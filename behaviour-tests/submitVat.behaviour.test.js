@@ -6,12 +6,14 @@ import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
+  createHmrcTestUser,
   getEnvVarAndLog,
   isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,
   runLocalSslProxy,
+  saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -141,6 +143,62 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     }
   });
 
+  /* ************************* */
+  /* HMRC TEST USER CREATION   */
+  /* ************************* */
+
+  // Variables to hold test credentials (either from env or generated)
+  let testUsername = hmrcTestUsername;
+  let testPassword = hmrcTestPassword;
+  let testVatNumber = hmrcTestVatNumber;
+
+  // If in sandbox mode and credentials are not provided, create a test user
+  if (isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber)) {
+    console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
+    try {
+      // Get HMRC client ID from environment (sandbox or default)
+      const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+
+      if (!hmrcClientId) {
+        console.error("[HMRC Test User] No HMRC client ID found in environment. Cannot create test user.");
+        throw new Error("HMRC_SANDBOX_CLIENT_ID or HMRC_CLIENT_ID is required to create test users");
+      }
+
+      console.log("[HMRC Test User] Creating HMRC sandbox test user with VAT enrollment");
+      const testUser = await createHmrcTestUser(hmrcClientId, { serviceNames: ["mtd-vat"] });
+
+      // Extract credentials from the created test user
+      testUsername = testUser.userId;
+      testPassword = testUser.password;
+      testVatNumber = testUser.vatRegistrationNumber;
+
+      console.log("[HMRC Test User] Successfully created test user:");
+      console.log(`  User ID: ${testUser.userId}`);
+      console.log(`  User Full Name: ${testUser.userFullName}`);
+      console.log(`  VAT Registration Number: ${testUser.vatRegistrationNumber}`);
+      console.log(`  Organisation: ${testUser.organisationDetails?.name || "N/A"}`);
+
+      // Save test user details to files
+      const repoRoot = path.resolve(process.cwd());
+      saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
+
+      // Update environment variables for this test run
+      process.env.TEST_HMRC_USERNAME = testUsername;
+      process.env.TEST_HMRC_PASSWORD = testPassword;
+      process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
+
+      console.log("[HMRC Test User] Updated environment variables with generated credentials");
+    } catch (error) {
+      console.error("[HMRC Test User] Failed to create test user:", error.message);
+      console.error("[HMRC Test User] Falling back to environment variables (if any)");
+      // Continue with whatever credentials we have (may be null)
+    }
+  } else if (isSandboxMode()) {
+    console.log("[HMRC Test User] Sandbox mode with provided credentials - using environment variables");
+  } else {
+    console.log("[HMRC Test User] Non-sandbox mode - using environment variables");
+  }
+
   /* ****** */
   /*  HOME  */
   /* ****** */
@@ -177,7 +235,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* ************ */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, hmrcTestVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -187,7 +245,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
   await initHmrcAuth(page, screenshotPath);
-  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
+  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
   await submitHmrcAuth(page, screenshotPath);
   await grantPermissionHmrcAuth(page, screenshotPath);
 
@@ -265,13 +323,14 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       testAuthUsername,
     },
     testData: {
-      hmrcTestUsername,
-      hmrcTestPassword,
-      hmrcTestVatNumber,
+      hmrcTestUsername: testUsername,
+      hmrcTestPassword: testPassword ? "***" : null, // Mask password in test context
+      hmrcTestVatNumber: testVatNumber,
       hmrcVatPeriodKey,
       hmrcVatDueAmount,
       receiptsBucketName,
       s3Endpoint,
+      testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
     },
     artefactsDir: outputDir,
   };

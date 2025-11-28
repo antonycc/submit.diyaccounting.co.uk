@@ -5,6 +5,8 @@ import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
+import fs from "node:fs";
+import path from "node:path";
 
 import logger from "@app/lib/logger.js";
 import { validateEnv } from "@app/lib/env.js";
@@ -225,4 +227,147 @@ export function timestamp() {
   const [hour, minute, second] = timePart.split(":");
   const nanos = (process.hrtime.bigint() % 1000000000n).toString().padStart(9, "0");
   return `${datePart}_${hour}-${minute}-${second}-${nanos}`;
+}
+
+/**
+ * Create an HMRC sandbox test user with VAT enrollment
+ * @param {string} hmrcClientId - HMRC application client ID
+ * @param {Object} options - Additional options
+ * @param {string[]} options.serviceNames - Service names to enroll (default: ["mtd-vat"])
+ * @returns {Promise<Object>} Test user details including userId, password, and vrn
+ */
+export async function createHmrcTestUser(hmrcClientId, options = {}) {
+  const serviceNames = options.serviceNames || ["mtd-vat"];
+  const baseUrl = "https://test-api.service.hmrc.gov.uk";
+  const endpoint = "/create-test-user/organisations";
+  const url = `${baseUrl}${endpoint}`;
+
+  logger.info({
+    message: "[HMRC Test User Creation] Starting test user creation",
+    url,
+    serviceNames,
+    hmrcClientId: hmrcClientId ? `${hmrcClientId.substring(0, 8)}...` : "none",
+  });
+
+  const requestBody = { serviceNames };
+  const requestHeaders = {
+    "Content-Type": "application/json",
+    "Accept": "application/vnd.hmrc.1.0+json",
+  };
+
+  logger.info({
+    message: "[HMRC Test User Creation] Request details",
+    method: "POST",
+    url,
+    headers: requestHeaders,
+    body: requestBody,
+  });
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: requestHeaders,
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseBody = await response.json();
+
+    logger.info({
+      message: "[HMRC Test User Creation] Response received",
+      status: response.status,
+      statusText: response.statusText,
+      responseBody,
+    });
+
+    if (!response.ok) {
+      logger.error({
+        message: "[HMRC Test User Creation] Failed to create test user",
+        status: response.status,
+        responseBody,
+      });
+      throw new Error(`Failed to create HMRC test user: ${response.status} ${response.statusText}`);
+    }
+
+    // Extract key information from response
+    const testUser = {
+      userId: responseBody.userId,
+      password: responseBody.password,
+      userFullName: responseBody.userFullName,
+      emailAddress: responseBody.emailAddress,
+      organisationDetails: responseBody.organisationDetails,
+      vatRegistrationNumber: responseBody.vatRegistrationNumber,
+      // Include all other fields for completeness
+      ...responseBody,
+    };
+
+    logger.info({
+      message: "[HMRC Test User Creation] Test user created successfully",
+      userId: testUser.userId,
+      userFullName: testUser.userFullName,
+      vatRegistrationNumber: testUser.vatRegistrationNumber,
+      organisationName: testUser.organisationDetails?.name,
+    });
+
+    return testUser;
+  } catch (error) {
+    logger.error({
+      message: "[HMRC Test User Creation] Error creating test user",
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
+}
+
+/**
+ * Save HMRC test user details to JSON files
+ * @param {Object} testUser - Test user details to save
+ * @param {string} outputDir - Test-specific output directory for artifacts
+ * @param {string} repoRoot - Repository root directory
+ */
+export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
+  logger.info({
+    message: "[HMRC Test User] Saving test user details to JSON files",
+    outputDir,
+    repoRoot,
+  });
+
+  const testUserJson = JSON.stringify(testUser, null, 2);
+
+  // Save to test-specific artifact directory
+  try {
+    if (outputDir) {
+      fs.mkdirSync(outputDir, { recursive: true });
+      const artifactPath = path.join(outputDir, "hmrc-test-user.json");
+      fs.writeFileSync(artifactPath, testUserJson, "utf-8");
+      logger.info({
+        message: "[HMRC Test User] Saved test user to artifact directory",
+        path: artifactPath,
+      });
+    }
+  } catch (error) {
+    logger.error({
+      message: "[HMRC Test User] Failed to save test user to artifact directory",
+      error: error.message,
+      outputDir,
+    });
+  }
+
+  // Save to repository root with consistent filename
+  try {
+    if (repoRoot) {
+      const rootPath = path.join(repoRoot, "hmrc-test-user.json");
+      fs.writeFileSync(rootPath, testUserJson, "utf-8");
+      logger.info({
+        message: "[HMRC Test User] Saved test user to repository root",
+        path: rootPath,
+      });
+    }
+  } catch (error) {
+    logger.error({
+      message: "[HMRC Test User] Failed to save test user to repository root",
+      error: error.message,
+      repoRoot,
+    });
+  }
 }
