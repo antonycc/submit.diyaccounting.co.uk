@@ -128,6 +128,7 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 
   try {
+    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${userSub}`);
     fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
   } catch (_e) {
     // Ignore errors writing file
@@ -312,9 +313,11 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   } catch (_e) {}
 
   try {
+    console.log(`Saving ${outputDir}/traceparent.txt for test "${testInfo.title}": ${observedTraceparent}`);
     fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
   } catch (_e) {}
   try {
+    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${userSub}`);
     fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
   } catch (_e) {}
 

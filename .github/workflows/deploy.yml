@@ -1947,6 +1947,18 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
 
+# TODO: YOU ARE HERE WORKING OUT WHY WE GET NO USER SUBS
+# TODO: ALSO MERGE VIEW INTO SUBMIT TEST AND EXPECT THE SUBMITTED DATA TO BE THERE
+
+#  Run chmod +x scripts/export-test-dynamodb.sh
+#  === Exporting DynamoDB data for test users ===
+#Deployment: ci-updatesan
+#Region: eu-west-2
+#Results directory: target/behaviour-test-results
+#
+#  ⚠️  No valid user subs found in userSub.txt files
+#  Skipping DynamoDB export
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5

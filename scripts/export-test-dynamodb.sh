@@ -32,6 +32,11 @@ echo "Results directory: $RESULTS_DIR"
 echo ""
 
 # Find all userSub.txt files in the test results
+find "$RESULTS_DIR" -type f -name 'userSub.txt' | while read -r file; do
+  echo "$file:"
+  cat "$file"
+  echo
+done
 USER_SUB_FILES=$(find "$RESULTS_DIR" -type f -name "userSub.txt" 2>/dev/null || true)
 
 if [ -z "$USER_SUB_FILES" ]; then
