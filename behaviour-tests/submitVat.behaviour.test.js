@@ -324,7 +324,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     },
     testData: {
       hmrcTestUsername: testUsername,
-      hmrcTestPassword: testPassword ? "***" : null, // Mask password in test context
+      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
       hmrcTestVatNumber: testVatNumber,
       hmrcVatPeriodKey,
       hmrcVatDueAmount,

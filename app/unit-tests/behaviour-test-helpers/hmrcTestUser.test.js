@@ -116,18 +116,10 @@ describe("saveHmrcTestUserToFiles", () => {
     expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
 
     // Check output directory file
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(outputDir, "hmrc-test-user.json"),
-      JSON.stringify(testUser, null, 2),
-      "utf-8",
-    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(path.join(outputDir, "hmrc-test-user.json"), JSON.stringify(testUser, null, 2), "utf-8");
 
     // Check repo root file
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      path.join(repoRoot, "hmrc-test-user.json"),
-      JSON.stringify(testUser, null, 2),
-      "utf-8",
-    );
+    expect(fs.writeFileSync).toHaveBeenCalledWith(path.join(repoRoot, "hmrc-test-user.json"), JSON.stringify(testUser, null, 2), "utf-8");
   });
 
   it("should handle errors gracefully when saving to output directory fails", () => {

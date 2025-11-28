@@ -246,7 +246,7 @@ export async function createHmrcTestUser(hmrcClientId, options = {}) {
     message: "[HMRC Test User Creation] Starting test user creation",
     url,
     serviceNames,
-    hmrcClientId: hmrcClientId ? `${hmrcClientId.substring(0, 8)}...` : "none",
+    hmrcClientId: hmrcClientId ? `${hmrcClientId.slice(0, Math.min(8, hmrcClientId.length))}...` : "none",
   });
 
   const requestBody = { serviceNames };
@@ -264,11 +264,22 @@ export async function createHmrcTestUser(hmrcClientId, options = {}) {
   });
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: requestHeaders,
-      body: JSON.stringify(requestBody),
-    });
+    // Add timeout to prevent hanging tests
+    const timeoutMs = 20000;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const responseBody = await response.json();
 
@@ -280,12 +291,13 @@ export async function createHmrcTestUser(hmrcClientId, options = {}) {
     });
 
     if (!response.ok) {
+      const errorDetails = responseBody?.message || responseBody?.error || JSON.stringify(responseBody);
       logger.error({
         message: "[HMRC Test User Creation] Failed to create test user",
         status: response.status,
         responseBody,
       });
-      throw new Error(`Failed to create HMRC test user: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to create HMRC test user: ${response.status} ${response.statusText} - ${errorDetails}`);
     }
 
     // Extract key information from response
