@@ -78,13 +78,12 @@ async function scanTableForHashedSubs(docClient, tableName, hashedSubs) {
 async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
   console.log(`\n=== Exporting DynamoDB data ===`);
   console.log(`Deployment: ${deploymentName}`);
-  console.log(`User subs: ${userSubs.join(", ")}`);
+  console.log(`User subs: ${userSubs.length} user(s)`);
   console.log(`Output dir: ${outputDir}`);
   console.log(`Region: ${region}\n`);
 
   // Hash all user subs
   const hashedSubs = userSubs.map((sub) => hashSub(sub));
-  console.log(`Hashed subs: ${hashedSubs.join(", ")}\n`);
 
   // Create DynamoDB client
   const docClient = makeDocClient(region);

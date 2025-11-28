@@ -70,12 +70,7 @@ if [ ${#USER_SUBS[@]} -eq 0 ]; then
   exit 0
 fi
 
-echo "Found ${#USER_SUBS[@]} unique user sub(s):"
-if [ ${#USER_SUBS[@]} -gt 0 ]; then
-  for sub in "${USER_SUBS[@]}"; do
-    echo "  - $sub"
-  done
-fi
+echo "Found ${#USER_SUBS[@]} unique user sub(s)"
 echo ""
 
 # Call the Node.js export script
