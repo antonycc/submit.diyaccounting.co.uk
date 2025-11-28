@@ -109,6 +109,29 @@ test.afterAll(async () => {
   } catch {}
 });
 
+test.afterEach(async ({ page }, testInfo) => {
+  // Extract and save userSub even if test fails
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  let userSub = null;
+  try {
+    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
+    if (userInfoStr) {
+      const userInfo = JSON.parse(userInfoStr);
+      userSub = userInfo?.sub || null;
+    }
+  } catch (_e) {
+    // Ignore errors accessing localStorage (e.g., if page never loaded)
+  }
+
+  try {
+    fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
+  } catch (_e) {
+    // Ignore errors writing file
+  }
+});
+
 test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo) => {
   // Compute test URL based on which servers are running
   const testUrl =
