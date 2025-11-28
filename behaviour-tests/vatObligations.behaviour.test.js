@@ -6,12 +6,14 @@ import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
+  createHmrcTestUser,
   getEnvVarAndLog,
   isSandboxMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
+  saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -162,6 +164,61 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     }
   });
 
+  /* ************************* */
+  /* HMRC TEST USER CREATION   */
+  /* ************************* */
+
+  // Variables to hold test credentials (either from env or generated)
+  let testUsername = hmrcTestUsername;
+  let testPassword = hmrcTestPassword;
+  let testVatNumber = hmrcTestVatNumber;
+
+  // If in sandbox mode and credentials are not provided, create a test user
+  if (!hmrcTestUsername) {
+    console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
+    // Get HMRC client ID from environment (sandbox or default)
+    const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
+
+    if (!hmrcClientId) {
+      console.error("[HMRC Test User] No HMRC client ID found in environment. Cannot create test user.");
+      throw new Error("HMRC_SANDBOX_CLIENT_ID or HMRC_CLIENT_ID is required to create test users");
+    }
+
+    if (!hmrcClientSecret) {
+      console.error("[HMRC Test User] No HMRC client secret found in environment. Cannot create test user.");
+      throw new Error("HMRC_SANDBOX_CLIENT_SECRET or HMRC_CLIENT_SECRET is required to create test users");
+    }
+
+    console.log("[HMRC Test User] Creating HMRC sandbox test user with VAT enrolment using client credentials");
+
+    const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, {
+      serviceNames: ["mtd-vat"],
+    });
+
+    // Extract credentials from the created test user
+    testUsername = testUser.userId;
+    testPassword = testUser.password;
+    testVatNumber = testUser.vrn;
+
+    console.log("[HMRC Test User] Successfully created test user:");
+    console.log(`  User ID: ${testUser.userId}`);
+    console.log(`  User Full Name: ${testUser.userFullName}`);
+    console.log(`  VAT Registration Number: ${testUser.vrn}`);
+    console.log(`  Organisation: ${testUser.organisationDetails?.name || "N/A"}`);
+
+    // Save test user details to files
+    const repoRoot = path.resolve(process.cwd());
+    saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
+
+    // Update environment variables for this test run
+    process.env.TEST_HMRC_USERNAME = testUsername;
+    process.env.TEST_HMRC_PASSWORD = testPassword;
+    process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
+
+    console.log("[HMRC Test User] Updated environment variables with generated credentials");
+  }
+
   /* ****** */
   /*  HOME  */
   /* ****** */
@@ -198,7 +255,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /* ******************* */
 
   await initVatObligations(page, screenshotPath);
-  await fillInVatObligations(page, hmrcTestVatNumber, { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
+  await fillInVatObligations(page, testVatNumber, { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
   await submitVatObligationsForm(page, screenshotPath);
 
   /* ************ */
@@ -208,7 +265,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
   await initHmrcAuth(page, screenshotPath);
-  await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
+  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
   await submitHmrcAuth(page, screenshotPath);
   await grantPermissionHmrcAuth(page, screenshotPath);
 
@@ -281,11 +338,12 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       testAuthUsername,
     },
     testData: {
-      hmrcTestVatNumber,
-      hmrcTestUsername,
-      hmrcTestPassword,
+      hmrcTestVatNumber: testVatNumber,
+      hmrcTestUsername: testUsername,
+      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
     },
     artefactsDir: outputDir,
   };

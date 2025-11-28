@@ -348,3 +348,6 @@ fabric.properties
 /cdk-submit-delivery.out/
 /cdk-submit-environment.out/
 /.output.txt
+
+# HMRC test user credentials
+/hmrc-test-user.json
