@@ -25,10 +25,15 @@ import path from "path";
 
 // Create DynamoDB Document Client
 function makeDocClient(region) {
-  const client = new DynamoDBClient({
-    region: region || "eu-west-2",
-  });
-  return DynamoDBDocumentClient.from(client);
+  try {
+    const client = new DynamoDBClient({
+      region: region || "eu-west-2",
+    });
+    return DynamoDBDocumentClient.from(client);
+  } catch (error) {
+    console.error("Failed to create DynamoDB client:", error.message);
+    throw new Error("AWS credentials not configured or invalid");
+  }
 }
 
 /**
@@ -121,6 +126,7 @@ async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
 
   // Write to JSON Lines file
   if (allData.length > 0) {
+    // Format timestamp for filenames: replace colons with dashes, remove milliseconds
     const timestamp = new Date().toISOString().replace(/:/g, "-").replace(/\..+/, "");
     const outputFileName = `dynamodb-export-${timestamp}.jsonl`;
     const outputFilePath = path.join(outputDir, outputFileName);
@@ -132,14 +138,13 @@ async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
     console.log(`   Exported ${allData.length} items from ${Object.keys(tableNames).length} tables`);
     console.log(`   Output file: ${outputFilePath}\n`);
 
-    // Also write a summary file
+    // Write a summary file (without sensitive user subs)
     const summaryFileName = `dynamodb-export-summary-${timestamp}.json`;
     const summaryFilePath = path.join(outputDir, summaryFileName);
     const summary = {
       timestamp: new Date().toISOString(),
       deploymentName,
-      userSubs,
-      hashedSubs,
+      userCount: userSubs.length,
       tables: tableNames,
       itemCount: allData.length,
       outputFile: outputFileName,

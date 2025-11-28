@@ -45,7 +45,7 @@ fi
 USER_SUBS=()
 while IFS= read -r file; do
   if [ -f "$file" ]; then
-    SUB=$(cat "$file" | tr -d '[:space:]')
+    SUB=$(tr -d '[:space:]' < "$file")
     if [ -n "$SUB" ]; then
       # Check if already in array
       FOUND=0
