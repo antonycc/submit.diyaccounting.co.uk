@@ -135,15 +135,19 @@ test.afterEach(async ({ page }, testInfo) => {
       const userInfo = JSON.parse(userInfoStr);
       userSub = userInfo?.sub || null;
     }
-  } catch (_e) {
-    // Ignore errors accessing localStorage (e.g., if page never loaded)
+  } catch (e) {
+    console.log(`[afterEach] Error accessing localStorage for test "${testInfo.title}": ${e.message}`);
   }
 
   try {
-    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${userSub}`);
-    fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
-  } catch (_e) {
-    // Ignore errors writing file
+    // Only write if we have a valid userSub (not null, not empty, not string "null" or "undefined")
+    const valueToWrite = userSub && userSub !== "null" && userSub !== "undefined" ? userSub : "";
+    console.log(
+      `[afterEach] Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${valueToWrite ? valueToWrite : "(empty - user may not have logged in)"}`,
+    );
+    fs.writeFileSync(path.join(outputDir, "userSub.txt"), valueToWrite, "utf-8");
+  } catch (e) {
+    console.log(`[afterEach] Error writing userSub.txt for test "${testInfo.title}": ${e.message}`);
   }
 });
 
@@ -368,16 +372,23 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       const userInfo = JSON.parse(userInfoStr);
       userSub = userInfo?.sub || null;
     }
-  } catch (_e) {}
+  } catch (e) {
+    console.log(`[test body] Error accessing localStorage: ${e.message}`);
+  }
 
   try {
     console.log(`Saving ${outputDir}/traceparent.txt for test "${testInfo.title}": ${observedTraceparent}`);
     fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
-  } catch (_e) {}
+  } catch (e) {
+    console.log(`[test body] Error writing traceparent.txt: ${e.message}`);
+  }
   try {
-    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${userSub}`);
-    fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
-  } catch (_e) {}
+    const valueToWrite = userSub && userSub !== "null" && userSub !== "undefined" ? userSub : "";
+    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${valueToWrite || "(empty)"}`);
+    fs.writeFileSync(path.join(outputDir, "userSub.txt"), valueToWrite, "utf-8");
+  } catch (e) {
+    console.log(`[test body] Error writing userSub.txt: ${e.message}`);
+  }
 
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
