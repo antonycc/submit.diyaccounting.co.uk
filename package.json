@@ -47,8 +47,6 @@
     "test:obligationBehaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:obligationBehaviour",
     "test:obligationBehaviour-ci": "npx dotenv -e .env.ci   -- playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-prod": "npx dotenv -e .env.prod -- playwright test --project=obligation-behaviour-tests",
-    "test:viewVatBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=view-vat-behaviour-tests",
-    "test:viewVatBehaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:viewVatBehaviour",
     "test:bundleBehaviour": "npx dotenv -e .env.proxy -- playwright test --project=bundle-behaviour-tests",
     "test:bundleBehaviour-ci": "npx dotenv -e .env.ci -- playwright test --project=bundle-behaviour-tests",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- playwright test behaviour-tests/submitVat.behaviour.test.js",

@@ -30,7 +30,17 @@ import {
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import {
+  completeVat,
+  fillInVat,
+  fillInViewVatReturn,
+  initSubmitVat,
+  initViewVatReturn,
+  submitFormVat,
+  submitViewVatReturnForm,
+  verifyVatSubmission,
+  verifyViewVatReturnResults,
+} from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -295,6 +305,34 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
   await verifyAtLeastOneClickableReceipt(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+
+  /* ******************* */
+  /*  VIEW VAT RETURN    */
+  /* ******************* */
+
+  // Now attempt to view the VAT return that was just submitted
+  await initViewVatReturn(page, screenshotPath);
+  await fillInViewVatReturn(page, testVatNumber, hmrcVatPeriodKey, screenshotPath);
+  await submitViewVatReturnForm(page, screenshotPath);
+
+  /* ************ */
+  /* `HMRC AUTH   */
+  /* ************ */
+
+  // Re-authenticate with HMRC for viewing the return
+  await acceptCookiesHmrc(page, screenshotPath);
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
+
+  /* ******************* */
+  /*  VIEW VAT RESULTS   */
+  /* ******************* */
+
+  await verifyViewVatReturnResults(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ********* */
