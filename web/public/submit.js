@@ -44,8 +44,8 @@ function checkTokenExpiry(accessToken, idToken) {
         window.showStatus("Your session has expired. Attempting to refresh...", "info");
       }
 
-      // Attempt to refresh tokens
-      void ensureSession({ force: true })
+      // Attempt to refresh tokens (fire-and-forget)
+      ensureSession({ force: true })
         .then((newToken) => {
           if (newToken) {
             console.log("Token refresh successful on page load");
@@ -61,7 +61,6 @@ function checkTokenExpiry(accessToken, idToken) {
               }, 3000);
             }
           }
-          return undefined;
         })
         .catch((err) => {
           console.error("Token refresh error on page load:", err);
@@ -71,7 +70,6 @@ function checkTokenExpiry(accessToken, idToken) {
               window.location.href = "/auth/login.html";
             }, 3000);
           }
-          return undefined;
         });
       return;
     }
@@ -83,15 +81,13 @@ function checkTokenExpiry(accessToken, idToken) {
 
     if (accessExpiringSoon || idExpiringSoon) {
       console.log("Token(s) expiring soon, attempting preemptive refresh");
-      // Silently attempt to refresh tokens before they expire
-      void ensureSession({ force: false, minTTLms: fiveMinutes })
+      // Silently attempt to refresh tokens before they expire (fire-and-forget)
+      ensureSession({ force: false, minTTLms: fiveMinutes })
         .then(() => {
           console.log("Preemptive token refresh successful");
-          return undefined;
         })
         .catch((err) => {
           console.warn("Preemptive token refresh failed:", err);
-          return undefined;
         });
     }
   } catch (error) {
@@ -643,6 +639,35 @@ async function ensureSession({ minTTLms = 30000, force = false } = {}) {
   }
 }
 
+// Handle 403 Forbidden errors with user guidance
+async function handle403Error(response) {
+  try {
+    const errorBody = await response.json().catch(() => ({}));
+    const message = errorBody.message || "Access forbidden. You may need to add a bundle to access this feature.";
+    console.warn("403 Forbidden:", message);
+
+    // Show user-friendly error and guide to bundles page
+    if (typeof window !== "undefined" && window.showStatus) {
+      window.showStatus(`${message} Click here to add bundles.`, "error");
+      // Add a link to bundles page in the error message
+      setTimeout(() => {
+        const statusContainer = document.getElementById("statusMessagesContainer");
+        if (statusContainer) {
+          const lastMessage = statusContainer.lastElementChild;
+          if (lastMessage && lastMessage.classList.contains("status-error")) {
+            lastMessage.style.cursor = "pointer";
+            lastMessage.onclick = () => {
+              window.location.href = "/account/bundles.html";
+            };
+          }
+        }
+      }, 100);
+    }
+  } catch (e) {
+    console.warn("Failed to handle 403 error:", e);
+  }
+}
+
 // Centralized fetch with Cognito header injection and 401/403 handling
 async function authorizedFetch(input, init = {}) {
   const headers = new Headers(init.headers || {});
@@ -654,31 +679,7 @@ async function authorizedFetch(input, init = {}) {
 
   // Handle 403 Forbidden - likely missing bundle entitlement
   if (first.status === 403) {
-    try {
-      const errorBody = await first.json().catch(() => ({}));
-      const message = errorBody.message || "Access forbidden. You may need to add a bundle to access this feature.";
-      console.warn("403 Forbidden:", message);
-
-      // Show user-friendly error and guide to bundles page
-      if (typeof window !== "undefined" && window.showStatus) {
-        window.showStatus(`${message} Click here to add bundles.`, "error");
-        // Add a link to bundles page in the error message
-        setTimeout(() => {
-          const statusContainer = document.getElementById("statusMessagesContainer");
-          if (statusContainer) {
-            const lastMessage = statusContainer.lastElementChild;
-            if (lastMessage && lastMessage.classList.contains("status-error")) {
-              lastMessage.style.cursor = "pointer";
-              lastMessage.onclick = () => {
-                window.location.href = "/account/bundles.html";
-              };
-            }
-          }
-        }, 100);
-      }
-    } catch (e) {
-      console.warn("Failed to handle 403 error:", e);
-    }
+    await handle403Error(first);
     return first; // Return the 403 response for caller to handle
   }
 
@@ -735,31 +736,7 @@ async function fetchWithIdToken(input, init = {}) {
 
   // Handle 403 Forbidden - likely missing bundle entitlement
   if (first.status === 403) {
-    try {
-      const errorBody = await first.json().catch(() => ({}));
-      const message = errorBody.message || "Access forbidden. You may need to add a bundle to access this feature.";
-      console.warn("403 Forbidden:", message);
-
-      // Show user-friendly error and guide to bundles page
-      if (typeof window !== "undefined" && window.showStatus) {
-        window.showStatus(`${message} Click here to add bundles.`, "error");
-        // Add a link to bundles page in the error message
-        setTimeout(() => {
-          const statusContainer = document.getElementById("statusMessagesContainer");
-          if (statusContainer) {
-            const lastMessage = statusContainer.lastElementChild;
-            if (lastMessage && lastMessage.classList.contains("status-error")) {
-              lastMessage.style.cursor = "pointer";
-              lastMessage.onclick = () => {
-                window.location.href = "/account/bundles.html";
-              };
-            }
-          }
-        }, 100);
-      }
-    } catch (e) {
-      console.warn("Failed to handle 403 error:", e);
-    }
+    await handle403Error(first);
     return first; // Return the 403 response for caller to handle
   }
 
