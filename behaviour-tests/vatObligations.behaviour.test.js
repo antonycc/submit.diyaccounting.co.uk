@@ -43,6 +43,13 @@ import {
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
+import {
+  appendTraceparentTxt,
+  appendUserSubTxt,
+  deleteTraceparentTxt,
+  deleteUserSubTxt,
+  extractUserSubFromLocalStorage,
+} from "./helpers/fileHelper.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -77,10 +84,12 @@ let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
 let dynamoControl;
+let userSub = null;
+let observedTraceparent = null;
 
 test.setTimeout(300_000);
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
   process.env = {
     ...originalEnv,
@@ -91,6 +100,12 @@ test.beforeAll(async () => {
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
   ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
+
+  // Clean up any existing artefacts from previous test runs
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  deleteUserSubTxt(outputDir);
+  deleteTraceparentTxt(outputDir);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -112,31 +127,10 @@ test.afterAll(async () => {
 });
 
 test.afterEach(async ({ page }, testInfo) => {
-  // Extract and save userSub even if test fails
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
-
-  let userSub = null;
-  try {
-    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
-    if (userInfoStr) {
-      const userInfo = JSON.parse(userInfoStr);
-      userSub = userInfo?.sub || null;
-    }
-  } catch (e) {
-    console.log(`[afterEach] Error accessing localStorage for test "${testInfo.title}": ${e.message}`);
-  }
-
-  try {
-    // Only write if we have a valid userSub (not null, not empty, not string "null" or "undefined")
-    const valueToWrite = userSub && userSub !== "null" && userSub !== "undefined" ? userSub : "";
-    console.log(
-      `[afterEach] Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${valueToWrite ? valueToWrite : "(empty - user may not have logged in)"}`,
-    );
-    fs.writeFileSync(path.join(outputDir, "userSub.txt"), valueToWrite, "utf-8");
-  } catch (e) {
-    console.log(`[afterEach] Error writing userSub.txt for test "${testInfo.title}": ${e.message}`);
-  }
+  appendUserSubTxt(outputDir, testInfo, userSub);
+  appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
 test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo) => {
@@ -152,7 +146,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
-  let observedTraceparent = null;
 
   // Capture the first traceparent header observed in any API response
   page.on("response", (response) => {
@@ -281,6 +274,14 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   await verifyVatObligationsResults(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
+  // TODO: When in sandbox mode, trigger each test scenario in turn, going back to home page each time
+
+  /* ****************** */
+  /*  Extract user sub  */
+  /* ****************** */
+
+  userSub = await extractUserSubFromLocalStorage(page, testInfo);
+
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
@@ -304,32 +305,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     } catch (error) {
       console.error("[DynamoDB Export]: Failed to export tables:", error);
     }
-  }
-
-  // Extract user sub (from localStorage.userInfo) and write artefacts
-  let userSub = null;
-  try {
-    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
-    if (userInfoStr) {
-      const userInfo = JSON.parse(userInfoStr);
-      userSub = userInfo?.sub || null;
-    }
-  } catch (e) {
-    console.log(`[test body] Error accessing localStorage: ${e.message}`);
-  }
-
-  try {
-    console.log(`Saving ${outputDir}/traceparent.txt for test "${testInfo.title}": ${observedTraceparent}`);
-    fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
-  } catch (e) {
-    console.log(`[test body] Error writing traceparent.txt: ${e.message}`);
-  }
-  try {
-    const valueToWrite = userSub && userSub !== "null" && userSub !== "undefined" ? userSub : "";
-    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${valueToWrite || "(empty)"}`);
-    fs.writeFileSync(path.join(outputDir, "userSub.txt"), valueToWrite, "utf-8");
-  } catch (e) {
-    console.log(`[test body] Error writing userSub.txt: ${e.message}`);
   }
 
   // Build and write testContext.json
@@ -358,6 +333,8 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
       testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      userSub,
+      observedTraceparent,
     },
     artefactsDir: outputDir,
   };
