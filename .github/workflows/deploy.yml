@@ -1872,6 +1872,7 @@ jobs:
           ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:obligationBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
@@ -1994,6 +1995,7 @@ jobs:
           ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:submitVatBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
@@ -2116,6 +2118,7 @@ jobs:
           ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:viewVatBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
