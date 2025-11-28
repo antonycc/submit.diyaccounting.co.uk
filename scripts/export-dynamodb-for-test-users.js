@@ -2,16 +2,16 @@
 
 /**
  * Export DynamoDB data for specific test users
- * 
+ *
  * This script exports data from all DynamoDB tables (bundles, hmrc-api-requests, receipts)
  * for the test users identified by their sub values. The output is in JSON Lines format.
- * 
+ *
  * Usage:
  *   node scripts/export-dynamodb-for-test-users.js <deployment-name> <user-sub> [user-sub2 ...]
- * 
+ *
  * Example:
  *   node scripts/export-dynamodb-for-test-users.js ci-abc123 test-user-1 test-user-2
- * 
+ *
  * Environment variables:
  *   AWS_REGION - AWS region (default: eu-west-2)
  *   OUTPUT_DIR - Output directory for export files (default: target/behaviour-test-results)

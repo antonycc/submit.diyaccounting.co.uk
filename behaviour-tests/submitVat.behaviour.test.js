@@ -30,7 +30,17 @@ import {
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import {
+  completeVat,
+  fillInVat,
+  fillInViewVatReturn,
+  initSubmitVat,
+  initViewVatReturn,
+  submitFormVat,
+  submitViewVatReturnForm,
+  verifyVatSubmission,
+  verifyViewVatReturnResults,
+} from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -39,6 +49,13 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
+import {
+  appendTraceparentTxt,
+  appendUserSubTxt,
+  deleteTraceparentTxt,
+  deleteUserSubTxt,
+  extractUserSubFromLocalStorage,
+} from "./helpers/fileHelper.js";
 
 if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -53,8 +70,6 @@ const originalEnv = { ...process.env };
 
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
-const optionalTestS3AccessKey = getEnvVarAndLog("optionalTestS3AccessKey", "TEST_S3_ACCESS_KEY", null);
-const optionalTestS3SecretKey = getEnvVarAndLog("optionalTestS3Secret_KEY", "TEST_S3_SECRET_KEY", null);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
@@ -79,10 +94,12 @@ let s3Endpoint;
 let serverProcess;
 let ngrokProcess;
 let dynamoControl;
+let userSub = null;
+let observedTraceparent = null;
 
 test.setTimeout(300_000);
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
   process.env = {
     ...originalEnv,
@@ -93,6 +110,12 @@ test.beforeAll(async () => {
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
   ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
+
+  // Clean up any existing artefacts from previous test runs
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  deleteUserSubTxt(outputDir);
+  deleteTraceparentTxt(outputDir);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -114,27 +137,10 @@ test.afterAll(async () => {
 });
 
 test.afterEach(async ({ page }, testInfo) => {
-  // Extract and save userSub even if test fails
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
-
-  let userSub = null;
-  try {
-    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
-    if (userInfoStr) {
-      const userInfo = JSON.parse(userInfoStr);
-      userSub = userInfo?.sub || null;
-    }
-  } catch (_e) {
-    // Ignore errors accessing localStorage (e.g., if page never loaded)
-  }
-
-  try {
-    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${userSub}`);
-    fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
-  } catch (_e) {
-    // Ignore errors writing file
-  }
+  appendUserSubTxt(outputDir, testInfo, userSub);
+  appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
 test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) => {
@@ -150,7 +156,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
-  let observedTraceparent = null;
 
   // Capture the first traceparent header observed in any API response
   page.on("response", (response) => {
@@ -179,8 +184,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   // If in sandbox mode and credentials are not provided, create a test user
   if (!hmrcTestUsername) {
     console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
-    //try {
-    // Get HMRC client ID from environment (sandbox or default)
+
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
     const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
 
@@ -213,6 +217,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
     // Save test user details to files
     const repoRoot = path.resolve(process.cwd());
+
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
 
     // Update environment variables for this test run
@@ -221,15 +226,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
 
     console.log("[HMRC Test User] Updated environment variables with generated credentials");
-    //} catch (error) {
-    //console.error("[HMRC Test User] Failed to create test user:", error.message);
-    //console.error("[HMRC Test User] Falling back to environment variables (if any)");
-    // Continue with whatever credentials we have (may be null)
-    //}
-    //} else if (isSandboxMode()) {
-    //  console.log("[HMRC Test User] Sandbox mode with provided credentials - using environment variables");
-    //} else {
-    //  console.log("[HMRC Test User] Non-sandbox mode - using environment variables");
   }
 
   /* ****** */
@@ -297,6 +293,32 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await verifyAtLeastOneClickableReceipt(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
+  /* ******************* */
+  /*  VIEW VAT RETURN    */
+  /* ******************* */
+
+  // Now attempt to view the VAT return that was just submitted
+  await initViewVatReturn(page, screenshotPath);
+  await fillInViewVatReturn(page, testVatNumber, hmrcVatPeriodKey, screenshotPath);
+  await submitViewVatReturnForm(page, screenshotPath);
+
+  // TODO: When in sandbox mode, trigger each submit vat test scenario in turn, going back to home page each time
+
+  /* ******************* */
+  /*  VIEW VAT RESULTS   */
+  /* ******************* */
+
+  await verifyViewVatReturnResults(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+
+  // TODO: When in sandbox mode, trigger each view vat test scenario in turn, going back to home page each time
+
+  /* ****************** */
+  /*  Extract user sub  */
+  /* ****************** */
+
+  userSub = await extractUserSubFromLocalStorage(page, testInfo);
+
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
@@ -321,25 +343,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       console.error("[DynamoDB Export]: Failed to export tables:", error);
     }
   }
-
-  // Extract user sub (from localStorage.userInfo) and write artefacts
-  let userSub = null;
-  try {
-    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
-    if (userInfoStr) {
-      const userInfo = JSON.parse(userInfoStr);
-      userSub = userInfo?.sub || null;
-    }
-  } catch (_e) {}
-
-  try {
-    console.log(`Saving ${outputDir}/traceparent.txt for test "${testInfo.title}": ${observedTraceparent}`);
-    fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
-  } catch (_e) {}
-  try {
-    console.log(`Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${userSub}`);
-    fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
-  } catch (_e) {}
 
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
@@ -366,6 +369,8 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       receiptsBucketName,
       s3Endpoint,
       testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
+      userSub,
+      observedTraceparent,
     },
     artefactsDir: outputDir,
   };
