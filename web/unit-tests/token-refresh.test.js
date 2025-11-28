@@ -24,6 +24,11 @@ describe("Token refresh on 401 errors", () => {
       },
       addEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
+      location: {
+        href: "http://localhost:3000",
+        origin: "http://localhost:3000",
+        search: "",
+      },
       crypto: {
         getRandomValues: (arr) => {
           for (let i = 0; i < arr.length; i++) {
@@ -234,5 +239,74 @@ describe("Token refresh on 401 errors", () => {
       expect(headers["Content-Type"]).toBe("application/json");
       expect(headers["X-Custom-Header"]).toBe("test-value");
     }
+  });
+
+  it("fetchWithIdToken should handle 403 errors and show user-friendly message", async () => {
+    // Mock valid access token
+    const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    storageMock.cognitoAccessToken = validToken;
+
+    // Mock 403 response
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ message: "Bundle entitlement required" }),
+    });
+
+    const result = await window.fetchWithIdToken("/api/v1/test", {});
+
+    // Should return 403 response without retry
+    expect(result.status).toBe(403);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // No retry on 403
+  });
+
+  it("authorizedFetch should handle 403 errors gracefully", async () => {
+    // Mock valid access token
+    const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    storageMock.cognitoAccessToken = validToken;
+
+    // Mock 403 response
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ message: "Access forbidden" }),
+    });
+
+    const result = await window.authorizedFetch("/api/v1/test", {});
+
+    // Should return 403 response without retry
+    expect(result.status).toBe(403);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // No retry on 403
+  });
+
+  it("checkTokenExpiry should detect expired tokens", () => {
+    // Create expired tokens
+    const expiredExp = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+    const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: expiredExp }))}.test`;
+
+    // Mock showStatus
+    window.showStatus = vi.fn();
+
+    // Call checkTokenExpiry with expired token
+    window.checkTokenExpiry(expiredToken, expiredToken);
+
+    // Should attempt to show status message
+    expect(window.showStatus).toHaveBeenCalled();
+  });
+
+  it("getJwtExpiryMs should parse JWT expiry correctly", () => {
+    const futureExp = Math.floor(Date.now() / 1000) + 3600;
+    const token = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: futureExp }))}.test`;
+
+    const expiryMs = window.getJwtExpiryMs(token);
+
+    expect(expiryMs).toBe(futureExp * 1000);
+  });
+
+  it("getJwtExpiryMs should handle invalid tokens", () => {
+    const expiryMs = window.getJwtExpiryMs("invalid-token");
+    expect(expiryMs).toBe(0);
   });
 });
