@@ -153,50 +153,59 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   let testVatNumber = hmrcTestVatNumber;
 
   // If in sandbox mode and credentials are not provided, create a test user
-  if (isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber)) {
+  if (!hmrcTestUsername) {
     console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
-    try {
-      // Get HMRC client ID from environment (sandbox or default)
-      const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    //try {
+    // Get HMRC client ID from environment (sandbox or default)
+    const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
 
-      if (!hmrcClientId) {
-        console.error("[HMRC Test User] No HMRC client ID found in environment. Cannot create test user.");
-        throw new Error("HMRC_SANDBOX_CLIENT_ID or HMRC_CLIENT_ID is required to create test users");
-      }
-
-      console.log("[HMRC Test User] Creating HMRC sandbox test user with VAT enrollment");
-      const testUser = await createHmrcTestUser(hmrcClientId, { serviceNames: ["mtd-vat"] });
-
-      // Extract credentials from the created test user
-      testUsername = testUser.userId;
-      testPassword = testUser.password;
-      testVatNumber = testUser.vatRegistrationNumber;
-
-      console.log("[HMRC Test User] Successfully created test user:");
-      console.log(`  User ID: ${testUser.userId}`);
-      console.log(`  User Full Name: ${testUser.userFullName}`);
-      console.log(`  VAT Registration Number: ${testUser.vatRegistrationNumber}`);
-      console.log(`  Organisation: ${testUser.organisationDetails?.name || "N/A"}`);
-
-      // Save test user details to files
-      const repoRoot = path.resolve(process.cwd());
-      saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
-
-      // Update environment variables for this test run
-      process.env.TEST_HMRC_USERNAME = testUsername;
-      process.env.TEST_HMRC_PASSWORD = testPassword;
-      process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
-
-      console.log("[HMRC Test User] Updated environment variables with generated credentials");
-    } catch (error) {
-      console.error("[HMRC Test User] Failed to create test user:", error.message);
-      console.error("[HMRC Test User] Falling back to environment variables (if any)");
-      // Continue with whatever credentials we have (may be null)
+    if (!hmrcClientId) {
+      console.error("[HMRC Test User] No HMRC client ID found in environment. Cannot create test user.");
+      throw new Error("HMRC_SANDBOX_CLIENT_ID or HMRC_CLIENT_ID is required to create test users");
     }
-  } else if (isSandboxMode()) {
-    console.log("[HMRC Test User] Sandbox mode with provided credentials - using environment variables");
-  } else {
-    console.log("[HMRC Test User] Non-sandbox mode - using environment variables");
+
+    if (!hmrcClientSecret) {
+      console.error("[HMRC Test User] No HMRC client secret found in environment. Cannot create test user.");
+      throw new Error("HMRC_SANDBOX_CLIENT_SECRET or HMRC_CLIENT_SECRET is required to create test users");
+    }
+
+    console.log("[HMRC Test User] Creating HMRC sandbox test user with VAT enrolment using client credentials");
+
+    const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, {
+      serviceNames: ["mtd-vat"],
+    });
+
+    // Extract credentials from the created test user
+    testUsername = testUser.userId;
+    testPassword = testUser.password;
+    testVatNumber = testUser.vatRegistrationNumber;
+
+    console.log("[HMRC Test User] Successfully created test user:");
+    console.log(`  User ID: ${testUser.userId}`);
+    console.log(`  User Full Name: ${testUser.userFullName}`);
+    console.log(`  VAT Registration Number: ${testUser.vatRegistrationNumber}`);
+    console.log(`  Organisation: ${testUser.organisationDetails?.name || "N/A"}`);
+
+    // Save test user details to files
+    const repoRoot = path.resolve(process.cwd());
+    saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
+
+    // Update environment variables for this test run
+    process.env.TEST_HMRC_USERNAME = testUsername;
+    process.env.TEST_HMRC_PASSWORD = testPassword;
+    process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
+
+    console.log("[HMRC Test User] Updated environment variables with generated credentials");
+    //} catch (error) {
+    //console.error("[HMRC Test User] Failed to create test user:", error.message);
+    //console.error("[HMRC Test User] Falling back to environment variables (if any)");
+    // Continue with whatever credentials we have (may be null)
+    //}
+    //} else if (isSandboxMode()) {
+    //  console.log("[HMRC Test User] Sandbox mode with provided credentials - using environment variables");
+    //} else {
+    //  console.log("[HMRC Test User] Non-sandbox mode - using environment variables");
   }
 
   /* ****** */

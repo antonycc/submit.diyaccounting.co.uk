@@ -231,16 +231,22 @@ export function timestamp() {
 
 /**
  * Create an HMRC sandbox test user with VAT enrollment
+ * Uses OAuth2 client credentials (client id + client secret) to obtain a bearer token
+ * before calling the Create Test User API.
+ *
  * @param {string} hmrcClientId - HMRC application client ID
+ * @param {string} hmrcClientSecret - HMRC application client secret
  * @param {Object} options - Additional options
  * @param {string[]} options.serviceNames - Service names to enroll (default: ["mtd-vat"])
+ * @param {string} [options.scope] - Optional OAuth2 scope for the client credentials request
  * @returns {Promise<Object>} Test user details including userId, password, and vrn
  */
-export async function createHmrcTestUser(hmrcClientId, options = {}) {
+export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) {
   const serviceNames = options.serviceNames || ["mtd-vat"];
   const baseUrl = "https://test-api.service.hmrc.gov.uk";
   const endpoint = "/create-test-user/organisations";
   const url = `${baseUrl}${endpoint}`;
+  const tokenUrl = `${baseUrl}/oauth/token`;
 
   logger.info({
     message: "[HMRC Test User Creation] Starting test user creation",
@@ -250,22 +256,109 @@ export async function createHmrcTestUser(hmrcClientId, options = {}) {
   });
 
   const requestBody = { serviceNames };
-  const requestHeaders = {
-    "Content-Type": "application/json",
-    "Accept": "application/vnd.hmrc.1.0+json",
-  };
 
   logger.info({
-    message: "[HMRC Test User Creation] Request details",
+    message: "[HMRC Test User Creation] Request details (pre-token)",
     method: "POST",
     url,
-    headers: requestHeaders,
     body: requestBody,
   });
 
   try {
     // Add timeout to prevent hanging tests
     const timeoutMs = 20000;
+
+    /* *************************** */
+    /* 1. Obtain OAuth2 access token */
+    /* *************************** */
+
+    logger.info({
+      message: "[HMRC Test User Creation] Requesting OAuth2 access token",
+      tokenUrl,
+      grantType: "client_credentials",
+    });
+
+    const tokenController = new AbortController();
+    const tokenTimeout = setTimeout(() => tokenController.abort(), timeoutMs);
+
+    let tokenResponse;
+    try {
+      const tokenBody = new URLSearchParams({
+        client_id: hmrcClientId,
+        client_secret: hmrcClientSecret,
+        grant_type: "client_credentials",
+      });
+
+      if (options.scope) {
+        tokenBody.set("scope", options.scope);
+      }
+
+      tokenResponse = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: tokenBody.toString(),
+        signal: tokenController.signal,
+      });
+    } finally {
+      clearTimeout(tokenTimeout);
+    }
+
+    const tokenResponseBody = await tokenResponse.json().catch(() => ({}));
+
+    logger.info({
+      message: "[HMRC Test User Creation] Token response received",
+      status: tokenResponse.status,
+      statusText: tokenResponse.statusText,
+      // Do not log access_token
+      hasAccessToken: Boolean(tokenResponseBody && tokenResponseBody.access_token),
+      error: tokenResponseBody.error,
+      errorDescription: tokenResponseBody.error_description,
+    });
+
+    if (!tokenResponse.ok) {
+      const tokenErrorDetails = tokenResponseBody?.error_description || tokenResponseBody?.error || JSON.stringify(tokenResponseBody);
+      logger.error({
+        message: "[HMRC Test User Creation] Failed to obtain access token",
+        status: tokenResponse.status,
+        tokenResponseBody,
+      });
+      throw new Error(`Failed to obtain HMRC access token: ${tokenResponse.status} ${tokenResponse.statusText} - ${tokenErrorDetails}`);
+    }
+
+    const accessToken = tokenResponseBody.access_token;
+    if (!accessToken) {
+      logger.error({
+        message: "[HMRC Test User Creation] Token response did not contain access_token",
+        tokenResponseBody,
+      });
+      throw new Error("Failed to obtain HMRC access token: access_token missing from response");
+    }
+
+    /* ************************************** */
+    /* 2. Call Create Test User (organisations) */
+    /* ************************************** */
+
+    const requestHeaders = {
+      "Content-Type": "application/json",
+      "Accept": "application/vnd.hmrc.1.0+json",
+      "Authorization": `Bearer ${accessToken}`,
+    };
+
+    const requestHeadersForLog = {
+      ...requestHeaders,
+      Authorization: "Bearer ***REDACTED***",
+    };
+
+    logger.info({
+      message: "[HMRC Test User Creation] Request details (create-test-user)",
+      method: "POST",
+      url,
+      headers: requestHeadersForLog,
+      body: requestBody,
+    });
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
