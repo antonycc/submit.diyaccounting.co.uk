@@ -187,9 +187,7 @@ public class HmrcStack extends Stack {
 
         // Grant circuit breaker permissions
         circuitBreakerTable.grantReadWriteData(this.hmrcAuthUrlGetLambda);
-        infof(
-                "Granted Circuit Breaker permissions to %s",
-                this.hmrcAuthUrlGetLambda.getFunctionName());
+        infof("Granted Circuit Breaker permissions to %s", this.hmrcAuthUrlGetLambda.getFunctionName());
 
         // exchangeToken - HMRC
         var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
@@ -249,9 +247,7 @@ public class HmrcStack extends Stack {
 
         // Grant circuit breaker permissions
         circuitBreakerTable.grantReadWriteData(this.hmrcTokenPostLambda);
-        infof(
-                "Granted Circuit Breaker permissions to %s",
-                this.hmrcTokenPostLambda.getFunctionName());
+        infof("Granted Circuit Breaker permissions to %s", this.hmrcTokenPostLambda.getFunctionName());
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -342,9 +338,7 @@ public class HmrcStack extends Stack {
 
         // Grant circuit breaker permissions
         circuitBreakerTable.grantReadWriteData(this.hmrcVatReturnPostLambda);
-        infof(
-                "Granted Circuit Breaker permissions to %s",
-                this.hmrcVatReturnPostLambda.getFunctionName());
+        infof("Granted Circuit Breaker permissions to %s", this.hmrcVatReturnPostLambda.getFunctionName());
 
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
@@ -391,9 +385,7 @@ public class HmrcStack extends Stack {
 
         // Grant circuit breaker permissions
         circuitBreakerTable.grantReadWriteData(this.hmrcVatObligationGetLambda);
-        infof(
-                "Granted Circuit Breaker permissions to %s",
-                this.hmrcVatObligationGetLambda.getFunctionName());
+        infof("Granted Circuit Breaker permissions to %s", this.hmrcVatObligationGetLambda.getFunctionName());
 
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
@@ -439,9 +431,7 @@ public class HmrcStack extends Stack {
 
         // Grant circuit breaker permissions
         circuitBreakerTable.grantReadWriteData(this.hmrcVatReturnGetLambda);
-        infof(
-                "Granted Circuit Breaker permissions to %s",
-                this.hmrcVatReturnGetLambda.getFunctionName());
+        infof("Granted Circuit Breaker permissions to %s", this.hmrcVatReturnGetLambda.getFunctionName());
 
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -493,9 +483,7 @@ public class HmrcStack extends Stack {
 
         // Grant circuit breaker permissions
         circuitBreakerTable.grantReadWriteData(this.receiptPostLambda);
-        infof(
-                "Granted Circuit Breaker permissions to %s",
-                this.receiptPostLambda.getFunctionName());
+        infof("Granted Circuit Breaker permissions to %s", this.receiptPostLambda.getFunctionName());
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
@@ -551,9 +539,7 @@ public class HmrcStack extends Stack {
 
         // Grant circuit breaker permissions
         circuitBreakerTable.grantReadWriteData(this.receiptGetLambda);
-        infof(
-                "Granted Circuit Breaker permissions to %s",
-                this.receiptGetLambda.getFunctionName());
+        infof("Granted Circuit Breaker permissions to %s", this.receiptGetLambda.getFunctionName());
 
         // Lookup existing DynamoDB Receipts Table
         ITable receiptsTable = Table.fromTableName(

@@ -5,9 +5,6 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import co.uk.diyaccounting.submit.constructs.ApiLambda;
-import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
-import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -18,10 +15,6 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.apigatewayv2.CfnApi;
-import software.amazon.awscdk.services.apigatewayv2.CfnIntegration;
-import software.amazon.awscdk.services.apigatewayv2.CfnRoute;
-import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
@@ -36,13 +29,8 @@ import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.Schedule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
-import software.amazon.awscdk.services.iam.Effect;
-import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.FunctionUrl;
-import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
-import software.amazon.awscdk.services.lambda.FunctionUrlOptions;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
@@ -108,11 +96,8 @@ public class CircuitBreakerStack extends Stack {
         super(scope, id, stackProps);
 
         // Define the external hosts that need circuit breaker protection
-        List<String> externalHosts = Arrays.asList(
-                "api.service.hmrc.gov.uk",
-                "test-api.service.hmrc.gov.uk",
-                "google.com",
-                "antonycc.com");
+        List<String> externalHosts =
+                Arrays.asList("api.service.hmrc.gov.uk", "test-api.service.hmrc.gov.uk", "google.com", "antonycc.com");
 
         // Create DynamoDB table for circuit breaker state
         this.circuitBreakerStateTable = Table.Builder.create(this, "CircuitBreakerStateTable")
@@ -125,9 +110,7 @@ public class CircuitBreakerStack extends Stack {
                 .removalPolicy(RemovalPolicy.DESTROY) // For non-prod environments
                 .build();
 
-        infof(
-                "Created DynamoDB table %s for circuit breaker state",
-                this.circuitBreakerStateTable.getTableName());
+        infof("Created DynamoDB table %s for circuit breaker state", this.circuitBreakerStateTable.getTableName());
 
         // Create Lambda function for circuit breaker state management
         this.circuitBreakerStateFunctionLogGroup = LogGroup.Builder.create(this, "CircuitBreakerStateFunctionLogGroup")
@@ -136,24 +119,23 @@ public class CircuitBreakerStack extends Stack {
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
-        this.circuitBreakerStateFunction =
-                Function.Builder.create(this, "CircuitBreakerStateFunction")
-                        .functionName(props.resourceNamePrefix() + "-circuit-breaker-state")
-                        .runtime(Runtime.NODEJS_20_X)
-                        .handler("index.handler")
-                        .code(Code.fromInline(getCircuitBreakerStateFunctionCode()))
-                        .timeout(Duration.seconds(30))
-                        .environment(Map.of(
-                                "CIRCUIT_BREAKER_TABLE_NAME",
-                                this.circuitBreakerStateTable.getTableName(),
-                                "FAILURE_THRESHOLD",
-                                "5",
-                                "TIMEOUT_THRESHOLD_MS",
-                                "10000",
-                                "OPEN_TIMEOUT_SECONDS",
-                                "60"))
-                        .logGroup(this.circuitBreakerStateFunctionLogGroup)
-                        .build();
+        this.circuitBreakerStateFunction = Function.Builder.create(this, "CircuitBreakerStateFunction")
+                .functionName(props.resourceNamePrefix() + "-circuit-breaker-state")
+                .runtime(Runtime.NODEJS_20_X)
+                .handler("index.handler")
+                .code(Code.fromInline(getCircuitBreakerStateFunctionCode()))
+                .timeout(Duration.seconds(30))
+                .environment(Map.of(
+                        "CIRCUIT_BREAKER_TABLE_NAME",
+                        this.circuitBreakerStateTable.getTableName(),
+                        "FAILURE_THRESHOLD",
+                        "5",
+                        "TIMEOUT_THRESHOLD_MS",
+                        "10000",
+                        "OPEN_TIMEOUT_SECONDS",
+                        "60"))
+                .logGroup(this.circuitBreakerStateFunctionLogGroup)
+                .build();
 
         // Grant DynamoDB permissions to the Lambda function
         this.circuitBreakerStateTable.grantReadWriteData(this.circuitBreakerStateFunction);
@@ -185,8 +167,8 @@ public class CircuitBreakerStack extends Stack {
                 .schedule(Schedule.rate(Duration.minutes(1)))
                 .build();
 
-        circuitBreakerCheckRule.addTarget(LambdaFunction.Builder.create(this.circuitBreakerStateFunction)
-                .build());
+        circuitBreakerCheckRule.addTarget(
+                LambdaFunction.Builder.create(this.circuitBreakerStateFunction).build());
 
         infof(
                 "Created EventBridge rule %s to check circuit breaker state every minute",
@@ -277,22 +259,22 @@ public class CircuitBreakerStack extends Stack {
 
                 exports.handler = async (event) => {
                   console.log('Circuit breaker state check triggered', JSON.stringify(event));
-                  
+
                   try {
                     // This function is triggered periodically by EventBridge
                     // It checks circuit breaker states and resets them if recovery period has passed
-                    
+
                     const hosts = [
                       'api.service.hmrc.gov.uk',
                       'test-api.service.hmrc.gov.uk',
                       'google.com',
                       'antonycc.com'
                     ];
-                    
+
                     for (const host of hosts) {
                       await checkAndUpdateCircuitBreakerState(host);
                     }
-                    
+
                     return {
                       statusCode: 200,
                       body: JSON.stringify({ message: 'Circuit breaker states checked' })
@@ -312,9 +294,9 @@ public class CircuitBreakerStack extends Stack {
                       TableName: CIRCUIT_BREAKER_TABLE_NAME,
                       Key: { hostName }
                     });
-                    
+
                     const result = await docClient.send(getCommand);
-                    
+
                     if (!result.Item) {
                       // Initialize circuit breaker state for new host
                       await putCommand({
@@ -327,10 +309,10 @@ public class CircuitBreakerStack extends Stack {
                       console.log(`Initialized circuit breaker state for ${hostName}`);
                       return;
                     }
-                    
+
                     const state = result.Item;
                     const now = Date.now();
-                    
+
                     // If circuit is OPEN and recovery period has passed, transition to HALF_OPEN
                     if (state.state === 'OPEN' && state.lastStateChange) {
                       const timeSinceOpen = now - new Date(state.lastStateChange).getTime();
