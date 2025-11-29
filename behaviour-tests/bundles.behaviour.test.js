@@ -24,8 +24,10 @@ import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
+  appendHashedUserSubTxt,
   deleteTraceparentTxt,
   deleteUserSubTxt,
+  deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
 
@@ -79,6 +81,7 @@ test.beforeAll(async ({ page }, testInfo) => {
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
   deleteUserSubTxt(outputDir);
+  deleteHashedUserSubTxt(outputDir);
   deleteTraceparentTxt(outputDir);
 
   console.log("beforeAll hook completed successfully");
@@ -104,6 +107,7 @@ test.afterEach(async ({ page }, testInfo) => {
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
   appendUserSubTxt(outputDir, testInfo, userSub);
+  appendHashedUserSubTxt(outputDir, testInfo, userSub);
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 

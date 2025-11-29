@@ -151,7 +151,8 @@
           requestHeaders["hmrcAccount"] = hmrcAccount;
         }
 
-        const response = await fetch(url, {
+        // Include Cognito idToken so backend can associate the HMRC OAuth audit with the authenticated web user
+        const response = await fetchWithIdToken(url, {
           method: "POST",
           headers: requestHeaders,
           body,

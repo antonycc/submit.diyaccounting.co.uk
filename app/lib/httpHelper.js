@@ -12,9 +12,14 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   const referer = httpRequest.get("referer");
   if (referer) incomingHeaders.referer = referer;
 
-  // Extract bearer token from Authorization header if present
+  // Extract bearer token from Authorization or X-Authorization header if present
   const authorization = httpRequest.get("x-authorization") || httpRequest.get("authorization");
-  const bearerToken = authorization ? authorization.match(/^Bearer (.+)$/) : null;
+  let bearerToken = null;
+  try {
+    if (authorization && authorization.startsWith("Bearer ")) {
+      bearerToken = authorization.substring("Bearer ".length);
+    }
+  } catch {}
   const jwtPayload = decodeJwtNoVerify(bearerToken);
 
   const lambdaEvent = {
@@ -30,6 +35,10 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
             },
           },
         },
+      },
+      http: {
+        method: httpRequest.method || "GET",
+        path: httpRequest.path,
       },
     },
     path: httpRequest.path,

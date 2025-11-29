@@ -1,6 +1,7 @@
 // behaviour-tests/vatObligations.behaviour.test.js
 
 import { test } from "./helpers/playwrightTestWithout.js";
+import { expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -47,8 +48,10 @@ import { assertHmrcApiRequestExists, assertHmrcApiRequestValues, assertConsisten
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
+  appendHashedUserSubTxt,
   deleteTraceparentTxt,
   deleteUserSubTxt,
+  deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
 
@@ -106,6 +109,7 @@ test.beforeAll(async ({ page }, testInfo) => {
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
   deleteUserSubTxt(outputDir);
+  deleteHashedUserSubTxt(outputDir);
   deleteTraceparentTxt(outputDir);
 
   console.log("beforeAll hook completed successfully");
@@ -131,6 +135,7 @@ test.afterEach(async ({ page }, testInfo) => {
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
   appendUserSubTxt(outputDir, testInfo, userSub);
+  appendHashedUserSubTxt(outputDir, testInfo, userSub);
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
@@ -294,7 +299,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /* **************** */
 
   // Export DynamoDB tables if dynalite was used
-  if (runDynamoDb === "run" && dynamoControl?.endpoint) {
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     console.log("[DynamoDB Export]: Starting export of all tables...");
     try {
       const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {

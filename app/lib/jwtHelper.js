@@ -37,17 +37,33 @@ export function decodeJwtToken(eventHeaders) {
 }
 
 export function getUserSub(event) {
-  const auth = event?.headers?.authorization || event?.headers?.Authorization;
-  if (!auth || !auth.startsWith("Bearer ")) return null;
-  const token = auth.split(" ")[1];
-  try {
-    const parts = String(token).split(".");
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const json = Buffer.from(payload, "base64").toString("utf8");
-    const claims = JSON.parse(json);
-    return claims?.sub || null;
-  } catch {
-    return null;
-  }
+  // Try standard Authorization header first
+  const headers = event?.headers || {};
+  const findHeader = (name) => headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()];
+
+  const tryExtract = (bearerValue) => {
+    if (!bearerValue || !bearerValue.startsWith("Bearer ")) return null;
+    const token = bearerValue.split(" ")[1];
+    try {
+      const parts = String(token).split(".");
+      if (parts.length < 2) return null;
+      const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const json = Buffer.from(payload, "base64").toString("utf8");
+      const claims = JSON.parse(json);
+      return claims?.sub || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const auth = findHeader("authorization");
+  const subFromAuth = tryExtract(auth);
+  if (subFromAuth) return subFromAuth;
+
+  // Fallback to X-Authorization header if present
+  const xAuth = Object.entries(headers).find(([k]) => k.toLowerCase() === "x-authorization")?.[1];
+  const subFromXAuth = tryExtract(xAuth);
+  if (subFromXAuth) return subFromXAuth;
+
+  return null;
 }

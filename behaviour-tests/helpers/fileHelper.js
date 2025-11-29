@@ -2,6 +2,7 @@
 
 import path from "node:path";
 import fs from "node:fs";
+import { hashSub } from "../../app/lib/subHasher.js";
 
 export function deleteUserSubTxt(outputDir) {
   // Delete ${outputDir}/userSub.txt
@@ -29,6 +30,19 @@ export function deleteTraceparentTxt(outputDir) {
   }
 }
 
+export function deleteHashedUserSubTxt(outputDir) {
+  // Delete ${outputDir}/hashedUserSub.txt
+  const hashedUserSubPath = path.join(outputDir, "hashedUserSub.txt");
+  try {
+    if (fs.existsSync(hashedUserSubPath)) {
+      fs.unlinkSync(hashedUserSubPath);
+      console.log(`[beforeAll] Deleted existing hashedUserSub.txt at ${hashedUserSubPath}`);
+    }
+  } catch (e) {
+    console.log(`[beforeAll] Error deleting hashedUserSub.txt at ${hashedUserSubPath}: ${e.message}`);
+  }
+}
+
 export function appendUserSubTxt(outputDir, testInfo, userSub) {
   // Write user sub
   try {
@@ -49,6 +63,20 @@ export function appendTraceparentTxt(outputDir, testInfo, observedTraceparent) {
     fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
   } catch (e) {
     console.log(`[test body] Error writing traceparent.txt: ${e.message}`);
+  }
+}
+
+export function appendHashedUserSubTxt(outputDir, testInfo, userSub) {
+  // Write hashed user sub in parallel with userSub.txt
+  try {
+    const hasValidSub = userSub && userSub !== "null" && userSub !== "undefined";
+    const valueToWrite = hasValidSub ? hashSub(String(userSub)) : "";
+    console.log(
+      `[afterEach] Saving ${outputDir}/hashedUserSub.txt for test "${testInfo.title}": ${valueToWrite ? valueToWrite : "(empty - user may not have logged in)"}`,
+    );
+    fs.appendFileSync(path.join(outputDir, "hashedUserSub.txt"), valueToWrite, "utf-8");
+  } catch (e) {
+    console.log(`[afterEach] Error writing hashedUserSub.txt for test "${testInfo.title}": ${e.message}`);
   }
 }
 

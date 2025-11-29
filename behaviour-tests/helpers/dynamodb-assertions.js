@@ -72,6 +72,7 @@ export function findHmrcApiRequestsByMethodAndUrl(exportFilePath, method, urlPat
  * @param {string} description - Description for error messages
  */
 export function assertHmrcApiRequestExists(exportFilePath, method, urlPattern, description = "") {
+  console.log(`Asserting HMRC API request exists: ${method} ${urlPattern}`);
   const matches = findHmrcApiRequestsByMethodAndUrl(exportFilePath, method, urlPattern);
   const desc = description ? ` (${description})` : "";
   expect(matches.length, `Expected at least one ${method} request to ${urlPattern}${desc}`).toBeGreaterThan(0);
@@ -140,10 +141,9 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
     const authenticatedHashedSubs = [...new Set(authenticatedRequests.map((r) => r.hashedSub))];
 
     // Verify OAuth requests use one hashedSub and authenticated requests use another
-    expect(
-      oauthHashedSubs.length,
-      `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`,
-    ).toBe(1);
+    expect(oauthHashedSubs.length, `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`).toBe(
+      1,
+    );
 
     expect(
       authenticatedHashedSubs.length,
