@@ -1,0 +1,30 @@
+{
+  "testName": "obligation-sandbox",
+  "generatedAt": "2025-11-29T01:35:23.052Z",
+  "testContext": {
+    "name": "Click through: Adding and removing bundles",
+    "title": "Bundle Management Test",
+    "description": "Tests the ability to add and remove bundles through the UI",
+    "hmrcApis": [],
+    "env": {
+      "envName": "test",
+      "baseUrl": "http://localhost:3000",
+      "serverPort": 3000,
+      "runTestServer": "run",
+      "runProxy": null,
+      "runMockOAuth2": "run",
+      "testAuthProvider": "mock",
+      "testAuthUsername": "test-user"
+    },
+    "testData": {
+      "userSub": "test-user-123",
+      "observedTraceparent": null
+    },
+    "artefactsDir": "target/behaviour-test-results/test-bundle"
+  },
+  "hmrcApiRequests": [],
+  "playwrightReport": {
+    "exists": false,
+    "status": "unknown"
+  }
+}

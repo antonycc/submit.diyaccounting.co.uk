@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Report</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Ubuntu,
+          sans-serif;
+        max-width: 1200px;
+        margin: 24px auto;
+        padding: 0 16px;
+        line-height: 1.6;
+        color: #333;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: #34495e;
+        border-bottom: 2px solid #ecf0f1;
+        padding-bottom: 0.5rem;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #555;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-left: 1rem;
+      }
+
+      .status.passed {
+        background-color: #d4edda;
+        color: #155724;
+      }
+
+      .status.failed {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+
+      .status.unknown {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+
+      .metadata {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 2rem;
+      }
+
+      .metadata p {
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+      }
+
+      .metadata strong {
+        color: #555;
+      }
+
+      pre {
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        overflow-x: auto;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .json-container {
+        margin: 1rem 0;
+      }
+
+      .api-request {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #fafafa;
+      }
+
+      .api-request h4 {
+        margin: 0 0 0.5rem 0;
+        color: #2c3e50;
+        font-size: 1rem;
+      }
+
+      .api-method {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+      }
+
+      .api-method.post {
+        background-color: #49cc90;
+        color: white;
+      }
+
+      .api-method.get {
+        background-color: #61affe;
+        color: white;
+      }
+
+      .api-method.put {
+        background-color: #fca130;
+        color: white;
+      }
+
+      .api-method.delete {
+        background-color: #f93e3e;
+        color: white;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-bottom: 1rem;
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+      }
+
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 4px;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="index.html" class="back-link">← Back to Test Reports</a>
+
+    <div id="loading" class="loading">Loading test report...</div>
+    <div id="error" class="error" style="display: none"></div>
+    <div id="content" style="display: none">
+      <h1 id="testTitle">Test Report</h1>
+
+      <div class="metadata">
+        <p><strong>Test Name:</strong> <span id="testName"></span></p>
+        <p><strong>Generated:</strong> <span id="generatedAt"></span></p>
+        <p>
+          <strong>Playwright Report:</strong>
+          <a id="playwrightLink" href="#" target="_blank">View Playwright Report</a>
+        </p>
+      </div>
+
+      <h2>Test Context</h2>
+      <div class="json-container">
+        <pre id="testContextJson"></pre>
+      </div>
+
+      <h2>HMRC API Requests</h2>
+      <div id="hmrcApiSection">
+        <p>No HMRC API requests found for this test.</p>
+      </div>
+    </div>
+
+    <script>
+      // Get test name from URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const testName = urlParams.get("test");
+
+      if (!testName) {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("error").style.display = "block";
+        document.getElementById("error").textContent = "Error: No test name specified in URL";
+      } else {
+        loadTestReport(testName);
+      }
+
+      async function loadTestReport(testName) {
+        try {
+          const response = await fetch(`test-report-${testName}.json`);
+          if (!response.ok) {
+            throw new Error(`Failed to load test report: ${response.statusText}`);
+          }
+
+          const report = await response.json();
+          renderReport(report);
+        } catch (error) {
+          console.error("Error loading test report:", error);
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("error").style.display = "block";
+          document.getElementById("error").textContent = `Error loading test report: ${error.message}`;
+        }
+      }
+
+      function renderReport(report) {
+        // Hide loading, show content
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("content").style.display = "block";
+
+        // Set title with status
+        const titleElement = document.getElementById("testTitle");
+        const status = report.playwrightReport?.status || "unknown";
+        titleElement.innerHTML = `${report.testContext?.title || report.testName} <span class="status ${status}">${status.toUpperCase()}</span>`;
+
+        // Set metadata
+        document.getElementById("testName").textContent = report.testName;
+        document.getElementById("generatedAt").textContent = new Date(report.generatedAt).toLocaleString();
+
+        // Set Playwright link
+        const playwrightLink = document.getElementById("playwrightLink");
+        playwrightLink.href = `../${report.testName}/html-report/index.html`;
+
+        // Render test context JSON
+        document.getElementById("testContextJson").textContent = JSON.stringify(report.testContext, null, 2);
+
+        // Render HMRC API requests
+        renderHmrcApiRequests(report.hmrcApiRequests || []);
+      }
+
+      function renderHmrcApiRequests(requests) {
+        const section = document.getElementById("hmrcApiSection");
+
+        if (!requests || requests.length === 0) {
+          section.innerHTML = "<p>No HMRC API requests found for this test.</p>";
+          return;
+        }
+
+        let html = `<p>Found ${requests.length} HMRC API request(s):</p>`;
+
+        requests.forEach((req, index) => {
+          const method = (req.method || "GET").toUpperCase();
+          const url = req.url || req.path || "unknown";
+
+          html += `
+            <div class="api-request">
+              <h4>
+                <span class="api-method ${method.toLowerCase()}">${method}</span>
+                ${url}
+              </h4>
+              <h5>Request:</h5>
+              <pre>${JSON.stringify(req.request || req, null, 2)}</pre>
+              ${
+                req.response
+                  ? `
+              <h5>Response:</h5>
+              <pre>${JSON.stringify(req.response, null, 2)}</pre>
+              `
+                  : ""
+              }
+            </div>
+          `;
+        });
+
+        section.innerHTML = html;
+      }
+    </script>
+  </body>
+</html>
