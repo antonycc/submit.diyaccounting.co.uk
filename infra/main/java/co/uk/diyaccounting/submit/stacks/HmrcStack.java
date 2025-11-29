@@ -135,6 +135,12 @@ public class HmrcStack extends Stack {
                 "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcApiRequestsTableName);
 
+        // Lookup Circuit Breaker State Table
+        ITable circuitBreakerTable = Table.fromTableName(
+                this,
+                "ImportedCircuitBreakerTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().circuitBreakerStateTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -146,7 +152,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName);
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("CIRCUIT_BREAKER_TABLE_NAME", props.sharedNames().circuitBreakerStateTableName);
         var authUrlHmrcLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -178,6 +185,12 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB permissions to %s for Bundles Table %s",
                 this.hmrcAuthUrlGetLambda.getFunctionName(), bundlesTable.getTableName());
 
+        // Grant circuit breaker permissions
+        circuitBreakerTable.grantReadWriteData(this.hmrcAuthUrlGetLambda);
+        infof(
+                "Granted Circuit Breaker permissions to %s",
+                this.hmrcAuthUrlGetLambda.getFunctionName());
+
         // exchangeToken - HMRC
         var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -186,7 +199,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("CIRCUIT_BREAKER_TABLE_NAME", props.sharedNames().circuitBreakerStateTableName);
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcTokenLambdaEnv.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }
@@ -232,6 +246,12 @@ public class HmrcStack extends Stack {
 
         // Allow the token exchange Lambda to write HMRC API request audit records to DynamoDB
         hmrcApiRequestsTable.grantWriteData(this.hmrcTokenPostLambda);
+
+        // Grant circuit breaker permissions
+        circuitBreakerTable.grantReadWriteData(this.hmrcTokenPostLambda);
+        infof(
+                "Granted Circuit Breaker permissions to %s",
+                this.hmrcTokenPostLambda.getFunctionName());
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -284,7 +304,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("CIRCUIT_BREAKER_TABLE_NAME", props.sharedNames().circuitBreakerStateTableName);
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -319,13 +340,20 @@ public class HmrcStack extends Stack {
         // Allow the VAT submission Lambda to write HMRC API request audit records to DynamoDB
         hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnPostLambda);
 
+        // Grant circuit breaker permissions
+        circuitBreakerTable.grantReadWriteData(this.hmrcVatReturnPostLambda);
+        infof(
+                "Granted Circuit Breaker permissions to %s",
+                this.hmrcVatReturnPostLambda.getFunctionName());
+
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("CIRCUIT_BREAKER_TABLE_NAME", props.sharedNames().circuitBreakerStateTableName);
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -361,13 +389,20 @@ public class HmrcStack extends Stack {
         // Allow the VAT obligations Lambda to write HMRC API request audit records to DynamoDB
         hmrcApiRequestsTable.grantWriteData(this.hmrcVatObligationGetLambda);
 
+        // Grant circuit breaker permissions
+        circuitBreakerTable.grantReadWriteData(this.hmrcVatObligationGetLambda);
+        infof(
+                "Granted Circuit Breaker permissions to %s",
+                this.hmrcVatObligationGetLambda.getFunctionName());
+
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("CIRCUIT_BREAKER_TABLE_NAME", props.sharedNames().circuitBreakerStateTableName);
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -402,10 +437,17 @@ public class HmrcStack extends Stack {
         // Allow the VAT return retrieval Lambda to write HMRC API request audit records to DynamoDB
         hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnGetLambda);
 
+        // Grant circuit breaker permissions
+        circuitBreakerTable.grantReadWriteData(this.hmrcVatReturnGetLambda);
+        infof(
+                "Granted Circuit Breaker permissions to %s",
+                this.hmrcVatReturnGetLambda.getFunctionName());
+
         var logReceiptLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("CIRCUIT_BREAKER_TABLE_NAME", props.sharedNames().circuitBreakerStateTableName);
         if (props.optionalTestS3Endpoint().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
                 && props.optionalTestS3AccessKey().isPresent()
@@ -449,11 +491,18 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB permissions to %s for Bundles Table %s",
                 this.receiptPostLambda.getFunctionName(), bundlesTable.getTableName());
 
+        // Grant circuit breaker permissions
+        circuitBreakerTable.grantReadWriteData(this.receiptPostLambda);
+        infof(
+                "Granted Circuit Breaker permissions to %s",
+                this.receiptPostLambda.getFunctionName());
+
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("CIRCUIT_BREAKER_TABLE_NAME", props.sharedNames().circuitBreakerStateTableName);
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -499,6 +548,12 @@ public class HmrcStack extends Stack {
         infof(
                 "Granted DynamoDB permissions to %s for Bundles Table %s",
                 this.receiptGetLambda.getFunctionName(), bundlesTable.getTableName());
+
+        // Grant circuit breaker permissions
+        circuitBreakerTable.grantReadWriteData(this.receiptGetLambda);
+        infof(
+                "Granted Circuit Breaker permissions to %s",
+                this.receiptGetLambda.getFunctionName());
 
         // Lookup existing DynamoDB Receipts Table
         ITable receiptsTable = Table.fromTableName(

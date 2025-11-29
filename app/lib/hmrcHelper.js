@@ -5,6 +5,7 @@ import logger, { context } from "./logger.js";
 import { BundleEntitlementError } from "./bundleManagement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
 import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
+import { fetchWithCircuitBreaker, CircuitBreakerOpenError } from "./circuitBreaker.js";
 
 export function getHmrcBaseUrl(hmrcAccount) {
   // TODO: Ensure we always have these when otherwise stable and remove defaults
@@ -119,8 +120,21 @@ export async function hmrcHttpGet(
   const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
   try {
     const startTime = Date.now();
-    hmrcResponse = await fetch(hmrcRequestUrl, httpRequest);
+    // Use circuit breaker for fetch
+    hmrcResponse = await fetchWithCircuitBreaker(hmrcRequestUrl, httpRequest);
     duration = Date.now() - startTime;
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error instanceof CircuitBreakerOpenError) {
+      logger.error({
+        message: "Circuit breaker is OPEN for HMRC API",
+        url: hmrcRequestUrl,
+        hostName: error.hostName,
+        circuitBreakerState: error.circuitBreakerState,
+      });
+      throw error;
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }
@@ -203,8 +217,21 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const startTime = Date.now();
-    hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
+    // Use circuit breaker for fetch
+    hmrcResponse = await fetchWithCircuitBreaker(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
     duration = Date.now() - startTime;
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error instanceof CircuitBreakerOpenError) {
+      logger.error({
+        message: "Circuit breaker is OPEN for HMRC API",
+        url: hmrcRequestUrl,
+        hostName: error.hostName,
+        circuitBreakerState: error.circuitBreakerState,
+      });
+      throw error;
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
   }

@@ -3,6 +3,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { logger, context } from "./logger.js";
 import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
+import { fetchWithCircuitBreaker, CircuitBreakerOpenError } from "./circuitBreaker.js";
 
 export function http200OkResponse({ request, headers, data }) {
   const merged = { ...(headers || {}) };
@@ -271,8 +272,30 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
 
   logger.info({ message: "Performing HTTP POST for token exchange", providerUrl });
   const startTime = new Date().getTime();
-  const response = await fetch(providerUrl, httpRequest);
-  duration = new Date().getTime() - startTime;
+  let response;
+  try {
+    // Use circuit breaker for fetch
+    response = await fetchWithCircuitBreaker(providerUrl, httpRequest);
+    duration = new Date().getTime() - startTime;
+  } catch (error) {
+    duration = new Date().getTime() - startTime;
+    if (error instanceof CircuitBreakerOpenError) {
+      logger.error({
+        message: "Circuit breaker is OPEN for token exchange",
+        providerUrl,
+        hostName: error.hostName,
+        circuitBreakerState: error.circuitBreakerState,
+      });
+      // Return error response indicating circuit breaker is open
+      return http500ServerErrorResponse({
+        request,
+        headers,
+        message: "Token exchange service is temporarily unavailable due to circuit breaker",
+        error: { circuitBreakerOpen: true, hostName: error.hostName },
+      });
+    }
+    throw error;
+  }
 
   let responseTokens;
   try {
