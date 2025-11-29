@@ -87,18 +87,23 @@ export async function hmrcHttpGet(
   );
   const queryString = new URLSearchParams(cleanParams).toString();
   // eslint-disable-next-line sonarjs/no-nested-template-literals
-  const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
-
-  const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
-  // Provide request correlation header to HMRC
-  if (context.get("requestId")) headers["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) headers["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) headers["traceparent"] = context.get("traceparent");
+  const hmrcRequestUrl = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
+  const hmrcRequestHeaders = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
+  const httpRequest = {
+    method: "GET",
+    headers: {
+      ...hmrcRequestHeaders,
+      ...govClientHeaders,
+      ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    },
+  };
 
   logger.info({
-    message: `Request to GET ${url}`,
-    url,
-    headers: Object.keys(headers),
+    message: `Request to GET ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    ...httpRequest,
     testScenario,
     environment: {
       hmrcBase: baseUrl,
@@ -107,39 +112,49 @@ export async function hmrcHttpGet(
   });
 
   // Add a conservative timeout to avoid hung connections
+  let duration = 0;
   const timeoutMs = 20000;
   let hmrcResponse;
-  if (timeoutMs && Number(timeoutMs) > 0) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
-    try {
-      hmrcResponse = await fetch(url, {
-        method: "GET",
-        headers,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-  } else {
-    hmrcResponse = await fetch(url, {
-      method: "GET",
-      headers,
-    });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
+  try {
+    const startTime = Date.now();
+    hmrcResponse = await fetch(hmrcRequestUrl, httpRequest);
+    duration = Date.now() - startTime;
+  } finally {
+    clearTimeout(timeout);
   }
 
   const hmrcResponseBody = await hmrcResponse.json().catch(() => ({}));
 
+  // Normalise response headers to a plain object (Headers is not marshallable)
+  let responseHeadersObj = {};
+  try {
+    if (hmrcResponse && typeof hmrcResponse.headers?.forEach === "function") {
+      hmrcResponse.headers.forEach((value, key) => {
+        responseHeadersObj[key] = value;
+      });
+    } else if (hmrcResponse?.headers && typeof hmrcResponse.headers === "object") {
+      responseHeadersObj = { ...hmrcResponse.headers };
+    }
+  } catch (error) {
+    logger.error({
+      message: "Error normalizing HMRC response headers",
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+
   logger.info({
-    message: `Response from GET ${url}`,
-    url,
+    message: `Response from GET ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
     status: hmrcResponse.status,
     hmrcResponseBody,
   });
 
   const httpResponse = {
     statusCode: hmrcResponse.status,
-    headers: hmrcResponse.headers,
+    headers: responseHeadersObj,
     body: hmrcResponseBody,
   };
   const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
@@ -163,7 +178,7 @@ export async function hmrcHttpGet(
 
 export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
-  const timeoutEnv = 20000;
+  const httpRequestTimeoutMillis = 20000;
   const httpRequest = {
     method: "POST",
     headers: {
@@ -175,23 +190,23 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     },
     body: JSON.stringify(hmrcRequestBody),
   };
+
+  logger.info({
+    message: `Request to POST ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    ...httpRequest,
+  });
+
   let duration = 0;
-  // TODO: Remove this optionality and always have a timeout
-  if (timeoutEnv && Number(timeoutEnv) > 0) {
-    const controller = new AbortController();
-    const timeoutMs = Number(timeoutEnv);
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const startTime = Date.now();
-      hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
-      duration = Date.now() - startTime;
-    } finally {
-      clearTimeout(timeout);
-    }
-  } else {
+  const controller = new AbortController();
+  const timeoutMs = Number(httpRequestTimeoutMillis);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
     const startTime = Date.now();
-    hmrcResponse = await fetch(hmrcRequestUrl, httpRequest);
+    hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
     duration = Date.now() - startTime;
+  } finally {
+    clearTimeout(timeout);
   }
   const hmrcResponseBody = await hmrcResponse.json();
 
