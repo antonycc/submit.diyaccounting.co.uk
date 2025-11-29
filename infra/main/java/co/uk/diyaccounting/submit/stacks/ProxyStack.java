@@ -28,6 +28,7 @@ import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
@@ -36,6 +37,7 @@ public class ProxyStack extends Stack {
     public final ITable proxyConfigTable;
     public final Function proxyFunction;
     public final HttpApi proxyApi;
+    public final LogGroup accessLogGroup;
 
     @Value.Immutable
     public interface ProxyStackProps extends StackProps, SubmitStackProps {
@@ -144,13 +146,30 @@ public class ProxyStack extends Stack {
                 "Created HTTP API Gateway with endpoint %s",
                 this.proxyApi.getApiEndpoint() != null ? this.proxyApi.getApiEndpoint() : "unknown");
 
+        // Create CloudWatch log group for API Gateway access logs
+        this.accessLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-ProxyAccessLogs")
+                .logGroupName("/aws/apigw/" + props.resourceNamePrefix() + "-proxy/access")
+                .retention(RetentionDays.THREE_MONTHS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        infof("Created access log group with name %s", this.accessLogGroup.getLogGroupName());
+
         // Enable access logging for API Gateway
         CfnStage defaultStage =
                 (CfnStage) this.proxyApi.getDefaultStage().getNode().getDefaultChild();
         if (defaultStage != null) {
             defaultStage.setAccessLogSettings(CfnStage.AccessLogSettingsProperty.builder()
-                    .format("$context.requestId $context.identity.sourceIp $context.requestTime "
-                            + "$context.httpMethod $context.routeKey $context.status")
+                    .destinationArn(this.accessLogGroup.getLogGroupArn())
+                    .format("{" + "\"requestId\":\"$context.requestId\","
+                            + "\"sourceIp\":\"$context.identity.sourceIp\","
+                            + "\"requestTime\":\"$context.requestTime\","
+                            + "\"httpMethod\":\"$context.httpMethod\","
+                            + "\"routeKey\":\"$context.routeKey\","
+                            + "\"status\":\"$context.status\","
+                            + "\"protocol\":\"$context.protocol\","
+                            + "\"responseLength\":\"$context.responseLength\""
+                            + "}")
                     .build());
         }
     }

@@ -56,7 +56,7 @@ beforeAll(async () => {
       KeySchema: [{ AttributeName: "proxyHost", KeyType: "HASH" }],
       AttributeDefinitions: [{ AttributeName: "proxyHost", AttributeType: "S" }],
       BillingMode: "PAY_PER_REQUEST",
-    })
+    }),
   );
 
   // Wait for table to be active
@@ -115,7 +115,7 @@ describe("Outbound Proxy System Tests", () => {
           rateLimitPerSecond: { N: "100" },
           breakerConfig: { S: '{"errorThreshold": 10, "latencyMs": 5000}' },
         },
-      })
+      }),
     );
 
     const event = {
@@ -150,7 +150,7 @@ describe("Outbound Proxy System Tests", () => {
           rateLimitPerSecond: { N: "2" },
           breakerConfig: { S: "{}" },
         },
-      })
+      }),
     );
 
     const event = {
@@ -184,7 +184,7 @@ describe("Outbound Proxy System Tests", () => {
           rateLimitPerSecond: { N: "100" },
           breakerConfig: { S: "{}" },
         },
-      })
+      }),
     );
 
     const event = {

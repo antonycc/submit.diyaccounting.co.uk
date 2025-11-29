@@ -74,7 +74,7 @@ async function getProxyConfig(proxyHost, requestId) {
     const config = {
       upstreamHost: item.upstreamHost,
       rateLimitPerSecond: item.rateLimitPerSecond || 10,
-      breakerConfig: item.breakerConfig || {},
+      breakerConfig: typeof item.breakerConfig === "string" ? JSON.parse(item.breakerConfig) : item.breakerConfig || {},
     };
 
     // Cache the config
@@ -261,28 +261,39 @@ export async function handler(event) {
     return httpResponse(503, { message: "Upstream service unavailable (circuit breaker open)" });
   }
 
-  // Build upstream URL
-  const upstreamUrl = upstreamHost.startsWith("http://") || upstreamHost.startsWith("https://") ? upstreamHost : `https://${upstreamHost}`;
+  // Build upstream URL - normalize and validate
+  let baseUrl;
+  try {
+    baseUrl = new URL(upstreamHost);
+  } catch {
+    // If upstreamHost is not a complete URL, assume HTTPS
+    baseUrl = new URL(`https://${upstreamHost}`);
+  }
 
   const targetPath = event.rawPath || event.requestContext?.http?.path || "/";
   const queryString = event.rawQueryString || "";
-  const fullUrl = `${upstreamUrl}${targetPath}${queryString ? `?${queryString}` : ""}`;
+  const fullUrl = `${baseUrl.origin}${targetPath}${queryString ? `?${queryString}` : ""}`;
 
   const url = new URL(fullUrl);
 
-  // Prepare request options
+  // Prepare request options - normalize headers to lowercase for case-insensitive removal
+  const normalizedHeaders = {};
+  for (const [key, value] of Object.entries(event.headers || {})) {
+    normalizedHeaders[key.toLowerCase()] = value;
+  }
+
+  // Replace host header with upstream host
+  normalizedHeaders.host = url.host;
+
+  // Remove proxy-specific headers (case-insensitive)
+  delete normalizedHeaders["x-forwarded-for"];
+  delete normalizedHeaders["x-forwarded-proto"];
+  delete normalizedHeaders["x-forwarded-port"];
+
   const requestOptions = {
     method: event.requestContext?.http?.method || "GET",
-    headers: {
-      ...event.headers,
-      host: url.host, // Replace host header with upstream host
-    },
+    headers: normalizedHeaders,
   };
-
-  // Remove proxy-specific headers
-  delete requestOptions.headers["x-forwarded-for"];
-  delete requestOptions.headers["x-forwarded-proto"];
-  delete requestOptions.headers["x-forwarded-port"];
 
   // Perform the proxied request
   const proxyResponse = await performProxyRequest(url, requestOptions, event.body, requestId);
