@@ -38,12 +38,14 @@ export function selectKeyScreenshots(screenshotDir, patterns, maxCount = 5) {
   if (selected.length < maxCount) {
     const fallbackKeywords = ["submit", "complete", "result", "success", "confirm", "receipt"];
     for (const keyword of fallbackKeywords) {
-      const matches = allScreenshots.filter((file) => file.toLowerCase().includes(keyword) && !selected.includes(file));
-      for (const match of matches) {
-        selected.push(match);
-        if (selected.length >= maxCount) break;
-      }
       if (selected.length >= maxCount) break;
+      // Use find() to get first match for this keyword instead of filtering all
+      const match = allScreenshots.find(
+        (file) => file.toLowerCase().includes(keyword) && !selected.includes(file),
+      );
+      if (match) {
+        selected.push(match);
+      }
     }
   }
 

@@ -114,8 +114,13 @@ function getNestedValue(obj, path) {
  * Assert that all HMRC API requests have the same hashedSub
  * @param {string} exportFilePath - Path to hmrc-api-requests.jsonl
  * @param {string} description - Description for error messages
+ * @param {Object} options - Options for validation
+ * @param {number} options.maxHashedSubs - Maximum allowed unique hashedSub values (default: 2)
+ * @param {boolean} options.allowOAuthDifference - Allow different hashedSub for OAuth requests (default: true)
  */
-export function assertConsistentHashedSub(exportFilePath, description = "") {
+export function assertConsistentHashedSub(exportFilePath, description = "", options = {}) {
+  const { maxHashedSubs = 2, allowOAuthDifference = true } = options;
+
   const records = readDynamoDbExport(exportFilePath);
 
   if (records.length === 0) {
@@ -126,12 +131,37 @@ export function assertConsistentHashedSub(exportFilePath, description = "") {
   const hashedSubs = [...new Set(records.map((r) => r.hashedSub).filter((h) => h))];
   const desc = description ? ` (${description})` : "";
 
-  expect(
-    hashedSubs.length,
-    `Expected all HMRC API requests to have the same hashedSub${desc}, but found ${hashedSubs.length} different values: ${hashedSubs.join(", ")}`,
-  ).toBeLessThanOrEqual(2); // Allow up to 2: one for OAuth (no userSub) and one for authenticated requests
+  // If allowing OAuth difference, validate that we have at most 2 hashedSubs: one for OAuth, one for authenticated
+  if (allowOAuthDifference && hashedSubs.length === 2) {
+    const oauthRequests = records.filter((r) => r.url && r.url.includes("/oauth/token"));
+    const authenticatedRequests = records.filter((r) => r.url && !r.url.includes("/oauth/token"));
 
-  logger.info(`Found ${records.length} HMRC API requests with ${hashedSubs.length} unique hashedSub value(s)`);
+    const oauthHashedSubs = [...new Set(oauthRequests.map((r) => r.hashedSub))];
+    const authenticatedHashedSubs = [...new Set(authenticatedRequests.map((r) => r.hashedSub))];
+
+    // Verify OAuth requests use one hashedSub and authenticated requests use another
+    expect(
+      oauthHashedSubs.length,
+      `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`,
+    ).toBe(1);
+
+    expect(
+      authenticatedHashedSubs.length,
+      `Expected authenticated requests to have a single hashedSub${desc}, but found ${authenticatedHashedSubs.length}`,
+    ).toBe(1);
+
+    logger.info(
+      `Found ${records.length} HMRC API requests: OAuth (${oauthRequests.length}) with hashedSub ${oauthHashedSubs[0]}, ` +
+        `authenticated (${authenticatedRequests.length}) with hashedSub ${authenticatedHashedSubs[0]}`,
+    );
+  } else {
+    expect(
+      hashedSubs.length,
+      `Expected all HMRC API requests to have the same hashedSub${desc}, but found ${hashedSubs.length} different values: ${hashedSubs.join(", ")}`,
+    ).toBeLessThanOrEqual(maxHashedSubs);
+
+    logger.info(`Found ${records.length} HMRC API requests with ${hashedSubs.length} unique hashedSub value(s)`);
+  }
 
   return hashedSubs;
 }
