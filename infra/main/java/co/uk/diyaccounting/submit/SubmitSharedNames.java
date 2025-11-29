@@ -228,6 +228,8 @@ public class SubmitSharedNames {
     public String outboundProxyFunctionName;
     public String outboundProxyFunctionArn;
     public String proxyApiName;
+    public String hmrcApiProxyHost;
+    public String hmrcSandboxApiProxyHost;
 
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
@@ -328,10 +330,14 @@ public class SubmitSharedNames {
         this.edgeStackId = "%s-app-EdgeStack".formatted(props.deploymentName);
         this.publishStackId = "%s-app-PublishStack".formatted(props.deploymentName);
 
-        this.outboundProxyFunctionName = "%s-outbound-proxy".formatted(this.appResourceNamePrefix);
+        this.outboundProxyFunctionName = "%s-outbound-proxy".formatted(this.envResourceNamePrefix);
         this.outboundProxyFunctionArn = "arn:aws:lambda:%s:%s:function:%s"
                 .formatted(props.regionName, props.awsAccount, this.outboundProxyFunctionName);
-        this.proxyApiName = "%s-proxy-api".formatted(this.appResourceNamePrefix);
+        this.proxyApiName = "%s-proxy-api".formatted(this.envResourceNamePrefix);
+        this.hmrcApiProxyHost = "%s-hmrc-api-proxy.%s.%s"
+                .formatted(props.envName, props.subDomainName, props.hostedZoneName);
+        this.hmrcSandboxApiProxyHost = "%s-hmrc-sandbox-api-proxy.%s.%s"
+                .formatted(props.envName, props.subDomainName, props.hostedZoneName);
 
         this.trailName = "%s-trail".formatted(this.envResourceNamePrefix);
         this.holdingBucketName =

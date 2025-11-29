@@ -13,22 +13,22 @@ const dynamo = new DynamoDBClient({});
 // Lazy-load configuration from environment variables
 function getConfig() {
   const STATE_TABLE = process.env.STATE_TABLE_NAME || "ProxyStateTable";
-  const PROXY_MAPPING = process.env.PROXY_MAPPING || "";
+  const HMRC_API_HOST = process.env.HMRC_API_HOST || "";
+  const HMRC_SANDBOX_API_HOST = process.env.HMRC_SANDBOX_API_HOST || "";
+  const HMRC_API_PROXY_HOST = process.env.HMRC_API_PROXY_HOST || "";
+  const HMRC_SANDBOX_API_PROXY_HOST = process.env.HMRC_SANDBOX_API_PROXY_HOST || "";
   const RATE_LIMIT_PER_SECOND = parseInt(process.env.RATE_LIMIT_PER_SECOND || "10", 10);
   const BREAKER_ERROR_THRESHOLD = parseInt(process.env.BREAKER_ERROR_THRESHOLD || "10", 10);
   const BREAKER_LATENCY_MS = parseInt(process.env.BREAKER_LATENCY_MS || "5000", 10);
   const BREAKER_COOLDOWN_SECONDS = parseInt(process.env.BREAKER_COOLDOWN_SECONDS || "60", 10);
 
-  // Parse proxy mapping: "host1=upstream1,host2=upstream2"
+  // Build proxy mappings from explicit environment variables
   const proxyMappings = {};
-  if (PROXY_MAPPING) {
-    const pairs = PROXY_MAPPING.split(",");
-    for (const pair of pairs) {
-      const [proxyHost, upstreamHost] = pair.split("=");
-      if (proxyHost && upstreamHost) {
-        proxyMappings[proxyHost.trim()] = upstreamHost.trim();
-      }
-    }
+  if (HMRC_API_PROXY_HOST && HMRC_API_HOST) {
+    proxyMappings[HMRC_API_PROXY_HOST] = `https://${HMRC_API_HOST}`;
+  }
+  if (HMRC_SANDBOX_API_PROXY_HOST && HMRC_SANDBOX_API_HOST) {
+    proxyMappings[HMRC_SANDBOX_API_PROXY_HOST] = `https://${HMRC_SANDBOX_API_HOST}`;
   }
 
   return {

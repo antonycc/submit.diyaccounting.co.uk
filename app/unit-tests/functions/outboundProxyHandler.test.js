@@ -88,7 +88,10 @@ describe("outboundProxyHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
     process.env.STATE_TABLE_NAME = "test-proxy-state-table";
-    process.env.PROXY_MAPPING = "test-proxy.example.com=https://upstream.example.com";
+    process.env.HMRC_API_HOST = "upstream.example.com";
+    process.env.HMRC_SANDBOX_API_HOST = "sandbox.example.com";
+    process.env.HMRC_API_PROXY_HOST = "test-proxy.example.com";
+    process.env.HMRC_SANDBOX_API_PROXY_HOST = "test-sandbox-proxy.example.com";
     process.env.RATE_LIMIT_PER_SECOND = "5";
     process.env.BREAKER_ERROR_THRESHOLD = "10";
     process.env.BREAKER_LATENCY_MS = "3000";

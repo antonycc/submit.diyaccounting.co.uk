@@ -66,7 +66,21 @@ public class ProxyStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        Map<String, String> proxyMappings();
+        String hmrcApiHost();
+
+        String hmrcSandboxApiHost();
+
+        String hmrcApiProxyHost();
+
+        String hmrcSandboxApiProxyHost();
+
+        String rateLimitPerSecond();
+
+        String breakerErrorThreshold();
+
+        String breakerLatencyMs();
+
+        String breakerCooldownSeconds();
 
         static ImmutableProxyStackProps.Builder builder() {
             return ImmutableProxyStackProps.builder();
@@ -100,10 +114,17 @@ public class ProxyStack extends Stack {
                 this.proxyStateTable.getTableName(),
                 this.proxyStateTable.getNode().getId());
 
-        // Build environment variables with proxy mappings
+        // Build environment variables with explicit proxy configuration
         var environmentVars = new java.util.HashMap<String, String>();
         environmentVars.put("STATE_TABLE_NAME", this.proxyStateTable.getTableName());
-        environmentVars.putAll(props.proxyMappings());
+        environmentVars.put("HMRC_API_HOST", props.hmrcApiHost());
+        environmentVars.put("HMRC_SANDBOX_API_HOST", props.hmrcSandboxApiHost());
+        environmentVars.put("HMRC_API_PROXY_HOST", props.hmrcApiProxyHost());
+        environmentVars.put("HMRC_SANDBOX_API_PROXY_HOST", props.hmrcSandboxApiProxyHost());
+        environmentVars.put("RATE_LIMIT_PER_SECOND", props.rateLimitPerSecond());
+        environmentVars.put("BREAKER_ERROR_THRESHOLD", props.breakerErrorThreshold());
+        environmentVars.put("BREAKER_LATENCY_MS", props.breakerLatencyMs());
+        environmentVars.put("BREAKER_COOLDOWN_SECONDS", props.breakerCooldownSeconds());
 
         // Create Lambda function for outbound proxy
         this.proxyFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-OutboundProxyFunction")

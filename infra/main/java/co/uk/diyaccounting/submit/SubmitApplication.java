@@ -12,7 +12,6 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
-import co.uk.diyaccounting.submit.stacks.ProxyStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
@@ -35,7 +34,6 @@ public class SubmitApplication {
     public final AccountStack accountStack;
     public final ApiStack apiStack;
     public final OpsStack opsStack;
-    public final ProxyStack proxyStack;
     public final EdgeStack edgeStack;
     public final PublishStack publishStack;
     public final SelfDestructStack selfDestructStack;
@@ -304,39 +302,6 @@ public class SubmitApplication {
                         .build());
         this.opsStack.addDependency(hmrcStack);
         this.opsStack.addDependency(apiStack);
-
-        // Create the ProxyStack for outbound proxy with rate limiting and circuit breaker
-        infof(
-                "Synthesizing stack %s for deployment %s to environment %s",
-                sharedNames.proxyStackId, deploymentName, envName);
-
-        // Define proxy mappings (proxyHost → upstreamHost and config)
-        var proxyMappings = Map.of(
-                "PROXY_MAPPING",
-                "ci-test-api.submit.diyaccounting.co.uk=https://test-api.service.hmrc.gov.uk",
-                "RATE_LIMIT_PER_SECOND",
-                "5",
-                "BREAKER_ERROR_THRESHOLD",
-                "10",
-                "BREAKER_LATENCY_MS",
-                "3000",
-                "BREAKER_COOLDOWN_SECONDS",
-                "60");
-
-        this.proxyStack = new ProxyStack(
-                app,
-                sharedNames.proxyStackId,
-                ProxyStack.ProxyStackProps.builder()
-                        .env(primaryEnv)
-                        .crossRegionReferences(false)
-                        .envName(envName)
-                        .deploymentName(deploymentName)
-                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .sharedNames(sharedNames)
-                        .proxyMappings(proxyMappings)
-                        .build());
-        this.proxyStack.addDependency(devStack);
 
         // Create the Edge stack (CloudFront, Route53)
         infof(

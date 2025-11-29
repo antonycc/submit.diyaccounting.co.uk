@@ -140,9 +140,10 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
     const authenticatedHashedSubs = [...new Set(authenticatedRequests.map((r) => r.hashedSub))];
 
     // Verify OAuth requests use one hashedSub and authenticated requests use another
-    expect(oauthHashedSubs.length, `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`).toBe(
-      1,
-    );
+    expect(
+      oauthHashedSubs.length,
+      `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`,
+    ).toBe(1);
 
     expect(
       authenticatedHashedSubs.length,
