@@ -312,10 +312,12 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     name: testInfo.title,
     title: "View VAT Obligations (HMRC: VAT Obligations GET)",
     description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",
-    hmrcApi: {
-      url: "/api/v1/hmrc/vat/obligation",
-      method: "GET",
-    },
+    hmrcApis: [
+      {
+        url: "/api/v1/hmrc/vat/obligation",
+        method: "GET",
+      },
+    ],
     env: {
       envName,
       baseUrl,
