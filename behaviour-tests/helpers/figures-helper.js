@@ -40,9 +40,7 @@ export function selectKeyScreenshots(screenshotDir, patterns, maxCount = 5) {
     for (const keyword of fallbackKeywords) {
       if (selected.length >= maxCount) break;
       // Use find() to get first match for this keyword instead of filtering all
-      const match = allScreenshots.find(
-        (file) => file.toLowerCase().includes(keyword) && !selected.includes(file),
-      );
+      const match = allScreenshots.find((file) => file.toLowerCase().includes(keyword) && !selected.includes(file));
       if (match) {
         selected.push(match);
       }

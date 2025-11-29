@@ -69,6 +69,7 @@ public class SubmitSharedNames {
     public String receiptsTableName;
     public String bundlesTableName;
     public String hmrcApiRequestsTableName;
+    public String proxyConfigTableName;
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -97,6 +98,7 @@ public class SubmitSharedNames {
     public String accountStackId;
     public String apiStackId;
     public String opsStackId;
+    public String proxyStackId;
     public String selfDestructStackId;
     public String ecrRepositoryArn;
     public String ecrRepositoryName;
@@ -223,6 +225,10 @@ public class SubmitSharedNames {
     public String edgeStackId;
     public String publishStackId;
 
+    public String outboundProxyFunctionName;
+    public String outboundProxyFunctionArn;
+    public String proxyApiName;
+
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
         public String envName;
@@ -283,6 +289,7 @@ public class SubmitSharedNames {
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
+        this.proxyConfigTableName = "%s-proxy-config".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envDashedDomainName);
@@ -305,6 +312,7 @@ public class SubmitSharedNames {
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
+        this.proxyStackId = "%s-app-ProxyStack".formatted(props.deploymentName);
         this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
         this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
@@ -319,6 +327,11 @@ public class SubmitSharedNames {
 
         this.edgeStackId = "%s-app-EdgeStack".formatted(props.deploymentName);
         this.publishStackId = "%s-app-PublishStack".formatted(props.deploymentName);
+
+        this.outboundProxyFunctionName = "%s-outbound-proxy".formatted(this.appResourceNamePrefix);
+        this.outboundProxyFunctionArn = "arn:aws:lambda:%s:%s:function:%s"
+                .formatted(props.regionName, props.awsAccount, this.outboundProxyFunctionName);
+        this.proxyApiName = "%s-proxy-api".formatted(this.appResourceNamePrefix);
 
         this.trailName = "%s-trail".formatted(this.envResourceNamePrefix);
         this.holdingBucketName =

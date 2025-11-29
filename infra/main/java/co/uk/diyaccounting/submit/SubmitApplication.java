@@ -12,6 +12,7 @@ import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
+import co.uk.diyaccounting.submit.stacks.ProxyStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
@@ -33,6 +34,7 @@ public class SubmitApplication {
     public final AccountStack accountStack;
     public final ApiStack apiStack;
     public final OpsStack opsStack;
+    public final ProxyStack proxyStack;
     public final EdgeStack edgeStack;
     public final PublishStack publishStack;
     public final SelfDestructStack selfDestructStack;
@@ -301,6 +303,24 @@ public class SubmitApplication {
                         .build());
         this.opsStack.addDependency(hmrcStack);
         this.opsStack.addDependency(apiStack);
+
+        // Create the ProxyStack for outbound proxy with rate limiting and circuit breaker
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.proxyStackId, deploymentName, envName);
+        this.proxyStack = new ProxyStack(
+                app,
+                sharedNames.proxyStackId,
+                ProxyStack.ProxyStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .build());
+        this.proxyStack.addDependency(devStack);
 
         // Create the Edge stack (CloudFront, Route53)
         infof(
