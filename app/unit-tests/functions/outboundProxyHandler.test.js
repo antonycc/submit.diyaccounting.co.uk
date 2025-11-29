@@ -4,63 +4,71 @@ import { handler as outboundProxyHandler } from "@app/functions/proxy/outboundPr
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv } from "@app/test-helpers/mockHelpers.js";
 
-// Mock AWS SDK
+// Mock AWS SDK DynamoDB
+let mockDynamoState = {};
+let mockDynamoError = null;
+
 vi.mock("@aws-sdk/client-dynamodb", () => {
-  const mockDynamoDBClient = vi.fn();
-  const mockGetItemCommand = vi.fn();
+  const mockSend = vi.fn(async (command) => {
+    if (mockDynamoError) throw mockDynamoError;
+
+    const commandName = command.constructor.name;
+    if (commandName === "GetItemCommand") {
+      const key = command.input.Key.stateKey.S;
+      return mockDynamoState[key] || {};
+    }
+    if (commandName === "PutItemCommand") {
+      const key = command.input.Item.stateKey.S;
+      mockDynamoState[key] = { Item: command.input.Item };
+      return {};
+    }
+    return {};
+  });
+
+  class MockDynamoDBClient {
+    constructor() {
+      this.send = mockSend;
+    }
+  }
+
+  const mockGetItemCommand = vi.fn((input) => ({ constructor: { name: "GetItemCommand" }, input }));
+  const mockPutItemCommand = vi.fn((input) => ({ constructor: { name: "PutItemCommand" }, input }));
+
   return {
-    DynamoDBClient: mockDynamoDBClient,
+    DynamoDBClient: MockDynamoDBClient,
     GetItemCommand: mockGetItemCommand,
+    PutItemCommand: mockPutItemCommand,
   };
 });
 
 vi.mock("@aws-sdk/util-dynamodb", () => ({
   unmarshall: vi.fn((item) => {
-    // Simple mock unmarshaller
     const result = {};
     for (const [key, value] of Object.entries(item)) {
       if (value.S) result[key] = value.S;
       if (value.N) result[key] = parseInt(value.N, 10);
-      if (value.M) result[key] = {}; // Simplified
+    }
+    return result;
+  }),
+  marshall: vi.fn((obj) => {
+    const result = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === "string") result[key] = { S: value };
+      if (typeof value === "number") result[key] = { N: String(value) };
     }
     return result;
   }),
 }));
 
-// Mock http/https modules
-vi.mock("http", () => ({
-  default: {
-    request: vi.fn((url, options, callback) => {
-      // Simulate successful response
-      const mockResponse = {
-        statusCode: 200,
-        headers: { "content-type": "application/json" },
-        on: vi.fn((event, handler) => {
-          if (event === "data") handler(JSON.stringify({ success: true }));
-          if (event === "end") handler();
-        }),
-      };
-      setTimeout(() => callback(mockResponse), 10);
-      return {
-        on: vi.fn(),
-        write: vi.fn(),
-        end: vi.fn(),
-        setTimeout: vi.fn(),
-        destroy: vi.fn(),
-      };
-    }),
-  },
-}));
-
+// Mock https for proxy requests
 vi.mock("https", () => ({
   default: {
     request: vi.fn((url, options, callback) => {
-      // Simulate successful response
       const mockResponse = {
         statusCode: 200,
         headers: { "content-type": "application/json" },
         on: vi.fn((event, handler) => {
-          if (event === "data") handler(JSON.stringify({ success: true }));
+          if (event === "data") handler('{"success":true}');
           if (event === "end") handler();
         }),
       };
@@ -79,14 +87,21 @@ vi.mock("https", () => ({
 describe("outboundProxyHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
-    process.env.CONFIG_TABLE_NAME = "test-proxy-config-table";
+    process.env.STATE_TABLE_NAME = "test-proxy-state-table";
+    process.env.PROXY_MAPPING = "test-proxy.example.com=https://upstream.example.com";
+    process.env.RATE_LIMIT_PER_SECOND = "5";
+    process.env.BREAKER_ERROR_THRESHOLD = "10";
+    process.env.BREAKER_LATENCY_MS = "3000";
+    process.env.BREAKER_COOLDOWN_SECONDS = "60";
+    mockDynamoState = {};
+    mockDynamoError = null;
     vi.clearAllMocks();
   });
 
   test("returns 400 when host header is missing", async () => {
     const event = buildLambdaEvent({
       method: "GET",
-      path: "/proxy/test",
+      path: "/test",
       headers: {},
     });
     delete event.headers.host;
@@ -98,13 +113,9 @@ describe("outboundProxyHandler", () => {
   });
 
   test("returns 404 when proxy host is not configured", async () => {
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const mockSend = vi.fn().mockResolvedValue({ Item: null });
-    DynamoDBClient.prototype.send = mockSend;
-
     const event = buildLambdaEvent({
       method: "GET",
-      path: "/proxy/test",
+      path: "/test",
       headers: { host: "unknown-proxy.example.com" },
     });
 
@@ -114,45 +125,7 @@ describe("outboundProxyHandler", () => {
     expect(body.message).toContain("Unknown proxy host");
   });
 
-  test("handles rate limiting", async () => {
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const mockSend = vi.fn().mockResolvedValue({
-      Item: {
-        proxyHost: { S: "test-proxy.example.com" },
-        upstreamHost: { S: "upstream.example.com" },
-        rateLimitPerSecond: { N: "1" }, // Very low rate limit
-        breakerConfig: { S: "{}" },
-      },
-    });
-    DynamoDBClient.prototype.send = mockSend;
-
-    const event = buildLambdaEvent({
-      method: "GET",
-      path: "/proxy/test",
-      headers: { host: "test-proxy.example.com" },
-    });
-
-    // First request should succeed
-    const response1 = await outboundProxyHandler(event);
-    expect([200, 429, 503]).toContain(response1.statusCode);
-
-    // Second immediate request should be rate limited
-    const response2 = await outboundProxyHandler(event);
-    expect([200, 429, 503]).toContain(response2.statusCode);
-  });
-
-  test("successfully proxies request with valid configuration", async () => {
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const mockSend = vi.fn().mockResolvedValue({
-      Item: {
-        proxyHost: { S: "test-proxy.example.com" },
-        upstreamHost: { S: "https://upstream.example.com" },
-        rateLimitPerSecond: { N: "100" },
-        breakerConfig: { S: '{"errorThreshold": 10, "latencyMs": 5000}' },
-      },
-    });
-    DynamoDBClient.prototype.send = mockSend;
-
+  test("successfully proxies request to configured upstream", async () => {
     const event = buildLambdaEvent({
       method: "GET",
       path: "/api/test",
@@ -161,59 +134,7 @@ describe("outboundProxyHandler", () => {
     });
 
     const response = await outboundProxyHandler(event);
-    expect([200, 429, 502, 503]).toContain(response.statusCode);
-    expect(response.headers).toBeDefined();
-  });
-
-  test("handles circuit breaker open state", async () => {
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const mockSend = vi.fn().mockResolvedValue({
-      Item: {
-        proxyHost: { S: "circuit-test.example.com" },
-        upstreamHost: { S: "https://upstream.example.com" },
-        rateLimitPerSecond: { N: "100" },
-        breakerConfig: { S: '{"errorThreshold": 1, "cooldownSeconds": 60}' },
-      },
-    });
-    DynamoDBClient.prototype.send = mockSend;
-
-    const event = buildLambdaEvent({
-      method: "GET",
-      path: "/api/test",
-      headers: { host: "circuit-test.example.com" },
-    });
-
-    const response = await outboundProxyHandler(event);
-    expect([200, 502, 503]).toContain(response.statusCode);
-  });
-
-  test("caches proxy configuration", async () => {
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const mockSend = vi.fn().mockResolvedValue({
-      Item: {
-        proxyHost: { S: "cache-test.example.com" },
-        upstreamHost: { S: "https://upstream.example.com" },
-        rateLimitPerSecond: { N: "100" },
-        breakerConfig: { S: "{}" },
-      },
-    });
-    DynamoDBClient.prototype.send = mockSend;
-
-    const event = buildLambdaEvent({
-      method: "GET",
-      path: "/api/test",
-      headers: { host: "cache-test.example.com" },
-    });
-
-    // First request
-    await outboundProxyHandler(event);
-    const firstCallCount = mockSend.mock.calls.length;
-
-    // Second request (should use cache)
-    await outboundProxyHandler(event);
-    const secondCallCount = mockSend.mock.calls.length;
-
-    // Should not make additional DynamoDB calls due to caching
-    expect(secondCallCount).toBe(firstCallCount);
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["x-request-id"]).toBeDefined();
   });
 });

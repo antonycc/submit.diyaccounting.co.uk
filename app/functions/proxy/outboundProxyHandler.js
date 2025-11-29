@@ -1,7 +1,7 @@
 // app/functions/proxy/outboundProxyHandler.js
 
-import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
+import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { unmarshall, marshall } from "@aws-sdk/util-dynamodb";
 import http from "http";
 import https from "https";
 import logger, { context } from "../../lib/logger.js";
@@ -9,16 +9,37 @@ import { extractRequest, http400BadRequestResponse, http500ServerErrorResponse }
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
 const dynamo = new DynamoDBClient({});
-const CONFIG_TABLE = process.env.CONFIG_TABLE_NAME || "ProxyConfigTable";
 
-// In-memory state per Lambda container
-const state = {
-  rateBuckets: new Map(), // proxyHost → { ts: timestamp, count: number }
-  breakerState: new Map(), // proxyHost → { openSince: timestamp | null, errors: number }
-  configCache: new Map(), // proxyHost → { config, timestamp }
-};
+// Lazy-load configuration from environment variables
+function getConfig() {
+  const STATE_TABLE = process.env.STATE_TABLE_NAME || "ProxyStateTable";
+  const PROXY_MAPPING = process.env.PROXY_MAPPING || "";
+  const RATE_LIMIT_PER_SECOND = parseInt(process.env.RATE_LIMIT_PER_SECOND || "10", 10);
+  const BREAKER_ERROR_THRESHOLD = parseInt(process.env.BREAKER_ERROR_THRESHOLD || "10", 10);
+  const BREAKER_LATENCY_MS = parseInt(process.env.BREAKER_LATENCY_MS || "5000", 10);
+  const BREAKER_COOLDOWN_SECONDS = parseInt(process.env.BREAKER_COOLDOWN_SECONDS || "60", 10);
 
-const CONFIG_CACHE_TTL_MS = 60000; // 1 minute cache for config
+  // Parse proxy mapping: "host1=upstream1,host2=upstream2"
+  const proxyMappings = {};
+  if (PROXY_MAPPING) {
+    const pairs = PROXY_MAPPING.split(",");
+    for (const pair of pairs) {
+      const [proxyHost, upstreamHost] = pair.split("=");
+      if (proxyHost && upstreamHost) {
+        proxyMappings[proxyHost.trim()] = upstreamHost.trim();
+      }
+    }
+  }
+
+  return {
+    STATE_TABLE,
+    proxyMappings,
+    RATE_LIMIT_PER_SECOND,
+    BREAKER_ERROR_THRESHOLD,
+    BREAKER_LATENCY_MS,
+    BREAKER_COOLDOWN_SECONDS,
+  };
+}
 
 /**
  * Helper function to create HTTP responses with proper headers
@@ -45,116 +66,158 @@ export function apiEndpoint(app) {
 }
 
 /**
- * Fetch proxy configuration from DynamoDB with caching
+ * Get proxy configuration from environment variables
  */
-async function getProxyConfig(proxyHost, requestId) {
-  const now = Date.now();
-  const cached = state.configCache.get(proxyHost);
-
-  // Return cached config if still valid
-  if (cached && now - cached.timestamp < CONFIG_CACHE_TTL_MS) {
-    logger.debug({ requestId, proxyHost, msg: "Using cached proxy configuration" });
-    return cached.config;
+function getProxyConfig(proxyHost) {
+  const config = getConfig();
+  const upstreamHost = config.proxyMappings[proxyHost];
+  if (!upstreamHost) {
+    return null;
   }
 
-  // Fetch from DynamoDB
+  return {
+    upstreamHost,
+    rateLimitPerSecond: config.RATE_LIMIT_PER_SECOND,
+    breakerConfig: {
+      errorThreshold: config.BREAKER_ERROR_THRESHOLD,
+      latencyMs: config.BREAKER_LATENCY_MS,
+      cooldownSeconds: config.BREAKER_COOLDOWN_SECONDS,
+    },
+  };
+}
+
+/**
+ * Check rate limit using DynamoDB state
+ */
+async function checkRateLimit(proxyHost, rateLimit, requestId) {
+  const config = getConfig();
+  const now = Math.floor(Date.now() / 1000);
+  const stateKey = `rate:${proxyHost}:${now}`;
+
+  try {
+    // Get current count for this second
+    const resp = await dynamo.send(
+      new GetItemCommand({
+        TableName: config.STATE_TABLE,
+        Key: { stateKey: { S: stateKey } },
+      }),
+    );
+
+    const currentCount = resp.Item ? parseInt(unmarshall(resp.Item).count || "0", 10) : 0;
+    const newCount = currentCount + 1;
+
+    // Update count in DynamoDB
+    await dynamo.send(
+      new PutItemCommand({
+        TableName: config.STATE_TABLE,
+        Item: marshall({
+          stateKey,
+          count: newCount,
+          ttl: now + 60, // TTL 60 seconds from now
+        }),
+      }),
+    );
+
+    logger.debug({ requestId, proxyHost, currentCount, newCount, rateLimit, msg: "Rate limit check" });
+    return newCount <= rateLimit;
+  } catch (error) {
+    logger.error({ requestId, proxyHost, error: error.message, msg: "Error checking rate limit" });
+    // On error, allow the request
+    return true;
+  }
+}
+
+/**
+ * Check circuit breaker state from DynamoDB
+ */
+async function checkCircuitBreaker(proxyHost, breakerConfig, requestId) {
+  const config = getConfig();
+  const stateKey = `breaker:${proxyHost}`;
+
   try {
     const resp = await dynamo.send(
       new GetItemCommand({
-        TableName: CONFIG_TABLE,
-        Key: { proxyHost: { S: proxyHost } },
+        TableName: config.STATE_TABLE,
+        Key: { stateKey: { S: stateKey } },
       }),
     );
 
     if (!resp.Item) {
-      return null;
+      // No state yet, circuit is closed
+      return { isOpen: false, state: { errors: 0, openSince: 0 } };
     }
 
     const item = unmarshall(resp.Item);
-    const config = {
-      upstreamHost: item.upstreamHost,
-      rateLimitPerSecond: item.rateLimitPerSecond || 10,
-      breakerConfig: typeof item.breakerConfig === "string" ? JSON.parse(item.breakerConfig) : item.breakerConfig || {},
-    };
+    const openSince = parseInt(item.openSince || "0", 10);
+    const errors = parseInt(item.errors || "0", 10);
 
-    // Cache the config
-    state.configCache.set(proxyHost, { config, timestamp: now });
-    logger.info({ requestId, proxyHost, config, msg: "Fetched and cached proxy configuration" });
-
-    return config;
-  } catch (error) {
-    logger.error({ requestId, proxyHost, error: error.message, msg: "Error fetching proxy configuration" });
-    return null;
-  }
-}
-
-/**
- * Check rate limit using token bucket algorithm
- */
-function checkRateLimit(proxyHost, rateLimit) {
-  const now = Date.now() / 1000;
-  const bucket = state.rateBuckets.get(proxyHost) || { ts: now, count: 0 };
-
-  // Reset bucket if more than 1 second has passed
-  if (now - bucket.ts >= 1) {
-    bucket.ts = now;
-    bucket.count = 0;
-  }
-
-  bucket.count += 1;
-  state.rateBuckets.set(proxyHost, bucket);
-
-  return bucket.count <= rateLimit;
-}
-
-/**
- * Check circuit breaker state
- */
-function checkCircuitBreaker(proxyHost, breakerConfig) {
-  const breaker = state.breakerState.get(proxyHost) || { openSince: null, errors: 0 };
-
-  if (breaker.openSince) {
-    const cooldownMs = (breakerConfig.cooldownSeconds || 60) * 1000;
-    if (Date.now() - breaker.openSince < cooldownMs) {
-      // Circuit is still open
-      return { isOpen: true, breaker };
-    } else {
-      // Try half-open: reset state
-      breaker.openSince = null;
-      breaker.errors = 0;
-      state.breakerState.set(proxyHost, breaker);
+    if (openSince > 0) {
+      const cooldownMs = (breakerConfig.cooldownSeconds || 60) * 1000;
+      if (Date.now() - openSince < cooldownMs) {
+        // Circuit is still open
+        logger.debug({ requestId, proxyHost, openSince, msg: "Circuit breaker is open" });
+        return { isOpen: true, state: { errors, openSince } };
+      } else {
+        // Cooldown expired, reset to half-open
+        logger.info({ requestId, proxyHost, msg: "Circuit breaker cooldown expired, trying half-open" });
+        return { isOpen: false, state: { errors: 0, openSince: 0 } };
+      }
     }
-  }
 
-  return { isOpen: false, breaker };
+    return { isOpen: false, state: { errors, openSince } };
+  } catch (error) {
+    logger.error({ requestId, proxyHost, error: error.message, msg: "Error checking circuit breaker" });
+    // On error, assume circuit is closed
+    return { isOpen: false, state: { errors: 0, openSince: 0 } };
+  }
 }
 
 /**
- * Update circuit breaker state based on response
+ * Update circuit breaker state in DynamoDB based on response
  */
-function updateCircuitBreaker(proxyHost, breaker, breakerConfig, statusCode, latencyMs) {
+async function updateCircuitBreaker(proxyHost, breakerState, breakerConfig, statusCode, latencyMs, requestId) {
+  const config = getConfig();
+  const stateKey = `breaker:${proxyHost}`;
   const errorThreshold = breakerConfig.errorThreshold || 10;
   const latencyThreshold = breakerConfig.latencyMs || 5000;
 
+  let newErrors = breakerState.errors;
+  let newOpenSince = breakerState.openSince;
+
   // Check if response indicates failure
   if (statusCode >= 500) {
-    breaker.errors += 1;
-    if (breaker.errors >= errorThreshold) {
-      breaker.openSince = Date.now();
-      logger.warn({ proxyHost, errors: breaker.errors, msg: "Circuit breaker opened due to error threshold" });
+    newErrors += 1;
+    if (newErrors >= errorThreshold) {
+      newOpenSince = Date.now();
+      logger.warn({ requestId, proxyHost, errors: newErrors, msg: "Circuit breaker opened due to error threshold" });
     }
   } else if (latencyMs > latencyThreshold) {
-    breaker.errors += 1;
-    if (breaker.errors >= errorThreshold) {
-      breaker.openSince = Date.now();
-      logger.warn({ proxyHost, latency: latencyMs, msg: "Circuit breaker opened due to latency threshold" });
+    newErrors += 1;
+    if (newErrors >= errorThreshold) {
+      newOpenSince = Date.now();
+      logger.warn({ requestId, proxyHost, latency: latencyMs, msg: "Circuit breaker opened due to latency threshold" });
     }
   } else {
     // Success - gradually reduce error count
-    breaker.errors = Math.max(0, breaker.errors - 1);
+    newErrors = Math.max(0, newErrors - 1);
   }
 
-  state.breakerState.set(proxyHost, breaker);
+  try {
+    await dynamo.send(
+      new PutItemCommand({
+        TableName: config.STATE_TABLE,
+        Item: marshall({
+          stateKey,
+          errors: newErrors,
+          openSince: newOpenSince,
+          ttl: Math.floor(Date.now() / 1000) + 3600, // TTL 1 hour from now
+        }),
+      }),
+    );
+    logger.debug({ requestId, proxyHost, newErrors, newOpenSince, msg: "Updated circuit breaker state" });
+  } catch (error) {
+    logger.error({ requestId, proxyHost, error: error.message, msg: "Error updating circuit breaker state" });
+  }
 }
 
 /**
@@ -239,8 +302,8 @@ export async function handler(event) {
     return http400BadRequestResponse({ request, message: "Missing host header" });
   }
 
-  // Fetch proxy configuration
-  const config = await getProxyConfig(host, requestId);
+  // Fetch proxy configuration from environment
+  const config = getProxyConfig(host);
   if (!config) {
     logger.warn({ requestId, host, msg: "Unknown proxy host" });
     return httpResponse(404, { message: "Unknown proxy host" });
@@ -249,13 +312,14 @@ export async function handler(event) {
   const { upstreamHost, rateLimitPerSecond, breakerConfig } = config;
 
   // Check rate limit
-  if (!checkRateLimit(host, rateLimitPerSecond)) {
+  const allowedByRateLimit = await checkRateLimit(host, rateLimitPerSecond, requestId);
+  if (!allowedByRateLimit) {
     logger.warn({ requestId, host, msg: "Rate limit exceeded" });
     return httpResponse(429, { message: "Rate limit exceeded" });
   }
 
   // Check circuit breaker
-  const { isOpen, breaker } = checkCircuitBreaker(host, breakerConfig);
+  const { isOpen, state: breakerState } = await checkCircuitBreaker(host, breakerConfig, requestId);
   if (isOpen) {
     logger.warn({ requestId, host, msg: "Circuit breaker is open" });
     return httpResponse(503, { message: "Upstream service unavailable (circuit breaker open)" });
@@ -299,7 +363,7 @@ export async function handler(event) {
   const proxyResponse = await performProxyRequest(url, requestOptions, event.body, requestId);
 
   // Update circuit breaker state
-  updateCircuitBreaker(host, breaker, breakerConfig, proxyResponse.statusCode, proxyResponse.latencyMs);
+  await updateCircuitBreaker(host, breakerState, breakerConfig, proxyResponse.statusCode, proxyResponse.latencyMs, requestId);
 
   // Return response
   if (proxyResponse.isError) {

@@ -69,7 +69,7 @@ public class SubmitSharedNames {
     public String receiptsTableName;
     public String bundlesTableName;
     public String hmrcApiRequestsTableName;
-    public String proxyConfigTableName;
+    public String proxyStateTableName;
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -289,7 +289,7 @@ public class SubmitSharedNames {
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
-        this.proxyConfigTableName = "%s-proxy-config".formatted(this.envDashedDomainName);
+        this.proxyStateTableName = "%s-proxy-state".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envDashedDomainName);

@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
@@ -308,6 +309,20 @@ public class SubmitApplication {
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.proxyStackId, deploymentName, envName);
+
+        // Define proxy mappings (proxyHost → upstreamHost and config)
+        var proxyMappings = Map.of(
+                "PROXY_MAPPING",
+                "ci-test-api.submit.diyaccounting.co.uk=https://test-api.service.hmrc.gov.uk",
+                "RATE_LIMIT_PER_SECOND",
+                "5",
+                "BREAKER_ERROR_THRESHOLD",
+                "10",
+                "BREAKER_LATENCY_MS",
+                "3000",
+                "BREAKER_COOLDOWN_SECONDS",
+                "60");
+
         this.proxyStack = new ProxyStack(
                 app,
                 sharedNames.proxyStackId,
@@ -319,6 +334,7 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
+                        .proxyMappings(proxyMappings)
                         .build());
         this.proxyStack.addDependency(devStack);
 

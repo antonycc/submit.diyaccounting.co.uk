@@ -34,7 +34,7 @@ import software.constructs.Construct;
 
 public class ProxyStack extends Stack {
 
-    public final ITable proxyConfigTable;
+    public final ITable proxyStateTable;
     public final Function proxyFunction;
     public final HttpApi proxyApi;
     public final LogGroup accessLogGroup;
@@ -66,6 +66,8 @@ public class ProxyStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
+        Map<String, String> proxyMappings();
+
         static ImmutableProxyStackProps.Builder builder() {
             return ImmutableProxyStackProps.builder();
         }
@@ -82,11 +84,11 @@ public class ProxyStack extends Stack {
         Aspects.of(this)
                 .add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_MONTHS));
 
-        // Create DynamoDB table for proxy configuration
-        this.proxyConfigTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ProxyConfigTable")
-                .tableName(props.sharedNames().proxyConfigTableName)
+        // Create DynamoDB table for proxy state (rate limiting and circuit breaker)
+        this.proxyStateTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ProxyStateTable")
+                .tableName(props.sharedNames().proxyStateTableName)
                 .partitionKey(Attribute.builder()
-                        .name("proxyHost")
+                        .name("stateKey")
                         .type(AttributeType.STRING)
                         .build())
                 .billingMode(BillingMode.PAY_PER_REQUEST)
@@ -94,9 +96,14 @@ public class ProxyStack extends Stack {
                 .build();
 
         infof(
-                "Created proxy config DynamoDB table with name %s and id %s",
-                this.proxyConfigTable.getTableName(),
-                this.proxyConfigTable.getNode().getId());
+                "Created proxy state DynamoDB table with name %s and id %s",
+                this.proxyStateTable.getTableName(),
+                this.proxyStateTable.getNode().getId());
+
+        // Build environment variables with proxy mappings
+        var environmentVars = new java.util.HashMap<String, String>();
+        environmentVars.put("STATE_TABLE_NAME", this.proxyStateTable.getTableName());
+        environmentVars.putAll(props.proxyMappings());
 
         // Create Lambda function for outbound proxy
         this.proxyFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-OutboundProxyFunction")
@@ -106,11 +113,11 @@ public class ProxyStack extends Stack {
                 .code(Code.fromAsset("app/functions/proxy"))
                 .timeout(Duration.seconds(30))
                 .memorySize(512)
-                .environment(Map.of("CONFIG_TABLE_NAME", this.proxyConfigTable.getTableName()))
+                .environment(environmentVars)
                 .build();
 
-        // Grant read access to DynamoDB table
-        this.proxyConfigTable.grantReadData(this.proxyFunction);
+        // Grant read/write access to DynamoDB state table
+        this.proxyStateTable.grantReadWriteData(this.proxyFunction);
 
         infof(
                 "Created outbound proxy Lambda function with name %s and ARN %s",

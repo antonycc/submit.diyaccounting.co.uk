@@ -1,14 +1,14 @@
 # Outbound Proxy with Rate Limiting and Circuit Breaker
 
-This directory contains the implementation of a centralized outbound proxy for the DIY Accounting submit application. The proxy provides rate limiting, circuit breaker patterns, and configuration management for all external API calls.
+This directory contains the implementation of a centralized outbound proxy for the DIY Accounting submit application. The proxy provides rate limiting, circuit breaker patterns, and centralized governance for all external API calls.
 
 ## Overview
 
 The outbound proxy is a Node.js Lambda function that sits between your application and external APIs. It provides:
 
-- **Rate Limiting**: Token-bucket algorithm per proxy host
-- **Circuit Breaker**: Automatic failure detection and recovery
-- **Configuration Management**: DynamoDB-based configuration with caching
+- **Rate Limiting**: DynamoDB-backed rate limiting per proxy host
+- **Circuit Breaker**: Automatic failure detection and recovery with state in DynamoDB
+- **Configuration Management**: Environment variable-based configuration from CDK
 - **Observability**: CloudWatch metrics and logging
 
 ## Architecture
@@ -16,60 +16,59 @@ The outbound proxy is a Node.js Lambda function that sits between your applicati
 ```
 Application Lambda → Proxy Host (API Gateway) → Proxy Lambda → Upstream API
                                                       ↓
-                                              DynamoDB Config Table
+                                              DynamoDB State Table
 ```
 
 ## Configuration
 
-### DynamoDB Table Schema
+### Environment Variables
 
-The proxy configuration is stored in a DynamoDB table with the following schema:
+Proxy configuration is set via environment variables in the CDK stack (SubmitApplication.java):
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `PROXY_MAPPING` | Comma-separated list of proxy host to upstream mappings | `test-proxy.example.com=https://api.example.com` |
+| `RATE_LIMIT_PER_SECOND` | Maximum requests per second | `5` |
+| `BREAKER_ERROR_THRESHOLD` | Number of errors before opening circuit | `10` |
+| `BREAKER_LATENCY_MS` | Latency threshold in milliseconds | `3000` |
+| `BREAKER_COOLDOWN_SECONDS` | Cooldown period before half-open state | `60` |
+
+### DynamoDB State Table
+
+The proxy state (rate limiting and circuit breaker) is stored in a DynamoDB table with a flat schema:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|
-| `proxyHost` | String (PK) | The proxy domain (e.g., "test-api-proxy.submit.diyaccounting.co.uk") |
-| `upstreamHost` | String | Target upstream URL (e.g., "https://test-api.service.hmrc.gov.uk") |
-| `rateLimitPerSecond` | Number | Maximum requests per second (default: 10) |
-| `breakerConfig` | String (JSON) | Circuit breaker configuration |
+| `stateKey` | String (PK) | State identifier (e.g., "rate:host:timestamp" or "breaker:host") |
+| `count` | Number | Request count for rate limiting |
+| `errors` | Number | Error count for circuit breaker |
+| `openSince` | Number | Timestamp when circuit opened (0 = closed) |
+| `ttl` | Number | Time-to-live for automatic cleanup |
 
-### Circuit Breaker Configuration
+### Example Configuration in CDK
 
-The `breakerConfig` is a JSON string with the following properties:
-
-```json
-{
-  "errorThreshold": 10,        // Number of errors before opening circuit
-  "latencyMs": 5000,           // Latency threshold in milliseconds
-  "cooldownSeconds": 60        // Cooldown period before half-open state
-}
-```
-
-### Example Configuration Entry
-
-```json
-{
-  "proxyHost": "ci-test-api-service-hmrc-gov-uk.submit.diyaccounting.co.uk",
-  "upstreamHost": "https://test-api.service.hmrc.gov.uk",
-  "rateLimitPerSecond": 5,
-  "breakerConfig": "{\"errorThreshold\": 10, \"latencyMs\": 3000, \"cooldownSeconds\": 60}"
-}
+```java
+var proxyMappings = Map.of(
+    "PROXY_MAPPING", "test-api.submit.diyaccounting.co.uk=https://test-api.service.hmrc.gov.uk",
+    "RATE_LIMIT_PER_SECOND", "5",
+    "BREAKER_ERROR_THRESHOLD", "10",
+    "BREAKER_LATENCY_MS", "3000",
+    "BREAKER_COOLDOWN_SECONDS", "60"
+);
 ```
 
 ## Usage
 
-### Adding a Proxy Configuration
+### Updating Proxy Configuration
 
-Use AWS CLI or AWS SDK to add configuration to DynamoDB:
+To change proxy configuration, update the `proxyMappings` in `SubmitApplication.java` and redeploy:
 
-```bash
-aws dynamodb put-item \
-  --table-name <proxy-config-table-name> \
-  --item '{
-    "proxyHost": {"S": "my-api-proxy.submit.diyaccounting.co.uk"},
-    "upstreamHost": {"S": "https://api.example.com"},
-    "rateLimitPerSecond": {"N": "10"},
-    "breakerConfig": {"S": "{\"errorThreshold\": 10, \"latencyMs\": 5000}"}
-  }'
+```java
+var proxyMappings = Map.of(
+    "PROXY_MAPPING", "my-api-proxy.submit.diyaccounting.co.uk=https://api.example.com",
+    "RATE_LIMIT_PER_SECOND", "10",
+    "BREAKER_ERROR_THRESHOLD", "15"
+);
 ```
 
 ### Making Requests Through the Proxy
