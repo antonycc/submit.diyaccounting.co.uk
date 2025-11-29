@@ -286,6 +286,7 @@ public class SubmitSharedNames {
         this.dataStackId = "%s-env-DataStack".formatted(props.envName);
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);
         this.apexStackId = "%s-env-ApexStack".formatted(props.envName);
+        this.proxyStackId = "%s-env-ProxyStack".formatted(props.envName);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
@@ -314,7 +315,6 @@ public class SubmitSharedNames {
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
-        this.proxyStackId = "%s-app-ProxyStack".formatted(props.deploymentName);
         this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
         this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
