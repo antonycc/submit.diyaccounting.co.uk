@@ -56,7 +56,11 @@ export function getUserSub(event) {
     }
   };
 
-  const auth = findHeader("authorization");
+  // Case-insensitive lookup for Authorization header
+  let auth = findHeader("authorization");
+  if (!auth) {
+    auth = Object.entries(headers).find(([k]) => k.toLowerCase() === "authorization")?.[1];
+  }
   const subFromAuth = tryExtract(auth);
   if (subFromAuth) return subFromAuth;
 

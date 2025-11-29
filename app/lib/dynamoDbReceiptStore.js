@@ -5,13 +5,20 @@ import { hashSub } from "./subHasher.js";
 
 let __dynamoDbModule;
 let __dynamoDbDocClient;
+let __dynamoEndpointUsed;
 
 async function getDynamoDbDocClient() {
-  if (!__dynamoDbDocClient) {
+  // Recreate client if endpoint changes after first import (common in tests)
+  const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
+  if (!__dynamoDbDocClient || __dynamoEndpointUsed !== (endpoint || "")) {
     __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
     const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const client = new DynamoDBClient({ region: process.env.AWS_REGION || "eu-west-2" });
+    const client = new DynamoDBClient({
+      region: process.env.AWS_REGION || "eu-west-2",
+      ...(endpoint ? { endpoint } : {}),
+    });
     __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client);
+    __dynamoEndpointUsed = endpoint || "";
   }
   return __dynamoDbDocClient;
 }

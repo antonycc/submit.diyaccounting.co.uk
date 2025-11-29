@@ -14,6 +14,7 @@ import { enforceBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 import { putReceipt } from "../../lib/dynamoDbReceiptStore.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
+import { extractUserFromAuthorizerContext } from "../../lib/responses.js";
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
@@ -79,11 +80,21 @@ export async function handler(event) {
     });
   }
 
-  // Extract userSub from JWT
-  const userSub = getUserSub(event);
+  // Extract userSub from JWT and fallbacks (do not proceed if missing)
+  let userSub = getUserSub(event);
+  if (!userSub) userSub = extractUserFromAuthorizerContext(event)?.sub || null;
+  if (!userSub) {
+    const hdrs = event.headers || {};
+    const xUserSub = Object.entries(hdrs).find(([k]) => k.toLowerCase() === "x-user-sub")?.[1];
+    userSub = xUserSub || null;
+  }
 
   // Extract and validate parameters
   const { receipt, receiptId, key, formBundle } = extractAndValidateParameters(event, errorMessages, userSub);
+
+  if (!userSub) {
+    errorMessages.push("Missing authenticated user sub for receipt logging");
+  }
 
   const responseHeaders = {};
 
