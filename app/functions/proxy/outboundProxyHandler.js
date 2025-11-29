@@ -94,8 +94,11 @@ async function checkRateLimit(proxyHost, rateLimit, requestId) {
   const now = Math.floor(Date.now() / 1000);
   const stateKey = `rate:${proxyHost}:${now}`;
 
+  logger.info({ requestId, proxyHost, rateLimit, stateKey, msg: "Checking rate limit" });
+
   try {
     // Get current count for this second
+    logger.info({ requestId, tableName: config.STATE_TABLE, stateKey, msg: "Querying DynamoDB for rate limit state" });
     const resp = await dynamo.send(
       new GetItemCommand({
         TableName: config.STATE_TABLE,
@@ -106,7 +109,10 @@ async function checkRateLimit(proxyHost, rateLimit, requestId) {
     const currentCount = resp.Item ? parseInt(unmarshall(resp.Item).count || "0", 10) : 0;
     const newCount = currentCount + 1;
 
+    logger.info({ requestId, proxyHost, currentCount, newCount, rateLimit, msg: "Rate limit state retrieved" });
+
     // Update count in DynamoDB
+    logger.info({ requestId, tableName: config.STATE_TABLE, stateKey, newCount, msg: "Updating rate limit count in DynamoDB" });
     await dynamo.send(
       new PutItemCommand({
         TableName: config.STATE_TABLE,
@@ -118,10 +124,11 @@ async function checkRateLimit(proxyHost, rateLimit, requestId) {
       }),
     );
 
-    logger.debug({ requestId, proxyHost, currentCount, newCount, rateLimit, msg: "Rate limit check" });
-    return newCount <= rateLimit;
+    const isAllowed = newCount <= rateLimit;
+    logger.info({ requestId, proxyHost, currentCount, newCount, rateLimit, isAllowed, msg: "Rate limit check completed" });
+    return isAllowed;
   } catch (error) {
-    logger.error({ requestId, proxyHost, error: error.message, msg: "Error checking rate limit" });
+    logger.error({ requestId, proxyHost, error: error.message, stack: error.stack, msg: "Error checking rate limit" });
     // On error, allow the request
     return true;
   }
@@ -134,7 +141,10 @@ async function checkCircuitBreaker(proxyHost, breakerConfig, requestId) {
   const config = getConfig();
   const stateKey = `breaker:${proxyHost}`;
 
+  logger.info({ requestId, proxyHost, breakerConfig, stateKey, msg: "Checking circuit breaker state" });
+
   try {
+    logger.info({ requestId, tableName: config.STATE_TABLE, stateKey, msg: "Querying DynamoDB for circuit breaker state" });
     const resp = await dynamo.send(
       new GetItemCommand({
         TableName: config.STATE_TABLE,
@@ -144,6 +154,7 @@ async function checkCircuitBreaker(proxyHost, breakerConfig, requestId) {
 
     if (!resp.Item) {
       // No state yet, circuit is closed
+      logger.info({ requestId, proxyHost, msg: "No circuit breaker state found, circuit is closed" });
       return { isOpen: false, state: { errors: 0, openSince: 0 } };
     }
 
@@ -151,22 +162,40 @@ async function checkCircuitBreaker(proxyHost, breakerConfig, requestId) {
     const openSince = parseInt(item.openSince || "0", 10);
     const errors = parseInt(item.errors || "0", 10);
 
+    logger.info({ requestId, proxyHost, errors, openSince, msg: "Circuit breaker state retrieved" });
+
     if (openSince > 0) {
       const cooldownMs = (breakerConfig.cooldownSeconds || 60) * 1000;
-      if (Date.now() - openSince < cooldownMs) {
+      const elapsedMs = Date.now() - openSince;
+      if (elapsedMs < cooldownMs) {
         // Circuit is still open
-        logger.debug({ requestId, proxyHost, openSince, msg: "Circuit breaker is open" });
+        logger.warn({ 
+          requestId, 
+          proxyHost, 
+          openSince, 
+          elapsedMs, 
+          cooldownMs, 
+          remainingMs: cooldownMs - elapsedMs,
+          msg: "Circuit breaker is OPEN - rejecting request" 
+        });
         return { isOpen: true, state: { errors, openSince } };
       } else {
         // Cooldown expired, reset to half-open
-        logger.info({ requestId, proxyHost, msg: "Circuit breaker cooldown expired, trying half-open" });
+        logger.info({ 
+          requestId, 
+          proxyHost, 
+          elapsedMs, 
+          cooldownMs, 
+          msg: "Circuit breaker cooldown expired, attempting half-open state" 
+        });
         return { isOpen: false, state: { errors: 0, openSince: 0 } };
       }
     }
 
+    logger.info({ requestId, proxyHost, errors, msg: "Circuit breaker is closed" });
     return { isOpen: false, state: { errors, openSince } };
   } catch (error) {
-    logger.error({ requestId, proxyHost, error: error.message, msg: "Error checking circuit breaker" });
+    logger.error({ requestId, proxyHost, error: error.message, stack: error.stack, msg: "Error checking circuit breaker" });
     // On error, assume circuit is closed
     return { isOpen: false, state: { errors: 0, openSince: 0 } };
   }
@@ -184,25 +213,78 @@ async function updateCircuitBreaker(proxyHost, breakerState, breakerConfig, stat
   let newErrors = breakerState.errors;
   let newOpenSince = breakerState.openSince;
 
+  logger.info({ 
+    requestId, 
+    proxyHost, 
+    statusCode, 
+    latencyMs, 
+    currentErrors: breakerState.errors,
+    errorThreshold,
+    latencyThreshold,
+    msg: "Evaluating circuit breaker conditions" 
+  });
+
   // Check if response indicates failure
   if (statusCode >= 500) {
     newErrors += 1;
+    logger.warn({ requestId, proxyHost, statusCode, errors: newErrors, errorThreshold, msg: "Server error detected, incrementing error count" });
     if (newErrors >= errorThreshold) {
       newOpenSince = Date.now();
-      logger.warn({ requestId, proxyHost, errors: newErrors, msg: "Circuit breaker opened due to error threshold" });
+      logger.error({ 
+        requestId, 
+        proxyHost, 
+        errors: newErrors, 
+        errorThreshold,
+        msg: "ERROR THRESHOLD REACHED - Circuit breaker OPENING" 
+      });
     }
   } else if (latencyMs > latencyThreshold) {
     newErrors += 1;
+    logger.warn({ 
+      requestId, 
+      proxyHost, 
+      latencyMs, 
+      latencyThreshold, 
+      errors: newErrors, 
+      errorThreshold,
+      msg: "High latency detected, incrementing error count" 
+    });
     if (newErrors >= errorThreshold) {
       newOpenSince = Date.now();
-      logger.warn({ requestId, proxyHost, latency: latencyMs, msg: "Circuit breaker opened due to latency threshold" });
+      logger.error({ 
+        requestId, 
+        proxyHost, 
+        latencyMs, 
+        latencyThreshold,
+        errors: newErrors,
+        msg: "LATENCY THRESHOLD REACHED - Circuit breaker OPENING" 
+      });
     }
   } else {
     // Success - gradually reduce error count
+    const previousErrors = newErrors;
     newErrors = Math.max(0, newErrors - 1);
+    if (previousErrors > 0) {
+      logger.info({ 
+        requestId, 
+        proxyHost, 
+        previousErrors, 
+        newErrors, 
+        statusCode,
+        msg: "Successful response, reducing error count" 
+      });
+    }
   }
 
   try {
+    logger.info({ 
+      requestId, 
+      tableName: config.STATE_TABLE, 
+      stateKey, 
+      newErrors, 
+      newOpenSince: newOpenSince > 0 ? new Date(newOpenSince).toISOString() : "closed",
+      msg: "Updating circuit breaker state in DynamoDB" 
+    });
     await dynamo.send(
       new PutItemCommand({
         TableName: config.STATE_TABLE,
@@ -214,9 +296,9 @@ async function updateCircuitBreaker(proxyHost, breakerState, breakerConfig, stat
         }),
       }),
     );
-    logger.debug({ requestId, proxyHost, newErrors, newOpenSince, msg: "Updated circuit breaker state" });
+    logger.info({ requestId, proxyHost, newErrors, isOpen: newOpenSince > 0, msg: "Circuit breaker state updated successfully" });
   } catch (error) {
-    logger.error({ requestId, proxyHost, error: error.message, msg: "Error updating circuit breaker state" });
+    logger.error({ requestId, proxyHost, error: error.message, stack: error.stack, msg: "Error updating circuit breaker state" });
   }
 }
 
@@ -228,7 +310,24 @@ function performProxyRequest(url, requestOptions, body, requestId) {
     const startTime = Date.now();
     const client = url.protocol === "https:" ? https : http;
 
+    logger.info({
+      requestId,
+      url: url.href,
+      method: requestOptions.method,
+      protocol: url.protocol,
+      hasBody: !!body,
+      bodyLength: body ? body.length : 0,
+      msg: "Initiating proxied HTTP request to upstream",
+    });
+
     const req = client.request(url, requestOptions, (res) => {
+      logger.info({
+        requestId,
+        url: url.href,
+        statusCode: res.statusCode,
+        msg: "Received response from upstream, reading body",
+      });
+
       let responseBody = "";
       res.on("data", (chunk) => (responseBody += chunk));
       res.on("end", () => {
@@ -241,7 +340,8 @@ function performProxyRequest(url, requestOptions, body, requestId) {
           method: requestOptions.method,
           statusCode,
           latencyMs,
-          msg: "Proxied request completed",
+          bodyLength: responseBody.length,
+          msg: "Proxied request completed successfully",
         });
 
         // Build response headers
@@ -263,8 +363,9 @@ function performProxyRequest(url, requestOptions, body, requestId) {
         requestId,
         url: url.href,
         error: err.message,
+        stack: err.stack,
         latencyMs,
-        msg: "Proxied request failed",
+        msg: "Proxied request FAILED with error",
       });
 
       resolve({
@@ -279,13 +380,15 @@ function performProxyRequest(url, requestOptions, body, requestId) {
     // Set a timeout for the request
     req.setTimeout(30000, () => {
       req.destroy();
-      logger.error({ requestId, url: url.href, msg: "Proxied request timed out" });
+      logger.error({ requestId, url: url.href, timeoutMs: 30000, msg: "Proxied request TIMED OUT" });
     });
 
     if (body) {
+      logger.info({ requestId, bodyLength: body.length, msg: "Writing request body to upstream" });
       req.write(body);
     }
     req.end();
+    logger.info({ requestId, msg: "Request sent to upstream, waiting for response" });
   });
 }
 
@@ -295,37 +398,60 @@ function performProxyRequest(url, requestOptions, body, requestId) {
 export async function handler(event) {
   const { request, requestId } = extractRequest(event);
   const host = event.headers?.host || event.headers?.Host;
+  const method = event.requestContext?.http?.method || "GET";
+  const path = event.rawPath || event.requestContext?.http?.path || "/";
 
-  logger.info({ requestId, host, path: event.rawPath, msg: "Processing proxy request" });
+  logger.info({ 
+    requestId, 
+    host, 
+    method,
+    path, 
+    queryString: event.rawQueryString,
+    hasBody: !!event.body,
+    msg: "Started processing proxy request" 
+  });
 
   if (!host) {
+    logger.error({ requestId, msg: "Missing host header in request" });
     return http400BadRequestResponse({ request, message: "Missing host header" });
   }
 
   // Fetch proxy configuration from environment
+  logger.info({ requestId, host, msg: "Fetching proxy configuration" });
   const config = getProxyConfig(host);
   if (!config) {
-    logger.warn({ requestId, host, msg: "Unknown proxy host" });
+    logger.error({ requestId, host, msg: "Unknown proxy host - no configuration found" });
     return httpResponse(404, { message: "Unknown proxy host" });
   }
 
   const { upstreamHost, rateLimitPerSecond, breakerConfig } = config;
+  logger.info({ 
+    requestId, 
+    host, 
+    upstreamHost, 
+    rateLimitPerSecond, 
+    breakerConfig,
+    msg: "Proxy configuration loaded" 
+  });
 
   // Check rate limit
   const allowedByRateLimit = await checkRateLimit(host, rateLimitPerSecond, requestId);
   if (!allowedByRateLimit) {
-    logger.warn({ requestId, host, msg: "Rate limit exceeded" });
+    logger.error({ requestId, host, rateLimitPerSecond, msg: "REJECTED - Rate limit exceeded" });
     return httpResponse(429, { message: "Rate limit exceeded" });
   }
+  logger.info({ requestId, host, msg: "Rate limit check passed" });
 
   // Check circuit breaker
   const { isOpen, state: breakerState } = await checkCircuitBreaker(host, breakerConfig, requestId);
   if (isOpen) {
-    logger.warn({ requestId, host, msg: "Circuit breaker is open" });
+    logger.error({ requestId, host, breakerState, msg: "REJECTED - Circuit breaker is open" });
     return httpResponse(503, { message: "Upstream service unavailable (circuit breaker open)" });
   }
+  logger.info({ requestId, host, breakerState, msg: "Circuit breaker check passed" });
 
   // Build upstream URL - normalize and validate
+  logger.info({ requestId, upstreamHost, path, msg: "Building upstream URL" });
   let baseUrl;
   try {
     baseUrl = new URL(upstreamHost);
@@ -339,6 +465,7 @@ export async function handler(event) {
   const fullUrl = `${baseUrl.origin}${targetPath}${queryString ? `?${queryString}` : ""}`;
 
   const url = new URL(fullUrl);
+  logger.info({ requestId, fullUrl: url.href, msg: "Upstream URL constructed" });
 
   // Prepare request options - normalize headers to lowercase for case-insensitive removal
   const normalizedHeaders = {};
@@ -359,16 +486,28 @@ export async function handler(event) {
     headers: normalizedHeaders,
   };
 
+  logger.info({ requestId, method: requestOptions.method, headerCount: Object.keys(normalizedHeaders).length, msg: "Request options prepared" });
+
   // Perform the proxied request
   const proxyResponse = await performProxyRequest(url, requestOptions, event.body, requestId);
 
   // Update circuit breaker state
+  logger.info({ requestId, statusCode: proxyResponse.statusCode, latencyMs: proxyResponse.latencyMs, msg: "Updating circuit breaker state based on response" });
   await updateCircuitBreaker(host, breakerState, breakerConfig, proxyResponse.statusCode, proxyResponse.latencyMs, requestId);
 
   // Return response
   if (proxyResponse.isError) {
+    logger.error({ requestId, statusCode: 502, msg: "Returning Bad Gateway response" });
     return httpResponse(502, { message: "Bad Gateway" });
   }
+
+  logger.info({ 
+    requestId, 
+    statusCode: proxyResponse.statusCode, 
+    latencyMs: proxyResponse.latencyMs,
+    bodyLength: proxyResponse.body?.length || 0,
+    msg: "Proxy request completed successfully, returning response" 
+  });
 
   return {
     statusCode: proxyResponse.statusCode,

@@ -368,8 +368,6 @@ jobs:
     name: 'deploy proxy'
     needs:
       - names
-      - create-secrets
-      - deploy-data
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     permissions:
