@@ -165,6 +165,8 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
     } catch (e) {
       console.warn(`  ⚠ Failed to read testContext: ${e.message}`);
     }
+  } else {
+    console.log(`  ℹ No testContext found for ${testName}`);
   }
 
   // Read hmrc-api-requests.jsonl
@@ -176,6 +178,8 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
     } catch (e) {
       console.warn(`  ⚠ Failed to read HMRC API requests: ${e.message}`);
     }
+  } else {
+    console.log(`  ℹ No HMRC API requests found for ${testName}`);
   }
 
   // Get playwright report status
@@ -200,6 +204,24 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
   console.log(`  ✓ Generated ${reportFileName}`);
 
   return reportFileName;
+}
+
+/**
+ * Find test-specific data in behaviour test results
+ * Returns both testContext.json and hmrc-api-requests.jsonl for a specific test
+ */
+function findTestData(testName) {
+  // Try to find a directory matching this test name in the behaviour test results
+  if (!fs.existsSync(RESULTS_DIR)) {
+    return { testContextPath: null, hmrcApiRequestsPath: null };
+  }
+
+  // Look for testContext.json and hmrc-api-requests.jsonl in the results directory
+  // They might be in subdirectories matching the test pattern
+  const testContextPath = findTestContext(RESULTS_DIR);
+  const hmrcApiRequestsPath = findHmrcApiRequests(RESULTS_DIR);
+
+  return { testContextPath, hmrcApiRequestsPath };
 }
 
 /**
@@ -235,15 +257,14 @@ function main() {
       continue; // Skip the combined report directory
     }
 
-    // Find testContext.json in the results directory
-    const testResultsDir = path.join(RESULTS_DIR);
-    const testContextPath = findTestContext(testResultsDir);
-
-    // Find hmrc-api-requests.jsonl
-    const hmrcApiRequestsPath = findHmrcApiRequests(testResultsDir);
+    // Find test-specific data
+    const { testContextPath, hmrcApiRequestsPath } = findTestData(testName);
 
     if (!testContextPath && !hmrcApiRequestsPath) {
-      console.log(`  ⚠ No test data found for ${testName}, skipping`);
+      console.log(`  ℹ No test data found for ${testName}, creating minimal report`);
+      // Still create a report with just the playwright info
+      const reportFileName = generateTestReport(testName, null, null);
+      reportFiles.push(reportFileName);
       continue;
     }
 
