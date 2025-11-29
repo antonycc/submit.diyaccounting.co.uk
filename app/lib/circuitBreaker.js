@@ -5,19 +5,24 @@ import logger from "./logger.js";
 const CIRCUIT_BREAKER_TABLE_NAME = process.env.CIRCUIT_BREAKER_TABLE_NAME;
 
 // Lazy initialization of DynamoDB clients only when needed
+// Using dynamic imports to avoid test initialization issues
 let dynamodbClient = null;
 let docClient = null;
+let GetCommand = null;
+let PutCommand = null;
 
-function getDynamoDBClient() {
+async function getDynamoDBClient() {
   if (!CIRCUIT_BREAKER_TABLE_NAME) {
     return null;
   }
   if (!dynamodbClient) {
     // Dynamic import to avoid initialization issues in tests
-    const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-    const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
-    dynamodbClient = new DynamoDBClient({});
-    docClient = DynamoDBDocumentClient.from(dynamodbClient);
+    const dynamoModule = await import("@aws-sdk/client-dynamodb");
+    const libModule = await import("@aws-sdk/lib-dynamodb");
+    dynamodbClient = new dynamoModule.DynamoDBClient({});
+    docClient = libModule.DynamoDBDocumentClient.from(dynamodbClient);
+    GetCommand = libModule.GetCommand;
+    PutCommand = libModule.PutCommand;
   }
   return docClient;
 }
@@ -62,14 +67,13 @@ function getHostFromUrl(url) {
  * Get circuit breaker state for a host
  */
 async function getCircuitBreakerState(hostName) {
-  const client = getDynamoDBClient();
+  const client = await getDynamoDBClient();
   if (!client) {
     logger.debug({ message: "Circuit breaker disabled (no table configured)" });
     return null;
   }
 
   try {
-    const { GetCommand } = require("@aws-sdk/lib-dynamodb");
     const command = new GetCommand({
       TableName: CIRCUIT_BREAKER_TABLE_NAME,
       Key: { hostName },
@@ -111,13 +115,12 @@ async function getCircuitBreakerState(hostName) {
  * Update circuit breaker state in DynamoDB
  */
 async function updateCircuitBreakerState(state) {
-  const client = getDynamoDBClient();
+  const client = await getDynamoDBClient();
   if (!client) {
     return;
   }
 
   try {
-    const { PutCommand } = require("@aws-sdk/lib-dynamodb");
     const command = new PutCommand({
       TableName: CIRCUIT_BREAKER_TABLE_NAME,
       Item: state,
