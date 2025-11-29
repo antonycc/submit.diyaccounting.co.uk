@@ -126,12 +126,20 @@ public class ProxyStack extends Stack {
         environmentVars.put("BREAKER_LATENCY_MS", props.breakerLatencyMs());
         environmentVars.put("BREAKER_COOLDOWN_SECONDS", props.breakerCooldownSeconds());
 
+        // Determine the path to the proxy function code
+        // When running from root (tests), use "app/functions/proxy"
+        // When running from cdk-environment (deployment), use "../app/functions/proxy"
+        var proxyCodePath = java.nio.file.Paths.get("app/functions/proxy");
+        if (!java.nio.file.Files.exists(proxyCodePath)) {
+            proxyCodePath = java.nio.file.Paths.get("../app/functions/proxy");
+        }
+
         // Create Lambda function for outbound proxy
         this.proxyFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-OutboundProxyFunction")
                 .functionName(props.sharedNames().outboundProxyFunctionName)
                 .runtime(Runtime.NODEJS_22_X)
                 .handler("outboundProxyHandler.handler")
-                .code(Code.fromAsset("app/functions/proxy"))
+                .code(Code.fromAsset(proxyCodePath.toString()))
                 .timeout(Duration.seconds(30))
                 .memorySize(512)
                 .environment(environmentVars)
