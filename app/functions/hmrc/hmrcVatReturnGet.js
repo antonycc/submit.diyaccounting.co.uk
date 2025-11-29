@@ -163,7 +163,7 @@ export async function handler(event) {
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub) {
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
-  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub);
+  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {}, auditForUserSub);
 
   if (!hmrcResponse.ok) {
     // Consumers of this function may choose to map these to HTTP responses
