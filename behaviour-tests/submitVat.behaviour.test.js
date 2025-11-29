@@ -30,6 +30,7 @@ import {
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
+import { assertHmrcApiRequestExists, assertHmrcApiRequestValues, assertConsistentHashedSub } from "./helpers/dynamodb-assertions.js";
 import {
   completeVat,
   fillInVat,
@@ -344,6 +345,107 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     }
   }
 
+  /* ********************************** */
+  /*  ASSERT DYNAMODB HMRC API REQUESTS */
+  /* ********************************** */
+
+  // Assert that HMRC API requests were logged correctly
+  if (runDynamoDb === "run") {
+    const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
+
+    // Assert OAuth token exchange request exists
+    const oauthRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "POST", "/oauth/token", "OAuth token exchange");
+    console.log(`[DynamoDB Assertions]: Found ${oauthRequests.length} OAuth token exchange request(s)`);
+
+    // Assert VAT return POST request exists and validate key fields
+    const vatPostRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "POST",
+      `/organisations/vat/${testVatNumber}/returns`,
+      "VAT return submission",
+    );
+    console.log(`[DynamoDB Assertions]: Found ${vatPostRequests.length} VAT return POST request(s)`);
+
+    if (vatPostRequests.length > 0) {
+      const vatPostRequest = vatPostRequests[0];
+      // Assert that the request body contains the submitted data
+      assertHmrcApiRequestValues(vatPostRequest, {
+        "httpRequest.method": "POST",
+        "httpResponse.statusCode": 201,
+      });
+
+      // Check that request body contains the period key and VAT due amount
+      const requestBody = JSON.parse(vatPostRequest.httpRequest.body);
+      expect(requestBody.periodKey).toBe(hmrcVatPeriodKey.toUpperCase());
+      expect(requestBody.vatDueSales).toBe(parseFloat(hmrcVatDueAmount));
+      console.log("[DynamoDB Assertions]: VAT POST request body validated successfully");
+    }
+
+    // Assert VAT return GET request exists and validate key fields
+    const vatGetRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "GET",
+      `/organisations/vat/${testVatNumber}/returns/${hmrcVatPeriodKey}`,
+      "VAT return retrieval",
+    );
+    console.log(`[DynamoDB Assertions]: Found ${vatGetRequests.length} VAT return GET request(s)`);
+
+    if (vatGetRequests.length > 0) {
+      const vatGetRequest = vatGetRequests[0];
+      // Assert that the response contains the submitted data
+      assertHmrcApiRequestValues(vatGetRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 200,
+      });
+
+      // Check that response body contains the expected data
+      const responseBody = vatGetRequest.httpResponse.body;
+      expect(responseBody.periodKey).toBe(hmrcVatPeriodKey.toUpperCase());
+      expect(responseBody.vatDueSales).toBe(parseFloat(hmrcVatDueAmount));
+      console.log("[DynamoDB Assertions]: VAT GET response body validated successfully");
+    }
+
+    // Assert consistent hashedSub across authenticated requests
+    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
+    console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
+  }
+
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "submit.*vat.*form", // VAT form submission
+    "complete.*vat", // VAT submission completion
+    "hmrc.*auth", // HMRC authorization screen
+    "receipt", // Receipt display
+    "view.*vat.*return.*result", // VAT return results
+  ];
+
+  const screenshotDescriptions = {
+    "submit.*vat.*form": "VAT return form filled out with test data including VAT number, period key, and amount due",
+    "complete.*vat": "Successful VAT return submission confirmation showing receipt details from HMRC",
+    "hmrc.*auth": "HMRC authorization page where user grants permission to access VAT data",
+    "receipt": "Receipt page displaying submitted VAT returns and their confirmation details",
+    "view.*vat.*return.*result": "Retrieved VAT return data showing previously submitted values",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
+
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
     name: testInfo.title,
@@ -362,6 +464,10 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
     },
     testData: {
       hmrcTestUsername: testUsername,
@@ -374,8 +480,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
       userSub,
       observedTraceparent,
+      testUrl,
+      isSandboxMode: isSandboxMode(),
     },
     artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
   };
   try {
     fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");

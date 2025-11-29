@@ -199,6 +199,42 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     }
   }
 
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "goto.*bundles.*page", // Bundles page navigation
+    "clear.*bundle", // Clearing bundles
+    "request.*bundle", // Requesting a bundle
+    "ensure.*bundle", // Bundle present/added
+    "added.*test", // Test bundle added confirmation
+  ];
+
+  const screenshotDescriptions = {
+    "goto.*bundles.*page": "Bundles management page showing available bundle types and current selections",
+    "clear.*bundle": "Bundles page after clearing all bundles showing empty state",
+    "request.*bundle": "Bundle request in progress with Test bundle being added",
+    "ensure.*bundle": "Bundle successfully added showing confirmation with checkmark",
+    "added.*test": "Test bundle successfully added and visible in the bundles list",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
+
   // Build and write testContext.json (no HMRC API directly exercised here)
   const testContext = {
     name: testInfo.title,
@@ -214,9 +250,20 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
     },
-    testData: { userSub, observedTraceparent },
+    testData: {
+      userSub,
+      observedTraceparent,
+      testUrl,
+      bundlesTested: envName === "prod" ? ["Test"] : ["Test", "Guest"],
+    },
     artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
   };
   try {
     fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
