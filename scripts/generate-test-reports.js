@@ -134,11 +134,17 @@ function getPlaywrightReportStatus(testName) {
     const html = fs.readFileSync(indexPath, "utf-8");
 
     // Try to determine pass/fail from HTML content
-    // Playwright HTML reports typically show pass/fail in various ways
-    if (html.includes("passed") || html.includes("✓") || html.includes("All tests passed")) {
+    // Look for specific Playwright HTML patterns indicating test status
+    // Check for failed tests first (more specific)
+    if (html.includes('class="passed"') || html.match(/\b\d+\s+passed\b/i) || html.includes("✓") || html.includes("All tests passed")) {
+      // Check if there are also failures
+      if (html.includes('class="failed"') || html.match(/\b\d+\s+failed\b/i) || html.includes("test failed")) {
+        return { exists: true, status: "failed" };
+      }
       return { exists: true, status: "passed" };
     }
-    if (html.includes("failed") || html.includes("✗") || html.includes("test failed")) {
+
+    if (html.includes('class="failed"') || html.match(/\b\d+\s+failed\b/i) || html.includes("test failed")) {
       return { exists: true, status: "failed" };
     }
 

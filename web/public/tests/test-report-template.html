@@ -251,6 +251,13 @@
         renderHmrcApiRequests(report.hmrcApiRequests || []);
       }
 
+      function escapeHtml(unsafe) {
+        if (typeof unsafe !== "string") {
+          return unsafe;
+        }
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      }
+
       function renderHmrcApiRequests(requests) {
         const section = document.getElementById("hmrcApiSection");
 
@@ -262,8 +269,10 @@
         let html = `<p>Found ${requests.length} HMRC API request(s):</p>`;
 
         requests.forEach((req, index) => {
-          const method = (req.method || "GET").toUpperCase();
-          const url = req.url || req.path || "unknown";
+          const method = escapeHtml((req.method || "GET").toUpperCase());
+          const url = escapeHtml(req.url || req.path || "unknown");
+          const requestJson = escapeHtml(JSON.stringify(req.request || req, null, 2));
+          const responseJson = req.response ? escapeHtml(JSON.stringify(req.response, null, 2)) : null;
 
           html += `
             <div class="api-request">
@@ -272,12 +281,12 @@
                 ${url}
               </h4>
               <h5>Request:</h5>
-              <pre>${JSON.stringify(req.request || req, null, 2)}</pre>
+              <pre>${requestJson}</pre>
               ${
-                req.response
+                responseJson
                   ? `
               <h5>Response:</h5>
-              <pre>${JSON.stringify(req.response, null, 2)}</pre>
+              <pre>${responseJson}</pre>
               `
                   : ""
               }
