@@ -231,18 +231,36 @@
         document.getElementById("loading").style.display = "none";
         document.getElementById("content").style.display = "block";
 
-        // Set title with status
+        // Set title with status safely using DOM manipulation
         const titleElement = document.getElementById("testTitle");
         const status = report.playwrightReport?.status || "unknown";
-        titleElement.innerHTML = `${report.testContext?.title || report.testName} <span class="status ${status}">${status.toUpperCase()}</span>`;
+
+        // Clear previous content
+        titleElement.textContent = "";
+
+        // Add text content safely
+        const titleText = document.createTextNode(report.testContext?.title || report.testName);
+        titleElement.appendChild(titleText);
+
+        // Add status span safely
+        const statusSpan = document.createElement("span");
+        statusSpan.className = `status ${status}`;
+        statusSpan.textContent = status.toUpperCase();
+        titleElement.appendChild(document.createTextNode(" "));
+        titleElement.appendChild(statusSpan);
 
         // Set metadata
         document.getElementById("testName").textContent = report.testName;
         document.getElementById("generatedAt").textContent = new Date(report.generatedAt).toLocaleString();
 
-        // Set Playwright link
+        // Set Playwright link (validate test name)
         const playwrightLink = document.getElementById("playwrightLink");
-        playwrightLink.href = `../${report.testName}/html-report/index.html`;
+        if (/^[a-zA-Z0-9_-]+$/.test(report.testName)) {
+          playwrightLink.href = `../${report.testName}/html-report/index.html`;
+        } else {
+          playwrightLink.href = "#";
+          playwrightLink.style.display = "none";
+        }
 
         // Render test context JSON
         document.getElementById("testContextJson").textContent = JSON.stringify(report.testContext, null, 2);

@@ -107,19 +107,6 @@ function findHmrcApiRequests(dir) {
 }
 
 /**
- * Derive test name from playwright HTML report directory
- */
-function getTestNameFromReportDir(reportDir) {
-  // Expected structure: target/test-reports/<test-name>/html-report/
-  const parts = reportDir.split(path.sep);
-  const reportsIndex = parts.indexOf("test-reports");
-  if (reportsIndex >= 0 && reportsIndex < parts.length - 2) {
-    return parts[reportsIndex + 1];
-  }
-  return null;
-}
-
-/**
  * Check if playwright report exists and extract test status
  */
 function getPlaywrightReportStatus(testName) {

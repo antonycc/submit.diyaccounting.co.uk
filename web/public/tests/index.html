@@ -135,6 +135,12 @@
         return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
       }
 
+      function isValidTestName(testName) {
+        // Allow only alphanumeric characters, hyphens, and underscores
+        // This prevents path traversal attacks
+        return /^[a-zA-Z0-9_-]+$/.test(testName);
+      }
+
       function renderReports(reports) {
         document.getElementById("loadingMessage").style.display = "none";
         document.getElementById("reportsContainer").style.display = "block";
@@ -145,6 +151,13 @@
 
         reports.forEach((report) => {
           const testName = report.testName;
+
+          // Validate test name to prevent path traversal
+          if (!isValidTestName(testName)) {
+            console.warn(`Skipping invalid test name: ${testName}`);
+            return;
+          }
+
           const label = TEST_LABELS[testName] || testName;
           const status = report.playwrightReport?.status || "unknown";
           const statusClass = status === "passed" ? "success" : status === "failed" ? "error" : "warning";
