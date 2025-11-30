@@ -24,7 +24,6 @@ import { createLogger } from "../lib/logger.js";
 const logger = createLogger({ source: "app/bin/server.js" });
 
 dotenvConfigIfNotBlank({ path: ".env" });
-dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

@@ -10,6 +10,9 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   const incomingHeaders = { ...(httpRequest.headers || {}) };
   // Ensure host header is present
   incomingHeaders.host = httpRequest.get("host") || incomingHeaders.host || "localhost:3000";
+  const protocol = httpRequest.protocol || "https";
+  // incomingHeaders.host = httpRequest.get("host") || incomingHeaders.host || "localhost";
+  // const port = httpRequest.get("host")?.split(":")[1] || (httpRequest.protocol === "https" ? "443" : "80");
   // Pass through referer if available via accessor (helps construct full URL in logs)
   const referer = httpRequest.get("referer");
   if (referer) incomingHeaders.referer = referer;
@@ -40,12 +43,16 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
       },
       http: {
         method: httpRequest.method || "GET",
+        protocol,
+        host: incomingHeaders.host,
+        // port,
         path: httpRequest.path,
       },
     },
     path: httpRequest.path,
     headers: incomingHeaders,
     queryStringParameters: httpRequest.query || {},
+    rawQueryString: httpRequest.query || {},
   };
 
   if (httpRequest.params) {

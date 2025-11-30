@@ -117,9 +117,9 @@ describe("httpProxy handler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
     process.env.STATE_TABLE_NAME = "test-proxy-state-table";
-    process.env.HMRC_API_PROXY_MAPPED_PREFIX = "/proxy/hmrc-api";
+    process.env.HMRC_API_PROXY_MAPPED_URL = "/proxy/hmrc-api";
     process.env.HMRC_API_PROXY_EGRESS_URL = "https://upstream.example.com";
-    process.env.HMRC_SANDBOX_API_PROXY_MAPPED_PREFIX = "/proxy/hmrc-sandbox-api";
+    process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL = "/proxy/hmrc-sandbox-api";
     process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL = "https://sandbox.example.com";
     process.env.RATE_LIMIT_PER_SECOND = "5";
     process.env.BREAKER_ERROR_THRESHOLD = "10";

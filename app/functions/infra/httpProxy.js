@@ -17,11 +17,16 @@ const STATE_TABLE = process.env.STATE_TABLE_NAME || "ProxyStateTable";
 // path prefix) and *_EGRESS_URL (the upstream base URL).
 function getProxyMappings() {
   const mappings = [];
-  if (process.env.HMRC_API_PROXY_MAPPED_PREFIX && process.env.HMRC_API_PROXY_EGRESS_URL) {
-    mappings.push({ prefix: process.env.HMRC_API_PROXY_MAPPED_PREFIX, target: process.env.HMRC_API_PROXY_EGRESS_URL });
+  logger.info({ msg: "Building proxy mappings from environment variables" });
+  logger.info({ msg: `HMRC_API_PROXY_MAPPED_URL=${process.env.HMRC_API_PROXY_MAPPED_URL}` });
+  logger.info({ msg: `HMRC_API_PROXY_EGRESS_URL=${process.env.HMRC_API_PROXY_EGRESS_URL}` });
+  logger.info({ msg: `HMRC_SANDBOX_API_PROXY_MAPPED_URL=${process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL}` });
+  logger.info({ msg: `HMRC_SANDBOX_API_PROXY_EGRESS_URL=${process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL}` });
+  if (process.env.HMRC_API_PROXY_MAPPED_URL && process.env.HMRC_API_PROXY_EGRESS_URL) {
+    mappings.push({ prefix: process.env.HMRC_API_PROXY_MAPPED_URL, target: process.env.HMRC_API_PROXY_EGRESS_URL });
   }
-  if (process.env.HMRC_SANDBOX_API_PROXY_MAPPED_PREFIX && process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL) {
-    mappings.push({ prefix: process.env.HMRC_SANDBOX_API_PROXY_MAPPED_PREFIX, target: process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL });
+  if (process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL && process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL) {
+    mappings.push({ prefix: process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL, target: process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL });
   }
   return mappings;
 }
@@ -200,38 +205,61 @@ function proxyRequest(targetUrl, options, body) {
 export async function handler(event) {
   const requestId = context.get("requestId");
 
-  const path = event.rawPath || event.requestContext?.http?.path || "/";
-  const method = event.requestContext?.http?.method || "GET";
-
-  logger.info({ requestId, method, path, msg: "Incoming proxy request" });
+  const method = event.requestContext?.http?.method;
+  const protocol = event.requestContext?.http?.protocol;
+  const host = event.requestContext?.http?.host;
+  // const port = event.requestContext?.http?.port;
+  const path = event.rawPath || event.requestContext?.http?.path;
+  logger.info({ requestId, method, protocol, host, path, msg: "Incoming proxy request" });
+  let urlProtocolHostAndPath;
+  // if (protocol && host && port && path) {
+  //  urlProtocolHostAndPath = `${protocol}://${host}:${port}/${path}`;
+  // } else
+  if (protocol && host && path) {
+    urlProtocolHostAndPath = `${protocol}://${host}/proxy${path}`;
+  } else if (host && path) {
+    urlProtocolHostAndPath = `${host}/proxy${path}`;
+  } else if (path) {
+    urlProtocolHostAndPath = `/proxy${path}`;
+  } else {
+    const message = `Invalid request, missing path: ${JSON.stringify(event)}`;
+    logger.error({ requestId, message });
+    return http400BadRequestResponse({ message });
+  }
 
   const mappings = getProxyMappings();
-  const mapping = matchMapping(path, mappings);
+  const mapping = matchMapping(urlProtocolHostAndPath, mappings);
   if (!mapping) {
-    logger.error({ requestId, path, msg: "No proxy mapping found" });
-    return http400BadRequestResponse({ message: "No proxy mapping" });
+    const message = `No proxy mapping found for path: ${urlProtocolHostAndPath} (available: ${mappings.map((m) => m.prefix).join(", ")})`;
+    logger.error({ requestId, urlProtocolHostAndPath, message });
+    return http400BadRequestResponse({ message });
+  } else {
+    const message = `Matched proxy mapping found for path: ${urlProtocolHostAndPath} (available: ${mappings.map((m) => m.prefix).join(", ")})`;
+    logger.info({ requestId, urlProtocolHostAndPath, mapping, message });
   }
 
-  const suffix = path.substring(mapping.prefix.length) || "/";
   let targetBase;
   try {
-    targetBase = new URL(mapping.target);
+    const urlProtocolHostAndPathTransformed = urlProtocolHostAndPath.replace(mapping.prefix, mapping.target);
+    targetBase = new URL(urlProtocolHostAndPathTransformed);
   } catch (err) {
-    logger.error({ requestId, mapping, err: err.stack ?? err.message, msg: "Invalid target URL in mapping" });
-    return http400BadRequestResponse({ message: "Invalid upstream mapping" });
+    const message = `Invalid target URL in mapping for prefix ${mapping.prefix}: ${mapping.target} in mappings ${JSON.stringify(mappings)} (caused by ${err.message})`;
+    logger.error({ requestId, mapping, err: err.stack, message });
+    return http400BadRequestResponse({ message });
   }
+  logger.info({ requestId, mapping, targetBase: targetBase.toString(), msg: "Proxy target determined" });
 
   // Rate-limit
   const allowed = await checkRateLimit(mapping.prefix, getRateLimitPerSecond(), requestId);
   if (!allowed) {
-    logger.warn({ requestId, mapping: mapping.prefix, msg: "Rate limit exceeded" });
+    logger.warn({ requestId, mapping, msg: `Rate limit ${getRateLimitPerSecond()} exceeded, rejecting request` });
     return { statusCode: 429, headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Rate limit exceeded" }) };
   }
 
   // Circuit breaker
   const breaker = await loadBreakerState(mapping.prefix);
   if (breaker.openSince && Date.now() - breaker.openSince < getBreakerCooldownSeconds() * 1000) {
-    logger.warn({ requestId, mapping: mapping.prefix, msg: "Circuit breaker open, rejecting request" });
+    logger.warn({ requestId, mappingPrefix: mapping.prefix, msg: "Circuit breaker open, rejecting request" });
     return {
       statusCode: 503,
       headers: { "content-type": "application/json" },
@@ -240,7 +268,9 @@ export async function handler(event) {
   }
 
   // Build full upstream URL
+  const suffix = path.substring(mapping.prefix.length) || "/";
   const targetUrl = new URL(suffix + (event.rawQueryString ? `?${event.rawQueryString}` : ""), targetBase);
+  logger.info({ requestId, mappingPrefix: mapping.prefix, targetUrl: targetUrl.toString(), msg: "Proxying request to upstream" });
 
   // Prepare request options
   const headers = { ...event.headers, host: targetBase.host };
@@ -249,6 +279,7 @@ export async function handler(event) {
   const start = Date.now();
   const resp = await proxyRequest(targetUrl, options, event.body);
   const latency = Date.now() - start;
+  logger.info({ requestId, mapping, statusCode: resp.statusCode, latency, msg: "Upstream response received" });
 
   const isError = resp.statusCode >= 500 || latency > getBreakerLatencyMs();
   let errors = breaker.errors;
@@ -258,14 +289,24 @@ export async function handler(event) {
     errors += 1;
     if (errors >= getBreakerErrorThreshold()) {
       openSince = Date.now();
-      logger.error({ requestId, mapping: mapping.prefix, errors, msg: "Circuit breaker triggered Open" });
+      logger.error({ requestId, mappingPrefix: mapping.prefix, errors, msg: "Circuit breaker triggered Open" });
     }
   } else {
     errors = Math.max(0, errors - 1);
   }
 
+  logger.info({
+    requestId,
+    mapping,
+    statusCode: resp.statusCode,
+    latency,
+    errors,
+    openSince,
+    msg: "Upstream response received, saving breaker state",
+  });
   await saveBreakerState(mapping.prefix, errors, openSince);
 
+  logger.info({ requestId, mapping, statusCode: resp.statusCode, msg: "Returning proxy response" });
   return {
     statusCode: resp.statusCode,
     headers: resp.headers,

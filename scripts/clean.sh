@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-rm -rvf target ;
-rm -rvf coverage ;
+rm -rf target ;
+rm -rf coverage ;
 rm -rvf cdk-submit-environment.out ;
 rm -rvf cdk-submit-application.out ;
 rm -rvf dependency-reduced-pom.xml ;
 rm -rvf hmrc-test-user.json ;
-rm -rf node_modules ;
 ./mvnw clean compile -DskipTests ;
-npm ci ;
+npm install ;
 git restore web/public/submit.deployment web/public/submit.env || true ;
