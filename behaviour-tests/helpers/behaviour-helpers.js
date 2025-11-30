@@ -1,5 +1,11 @@
 // behaviour-tests/helpers/behaviour-helpers.js
-import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
+import {
+  startDynamoDB,
+  ensureBundleTableExists,
+  ensureHmrcApiRequestsTableExists,
+  ensureReceiptsTableExists,
+  ensureProxyStateTableExists,
+} from "@app/bin/dynamodb.js";
 import { startNgrok, extractDomainFromUrl } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
@@ -65,15 +71,18 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const bundlesTable = bundleTableName || process.env.BUNDLE_DYNAMODB_TABLE_NAME || "behaviour-bundles";
     const hmrcReqsTable = hmrcApiRequestsTableName || process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME || "behaviour-hmrc-requests";
     const receiptsTable = receiptsTableName || process.env.RECEIPTS_DYNAMODB_TABLE_NAME || "behaviour-receipts";
+    const proxyStateTable = process.env.STATE_TABLE_NAME || process.env.PROXY_STATE_DYNAMODB_TABLE_NAME || "behaviour-proxy-state";
 
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTable;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTable;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTable;
+    process.env.STATE_TABLE_NAME = proxyStateTable;
 
     // Create tables
     await ensureBundleTableExists(bundlesTable, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTable, endpoint);
     await ensureReceiptsTableExists(receiptsTable, endpoint);
+    await ensureProxyStateTableExists(proxyStateTable, endpoint);
   } else {
     logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
   }

@@ -9,8 +9,22 @@ import { http400BadRequestResponse } from "../../lib/responses.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
 const logger = createLogger({ source: "app/functions/infra/httpProxy.js" });
-const dynamo = new DynamoDBClient({});
-const STATE_TABLE = process.env.STATE_TABLE_NAME || "ProxyStateTable";
+
+// Lazily construct a DynamoDB client that honours local dynalite endpoints used in tests
+let __dynamoClient;
+async function getDynamoClient() {
+  if (!__dynamoClient) {
+    const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
+    __dynamoClient = new DynamoDBClient({
+      region: process.env.AWS_REGION || "eu-west-2",
+      ...(endpoint ? { endpoint } : {}),
+    });
+  }
+  return __dynamoClient;
+}
+
+// Table for proxy state (rate limiter + circuit breaker). Keep legacy env var for compatibility
+const STATE_TABLE = process.env.STATE_TABLE_NAME || process.env.PROXY_STATE_DYNAMODB_TABLE_NAME || "ProxyStateTable";
 
 // Build mappings from environment variables at call time so tests that
 // set env vars after import still work. Expect *_MAPPED_PREFIX (incoming
@@ -113,6 +127,7 @@ async function checkRateLimit(keyPrefix, rateLimit, requestId) {
   // DynamoDB-backed counter (not used in tests by default)
   const stateKey = `rate:${keyPrefix}:${nowSec}`;
   try {
+    const dynamo = await getDynamoClient();
     const resp = await dynamo.send(
       new GetItemCommand({
         TableName: STATE_TABLE,
@@ -144,6 +159,7 @@ async function checkRateLimit(keyPrefix, rateLimit, requestId) {
 async function loadBreakerState(keyPrefix) {
   const stateKey = `breaker:${keyPrefix}`;
   try {
+    const dynamo = await getDynamoClient();
     const resp = await dynamo.send(
       new GetItemCommand({
         TableName: STATE_TABLE,
@@ -164,6 +180,7 @@ async function loadBreakerState(keyPrefix) {
  */
 async function saveBreakerState(keyPrefix, errors, openSince) {
   const stateKey = `breaker:${keyPrefix}`;
+  const dynamo = await getDynamoClient();
   await dynamo.send(
     new PutItemCommand({
       TableName: STATE_TABLE,
@@ -188,14 +205,17 @@ function proxyRequest(targetUrl, options, body) {
       res.on("data", (d) => chunks.push(typeof d === "string" ? Buffer.from(d) : d));
       res.on("end", () => {
         const responseBody = Buffer.concat(chunks).toString("utf8");
+        logger.info({ msg: `Upstream response received: ${res.statusCode}`, responseBody });
         resolve({ statusCode: res.statusCode, headers: res.headers, body: responseBody });
       });
     });
     req.on("error", (err) => {
+      logger.error({ err: err.stack ?? err.message, msg: "Upstream request error" });
       resolve({ statusCode: 502, headers: { "content-type": "application/json" }, body: JSON.stringify({ error: err.message }) });
     });
     if (body) req.write(body);
     req.end();
+    logger.info({ msg: `Upstream request sent to ${targetUrl.toString()}` });
   });
 }
 
@@ -250,26 +270,43 @@ export async function handler(event) {
   logger.info({ requestId, mapping, targetBase: targetBase.toString(), msg: "Proxy target determined" });
 
   // Rate-limit
-  const allowed = await checkRateLimit(mapping.prefix, getRateLimitPerSecond(), requestId);
-  if (!allowed) {
-    logger.warn({ requestId, mapping, msg: `Rate limit ${getRateLimitPerSecond()} exceeded, rejecting request` });
-    return { statusCode: 429, headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Rate limit exceeded" }) };
+  try {
+    const allowed = await checkRateLimit(mapping.prefix, getRateLimitPerSecond(), requestId);
+    if (!allowed) {
+      logger.warn({ requestId, mapping, msg: `Rate limit ${getRateLimitPerSecond()} exceeded, rejecting request` });
+      return { statusCode: 429, headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Rate limit exceeded" }) };
+    } else {
+      logger.info({ requestId, mapping, msg: "Rate limit check passed, proceeding" });
+    }
+  } catch (err) {
+    logger.error({ requestId, mapping, err: err.stack ?? err.message, msg: "Rate limit check failed, allowing request" });
   }
 
   // Circuit breaker
-  const breaker = await loadBreakerState(mapping.prefix);
-  if (breaker.openSince && Date.now() - breaker.openSince < getBreakerCooldownSeconds() * 1000) {
-    logger.warn({ requestId, mappingPrefix: mapping.prefix, msg: "Circuit breaker open, rejecting request" });
-    return {
-      statusCode: 503,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ message: "Upstream unavailable (circuit open)" }),
-    };
+  let breaker;
+  try {
+    breaker = await loadBreakerState(mapping.prefix);
+    if (breaker.openSince && Date.now() - breaker.openSince < getBreakerCooldownSeconds() * 1000) {
+      logger.warn({ requestId, mappingPrefix: mapping.prefix, msg: "Circuit breaker open, rejecting request" });
+      return {
+        statusCode: 503,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: "Upstream unavailable (circuit open)" }),
+      };
+    } else if (breaker.openSince) {
+      logger.info({ requestId, mappingPrefix: mapping.prefix, msg: "Circuit breaker cooldown passed, closing breaker" });
+      breaker = { errors: 0, openSince: 0 };
+    } else {
+      logger.info({ requestId, mapping, breaker, msg: "Circuit breaker closed, proceeding" });
+    }
+  } catch (err) {
+    logger.error({ requestId, mapping, err: err.stack ?? err.message, msg: "Circuit breaker load failed, proceeding closed" });
+    breaker = { errors: 0, openSince: 0 };
   }
 
   // Build full upstream URL
-  const suffix = path.substring(mapping.prefix.length) || "/";
-  const targetUrl = new URL(suffix + (event.rawQueryString ? `?${event.rawQueryString}` : ""), targetBase);
+  // const suffix = path.substring(mapping.prefix.length) || "/";
+  const targetUrl = new URL(targetBase.toString() + (event.rawQueryString ? `?${event.rawQueryString}` : ""));
   logger.info({ requestId, mappingPrefix: mapping.prefix, targetUrl: targetUrl.toString(), msg: "Proxying request to upstream" });
 
   // Prepare request options

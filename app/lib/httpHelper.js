@@ -52,7 +52,7 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
     path: httpRequest.path,
     headers: incomingHeaders,
     queryStringParameters: httpRequest.query || {},
-    rawQueryString: httpRequest.query || {},
+    rawQueryString: httpRequest.originalUrl?.split("?")[1] || "",
   };
 
   if (httpRequest.params) {
