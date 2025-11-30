@@ -4,7 +4,9 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import fs from "node:fs";
 import path from "node:path";
-import logger from "../../app/lib/logger.js";
+import { createLogger } from "@app/lib/logger.js";
+
+const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-export.js" });
 
 /**
  * Export all items from a DynamoDB table to a JSONLines file

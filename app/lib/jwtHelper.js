@@ -1,6 +1,8 @@
 // app/lib/jwtHelper.js
 
-import logger from "./logger.js";
+import { createLogger } from "./logger.js";
+
+const logger = createLogger({ source: "app/lib/jwtHelper.js" });
 
 export function decodeJwtNoVerify(token) {
   try {

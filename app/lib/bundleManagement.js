@@ -1,9 +1,11 @@
 // app/lib/bundleEnforcement.js
 
-import logger from "./logger.js";
+import { createLogger } from "./logger.js";
 import { extractRequest, extractUserFromAuthorizerContext } from "./responses.js";
 import { loadCatalogFromRoot } from "./productCatalogHelper.js";
 import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
+
+const logger = createLogger({ source: "app/lib/bundleEnforcement.js" });
 
 export class BundleAuthorizationError extends Error {
   constructor(message, details) {

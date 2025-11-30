@@ -7,9 +7,9 @@ import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
 import fs from "node:fs";
 import path from "node:path";
+import { createLogger } from "../../app/lib/logger.js";
 
-import logger from "@app/lib/logger.js";
-import { validateEnv } from "@app/lib/env.js";
+const logger = createLogger({ source: "behaviour-tests/helpers/behaviour-helpers.js" });
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-helpers";
 

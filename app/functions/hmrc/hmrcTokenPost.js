@@ -1,19 +1,20 @@
 // app/functions/hmrc/hmrcTokenPost.js
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
   buildTokenExchangeResponse,
   buildValidationError,
   http200OkResponse,
+  extractUserFromAuthorizerContext,
 } from "../../lib/responses.js";
-import { extractUserFromAuthorizerContext } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
 const secretsClient = new SecretsManagerClient();
 

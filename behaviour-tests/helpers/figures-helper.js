@@ -2,7 +2,9 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import logger from "../../app/lib/logger.js";
+import { createLogger } from "@app/lib/logger.js";
+
+const logger = createLogger({ source: "behaviour-tests/helpers/figures-helper.js" });
 
 /**
  * Select key screenshots from a screenshots directory
@@ -40,9 +42,7 @@ export function selectKeyScreenshots(screenshotDir, patterns, maxCount = 5) {
     for (const keyword of fallbackKeywords) {
       if (selected.length >= maxCount) break;
       // Use find() to get first match for this keyword instead of filtering all
-      const match = allScreenshots.find(
-        (file) => file.toLowerCase().includes(keyword) && !selected.includes(file),
-      );
+      const match = allScreenshots.find((file) => file.toLowerCase().includes(keyword) && !selected.includes(file));
       if (match) {
         selected.push(match);
       }

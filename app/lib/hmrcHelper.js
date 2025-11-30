@@ -1,10 +1,12 @@
 // app/lib/hmrcHelper.js
 
 import { v4 as uuidv4 } from "uuid";
-import logger, { context } from "./logger.js";
+import { createLogger, context } from "./logger.js";
 import { BundleEntitlementError } from "./bundleManagement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
 import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
+
+const logger = createLogger({ source: "app/lib/hmrcHelper.js" });
 
 export function getHmrcBaseUrl(hmrcAccount) {
   // TODO: Ensure we always have these when otherwise stable and remove defaults

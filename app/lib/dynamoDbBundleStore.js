@@ -1,7 +1,9 @@
 // app/lib/dynamoDbBundleStore.js
 
-import logger from "./logger.js";
+import { createLogger } from "./logger.js";
 import { hashSub } from "./subHasher.js";
+
+const logger = createLogger({ source: "app/lib/dynamoDbBundleStore.js" });
 
 let __dynamoDbModule;
 let __dynamoDbDocClient;

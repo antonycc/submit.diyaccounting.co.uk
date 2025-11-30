@@ -1,6 +1,6 @@
 // app/functions/submitVat.js
 
-import { logger, context } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -20,6 +20,8 @@ import {
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
 } from "../../lib/hmrcHelper.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {

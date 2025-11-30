@@ -3,7 +3,9 @@
 // Falls back to decode-only if verification explicitly disabled via env.
 
 import { createRemoteJWKSet, jwtVerify } from "jose";
-import logger from "./logger.js";
+import { createLogger } from "./logger.js";
+
+const logger = createLogger({ source: "app/lib/jwtVerifier.js" });
 
 function base64UrlDecodePayload(token) {
   try {

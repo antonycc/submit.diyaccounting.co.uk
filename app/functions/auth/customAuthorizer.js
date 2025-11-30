@@ -2,8 +2,10 @@
 // Custom Lambda authorizer that extracts JWT from X-Authorization header
 // and validates it against Cognito, similar to native JWT authorizer
 
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
+
+const logger = createLogger({ source: "app/functions/auth/customAuthorizer.js" });
 
 // Cache the verifier instance across Lambda invocations
 let verifier = null;

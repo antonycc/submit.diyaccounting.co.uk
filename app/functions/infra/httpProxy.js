@@ -6,36 +6,51 @@ import http from "http";
 import https from "https";
 import { createLogger, context } from "../../lib/logger.js";
 import { http400BadRequestResponse } from "../../lib/responses.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "@app/lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 
 const logger = createLogger({ source: "app/functions/infra/httpProxy.js" });
 const dynamo = new DynamoDBClient({});
 const STATE_TABLE = process.env.STATE_TABLE_NAME || "ProxyStateTable";
 
-// Load mappings at startup from environment variables:
-// Expect *_MAPPED_PREFIX (the incoming path prefix) and *_EGRESS_URL (the upstream base URL)
-const proxyMappings = [
-  ...(process.env.HMRC_API_PROXY_MAPPED_PREFIX && process.env.HMRC_API_PROXY_EGRESS_URL
-    ? [{ prefix: process.env.HMRC_API_PROXY_MAPPED_PREFIX, target: process.env.HMRC_API_PROXY_EGRESS_URL }]
-    : []),
-  ...(process.env.HMRC_SANDBOX_API_PROXY_MAPPED_PREFIX && process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL
-    ? [{ prefix: process.env.HMRC_SANDBOX_API_PROXY_MAPPED_PREFIX, target: process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL }]
-    : []),
-  // add more mappings as needed
-];
+// Build mappings from environment variables at call time so tests that
+// set env vars after import still work. Expect *_MAPPED_PREFIX (incoming
+// path prefix) and *_EGRESS_URL (the upstream base URL).
+function getProxyMappings() {
+  const mappings = [];
+  if (process.env.HMRC_API_PROXY_MAPPED_PREFIX && process.env.HMRC_API_PROXY_EGRESS_URL) {
+    mappings.push({ prefix: process.env.HMRC_API_PROXY_MAPPED_PREFIX, target: process.env.HMRC_API_PROXY_EGRESS_URL });
+  }
+  if (process.env.HMRC_SANDBOX_API_PROXY_MAPPED_PREFIX && process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL) {
+    mappings.push({ prefix: process.env.HMRC_SANDBOX_API_PROXY_MAPPED_PREFIX, target: process.env.HMRC_SANDBOX_API_PROXY_EGRESS_URL });
+  }
+  return mappings;
+}
 
-const RATE_LIMIT_PER_SECOND = Number(process.env.RATE_LIMIT_PER_SECOND || "10");
-const BREAKER_ERROR_THRESHOLD = Number(process.env.BREAKER_ERROR_THRESHOLD || "10");
-const BREAKER_LATENCY_MS = Number(process.env.BREAKER_LATENCY_MS || "5000");
-const BREAKER_COOLDOWN_SECONDS = Number(process.env.BREAKER_COOLDOWN_SECONDS || "60");
+function getRateLimitPerSecond() {
+  return Number(process.env.RATE_LIMIT_PER_SECOND || "10");
+}
+function getBreakerErrorThreshold() {
+  return Number(process.env.BREAKER_ERROR_THRESHOLD || "10");
+}
+function getBreakerLatencyMs() {
+  return Number(process.env.BREAKER_LATENCY_MS || "5000");
+}
+function getBreakerCooldownSeconds() {
+  return Number(process.env.BREAKER_COOLDOWN_SECONDS || "60");
+}
 
 // Server hook for Express app
 export function apiEndpoint(app) {
-  app.all("/proxy/*", async (httpRequest, httpResponse) => {
+  // Mount under a static prefix to avoid path-to-regexp wildcard parsing
+  // differences across versions. This catches all methods and subpaths
+  // beneath "/proxy" without needing patterns like ":path*".
+  const onProxy = async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  };
+
+  app.use("/proxy", onProxy);
 }
 
 /**
@@ -64,8 +79,8 @@ export function apiEndpoint(app) {
 /**
  * Find which mapping (if any) matches the incoming path.
  */
-function matchMapping(path) {
-  for (const m of proxyMappings) {
+function matchMapping(path, mappings) {
+  for (const m of mappings) {
     if (path.startsWith(m.prefix)) {
       return m;
     }
@@ -74,10 +89,23 @@ function matchMapping(path) {
 }
 
 /**
- * Rate-limit using DynamoDB per-second counters.
+ * Rate-limit using in-memory per-second counters for test/runtime stability.
+ * Falls back to DynamoDB if explicitly configured via PROXY_RATE_LIMIT_STORE="dynamo".
  */
+const inMemoryRateCounts = new Map();
 async function checkRateLimit(keyPrefix, rateLimit, requestId) {
+  const useDynamo = process.env.PROXY_RATE_LIMIT_STORE === "dynamo";
   const nowSec = Math.floor(Date.now() / 1000);
+
+  if (!useDynamo) {
+    const key = `${keyPrefix}:${nowSec}`;
+    const next = (inMemoryRateCounts.get(key) || 0) + 1;
+    inMemoryRateCounts.set(key, next);
+    logger.info({ requestId, keyPrefix, second: nowSec, count: next, limit: rateLimit, msg: "In-memory rate check" });
+    return next <= rateLimit;
+  }
+
+  // DynamoDB-backed counter (not used in tests by default)
   const stateKey = `rate:${keyPrefix}:${nowSec}`;
   try {
     const resp = await dynamo.send(
@@ -152,7 +180,7 @@ function proxyRequest(targetUrl, options, body) {
     const client = targetUrl.protocol === "https:" ? https : http;
     const req = client.request(targetUrl, options, (res) => {
       const chunks = [];
-      res.on("data", (d) => chunks.push(d));
+      res.on("data", (d) => chunks.push(typeof d === "string" ? Buffer.from(d) : d));
       res.on("end", () => {
         const responseBody = Buffer.concat(chunks).toString("utf8");
         resolve({ statusCode: res.statusCode, headers: res.headers, body: responseBody });
@@ -177,7 +205,8 @@ export async function handler(event) {
 
   logger.info({ requestId, method, path, msg: "Incoming proxy request" });
 
-  const mapping = matchMapping(path);
+  const mappings = getProxyMappings();
+  const mapping = matchMapping(path, mappings);
   if (!mapping) {
     logger.error({ requestId, path, msg: "No proxy mapping found" });
     return http400BadRequestResponse({ message: "No proxy mapping" });
@@ -193,7 +222,7 @@ export async function handler(event) {
   }
 
   // Rate-limit
-  const allowed = await checkRateLimit(mapping.prefix, RATE_LIMIT_PER_SECOND, requestId);
+  const allowed = await checkRateLimit(mapping.prefix, getRateLimitPerSecond(), requestId);
   if (!allowed) {
     logger.warn({ requestId, mapping: mapping.prefix, msg: "Rate limit exceeded" });
     return { statusCode: 429, headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Rate limit exceeded" }) };
@@ -201,7 +230,7 @@ export async function handler(event) {
 
   // Circuit breaker
   const breaker = await loadBreakerState(mapping.prefix);
-  if (breaker.openSince && Date.now() - breaker.openSince < BREAKER_COOLDOWN_SECONDS * 1000) {
+  if (breaker.openSince && Date.now() - breaker.openSince < getBreakerCooldownSeconds() * 1000) {
     logger.warn({ requestId, mapping: mapping.prefix, msg: "Circuit breaker open, rejecting request" });
     return {
       statusCode: 503,
@@ -221,13 +250,13 @@ export async function handler(event) {
   const resp = await proxyRequest(targetUrl, options, event.body);
   const latency = Date.now() - start;
 
-  const isError = resp.statusCode >= 500 || latency > BREAKER_LATENCY_MS;
+  const isError = resp.statusCode >= 500 || latency > getBreakerLatencyMs();
   let errors = breaker.errors;
   let openSince = breaker.openSince;
 
   if (isError) {
     errors += 1;
-    if (errors >= BREAKER_ERROR_THRESHOLD) {
+    if (errors >= getBreakerErrorThreshold()) {
       openSince = Date.now();
       logger.error({ requestId, mapping: mapping.prefix, errors, msg: "Circuit breaker triggered Open" });
     }

@@ -1,7 +1,9 @@
 // app/lib/dynamoDbHmrcApiRequestStore.js
 
-import logger, { context } from "./logger.js";
+import { createLogger, context } from "./logger.js";
 import { hashSub } from "./subHasher.js";
+
+const logger = createLogger({ source: "app/lib/dynamoDbHmrcApiRequestStore.js" });
 
 let __dynamoDbModule;
 let __dynamoDbDocClient;

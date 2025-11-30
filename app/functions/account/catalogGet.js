@@ -4,8 +4,6 @@ import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
 import { createLogger } from "../../lib/logger.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 
 const logger = createLogger({ source: "app/functions/account/catalogGet.js" });
 

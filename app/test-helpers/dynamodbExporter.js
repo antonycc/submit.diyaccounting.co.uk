@@ -5,7 +5,9 @@ import path from "path";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { hashSub } from "../lib/subHasher.js";
-import logger from "../lib/logger.js";
+import { createLogger } from "../lib/logger.js";
+
+const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-export.js" });
 
 /**
  * Creates a DynamoDB Document Client based on environment configuration

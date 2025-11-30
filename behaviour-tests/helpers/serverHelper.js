@@ -1,7 +1,9 @@
 // behaviour-tests/helpers/serverHelper.js
 
-import logger from "@app/lib/logger.js";
+import { createLogger } from "@app/lib/logger.js";
 import { setTimeout } from "timers/promises";
+
+const logger = createLogger({ source: "behaviour-tests/helpers/serverHelper.js" });
 
 export async function checkIfServerIsRunning(url, delay = 500, runServer = undefined, label = "") {
   let serverReady = false;

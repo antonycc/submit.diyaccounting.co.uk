@@ -5,6 +5,7 @@ import {
   extractRequest,
   http200OkResponse,
   http500ServerErrorResponse,
+  extractUserFromAuthorizerContext,
   parseRequestBody,
   buildValidationError,
 } from "../../lib/responses.js";
@@ -14,7 +15,6 @@ import { enforceBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 import { putReceipt } from "../../lib/dynamoDbReceiptStore.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
-import { extractUserFromAuthorizerContext } from "../../lib/responses.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptPost.js" });
 

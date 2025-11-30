@@ -1,9 +1,10 @@
 // behaviour-tests/helpers/dynamodb-assertions.js
 
 import fs from "node:fs";
-import path from "node:path";
 import { expect } from "@playwright/test";
-import logger from "../../app/lib/logger.js";
+import { createLogger } from "@app/lib/logger.js";
+
+const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-assertions.js" });
 
 /**
  * Read and parse a JSONL file exported from DynamoDB

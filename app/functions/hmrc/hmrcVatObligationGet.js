@@ -1,6 +1,6 @@
 // app/functions/hmrc/hmrcVatObligationGet.js
 
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -24,6 +24,8 @@ import {
   http403ForbiddenFromBundleEnforcement,
 } from "../../lib/hmrcHelper.js";
 import { enforceBundles } from "../../lib/bundleManagement.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
