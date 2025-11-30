@@ -18,6 +18,17 @@ cleanup() {
 
 trap cleanup INT TERM EXIT
 
+echo 'Starting data (dynalite)...' >&2
+npm run data &
+BG_PIDS+=("$!")
+
+# Dynalite config
+export AWS_REGION='us-east-1'
+export AWS_ACCESS_KEY_ID='dummy'
+export AWS_SECRET_ACCESS_KEY='dummy'
+export AWS_ENDPOINT_URL='http://127.0.0.1:9000'
+export AWS_ENDPOINT_URL_DYNAMODB='http://127.0.0.1:9000'
+
 echo 'Starting auth (mock-oauth2-server)...' >&2
 npm run auth &
 BG_PIDS+=("$!")

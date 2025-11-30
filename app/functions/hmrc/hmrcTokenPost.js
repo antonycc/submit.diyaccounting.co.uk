@@ -55,6 +55,7 @@ export async function handler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "HMRC_SANDBOX_CLIENT_ID",
     "DIY_SUBMIT_BASE_URL",
+    "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
   ];
   if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");

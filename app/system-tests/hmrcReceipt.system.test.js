@@ -1,8 +1,6 @@
 // app/system-tests/hmrcReceipt.system.test.js
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-//import { mockClient } from "aws-sdk-client-mock";
-import { Readable } from "stream";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcReceiptPostHandler } from "../functions/hmrc/hmrcReceiptPost.js";
 import { handler as hmrcReceiptGetHandler } from "../functions/hmrc/hmrcReceiptGet.js";
@@ -10,13 +8,14 @@ import { buildLambdaEvent, makeIdToken } from "../test-helpers/eventBuilders.js"
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
+import { ensureReceiptsTableExists, ensureBundleTableExists } from "@app/bin/dynamodb.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 let stopDynalite;
 let importedDynamoDbReceiptStore;
 const receiptsTableName = "system-test-vat-journey-receipts";
+const bundleTableName = "test-bundle-table";
 
 function makeDocClient() {
   const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
@@ -36,7 +35,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
   const testToken = makeIdToken(testUserSub);
 
   beforeAll(async () => {
-    const { ensureReceiptsTableExists } = await import("../bin/dynamodb.js");
+    const { ensureReceiptsTableExists, ensureBundleTableExists } = await import("../bin/dynamodb.js");
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
@@ -57,11 +56,11 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
     process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
-    //process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
-    //process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundleTableName;
 
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
+    await ensureBundleTableExists(bundleTableName, endpoint);
 
     importedDynamoDbReceiptStore = await import("../lib/dynamoDbReceiptStore.js");
   });
@@ -77,7 +76,6 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
     Object.assign(
       process.env,
       setupTestEnv({
-        DIY_SUBMIT_RECEIPTS_BUCKET_NAME: "test-receipts-bucket",
         RECEIPTS_DYNAMODB_TABLE_NAME: receiptsTableName,
       }),
     );

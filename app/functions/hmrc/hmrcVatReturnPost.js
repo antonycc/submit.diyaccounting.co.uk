@@ -68,7 +68,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "RECEIPTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["HMRC_BASE_URI", "RECEIPTS_DYNAMODB_TABLE_NAME", "BUNDLE_DYNAMODB_TABLE_NAME", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];

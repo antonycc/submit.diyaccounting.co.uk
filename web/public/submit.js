@@ -489,7 +489,7 @@ function fetchWithId(url, opts = {}) {
         viewSrc.href = viewSrc.href || "#";
         viewSrc.setAttribute("data-href-initialized", "true");
       }
-      if (tests) tests.href = "/tests/html-report/index.html";
+      if (tests) tests.href = "/tests/index.html";
       if (apiDocs) apiDocs.href = "/docs/index.html";
 
       setDisplay(viewSrc, enabled ? "inline" : "none");

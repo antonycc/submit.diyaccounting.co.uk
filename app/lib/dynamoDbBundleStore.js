@@ -202,10 +202,10 @@ export async function getUserBundles(userId) {
     return bundles;
   } catch (error) {
     logger.error({
-      message: "Error retrieving bundles from DynamoDB",
+      message: `Error retrieving bundles from DynamoDB table ${getTableName()}`,
       error: error.message,
       userId,
     });
-    return [];
+    throw error;
   }
 }

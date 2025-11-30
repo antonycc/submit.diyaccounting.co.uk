@@ -67,7 +67,7 @@ export function extractAndValidateParameters(event, errorMessages, userSub) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["RECEIPTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "RECEIPTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };

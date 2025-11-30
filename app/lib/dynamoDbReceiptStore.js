@@ -215,6 +215,6 @@ export async function listUserReceipts(userSub) {
       error: error.message,
       userSub,
     });
-    return [];
+    throw error;
   }
 }

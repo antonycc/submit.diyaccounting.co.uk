@@ -17,6 +17,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 let bm;
 let stopDynalite;
 const bundlesTableName = "test-bundle-table";
+const receiptsTableName = "test-receipts-table";
 
 describe("System: HMRC VAT Scenarios with Test Parameters", () => {
   beforeAll(async () => {
@@ -42,6 +43,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
+    process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
 
     await ensureBundleTableExists(bundlesTableName, endpoint);
 

@@ -173,6 +173,7 @@ export async function ensureReceiptsTableExists(tableName, endpoint) {
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const bundleTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
+  const receiptsTableName = process.env.RECEIPTS_DYNAMODB_TABLE_NAME;
   const hmrcApiRequestsTableName = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
 
   let stop;
@@ -190,6 +191,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     if (hmrcApiRequestsTableName) {
       await ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
+    }
+    if (receiptsTableName) {
+      await ensureReceiptsTableExists(receiptsTableName, endpoint);
     }
 
     logger.info("DynamoDB Local server is running. Press CTRL-C to stop.");
