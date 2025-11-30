@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -228,8 +229,8 @@ public class SubmitSharedNames {
     public String outboundProxyFunctionName;
     public String outboundProxyFunctionArn;
     public String proxyApiName;
-    public String hmrcApiProxyHost;
-    public String hmrcSandboxApiProxyHost;
+    public String hmrcApiProxyMappedUrl;
+    public String hmrcSandboxApiProxyMappedUrl;
 
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
@@ -334,9 +335,9 @@ public class SubmitSharedNames {
         this.outboundProxyFunctionArn = "arn:aws:lambda:%s:%s:function:%s"
                 .formatted(props.regionName, props.awsAccount, this.outboundProxyFunctionName);
         this.proxyApiName = "%s-proxy-api".formatted(this.envResourceNamePrefix);
-        this.hmrcApiProxyHost = "%s-hmrc-api-proxy.%s.%s"
+        this.hmrcApiProxyMappedUrl = "%s-hmrc-api-proxy.%s.%s"
                 .formatted(props.envName, props.subDomainName, props.hostedZoneName);
-        this.hmrcSandboxApiProxyHost = "%s-hmrc-sandbox-api-proxy.%s.%s"
+        this.hmrcSandboxApiProxyMappedUrl = "%s-hmrc-sandbox-api-proxy.%s.%s"
                 .formatted(props.envName, props.subDomainName, props.hostedZoneName);
 
         this.trailName = "%s-trail".formatted(this.envResourceNamePrefix);

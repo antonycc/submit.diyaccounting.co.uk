@@ -1,7 +1,9 @@
 // app/lib/httpHelper.js
 
-import logger, { context } from "./logger.js";
+import { createLogger, context } from "./logger.js";
 import { decodeJwtNoVerify } from "./jwtHelper.js";
+
+const logger = createLogger({ source: "app/lib/httpHelper.js" });
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)

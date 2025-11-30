@@ -87,7 +87,7 @@ const response = await fetch("https://api.example.com/endpoint", {
 ```javascript
 const response = await fetch("https://my-api-proxy.submit.diyaccounting.co.uk/endpoint", {
   method: "GET",
-  headers: { 
+  headers: {
     host: "my-api-proxy.submit.diyaccounting.co.uk",
     ...
   }
@@ -173,7 +173,7 @@ this.proxyStack = new ProxyStack(
 npm run test:unit
 ```
 
-Tests are located in `app/unit-tests/functions/outboundProxyHandler.test.js`
+Tests are located in `app/unit-tests/functions/httpProxy.test.js`
 
 ### System Tests
 

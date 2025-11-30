@@ -10,7 +10,9 @@ import dynalite from "dynalite";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
-import logger from "../lib/logger.js";
+import { createLogger } from "../lib/logger.js";
+
+const logger = createLogger({ source: "app/bin/dynamodb.js" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

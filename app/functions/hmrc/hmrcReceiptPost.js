@@ -1,6 +1,6 @@
 // app/functions/hmrc/hmrcReceiptPost.js
 
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -15,6 +15,8 @@ import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
 import { putReceipt } from "../../lib/dynamoDbReceiptStore.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 import { extractUserFromAuthorizerContext } from "../../lib/responses.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptPost.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {

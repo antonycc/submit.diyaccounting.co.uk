@@ -1,6 +1,6 @@
 // app/functions/auth/cognitoAuthUrlGet.js
 
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse, buildValidationError } from "../../lib/responses.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
@@ -13,6 +13,8 @@ export function apiEndpoint(app) {
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
 }
+
+const logger = createLogger({ source: "app/functions/auth/cognitoAuthUrlGet.js" });
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};

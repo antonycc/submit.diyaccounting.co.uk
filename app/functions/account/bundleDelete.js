@@ -1,7 +1,7 @@
 // app/functions/account/bundleDelete.js
 
 import { validateEnv } from "../../lib/env.js";
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
@@ -14,6 +14,8 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, http404NotFound } from "../../lib/httpHelper.js";
 import { enforceBundles, getUserBundles, updateUserBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
+
+const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {

@@ -22,7 +22,7 @@
     "docker:build": "docker build -t submit-base:latest -f Dockerfile .",
     "cdk:synth-environment": "cd cdk-environment && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation && cd ..",
     "cdk:synth-application": "cd cdk-application && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation && cd ..",
-    "cdk":    "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-environment && ENVIRONMENT_NAME=prod npm run cdk:synth-application && ENVIRONMENT_NAME=prod && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests",
+    "cdk": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-environment && ENVIRONMENT_NAME=prod npm run cdk:synth-application && ENVIRONMENT_NAME=prod && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests",
     "cdk-ci": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=ci   npm run cdk:synth-environment && ENVIRONMENT_NAME=ci   npm run cdk:synth-application && ENVIRONMENT_NAME=ci   && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests",
     "update-to-minor": "npx npm-check-updates --upgrade --enginesNode --target minor    --verbose --install always",
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
@@ -63,6 +63,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudformation": "^3.940.0",
     "@aws-sdk/client-secrets-manager": "^3.940.0",
+    "@aws-sdk/util-dynamodb": "^3.940.0",
     "@iarna/toml": "^3.0.0",
     "aws-jwt-verify": "^5.1.1",
     "dotenv": "^17.2.3",

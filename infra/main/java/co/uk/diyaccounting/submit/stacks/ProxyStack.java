@@ -1,10 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -31,6 +28,8 @@ import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class ProxyStack extends Stack {
 
@@ -66,13 +65,13 @@ public class ProxyStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        String hmrcApiHost();
+        String hmrcApiProxyEgressUrl();
 
-        String hmrcSandboxApiHost();
+        String hmrcSandboxApiProxyEgressUrl();
 
-        String hmrcApiProxyHost();
+        String hmrcApiProxyMappedUrl();
 
-        String hmrcSandboxApiProxyHost();
+        String hmrcSandboxApiProxyMappedUrl();
 
         String rateLimitPerSecond();
 
@@ -117,10 +116,10 @@ public class ProxyStack extends Stack {
         // Build environment variables with explicit proxy configuration
         var environmentVars = new java.util.HashMap<String, String>();
         environmentVars.put("STATE_TABLE_NAME", this.proxyStateTable.getTableName());
-        environmentVars.put("HMRC_API_HOST", props.hmrcApiHost());
-        environmentVars.put("HMRC_SANDBOX_API_HOST", props.hmrcSandboxApiHost());
-        environmentVars.put("HMRC_API_PROXY_HOST", props.hmrcApiProxyHost());
-        environmentVars.put("HMRC_SANDBOX_API_PROXY_HOST", props.hmrcSandboxApiProxyHost());
+        environmentVars.put("HMRC_API_PROXY_MAPPED_URL", props.hmrcApiProxyMappedUrl());
+        environmentVars.put("HMRC_API_PROXY_EGRESS_URL", props.hmrcApiProxyEgressUrl());
+        environmentVars.put("HMRC_SANDBOX_API_PROXY_MAPPED_URL", props.hmrcSandboxApiProxyMappedUrl());
+        environmentVars.put("HMRC_SANDBOX_API_PROXY_EGRESS_URL", props.hmrcSandboxApiProxyEgressUrl());
         environmentVars.put("RATE_LIMIT_PER_SECOND", props.rateLimitPerSecond());
         environmentVars.put("BREAKER_ERROR_THRESHOLD", props.breakerErrorThreshold());
         environmentVars.put("BREAKER_LATENCY_MS", props.breakerLatencyMs());
@@ -138,7 +137,7 @@ public class ProxyStack extends Stack {
         this.proxyFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-OutboundProxyFunction")
                 .functionName(props.sharedNames().outboundProxyFunctionName)
                 .runtime(Runtime.NODEJS_22_X)
-                .handler("outboundProxyHandler.handler")
+                .handler("httpProxy.handler")
                 .code(Code.fromAsset(proxyCodePath.toString()))
                 .timeout(Duration.seconds(30))
                 .memorySize(512)

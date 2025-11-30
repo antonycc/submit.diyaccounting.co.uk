@@ -5,6 +5,8 @@ import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
 import { apiEndpoint as catalogGetApiEndpoint } from "../functions/account/catalogGet.js";
+import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
+import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
@@ -15,10 +17,11 @@ import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmr
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmrcReceiptPost.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
-import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
-import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
+import { apiEndpoint as httpProxyEndpoint } from "../functions/infra/httpProxy.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
-import logger from "../lib/logger.js";
+import { createLogger } from "../lib/logger.js";
+
+const logger = createLogger({ source: "app/bin/server.js" });
 
 dotenvConfigIfNotBlank({ path: ".env" });
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -59,11 +62,11 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
 catalogGetApiEndpoint(app);
+mockAuthUrlGetApiEndpoint(app);
+mockTokenPostApiEndpoint(app);
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
-mockAuthUrlGetApiEndpoint(app);
-mockTokenPostApiEndpoint(app);
 hmrcAuthUrlGetApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
@@ -71,6 +74,7 @@ hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptPostApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
+httpProxyEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {
@@ -85,6 +89,7 @@ const __argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
 const __runDirect = __thisFile === __argv1 || String(process.env.TEST_SERVER_HTTP || "") === "run";
 
 if (__runDirect) {
+  // TODO: Get rid of this and make it always strict once otherwise stable
   const strict = process.env.STRICT_ENV_VALIDATION === "true";
   try {
     if (strict) {
@@ -93,9 +98,13 @@ if (__runDirect) {
         "COGNITO_CLIENT_ID",
         "COGNITO_BASE_URI",
         "HMRC_BASE_URI",
+        "HMRC_API_PROXY_MAPPED_URL",
+        "HMRC_API_PROXY_EGRESS_URL",
+        "HMRC_SANDBOX_BASE_URI",
+        "HMRC_SANDBOX_API_PROXY_MAPPED_URL",
+        "HMRC_SANDBOX_API_PROXY_EGRESS_URL",
         "HMRC_CLIENT_ID",
         "HMRC_CLIENT_SECRET_ARN",
-        "HMRC_SANDBOX_BASE_URI",
         "HMRC_SANDBOX_CLIENT_ID",
         "HMRC_SANDBOX_CLIENT_SECRET_ARN",
         "DIY_SUBMIT_RECEIPTS_BUCKET_NAME",

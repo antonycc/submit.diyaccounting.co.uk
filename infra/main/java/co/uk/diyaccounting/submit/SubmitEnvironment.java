@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
@@ -11,11 +7,16 @@ import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.stacks.ProxyStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import java.lang.reflect.Field;
-import java.nio.file.Paths;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.constructs.Construct;
+
+import java.lang.reflect.Field;
+import java.nio.file.Paths;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitEnvironment {
 
@@ -44,10 +45,10 @@ public class SubmitEnvironment {
         public String googleClientSecretArn;
         public String antonyccClientId;
         public String antonyccBaseUri;
-        public String hmrcApiHost;
-        public String hmrcSandboxApiHost;
-        public String hmrcApiProxyHost;
-        public String hmrcSandboxApiProxyHost;
+        public String hmrcApiProxyEgressUrl;
+        public String hmrcSandboxApiProxyEgressUrl;
+        public String hmrcApiProxyMappedUrl;
+        public String hmrcSandboxApiProxyMappedUrl;
         public String proxyRateLimitPerSecond;
         public String proxyBreakerErrorThreshold;
         public String proxyBreakerLatencyMs;
@@ -115,16 +116,14 @@ public class SubmitEnvironment {
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
-        
+
         // Proxy configuration
-        var hmrcApiHost = envOr("HMRC_API_HOST", appProps.hmrcApiHost, "test-api.service.hmrc.gov.uk");
-        var hmrcSandboxApiHost = envOr("HMRC_SANDBOX_API_HOST", appProps.hmrcSandboxApiHost, "test-api.service.hmrc.gov.uk");
-        var hmrcApiProxyHost = envOr("HMRC_API_PROXY_HOST", appProps.hmrcApiProxyHost, sharedNames.hmrcApiProxyHost);
-        var hmrcSandboxApiProxyHost = envOr("HMRC_SANDBOX_API_PROXY_HOST", appProps.hmrcSandboxApiProxyHost, sharedNames.hmrcSandboxApiProxyHost);
-        var proxyRateLimitPerSecond = envOr("PROXY_RATE_LIMIT_PER_SECOND", appProps.proxyRateLimitPerSecond, "10");
-        var proxyBreakerErrorThreshold = envOr("PROXY_BREAKER_ERROR_THRESHOLD", appProps.proxyBreakerErrorThreshold, "10");
-        var proxyBreakerLatencyMs = envOr("PROXY_BREAKER_LATENCY_MS", appProps.proxyBreakerLatencyMs, "5000");
-        var proxyBreakerCooldownSeconds = envOr("PROXY_BREAKER_COOLDOWN_SECONDS", appProps.proxyBreakerCooldownSeconds, "60");
+        var hmrcApiProxyEgressUrl = envOr("HMRC_API_PROXY_EGRESS_URL", appProps.hmrcApiProxyEgressUrl);
+        var hmrcSandboxApiProxyEgressUrl = envOr("HMRC_SANDBOX_API_PROXY_EGRESS_URL", appProps.hmrcSandboxApiProxyEgressUrl);
+        var proxyRateLimitPerSecond = envOr("PROXY_RATE_LIMIT_PER_SECOND", appProps.proxyRateLimitPerSecond);
+        var proxyBreakerErrorThreshold = envOr("PROXY_BREAKER_ERROR_THRESHOLD", appProps.proxyBreakerErrorThreshold);
+        var proxyBreakerLatencyMs = envOr("PROXY_BREAKER_LATENCY_MS", appProps.proxyBreakerLatencyMs);
+        var proxyBreakerCooldownSeconds = envOr("PROXY_BREAKER_COOLDOWN_SECONDS", appProps.proxyBreakerCooldownSeconds);
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -196,10 +195,10 @@ public class SubmitEnvironment {
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
-                        .hmrcApiHost(hmrcApiHost)
-                        .hmrcSandboxApiHost(hmrcSandboxApiHost)
-                        .hmrcApiProxyHost(hmrcApiProxyHost)
-                        .hmrcSandboxApiProxyHost(hmrcSandboxApiProxyHost)
+                        .hmrcApiProxyEgressUrl(hmrcApiProxyEgressUrl)
+                        .hmrcSandboxApiProxyEgressUrl(hmrcSandboxApiProxyEgressUrl)
+                        .hmrcApiProxyMappedUrl(sharedNames.hmrcApiProxyMappedUrl)
+                        .hmrcSandboxApiProxyMappedUrl(sharedNames.hmrcSandboxApiProxyMappedUrl)
                         .rateLimitPerSecond(proxyRateLimitPerSecond)
                         .breakerErrorThreshold(proxyBreakerErrorThreshold)
                         .breakerLatencyMs(proxyBreakerLatencyMs)

@@ -17,6 +17,10 @@ const logToFile = process.env.LOG_TO_FILE === "true"; // default off
 
 let destinationStream;
 
+export function createLogger(bindings = {}) {
+  return logger.child(bindings);
+}
+
 if (logToConsole && logToFile) {
   // Both console and file
   const timestamp = new Date().toISOString().replace(/:/g, "-");

@@ -2,12 +2,14 @@
 
 import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
 import { enforceBundles, getUserBundles } from "../../lib/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
+
+const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
 function parseIsoDurationToDate(fromDate, iso) {
   // Minimal support for PnD, PnM, PnY
