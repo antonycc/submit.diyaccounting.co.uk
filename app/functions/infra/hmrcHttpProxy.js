@@ -3,7 +3,8 @@
 import { createLogger, context } from "../../lib/logger.js";
 import { http400BadRequestResponse } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { proxyRequestWithRedirects } from "../../services/httpProxy.js";
+// Import via lib shim so tests can vi.doMock("@app/lib/httpProxy.js") reliably
+import { proxyRequestWithRedirects } from "../../lib/httpProxy.js";
 import { checkRateLimit, loadBreakerState, saveBreakerState } from "../../data/dynamoDbBreakerRepository.js";
 
 const logger = createLogger({ source: "app/functions/infra/hmrcHttpProxy.js" });

@@ -5,6 +5,11 @@ import { extractRequest, extractUserFromAuthorizerContext } from "../lib/httpRes
 import { loadCatalogFromRoot } from "./productCatalog.js";
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 
+// Expose repository getUserBundles as a pass-through binding so tests can mock
+// it via vi.mock on the repository module and still control this export.
+// Do NOT wrap in another function; keep direct reference for mockability.
+export const getUserBundles = dynamoDbBundleStore.getUserBundles;
+
 const logger = createLogger({ source: "app/lib/bundleEnforcement.js" });
 
 export class BundleAuthorizationError extends Error {
@@ -23,19 +28,15 @@ export class BundleEntitlementError extends Error {
   }
 }
 
-export async function getUserBundles(userId) {
-  // Use DynamoDB as primary source
-  const bundles = await dynamoDbBundleStore.getUserBundles(userId);
-  logger.info({ message: "Current user bundles from DynamoDB:", bundles });
-  return bundles;
-}
+// Note: getUserBundles is exported above as a direct reference to repository
+// function for test mocking compatibility.
 
 export async function updateUserBundles(userId, bundles) {
   logger.info({ message: `Updating bundles for user ${userId} with ${bundles.length}`, bundles });
 
   // Update DynamoDB - this requires removing old bundles and adding new ones
   // Get current bundles to determine what to remove
-  const currentBundles = await dynamoDbBundleStore.getUserBundles(userId);
+  const currentBundles = await getUserBundles(userId);
 
   logger.info({ message: `Current bundles for user ${userId} in DynamoDB count: ${currentBundles.length}`, currentBundles });
 
