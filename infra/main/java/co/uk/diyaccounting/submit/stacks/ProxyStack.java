@@ -128,10 +128,13 @@ public class ProxyStack extends Stack {
         // Determine the path to the proxy function code
         // When running from root (tests), use "app/functions/proxy"
         // When running from cdk-environment (deployment), use "../app/functions/proxy"
-        // TODO: Pick 1 and remove
-        var proxyCodePath = java.nio.file.Paths.get("app/functions/proxy");
+        // TODO: Replace all of this with the Api Lambda Construct
+
+        // YOU ARE HERE
+
+        var proxyCodePath = java.nio.file.Paths.get("app/functions/infra");
         if (!java.nio.file.Files.exists(proxyCodePath)) {
-            proxyCodePath = java.nio.file.Paths.get("../app/functions/proxy");
+            proxyCodePath = java.nio.file.Paths.get("../app/functions/infra");
         }
 
         // Create Lambda function for outbound proxy
