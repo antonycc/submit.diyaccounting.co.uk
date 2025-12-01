@@ -47,8 +47,6 @@ public class SubmitEnvironment {
         public String antonyccBaseUri;
         public String hmrcApiProxyEgressUrl;
         public String hmrcSandboxApiProxyEgressUrl;
-        public String hmrcApiProxyMappedUrl;
-        public String hmrcSandboxApiProxyMappedUrl;
         public String proxyRateLimitPerSecond;
         public String proxyBreakerErrorThreshold;
         public String proxyBreakerLatencyMs;

@@ -17,7 +17,7 @@ import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmr
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmrcReceiptPost.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
-import { apiEndpoint as httpProxyEndpoint } from "../functions/infra/httpProxy.js";
+import { apiEndpoint as hmrcHttpProxyEndpoint } from "../functions/infra/hmrcHttpProxy.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { createLogger } from "../lib/logger.js";
 
@@ -73,7 +73,7 @@ hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptPostApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
-httpProxyEndpoint(app);
+hmrcHttpProxyEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {

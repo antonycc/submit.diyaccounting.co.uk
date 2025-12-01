@@ -2,4 +2,7 @@
 FROM public.ecr.aws/lambda/nodejs:22
 COPY package.json package-lock.json product-catalogue.toml ./
 RUN npm ci --omit=dev
-COPY app/ app/
+COPY app/lib app/lib
+COPY app/functions app/functions
+COPY app/data app/data
+COPY app/services app/services

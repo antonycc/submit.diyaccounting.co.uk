@@ -479,7 +479,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       hmrcTestVatNumber: testVatNumber,
       hmrcVatPeriodKey,
       hmrcVatDueAmount,
-      receiptsBucketName,
       s3Endpoint,
       testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
       userSub,
