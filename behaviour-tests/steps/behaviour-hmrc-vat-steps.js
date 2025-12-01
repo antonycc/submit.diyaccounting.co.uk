@@ -224,24 +224,34 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
 }
 
 export async function verifyVatObligationsResults(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user sees VAT obligations results displayed", async () => {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
-    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
-    const resultsContainer = page.locator("#obligationsResults");
-    await expect(resultsContainer).toBeVisible();
+  await test.step(
+    "The user sees VAT obligations results displayed",
+    async () => {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
 
-    // Verify the table is displayed
-    const obligationsTable = page.locator("#obligationsTable");
-    await expect(obligationsTable).toBeVisible();
+      // Wait for network activity to settle after OAuth callback
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
 
-    console.log("VAT obligations retrieval completed successfully");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results-waiting.png` });
+      await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 60000 });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-results.png` });
+      const resultsContainer = page.locator("#obligationsResults");
+      await expect(resultsContainer).toBeVisible();
 
-    // If results likely scroll, capture a pagedown
-    await page.keyboard.press("PageDown");
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-results-pagedown.png` });
-  });
+      // Verify the table is displayed
+      const obligationsTable = page.locator("#obligationsTable");
+      await expect(obligationsTable).toBeVisible();
+
+      console.log("VAT obligations retrieval completed successfully");
+
+      // If results likely scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-results-pagedown.png` });
+    },
+    { timeout: 70000 },
+  );
 }
 
 /* View VAT Return Journey Steps */
@@ -292,21 +302,31 @@ export async function submitViewVatReturnForm(page, screenshotPath = defaultScre
 }
 
 export async function verifyViewVatReturnResults(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user sees VAT return details displayed", async () => {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
-    await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results.png` });
-    const resultsContainer = page.locator("#returnResults");
-    await expect(resultsContainer).toBeVisible();
+  await test.step(
+    "The user sees VAT return details displayed",
+    async () => {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
 
-    // Verify the details are displayed
-    const returnDetails = page.locator("#returnDetails");
-    await expect(returnDetails).toBeVisible();
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-results.png` });
-    await page.keyboard.press("PageDown");
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-results.png` });
+      // Wait for network activity to settle after OAuth callback
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
 
-    console.log("View VAT return completed successfully");
-  });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results-waiting-network.png` });
+      await page.waitForSelector("#returnResults", { state: "visible", timeout: 60000 });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-results.png` });
+      const resultsContainer = page.locator("#returnResults");
+      await expect(resultsContainer).toBeVisible();
+
+      // Verify the details are displayed
+      const returnDetails = page.locator("#returnDetails");
+      await expect(returnDetails).toBeVisible();
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-results.png` });
+      await page.keyboard.press("PageDown");
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-results.png` });
+
+      console.log("View VAT return completed successfully");
+    },
+    { timeout: 70000 },
+  );
 }
