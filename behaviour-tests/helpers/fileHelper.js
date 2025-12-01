@@ -2,7 +2,7 @@
 
 import path from "node:path";
 import fs from "node:fs";
-import { hashSub } from "../../app/lib/subHasher.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 export function deleteUserSubTxt(outputDir) {
   // Delete ${outputDir}/userSub.txt

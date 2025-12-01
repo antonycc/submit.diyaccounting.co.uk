@@ -1,14 +1,12 @@
 // app/functions/infra/hmrcHttpProxy.js
 
 import { createLogger, context } from "../../lib/logger.js";
-import { http400BadRequestResponse } from "../../lib/responses.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { checkRateLimit, matchMapping, proxyRequestWithRedirects } from "@app/lib/proxyHelper.js";
-import { loadBreakerState, saveBreakerState } from "@app/lib/dynamoDbBreakerStore.js";
+import { http400BadRequestResponse } from "../../lib/httpResponseHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { proxyRequestWithRedirects } from "../../services/httpProxy.js";
+import { checkRateLimit, loadBreakerState, saveBreakerState } from "../../data/dynamoDbBreakerRepository.js";
 
 const logger = createLogger({ source: "app/functions/infra/hmrcHttpProxy.js" });
-
-// TODO: Separate into HMRC-specific parameterisation + http endpoint and lambda handler in one JS file and move everything else to a generic library JS file.
 
 // Build mappings from environment variables at call time so tests that
 // set env vars after import still work. Expect *_MAPPED_PREFIX (incoming
@@ -55,29 +53,6 @@ export function apiEndpoint(app) {
 
   app.use("/proxy", onProxy);
 }
-
-/**
- * Expose for Express integration (local testing).
- * Mount this under your Express app (e.g. app.use('/proxy', …)).
- */
-// export function apiEndpoint(app) {
-//   app.all("/*", async (req, res) => {
-//     // reconstruct minimal lambda-style event
-//     const event = {
-//       rawPath: req.path,
-//       rawQueryString: req._parsedUrl?.query || "",
-//       requestContext: { http: { method: req.method } },
-//       headers: req.headers,
-//       body: req.body,
-//     };
-//     const result = await handler(event);
-//     res.status(result.statusCode);
-//     for (const [k, v] of Object.entries(result.headers || {})) {
-//       res.setHeader(k, v);
-//     }
-//     res.send(result.body);
-//   });
-// }
 
 /**
  * Lambda handler (for AWS Lambda + API Gateway).
@@ -209,4 +184,16 @@ export async function handler(event) {
     headers: resp.headers,
     body: resp.body,
   };
+}
+
+/**
+ * Find which mapping (if any) matches the incoming path.
+ */
+export function matchMapping(path, mappings) {
+  for (const m of mappings) {
+    if (path.startsWith(m.prefix)) {
+      return m;
+    }
+  }
+  return null;
 }

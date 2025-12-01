@@ -4,13 +4,13 @@ import { DynamoDBDocumentClient, ScanCommand, GetCommand } from "@aws-sdk/lib-dy
 
 // We start a local Dynalite instance using the helper in app/bin/dynamodb.js,
 // then set environment variables so that the AWS SDK v3 client in
-// app/lib/dynamoDbReceiptStore.js connects to that local endpoint via
+// app/lib/dynamoDbReceiptRepository.js connects to that local endpoint via
 // AWS_ENDPOINT_URL[_DYNAMODB]. Only after env is set we dynamically import the
 // receipt store module to ensure it picks up the correct configuration.
 
 let stopDynalite;
 // @ts-check
-/** @typedef {typeof import("../lib/dynamoDbReceiptStore.js")} ReceiptStore */
+/** @typedef {typeof import("../data/dynamoDbReceiptRepository.js")} ReceiptStore */
 /** @type {ReceiptStore} */
 let store;
 const tableName = "receipts-system-test";
@@ -67,7 +67,7 @@ beforeAll(async () => {
   docClient = DynamoDBDocumentClient.from(dynamoDbClient);
 
   // Import the store AFTER environment is configured
-  store = await import("../lib/dynamoDbReceiptStore.js");
+  store = await import("../data/dynamoDbReceiptRepository.js");
 });
 
 afterAll(async () => {
@@ -184,7 +184,7 @@ describe("System: dynamoDbReceiptStore with local dynalite", () => {
       await store.putReceipt(userSub, receiptId, receipt);
 
       // Import hashSub to get the hashed value
-      const { hashSub } = await import("../lib/subHasher.js");
+      const { hashSub } = await import("../services/subHasher.js");
       const hashedSub = hashSub(userSub);
 
       // Directly query DynamoDB to verify the stored item
@@ -255,7 +255,7 @@ describe("System: dynamoDbReceiptStore with local dynalite", () => {
 
       await store.putReceipt(userSub, receiptId, receipt);
 
-      const { hashSub } = await import("../lib/subHasher.js");
+      const { hashSub } = await import("../services/subHasher.js");
       const hashedSub = hashSub(userSub);
 
       const result = await docClient.send(

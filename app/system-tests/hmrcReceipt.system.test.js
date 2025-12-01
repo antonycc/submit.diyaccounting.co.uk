@@ -62,7 +62,7 @@ describe("System: HMRC Receipt Flow (hmrcReceiptPost + hmrcReceiptGet)", () => {
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
     await ensureBundleTableExists(bundleTableName, endpoint);
 
-    importedDynamoDbReceiptStore = await import("../lib/dynamoDbReceiptStore.js");
+    importedDynamoDbReceiptStore = await import("../data/dynamoDbReceiptRepository.js");
   });
 
   afterAll(async () => {

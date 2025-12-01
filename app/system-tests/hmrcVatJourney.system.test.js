@@ -3,7 +3,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { hashSub } from "../lib/subHasher.js";
+import { hashSub } from "../services/subHasher.js";
 import { mockClient } from "aws-sdk-client-mock";
 import { Readable } from "stream";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
@@ -118,7 +118,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     await ensureHmrcApiRequestsTableExists(hmrcReqsTableName, endpoint);
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
 
-    importedBundleManagement = await import("../lib/bundleManagement.js");
+    importedBundleManagement = await import("../services/bundleManagement.js");
 
     // Start HMRC mock server
     hmrcMock = await startHmrcMockServer();

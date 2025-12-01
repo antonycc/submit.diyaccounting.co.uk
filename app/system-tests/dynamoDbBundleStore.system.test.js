@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-//import * as store from "../lib/dynamoDbBundleStore.js";
+//import * as store from "../lib/dynamoDbBundleRepository.js";
 
 // We start a local Dynalite instance using the helper in app/bin/dynamodb.js,
 // then set environment variables so that the AWS SDK v3 client in
-// app/lib/dynamoDbBundleStore.js connects to that local endpoint via
+// app/lib/dynamoDbBundleRepository.js connects to that local endpoint via
 // AWS_ENDPOINT_URL[_DYNAMODB]. Only after env is set we dynamically import the
 // bundle store module to ensure it picks up the correct configuration.
 
 let stopDynalite;
 // @ts-check
-/** @typedef {typeof import("../lib/dynamoDbBundleStore.js")} DynamoStore */
+/** @typedef {typeof import("../data/dynamoDbBundleRepository.js")} DynamoStore */
 /** @type {DynamoStore} */
 let store;
 const tableName = "bundles-system-test";
@@ -53,7 +53,7 @@ beforeAll(async () => {
   await ensureBundleTableExists(tableName, endpoint);
 
   // Import the store AFTER environment is configured
-  store = await import("../lib/dynamoDbBundleStore.js");
+  store = await import("../data/dynamoDbBundleRepository.js");
 });
 
 afterAll(async () => {

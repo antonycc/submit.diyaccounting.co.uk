@@ -1,5 +1,5 @@
 // app/unit-tests/app-lib/dynamoDbBreakerStore.test.js
-import { describe, test, beforeEach, expect, vi } from "vitest";
+import { describe, test, beforeEach, expect, vi, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -22,9 +22,21 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
     }
     return {};
   });
-  class DynamoDBClient { send(cmd) { return mockSend(cmd); } }
-  class GetItemCommand { constructor(input) { this.input = input; } }
-  class PutItemCommand { constructor(input) { this.input = input; } }
+  class DynamoDBClient {
+    send(cmd) {
+      return mockSend(cmd);
+    }
+  }
+  class GetItemCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  class PutItemCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return { DynamoDBClient, GetItemCommand, PutItemCommand };
 });
 
@@ -54,7 +66,49 @@ describe("dynamoDbBreakerStore", () => {
     vi.resetModules();
     mockState = {};
     process.env.STATE_TABLE_NAME = "test-proxy-state-table";
-    store = await import("@app/lib/dynamoDbBreakerStore.js");
+    process.env.NODE_ENV = "test";
+    delete process.env.PROXY_RATE_LIMIT_STORE;
+    store = await import("@app/data/dynamoDbBreakerRepository.js");
+  });
+
+  test("checkRateLimit returns true in test mode when not using dynamo store", async () => {
+    const ok = await store.checkRateLimit("key", 1, "req1");
+    expect(ok).toBe(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("checkRateLimit uses dynamo store when configured", async () => {
+    process.env.PROXY_RATE_LIMIT_STORE = "dynamo";
+    // Keep time stable within same second
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-01-01T00:00:00Z"));
+    const r1 = await store.checkRateLimit("k", 2, "r");
+    const r2 = await store.checkRateLimit("k", 2, "r");
+    const r3 = await store.checkRateLimit("k", 2, "r");
+    expect(r1).toBe(true);
+    expect(r2).toBe(true);
+    expect(r3).toBe(false);
+  });
+
+  test("checkRateLimit returns true in test mode when not using dynamo store", async () => {
+    const ok = await store.checkRateLimit("key", 1, "req1");
+    expect(ok).toBe(true);
+  });
+
+  test("checkRateLimit uses dynamo store when configured", async () => {
+    process.env.PROXY_RATE_LIMIT_STORE = "dynamo";
+    // Keep time stable within same second
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-01-01T00:00:00Z"));
+    const r1 = await store.checkRateLimit("k", 2, "r");
+    const r2 = await store.checkRateLimit("k", 2, "r");
+    const r3 = await store.checkRateLimit("k", 2, "r");
+    expect(r1).toBe(true);
+    expect(r2).toBe(true);
+    expect(r3).toBe(false);
   });
 
   test("loadBreakerState returns defaults when no item", async () => {

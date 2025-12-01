@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => {
           "**/dist/**",
           "**/entrypoint/**",
           "app/unit-tests/*.test.js",
+          "app/unit-tests/*/*.test.js",
           "app/system-tests/*.test.js",
           "web/unit-tests/*.test.js",
           "web/browser-tests/*.test.js",

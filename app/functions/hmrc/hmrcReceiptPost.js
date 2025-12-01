@@ -8,12 +8,12 @@ import {
   extractUserFromAuthorizerContext,
   parseRequestBody,
   buildValidationError,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
-import { putReceipt } from "../../lib/dynamoDbReceiptStore.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
+import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptPost.js" });

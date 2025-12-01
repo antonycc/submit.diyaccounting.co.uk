@@ -9,10 +9,10 @@ import {
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -22,8 +22,8 @@ import {
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
-} from "../../lib/hmrcHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
+} from "../../services/hmrcApi.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 

@@ -1,6 +1,6 @@
 // app/unit-tests/functions/httpProxy.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
-import { handler as httpProxy } from "@app/functions/infra/hmrcHttpProxy.js";
+import { handler as httpProxy, matchMapping } from "@app/functions/infra/hmrcHttpProxy.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv } from "@app/test-helpers/mockHelpers.js";
 
@@ -243,6 +243,16 @@ describe.skip("httpProxy handler (legacy combined tests) — superseded by split
     expect(res.statusCode).toBe(508);
     const body = JSON.parse(res.body);
     expect(body.message).toMatch(/Too many redirects/);
+  });
+
+  test("matchMapping finds correct mapping or null", () => {
+    const mappings = [
+      { prefix: "/a", target: "https://a.example.com" },
+      { prefix: "/b", target: "https://b.example.com" },
+    ];
+    expect(matchMapping("/a/1", mappings)).toEqual(mappings[0]);
+    expect(matchMapping("/b", mappings)).toEqual(mappings[1]);
+    expect(matchMapping("/c", mappings)).toBeNull();
   });
 
   test("rate-limit enforces limit", async () => {

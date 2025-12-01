@@ -1,10 +1,10 @@
-// app/lib/responses.js
+// app/lib/httpResponseHelper.js
 
 import { v4 as uuidv4 } from "uuid";
 import { createLogger, context } from "./logger.js";
-import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
+import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 
-const logger = createLogger({ source: "app/lib/responses.js" });
+const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
 
 export function http200OkResponse({ request, headers, data }) {
   const merged = { ...(headers || {}) };

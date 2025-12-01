@@ -1,9 +1,9 @@
 // app/functions/auth/cognitoTokenPost.js
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, buildTokenExchangeResponse, buildValidationError, http200OkResponse } from "../../lib/responses.js";
+import { extractRequest, buildTokenExchangeResponse, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 
 const logger = createLogger({ source: "app/functions/auth/cognitoTokenPost.js" });
 

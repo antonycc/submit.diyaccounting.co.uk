@@ -1,9 +1,9 @@
-// app/lib/httpHelper.js
+// app/lib/httpServerToLambdaAdaptor.js
 
-import { createLogger, context } from "./logger.js";
+import { createLogger } from "./logger.js";
 import { decodeJwtNoVerify } from "./jwtHelper.js";
 
-const logger = createLogger({ source: "app/lib/httpHelper.js" });
+const logger = createLogger({ source: "app/lib/httpServerToLambdaAdaptor.js" });
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
@@ -78,37 +78,4 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body },
     logger.warn(`Response body is not valid JSON, sending as text ${_e}`);
     return httpResponse.status(statusCode).send(body || "");
   }
-}
-
-export function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
-  logger.info({
-    message: `Request to POST ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
-    headers: {
-      ...hmrcRequestHeaders,
-      ...govClientHeaders,
-    },
-    body: hmrcRequestBody,
-    environment: {
-      // nodeEnv: process.env.NODE_ENV,
-    },
-  });
-}
-
-export function http404NotFound(request, message, responseHeaders) {
-  // Log with clear semantics and avoid misusing headers as a response code
-  logger.warn({ message, request });
-  // Return a proper 404 response (was incorrectly returning 400)
-  // We keep using the generic bad request builder style but with correct status
-  const reqId = context.get("requestId") || String(Date.now());
-  return {
-    statusCode: 404,
-    headers: {
-      ...(responseHeaders || {}),
-      "x-request-id": reqId,
-      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
-    },
-    body: JSON.stringify({ message }),
-  };
 }

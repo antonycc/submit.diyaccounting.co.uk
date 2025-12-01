@@ -34,8 +34,16 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
       return mockSend(cmd);
     }
   }
-  class GetItemCommand { constructor(input) { this.input = input; } }
-  class PutItemCommand { constructor(input) { this.input = input; } }
+  class GetItemCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  class PutItemCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return { DynamoDBClient, GetItemCommand, PutItemCommand };
 });
 
@@ -78,7 +86,7 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
 
   test("returns 400 for unmapped path", async () => {
     // Mock helper but pass-through real implementation except for proxy call
-    vi.doMock("@app/lib/proxyHelper.js", async (importOriginal) => {
+    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue({ statusCode: 200, headers: {}, body: "{}" }) };
     });
@@ -93,13 +101,18 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
 
   test("successfully proxies to upstream when mapping matches", async () => {
     const upstreamResponse = { statusCode: 200, headers: { "content-type": "application/json" }, body: '{"ok":true}' };
-    vi.doMock("@app/lib/proxyHelper.js", async (importOriginal) => {
+    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue(upstreamResponse) };
     });
     const { handler } = await import("@app/functions/infra/hmrcHttpProxy.js");
 
-    const event = buildLambdaEvent({ method: "GET", path: "/proxy/hmrc-api/resource", headers: { host: "local" }, queryStringParameters: null });
+    const event = buildLambdaEvent({
+      method: "GET",
+      path: "/proxy/hmrc-api/resource",
+      headers: { host: "local" },
+      queryStringParameters: null,
+    });
     const res = await handler(event);
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body)).toEqual({ ok: true });
@@ -109,7 +122,7 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
     // Enable dynamo-backed rate limiter for deterministic counting
     process.env.PROXY_RATE_LIMIT_STORE = "dynamo";
     process.env.RATE_LIMIT_PER_SECOND = "2";
-    vi.doMock("@app/lib/proxyHelper.js", async (importOriginal) => {
+    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       // Keep real rate-limit/breaker logic; stub proxy to a constant value
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue({ statusCode: 200, headers: {}, body: "{}" }) };
@@ -131,9 +144,13 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
     const prefix = "/proxy/hmrc-api";
     const stateKey = `breaker:${prefix}`;
     // @aws-sdk/util-dynamodb is mocked; construct item manually
-    mockDynamoState[stateKey] = { stateKey: { S: stateKey }, errors: { N: "10" }, openSince: { N: String(Math.floor(Date.now() / 1000) * 1000) } };
+    mockDynamoState[stateKey] = {
+      stateKey: { S: stateKey },
+      errors: { N: "10" },
+      openSince: { N: String(Math.floor(Date.now() / 1000) * 1000) },
+    };
 
-    vi.doMock("@app/lib/proxyHelper.js", async (importOriginal) => {
+    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue({ statusCode: 200, headers: {}, body: "{}" }) };
     });

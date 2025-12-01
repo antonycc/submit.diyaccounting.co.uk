@@ -48,7 +48,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     await ensureBundleTableExists(tableName, endpoint);
 
-    bm = await import("../lib/bundleManagement.js");
+    bm = await import("../services/bundleManagement.js");
 
     // Start HMRC mock server and point base URIs at it
     hmrcMock = await startHmrcMockServer();

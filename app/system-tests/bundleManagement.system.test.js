@@ -6,7 +6,7 @@ import { handler as bundleGetHandler } from "@app/functions/account/bundleGet.js
 
 // We mirror the dynalite setup used by dynamoDbBundleStore.system.test.js
 let stopDynalite;
-/** @typedef {typeof import("../lib/bundleManagement.js")} BundleManagement */
+/** @typedef {typeof import("../services/bundleManagement.js")} BundleManagement */
 /** @type {BundleManagement} */
 let bm;
 
@@ -82,7 +82,7 @@ beforeAll(async () => {
   await ensureBundleTableExists(tableName, endpoint);
 
   // Import after env configured
-  bm = await import("../lib/bundleManagement.js");
+  bm = await import("../services/bundleManagement.js");
 });
 
 afterAll(async () => {

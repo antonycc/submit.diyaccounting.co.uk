@@ -8,13 +8,13 @@ import {
   buildValidationError,
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
-import { getReceipt, listUserReceipts } from "../../lib/dynamoDbReceiptStore.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
+import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptGet.js" });
 

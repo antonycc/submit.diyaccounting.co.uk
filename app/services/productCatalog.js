@@ -1,4 +1,4 @@
-// app/lib/productCatalogHelper.js
+// app/lib/productCatalog.js
 import fs from "node:fs";
 import path from "node:path";
 import TOML from "@iarna/toml";

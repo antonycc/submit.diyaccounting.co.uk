@@ -1,9 +1,9 @@
 // app/functions/account/catalogGet.js
 
-import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
-import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
+import { loadCatalogFromRoot } from "../../services/productCatalog.js";
+import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
 import { createLogger } from "../../lib/logger.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 
 const logger = createLogger({ source: "app/functions/account/catalogGet.js" });
 

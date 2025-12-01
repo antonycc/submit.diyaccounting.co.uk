@@ -8,18 +8,18 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, logHmrcRequestDetails } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
   http403ForbiddenFromBundleEnforcement,
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
-} from "../../lib/hmrcHelper.js";
+} from "../../services/hmrcApi.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -208,4 +208,19 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
   );
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
+}
+
+function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
+  logger.info({
+    message: `Request to POST ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    headers: {
+      ...hmrcRequestHeaders,
+      ...govClientHeaders,
+    },
+    body: hmrcRequestBody,
+    environment: {
+      // nodeEnv: process.env.NODE_ENV,
+    },
+  });
 }

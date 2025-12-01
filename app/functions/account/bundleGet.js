@@ -2,11 +2,16 @@
 
 import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, http401UnauthorizedResponse, http500ServerErrorResponse } from "../../lib/responses.js";
+import {
+  extractRequest,
+  http200OkResponse,
+  http401UnauthorizedResponse,
+  http500ServerErrorResponse,
+} from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { BundleAuthorizationError, BundleEntitlementError, enforceBundles, getUserBundles } from "../../lib/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { BundleAuthorizationError, BundleEntitlementError, enforceBundles, getUserBundles } from "../../services/bundleManagement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 

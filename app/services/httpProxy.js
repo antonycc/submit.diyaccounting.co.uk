@@ -1,93 +1,13 @@
-// app/lib/proxyHelper.js
+// app/lib/httpProxy.js
 
-import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { unmarshall, marshall } from "@aws-sdk/util-dynamodb";
 import http from "http";
 import https from "https";
-import { createLogger } from "./logger.js";
+import { createLogger } from "../lib/logger.js";
 
-const logger = createLogger({ source: "app/lib/proxyHelper.js" });
+const logger = createLogger({ source: "app/lib/httpProxy.js" });
 
 // Maximum number of redirects the proxy will follow for a single upstream request
 const MAX_REDIRECTS = 5;
-
-// Lazily construct a DynamoDB client that honours local dynalite endpoints used in tests
-let __dynamoClient;
-async function getDynamoClient() {
-  if (!__dynamoClient) {
-    const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
-    __dynamoClient = new DynamoDBClient({
-      region: process.env.AWS_REGION || "eu-west-2",
-      ...(endpoint ? { endpoint } : {}),
-    });
-  }
-  return __dynamoClient;
-}
-
-// Table for proxy state (rate limiter uses it when configured). Keep legacy env var for compatibility
-const STATE_TABLE = process.env.STATE_TABLE_NAME || process.env.PROXY_STATE_DYNAMODB_TABLE_NAME || "ProxyStateTable";
-
-/**
- * Find which mapping (if any) matches the incoming path.
- */
-export function matchMapping(path, mappings) {
-  for (const m of mappings) {
-    if (path.startsWith(m.prefix)) {
-      return m;
-    }
-  }
-  return null;
-}
-
-/**
- * Rate-limit using in-memory per-second counters for test/runtime stability.
- * Falls back to DynamoDB if explicitly configured via PROXY_RATE_LIMIT_STORE="dynamo".
- */
-export const inMemoryRateCounts = new Map();
-export async function checkRateLimit(keyPrefix, rateLimit, requestId) {
-  const useDynamo = process.env.PROXY_RATE_LIMIT_STORE === "dynamo";
-  if (process.env.NODE_ENV === "test" && !useDynamo) {
-    logger.info({ requestId, keyPrefix, msg: "Skipping in-memory rate limit in test mode" });
-    return true;
-  }
-  const nowSec = Math.floor(Date.now() / 1000);
-
-  if (!useDynamo) {
-    const key = `${keyPrefix}:${nowSec}`;
-    const next = (inMemoryRateCounts.get(key) || 0) + 1;
-    inMemoryRateCounts.set(key, next);
-    logger.info({ requestId, keyPrefix, second: nowSec, count: next, limit: rateLimit, msg: "In-memory rate check" });
-    return next <= rateLimit;
-  }
-
-  // DynamoDB-backed counter
-  const stateKey = `rate:${keyPrefix}:${nowSec}`;
-  try {
-    const dynamo = await getDynamoClient();
-    const resp = await dynamo.send(
-      new GetItemCommand({
-        TableName: STATE_TABLE,
-        Key: { stateKey: { S: stateKey } },
-      }),
-    );
-    const current = resp.Item ? Number(unmarshall(resp.Item).count) : 0;
-    const next = current + 1;
-    await dynamo.send(
-      new PutItemCommand({
-        TableName: STATE_TABLE,
-        Item: marshall({
-          stateKey,
-          count: next,
-          ttl: nowSec + 60,
-        }),
-      }),
-    );
-    return next <= rateLimit;
-  } catch (err) {
-    logger.error({ requestId, keyPrefix, err: err.stack ?? err.message, msg: "Rate-limit check failed, allowing" });
-    return true;
-  }
-}
 
 /**
  * Perform the HTTP proxy request.
@@ -144,9 +64,9 @@ export async function proxyRequestWithRedirects(initialUrl, initialOptions, init
     let nextUrl;
     try {
       nextUrl = new URL(location, url);
-    } catch (e) {
+    } catch (error) {
       // If Location is invalid, return the redirect response as-is
-      logger.warn({ msg: "Invalid redirect location header, returning upstream response", location, status });
+      logger.warn({ msg: "Invalid redirect location header, returning upstream response", error, location, status });
       return resp;
     }
 

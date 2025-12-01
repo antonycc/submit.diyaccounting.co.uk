@@ -5,14 +5,14 @@ import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { handler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { handler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
-import * as hmrcHelper from "../lib/hmrcHelper.js";
+import * as hmrcHelper from "../services/hmrcApi.js";
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { exportDynamoDBDataForUsers } from "../test-helpers/dynamodbExporter.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-/** @typedef {typeof import("../lib/bundleManagement.js")} BundleManagement */
+/** @typedef {typeof import("../services/bundleManagement.js")} BundleManagement */
 /** @type {BundleManagement} */
 let bm;
 let stopDynalite;
@@ -47,7 +47,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     await ensureBundleTableExists(bundlesTableName, endpoint);
 
-    bm = await import("../lib/bundleManagement.js");
+    bm = await import("../services/bundleManagement.js");
   });
 
   afterAll(async () => {

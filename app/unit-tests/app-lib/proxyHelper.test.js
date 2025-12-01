@@ -23,9 +23,21 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
     }
     return {};
   });
-  class DynamoDBClient { send(cmd) { return mockSend(cmd); } }
-  class GetItemCommand { constructor(input) { this.input = input; } }
-  class PutItemCommand { constructor(input) { this.input = input; } }
+  class DynamoDBClient {
+    send(cmd) {
+      return mockSend(cmd);
+    }
+  }
+  class GetItemCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  class PutItemCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return { DynamoDBClient, GetItemCommand, PutItemCommand };
 });
 
@@ -57,40 +69,12 @@ describe("proxyHelper lib", () => {
     process.env.STATE_TABLE_NAME = "test-proxy-state-table";
     process.env.NODE_ENV = "test";
     delete process.env.PROXY_RATE_LIMIT_STORE;
-    helper = await import("@app/lib/proxyHelper.js");
+    helper = await import("@app/services/httpProxy.js");
   });
 
-  test("matchMapping finds correct mapping or null", () => {
-    const mappings = [
-      { prefix: "/a", target: "https://a.example.com" },
-      { prefix: "/b", target: "https://b.example.com" },
-    ];
-    expect(helper.matchMapping("/a/1", mappings)).toEqual(mappings[0]);
-    expect(helper.matchMapping("/b", mappings)).toEqual(mappings[1]);
-    expect(helper.matchMapping("/c", mappings)).toBeNull();
-  });
-
-  test("checkRateLimit returns true in test mode when not using dynamo store", async () => {
-    const ok = await helper.checkRateLimit("key", 1, "req1");
-    expect(ok).toBe(true);
-  });
-
-  test("checkRateLimit uses dynamo store when configured", async () => {
-    process.env.PROXY_RATE_LIMIT_STORE = "dynamo";
-    // Keep time stable within same second
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2024-01-01T00:00:00Z"));
-    const r1 = await helper.checkRateLimit("k", 2, "r");
-    const r2 = await helper.checkRateLimit("k", 2, "r");
-    const r3 = await helper.checkRateLimit("k", 2, "r");
-    expect(r1).toBe(true);
-    expect(r2).toBe(true);
-    expect(r3).toBe(false);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+  //afterEach(() => {
+  //vi.useRealTimers();
+  //});
 
   function makeRequestImpl(callsArray, responses) {
     let i = 0;
@@ -106,7 +90,7 @@ describe("proxyHelper lib", () => {
     const calls = [];
     const responses = [
       { statusCode: 301, headers: { location: "https://other.example.com/final" }, body: "" },
-      { statusCode: 200, headers: { "content-type": "application/json" }, body: "{\"ok\":true}" },
+      { statusCode: 200, headers: { "content-type": "application/json" }, body: '{"ok":true}' },
     ];
     const requestImpl = makeRequestImpl(calls, responses);
 
@@ -132,8 +116,8 @@ describe("proxyHelper lib", () => {
     const requestImpl = makeRequestImpl(calls, responses);
 
     const url = new URL("https://ex.example.com/start");
-    const options = { method: "POST", headers: { host: "ex.example.com", "content-length": "10", "content-type": "application/json" } };
-    const resp = await helper.proxyRequestWithRedirects(url, options, "{\"a\":1}", requestImpl);
+    const options = { method: "POST", headers: { "host": "ex.example.com", "content-length": "10", "content-type": "application/json" } };
+    const resp = await helper.proxyRequestWithRedirects(url, options, '{"a":1}', requestImpl);
     expect(resp.statusCode).toBe(200);
     // Second hop should be GET with no body
     const [, second] = calls;
@@ -149,7 +133,12 @@ describe("proxyHelper lib", () => {
       responses.push({ statusCode: i % 2 === 0 ? 301 : 302, headers: { location: "/next" }, body: "" });
     }
     const requestImpl = makeRequestImpl(calls, responses);
-    const resp = await helper.proxyRequestWithRedirects(new URL("https://l.example.com/loop"), { method: "GET", headers: { host: "l.example.com" } }, undefined, requestImpl);
+    const resp = await helper.proxyRequestWithRedirects(
+      new URL("https://l.example.com/loop"),
+      { method: "GET", headers: { host: "l.example.com" } },
+      undefined,
+      requestImpl,
+    );
     expect(resp.statusCode).toBe(508);
   });
 });

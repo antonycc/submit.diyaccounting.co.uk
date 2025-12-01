@@ -1,13 +1,13 @@
 // app/functions/bundlePost.js
 
-import { loadCatalogFromRoot } from "../../lib/productCatalogHelper.js";
+import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
-import { enforceBundles, getUserBundles } from "../../lib/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { enforceBundles, getUserBundles } from "../../services/bundleManagement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
@@ -231,7 +231,7 @@ export async function handler(event) {
     // Persist the updated bundles to the primary store (DynamoDB)
     // try {
     // Lazy import to avoid circular deps at module load and keep handler fast to import
-    const { updateUserBundles } = await import("../../lib/bundleManagement.js");
+    const { updateUserBundles } = await import("../../services/bundleManagement.js");
     await updateUserBundles(userId, currentBundles);
     // } catch (e) {
     //  logger.error({ message: "Failed to persist updated bundles", error: e });

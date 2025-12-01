@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { hashSub } from "../lib/subHasher.js";
+import { hashSub } from "../services/subHasher.js";
 
-/** @typedef {typeof import("../lib/bundleManagement.js")} BundleManagement */
+/** @typedef {typeof import("../services/bundleManagement.js")} BundleManagement */
 /** @type {BundleManagement} */
 let bm;
 let stopDynalite;
@@ -100,7 +100,7 @@ beforeAll(async () => {
 
   await ensureBundleTableExists(bundlesTableName, endpoint);
 
-  bm = await import("../lib/bundleManagement.js");
+  bm = await import("../services/bundleManagement.js");
 });
 
 afterAll(async () => {

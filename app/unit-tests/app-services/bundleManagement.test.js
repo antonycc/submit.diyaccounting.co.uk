@@ -11,12 +11,12 @@ import {
   getUserBundles,
   removeBundles,
   updateUserBundles,
-} from "@app/lib/bundleManagement.js";
+} from "@app/services/bundleManagement.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock the DynamoDB bundle store at the module boundary used by bundleManagement
-vi.mock("@app/lib/dynamoDbBundleStore.js", () => ({
+vi.mock("@app/lib/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn(),
   putBundle: vi.fn(),
   deleteBundle: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock("@app/lib/dynamoDbBundleStore.js", () => ({
 }));
 
 // Import the mocked functions for assertions in tests that go via Dynamo
-import * as dynamoDbBundleStore from "@app/lib/dynamoDbBundleStore.js";
+import * as dynamoDbBundleStore from "@app/data/dynamoDbBundleRepository.js";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -110,12 +110,12 @@ describe("bundleEnforcement.js", () => {
       const event = buildEvent(token, authorizerContext);
 
       // Dynamo returns objects; enforceBundles maps to bundleId
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(dynamoDbBundleStore.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-test-bundle");
     });
 
     test("should allow sandbox access with test bundle with expiry", async () => {
@@ -133,12 +133,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(dynamoDbBundleStore.getUserBundles).toHaveBeenCalledWith("user-with-test-bundle-expiry");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-test-bundle-expiry");
     });
 
     test("should deny vat return access without test or guest bundle", async () => {
@@ -157,7 +157,7 @@ describe("bundleEnforcement.js", () => {
       const hmrcVatReturnGetUrlPath = "/api/v1/hmrc/vat/return";
       const event = buildEvent(token, authorizerContext, hmrcVatReturnGetUrlPath);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([]);
+      getUserBundles.mockResolvedValue([]);
 
       await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
     });
@@ -177,12 +177,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(dynamoDbBundleStore.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle");
     });
 
     test("should allow production access with business bundle", async () => {
@@ -223,12 +223,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "guest", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(dynamoDbBundleStore.getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle-expiry");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle-expiry");
     });
 
     test("should extract user info from authorizer context", async () => {
@@ -239,12 +239,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(null, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(dynamoDbBundleStore.getUserBundles).toHaveBeenCalledWith("user-from-authorizer");
+      expect(getUserBundles).toHaveBeenCalledWith("user-from-authorizer");
     });
   });
 });

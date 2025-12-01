@@ -1,9 +1,9 @@
 // app/lib/bundleEnforcement.js
 
-import { createLogger } from "./logger.js";
-import { extractRequest, extractUserFromAuthorizerContext } from "./responses.js";
-import { loadCatalogFromRoot } from "./productCatalogHelper.js";
-import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
+import { createLogger } from "../lib/logger.js";
+import { extractRequest, extractUserFromAuthorizerContext } from "../lib/httpResponseHelper.js";
+import { loadCatalogFromRoot } from "./productCatalog.js";
+import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 
 const logger = createLogger({ source: "app/lib/bundleEnforcement.js" });
 
