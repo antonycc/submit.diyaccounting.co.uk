@@ -129,8 +129,9 @@ public class ProxyStack extends Stack {
         // When running from root (tests), use "app/functions/proxy"
         // When running from cdk-environment (deployment), use "../app/functions/proxy"
         // TODO: Replace all of this with the Api Lambda Construct
-
-        // YOU ARE HERE
+        // TODO: Also add an async Lambda wrapper that uses a queue with a worker which stores the result and consumers poll for the result
+        // apiEndpoint - http->lambda event, handler - api origin, worker - async processor, poller - result retriever
+        // for the poller the inflight request will be identified by a request ID stored in DynamoDB with the result
 
         var proxyCodePath = java.nio.file.Paths.get("app/functions/infra");
         if (!java.nio.file.Files.exists(proxyCodePath)) {

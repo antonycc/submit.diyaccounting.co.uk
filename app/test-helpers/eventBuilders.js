@@ -49,6 +49,8 @@ export function buildAuthorizerContext(sub = "test-sub", username = "test", emai
  */
 export function buildLambdaEvent({
   method = "POST",
+  protocol = null,
+  host = null,
   path = "/",
   headers = {},
   body = null,
@@ -62,6 +64,8 @@ export function buildLambdaEvent({
       requestId,
       http: {
         method,
+        host,
+        protocol,
         path,
       },
       ...authorizer,
