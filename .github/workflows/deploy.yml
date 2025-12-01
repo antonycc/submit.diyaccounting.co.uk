@@ -235,9 +235,9 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
@@ -299,9 +299,9 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
@@ -364,9 +364,9 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
@@ -1750,9 +1750,9 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
@@ -1845,9 +1845,9 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
@@ -1939,6 +1939,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          # TODO: Change to HMRC_SYTH_PRODUCTION_USERNAME when available
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -2034,9 +2035,9 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
@@ -2128,6 +2129,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          # TODO: Change to HMRC_SYTH_PRODUCTION_USERNAME when available
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
