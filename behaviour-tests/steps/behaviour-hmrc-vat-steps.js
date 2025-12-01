@@ -227,15 +227,30 @@ export async function verifyVatObligationsResults(page, screenshotPath = default
   await test.step(
     "The user sees VAT obligations results displayed",
     async () => {
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results-before-redirect.png` });
 
-      // Wait for network activity to settle after OAuth callback
+      // Wait for redirect through callback page back to vatObligations.html
+      console.log("Waiting for redirect to vatObligations.html after OAuth callback...");
+      await page.waitForURL(/vatObligations\.html/, { timeout: 30000 });
+      console.log("Successfully redirected to vatObligations.html");
+
+      // Wait for page to load completely
       await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2000); // Give time for JavaScript to execute and API call to start
 
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results-waiting.png` });
-      await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 60000 });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results-on-page.png` });
+
+      // Wait for loading spinner to disappear (indicates API call is complete)
+      const loadingSpinner = page.locator("#loadingSpinner");
+      await loadingSpinner.waitFor({ state: "hidden", timeout: 30000 });
+      console.log("Loading spinner hidden, API call should be complete");
+
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-results-loading-done.png` });
+
+      // Now wait for results to be visible
+      await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-results-visible.png` });
+
       const resultsContainer = page.locator("#obligationsResults");
       await expect(resultsContainer).toBeVisible();
 
@@ -248,9 +263,9 @@ export async function verifyVatObligationsResults(page, screenshotPath = default
       // If results likely scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.waitForTimeout(200);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-results-pagedown.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-results-pagedown.png` });
     },
-    { timeout: 70000 },
+    { timeout: 120000 }, // Increase to 120s to accommodate full redirect flow
   );
 }
 
@@ -305,28 +320,43 @@ export async function verifyViewVatReturnResults(page, screenshotPath = defaultS
   await test.step(
     "The user sees VAT return details displayed",
     async () => {
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-before-redirect.png` });
 
-      // Wait for network activity to settle after OAuth callback
+      // Wait for redirect through callback page back to viewVatReturn.html
+      console.log("Waiting for redirect to viewVatReturn.html after OAuth callback...");
+      await page.waitForURL(/viewVatReturn\.html/, { timeout: 30000 });
+      console.log("Successfully redirected to viewVatReturn.html");
+
+      // Wait for page to load completely
       await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2000); // Give time for JavaScript to execute and API call to start
 
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results-waiting-network.png` });
-      await page.waitForSelector("#returnResults", { state: "visible", timeout: 60000 });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results-on-page.png` });
+
+      // Wait for loading spinner to disappear (indicates API call is complete)
+      const loadingSpinner = page.locator("#loadingSpinner");
+      await loadingSpinner.waitFor({ state: "hidden", timeout: 30000 });
+      console.log("Loading spinner hidden, API call should be complete");
+
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-results-loading-done.png` });
+
+      // Now wait for results to be visible
+      await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-results-visible.png` });
+
       const resultsContainer = page.locator("#returnResults");
       await expect(resultsContainer).toBeVisible();
 
       // Verify the details are displayed
       const returnDetails = page.locator("#returnDetails");
       await expect(returnDetails).toBeVisible();
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-results.png` });
       await page.keyboard.press("PageDown");
       await page.waitForTimeout(200);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-results.png` });
 
       console.log("View VAT return completed successfully");
     },
-    { timeout: 70000 },
+    { timeout: 120000 }, // Increase to 120s to accommodate full redirect flow
   );
 }
