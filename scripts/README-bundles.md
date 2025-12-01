@@ -160,5 +160,5 @@ Ensure the bundle exists in product-catalogue.toml with a valid timeout:
 ### Hash mismatch
 Verify the hash using Node.js:
 ```bash
-node -e "import('./app/lib/subHasher.js').then(({ hashSub }) => console.log(hashSub('your-sub-here')))"
+node -e "import('./app/services/subHasher.js').then(({ hashSub }) => console.log(hashSub('your-sub-here')))"
 ```

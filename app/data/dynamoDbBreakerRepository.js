@@ -1,10 +1,10 @@
-// app/lib/dynamoDbBreakerRepository.js
+// app/data/dynamoDbBreakerRepository.js
 
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall, marshall } from "@aws-sdk/util-dynamodb";
 import { createLogger } from "../lib/logger.js";
 
-const logger = createLogger({ source: "app/lib/dynamoDbBreakerRepository.js" });
+const logger = createLogger({ source: "app/data/dynamoDbBreakerRepository.js" });
 
 // Lazily construct a DynamoDB client that honours local dynalite endpoints used in tests
 let __dynamoClient;

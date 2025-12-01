@@ -3,20 +3,13 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 // Import real functions from bundleManagement
-import {
-  addBundles,
-  BundleAuthorizationError,
-  BundleEntitlementError,
-  enforceBundles,
-  getUserBundles,
-  removeBundles,
-  updateUserBundles,
-} from "@app/services/bundleManagement.js";
+import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "@app/services/bundleManagement.js";
+import { getUserBundles } from "@app/data/dynamoDbBundleRepository.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock the DynamoDB bundle store at the module boundary used by bundleManagement
-vi.mock("@app/lib/dynamoDbBundleRepository.js", () => ({
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn(),
   putBundle: vi.fn(),
   deleteBundle: vi.fn(),
@@ -25,7 +18,8 @@ vi.mock("@app/lib/dynamoDbBundleRepository.js", () => ({
 }));
 
 // Import the mocked functions for assertions in tests that go via Dynamo
-import * as dynamoDbBundleStore from "@app/data/dynamoDbBundleRepository.js";
+//import * as dynamoDbBundleStore from "@app/data/dynamoDbBundleRepository.js";
+//import { getUserBundles } from "@app/data/dynamoDbBundleRepository.js";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -200,12 +194,12 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      dynamoDbBundleStore.getUserBundles.mockResolvedValue([{ bundleId: "business", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "business", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
 
-      expect(dynamoDbBundleStore.getUserBundles).toHaveBeenCalledWith("user-with-legacy-bundle");
+      expect(getUserBundles).toHaveBeenCalledWith("user-with-legacy-bundle");
     });
 
     test("should allow production access with guest bundle with expiry", async () => {

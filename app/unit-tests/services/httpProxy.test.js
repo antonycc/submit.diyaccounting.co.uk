@@ -1,4 +1,4 @@
-// app/unit-tests/app-lib/proxyHelper.test.js
+// app/unit-tests/services/httpProxy.test.js
 import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 

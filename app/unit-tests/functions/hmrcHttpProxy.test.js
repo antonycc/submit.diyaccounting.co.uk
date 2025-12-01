@@ -1,4 +1,4 @@
-// app/unit-tests/functions/httpProxy.test.js
+// app/unit-tests/functions/hmrcHttpProxy.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { handler as httpProxy, matchMapping } from "@app/functions/infra/hmrcHttpProxy.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";

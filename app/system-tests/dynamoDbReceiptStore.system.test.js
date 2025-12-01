@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient, ScanCommand, GetCommand } from "@aws-sdk/lib-dy
 
 // We start a local Dynalite instance using the helper in app/bin/dynamodb.js,
 // then set environment variables so that the AWS SDK v3 client in
-// app/lib/dynamoDbReceiptRepository.js connects to that local endpoint via
+// app/data/dynamoDbReceiptRepository.js connects to that local endpoint via
 // AWS_ENDPOINT_URL[_DYNAMODB]. Only after env is set we dynamically import the
 // receipt store module to ensure it picks up the correct configuration.
 

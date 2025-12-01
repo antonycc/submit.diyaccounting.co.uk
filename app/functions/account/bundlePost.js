@@ -6,7 +6,8 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, parseRequestBody } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles, getUserBundles } from "../../services/bundleManagement.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });

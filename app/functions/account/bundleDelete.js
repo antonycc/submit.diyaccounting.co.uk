@@ -12,8 +12,9 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles, getUserBundles, updateUserBundles } from "../../services/bundleManagement.js";
+import { enforceBundles, updateUserBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 

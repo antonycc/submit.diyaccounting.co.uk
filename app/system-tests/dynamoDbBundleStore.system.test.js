@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 // We start a local Dynalite instance using the helper in app/bin/dynamodb.js,
 // then set environment variables so that the AWS SDK v3 client in
-// app/lib/dynamoDbBundleRepository.js connects to that local endpoint via
+// app/data/dynamoDbBundleRepository.js connects to that local endpoint via
 // AWS_ENDPOINT_URL[_DYNAMODB]. Only after env is set we dynamically import the
 // bundle store module to ensure it picks up the correct configuration.
 

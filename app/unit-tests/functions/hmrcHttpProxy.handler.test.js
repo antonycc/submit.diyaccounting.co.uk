@@ -86,7 +86,7 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
 
   test("returns 400 for unmapped path", async () => {
     // Mock helper but pass-through real implementation except for proxy call
-    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
+    vi.doMock("@app/services/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue({ statusCode: 200, headers: {}, body: "{}" }) };
     });
@@ -101,7 +101,7 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
 
   test("successfully proxies to upstream when mapping matches", async () => {
     const upstreamResponse = { statusCode: 200, headers: { "content-type": "application/json" }, body: '{"ok":true}' };
-    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
+    vi.doMock("@app/services/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue(upstreamResponse) };
     });
@@ -122,7 +122,7 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
     // Enable dynamo-backed rate limiter for deterministic counting
     process.env.PROXY_RATE_LIMIT_STORE = "dynamo";
     process.env.RATE_LIMIT_PER_SECOND = "2";
-    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
+    vi.doMock("@app/services/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       // Keep real rate-limit/breaker logic; stub proxy to a constant value
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue({ statusCode: 200, headers: {}, body: "{}" }) };
@@ -150,7 +150,7 @@ describe("hmrcHttpProxy handler (Lambda)", () => {
       openSince: { N: String(Math.floor(Date.now() / 1000) * 1000) },
     };
 
-    vi.doMock("@app/lib/httpProxy.js", async (importOriginal) => {
+    vi.doMock("@app/services/httpProxy.js", async (importOriginal) => {
       const real = await importOriginal();
       return { ...real, proxyRequestWithRedirects: vi.fn().mockResolvedValue({ statusCode: 200, headers: {}, body: "{}" }) };
     });

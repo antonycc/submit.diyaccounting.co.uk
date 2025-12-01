@@ -1,9 +1,9 @@
-// app/lib/dynamoDbReceiptRepository.js
+// app/data/dynamoDbReceiptRepository.js
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
 
-const logger = createLogger({ source: "app/lib/dynamoDbReceiptRepository.js" });
+const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" });
 
 let __dynamoDbModule;
 let __dynamoDbDocClient;

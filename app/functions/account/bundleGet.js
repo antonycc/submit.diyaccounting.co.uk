@@ -10,7 +10,8 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { BundleAuthorizationError, BundleEntitlementError, enforceBundles, getUserBundles } from "../../services/bundleManagement.js";
+import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "../../services/bundleManagement.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });

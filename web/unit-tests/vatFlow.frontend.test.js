@@ -6,7 +6,7 @@ import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
-import { buildGovClientTestHeaders } from "@app/unit-tests/app-lib/govClientTestHeader.js";
+import { buildGovClientTestHeaders } from "@app/unit-tests/lib/govClientTestHeader.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

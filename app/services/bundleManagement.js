@@ -1,16 +1,12 @@
-// app/lib/bundleEnforcement.js
+// app/services/bundleEnforcement.js
 
 import { createLogger } from "../lib/logger.js";
 import { extractRequest, extractUserFromAuthorizerContext } from "../lib/httpResponseHelper.js";
 import { loadCatalogFromRoot } from "./productCatalog.js";
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
+import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 
-// Expose repository getUserBundles as a pass-through binding so tests can mock
-// it via vi.mock on the repository module and still control this export.
-// Do NOT wrap in another function; keep direct reference for mockability.
-export const getUserBundles = dynamoDbBundleStore.getUserBundles;
-
-const logger = createLogger({ source: "app/lib/bundleEnforcement.js" });
+const logger = createLogger({ source: "app/services/bundleEnforcement.js" });
 
 export class BundleAuthorizationError extends Error {
   constructor(message, details) {
@@ -248,6 +244,7 @@ function findRequiredBundleIdsForUrlPath(catalog, currentPath) {
         : // For simple paths, match against the variant that makes sense:
           // - If the activity path contains a query, preserve it when comparing
           // - Otherwise compare without the query string
+          // eslint-disable-next-line sonarjs/no-nested-conditional
           p.includes("?")
           ? matchesSimplePath(p, pathWithQuery)
           : matchesSimplePath(p, pathNoQuery);

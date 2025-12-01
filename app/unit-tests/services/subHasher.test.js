@@ -1,4 +1,4 @@
-// app/unit-tests/subHasher.test.js
+// app/unit-tests/services/subHasher.test.js
 
 import { describe, test, expect } from "vitest";
 import { hashSub } from "@app/services/subHasher.js";

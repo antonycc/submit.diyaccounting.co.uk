@@ -10,6 +10,9 @@ let stopDynalite;
 /** @type {BundleManagement} */
 let bm;
 
+// Dynamo db repository imported here
+let bundleRepository;
+
 const tableName = "bundles-system-test-bm";
 
 function base64UrlEncode(obj) {
@@ -83,6 +86,7 @@ beforeAll(async () => {
 
   // Import after env configured
   bm = await import("../services/bundleManagement.js");
+  bundleRepository = await import("../data/dynamoDbBundleRepository.js");
 });
 
 afterAll(async () => {
@@ -115,7 +119,7 @@ describe("System: bundleManagement with local dynalite", () => {
 
   it("getUserBundles should return [] initially (Dynamo mode)", async () => {
     const userId = "bm-sys-empty";
-    const bundles = await bm.getUserBundles(userId);
+    const bundles = await bundleRepository.getUserBundles(userId);
     expect(Array.isArray(bundles)).toBe(true);
     expect(bundles.length).toBe(0);
   });
@@ -130,7 +134,7 @@ describe("System: bundleManagement with local dynalite", () => {
 
     await bm.updateUserBundles(userId, bundlesToSet);
 
-    const after = await bm.getUserBundles(userId);
+    const after = await bundleRepository.getUserBundles(userId);
     const ids = after.map((b) => b.bundleId);
     expect(new Set(ids)).toEqual(new Set(["guest", "test"]));
   });
@@ -146,7 +150,7 @@ describe("System: bundleManagement with local dynalite", () => {
 
     await bm.updateUserBundles(userId, [{ bundleId: "guest", expiry }]);
 
-    const after = await bm.getUserBundles(userId);
+    const after = await bundleRepository.getUserBundles(userId);
     const ids = after.map((b) => b.bundleId);
     expect(ids).toContain("guest");
     expect(ids).not.toContain("test");

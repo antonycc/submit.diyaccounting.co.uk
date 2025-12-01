@@ -1,4 +1,4 @@
-// app/unit-tests/app-lib/dynamoDbBreakerStore.test.js
+// app/unit-tests/data/dynamoDbBreakerStore.test.js
 import { describe, test, beforeEach, expect, vi, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 

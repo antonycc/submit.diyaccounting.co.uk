@@ -1,10 +1,10 @@
-// app/lib/httpProxy.js
+// app/services/httpProxy.js
 
 import http from "http";
 import https from "https";
 import { createLogger } from "../lib/logger.js";
 
-const logger = createLogger({ source: "app/lib/httpProxy.js" });
+const logger = createLogger({ source: "app/services/httpProxy.js" });
 
 // Maximum number of redirects the proxy will follow for a single upstream request
 const MAX_REDIRECTS = 5;

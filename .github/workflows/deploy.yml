@@ -61,8 +61,10 @@ on:
       - '!gh_pages'
       - '!dependabot/**'
     paths:
+      - 'app/data/**'
       - 'app/functions/**'
       - 'app/lib/**'
+      - 'app/services/**'
       - 'infra/main/**'
       - 'web/public/**'
       - '.env.ci'
