@@ -304,7 +304,9 @@ jobs:
           #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          # HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
@@ -369,7 +371,9 @@ jobs:
           #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          #HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
