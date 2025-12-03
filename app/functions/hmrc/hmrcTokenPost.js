@@ -58,8 +58,8 @@ export async function handler(event) {
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
   ];
-  if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
-  if (!process.env.HMRC_SANDBOX_CLIENT_SECRET) required.push("HMRC_SANDBOX_CLIENT_SECRET_ARN");
+  // if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
+  // if (!process.env.HMRC_SANDBOX_CLIENT_SECRET) required.push("HMRC_SANDBOX_CLIENT_SECRET_ARN");
   validateEnv(required);
 
   const { request } = extractRequest(event);

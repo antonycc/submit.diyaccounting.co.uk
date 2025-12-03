@@ -55,11 +55,11 @@ import {
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
 
-if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
-  dotenvConfigIfNotBlank({ path: ".env.test" });
-} else {
-  console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
-}
+//if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
+//  dotenvConfigIfNotBlank({ path: ".env.test" });
+//} else {
+//  console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
+//}
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
 const screenshotPath = "target/behaviour-test-results/screenshots/vat-obligations-behaviour-test";

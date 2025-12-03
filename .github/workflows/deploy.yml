@@ -207,7 +207,7 @@ jobs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   behaviour-test-bundle:
-    name: 'behaviour test - bundle'
+    name: 'behaviour test - bundle (proxy)'
     needs:
       - names
     runs-on: ubuntu-24.04
@@ -232,7 +232,7 @@ jobs:
 
       - name: Run behaviour tests - bundle
         run: |
-          npm run test:bundleBehaviour || exit_code=$? \
+          npm run test:bundleBehaviour-proxy || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -270,7 +270,7 @@ jobs:
             target/behaviour-test-results/**/*.jsonl
 
   behaviour-test-obligation:
-    name: 'behaviour test - obligation'
+    name: 'behaviour test - obligation (proxy)'
     needs:
       - names
       - behaviour-test-bundle
@@ -296,7 +296,7 @@ jobs:
 
       - name: Run behaviour tests - obligation
         run: |
-          npm run test:obligationBehaviour || exit_code=$? \
+          npm run test:obligationBehaviour-proxy || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -337,7 +337,7 @@ jobs:
             target/behaviour-test-results/**/*.jsonl
 
   behaviour-test-submit-vat:
-    name: 'behaviour test - submit vat'
+    name: 'behaviour test - submit vat (proxy)'
     needs:
       - names
       - behaviour-test-obligation
@@ -363,7 +363,7 @@ jobs:
 
       - name: Run behaviour tests - submit vat
         run: |
-          npm run test:submitVatBehaviour || exit_code=$? \
+          npm run test:submitVatBehaviour-proxy || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -1748,8 +1748,7 @@ jobs:
 
       - name: Run behaviour tests - bundleBehaviour
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:bundleBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
@@ -1842,8 +1841,7 @@ jobs:
       - name: Run behaviour tests - obligationBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:obligationBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
@@ -1851,6 +1849,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          HMRC_ACCOUNT: sandbox
           #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -1937,8 +1936,7 @@ jobs:
       - name: Run behaviour tests - obligationBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:obligationBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
@@ -2032,8 +2030,7 @@ jobs:
       - name: Run behaviour tests - submitVatBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:submitVatBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
@@ -2041,6 +2038,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          HMRC_ACCOUNT: sandbox
           #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -2127,8 +2125,7 @@ jobs:
       - name: Run behaviour tests - submitVatBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
+          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
             npm run test:submitVatBehaviour || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
