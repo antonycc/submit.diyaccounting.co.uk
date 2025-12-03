@@ -28,7 +28,10 @@ function startDynaliteServer({ host = "127.0.0.1", port = 9000 } = {}) {
   return new Promise((resolve, reject) => {
     server.listen(port, host, (err) => {
       if (err) return reject(err);
-      const endpoint = `http://${host}:${port}`;
+      // If using port 0, retrieve the actual bound port from server.address()
+      const addr = server.address();
+      const actualPort = typeof addr === "object" && addr && "port" in addr ? addr.port : port;
+      const endpoint = `http://${host}:${actualPort}`;
       resolve({ server, endpoint });
     });
   });
@@ -36,7 +39,11 @@ function startDynaliteServer({ host = "127.0.0.1", port = 9000 } = {}) {
 
 export async function startDynamoDB() {
   // Start a single, consistent local DynamoDB-like server (dynalite)
-  const { server, endpoint } = await startDynaliteServer({ host: "127.0.0.1", port: 9000 });
+  const host = process.env.DYNAMODB_HOST || "127.0.0.1";
+  // Allow tests to request a random free port with DYNAMODB_PORT=0
+  const rawPort = process.env.DYNAMODB_PORT;
+  const port = Number.isFinite(Number(rawPort)) ? Number(rawPort) : 9000;
+  const { server, endpoint } = await startDynaliteServer({ host, port });
   const stop = async () => {
     try {
       server.close();
