@@ -60,6 +60,7 @@ import {
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
+import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 
 // if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
 //   dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -67,6 +68,9 @@ import {
 //   console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
 // }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
+
+let wiremockMode;
+let wiremockPort;
 
 const screenshotPath = "target/behaviour-test-results/screenshots/submitVat-behaviour-test";
 
@@ -121,6 +125,24 @@ test.beforeAll(async ({ page }, testInfo) => {
   deleteHashedUserSubTxt(outputDir);
   deleteTraceparentTxt(outputDir);
 
+  wiremockMode = process.env.TEST_WIREMOCK || "off";
+  wiremockPort = process.env.WIREMOCK_PORT || 9090;
+
+  if (wiremockMode !== "off") {
+    const targets = [];
+    if (process.env.HMRC_BASE_URI) targets.push(process.env.HMRC_BASE_URI);
+    if (process.env.HMRC_SANDBOX_BASE_URI) targets.push(process.env.HMRC_SANDBOX_BASE_URI);
+    await startWiremock({
+      mode: wiremockMode,
+      port: wiremockPort,
+      outputDir: process.env.WIREMOCK_RECORD_OUTPUT_DIR || "",
+      targets,
+    });
+    // override HMRC endpoints so the app uses WireMock
+    process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
+    process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
+  }
+
   console.log("beforeAll hook completed successfully");
 });
 
@@ -138,6 +160,10 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
+  // stop local servers...
+  if (wiremockMode && wiremockMode !== "off") {
+    await stopWiremock({ mode: wiremockMode, port: wiremockPort });
+  }
 });
 
 test.afterEach(async ({ page }, testInfo) => {
