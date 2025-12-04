@@ -55,6 +55,7 @@
     "test:obligationBehaviour-ci": "npx dotenv -e .env.ci   -- npm run test:obligationBehaviour",
     "test:obligationBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:obligationBehaviour",
     "test:submitVatBehaviour": "playwright test --project=submit-vat-behaviour-tests",
+    "test:submitVatBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:submitVatBehaviour",
     "test:submitVatBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:submitVatBehaviour",
     "test:submitVatBehaviour-sandbox": "HMRC_ACCOUNT=sandbox npm run test:submitVatBehaviour-proxy",
     "test:submitVatBehaviourProxyRunning": "npx dotenv -e .env.proxyRunning -- npm run test:submitVatBehaviour",

@@ -1848,6 +1848,7 @@ jobs:
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
           HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
@@ -2035,6 +2036,7 @@ jobs:
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
           HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
