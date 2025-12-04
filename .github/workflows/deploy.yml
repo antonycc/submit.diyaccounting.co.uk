@@ -1748,8 +1748,7 @@ jobs:
 
       - name: Run behaviour tests - bundleBehaviour
         run: |
-          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:bundleBehaviour || exit_code=$? \
+          npm run 'test:bundleBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -1841,8 +1840,7 @@ jobs:
       - name: Run behaviour tests - obligationBehaviour
         if: ${{ !cancelled() }}
         run: |
-          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:obligationBehaviour || exit_code=$? \
+          npm run 'test:obligationBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
@@ -1936,8 +1934,7 @@ jobs:
       - name: Run behaviour tests - obligationBehaviour
         if: ${{ !cancelled() }}
         run: |
-          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:obligationBehaviour || exit_code=$? \
+          npm run 'test:obligationBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -2030,8 +2027,7 @@ jobs:
       - name: Run behaviour tests - submitVatBehaviour
         if: ${{ !cancelled() }}
         run: |
-          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:submitVatBehaviour || exit_code=$? \
+          npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
@@ -2125,8 +2121,7 @@ jobs:
       - name: Run behaviour tests - submitVatBehaviour
         if: ${{ !cancelled() }}
         run: |
-          npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:submitVatBehaviour || exit_code=$? \
+          npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;

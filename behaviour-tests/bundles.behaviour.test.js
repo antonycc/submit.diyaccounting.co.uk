@@ -46,6 +46,7 @@ const screenshotPath = "target/behaviour-test-results/screenshots/bundles-behavi
 
 const originalEnv = { ...process.env };
 
+const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", null);
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3500);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
@@ -70,6 +71,10 @@ test.setTimeout(120_000);
 
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
+
+  if (!envFilePath) {
+    throw new Error("Environment variable DIY_SUBMIT_ENV_FILEPATH is not set, assuming no environment; not attempting tests.");
+  }
 
   process.env = {
     ...originalEnv,
