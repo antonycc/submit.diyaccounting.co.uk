@@ -396,30 +396,46 @@
           return;
         }
 
-        let html = `<p>Found ${requests.length} HMRC API request(s):</p>`;
+        let html = `<p>Found ${requests.length} HMRC API request(s) logged during test execution:</p>`;
 
         requests.forEach((req, index) => {
-          const method = escapeHtml((req.method || "GET").toUpperCase());
-          const url = escapeHtml(req.url || req.path || "unknown");
-          const requestJson = escapeHtml(JSON.stringify(req.request || req, null, 2));
-          const responseJson = req.response ? escapeHtml(JSON.stringify(req.response, null, 2)) : null;
+          // Handle different data structures - could be direct or nested
+          const httpRequest = req.httpRequest || req;
+          const httpResponse = req.httpResponse || req.response;
+          
+          const method = escapeHtml((httpRequest.method || req.method || "GET").toUpperCase());
+          const url = escapeHtml(httpRequest.path || httpRequest.url || req.url || req.path || "unknown");
+          const requestHeaders = httpRequest.headers || {};
+          const requestBody = httpRequest.body || httpRequest.data || req.body || req.data;
+          
+          const statusCode = httpResponse?.statusCode || httpResponse?.status || "";
+          const responseHeaders = httpResponse?.headers || {};
+          const responseBody = httpResponse?.body || httpResponse?.data;
 
           html += `
             <div class="api-request">
               <h4>
                 <span class="api-method ${method.toLowerCase()}">${method}</span>
                 ${url}
+                ${statusCode ? `<span style="margin-left: 1rem; color: ${statusCode < 400 ? '#28a745' : '#dc3545'};">Status: ${statusCode}</span>` : ''}
               </h4>
+              
               <h5>Request:</h5>
-              <pre>${requestJson}</pre>
-              ${
-                responseJson
-                  ? `
+              <pre><strong>Method:</strong> ${method}
+<strong>URL:</strong> ${url}${Object.keys(requestHeaders).length > 0 ? `
+<strong>Headers:</strong>
+${escapeHtml(JSON.stringify(requestHeaders, null, 2))}` : ''}${requestBody ? `
+<strong>Body:</strong>
+${escapeHtml(typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody, null, 2))}` : ''}</pre>
+              
+              ${httpResponse ? `
               <h5>Response:</h5>
-              <pre>${responseJson}</pre>
-              `
-                  : ""
-              }
+              <pre>${statusCode ? `<strong>Status:</strong> ${statusCode}
+` : ''}${Object.keys(responseHeaders).length > 0 ? `<strong>Headers:</strong>
+${escapeHtml(JSON.stringify(responseHeaders, null, 2))}
+` : ''}${responseBody ? `<strong>Body:</strong>
+${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody, null, 2))}` : ''}</pre>
+              ` : ''}
             </div>
           `;
         });

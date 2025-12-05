@@ -283,26 +283,16 @@ function findTestArtifacts(testName) {
     }
   }
 
-  // Always find videos separately
-  function findVideos(dir, relativePath = "") {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
+  // Find video for this specific test (should be only one at root level)
+  // Videos are typically named with timestamps, look for .webm or .mp4 at the root of testResultsDir
+  try {
+    const entries = fs.readdirSync(testResultsDir, { withFileTypes: true });
     for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      const relPath = path.join(relativePath, entry.name);
-
-      if (entry.isDirectory()) {
-        findVideos(fullPath, relPath);
-      } else if (entry.isFile()) {
-        if (entry.name.endsWith(".webm") || entry.name.endsWith(".mp4")) {
-          artifacts.videos.push(relPath);
-        }
+      if (entry.isFile() && (entry.name.endsWith(".webm") || entry.name.endsWith(".mp4"))) {
+        artifacts.videos.push(entry.name);
+        console.log(`  ✓ Found video: ${entry.name}`);
       }
     }
-  }
-
-  try {
-    findVideos(testResultsDir);
   } catch (e) {
     console.warn(`  ⚠ Failed to find videos: ${e.message}`);
   }
