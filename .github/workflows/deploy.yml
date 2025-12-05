@@ -1795,8 +1795,23 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           echo "Generating test report JSON files from behaviour test results..."
-          node scripts/generate-test-reports.js
-          mv target/behaviour-test-results/test-report-html-report.json target/behaviour-test-results/test-report-bundle.json
+          node scripts/generate-test-reports.js \
+            --testName bundle \
+            --testFile 'behaviour-tests/bundles.behaviour.test.js' \
+            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+          ;
+          mv -v target/behaviour-test-results/test-report-html-report.json \
+            target/behaviour-test-results/test-report-bundle.json \
+          ;
+        shell: bash
+
+      - name: List artefacts
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Behaviour test results files:"
+          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          echo "Test report files:"
+          find target/test-reports/ - type f -exec ls -l {} \;
         shell: bash
 
       - name: Upload artifacts (results)
@@ -1894,6 +1909,29 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
 
+      - name: Generate test report JSON files
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Generating test report JSON files from behaviour test results..."
+          node scripts/generate-test-reports.js \
+            --testName obligation-sandbox \
+            --testFile 'behaviour-tests/vatObligations.behaviour.test.js' \
+            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+          ;
+          mv -v target/behaviour-test-results/test-report-html-report.json \
+            target/behaviour-test-results/test-report-obligation-sandbox.json \
+          ;
+        shell: bash
+
+      - name: List artefacts
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Behaviour test results files:"
+          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          echo "Test report files:"
+          find target/test-reports/ - type f -exec ls -l {} \;
+        shell: bash
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -1986,6 +2024,29 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
+
+      - name: Generate test report JSON files
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Generating test report JSON files from behaviour test results..."
+          node scripts/generate-test-reports.js \
+            --testName obligation \
+            --testFile 'behaviour-tests/vatObligations.behaviour.test.js' \
+            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+          ;
+          mv -v target/behaviour-test-results/test-report-html-report.json \
+            target/behaviour-test-results/test-report-obligation.json \
+          ;
+        shell: bash
+
+      - name: List artefacts
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Behaviour test results files:"
+          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          echo "Test report files:"
+          find target/test-reports/ - type f -exec ls -l {} \;
+        shell: bash
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -2082,6 +2143,29 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
 
+      - name: Generate test report JSON files
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Generating test report JSON files from behaviour test results..."
+          node scripts/generate-test-reports.js \
+            --testName submit-vat-sandbox \
+            --testFile 'behaviour-tests/submitVat.behaviour.test.js' \
+            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+          ;
+          mv -v target/behaviour-test-results/test-report-html-report.json \
+            target/behaviour-test-results/test-report-submit-vat-sandbox.json \
+          ;
+        shell: bash
+
+      - name: List artefacts
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Behaviour test results files:"
+          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          echo "Test report files:"
+          find target/test-reports/ - type f -exec ls -l {} \;
+        shell: bash
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -2175,6 +2259,29 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
 
+      - name: Generate test report JSON files
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Generating test report JSON files from behaviour test results..."
+          node scripts/generate-test-reports.js \
+            --testName submit-vat-sandbox \
+            --testFile 'behaviour-tests/submitVat.behaviour.test.js' \
+            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+          ;
+          mv -v target/behaviour-test-results/test-report-html-report.json \
+            target/behaviour-test-results/test-report-submit-vat.json \
+          ;
+        shell: bash
+
+      - name: List artefacts
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Behaviour test results files:"
+          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          echo "Test report files:"
+          find target/test-reports/ - type f -exec ls -l {} \;
+        shell: bash
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -2219,7 +2326,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download artifacts (results) - bundle
+      - name: Download artifacts - bundle
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
         with:
@@ -2227,7 +2334,7 @@ jobs:
           path: |
             target/behaviour-test-results/bundle/
 
-      - name: Download artifacts (results) - obligation
+      - name: Download artifacts - obligation
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v6
         with:
@@ -2235,7 +2342,7 @@ jobs:
           path: |
             target/behaviour-test-results/obligation/
 
-      - name: Download artifacts (results) - obligation sandbox
+      - name: Download artifacts - obligation sandbox
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
         with:
@@ -2243,7 +2350,7 @@ jobs:
           path: |
             target/behaviour-test-results/obligation-sandbox/
 
-      - name: Download artifacts (results) - submit vat
+      - name: Download artifacts - submit vat
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v6
         with:
@@ -2251,7 +2358,7 @@ jobs:
           path: |
             target/behaviour-test-results/submit-vat/
 
-      - name: Download artifacts (results) - submit vat sandbox
+      - name: Download artifacts - submit vat sandbox
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
         with:
@@ -2259,7 +2366,14 @@ jobs:
           path: |
             target/behaviour-test-results/submit-vat-sandbox/
 
-      - name: Download artifacts (reports) - bundle
+      - name: List downloaded artefacts
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          echo "Behaviour test results files:"
+          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+
+      - name: Download reports - bundle
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
         with:
@@ -2267,7 +2381,7 @@ jobs:
           path: |
             target/test-reports/bundle/
 
-      - name: Download artifacts (reports) - obligation
+      - name: Download reports - obligation
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v6
         with:
@@ -2275,7 +2389,7 @@ jobs:
           path: |
             target/test-reports/obligation/
 
-      - name: Download artifacts (reports) - obligation sandbox
+      - name: Download reports - obligation sandbox
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
         with:
@@ -2283,7 +2397,7 @@ jobs:
           path: |
             target/test-reports/obligation-sandbox/
 
-      - name: Download artifacts (reports) - submit vat
+      - name: Download reports - submit vat
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v6
         with:
@@ -2291,7 +2405,7 @@ jobs:
           path: |
             target/test-reports/submit-vat/
 
-      - name: Download artifacts (reports) - submit vat sandbox
+      - name: Download reports - submit vat sandbox
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
         with:
@@ -2299,145 +2413,12 @@ jobs:
           path: |
             target/test-reports/submit-vat-sandbox/
 
-      - name: Generate combined test report index
+      - name: List downloaded reports
         if: ${{ !cancelled() }}
-        run: |
-          set -euo pipefail
-          mkdir -p target/test-reports/html-report
-          INDEX_FILE="target/test-reports/html-report/index.html"
-          cat > "$INDEX_FILE" << 'HTMLEOF'
-          <!doctype html>
-          <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Playwright Test Reports - DIY Accounting Submit</title>
-            <style>
-              body {
-                font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif;
-                max-width: 920px;
-                margin: 24px auto;
-                padding: 0 16px;
-                line-height: 1.6;
-                color: #333;
-              }
-              h1 {
-                font-size: 1.8rem;
-                color: #2c3e50;
-                margin-bottom: 0.5rem;
-              }
-              p.subtitle {
-                color: #666;
-                font-size: 1rem;
-                margin-top: 0;
-                margin-bottom: 2rem;
-              }
-              ul {
-                list-style: none;
-                padding: 0;
-              }
-              li {
-                margin: 12px 0;
-                padding: 16px;
-                background-color: #f8f9fa;
-                border-radius: 6px;
-                border-left: 4px solid #007bff;
-              }
-              li:hover {
-                background-color: #e9ecef;
-              }
-              a {
-                color: #007bff;
-                text-decoration: none;
-                font-size: 1.05rem;
-                font-weight: 500;
-              }
-              a:hover {
-                text-decoration: underline;
-              }
-              .timestamp {
-                color: #666;
-                font-size: 0.9rem;
-                margin-top: 2rem;
-                padding-top: 1rem;
-                border-top: 1px solid #ddd;
-                text-align: center;
-              }
-              .back-link {
-                display: inline-block;
-                margin-bottom: 1.5rem;
-                color: #007bff;
-                text-decoration: none;
-              }
-              .back-link:hover {
-                text-decoration: underline;
-              }
-            </style>
-          </head>
-          <body>
-            <a href="../index.html" class="back-link">← Back to All Test Reports</a>
-            <h1>Playwright Test Reports</h1>
-            <p class="subtitle">Direct access to Playwright HTML reports for each test suite</p>
-            <ul>
-          HTMLEOF
-
-          for d in bundle obligation obligation-sandbox submit-vat submit-vat-sandbox; do
-            if [ -f "target/test-reports/$d/html-report/index.html" ]; then
-              case "$d" in
-                bundle) label="Click through test: Adding and removing bundles" ;;
-                obligation) label="Click through test: View VAT obligations from HMRC" ;;
-                obligation-sandbox) label="Click through test: View VAT obligations from HMRC (sandbox)" ;;
-                submit-vat) label="Click through test: Submit a VAT return to HMRC (includes view VAT return)" ;;
-                submit-vat-sandbox) label="Click through test: Submit a VAT return to HMRC (sandbox, includes view VAT return)" ;;
-                *) label="$d" ;;
-              esac
-              echo "              <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
-            fi
-          done
-
-          cat >> "$INDEX_FILE" << HTMLEOF
-            </ul>
-            <p class="timestamp">Generated on $(date -u '+%Y-%m-%d %H:%M:%SZ') (UTC)</p>
-          </body>
-          </html>
-          HTMLEOF
         shell: bash
-#      - name: Generate combined test report index
-#        if: ${{ !cancelled() }}
-#        run: |
-#          set -euo pipefail
-#          mkdir -p target/test-reports/html-report
-#          INDEX_FILE="target/test-reports/html-report/index.html"
-#          echo "<!doctype html>" > "$INDEX_FILE"
-#          echo "<html><head><meta charset=\"utf-8\"><title>Behaviour Test Reports</title>" >> "$INDEX_FILE"
-#          echo "<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;max-width:920px;margin:24px auto;padding:0 16px}h1{font-size:1.6rem}ul{line-height:1.9}li{margin:6px 0}.ts{color:#666;font-size:.9rem}</style>" >> "$INDEX_FILE"
-#          echo "</head><body>" >> "$INDEX_FILE"
-#          echo "<h1>Behaviour Test Reports</h1>" >> "$INDEX_FILE"
-#          echo "<ul>" >> "$INDEX_FILE"
-#          for d in bundle obligation obligation-sandbox submit-vat submit-vat-sandbox; do
-#            if [ -f "target/test-reports/$d/html-report/index.html" ]; then
-#              case "$d" in
-#                bundle) label="Click through test: Adding and removing bundles" ;;
-#                obligation) label="Click through test: View VAT obligations from HMRC" ;;
-#                obligation-sandbox) label="Click through test: View VAT obligations from HMRC (sandbox)" ;;
-#                submit-vat) label="Click through test: Submit a VAT return to HMRC (includes view VAT return)" ;;
-#                submit-vat-sandbox) label="Click through test: Submit a VAT return to HMRC (sandbox, includes view VAT return)" ;;
-#                *) label="$d" ;;
-#              esac
-#              echo "  <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
-#            fi
-#          done
-#          echo "</ul>" >> "$INDEX_FILE"
-#          echo "<hr><p class=\"ts\">Generated on $(date -u '+%Y-%m-%d %H:%M:%SZ') (UTC)</p>" >> "$INDEX_FILE"
-#          echo "</body></html>" >> "$INDEX_FILE"
-#        shell: bash
-
-#      - name: Generate test report JSON files
-#        if: ${{ !cancelled() }}
-#        run: |
-#          echo "Generating test report JSON files from behaviour test results..."
-#          node scripts/generate-test-reports.js
-#        shell: bash
+        run: |
+          echo "Test report files:"
+          find target/test-reports/ - type f -exec ls -l {} \;
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
@@ -2467,14 +2448,14 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
+        shell: bash
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
-          echo "Uploading behaviour test results (artifacts) to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
+          aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive --verbose
+          echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
+          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive --verbose
           echo "Uploading test report JSON files and index pages to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "test-report*.json"
-        shell: bash
+          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --include "test-report*.json" --verbose
 
   convert-video:
     name: 'convert web test video to mp4'
