@@ -2433,6 +2433,8 @@ jobs:
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
+          echo "Uploading behaviour test results (artifacts) to S3 bucket: ${BUCKET_NAME?}"
+          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
           echo "Uploading test report JSON files and index pages to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp web/public/tests/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "*.json" --include "*.txt" --include "*.html"
         shell: bash

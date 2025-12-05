@@ -396,7 +396,7 @@
         if (artifacts.videos && artifacts.videos.length > 0) {
           let html = "";
           artifacts.videos.forEach((video) => {
-            const videoPath = `../../behaviour-test-results/${report.testName}/${escapeHtml(video)}`;
+            const videoPath = `behaviour-test-results/${report.testName}/${escapeHtml(video)}`;
             html += `
               <div class="video-container">
                 <p><strong>${escapeHtml(video)}</strong></p>
@@ -418,7 +418,7 @@
         if (artifacts.screenshots && artifacts.screenshots.length > 0) {
           let html = "<div>";
           artifacts.screenshots.forEach((screenshot) => {
-            const screenshotPath = `../../behaviour-test-results/${report.testName}/${escapeHtml(screenshot)}`;
+            const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(screenshot)}`;
             html += `<a href="${screenshotPath}" target="_blank"><img src="${screenshotPath}" alt="${escapeHtml(screenshot)}" class="screenshot-thumbnail" title="${escapeHtml(screenshot)}"></a>`;
           });
           html += "</div>";
