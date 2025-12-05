@@ -109,38 +109,33 @@ function findHmrcApiRequests(dir) {
 
 /**
  * Check if playwright report exists and extract test status
+ * Sources status (and failedTests when available) ONLY from .last-run.json
+ * in target/behaviour-test-results. No HTML parsing fallback.
  */
 function getPlaywrightReportStatus(testName) {
   const indexPath = path.join(REPORTS_DIR, "index.html");
+  const exists = fs.existsSync(indexPath);
 
-  if (!fs.existsSync(indexPath)) {
-    return { exists: false, status: "unknown" };
-  }
+  // Start with defaults
+  const result = { exists, status: "unknown" };
 
+  // Prefer .last-run.json for authoritative status and failedTests
   try {
-    const html = fs.readFileSync(indexPath, "utf-8");
-
-    // Try to determine pass/fail from HTML content
-    // Look for specific Playwright HTML patterns indicating test status
-    // Check for failed tests first (more specific)
-    if (html.includes('class="passed"') || html.match(/\b\d+\s+passed\b/i) || html.includes("✓") || html.includes("All tests passed")) {
-      // Check if there are also failures
-      if (html.includes('class="failed"') || html.match(/\b\d+\s+failed\b/i) || html.includes("test failed")) {
-        return { exists: true, status: "failed" };
+    const lastRunPath = path.join(RESULTS_DIR, ".last-run.json");
+    if (fs.existsSync(lastRunPath)) {
+      const lastRun = JSON.parse(fs.readFileSync(lastRunPath, "utf-8"));
+      if (typeof lastRun.status === "string") {
+        result.status = lastRun.status;
       }
-      return { exists: true, status: "passed" };
+      if (Array.isArray(lastRun.failedTests)) {
+        result.failedTests = lastRun.failedTests;
+      }
     }
-
-    if (html.includes('class="failed"') || html.match(/\b\d+\s+failed\b/i) || html.includes("test failed")) {
-      return { exists: true, status: "failed" };
-    }
-
-    // Default to unknown if we can't determine
-    return { exists: true, status: "unknown" };
   } catch (e) {
-    console.warn(`Failed to read playwright report: ${e.message}`);
-    return { exists: false, status: "unknown" };
+    console.warn(`Failed to read .last-run.json: ${e.message}`);
   }
+
+  return result;
 }
 
 /**

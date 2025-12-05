@@ -1796,6 +1796,7 @@ jobs:
         run: |
           echo "Generating test report JSON files from behaviour test results..."
           node scripts/generate-test-reports.js
+          mv target/behaviour-test-results/test-report-html-report.json target/behaviour-test-results/test-report-bundle.json
         shell: bash
 
       - name: Upload artifacts (results)
@@ -2367,7 +2368,7 @@ jobs:
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
           echo "Uploading test report JSON files and index pages to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp web/public/tests/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "*.json" --include "*.txt" --include "*.html"
+          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "test-report*.json"
         shell: bash
 
   convert-video:
