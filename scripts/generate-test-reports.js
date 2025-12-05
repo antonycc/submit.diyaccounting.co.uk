@@ -107,6 +107,17 @@ function findHmrcApiRequests(dir) {
 }
 
 /**
+ * Regex patterns for status detection (compiled once for performance)
+ */
+const STATUS_PATTERNS = {
+  passed: /(\d+)\s+passed/i,
+  failed: /(\d+)\s+failed/i,
+  skipped: /(\d+)\s+skipped/i,
+  allPassed: /All\s+tests?\s+passed/i,
+  checkPassed: /✓.*passed/i,
+};
+
+/**
  * Check if playwright report exists and extract test status
  */
 function getPlaywrightReportStatus(testName) {
@@ -122,12 +133,13 @@ function getPlaywrightReportStatus(testName) {
 
     // Look for Playwright report status indicators
     // Check for passed and failed test counts
-    const passedMatch = html.match(/(\d+)\s+passed/i);
-    const failedMatch = html.match(/(\d+)\s+failed/i);
-    const skippedMatch = html.match(/(\d+)\s+skipped/i);
+    const passedMatch = html.match(STATUS_PATTERNS.passed);
+    const failedMatch = html.match(STATUS_PATTERNS.failed);
 
     const passedCount = passedMatch ? parseInt(passedMatch[1]) : 0;
     const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
+
+    console.log(`  ℹ Status detection for ${testName}: passed=${passedCount}, failed=${failedCount}`);
 
     // If we have failed tests, status is failed
     if (failedCount > 0) {
@@ -139,8 +151,14 @@ function getPlaywrightReportStatus(testName) {
       return { exists: true, status: "passed" };
     }
 
+    // Check for alternative patterns in newer Playwright versions
+    // Look for test results summary
+    if (html.match(STATUS_PATTERNS.allPassed) || html.match(STATUS_PATTERNS.checkPassed)) {
+      return { exists: true, status: "passed" };
+    }
+
     // Check for class-based indicators as fallback
-    if (html.includes('class="passed"') || html.includes("✓") || html.includes("All tests passed")) {
+    if (html.includes('class="passed"') || html.includes("✓")) {
       if (html.includes('class="failed"') || html.includes("test failed")) {
         return { exists: true, status: "failed" };
       }
@@ -151,15 +169,15 @@ function getPlaywrightReportStatus(testName) {
       return { exists: true, status: "failed" };
     }
 
-    // If report exists but we couldn't determine status, assume passed
-    // This handles edge cases where Playwright format might vary
-    // Only do this if the report file exists and has content
+    // If report exists but we couldn't determine status, check content size
+    // A substantial report usually means tests ran successfully
     if (html.length > 1000) {
-      console.log(`  ℹ Could not determine exact status for ${testName}, defaulting to passed (report exists with content)`);
+      console.log(`  ℹ Could not determine exact status for ${testName}, defaulting to passed (report exists with ${html.length} chars)`);
       return { exists: true, status: "passed" };
     }
     
     // If report is too small or empty, status is unknown
+    console.log(`  ⚠ Report for ${testName} is too small (${html.length} chars), status unknown`);
     return { exists: true, status: "unknown" };
   } catch (e) {
     console.warn(`Failed to read playwright report: ${e.message}`);

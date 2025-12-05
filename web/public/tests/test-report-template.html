@@ -142,6 +142,14 @@
         color: white;
       }
 
+      .status-success {
+        color: #28a745;
+      }
+
+      .status-error {
+        color: #dc3545;
+      }
+
       .back-link {
         display: inline-block;
         margin-bottom: 1rem;
@@ -417,7 +425,7 @@
               <h4>
                 <span class="api-method ${method.toLowerCase()}">${method}</span>
                 ${url}
-                ${statusCode ? `<span style="margin-left: 1rem; color: ${statusCode < 400 ? '#28a745' : '#dc3545'};">Status: ${statusCode}</span>` : ''}
+                ${statusCode ? `<span class="${statusCode < 400 ? 'status-success' : 'status-error'}" style="margin-left: 1rem;">Status: ${statusCode}</span>` : ''}
               </h4>
               
               <h5>Request:</h5>
