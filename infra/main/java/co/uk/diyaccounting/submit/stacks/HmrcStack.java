@@ -1,15 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -25,6 +20,11 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -87,9 +87,13 @@ public class HmrcStack extends Stack {
 
         String hmrcBaseUri();
 
+        String hmrcProxyBaseUri();
+
         String hmrcClientId();
 
         String hmrcClientSecretArn();
+
+        String hmrcSandboxProxyBaseUri();
 
         String hmrcSandboxBaseUri();
 
@@ -103,13 +107,13 @@ public class HmrcStack extends Stack {
         SubmitSharedNames sharedNames();
 
         // TODO: Delete these and ensure the tests set environment which the server.js reads
-        Optional<String> optionalTestAccessToken(); // {
+        //Optional<String> optionalTestAccessToken(); // {
 
-        Optional<String> optionalTestS3Endpoint(); // {
+        //Optional<String> optionalTestS3Endpoint(); // {
 
-        Optional<String> optionalTestS3AccessKey(); // {
+        //Optional<String> optionalTestS3AccessKey(); // {
 
-        Optional<String> optionalTestS3SecretKey(); // {
+        //Optional<String> optionalTestS3SecretKey(); // {
 
         static ImmutableHmrcStackProps.Builder builder() {
             return ImmutableHmrcStackProps.builder();
@@ -182,8 +186,10 @@ public class HmrcStack extends Stack {
         var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                //.with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                //.with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
@@ -193,11 +199,11 @@ public class HmrcStack extends Stack {
         if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
             exchangeHmrcTokenLambdaEnv.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
         }
-        if (props.optionalTestAccessToken().isPresent()
-                && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
-            exchangeHmrcTokenLambdaEnv.with(
-                    "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
-        }
+//        if (props.optionalTestAccessToken().isPresent()
+//                && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
+//            exchangeHmrcTokenLambdaEnv.with(
+//                    "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
+//        }
 
         var exchangeHmrcTokenLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -281,7 +287,9 @@ public class HmrcStack extends Stack {
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                //.with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                //.with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
@@ -323,7 +331,9 @@ public class HmrcStack extends Stack {
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                //.with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                //.with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
@@ -365,7 +375,9 @@ public class HmrcStack extends Stack {
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                //.with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                //.with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
@@ -406,18 +418,18 @@ public class HmrcStack extends Stack {
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
-        if (props.optionalTestS3Endpoint().isPresent()
-                && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
-                && props.optionalTestS3AccessKey().isPresent()
-                && StringUtils.isNotBlank(props.optionalTestS3AccessKey().get())
-                && props.optionalTestS3SecretKey().isPresent()
-                && StringUtils.isNotBlank(props.optionalTestS3SecretKey().get())) {
-            // For production like integrations without AWS we can use test S3 credentials
-            logReceiptLambdaEnv
-                    .with("TEST_S3_ENDPOINT", props.optionalTestS3Endpoint().get())
-                    .with("TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey().get())
-                    .with("TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey().get());
-        }
+//        if (props.optionalTestS3Endpoint().isPresent()
+//                && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
+//                && props.optionalTestS3AccessKey().isPresent()
+//                && StringUtils.isNotBlank(props.optionalTestS3AccessKey().get())
+//                && props.optionalTestS3SecretKey().isPresent()
+//                && StringUtils.isNotBlank(props.optionalTestS3SecretKey().get())) {
+//            // For production like integrations without AWS we can use test S3 credentials
+//            logReceiptLambdaEnv
+//                    .with("TEST_S3_ENDPOINT", props.optionalTestS3Endpoint().get())
+//                    .with("TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey().get())
+//                    .with("TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey().get());
+//        }
         var logReceiptLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()

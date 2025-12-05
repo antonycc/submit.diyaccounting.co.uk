@@ -1,9 +1,12 @@
-// app/lib/bundleEnforcement.js
+// app/services/bundleEnforcement.js
 
-import logger from "./logger.js";
-import { extractRequest, extractUserFromAuthorizerContext } from "./responses.js";
-import { loadCatalogFromRoot } from "./productCatalogHelper.js";
-import * as dynamoDbBundleStore from "./dynamoDbBundleStore.js";
+import { createLogger } from "../lib/logger.js";
+import { extractRequest, extractUserFromAuthorizerContext } from "../lib/httpResponseHelper.js";
+import { loadCatalogFromRoot } from "./productCatalog.js";
+import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
+import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
+
+const logger = createLogger({ source: "app/services/bundleEnforcement.js" });
 
 export class BundleAuthorizationError extends Error {
   constructor(message, details) {
@@ -21,19 +24,15 @@ export class BundleEntitlementError extends Error {
   }
 }
 
-export async function getUserBundles(userId) {
-  // Use DynamoDB as primary source
-  const bundles = await dynamoDbBundleStore.getUserBundles(userId);
-  logger.info({ message: "Current user bundles from DynamoDB:", bundles });
-  return bundles;
-}
+// Note: getUserBundles is exported above as a direct reference to repository
+// function for test mocking compatibility.
 
 export async function updateUserBundles(userId, bundles) {
   logger.info({ message: `Updating bundles for user ${userId} with ${bundles.length}`, bundles });
 
   // Update DynamoDB - this requires removing old bundles and adding new ones
   // Get current bundles to determine what to remove
-  const currentBundles = await dynamoDbBundleStore.getUserBundles(userId);
+  const currentBundles = await getUserBundles(userId);
 
   logger.info({ message: `Current bundles for user ${userId} in DynamoDB count: ${currentBundles.length}`, currentBundles });
 
@@ -245,6 +244,7 @@ function findRequiredBundleIdsForUrlPath(catalog, currentPath) {
         : // For simple paths, match against the variant that makes sense:
           // - If the activity path contains a query, preserve it when comparing
           // - Otherwise compare without the query string
+          // eslint-disable-next-line sonarjs/no-nested-conditional
           p.includes("?")
           ? matchesSimplePath(p, pathWithQuery)
           : matchesSimplePath(p, pathNoQuery);

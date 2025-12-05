@@ -1,44 +1,217 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <title>Behaviour Test Reports</title>
-    <style>
-      body {
-        font-family:
-          system-ui,
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          Ubuntu;
-        max-width: 920px;
-        margin: 24px auto;
-        padding: 0 16px;
-      }
-      h1 {
-        font-size: 1.6rem;
-      }
-      ul {
-        line-height: 1.9;
-      }
-      li {
-        margin: 6px 0;
-      }
-      .ts {
-        color: #666;
-        font-size: 0.9rem;
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Behaviour Test Reports - DIY Accounting Submit</title>
+    <link rel="stylesheet" href="../submit.css" />
   </head>
   <body>
-    <h1>Behaviour Test Reports - local placeholder</h1>
-    <ul>
-      <li><a href="../bundle/html-report/index.html">Click through test: Adding and removing bundles</a></li>
-      <li><a href="../obligation/html-report/index.html">Click through test: View VAT obligations from HMRC</a></li>
-      <li><a href="../submit-vat/html-report/index.html">Click through test: Submit a VAT return to HMRC</a></li>
-      <li><a href="../view-vat/html-report/index.html">Click through test: Get VAT return from HMRC</a></li>
-    </ul>
-    <hr />
-    <p class="ts">Generated on 2025-11-09 22:52:19Z (UTC)</p>
+    <header>
+      <div class="header-nav">
+        <div class="hamburger-menu">
+          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <div class="menu-dropdown" id="menuDropdown">
+            <a href="../index.html">Home</a>
+            <a href="../account/bundles.html">Bundles</a>
+            <a href="../hmrc/receipt/receipts.html">Receipts</a>
+            <a href="../guide/index.html">User Guide</a>
+            <a href="../tests/html-report/index.html">Playwright Reports</a>
+            <a href="../about.html">About</a>
+          </div>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Behaviour Test Reports</h1>
+      <p class="subtitle">End-to-end test execution results</p>
+    </header>
+
+    <div id="mainContent">
+      <div id="statusMessagesContainer"></div>
+
+      <div class="form-container">
+        <div id="loadingMessage" style="text-align: center; padding: 2rem; color: #666">
+          <p>Loading test reports...</p>
+        </div>
+
+        <div id="noReportsMessage" style="display: none; text-align: center; padding: 2rem; color: #666">
+          <p>No test reports available.</p>
+        </div>
+
+        <div id="reportsContainer" style="display: none"></div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="#" id="viewSourceLink" style="display: none">view source</a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/index.html">api</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025 DIY Accounting Limited</p>
+        </div>
+        <div class="footer-right" id="localstorageContainer"></div>
+      </div>
+    </footer>
+
+    <script src="../submit.js"></script>
+    <script src="../widgets/hamburger-menu.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+    <script src="../widgets/localstorage-viewer.js"></script>
+
+    <script>
+      // Test report labels mapping
+      const TEST_LABELS = {
+        "bundle": "Click through test: Adding and removing bundles",
+        "obligation": "Click through test: View VAT obligations from HMRC",
+        "obligation-sandbox": "Click through test: View VAT obligations from HMRC (sandbox)",
+        "submit-vat": "Click through test: Submit a VAT return to HMRC (includes view VAT return)",
+        "submit-vat-sandbox": "Click through test: Submit a VAT return to HMRC (sandbox, includes view VAT return)",
+      };
+
+      async function loadTestReports() {
+        try {
+          // Load the test reports index
+          const indexResponse = await fetch("test-reports-index.txt");
+
+          if (!indexResponse.ok) {
+            throw new Error("Test reports index not found");
+          }
+
+          const indexText = await indexResponse.text();
+          const reportFiles = indexText
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+
+          if (reportFiles.length === 0) {
+            showNoReports();
+            return;
+          }
+
+          // Load each report's metadata
+          const reports = await Promise.all(
+            reportFiles.map(async (fileName) => {
+              try {
+                const response = await fetch(fileName);
+                if (!response.ok) {
+                  return null;
+                }
+                const report = await response.json();
+                return { fileName, ...report };
+              } catch (e) {
+                console.warn(`Failed to load ${fileName}:`, e);
+                return null;
+              }
+            }),
+          );
+
+          const validReports = reports.filter((r) => r !== null);
+
+          if (validReports.length === 0) {
+            showNoReports();
+            return;
+          }
+
+          renderReports(validReports);
+        } catch (error) {
+          console.error("Error loading test reports:", error);
+          showNoReports();
+        }
+      }
+
+      function showNoReports() {
+        document.getElementById("loadingMessage").style.display = "none";
+        document.getElementById("noReportsMessage").style.display = "block";
+      }
+
+      function escapeHtml(unsafe) {
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+      }
+
+      function isValidTestName(testName) {
+        // Allow only alphanumeric characters, hyphens, and underscores
+        // This prevents path traversal attacks
+        return /^[a-zA-Z0-9_-]+$/.test(testName);
+      }
+
+      function renderReports(reports) {
+        document.getElementById("loadingMessage").style.display = "none";
+        document.getElementById("reportsContainer").style.display = "block";
+
+        const container = document.getElementById("reportsContainer");
+
+        let html = "";
+
+        reports.forEach((report) => {
+          const testName = report.testName;
+
+          // Validate test name to prevent path traversal
+          if (!isValidTestName(testName)) {
+            console.warn(`Skipping invalid test name: ${testName}`);
+            return;
+          }
+
+          const label = TEST_LABELS[testName] || testName;
+          const status = report.playwrightReport?.status || "unknown";
+          const statusClass = status === "passed" ? "success" : status === "failed" ? "error" : "warning";
+          const statusIcon = status === "passed" ? "✓" : status === "failed" ? "✗" : "?";
+
+          // Create a summary from test context
+          const description = report.testContext?.description || "No description available";
+          const generatedAt = new Date(report.generatedAt).toLocaleString();
+
+          // Escape user-controlled content
+          const escapedTestName = escapeHtml(testName);
+          const escapedLabel = escapeHtml(label);
+          const escapedDescription = escapeHtml(description);
+          const escapedGeneratedAt = escapeHtml(generatedAt);
+          const encodedTestName = encodeURIComponent(testName);
+
+          html += `
+            <div style="margin-bottom: 2rem; border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; background-color: #fafafa;">
+              <h2 style="margin-top: 0; margin-bottom: 0.5rem;">
+                <span style="color: ${statusClass === "success" ? "#28a745" : statusClass === "error" ? "#dc3545" : "#ffc107"};">${statusIcon}</span>
+                ${escapedLabel}
+              </h2>
+              <p style="color: #666; margin-bottom: 1rem; font-size: 0.95rem;">
+                ${escapedDescription}
+              </p>
+              <div style="margin-bottom: 1rem;">
+                <iframe
+                  src="../${escapedTestName}/html-report/index.html"
+                  style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;"
+                  title="Playwright Test Report for ${escapedTestName}">
+                </iframe>
+              </div>
+              <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="test-report-template.html?test=${encodedTestName}" class="btn" style="text-decoration: none; display: inline-block;">
+                  View Full Test Details
+                </a>
+                <a href="../${escapedTestName}/html-report/index.html" target="_blank" class="btn" style="text-decoration: none; display: inline-block; background-color: #6c757d; border-color: #6c757d;">
+                  Open Playwright Report
+                </a>
+              </div>
+              <p style="margin-top: 1rem; margin-bottom: 0; font-size: 0.85rem; color: #999;">
+                Generated: ${escapedGeneratedAt}
+              </p>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      // Initialize
+      checkAuthStatus();
+      loadTestReports();
+    </script>
   </body>
 </html>

@@ -1,0 +1,99 @@
+// behaviour-tests/helpers/fileHelper.js
+
+import path from "node:path";
+import fs from "node:fs";
+import { hashSub } from "@app/services/subHasher.js";
+
+export function deleteUserSubTxt(outputDir) {
+  // Delete ${outputDir}/userSub.txt
+  const userSubPath = path.join(outputDir, "userSub.txt");
+  try {
+    if (fs.existsSync(userSubPath)) {
+      fs.unlinkSync(userSubPath);
+      console.log(`[beforeAll] Deleted existing userSub.txt at ${userSubPath}`);
+    }
+  } catch (e) {
+    console.log(`[beforeAll] Error deleting userSub.txt at ${userSubPath}: ${e.message}`);
+  }
+}
+
+export function deleteTraceparentTxt(outputDir) {
+  // Delete ${outputDir}/traceparent.txt
+  const traceparentPath = path.join(outputDir, "traceparent.txt");
+  try {
+    if (fs.existsSync(traceparentPath)) {
+      fs.unlinkSync(traceparentPath);
+      console.log(`[beforeAll] Deleted existing traceparent.txt at ${traceparentPath}`);
+    }
+  } catch (e) {
+    console.log(`[beforeAll] Error deleting traceparent.txt at ${traceparentPath}: ${e.message}`);
+  }
+}
+
+export function deleteHashedUserSubTxt(outputDir) {
+  // Delete ${outputDir}/hashedUserSub.txt
+  const hashedUserSubPath = path.join(outputDir, "hashedUserSub.txt");
+  try {
+    if (fs.existsSync(hashedUserSubPath)) {
+      fs.unlinkSync(hashedUserSubPath);
+      console.log(`[beforeAll] Deleted existing hashedUserSub.txt at ${hashedUserSubPath}`);
+    }
+  } catch (e) {
+    console.log(`[beforeAll] Error deleting hashedUserSub.txt at ${hashedUserSubPath}: ${e.message}`);
+  }
+}
+
+export function appendUserSubTxt(outputDir, testInfo, userSub) {
+  // Write user sub
+  try {
+    // Only write if we have a valid userSub (not null, not empty, not string "null" or "undefined")
+    const valueToWrite = userSub && userSub !== "null" && userSub !== "undefined" ? userSub : "";
+    console.log(
+      `[afterEach] Saving ${outputDir}/userSub.txt for test "${testInfo.title}": ${valueToWrite ? valueToWrite : "(empty - user may not have logged in)"}`,
+    );
+    fs.appendFileSync(path.join(outputDir, "userSub.txt"), valueToWrite, "utf-8");
+  } catch (e) {
+    console.log(`[afterEach] Error writing userSub.txt for test "${testInfo.title}": ${e.message}`);
+  }
+}
+
+export function appendTraceparentTxt(outputDir, testInfo, observedTraceparent) {
+  try {
+    console.log(`Saving ${outputDir}/traceparent.txt for test "${testInfo.title}": ${observedTraceparent}`);
+    fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
+  } catch (e) {
+    console.log(`[test body] Error writing traceparent.txt: ${e.message}`);
+  }
+}
+
+export function appendHashedUserSubTxt(outputDir, testInfo, userSub) {
+  // Write hashed user sub in parallel with userSub.txt
+  try {
+    const hasValidSub = userSub && userSub !== "null" && userSub !== "undefined";
+    const valueToWrite = hasValidSub ? hashSub(String(userSub)) : "";
+    console.log(
+      `[afterEach] Saving ${outputDir}/hashedUserSub.txt for test "${testInfo.title}": ${valueToWrite ? valueToWrite : "(empty - user may not have logged in)"}`,
+    );
+    fs.appendFileSync(path.join(outputDir, "hashedUserSub.txt"), valueToWrite, "utf-8");
+  } catch (e) {
+    console.log(`[afterEach] Error writing hashedUserSub.txt for test "${testInfo.title}": ${e.message}`);
+  }
+}
+
+export async function extractUserSubFromLocalStorage(page, testInfo) {
+  try {
+    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
+    if (userInfoStr) {
+      console.log(`[test body] Found userInfo in localStorage for test "${testInfo.title}": ${userInfoStr}`);
+      const userInfo = JSON.parse(userInfoStr);
+      const userSub = userInfo?.sub || null;
+      console.log(`[test body] Extracted userSub from localStorage for test "${testInfo.title}": ${userSub}`);
+      return userSub;
+    } else {
+      console.log(`[test body] No userInfo found in localStorage for test "${testInfo.title}"`);
+    }
+  } catch (e) {
+    console.log(`[test body] Error accessing localStorage: ${e.message}`);
+  }
+  return null;
+}

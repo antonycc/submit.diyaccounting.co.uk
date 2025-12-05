@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-rm -rf target
-rm -rvf submit*.log
-rm -rf cdk-submit-environment.out
-rm -rf cdk-submit-application.out
-git restore web/public/submit.deployment web/public/submit.env || true
+rm -rf target ;
+rm -rf coverage ;
+rm -rvf cdk-submit-environment.out ;
+rm -rvf cdk-submit-application.out ;
+rm -rvf dependency-reduced-pom.xml ;
+rm -rvf hmrc-test-user.json ;
+./mvnw clean compile -DskipTests ;
+npm install ;
+git restore web/public/submit.deployment web/public/submit.env || true ;

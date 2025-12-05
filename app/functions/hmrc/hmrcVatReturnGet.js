@@ -1,6 +1,6 @@
 // app/functions/hmrc/hmrcVatReturnGet.js
 
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -9,10 +9,10 @@ import {
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -22,12 +22,16 @@ import {
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
-} from "../../lib/hmrcHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
+} from "../../services/hmrcApi.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnGet.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.get(`/api/v1/hmrc/vat/return/:periodKey`, async (httpRequest, httpResponse) => {
+    // process.env.HMRC_BASE_URI = process.env.HMRC_PROXY_BASE_URI;
+    // process.env.HMRC_SANDBOX_BASE_URI = process.env.HMRC_PROXY_BASE_URI;
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
@@ -61,14 +65,15 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_SANDBOX_BASE_URI"]);
+  validateEnv(["HMRC_BASE_URI", "HMRC_SANDBOX_BASE_URI", "BUNDLE_DYNAMODB_TABLE_NAME", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];
 
   // Bundle enforcement
+  let userSub;
   try {
-    await enforceBundles(event);
+    userSub = await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -121,7 +126,15 @@ export async function handler(event) {
   let hmrcResponse;
   try {
     logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
-    ({ vatReturn, hmrcResponse } = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount));
+    ({ vatReturn, hmrcResponse } = await getVatReturn(
+      vrn,
+      periodKey,
+      hmrcAccessToken,
+      govClientHeaders,
+      testScenario,
+      hmrcAccount,
+      userSub,
+    ));
     // Generate error responses based on HMRC response
     if (hmrcResponse && !hmrcResponse.ok) {
       if (hmrcResponse.status === 403) {
@@ -152,9 +165,9 @@ export async function handler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount) {
+export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub) {
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
-  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount);
+  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {}, auditForUserSub);
 
   if (!hmrcResponse.ok) {
     // Consumers of this function may choose to map these to HTTP responses

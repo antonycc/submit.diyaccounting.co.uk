@@ -1,6 +1,8 @@
 // app/lib/eventToGovClientHeaders.js
 
-import logger from "./logger.js";
+import { createLogger } from "./logger.js";
+
+const logger = createLogger({ source: "app/lib/eventToGovClientHeaders.js" });
 
 export default function eventToGovClientHeaders(event, detectedIP) {
   const headers = event.headers || {};

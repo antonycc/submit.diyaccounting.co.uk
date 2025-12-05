@@ -1,20 +1,30 @@
-// app/lib/httpHelper.js
+// app/lib/httpServerToLambdaAdaptor.js
 
-import logger, { context } from "./logger.js";
+import { createLogger } from "./logger.js";
 import { decodeJwtNoVerify } from "./jwtHelper.js";
+
+const logger = createLogger({ source: "app/lib/httpServerToLambdaAdaptor.js" });
 
 export function buildLambdaEventFromHttpRequest(httpRequest) {
   // Start with a copy of all incoming headers (Express normalizes to lowercase keys)
   const incomingHeaders = { ...(httpRequest.headers || {}) };
   // Ensure host header is present
   incomingHeaders.host = httpRequest.get("host") || incomingHeaders.host || "localhost:3000";
+  const protocol = httpRequest.protocol || "https";
+  // incomingHeaders.host = httpRequest.get("host") || incomingHeaders.host || "localhost";
+  // const port = httpRequest.get("host")?.split(":")[1] || (httpRequest.protocol === "https" ? "443" : "80");
   // Pass through referer if available via accessor (helps construct full URL in logs)
   const referer = httpRequest.get("referer");
   if (referer) incomingHeaders.referer = referer;
 
-  // Extract bearer token from Authorization header if present
+  // Extract bearer token from Authorization or X-Authorization header if present
   const authorization = httpRequest.get("x-authorization") || httpRequest.get("authorization");
-  const bearerToken = authorization ? authorization.match(/^Bearer (.+)$/) : null;
+  let bearerToken = null;
+  try {
+    if (authorization && authorization.startsWith("Bearer ")) {
+      bearerToken = authorization.substring("Bearer ".length);
+    }
+  } catch {}
   const jwtPayload = decodeJwtNoVerify(bearerToken);
 
   const lambdaEvent = {
@@ -31,10 +41,18 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
           },
         },
       },
+      http: {
+        method: httpRequest.method || "GET",
+        protocol,
+        host: incomingHeaders.host,
+        // port,
+        path: httpRequest.path,
+      },
     },
     path: httpRequest.path,
     headers: incomingHeaders,
     queryStringParameters: httpRequest.query || {},
+    rawQueryString: httpRequest.originalUrl?.split("?")[1] || "",
   };
 
   if (httpRequest.params) {
@@ -60,37 +78,4 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body },
     logger.warn(`Response body is not valid JSON, sending as text ${_e}`);
     return httpResponse.status(statusCode).send(body || "");
   }
-}
-
-export function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
-  logger.info({
-    message: `Request to POST ${hmrcRequestUrl}`,
-    url: hmrcRequestUrl,
-    headers: {
-      ...hmrcRequestHeaders,
-      ...govClientHeaders,
-    },
-    body: hmrcRequestBody,
-    environment: {
-      // nodeEnv: process.env.NODE_ENV,
-    },
-  });
-}
-
-export function http404NotFound(request, message, responseHeaders) {
-  // Log with clear semantics and avoid misusing headers as a response code
-  logger.warn({ message, request });
-  // Return a proper 404 response (was incorrectly returning 400)
-  // We keep using the generic bad request builder style but with correct status
-  const reqId = context.get("requestId") || String(Date.now());
-  return {
-    statusCode: 404,
-    headers: {
-      ...(responseHeaders || {}),
-      "x-request-id": reqId,
-      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
-    },
-    body: JSON.stringify({ message }),
-  };
 }

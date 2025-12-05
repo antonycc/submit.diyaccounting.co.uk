@@ -1,13 +1,21 @@
 // behaviour-tests/helpers/behaviour-helpers.js
-import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
+import {
+  startDynamoDB,
+  ensureBundleTableExists,
+  ensureHmrcApiRequestsTableExists,
+  ensureReceiptsTableExists,
+  ensureProxyStateTableExists,
+} from "@app/bin/dynamodb.js";
 import { startNgrok, extractDomainFromUrl } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
+import fs from "node:fs";
+import path from "node:path";
+import { createLogger } from "../../app/lib/logger.js";
 
-import logger from "@app/lib/logger.js";
-import { validateEnv } from "@app/lib/env.js";
+const logger = createLogger({ source: "behaviour-tests/helpers/behaviour-helpers.js" });
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-helpers";
 
@@ -63,15 +71,18 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const bundlesTable = bundleTableName || process.env.BUNDLE_DYNAMODB_TABLE_NAME || "behaviour-bundles";
     const hmrcReqsTable = hmrcApiRequestsTableName || process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME || "behaviour-hmrc-requests";
     const receiptsTable = receiptsTableName || process.env.RECEIPTS_DYNAMODB_TABLE_NAME || "behaviour-receipts";
+    const proxyStateTable = process.env.STATE_TABLE_NAME || process.env.PROXY_STATE_DYNAMODB_TABLE_NAME || "behaviour-proxy-state";
 
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTable;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTable;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTable;
+    process.env.STATE_TABLE_NAME = proxyStateTable;
 
     // Create tables
     await ensureBundleTableExists(bundlesTable, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTable, endpoint);
     await ensureReceiptsTableExists(receiptsTable, endpoint);
+    await ensureProxyStateTableExists(proxyStateTable, endpoint);
   } else {
     logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
   }
@@ -225,4 +236,252 @@ export function timestamp() {
   const [hour, minute, second] = timePart.split(":");
   const nanos = (process.hrtime.bigint() % 1000000000n).toString().padStart(9, "0");
   return `${datePart}_${hour}-${minute}-${second}-${nanos}`;
+}
+
+/**
+ * Create an HMRC sandbox test user with VAT enrollment
+ * Uses OAuth2 client credentials (client id + client secret) to obtain a bearer token
+ * before calling the Create Test User API.
+ *
+ * @param {string} hmrcClientId - HMRC application client ID
+ * @param {string} hmrcClientSecret - HMRC application client secret
+ * @param {Object} options - Additional options
+ * @param {string[]} options.serviceNames - Service names to enroll (default: ["mtd-vat"])
+ * @param {string} [options.scope] - Optional OAuth2 scope for the client credentials request
+ * @returns {Promise<Object>} Test user details including userId, password, and vrn
+ */
+export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) {
+  const serviceNames = options.serviceNames || ["mtd-vat"];
+  const baseUrl = "https://test-api.service.hmrc.gov.uk";
+  const endpoint = "/create-test-user/organisations";
+  const url = `${baseUrl}${endpoint}`;
+  const tokenUrl = `${baseUrl}/oauth/token`;
+
+  logger.info({
+    message: "[HMRC Test User Creation] Starting test user creation",
+    url,
+    serviceNames,
+    hmrcClientId: hmrcClientId ? `${hmrcClientId.slice(0, Math.min(8, hmrcClientId.length))}...` : "none",
+  });
+
+  const requestBody = { serviceNames };
+
+  logger.info({
+    message: "[HMRC Test User Creation] Request details (pre-token)",
+    method: "POST",
+    url,
+    body: requestBody,
+  });
+
+  try {
+    // Add timeout to prevent hanging tests
+    const timeoutMs = 20000;
+
+    /* *************************** */
+    /* 1. Obtain OAuth2 access token */
+    /* *************************** */
+
+    logger.info({
+      message: "[HMRC Test User Creation] Requesting OAuth2 access token",
+      tokenUrl,
+      grantType: "client_credentials",
+    });
+
+    const tokenController = new AbortController();
+    const tokenTimeout = setTimeout(() => tokenController.abort(), timeoutMs);
+
+    let tokenResponse;
+    try {
+      const tokenBody = new URLSearchParams({
+        client_id: hmrcClientId,
+        client_secret: hmrcClientSecret,
+        grant_type: "client_credentials",
+      });
+
+      if (options.scope) {
+        tokenBody.set("scope", options.scope);
+      }
+
+      tokenResponse = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: tokenBody.toString(),
+        signal: tokenController.signal,
+      });
+    } finally {
+      clearTimeout(tokenTimeout);
+    }
+
+    const tokenResponseBody = await tokenResponse.json().catch(() => ({}));
+
+    logger.info({
+      message: "[HMRC Test User Creation] Token response received",
+      status: tokenResponse.status,
+      statusText: tokenResponse.statusText,
+      // Do not log access_token
+      hasAccessToken: Boolean(tokenResponseBody && tokenResponseBody.access_token),
+      error: tokenResponseBody.error,
+      errorDescription: tokenResponseBody.error_description,
+    });
+
+    if (!tokenResponse.ok) {
+      const tokenErrorDetails = tokenResponseBody?.error_description || tokenResponseBody?.error || JSON.stringify(tokenResponseBody);
+      logger.error({
+        message: "[HMRC Test User Creation] Failed to obtain access token",
+        status: tokenResponse.status,
+        tokenResponseBody,
+      });
+      throw new Error(`Failed to obtain HMRC access token: ${tokenResponse.status} ${tokenResponse.statusText} - ${tokenErrorDetails}`);
+    }
+
+    const accessToken = tokenResponseBody.access_token;
+    if (!accessToken) {
+      logger.error({
+        message: "[HMRC Test User Creation] Token response did not contain access_token",
+        tokenResponseBody,
+      });
+      throw new Error("Failed to obtain HMRC access token: access_token missing from response");
+    }
+
+    /* ************************************** */
+    /* 2. Call Create Test User (organisations) */
+    /* ************************************** */
+
+    const requestHeaders = {
+      "Content-Type": "application/json",
+      "Accept": "application/vnd.hmrc.1.0+json",
+      "Authorization": `Bearer ${accessToken}`,
+    };
+
+    const requestHeadersForLog = {
+      ...requestHeaders,
+      Authorization: "Bearer ***REDACTED***",
+    };
+
+    logger.info({
+      message: "[HMRC Test User Creation] Request details (create-test-user)",
+      method: "POST",
+      url,
+      headers: requestHeadersForLog,
+      body: requestBody,
+    });
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const responseBody = await response.json();
+
+    logger.info({
+      message: "[HMRC Test User Creation] Response received",
+      status: response.status,
+      statusText: response.statusText,
+      responseBody,
+    });
+
+    if (!response.ok) {
+      const errorDetails = responseBody?.message || responseBody?.error || JSON.stringify(responseBody);
+      logger.error({
+        message: "[HMRC Test User Creation] Failed to create test user",
+        status: response.status,
+        responseBody,
+      });
+      throw new Error(`Failed to create HMRC test user: ${response.status} ${response.statusText} - ${errorDetails}`);
+    }
+
+    // Extract key information from response
+    const testUser = {
+      userId: responseBody.userId,
+      password: responseBody.password,
+      userFullName: responseBody.userFullName,
+      emailAddress: responseBody.emailAddress,
+      organisationDetails: responseBody.organisationDetails,
+      vatRegistrationNumber: responseBody.vatRegistrationNumber,
+      // Include all other fields for completeness
+      ...responseBody,
+    };
+
+    logger.info({
+      message: "[HMRC Test User Creation] Test user created successfully",
+      userId: testUser.userId,
+      userFullName: testUser.userFullName,
+      vatRegistrationNumber: testUser.vatRegistrationNumber,
+      organisationName: testUser.organisationDetails?.name,
+    });
+
+    return testUser;
+  } catch (error) {
+    logger.error({
+      message: "[HMRC Test User Creation] Error creating test user",
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
+  }
+}
+
+/**
+ * Save HMRC test user details to JSON files
+ * @param {Object} testUser - Test user details to save
+ * @param {string} outputDir - Test-specific output directory for artifacts
+ * @param {string} repoRoot - Repository root directory
+ */
+export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
+  logger.info({
+    message: "[HMRC Test User] Saving test user details to JSON files",
+    outputDir,
+    repoRoot,
+  });
+
+  const testUserJson = JSON.stringify(testUser, null, 2);
+
+  // Save to test-specific artifact directory
+  try {
+    if (outputDir) {
+      fs.mkdirSync(outputDir, { recursive: true });
+      const artifactPath = path.join(outputDir, "hmrc-test-user.json");
+      fs.writeFileSync(artifactPath, testUserJson, "utf-8");
+      logger.info({
+        message: "[HMRC Test User] Saved test user to artifact directory",
+        path: artifactPath,
+      });
+    }
+  } catch (error) {
+    logger.error({
+      message: "[HMRC Test User] Failed to save test user to artifact directory",
+      error: error.message,
+      outputDir,
+    });
+  }
+
+  // Save to repository root with consistent filename
+  try {
+    if (repoRoot) {
+      const rootPath = path.join(repoRoot, "hmrc-test-user.json");
+      fs.writeFileSync(rootPath, testUserJson, "utf-8");
+      logger.info({
+        message: "[HMRC Test User] Saved test user to repository root",
+        path: rootPath,
+      });
+    }
+  } catch (error) {
+    logger.error({
+      message: "[HMRC Test User] Failed to save test user to repository root",
+      error: error.message,
+      repoRoot,
+    });
+  }
 }

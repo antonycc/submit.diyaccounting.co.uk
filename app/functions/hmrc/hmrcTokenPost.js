@@ -1,17 +1,20 @@
 // app/functions/hmrc/hmrcTokenPost.js
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
-
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
   buildTokenExchangeResponse,
   buildValidationError,
   http200OkResponse,
-} from "../../lib/responses.js";
+  extractUserFromAuthorizerContext,
+} from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { getUserSub } from "../../lib/jwtHelper.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
 const secretsClient = new SecretsManagerClient();
 
@@ -52,10 +55,11 @@ export async function handler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "HMRC_SANDBOX_CLIENT_ID",
     "DIY_SUBMIT_BASE_URL",
+    "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
   ];
-  if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
-  if (!process.env.HMRC_SANDBOX_CLIENT_SECRET) required.push("HMRC_SANDBOX_CLIENT_SECRET_ARN");
+  // if (!process.env.HMRC_CLIENT_SECRET) required.push("HMRC_CLIENT_SECRET_ARN");
+  // if (!process.env.HMRC_SANDBOX_CLIENT_SECRET) required.push("HMRC_SANDBOX_CLIENT_SECRET_ARN");
   validateEnv(required);
 
   const { request } = extractRequest(event);
@@ -84,7 +88,16 @@ export async function handler(event) {
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
   // TODO: Simplify this and/or rename because exchangeCodeForToken does not do the exchange, it just creates the body
   const tokenResponse = await exchangeCodeForToken(code, hmrcAccount);
-  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body); // , userSub);
+  // Ensure HMRC OAuth token exchange audit is associated with the authenticated web user's sub
+  // Try Authorization header, then authorizer context, then custom x-user-sub header (case-insensitive)
+  let userSub = getUserSub(event);
+  if (!userSub) userSub = extractUserFromAuthorizerContext(event)?.sub || null;
+  if (!userSub) {
+    const hdrs = event.headers || {};
+    const xUserSub = Object.entries(hdrs).find(([k]) => k.toLowerCase() === "x-user-sub")?.[1];
+    userSub = xUserSub || null;
+  }
+  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response

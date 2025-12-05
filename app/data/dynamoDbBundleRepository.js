@@ -1,7 +1,9 @@
-// app/lib/dynamoDbBundleStore.js
+// app/data/dynamoDbBundleRepository.js
 
-import logger from "./logger.js";
-import { hashSub } from "./subHasher.js";
+import { createLogger } from "../lib/logger.js";
+import { hashSub } from "../services/subHasher.js";
+
+const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
 
 let __dynamoDbModule;
 let __dynamoDbDocClient;
@@ -200,10 +202,10 @@ export async function getUserBundles(userId) {
     return bundles;
   } catch (error) {
     logger.error({
-      message: "Error retrieving bundles from DynamoDB",
+      message: `Error retrieving bundles from DynamoDB table ${getTableName()}`,
       error: error.message,
       userId,
     });
-    return [];
+    throw error;
   }
 }

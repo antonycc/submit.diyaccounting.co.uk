@@ -1,4 +1,4 @@
-// app/lib/subHasher.js
+// app/services/subHasher.js
 
 import crypto from "crypto";
 

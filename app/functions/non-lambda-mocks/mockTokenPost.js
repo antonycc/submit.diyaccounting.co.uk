@@ -1,6 +1,8 @@
 // app/functions/mockTokenPost.js
 
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
+
+const logger = createLogger({ source: "app/functions/non-lambda-mocks/mockTokenPost.js" });
 
 export function apiEndpoint(app) {
   // Proxy to local mock OAuth2 server token endpoint to avoid browser PNA/CORS

@@ -3,7 +3,7 @@
 
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { buildLambdaEvent, buildEventWithToken, buildHeadEvent, makeIdToken } from "@app/test-helpers/eventBuilders.js";
+import { buildLambdaEvent, buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 
 // ---------------------------------------------------------------------------

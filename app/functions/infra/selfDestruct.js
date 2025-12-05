@@ -1,7 +1,7 @@
 // app/functions/selfDestruct.js
 
 import { CloudFormationClient, DeleteStackCommand, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
-import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/responses.js";
+import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
 
 export async function handler(event, context) {
   const client = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });

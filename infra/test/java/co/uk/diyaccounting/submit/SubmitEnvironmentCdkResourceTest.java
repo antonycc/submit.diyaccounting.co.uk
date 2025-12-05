@@ -26,7 +26,15 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "DYNAMODB_RETAIN_RECEIPTS_TABLE", value = "false"),
     @SetEnvironmentVariable(key = "HOLDING_DOC_ROOT_PATH", value = "./web/holding"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
-    @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1")
+    @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1"),
+    @SetEnvironmentVariable(key = "HMRC_API_PROXY_MAPPED_URL", value = "https://test-hmrc-api-proxy.submit.diyaccounting.co.uk"),
+    @SetEnvironmentVariable(key = "HMRC_API_PROXY_EGRESS_URL", value = "https://test-api.service.hmrc.gov.uk"),
+    @SetEnvironmentVariable(key = "HMRC_SANDBOX_API_PROXY_MAPPED_URL", value = "https://test-hmrc-sandbox-api-proxy.submit.diyaccounting.co.uk"),
+    @SetEnvironmentVariable(key = "HMRC_SANDBOX_API_PROXY_EGRESS_URL", value = "https://test-api.service.hmrc.gov.uk"),
+    @SetEnvironmentVariable(key = "PROXY_RATE_LIMIT_PER_SECOND", value = "10"),
+    @SetEnvironmentVariable(key = "PROXY_BREAKER_ERROR_THRESHOLD", value = "10"),
+    @SetEnvironmentVariable(key = "PROXY_BREAKER_LATENCY_MS", value = "5000"),
+    @SetEnvironmentVariable(key = "PROXY_BREAKER_COOLDOWN_SECONDS", value = "60")
 })
 class SubmitEnvironmentCdkResourceTest {
 
@@ -67,7 +75,10 @@ class SubmitEnvironmentCdkResourceTest {
         // 6) Data stack should create a receipts DynamoDB table (3 tables total: receipts, bundles, hmrcApiRequests)
         Template.fromStack(env.dataStack).resourceCountIs("AWS::DynamoDB::Table", 3);
 
-        // 7) Observability stack should enable CloudTrail (Trail present)
+        // 7) Proxy stack should create a state DynamoDB table
+        Template.fromStack(env.proxyStack).resourceCountIs("AWS::DynamoDB::Table", 1);
+
+        // 8) Observability stack should enable CloudTrail (Trail present)
         Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);
     }
 

@@ -6,7 +6,9 @@ import ngrok from "@ngrok/ngrok";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
-import logger from "../lib/logger.js";
+import { createLogger } from "../lib/logger.js";
+
+const logger = createLogger({ source: "app/bin/ngrok.js" });
 
 /**
  * Extract domain from a URL string

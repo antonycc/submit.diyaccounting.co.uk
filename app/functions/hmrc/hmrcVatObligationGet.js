@@ -1,6 +1,6 @@
 // app/functions/hmrc/hmrcVatObligationGet.js
 
-import logger from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -9,10 +9,10 @@ import {
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -22,12 +22,16 @@ import {
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
-} from "../../lib/hmrcHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
+} from "../../services/hmrcApi.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.get("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
+    // process.env.HMRC_BASE_URI = process.env.HMRC_PROXY_BASE_URI;
+    // process.env.HMRC_SANDBOX_BASE_URI = process.env.HMRC_PROXY_BASE_URI;
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
@@ -69,14 +73,15 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_SANDBOX_BASE_URI"]);
+  validateEnv(["HMRC_BASE_URI", "HMRC_SANDBOX_BASE_URI", "BUNDLE_DYNAMODB_TABLE_NAME", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];
 
   // Bundle enforcement
+  let userSub;
   try {
-    await enforceBundles(event);
+    userSub = await enforceBundles(event);
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -129,11 +134,19 @@ export async function handler(event) {
   try {
     // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
-    ({ obligations, hmrcResponse } = await getVatObligations(vrn, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {
-      from,
-      to,
-      status,
-    }));
+    ({ obligations, hmrcResponse } = await getVatObligations(
+      vrn,
+      hmrcAccessToken,
+      govClientHeaders,
+      testScenario,
+      hmrcAccount, // TODO: Instead of the account, the prod/sandbox should be picked in the lambda and allow a local proxy override
+      {
+        from,
+        to,
+        status,
+      },
+      userSub,
+    ));
 
     // Generate error responses based on HMRC response
     if (hmrcResponse && !hmrcResponse.ok) {
@@ -167,9 +180,25 @@ export async function handler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function getVatObligations(vrn, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, hmrcQueryParams = {}) {
+export async function getVatObligations(
+  vrn,
+  hmrcAccessToken,
+  govClientHeaders,
+  testScenario,
+  hmrcAccount,
+  hmrcQueryParams = {},
+  auditForUserSub,
+) {
   const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;
-  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, hmrcQueryParams);
+  const hmrcResponse = await hmrcHttpGet(
+    hmrcRequestUrl,
+    hmrcAccessToken,
+    govClientHeaders,
+    testScenario,
+    hmrcAccount,
+    hmrcQueryParams,
+    auditForUserSub,
+  );
 
   if (!hmrcResponse.ok) {
     return { hmrcResponse, obligations: null };

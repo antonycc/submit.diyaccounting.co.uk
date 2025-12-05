@@ -26,6 +26,12 @@
     "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "antonyccClientId": "submit-diyaccounting-co-uk",
-    "antonyccBaseUri": "https://oidc.antonycc.com/"
+    "antonyccBaseUri": "https://oidc.antonycc.com/",
+    "hmrcApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
+    "hmrcSandboxApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
+    "proxyRateLimitPerSecond": "10",
+    "proxyBreakerErrorThreshold": "10",
+    "proxyBreakerLatencyMs": "5000",
+    "proxyBreakerCooldownSeconds": "60"
   }
 }

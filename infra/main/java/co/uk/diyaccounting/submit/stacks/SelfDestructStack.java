@@ -173,20 +173,15 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> selfDestructLambdaEnv = new HashMap<>();
         putIfNotNull(selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", functionName);
-        if (props.isApplicationStack()) {
-            putIfNotNull(selfDestructLambdaEnv, "DEV_STACK_NAME", props.sharedNames().devStackId);
-            putIfNotNull(selfDestructLambdaEnv, "DEV_UE1_STACK_NAME", props.sharedNames().ue1DevStackId);
-            putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
-            putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
-            putIfNotNull(selfDestructLambdaEnv, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
-            putIfNotNull(selfDestructLambdaEnv, "API_STACK_NAME", props.sharedNames().apiStackId);
-            putIfNotNull(selfDestructLambdaEnv, "OPS_STACK_NAME", props.sharedNames().opsStackId);
-        }
-        if (props.isDeliveryStack()) {
-            putIfNotNull(selfDestructLambdaEnv, "DEV_UE1_STACK_NAME", props.sharedNames().ue1DevStackId);
-            putIfNotNull(selfDestructLambdaEnv, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);
-            putIfNotNull(selfDestructLambdaEnv, "PUBLISH_STACK_NAME", props.sharedNames().publishStackId);
-        }
+        putIfNotNull(selfDestructLambdaEnv, "DEV_STACK_NAME", props.sharedNames().devStackId);
+        putIfNotNull(selfDestructLambdaEnv, "DEV_UE1_STACK_NAME", props.sharedNames().ue1DevStackId);
+        putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
+        putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
+        putIfNotNull(selfDestructLambdaEnv, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
+        putIfNotNull(selfDestructLambdaEnv, "API_STACK_NAME", props.sharedNames().apiStackId);
+        putIfNotNull(selfDestructLambdaEnv, "OPS_STACK_NAME", props.sharedNames().opsStackId);
+        putIfNotNull(selfDestructLambdaEnv, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);
+        putIfNotNull(selfDestructLambdaEnv, "PUBLISH_STACK_NAME", props.sharedNames().publishStackId);
         putIfNotNull(selfDestructLambdaEnv, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
 
         infof(

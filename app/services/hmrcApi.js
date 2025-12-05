@@ -1,10 +1,12 @@
-// app/lib/hmrcHelper.js
+// app/services/hmrcApi.js
 
 import { v4 as uuidv4 } from "uuid";
-import logger, { context } from "./logger.js";
+import { createLogger, context } from "../lib/logger.js";
 import { BundleEntitlementError } from "./bundleManagement.js";
-import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "./responses.js";
-import { putHmrcApiRequest } from "./dynamoDbHmrcApiRequestStore.js";
+import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
+import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
+
+const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
 export function getHmrcBaseUrl(hmrcAccount) {
   // TODO: Ensure we always have these when otherwise stable and remove defaults
@@ -71,7 +73,15 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
   }
 }
 
-export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, testScenario = null, hmrcAccount, queryParams = {}) {
+export async function hmrcHttpGet(
+  endpoint,
+  accessToken,
+  govClientHeaders = {},
+  testScenario = null,
+  hmrcAccount,
+  queryParams = {},
+  auditForUserSub,
+) {
   const baseUrl = getHmrcBaseUrl(hmrcAccount);
   // Sanitize query params: drop undefined, null, and blank strings
   const cleanParams = Object.fromEntries(
@@ -79,18 +89,23 @@ export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, 
   );
   const queryString = new URLSearchParams(cleanParams).toString();
   // eslint-disable-next-line sonarjs/no-nested-template-literals
-  const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
-
-  const headers = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
-  // Provide request correlation header to HMRC
-  if (context.get("requestId")) headers["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) headers["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) headers["traceparent"] = context.get("traceparent");
+  const hmrcRequestUrl = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
+  const hmrcRequestHeaders = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
+  const httpRequest = {
+    method: "GET",
+    headers: {
+      ...hmrcRequestHeaders,
+      ...govClientHeaders,
+      ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    },
+  };
 
   logger.info({
-    message: `Request to GET ${url}`,
-    url,
-    headers: Object.keys(headers),
+    message: `Request to GET ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    ...httpRequest,
     testScenario,
     environment: {
       hmrcBase: baseUrl,
@@ -99,35 +114,61 @@ export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, 
   });
 
   // Add a conservative timeout to avoid hung connections
+  let duration = 0;
   const timeoutMs = 20000;
   let hmrcResponse;
-  if (timeoutMs && Number(timeoutMs) > 0) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
-    try {
-      hmrcResponse = await fetch(url, {
-        method: "GET",
-        headers,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-  } else {
-    hmrcResponse = await fetch(url, {
-      method: "GET",
-      headers,
-    });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
+  try {
+    const startTime = Date.now();
+    hmrcResponse = await fetch(hmrcRequestUrl, httpRequest);
+    duration = Date.now() - startTime;
+  } finally {
+    clearTimeout(timeout);
   }
 
   const hmrcResponseBody = await hmrcResponse.json().catch(() => ({}));
 
+  // Normalise response headers to a plain object (Headers is not marshallable)
+  let responseHeadersObj = {};
+  try {
+    if (hmrcResponse && typeof hmrcResponse.headers?.forEach === "function") {
+      hmrcResponse.headers.forEach((value, key) => {
+        responseHeadersObj[key] = value;
+      });
+    } else if (hmrcResponse?.headers && typeof hmrcResponse.headers === "object") {
+      responseHeadersObj = { ...hmrcResponse.headers };
+    }
+  } catch (error) {
+    logger.error({
+      message: "Error normalizing HMRC response headers",
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+
   logger.info({
-    message: `Response from GET ${url}`,
-    url,
+    message: `Response from GET ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
     status: hmrcResponse.status,
     hmrcResponseBody,
   });
+
+  const httpResponse = {
+    statusCode: hmrcResponse.status,
+    headers: responseHeadersObj,
+    body: hmrcResponseBody,
+  };
+  const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+  try {
+    await putHmrcApiRequest(userSubOrUuid, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
+  } catch (auditError) {
+    logger.error({
+      message: "Error auditing HMRC API request/response to DynamoDB",
+      error: auditError.message,
+      stack: auditError.stack,
+    });
+  }
 
   return {
     ok: hmrcResponse.ok,
@@ -139,7 +180,7 @@ export async function hmrcHttpGet(endpoint, accessToken, govClientHeaders = {}, 
 
 export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
-  const timeoutEnv = 20000;
+  const httpRequestTimeoutMillis = 20000;
   const httpRequest = {
     method: "POST",
     headers: {
@@ -151,23 +192,23 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     },
     body: JSON.stringify(hmrcRequestBody),
   };
+
+  logger.info({
+    message: `Request to POST ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    ...httpRequest,
+  });
+
   let duration = 0;
-  // TODO: Remove this optionality and always have a timeout
-  if (timeoutEnv && Number(timeoutEnv) > 0) {
-    const controller = new AbortController();
-    const timeoutMs = Number(timeoutEnv);
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const startTime = Date.now();
-      hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
-      duration = Date.now() - startTime;
-    } finally {
-      clearTimeout(timeout);
-    }
-  } else {
+  const controller = new AbortController();
+  const timeoutMs = Number(httpRequestTimeoutMillis);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
     const startTime = Date.now();
-    hmrcResponse = await fetch(hmrcRequestUrl, httpRequest);
+    hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
     duration = Date.now() - startTime;
+  } finally {
+    clearTimeout(timeout);
   }
   const hmrcResponseBody = await hmrcResponse.json();
 
@@ -189,22 +230,27 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     });
   }
 
+  logger.info({
+    message: `Response from POST ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    status: hmrcResponse.status,
+    hmrcResponseBody,
+  });
+
   const httpResponse = {
     statusCode: hmrcResponse.status,
     headers: responseHeadersObj,
     body: hmrcResponseBody,
   };
   const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
-  if (userSubOrUuid) {
-    try {
-      await putHmrcApiRequest(auditForUserSub, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
-    } catch (auditError) {
-      logger.error({
-        message: "Error auditing HMRC API request/response to DynamoDB",
-        error: auditError.message,
-        stack: auditError.stack,
-      });
-    }
+  try {
+    await putHmrcApiRequest(userSubOrUuid, { url: hmrcRequestUrl, httpRequest, httpResponse, duration });
+  } catch (auditError) {
+    logger.error({
+      message: "Error auditing HMRC API request/response to DynamoDB",
+      error: auditError.message,
+      stack: auditError.stack,
+    });
   }
 
   return { hmrcResponse, hmrcResponseBody };

@@ -113,7 +113,7 @@ await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, hmrcRequestBody);
 
 Relevant code locations:
 
-* `extractClientIPFromHeaders` (`lib/httpHelper.js`)
+* `extractClientIPFromHeaders` (`lib/httpServerToLambdaAdaptor.js`)
 * `eventToGovClientHeaders` (`lib/eventToGovClientHeaders.js`)
 * All VAT functions merge these headers into `responseHeaders` and requests
 

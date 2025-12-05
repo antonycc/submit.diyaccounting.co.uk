@@ -1,7 +1,7 @@
 // app/functions/account/bundleDelete.js
 
 import { validateEnv } from "../../lib/env.js";
-import logger from "../../lib/logger.js";
+import { context, createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
@@ -9,11 +9,14 @@ import {
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
   buildValidationError,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, http404NotFound } from "../../lib/httpHelper.js";
-import { enforceBundles, getUserBundles, updateUserBundles } from "../../lib/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../lib/hmrcHelper.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { enforceBundles, updateUserBundles } from "../../services/bundleManagement.js";
+import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+
+const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
@@ -169,5 +172,23 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
     message: "Bundle removed",
     bundle: bundleToRemove,
     bundles: bundlesAfterRemoval,
+  };
+}
+
+function http404NotFound(request, message, responseHeaders) {
+  // Log with clear semantics and avoid misusing headers as a response code
+  logger.warn({ message, request });
+  // Return a proper 404 response (was incorrectly returning 400)
+  // We keep using the generic bad request builder style but with correct status
+  const reqId = context.get("requestId") || String(Date.now());
+  return {
+    statusCode: 404,
+    headers: {
+      ...(responseHeaders || {}),
+      "x-request-id": reqId,
+      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    },
+    body: JSON.stringify({ message }),
   };
 }

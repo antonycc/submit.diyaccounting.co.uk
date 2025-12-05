@@ -4,7 +4,9 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import fs from "node:fs";
 import path from "node:path";
-import logger from "../../app/lib/logger.js";
+import { createLogger } from "@app/lib/logger.js";
+
+const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-export.js" });
 
 /**
  * Export all items from a DynamoDB table to a JSONLines file
@@ -141,6 +143,21 @@ export async function exportAllTables(outputDir, endpoint, tableNames) {
     } catch (error) {
       logger.error(`[dynamodb-export]: Failed to export receipts table:`, error);
       results.push({ table: "receipts", error: error.message });
+    }
+  }
+
+  // Export proxy state table (rate limiter / circuit breaker)
+  if (tableNames.proxyStateTableName) {
+    try {
+      const result = await exportTableToJsonLines(
+        tableNames.proxyStateTableName,
+        endpoint,
+        path.join(outputDir, "proxy-state.jsonl"),
+      );
+      results.push({ table: "proxy-state", ...result });
+    } catch (error) {
+      logger.error(`[dynamodb-export]: Failed to export proxy state table:`, error);
+      results.push({ table: "proxy-state", error: error.message });
     }
   }
 

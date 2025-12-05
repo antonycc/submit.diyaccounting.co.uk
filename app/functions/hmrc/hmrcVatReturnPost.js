@@ -1,6 +1,6 @@
 // app/functions/submitVat.js
 
-import { logger, context } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -8,22 +8,26 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
-} from "../../lib/responses.js";
+} from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest, logHmrcRequestDetails } from "../../lib/httpHelper.js";
-import { enforceBundles } from "../../lib/bundleManagement.js";
+import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
   http403ForbiddenFromBundleEnforcement,
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
-} from "../../lib/hmrcHelper.js";
+} from "../../services/hmrcApi.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
+    // process.env.HMRC_BASE_URI = process.env.HMRC_PROXY_BASE_URI;
+    // process.env.HMRC_SANDBOX_BASE_URI = process.env.HMRC_PROXY_BASE_URI;
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
@@ -66,7 +70,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "RECEIPTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["HMRC_BASE_URI", "RECEIPTS_DYNAMODB_TABLE_NAME", "BUNDLE_DYNAMODB_TABLE_NAME", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];
@@ -189,19 +193,34 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
     finalised: true,
   };
 
-  let hmrcResponseBody;
-  let hmrcResponse;
+  // let hmrcResponseBody;
+  // let hmrcResponse;
   const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
   // Perform HTTP call
-  ({ hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
+  const { hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
     hmrcRequestUrl,
     hmrcRequestHeaders,
     govClientHeaders,
     hmrcRequestBody,
     auditForUserSub,
-  ));
+  );
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
+}
+
+function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody) {
+  logger.info({
+    message: `Request to POST ${hmrcRequestUrl}`,
+    url: hmrcRequestUrl,
+    headers: {
+      ...hmrcRequestHeaders,
+      ...govClientHeaders,
+    },
+    body: hmrcRequestBody,
+    environment: {
+      // nodeEnv: process.env.NODE_ENV,
+    },
+  });
 }

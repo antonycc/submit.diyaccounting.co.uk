@@ -7,18 +7,12 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
-  isSandboxMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import {
-  consentToDataCollection,
-  goToHomePage,
-  goToHomePageExpectNotLoggedIn,
-  goToHomePageUsingHamburgerMenu,
-} from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -27,51 +21,92 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { clearBundles, goToBundlesPage, ensureBundlePresent } from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
+import {
+  appendTraceparentTxt,
+  appendUserSubTxt,
+  appendHashedUserSubTxt,
+  deleteTraceparentTxt,
+  deleteUserSubTxt,
+  deleteHashedUserSubTxt,
+  extractUserSubFromLocalStorage,
+} from "./helpers/fileHelper.js";
+import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 
-if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
-  dotenvConfigIfNotBlank({ path: ".env.test" });
-} else {
-  console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
-}
+// if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
+//   dotenvConfigIfNotBlank({ path: ".env.test" });
+// } else {
+//   console.log(`Already loaded environment from custom path: ${process.env.DIY_SUBMIT_ENV_FILEPATH}`);
+// }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
 const screenshotPath = "target/behaviour-test-results/screenshots/bundles-behaviour-test";
 
 const originalEnv = { ...process.env };
 
+const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", null);
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3500);
-// const optionalTestS3AccessKey = getEnvVarAndLog("optionalTestS3AccessKey", "TEST_S3_ACCESS_KEY", null);
-// const optionalTestS3SecretKey = getEnvVarAndLog("optionalTestS3Secret_KEY", "TEST_S3_SECRET_KEY", null);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
-// const receiptsBucketName = getEnvVarAndLog("receiptsBucketName", "DIY_SUBMIT_RECEIPTS_BUCKET_NAME", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
+const wiremockMode = getEnvVarAndLog("wiremockMode", "TEST_WIREMOCK", "off");
+const wiremockPort = getEnvVarAndLog("wiremockPort", "WIREMOCK_PORT", 9090);
+const wiremockOutputDir = getEnvVarAndLog("wiremockOutputDir", "WIREMOCK_RECORD_OUTPUT_DIR", "target/wiremock-recordings");
 
 let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
 let dynamoControl;
+let userSub = null;
+let observedTraceparent = null;
 
 test.setTimeout(120_000);
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
+
+  if (!envFilePath) {
+    throw new Error("Environment variable DIY_SUBMIT_ENV_FILEPATH is not set, assuming no environment; not attempting tests.");
+  }
+
   process.env = {
     ...originalEnv,
   };
+
   // Run local servers as needed for the tests
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
   ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
+
+  // Clean up any existing artefacts from previous test runs
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  deleteUserSubTxt(outputDir);
+  deleteHashedUserSubTxt(outputDir);
+  deleteTraceparentTxt(outputDir);
+
+  if (wiremockMode === "record" || wiremockMode === "mock") {
+    const targets = [];
+    if (process.env.HMRC_BASE_URI) targets.push(process.env.HMRC_BASE_URI);
+    if (process.env.HMRC_SANDBOX_BASE_URI) targets.push(process.env.HMRC_SANDBOX_BASE_URI);
+    await startWiremock({
+      mode: wiremockMode,
+      port: wiremockPort,
+      outputDir: wiremockOutputDir,
+      targets,
+    });
+    // override HMRC endpoints so the app uses WireMock
+    process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
+    process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
+  }
 
   console.log("beforeAll hook completed successfully");
 });
@@ -90,6 +125,18 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
+  // stop local servers...
+  if (wiremockMode && wiremockMode !== "off") {
+    await stopWiremock({ mode: wiremockMode, port: wiremockPort });
+  }
+});
+
+test.afterEach(async ({ page }, testInfo) => {
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  appendUserSubTxt(outputDir, testInfo, userSub);
+  appendHashedUserSubTxt(outputDir, testInfo, userSub);
+  appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
 test("Click through: Adding and removing bundles", async ({ page }, testInfo) => {
@@ -105,7 +152,6 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
-  let observedTraceparent = null;
 
   // Capture the first traceparent header observed in any API response
   page.on("response", (response) => {
@@ -154,6 +200,12 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   }
   await goToHomePage(page, screenshotPath);
 
+  /* ****************** */
+  /*  Extract user sub  */
+  /* ****************** */
+
+  userSub = await extractUserSubFromLocalStorage(page, testInfo);
+
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
@@ -179,22 +231,41 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     }
   }
 
-  // Extract user sub (from localStorage.userInfo) and write artefacts
-  let userSub = null;
-  try {
-    const userInfoStr = await page.evaluate(() => localStorage.getItem("userInfo"));
-    if (userInfoStr) {
-      const userInfo = JSON.parse(userInfoStr);
-      userSub = userInfo?.sub || null;
-    }
-  } catch (_e) {}
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
 
-  try {
-    fs.writeFileSync(path.join(outputDir, "traceparent.txt"), observedTraceparent || "", "utf-8");
-  } catch (_e) {}
-  try {
-    fs.writeFileSync(path.join(outputDir, "userSub.txt"), userSub || "", "utf-8");
-  } catch (_e) {}
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "goto.*bundles.*page", // Bundles page navigation
+    "clear.*bundle", // Clearing bundles
+    "request.*bundle", // Requesting a bundle
+    "ensure.*bundle", // Bundle present/added
+    "added.*test", // Test bundle added confirmation
+  ];
+
+  const screenshotDescriptions = {
+    "goto.*bundles.*page": "Bundles management page showing available bundle types and current selections",
+    "clear.*bundle": "Bundles page after clearing all bundles showing empty state",
+    "request.*bundle": "Bundle request in progress with Test bundle being added",
+    "ensure.*bundle": "Bundle successfully added showing confirmation with checkmark",
+    "added.*test": "Test bundle successfully added and visible in the bundles list",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
 
   // Build and write testContext.json (no HMRC API directly exercised here)
   const testContext = {
@@ -211,9 +282,20 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
     },
-    testData: {},
+    testData: {
+      userSub,
+      observedTraceparent,
+      testUrl,
+      bundlesTested: envName === "prod" ? ["Test"] : ["Test", "Guest"],
+    },
     artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
   };
   try {
     fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");

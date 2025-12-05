@@ -4,7 +4,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump14
+# Bump15
 
 on:
   workflow_dispatch:
@@ -61,8 +61,10 @@ on:
       - '!gh_pages'
       - '!dependabot/**'
     paths:
+      - 'app/data/**'
       - 'app/functions/**'
       - 'app/lib/**'
+      - 'app/services/**'
       - 'infra/main/**'
       - 'web/public/**'
       - '.env.ci'
@@ -111,10 +113,10 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Compute deployment name and environment
         id: deployment-config
-        uses: ./.github/actions/get-names
+        uses: './.github/actions/get-names'
         with:
           environment-name: ${{ github.event.inputs.environment-name || '' }}
           deployment-name: ${{ github.event.inputs.deployment-name || '' }}
@@ -150,7 +152,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -179,7 +181,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-java@v5
         with:
@@ -205,7 +207,7 @@ jobs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   behaviour-test-bundle:
-    name: 'behaviour test - bundle'
+    name: 'behaviour test - bundle (proxy)'
     needs:
       - names
     runs-on: ubuntu-24.04
@@ -215,7 +217,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -230,14 +232,14 @@ jobs:
 
       - name: Run behaviour tests - bundle
         run: |
-          npm run test:bundleBehaviour || exit_code=$? \
+          npm run test:bundleBehaviour-proxy || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
@@ -268,7 +270,7 @@ jobs:
             target/behaviour-test-results/**/*.jsonl
 
   behaviour-test-obligation:
-    name: 'behaviour test - obligation'
+    name: 'behaviour test - obligation (proxy)'
     needs:
       - names
       - behaviour-test-bundle
@@ -279,7 +281,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -294,15 +296,17 @@ jobs:
 
       - name: Run behaviour tests - obligation
         run: |
-          npm run test:obligationBehaviour || exit_code=$? \
+          npm run test:obligationBehaviour-proxy || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          # HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
@@ -332,8 +336,8 @@ jobs:
           path: |
             target/behaviour-test-results/**/*.jsonl
 
-  behaviour-test-view-vat:
-    name: 'behaviour test - view vat'
+  behaviour-test-submit-vat:
+    name: 'behaviour test - submit vat (proxy)'
     needs:
       - names
       - behaviour-test-obligation
@@ -344,72 +348,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - view vat
-        run: |
-          npm run test:viewVatBehaviour || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: behaviour-test-artifacts-view-vat
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: behaviour-test-reports-view-vat
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: behaviour-test-dynamodb-view-vat
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/**/*.jsonl
-
-  behaviour-test-submit-vat:
-    name: 'behaviour test - submit vat'
-    needs:
-      - names
-      - behaviour-test-view-vat
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -424,15 +363,17 @@ jobs:
 
       - name: Run behaviour tests - submit vat
         run: |
-          npm run test:submitVatBehaviour || exit_code=$? \
+          npm run test:submitVatBehaviour-proxy || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-          HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          #HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
@@ -525,7 +466,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -603,7 +544,7 @@ jobs:
 
       - name: Checkout
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -695,7 +636,7 @@ jobs:
 
       - name: Checkout
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -801,7 +742,7 @@ jobs:
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -902,7 +843,7 @@ jobs:
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -975,7 +916,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1027,7 +968,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1104,7 +1045,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1181,7 +1122,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1260,7 +1201,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1393,7 +1334,7 @@ jobs:
 
       - name: Checkout
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
@@ -1467,7 +1408,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Configure AWS role via GitHub OIDC (for RUM outputs)
         uses: aws-actions/configure-aws-credentials@v5
@@ -1666,7 +1607,7 @@ jobs:
 
       - name: Checkout
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
@@ -1729,7 +1670,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
@@ -1767,7 +1708,7 @@ jobs:
 
       - name: Alias apex domain to base domain
         id: set-origins
-        uses: ./.github/actions/set-origins
+        uses: './.github/actions/set-origins'
         with:
           origin-domain: ${{ needs.names.outputs.base-domain }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
@@ -1791,7 +1732,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1807,17 +1748,48 @@ jobs:
 
       - name: Run behaviour tests - bundleBehaviour
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:bundleBehaviour || exit_code=$? \
+          npm run 'test:bundleBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -1851,7 +1823,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1868,17 +1840,51 @@ jobs:
       - name: Run behaviour tests - obligationBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:obligationBehaviour || exit_code=$? \
+          npm run 'test:obligationBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -1912,7 +1918,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1929,17 +1935,49 @@ jobs:
       - name: Run behaviour tests - obligationBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:obligationBehaviour || exit_code=$? \
+          npm run 'test:obligationBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          # TODO: Change to HMRC_SYTH_PRODUCTION_USERNAME when available
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -1973,7 +2011,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -1990,17 +2028,51 @@ jobs:
       - name: Run behaviour tests - submitVatBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:submitVatBehaviour || exit_code=$? \
+          npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -2034,7 +2106,7 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -2051,17 +2123,49 @@ jobs:
       - name: Run behaviour tests - submitVatBehaviour
         if: ${{ !cancelled() }}
         run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:submitVatBehaviour || exit_code=$? \
+          npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          # TODO: Change to HMRC_SYTH_PRODUCTION_USERNAME when available
           TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
           TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -2081,128 +2185,6 @@ jobs:
           path: |
             target/test-reports/
 
-  web-test-view-vat-sandbox:
-    if: ${{ !cancelled() }}
-    name: 'web test view vat sandbox'
-    needs:
-      - names
-      - set-origins
-      - web-test-bundle
-    runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.57.0-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      - name: Run behaviour tests - viewVatBehaviour
-        if: ${{ !cancelled() }}
-        run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; HMRC_ACCOUNT=sandbox npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:viewVatBehaviour || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: web-test-artifacts-view-vat-sandbox
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: web-test-reports-view-vat-sandbox
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-  web-test-view-vat:
-    if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-    name: 'web test view vat'
-    needs:
-      - names
-      - set-origins
-      - web-test-bundle
-    runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.57.0-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      - name: Run behaviour tests - viewVatBehaviour
-        if: ${{ !cancelled() }}
-        run: |
-          cp '.env.${{ needs.names.outputs.environment-name }}' '.env.test' \
-          ; npx dotenv -e '.env.${{ needs.names.outputs.environment-name }}' -- \
-            npm run test:viewVatBehaviour || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: web-test-artifacts-view-vat
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: web-test-reports-view-vat
-          retention-days: 30
-          path: |
-            target/test-reports/
-
   upload-web-test-results:
     if: ${{ !cancelled() }}
     name: 'upload web test results'
@@ -2214,11 +2196,61 @@ jobs:
       - web-test-obligation-sandbox
       - web-test-submit-vat
       - web-test-submit-vat-sandbox
-      - web-test-view-vat
-      - web-test-view-vat-sandbox
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download artifacts (results) - bundle
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-artifacts-bundle
+          path: |
+            target/behaviour-test-results/
+
+      - name: Download artifacts (results) - obligation
+        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-artifacts-obligation
+          path: |
+            target/behaviour-test-results/
+
+      - name: Download artifacts (results) - obligation sandbox
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-artifacts-obligation-sandbox
+          path: |
+            target/behaviour-test-results/
+
+      - name: Download artifacts (results) - submit vat
+        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-artifacts-submit-vat
+          path: |
+            target/behaviour-test-results/
+
+      - name: Download artifacts (results) - submit vat sandbox
+        if: ${{ !cancelled() }}
+        uses: actions/download-artifact@v6
+        with:
+          name: web-test-artifacts-submit-vat-sandbox
+          path: |
+            target/behaviour-test-results/
+
       - name: Download artifacts (reports) - bundle
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v6
@@ -2259,22 +2291,6 @@ jobs:
           path: |
             target/test-reports/submit-vat-sandbox/
 
-      - name: Download artifacts (reports) - view vat
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-        uses: actions/download-artifact@v6
-        with:
-          name: web-test-reports-view-vat
-          path: |
-            target/test-reports/view-vat/
-
-      - name: Download artifacts (reports) - view vat sandbox
-        if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v6
-        with:
-          name: web-test-reports-view-vat-sandbox
-          path: |
-            target/test-reports/view-vat-sandbox/
-
       - name: Generate combined test report index
         if: ${{ !cancelled() }}
         run: |
@@ -2287,16 +2303,14 @@ jobs:
           echo "</head><body>" >> "$INDEX_FILE"
           echo "<h1>Behaviour Test Reports</h1>" >> "$INDEX_FILE"
           echo "<ul>" >> "$INDEX_FILE"
-          for d in bundle obligation obligation-sandbox submit-vat submit-vat-sandbox view-vat view-vat-sandbox; do
+          for d in bundle obligation obligation-sandbox submit-vat submit-vat-sandbox; do
             if [ -f "target/test-reports/$d/html-report/index.html" ]; then
               case "$d" in
                 bundle) label="Click through test: Adding and removing bundles" ;;
                 obligation) label="Click through test: View VAT obligations from HMRC" ;;
                 obligation-sandbox) label="Click through test: View VAT obligations from HMRC (sandbox)" ;;
-                submit-vat) label="Click through test: Submit a VAT return to HMRC" ;;
-                submit-vat-sandbox) label="Click through test: Submit a VAT return to HMRC (sandbox)" ;;
-                view-vat) label="Click through test: Get VAT return from HMRC" ;;
-                view-vat-sandbox) label="Click through test: Get VAT return from HMRC (sandbox)" ;;
+                submit-vat) label="Click through test: Submit a VAT return to HMRC (includes view VAT return)" ;;
+                submit-vat-sandbox) label="Click through test: Submit a VAT return to HMRC (sandbox, includes view VAT return)" ;;
                 *) label="$d" ;;
               esac
               echo "  <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
@@ -2305,6 +2319,13 @@ jobs:
           echo "</ul>" >> "$INDEX_FILE"
           echo "<hr><p class=\"ts\">Generated on $(date -u '+%Y-%m-%d %H:%M:%SZ') (UTC)</p>" >> "$INDEX_FILE"
           echo "</body></html>" >> "$INDEX_FILE"
+        shell: bash
+
+      - name: Generate test report JSON files
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Generating test report JSON files from behaviour test results..."
+          node scripts/generate-test-reports.js
         shell: bash
 
       - name: Configure AWS role via GitHub OIDC
@@ -2338,6 +2359,8 @@ jobs:
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
+          echo "Uploading test report JSON files and index pages to S3 bucket: ${BUCKET_NAME?}"
+          aws s3 cp web/public/tests/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "*.json" --include "*.txt" --include "*.html"
         shell: bash
 
   convert-video:
@@ -2356,7 +2379,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -2423,7 +2446,6 @@ jobs:
       - web-test-bundle
       - web-test-obligation
       - web-test-submit-vat
-      - web-test-view-vat
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
@@ -2474,7 +2496,7 @@ jobs:
       - set-origins
       - upload-web-test-results
       - set-last-known-good-deployment
-    uses: ./.github/workflows/destroy.yml
+    uses: './.github/workflows/destroy.yml'
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}

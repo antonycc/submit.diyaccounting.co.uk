@@ -1,7 +1,7 @@
-// app/unit-tests/subHasher.test.js
+// app/unit-tests/services/subHasher.test.js
 
 import { describe, test, expect } from "vitest";
-import { hashSub } from "@app/lib/subHasher.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 describe("subHasher.js", () => {
   test("should hash a sub claim to a hex string", () => {

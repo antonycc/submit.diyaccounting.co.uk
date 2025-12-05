@@ -2,7 +2,7 @@
 Overall, these three Lambdas are in good shape. The refactor has made them much more consistent in structure and intent:
 - Common layout: `apiEndpoint` → `extractAndValidateParameters` → `handler` → service adaptor (`submitVat`/`getVatReturn`/`getVatObligations`).
 - Clear separation of concerns between HTTP-facing logic and HMRC service calls.
-- Consistent validation and error shaping using helpers from `responses.js`/`hmrcHelper.js`.
+- Consistent validation and error shaping using helpers from `httpResponseHelper.js`/`hmrcApi.js`.
 - Good observability: request IDs, structured logs, and fraud-prevention headers propagated.
 - Tests are pragmatic and resilient (mock network, assert only on key values), and everything passes.
 
@@ -24,7 +24,7 @@ Suggestion:
 
 Example:
 ```js
-// app/lib/httpHelper.js
+// app/lib/httpServerToLambdaAdaptor.js
 function redactHeaders(headers) {
   const h = { ...headers };
   for (const key of Object.keys(h)) {
@@ -72,7 +72,7 @@ Suggestion:
 Suggestion:
 - Introduce a small helper to map HMRC `Response` to app responses for GETs (mirroring `generateHmrcErrorResponseWithRetryAdvice` for POST):
 ```js
-// app/lib/hmrcHelper.js (conceptual)
+// app/lib/hmrcApi.js (conceptual)
 export function mapHmrcGetResponseToHttp(request, requestId, hmrcResponse, headers) {
   if (hmrcResponse.status === 403) return http403ForbiddenFromHmrcResponse(/* ... */);
   if (hmrcResponse.status === 404) return http404NotFoundFromHmrcResponse(/* ... */);

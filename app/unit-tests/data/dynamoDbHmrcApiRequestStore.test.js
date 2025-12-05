@@ -41,7 +41,7 @@ describe("dynamoDbHmrcApiRequestStore", () => {
   test("skips put when HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME is not set", async () => {
     // Arrange
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = ""; // disabled
-    const { putHmrcApiRequest } = await import("@app/lib/dynamoDbHmrcApiRequestStore.js");
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
 
     // Act
     await expect(
@@ -58,9 +58,9 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     // Arrange
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = "unit-test-hmrc-requests";
     process.env.AWS_REGION = process.env.AWS_REGION || "eu-west-2";
-    const { putHmrcApiRequest } = await import("@app/lib/dynamoDbHmrcApiRequestStore.js");
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
     const { context } = await import("@app/lib/logger.js");
-    const { hashSub } = await import("@app/lib/subHasher.js");
+    const { hashSub } = await import("@app/services/subHasher.js");
 
     // add request correlation data
     context.set("requestId", "req-123");

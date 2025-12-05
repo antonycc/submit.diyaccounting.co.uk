@@ -1,9 +1,52 @@
 // app/unit-tests/functions/hmrcVatObligationGet.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { handler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+
+// ---------------------------------------------------------------------------
+// Mock AWS DynamoDB used by bundle management to avoid real AWS calls
+// We keep behaviour simple: Query returns empty items; Put/Delete succeed.
+// This preserves the current handler behaviour expected by tests without
+// persisting between calls (so duplicate requests still appear as new).
+// ---------------------------------------------------------------------------
+const mockSend = vi.fn();
+
+vi.mock("@aws-sdk/lib-dynamodb", () => {
+  class PutCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  class QueryCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  class DeleteCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  return {
+    DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
+    PutCommand,
+    QueryCommand,
+    DeleteCommand,
+  };
+});
+
+vi.mock("@aws-sdk/client-dynamodb", () => {
+  class DynamoDBClient {
+    constructor(_config) {
+      // no-op in unit tests
+    }
+  }
+  return { DynamoDBClient };
+});
+
+// Defer importing the handlers until after mocks are defined
+import { handler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -12,7 +55,21 @@ const mockFetch = setupFetchMock();
 describe("hmrcVatObligationGet handler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
+    // Reset and provide default mock DynamoDB behaviour
     vi.clearAllMocks();
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      if (cmd instanceof lib.PutCommand) {
+        return {};
+      }
+      if (cmd instanceof lib.DeleteCommand) {
+        return {};
+      }
+      return {};
+    });
   });
 
   test("HEAD request returns 200 OK", async () => {

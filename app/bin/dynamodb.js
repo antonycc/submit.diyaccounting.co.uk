@@ -10,7 +10,9 @@ import dynalite from "dynalite";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
-import logger from "../lib/logger.js";
+import { createLogger } from "../lib/logger.js";
+
+const logger = createLogger({ source: "app/bin/dynamodb.js" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,7 +28,10 @@ function startDynaliteServer({ host = "127.0.0.1", port = 9000 } = {}) {
   return new Promise((resolve, reject) => {
     server.listen(port, host, (err) => {
       if (err) return reject(err);
-      const endpoint = `http://${host}:${port}`;
+      // If using port 0, retrieve the actual bound port from server.address()
+      const addr = server.address();
+      const actualPort = typeof addr === "object" && addr && "port" in addr ? addr.port : port;
+      const endpoint = `http://${host}:${actualPort}`;
       resolve({ server, endpoint });
     });
   });
@@ -34,7 +39,11 @@ function startDynaliteServer({ host = "127.0.0.1", port = 9000 } = {}) {
 
 export async function startDynamoDB() {
   // Start a single, consistent local DynamoDB-like server (dynalite)
-  const { server, endpoint } = await startDynaliteServer({ host: "127.0.0.1", port: 9000 });
+  const host = process.env.DYNAMODB_HOST || "127.0.0.1";
+  // Allow tests to request a random free port with DYNAMODB_PORT=0
+  const rawPort = process.env.DYNAMODB_PORT;
+  const port = Number.isFinite(Number(rawPort)) ? Number(rawPort) : 9000;
+  const { server, endpoint } = await startDynaliteServer({ host, port });
   const stop = async () => {
     try {
       server.close();
@@ -168,10 +177,47 @@ export async function ensureReceiptsTableExists(tableName, endpoint) {
   }
 }
 
+// Create proxy state table (for rate limiter + circuit breaker) if it doesn't exist
+export async function ensureProxyStateTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring proxy state table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [{ AttributeName: "stateKey", KeyType: "HASH" }],
+          AttributeDefinitions: [{ AttributeName: "stateKey", AttributeType: "S" }],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const bundleTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
+  const receiptsTableName = process.env.RECEIPTS_DYNAMODB_TABLE_NAME;
   const hmrcApiRequestsTableName = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
+  const proxyStateTableName = process.env.STATE_TABLE_NAME || process.env.PROXY_STATE_DYNAMODB_TABLE_NAME;
 
   let stop;
 
@@ -188,6 +234,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     if (hmrcApiRequestsTableName) {
       await ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
+    }
+    if (receiptsTableName) {
+      await ensureReceiptsTableExists(receiptsTableName, endpoint);
+    }
+    if (proxyStateTableName) {
+      await ensureProxyStateTableExists(proxyStateTableName, endpoint);
     }
 
     logger.info("DynamoDB Local server is running. Press CTRL-C to stop.");
