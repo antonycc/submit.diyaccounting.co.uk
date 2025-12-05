@@ -200,11 +200,48 @@
 
       .video-container {
         margin: 1rem 0;
+        border: 2px solid #007bff;
+        border-radius: 4px;
+        padding: 1rem;
+        background-color: #f8f9fa;
       }
 
       .video-container video {
         max-width: 100%;
         height: auto;
+        display: block;
+      }
+
+      .screenshot-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+
+      .screenshot-item {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0.5rem;
+        background-color: #fafafa;
+      }
+
+      .screenshot-item img {
+        width: 100%;
+        height: auto;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .screenshot-item img:hover {
+        opacity: 0.8;
+      }
+
+      .screenshot-caption {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.5rem;
+        line-height: 1.4;
       }
     </style>
   </head>
@@ -391,7 +428,7 @@
       }
 
       function renderArtifacts(artifacts) {
-        // Render videos
+        // Render videos at the bottom with border
         const videosSection = document.getElementById("videosSection");
         if (artifacts.videos && artifacts.videos.length > 0) {
           let html = "";
@@ -400,7 +437,7 @@
             const videoExt = video.toLowerCase();
             html += `
               <div class="video-container">
-                <p><strong>${escapeHtml(video)}</strong></p>
+                <p><strong>Test Recording: ${escapeHtml(video)}</strong></p>
                 <video controls>`;
             // Add appropriate source based on file extension
             if (videoExt.endsWith('.webm')) {
@@ -424,14 +461,45 @@
           videosSection.innerHTML = "<p>No videos found for this test.</p>";
         }
 
-        // Render screenshots
+        // Render screenshots with figure metadata if available
         const screenshotsSection = document.getElementById("screenshotsSection");
         if (artifacts.screenshots && artifacts.screenshots.length > 0) {
-          let html = "<div>";
-          artifacts.screenshots.forEach((screenshot) => {
-            const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(screenshot)}`;
-            html += `<a href="${screenshotPath}" target="_blank"><img src="${screenshotPath}" alt="${escapeHtml(screenshot)}" class="screenshot-thumbnail" title="${escapeHtml(screenshot)}"></a>`;
-          });
+          let html = '<div class="screenshot-gallery">';
+          
+          // Use figures metadata if available
+          if (artifacts.figures && artifacts.figures.length > 0) {
+            artifacts.figures.forEach((figure) => {
+              const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(figure.filename)}`;
+              html += `
+                <div class="screenshot-item">
+                  <a href="${screenshotPath}" target="_blank">
+                    <img src="${screenshotPath}" alt="${escapeHtml(figure.caption || figure.filename)}" title="${escapeHtml(figure.description || figure.caption)}">
+                  </a>
+                  <div class="screenshot-caption">
+                    <strong>${escapeHtml(figure.caption || 'Screenshot ' + figure.order)}</strong><br>
+                    ${escapeHtml(figure.description || '')}
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            // Fallback to simple list if no figures metadata
+            artifacts.screenshots.forEach((screenshot) => {
+              const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(screenshot)}`;
+              const filename = screenshot.split('/').pop();
+              html += `
+                <div class="screenshot-item">
+                  <a href="${screenshotPath}" target="_blank">
+                    <img src="${screenshotPath}" alt="${escapeHtml(filename)}" title="Click to view full size">
+                  </a>
+                  <div class="screenshot-caption">
+                    ${escapeHtml(filename)}
+                  </div>
+                </div>
+              `;
+            });
+          }
+          
           html += "</div>";
           screenshotsSection.innerHTML = html;
         } else {
