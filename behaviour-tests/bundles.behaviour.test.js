@@ -39,9 +39,6 @@ import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 // }
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
-let wiremockMode;
-let wiremockPort;
-
 const screenshotPath = "target/behaviour-test-results/screenshots/bundles-behaviour-test";
 
 const originalEnv = { ...process.env };
@@ -59,6 +56,9 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
+const wiremockMode = getEnvVarAndLog("wiremockMode", "TEST_WIREMOCK", "off");
+const wiremockPort = getEnvVarAndLog("wiremockPort", "WIREMOCK_PORT", 9090);
+const wiremockOutputDir = getEnvVarAndLog("wiremockOutputDir", "WIREMOCK_RECORD_OUTPUT_DIR", "target/wiremock-recordings");
 
 let mockOAuth2Process;
 let serverProcess;
@@ -93,17 +93,14 @@ test.beforeAll(async ({ page }, testInfo) => {
   deleteHashedUserSubTxt(outputDir);
   deleteTraceparentTxt(outputDir);
 
-  wiremockMode = process.env.TEST_WIREMOCK || "off";
-  wiremockPort = process.env.WIREMOCK_PORT || 9090;
-
-  if (wiremockMode !== "off") {
+  if (wiremockMode === "record" || wiremockMode === "mock") {
     const targets = [];
     if (process.env.HMRC_BASE_URI) targets.push(process.env.HMRC_BASE_URI);
     if (process.env.HMRC_SANDBOX_BASE_URI) targets.push(process.env.HMRC_SANDBOX_BASE_URI);
     await startWiremock({
       mode: wiremockMode,
       port: wiremockPort,
-      outputDir: process.env.WIREMOCK_RECORD_OUTPUT_DIR || "",
+      outputDir: wiremockOutputDir,
       targets,
     });
     // override HMRC endpoints so the app uses WireMock

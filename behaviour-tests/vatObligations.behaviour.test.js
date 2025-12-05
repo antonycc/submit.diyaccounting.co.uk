@@ -125,7 +125,7 @@ test.beforeAll(async ({ page }, testInfo) => {
   wiremockMode = process.env.TEST_WIREMOCK || "off";
   wiremockPort = process.env.WIREMOCK_PORT || 9090;
 
-  if (wiremockMode !== "off") {
+  if (wiremockMode === "record" || wiremockMode === "mock") {
     const targets = [];
     if (process.env.HMRC_BASE_URI) targets.push(process.env.HMRC_BASE_URI);
     if (process.env.HMRC_SANDBOX_BASE_URI) targets.push(process.env.HMRC_SANDBOX_BASE_URI);
