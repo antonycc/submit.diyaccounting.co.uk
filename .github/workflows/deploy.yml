@@ -1791,6 +1791,13 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
 
+      - name: Generate test report JSON files
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Generating test report JSON files from behaviour test results..."
+          node scripts/generate-test-reports.js
+        shell: bash
+
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
@@ -2291,42 +2298,42 @@ jobs:
           path: |
             target/test-reports/submit-vat-sandbox/
 
-      - name: Generate combined test report index
-        if: ${{ !cancelled() }}
-        run: |
-          set -euo pipefail
-          mkdir -p target/test-reports/html-report
-          INDEX_FILE="target/test-reports/html-report/index.html"
-          echo "<!doctype html>" > "$INDEX_FILE"
-          echo "<html><head><meta charset=\"utf-8\"><title>Behaviour Test Reports</title>" >> "$INDEX_FILE"
-          echo "<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;max-width:920px;margin:24px auto;padding:0 16px}h1{font-size:1.6rem}ul{line-height:1.9}li{margin:6px 0}.ts{color:#666;font-size:.9rem}</style>" >> "$INDEX_FILE"
-          echo "</head><body>" >> "$INDEX_FILE"
-          echo "<h1>Behaviour Test Reports</h1>" >> "$INDEX_FILE"
-          echo "<ul>" >> "$INDEX_FILE"
-          for d in bundle obligation obligation-sandbox submit-vat submit-vat-sandbox; do
-            if [ -f "target/test-reports/$d/html-report/index.html" ]; then
-              case "$d" in
-                bundle) label="Click through test: Adding and removing bundles" ;;
-                obligation) label="Click through test: View VAT obligations from HMRC" ;;
-                obligation-sandbox) label="Click through test: View VAT obligations from HMRC (sandbox)" ;;
-                submit-vat) label="Click through test: Submit a VAT return to HMRC (includes view VAT return)" ;;
-                submit-vat-sandbox) label="Click through test: Submit a VAT return to HMRC (sandbox, includes view VAT return)" ;;
-                *) label="$d" ;;
-              esac
-              echo "  <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
-            fi
-          done
-          echo "</ul>" >> "$INDEX_FILE"
-          echo "<hr><p class=\"ts\">Generated on $(date -u '+%Y-%m-%d %H:%M:%SZ') (UTC)</p>" >> "$INDEX_FILE"
-          echo "</body></html>" >> "$INDEX_FILE"
-        shell: bash
+#      - name: Generate combined test report index
+#        if: ${{ !cancelled() }}
+#        run: |
+#          set -euo pipefail
+#          mkdir -p target/test-reports/html-report
+#          INDEX_FILE="target/test-reports/html-report/index.html"
+#          echo "<!doctype html>" > "$INDEX_FILE"
+#          echo "<html><head><meta charset=\"utf-8\"><title>Behaviour Test Reports</title>" >> "$INDEX_FILE"
+#          echo "<style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu;max-width:920px;margin:24px auto;padding:0 16px}h1{font-size:1.6rem}ul{line-height:1.9}li{margin:6px 0}.ts{color:#666;font-size:.9rem}</style>" >> "$INDEX_FILE"
+#          echo "</head><body>" >> "$INDEX_FILE"
+#          echo "<h1>Behaviour Test Reports</h1>" >> "$INDEX_FILE"
+#          echo "<ul>" >> "$INDEX_FILE"
+#          for d in bundle obligation obligation-sandbox submit-vat submit-vat-sandbox; do
+#            if [ -f "target/test-reports/$d/html-report/index.html" ]; then
+#              case "$d" in
+#                bundle) label="Click through test: Adding and removing bundles" ;;
+#                obligation) label="Click through test: View VAT obligations from HMRC" ;;
+#                obligation-sandbox) label="Click through test: View VAT obligations from HMRC (sandbox)" ;;
+#                submit-vat) label="Click through test: Submit a VAT return to HMRC (includes view VAT return)" ;;
+#                submit-vat-sandbox) label="Click through test: Submit a VAT return to HMRC (sandbox, includes view VAT return)" ;;
+#                *) label="$d" ;;
+#              esac
+#              echo "  <li><a href=\"../$d/html-report/index.html\">$label</a></li>" >> "$INDEX_FILE"
+#            fi
+#          done
+#          echo "</ul>" >> "$INDEX_FILE"
+#          echo "<hr><p class=\"ts\">Generated on $(date -u '+%Y-%m-%d %H:%M:%SZ') (UTC)</p>" >> "$INDEX_FILE"
+#          echo "</body></html>" >> "$INDEX_FILE"
+#        shell: bash
 
-      - name: Generate test report JSON files
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Generating test report JSON files from behaviour test results..."
-          node scripts/generate-test-reports.js
-        shell: bash
+#      - name: Generate test report JSON files
+#        if: ${{ !cancelled() }}
+#        run: |
+#          echo "Generating test report JSON files from behaviour test results..."
+#          node scripts/generate-test-reports.js
+#        shell: bash
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}

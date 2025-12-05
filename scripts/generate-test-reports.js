@@ -25,7 +25,8 @@ const __dirname = path.dirname(__filename);
 
 const PROJECT_ROOT = path.join(__dirname, "..");
 const RESULTS_DIR = path.join(PROJECT_ROOT, "target/behaviour-test-results");
-const OUTPUT_DIR = path.join(PROJECT_ROOT, "web/public/tests");
+const REPORTS_DIR = path.join(PROJECT_ROOT, "target/test-reports/html-report");
+const OUTPUT_DIR = path.join(PROJECT_ROOT, "target/behaviour-test-results");
 
 /**
  * Read and parse JSONL file
@@ -110,8 +111,7 @@ function findHmrcApiRequests(dir) {
  * Check if playwright report exists and extract test status
  */
 function getPlaywrightReportStatus(testName) {
-  const reportDir = path.join(PROJECT_ROOT, "target/test-reports", testName, "html-report");
-  const indexPath = path.join(reportDir, "index.html");
+  const indexPath = path.join(REPORTS_DIR, "index.html");
 
   if (!fs.existsSync(indexPath)) {
     return { exists: false, status: "unknown" };
@@ -246,9 +246,9 @@ function main() {
   console.log("");
 
   for (const testName of testDirs) {
-    if (testName === "html-report") {
-      continue; // Skip the combined report directory
-    }
+    //if (testName === "html-report") {
+    //  continue; // Skip the combined report directory
+    //}
 
     // Find test-specific data
     const { testContextPath, hmrcApiRequestsPath } = findTestData(testName);
