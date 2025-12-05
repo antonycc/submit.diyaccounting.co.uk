@@ -57,9 +57,7 @@ describe("System: runLocalDynamoDb() helper", () => {
         Item: { hashedSub: pk, receiptId: { S: "r1" }, createdAt: { N: String(Date.now()) } },
       }),
     );
-    const got = await ddb.send(
-      new GetItemCommand({ TableName: receiptsTableName, Key: { hashedSub: pk, receiptId: { S: "r1" } } }),
-    );
+    const got = await ddb.send(new GetItemCommand({ TableName: receiptsTableName, Key: { hashedSub: pk, receiptId: { S: "r1" } } }));
     expect(got.Item?.hashedSub?.S).toBe("test-sub");
   });
 });

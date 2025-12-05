@@ -149,11 +149,7 @@ export async function exportAllTables(outputDir, endpoint, tableNames) {
   // Export proxy state table (rate limiter / circuit breaker)
   if (tableNames.proxyStateTableName) {
     try {
-      const result = await exportTableToJsonLines(
-        tableNames.proxyStateTableName,
-        endpoint,
-        path.join(outputDir, "proxy-state.jsonl"),
-      );
+      const result = await exportTableToJsonLines(tableNames.proxyStateTableName, endpoint, path.join(outputDir, "proxy-state.jsonl"));
       results.push({ table: "proxy-state", ...result });
     } catch (error) {
       logger.error(`[dynamodb-export]: Failed to export proxy state table:`, error);
