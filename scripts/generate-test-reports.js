@@ -153,8 +153,14 @@ function getPlaywrightReportStatus(testName) {
 
     // If report exists but we couldn't determine status, assume passed
     // This handles edge cases where Playwright format might vary
-    console.log(`  ℹ Could not determine exact status for ${testName}, defaulting to passed`);
-    return { exists: true, status: "passed" };
+    // Only do this if the report file exists and has content
+    if (html.length > 1000) {
+      console.log(`  ℹ Could not determine exact status for ${testName}, defaulting to passed (report exists with content)`);
+      return { exists: true, status: "passed" };
+    }
+    
+    // If report is too small or empty, status is unknown
+    return { exists: true, status: "unknown" };
   } catch (e) {
     console.warn(`Failed to read playwright report: ${e.message}`);
     return { exists: false, status: "unknown" };
@@ -243,7 +249,7 @@ function findTestArtifacts(testName) {
       const figuresData = JSON.parse(fs.readFileSync(figuresPath, "utf-8"));
       artifacts.figures = figuresData;
       // Extract screenshot filenames from figures.json
-      artifacts.screenshots = figuresData.map((fig) => fig.filename).filter((f) => f);
+      artifacts.screenshots = figuresData.map((fig) => fig.filename).filter((f) => f != null && f !== "");
       console.log(`  ✓ Found figures.json with ${artifacts.screenshots.length} curated screenshots`);
     } catch (e) {
       console.warn(`  ⚠ Failed to read figures.json: ${e.message}`);

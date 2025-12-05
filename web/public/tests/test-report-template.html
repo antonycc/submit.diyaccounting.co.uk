@@ -468,15 +468,16 @@
           
           // Use figures metadata if available
           if (artifacts.figures && artifacts.figures.length > 0) {
-            artifacts.figures.forEach((figure) => {
+            artifacts.figures.forEach((figure, index) => {
               const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(figure.filename)}`;
+              const caption = figure.caption || `Screenshot ${(figure.order ?? index + 1)}`;
               html += `
                 <div class="screenshot-item">
                   <a href="${screenshotPath}" target="_blank">
-                    <img src="${screenshotPath}" alt="${escapeHtml(figure.caption || figure.filename)}" title="${escapeHtml(figure.description || figure.caption)}">
+                    <img src="${screenshotPath}" alt="${escapeHtml(caption)}" title="${escapeHtml(figure.description || caption)}">
                   </a>
                   <div class="screenshot-caption">
-                    <strong>${escapeHtml(figure.caption || 'Screenshot ' + figure.order)}</strong><br>
+                    <strong>${escapeHtml(caption)}</strong><br>
                     ${escapeHtml(figure.description || '')}
                   </div>
                 </div>
