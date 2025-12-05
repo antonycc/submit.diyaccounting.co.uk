@@ -64,7 +64,8 @@
     "data": "npx dotenv -e .env.proxy -- node app/bin/dynamodb.js",
     "mock": "wiremock --port 9090 --root-dir wiremock-recordings --verbose --preserve-host-header",
     "cloudfront:set-origins": "node ./app/actions/set-apex-origins.mjs",
-    "set-apex-origins": "node ./app/actions/set-apex-origins.mjs"
+    "set-apex-origins": "node ./app/actions/set-apex-origins.mjs",
+    "wiremock:server": "wiremock --port 9090 --root-dir wiremock-recordings --disable-banner"
   },
   "keywords": [],
   "author": "",
