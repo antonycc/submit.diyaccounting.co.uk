@@ -5,7 +5,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { createLogger } from "@app/lib/logger.js";
 
-const logger = createLogger({ source: "behaviour-tests/helpers/wiremock-helpers.js" });
+const logger = createLogger({ source: "behaviour-tests/helpers/wiremock-helper.js" });
 
 //
 // Dynamically resolve the WireMock standalone JAR in ESM mode
@@ -95,27 +95,44 @@ export async function startWiremock({ mode = "record", port = 9090, outputDir, t
   logger.info(`WireMock is ready on port ${port}`);
 
   if (mode === "record") {
-    logger.info(`Configuring WireMock to record and proxy to targets: ${targets.join(", ")}`);
-    // Create proxy stubs so WireMock forwards unmatched requests to the live HMRC endpoints
-    for (const base of targets) {
-      logger.info(`Setting up proxy to: ${base}`);
-      await fetch(`http://localhost:${port}/__admin/mappings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          request: { method: "ANY", urlPattern: ".*" },
-          response: { proxyBaseUrl: base },
-        }),
-      });
+    // De-duplicate targets
+    const uniqueTargets = [...new Set(targets)];
+    logger.info(`Configuring WireMock to record and proxy to targets: ${uniqueTargets.join(", ")}`);
+
+    if (uniqueTargets.length === 0) {
+      throw new Error(
+        "No targets specified for WireMock recording mode. " +
+          "Recording requires at least one targetBaseUrl to proxy requests to. " +
+          "Ensure that HMRC_BASE_URI or HMRC_SANDBOX_BASE_URI is configured.",
+      );
     }
 
-    // Start recording
-    logger.info("Starting WireMock recording...");
-    await fetch(`http://localhost:${port}/__admin/recordings/start`, {
+    // WireMock recording API supports only a single target base URL.
+    // If multiple unique targets are provided, we use the first one.
+    // All requests will be proxied to and recorded from this target.
+    const targetBaseUrl = uniqueTargets[0];
+    if (uniqueTargets.length > 1) {
+      logger.warn(
+        `Multiple unique targets provided: ${uniqueTargets.join(", ")}. ` +
+          `Using first target: ${targetBaseUrl}. Other targets will be ignored.`,
+      );
+    }
+    logger.info(`Starting WireMock recording with target: ${targetBaseUrl}`);
+
+    // Start recording with the target base URL
+    const recordingResponse = await fetch(`http://localhost:${port}/__admin/recordings/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify({
+        targetBaseUrl: targetBaseUrl,
+      }),
     });
+
+    if (!recordingResponse.ok) {
+      const errorText = await recordingResponse.text();
+      throw new Error(`Failed to start WireMock recording: ${recordingResponse.status} ${errorText}`);
+    }
+
     logger.info(`WireMock started in record mode, recording to directory: ${outputDir}`);
   } else {
     logger.info(`WireMock started in mock mode, serving from directory: ${outputDir}`);
