@@ -9,10 +9,23 @@ import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
 export function getHmrcBaseUrl(hmrcAccount) {
-  // TODO: Ensure we always have these when otherwise stable and remove defaults
-  return hmrcAccount === "sandbox"
-    ? process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk"
-    : process.env.HMRC_BASE_URI || "https://api.service.hmrc.gov.uk";
+  // Use proxy mapped URLs when configured for local development/testing
+  // This routes traffic through the Express proxy endpoint which then forwards to HMRC
+  if (hmrcAccount === "sandbox") {
+    // Check for proxy mapped URL first, then fall back to direct URL
+    if (process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL) {
+      logger.debug({ msg: `Using proxy mapped URL for sandbox: ${process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL}` });
+      return process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL;
+    }
+    return process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+  } else {
+    // Live/production account
+    if (process.env.HMRC_API_PROXY_MAPPED_URL) {
+      logger.debug({ msg: `Using proxy mapped URL for live: ${process.env.HMRC_API_PROXY_MAPPED_URL}` });
+      return process.env.HMRC_API_PROXY_MAPPED_URL;
+    }
+    return process.env.HMRC_BASE_URI || "https://api.service.hmrc.gov.uk";
+  }
 }
 
 export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenario = null) {
