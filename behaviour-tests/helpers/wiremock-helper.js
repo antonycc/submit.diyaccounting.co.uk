@@ -5,7 +5,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { createLogger } from "@app/lib/logger.js";
 
-const logger = createLogger({ source: "behaviour-tests/helpers/wiremock-helpers.js" });
+const logger = createLogger({ source: "behaviour-tests/helpers/wiremock-helper.js" });
 
 //
 // Dynamically resolve the WireMock standalone JAR in ESM mode
@@ -100,11 +100,23 @@ export async function startWiremock({ mode = "record", port = 9090, outputDir, t
     logger.info(`Configuring WireMock to record and proxy to targets: ${uniqueTargets.join(", ")}`);
 
     if (uniqueTargets.length === 0) {
-      throw new Error("No targets specified for WireMock recording mode");
+      throw new Error(
+        "No targets specified for WireMock recording mode. " +
+          "Recording requires at least one targetBaseUrl to proxy requests to. " +
+          "Ensure that HMRC_BASE_URI or HMRC_SANDBOX_BASE_URI is configured.",
+      );
     }
 
-    // Use the first unique target as the primary recording target
+    // WireMock recording API supports only a single target base URL.
+    // If multiple unique targets are provided, we use the first one.
+    // All requests will be proxied to and recorded from this target.
     const targetBaseUrl = uniqueTargets[0];
+    if (uniqueTargets.length > 1) {
+      logger.warn(
+        `Multiple unique targets provided: ${uniqueTargets.join(", ")}. ` +
+          `Using first target: ${targetBaseUrl}. Other targets will be ignored.`,
+      );
+    }
     logger.info(`Starting WireMock recording with target: ${targetBaseUrl}`);
 
     // Start recording with the target base URL
