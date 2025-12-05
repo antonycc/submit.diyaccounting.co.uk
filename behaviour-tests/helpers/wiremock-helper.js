@@ -95,27 +95,32 @@ export async function startWiremock({ mode = "record", port = 9090, outputDir, t
   logger.info(`WireMock is ready on port ${port}`);
 
   if (mode === "record") {
-    logger.info(`Configuring WireMock to record and proxy to targets: ${targets.join(", ")}`);
-    // Create proxy stubs so WireMock forwards unmatched requests to the live HMRC endpoints
-    for (const base of targets) {
-      logger.info(`Setting up proxy to: ${base}`);
-      await fetch(`http://localhost:${port}/__admin/mappings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          request: { method: "ANY", urlPattern: ".*" },
-          response: { proxyBaseUrl: base },
-        }),
-      });
+    // De-duplicate targets
+    const uniqueTargets = [...new Set(targets)];
+    logger.info(`Configuring WireMock to record and proxy to targets: ${uniqueTargets.join(", ")}`);
+
+    if (uniqueTargets.length === 0) {
+      throw new Error("No targets specified for WireMock recording mode");
     }
 
-    // Start recording
-    logger.info("Starting WireMock recording...");
-    await fetch(`http://localhost:${port}/__admin/recordings/start`, {
+    // Use the first unique target as the primary recording target
+    const targetBaseUrl = uniqueTargets[0];
+    logger.info(`Starting WireMock recording with target: ${targetBaseUrl}`);
+
+    // Start recording with the target base URL
+    const recordingResponse = await fetch(`http://localhost:${port}/__admin/recordings/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify({
+        targetBaseUrl: targetBaseUrl,
+      }),
     });
+
+    if (!recordingResponse.ok) {
+      const errorText = await recordingResponse.text();
+      throw new Error(`Failed to start WireMock recording: ${recordingResponse.status} ${errorText}`);
+    }
+
     logger.info(`WireMock started in record mode, recording to directory: ${outputDir}`);
   } else {
     logger.info(`WireMock started in mock mode, serving from directory: ${outputDir}`);
