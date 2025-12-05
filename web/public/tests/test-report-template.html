@@ -166,6 +166,46 @@
         border-radius: 4px;
         border: 1px solid #f5c6cb;
       }
+
+      .artifact-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .artifact-list li {
+        margin: 0.5rem 0;
+      }
+
+      .artifact-list a {
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      .artifact-list a:hover {
+        text-decoration: underline;
+      }
+
+      .screenshot-thumbnail {
+        max-width: 200px;
+        max-height: 150px;
+        margin: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .screenshot-thumbnail:hover {
+        border-color: #007bff;
+      }
+
+      .video-container {
+        margin: 1rem 0;
+      }
+
+      .video-container video {
+        max-width: 100%;
+        height: auto;
+      }
     </style>
   </head>
   <body>
@@ -194,9 +234,35 @@
       <div id="hmrcApiSection">
         <p>No HMRC API requests found for this test.</p>
       </div>
+
+      <h2>Test Artifacts</h2>
+      <div id="artifactsSection">
+        <h3>Videos</h3>
+        <div id="videosSection">
+          <p>No videos found for this test.</p>
+        </div>
+        <h3>Screenshots</h3>
+        <div id="screenshotsSection">
+          <p>No screenshots found for this test.</p>
+        </div>
+      </div>
+
+      <h2>Test Configuration</h2>
+      <div id="testSourceSection">
+        <h3 id="testSourceFilename">Test Source File</h3>
+        <pre id="testSourceContent"></pre>
+      </div>
+
+      <div id="envConfigSection">
+        <h3 id="envConfigFilename">Environment Configuration</h3>
+        <pre id="envConfigContent"></pre>
+      </div>
     </div>
 
     <script>
+      // Store report globally for use in artifact rendering
+      let report = null;
+
       // Get test name from URL parameter
       const urlParams = new URLSearchParams(window.location.search);
       const testName = urlParams.get("test");
@@ -216,7 +282,7 @@
             throw new Error(`Failed to load test report: ${response.statusText}`);
           }
 
-          const report = await response.json();
+          report = await response.json();
           renderReport(report);
         } catch (error) {
           console.error("Error loading test report:", error);
@@ -267,6 +333,15 @@
 
         // Render HMRC API requests
         renderHmrcApiRequests(report.hmrcApiRequests || []);
+
+        // Render test artifacts
+        renderArtifacts(report.artifacts || {});
+
+        // Render test source file
+        renderTestSource(report.testSourceFile);
+
+        // Render environment config
+        renderEnvConfig(report.envConfig);
       }
 
       function escapeHtml(unsafe) {
@@ -313,6 +388,70 @@
         });
 
         section.innerHTML = html;
+      }
+
+      function renderArtifacts(artifacts) {
+        // Render videos
+        const videosSection = document.getElementById("videosSection");
+        if (artifacts.videos && artifacts.videos.length > 0) {
+          let html = "";
+          artifacts.videos.forEach((video) => {
+            const videoPath = `../../behaviour-test-results/${report.testName}/${escapeHtml(video)}`;
+            html += `
+              <div class="video-container">
+                <p><strong>${escapeHtml(video)}</strong></p>
+                <video controls>
+                  <source src="${videoPath}" type="video/webm">
+                  <source src="${videoPath.replace('.webm', '.mp4')}" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            `;
+          });
+          videosSection.innerHTML = html;
+        } else {
+          videosSection.innerHTML = "<p>No videos found for this test.</p>";
+        }
+
+        // Render screenshots
+        const screenshotsSection = document.getElementById("screenshotsSection");
+        if (artifacts.screenshots && artifacts.screenshots.length > 0) {
+          let html = "<div>";
+          artifacts.screenshots.forEach((screenshot) => {
+            const screenshotPath = `../../behaviour-test-results/${report.testName}/${escapeHtml(screenshot)}`;
+            html += `<a href="${screenshotPath}" target="_blank"><img src="${screenshotPath}" alt="${escapeHtml(screenshot)}" class="screenshot-thumbnail" title="${escapeHtml(screenshot)}"></a>`;
+          });
+          html += "</div>";
+          screenshotsSection.innerHTML = html;
+        } else {
+          screenshotsSection.innerHTML = "<p>No screenshots found for this test.</p>";
+        }
+      }
+
+      function renderTestSource(testSourceFile) {
+        const section = document.getElementById("testSourceSection");
+        const filenameElement = document.getElementById("testSourceFilename");
+        const contentElement = document.getElementById("testSourceContent");
+
+        if (testSourceFile && testSourceFile.content) {
+          filenameElement.textContent = `Test Source File: ${testSourceFile.filename}`;
+          contentElement.textContent = testSourceFile.content;
+        } else {
+          section.style.display = "none";
+        }
+      }
+
+      function renderEnvConfig(envConfig) {
+        const section = document.getElementById("envConfigSection");
+        const filenameElement = document.getElementById("envConfigFilename");
+        const contentElement = document.getElementById("envConfigContent");
+
+        if (envConfig && envConfig.content) {
+          filenameElement.textContent = `Environment Configuration: ${envConfig.filename}`;
+          contentElement.textContent = envConfig.content;
+        } else {
+          section.style.display = "none";
+        }
       }
     </script>
   </body>

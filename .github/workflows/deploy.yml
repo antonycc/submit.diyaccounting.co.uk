@@ -2217,7 +2217,7 @@ jobs:
         with:
           name: web-test-artifacts-bundle
           path: |
-            target/behaviour-test-results/
+            target/behaviour-test-results/bundle/
 
       - name: Download artifacts (results) - obligation
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
@@ -2225,7 +2225,7 @@ jobs:
         with:
           name: web-test-artifacts-obligation
           path: |
-            target/behaviour-test-results/
+            target/behaviour-test-results/obligation/
 
       - name: Download artifacts (results) - obligation sandbox
         if: ${{ !cancelled() }}
@@ -2233,7 +2233,7 @@ jobs:
         with:
           name: web-test-artifacts-obligation-sandbox
           path: |
-            target/behaviour-test-results/
+            target/behaviour-test-results/obligation-sandbox/
 
       - name: Download artifacts (results) - submit vat
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
@@ -2241,7 +2241,7 @@ jobs:
         with:
           name: web-test-artifacts-submit-vat
           path: |
-            target/behaviour-test-results/
+            target/behaviour-test-results/submit-vat/
 
       - name: Download artifacts (results) - submit vat sandbox
         if: ${{ !cancelled() }}
@@ -2249,7 +2249,7 @@ jobs:
         with:
           name: web-test-artifacts-submit-vat-sandbox
           path: |
-            target/behaviour-test-results/
+            target/behaviour-test-results/submit-vat-sandbox/
 
       - name: Download artifacts (reports) - bundle
         if: ${{ !cancelled() }}
