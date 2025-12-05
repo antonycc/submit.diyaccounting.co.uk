@@ -105,16 +105,7 @@ export async function exchangeCodeForToken(code, hmrcAccount) {
   const secretArn = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
   const overrideSecret = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
-
-  // Use proxy mapped URL when configured for local development/testing
-  // This routes server-side OAuth token exchange through the Express proxy
-  let hmrcBaseUri;
-  if (hmrcAccount === "sandbox") {
-    hmrcBaseUri = process.env.HMRC_SANDBOX_API_PROXY_MAPPED_URL || process.env.HMRC_SANDBOX_BASE_URI;
-  } else {
-    hmrcBaseUri = process.env.HMRC_API_PROXY_MAPPED_URL || process.env.HMRC_BASE_URI;
-  }
-
+  const hmrcBaseUri = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcClientId = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
   const url = `${hmrcBaseUri}/oauth/token`;
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
