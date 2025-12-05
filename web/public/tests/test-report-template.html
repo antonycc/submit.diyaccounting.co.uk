@@ -397,12 +397,23 @@
           let html = "";
           artifacts.videos.forEach((video) => {
             const videoPath = `behaviour-test-results/${report.testName}/${escapeHtml(video)}`;
+            const videoExt = video.toLowerCase();
             html += `
               <div class="video-container">
                 <p><strong>${escapeHtml(video)}</strong></p>
-                <video controls>
-                  <source src="${videoPath}" type="video/webm">
-                  <source src="${videoPath.replace('.webm', '.mp4')}" type="video/mp4">
+                <video controls>`;
+            // Add appropriate source based on file extension
+            if (videoExt.endsWith('.webm')) {
+              html += `<source src="${videoPath}" type="video/webm">`;
+              // Also try mp4 if converted
+              html += `<source src="${videoPath.replace('.webm', '.mp4')}" type="video/mp4">`;
+            } else if (videoExt.endsWith('.mp4')) {
+              html += `<source src="${videoPath}" type="video/mp4">`;
+            } else {
+              // Generic fallback
+              html += `<source src="${videoPath}">`;
+            }
+            html += `
                   Your browser does not support the video tag.
                 </video>
               </div>

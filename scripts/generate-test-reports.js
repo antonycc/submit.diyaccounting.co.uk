@@ -192,6 +192,8 @@ function findTestSourceFile(testName) {
 
 /**
  * Find environment config based on test name
+ * Note: Currently returns .env.ci for all tests, but testName parameter
+ * is available for future environment-specific config selection
  */
 function findEnvConfig(testName) {
   // Determine which environment config file to use
