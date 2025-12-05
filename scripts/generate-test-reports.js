@@ -108,6 +108,17 @@ function findHmrcApiRequests(dir) {
 }
 
 /**
+ * Regex patterns for status detection (compiled once for performance)
+ */
+const STATUS_PATTERNS = {
+  passed: /(\d+)\s+passed/i,
+  failed: /(\d+)\s+failed/i,
+  skipped: /(\d+)\s+skipped/i,
+  allPassed: /All\s+tests?\s+passed/i,
+  checkPassed: /✓.*passed/i,
+};
+
+/**
  * Check if playwright report exists and extract test status
  * Sources status (and failedTests when available) ONLY from .last-run.json
  * in target/behaviour-test-results. No HTML parsing fallback.
@@ -136,6 +147,139 @@ function getPlaywrightReportStatus(testName) {
   }
 
   return result;
+}
+
+/**
+ * Find test source file based on test name
+ */
+function findTestSourceFile(testName) {
+  // Map test names to their source files
+  const testFileMap = {
+    bundle: "behaviour-tests/bundles.behaviour.test.js",
+    obligation: "behaviour-tests/vatObligations.behaviour.test.js",
+    "obligation-sandbox": "behaviour-tests/vatObligations.behaviour.test.js",
+    "submit-vat": "behaviour-tests/submitVat.behaviour.test.js",
+    "submit-vat-sandbox": "behaviour-tests/submitVat.behaviour.test.js",
+  };
+
+  const testFile = testFileMap[testName];
+  if (!testFile) {
+    return null;
+  }
+
+  const filePath = path.join(PROJECT_ROOT, testFile);
+  if (fs.existsSync(filePath)) {
+    try {
+      return {
+        filename: testFile,
+        content: fs.readFileSync(filePath, "utf-8"),
+      };
+    } catch (e) {
+      console.warn(`  ⚠ Failed to read test file: ${e.message}`);
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find environment config based on test name
+ * Note: Currently returns .env.ci for all tests, but testName parameter
+ * is available for future environment-specific config selection
+ */
+function findEnvConfig(testName) {
+  // Determine which environment config file to use
+  const envFile = ".env.ci";
+  const filePath = path.join(PROJECT_ROOT, envFile);
+
+  if (fs.existsSync(filePath)) {
+    try {
+      return {
+        filename: envFile,
+        content: fs.readFileSync(filePath, "utf-8"),
+      };
+    } catch (e) {
+      console.warn(`  ⚠ Failed to read env config: ${e.message}`);
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find screenshots and videos for a test, preferring curated figures.json
+ */
+function findTestArtifacts(testName) {
+  const artifacts = {
+    screenshots: [],
+    videos: [],
+    figures: null,
+  };
+
+  // Look in behaviour test results directory
+  const testResultsDir = path.join(PROJECT_ROOT, "target/behaviour-test-results", testName);
+  if (!fs.existsSync(testResultsDir)) {
+    return artifacts;
+  }
+
+  // First, try to read figures.json which contains curated screenshots
+  const figuresPath = path.join(testResultsDir, "figures.json");
+  if (fs.existsSync(figuresPath)) {
+    try {
+      const figuresData = JSON.parse(fs.readFileSync(figuresPath, "utf-8"));
+      artifacts.figures = figuresData;
+      // Extract screenshot filenames from figures.json
+      artifacts.screenshots = figuresData.map((fig) => fig.filename).filter((f) => f != null && f !== "");
+      console.log(`  ✓ Found figures.json with ${artifacts.screenshots.length} curated screenshots`);
+    } catch (e) {
+      console.warn(`  ⚠ Failed to read figures.json: ${e.message}`);
+    }
+  }
+
+  // If no figures.json, fall back to finding all screenshots
+  if (artifacts.screenshots.length === 0) {
+    // Recursively find screenshots and videos
+    function findFiles(dir, relativePath = "") {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        const relPath = path.join(relativePath, entry.name);
+
+        if (entry.isDirectory()) {
+          findFiles(fullPath, relPath);
+        } else if (entry.isFile()) {
+          if (entry.name.endsWith(".png") || entry.name.endsWith(".jpg") || entry.name.endsWith(".jpeg")) {
+            artifacts.screenshots.push(relPath);
+          }
+        }
+      }
+    }
+
+    try {
+      findFiles(testResultsDir);
+    } catch (e) {
+      console.warn(`  ⚠ Failed to find test artifacts: ${e.message}`);
+    }
+  }
+
+  // Find video for this specific test (should be only one at root level)
+  // Videos are typically named with timestamps, look for .webm or .mp4 at the root of testResultsDir
+  try {
+    const entries = fs.readdirSync(testResultsDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile() && (entry.name.endsWith(".webm") || entry.name.endsWith(".mp4"))) {
+        artifacts.videos.push(entry.name);
+        console.log(`  ✓ Found video: ${entry.name}`);
+      }
+    }
+  } catch (e) {
+    console.warn(`  ⚠ Failed to find videos: ${e.message}`);
+  }
+
+  return artifacts;
 }
 
 /**
@@ -173,6 +317,27 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
   // Get playwright report status
   const playwrightReport = getPlaywrightReportStatus(testName);
 
+  // Get test source file
+  const testSourceFile = findTestSourceFile(testName);
+  if (testSourceFile) {
+    console.log(`  ✓ Read test source file: ${testSourceFile.filename}`);
+  }
+
+  // Get environment config
+  const envConfig = findEnvConfig(testName);
+  if (envConfig) {
+    console.log(`  ✓ Read environment config: ${envConfig.filename}`);
+  }
+
+  // Get test artifacts (screenshots and videos)
+  const artifacts = findTestArtifacts(testName);
+  if (artifacts.screenshots.length > 0) {
+    console.log(`  ✓ Found ${artifacts.screenshots.length} screenshot(s)`);
+  }
+  if (artifacts.videos.length > 0) {
+    console.log(`  ✓ Found ${artifacts.videos.length} video(s)`);
+  }
+
   // Build report object
   const report = {
     testName,
@@ -180,6 +345,9 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
     testContext,
     hmrcApiRequests,
     playwrightReport,
+    testSourceFile,
+    envConfig,
+    artifacts,
   };
 
   // Write report file
@@ -204,8 +372,15 @@ function findTestData(testName) {
     return { testContextPath: null, hmrcApiRequestsPath: null };
   }
 
-  // Look for testContext.json and hmrc-api-requests.jsonl in the results directory
-  // They might be in subdirectories matching the test pattern
+  // Look for test-specific subdirectory first
+  const testSpecificDir = path.join(RESULTS_DIR, testName);
+  if (fs.existsSync(testSpecificDir)) {
+    const testContextPath = findTestContext(testSpecificDir);
+    const hmrcApiRequestsPath = findHmrcApiRequests(testSpecificDir);
+    return { testContextPath, hmrcApiRequestsPath };
+  }
+
+  // Fallback to searching entire results directory
   const testContextPath = findTestContext(RESULTS_DIR);
   const hmrcApiRequestsPath = findHmrcApiRequests(RESULTS_DIR);
 

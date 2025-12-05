@@ -142,6 +142,14 @@
         color: white;
       }
 
+      .status-success {
+        color: #28a745;
+      }
+
+      .status-error {
+        color: #dc3545;
+      }
+
       .back-link {
         display: inline-block;
         margin-bottom: 1rem;
@@ -165,6 +173,83 @@
         padding: 1rem;
         border-radius: 4px;
         border: 1px solid #f5c6cb;
+      }
+
+      .artifact-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .artifact-list li {
+        margin: 0.5rem 0;
+      }
+
+      .artifact-list a {
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      .artifact-list a:hover {
+        text-decoration: underline;
+      }
+
+      .screenshot-thumbnail {
+        max-width: 200px;
+        max-height: 150px;
+        margin: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .screenshot-thumbnail:hover {
+        border-color: #007bff;
+      }
+
+      .video-container {
+        margin: 1rem 0;
+        border: 2px solid #007bff;
+        border-radius: 4px;
+        padding: 1rem;
+        background-color: #f8f9fa;
+      }
+
+      .video-container video {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .screenshot-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+
+      .screenshot-item {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0.5rem;
+        background-color: #fafafa;
+      }
+
+      .screenshot-item img {
+        width: 100%;
+        height: auto;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .screenshot-item img:hover {
+        opacity: 0.8;
+      }
+
+      .screenshot-caption {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.5rem;
+        line-height: 1.4;
       }
     </style>
   </head>
@@ -194,9 +279,35 @@
       <div id="hmrcApiSection">
         <p>No HMRC API requests found for this test.</p>
       </div>
+
+      <h2>Test Artifacts</h2>
+      <div id="artifactsSection">
+        <h3>Videos</h3>
+        <div id="videosSection">
+          <p>No videos found for this test.</p>
+        </div>
+        <h3>Screenshots</h3>
+        <div id="screenshotsSection">
+          <p>No screenshots found for this test.</p>
+        </div>
+      </div>
+
+      <h2>Test Configuration</h2>
+      <div id="testSourceSection">
+        <h3 id="testSourceFilename">Test Source File</h3>
+        <pre id="testSourceContent"></pre>
+      </div>
+
+      <div id="envConfigSection">
+        <h3 id="envConfigFilename">Environment Configuration</h3>
+        <pre id="envConfigContent"></pre>
+      </div>
     </div>
 
     <script>
+      // Store report globally for use in artifact rendering
+      let report = null;
+
       // Get test name from URL parameter
       const urlParams = new URLSearchParams(window.location.search);
       const testName = urlParams.get("test");
@@ -216,7 +327,7 @@
             throw new Error(`Failed to load test report: ${response.statusText}`);
           }
 
-          const report = await response.json();
+          report = await response.json();
           renderReport(report);
         } catch (error) {
           console.error("Error loading test report:", error);
@@ -256,7 +367,7 @@
         // Set Playwright link (validate test name)
         const playwrightLink = document.getElementById("playwrightLink");
         if (/^[a-zA-Z0-9_-]+$/.test(report.testName)) {
-          playwrightLink.href = `../${report.testName}/html-report/index.html`;
+          playwrightLink.href = `${report.testName}/html-report/index.html`;
         } else {
           playwrightLink.href = "#";
           playwrightLink.style.display = "none";
@@ -267,6 +378,15 @@
 
         // Render HMRC API requests
         renderHmrcApiRequests(report.hmrcApiRequests || []);
+
+        // Render test artifacts
+        renderArtifacts(report.artifacts || {});
+
+        // Render test source file
+        renderTestSource(report.testSourceFile);
+
+        // Render environment config
+        renderEnvConfig(report.envConfig);
       }
 
       function escapeHtml(unsafe) {
@@ -284,35 +404,158 @@
           return;
         }
 
-        let html = `<p>Found ${requests.length} HMRC API request(s):</p>`;
+        let html = `<p>Found ${requests.length} HMRC API request(s) logged during test execution:</p>`;
 
         requests.forEach((req, index) => {
-          const method = escapeHtml((req.method || "GET").toUpperCase());
-          const url = escapeHtml(req.url || req.path || "unknown");
-          const requestJson = escapeHtml(JSON.stringify(req.request || req, null, 2));
-          const responseJson = req.response ? escapeHtml(JSON.stringify(req.response, null, 2)) : null;
+          // Handle different data structures - could be direct or nested
+          const httpRequest = req.httpRequest || req;
+          const httpResponse = req.httpResponse || req.response;
+          
+          const method = escapeHtml((httpRequest.method || req.method || "GET").toUpperCase());
+          const url = escapeHtml(httpRequest.path || httpRequest.url || req.url || req.path || "unknown");
+          const requestHeaders = httpRequest.headers || {};
+          const requestBody = httpRequest.body || httpRequest.data || req.body || req.data;
+          
+          const statusCode = httpResponse?.statusCode || httpResponse?.status || "";
+          const responseHeaders = httpResponse?.headers || {};
+          const responseBody = httpResponse?.body || httpResponse?.data;
 
           html += `
             <div class="api-request">
               <h4>
                 <span class="api-method ${method.toLowerCase()}">${method}</span>
                 ${url}
+                ${statusCode ? `<span class="${statusCode < 400 ? 'status-success' : 'status-error'}" style="margin-left: 1rem;">Status: ${statusCode}</span>` : ''}
               </h4>
+              
               <h5>Request:</h5>
-              <pre>${requestJson}</pre>
-              ${
-                responseJson
-                  ? `
+              <pre><strong>Method:</strong> ${method}
+<strong>URL:</strong> ${url}${Object.keys(requestHeaders).length > 0 ? `
+<strong>Headers:</strong>
+${escapeHtml(JSON.stringify(requestHeaders, null, 2))}` : ''}${requestBody ? `
+<strong>Body:</strong>
+${escapeHtml(typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody, null, 2))}` : ''}</pre>
+              
+              ${httpResponse ? `
               <h5>Response:</h5>
-              <pre>${responseJson}</pre>
-              `
-                  : ""
-              }
+              <pre>${statusCode ? `<strong>Status:</strong> ${statusCode}
+` : ''}${Object.keys(responseHeaders).length > 0 ? `<strong>Headers:</strong>
+${escapeHtml(JSON.stringify(responseHeaders, null, 2))}
+` : ''}${responseBody ? `<strong>Body:</strong>
+${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody, null, 2))}` : ''}</pre>
+              ` : ''}
             </div>
           `;
         });
 
         section.innerHTML = html;
+      }
+
+      function renderArtifacts(artifacts) {
+        // Render videos at the bottom with border
+        const videosSection = document.getElementById("videosSection");
+        if (artifacts.videos && artifacts.videos.length > 0) {
+          let html = "";
+          artifacts.videos.forEach((video) => {
+            const videoPath = `behaviour-test-results/${report.testName}/${escapeHtml(video)}`;
+            const videoExt = video.toLowerCase();
+            html += `
+              <div class="video-container">
+                <p><strong>Test Recording: ${escapeHtml(video)}</strong></p>
+                <video controls>`;
+            // Add appropriate source based on file extension
+            if (videoExt.endsWith('.webm')) {
+              html += `<source src="${videoPath}" type="video/webm">`;
+              // Also try mp4 if converted
+              html += `<source src="${videoPath.replace('.webm', '.mp4')}" type="video/mp4">`;
+            } else if (videoExt.endsWith('.mp4')) {
+              html += `<source src="${videoPath}" type="video/mp4">`;
+            } else {
+              // Generic fallback
+              html += `<source src="${videoPath}">`;
+            }
+            html += `
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            `;
+          });
+          videosSection.innerHTML = html;
+        } else {
+          videosSection.innerHTML = "<p>No videos found for this test.</p>";
+        }
+
+        // Render screenshots with figure metadata if available
+        const screenshotsSection = document.getElementById("screenshotsSection");
+        if (artifacts.screenshots && artifacts.screenshots.length > 0) {
+          let html = '<div class="screenshot-gallery">';
+          
+          // Use figures metadata if available
+          if (artifacts.figures && artifacts.figures.length > 0) {
+            artifacts.figures.forEach((figure, index) => {
+              const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(figure.filename)}`;
+              const caption = figure.caption || `Screenshot ${(figure.order ?? index + 1)}`;
+              html += `
+                <div class="screenshot-item">
+                  <a href="${screenshotPath}" target="_blank">
+                    <img src="${screenshotPath}" alt="${escapeHtml(caption)}" title="${escapeHtml(figure.description || caption)}">
+                  </a>
+                  <div class="screenshot-caption">
+                    <strong>${escapeHtml(caption)}</strong><br>
+                    ${escapeHtml(figure.description || '')}
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            // Fallback to simple list if no figures metadata
+            artifacts.screenshots.forEach((screenshot) => {
+              const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(screenshot)}`;
+              const filename = screenshot.split('/').pop();
+              html += `
+                <div class="screenshot-item">
+                  <a href="${screenshotPath}" target="_blank">
+                    <img src="${screenshotPath}" alt="${escapeHtml(filename)}" title="Click to view full size">
+                  </a>
+                  <div class="screenshot-caption">
+                    ${escapeHtml(filename)}
+                  </div>
+                </div>
+              `;
+            });
+          }
+          
+          html += "</div>";
+          screenshotsSection.innerHTML = html;
+        } else {
+          screenshotsSection.innerHTML = "<p>No screenshots found for this test.</p>";
+        }
+      }
+
+      function renderTestSource(testSourceFile) {
+        const section = document.getElementById("testSourceSection");
+        const filenameElement = document.getElementById("testSourceFilename");
+        const contentElement = document.getElementById("testSourceContent");
+
+        if (testSourceFile && testSourceFile.content) {
+          filenameElement.textContent = `Test Source File: ${testSourceFile.filename}`;
+          contentElement.textContent = testSourceFile.content;
+        } else {
+          section.style.display = "none";
+        }
+      }
+
+      function renderEnvConfig(envConfig) {
+        const section = document.getElementById("envConfigSection");
+        const filenameElement = document.getElementById("envConfigFilename");
+        const contentElement = document.getElementById("envConfigContent");
+
+        if (envConfig && envConfig.content) {
+          filenameElement.textContent = `Environment Configuration: ${envConfig.filename}`;
+          contentElement.textContent = envConfig.content;
+        } else {
+          section.style.display = "none";
+        }
       }
     </script>
   </body>
