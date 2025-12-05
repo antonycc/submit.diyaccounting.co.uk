@@ -1,0 +1,13 @@
+{
+  "testName": "bundle",
+  "generatedAt": "2025-12-05T09:44:28.895Z",
+  "testContext": {
+    "title": "Bundle Test",
+    "description": "Test for adding and removing bundles"
+  },
+  "hmrcApiRequests": [],
+  "playwrightReport": {
+    "exists": true,
+    "status": "passed"
+  }
+}

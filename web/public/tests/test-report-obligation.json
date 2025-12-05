@@ -1,0 +1,13 @@
+{
+  "testName": "obligation",
+  "generatedAt": "2025-12-05T09:44:28.895Z",
+  "testContext": {
+    "title": "Obligation Test",
+    "description": "Test for viewing VAT obligations"
+  },
+  "hmrcApiRequests": [],
+  "playwrightReport": {
+    "exists": true,
+    "status": "passed"
+  }
+}
