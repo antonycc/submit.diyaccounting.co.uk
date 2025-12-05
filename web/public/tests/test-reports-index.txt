@@ -1,2 +1,0 @@
-test-report-bundle.json
-test-report-obligation.json
