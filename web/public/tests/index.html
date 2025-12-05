@@ -16,7 +16,7 @@
             <a href="../account/bundles.html">Bundles</a>
             <a href="../hmrc/receipt/receipts.html">Receipts</a>
             <a href="../guide/index.html">User Guide</a>
-            <a href="../tests/html-report/index.html">Playwright Reports</a>
+            <a href="html-report/index.html">Playwright Reports</a>
             <a href="../about.html">About</a>
           </div>
         </div>
@@ -186,16 +186,16 @@
               </p>
               <div style="margin-bottom: 1rem;">
                 <iframe
-                  src="../${escapedTestName}/html-report/index.html"
+                  src="${escapedTestName}/html-report/index.html"
                   style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;"
                   title="Playwright Test Report for ${escapedTestName}">
                 </iframe>
               </div>
               <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <a href="test-report-template.html?test=${encodedTestName}" class="btn" style="text-decoration: none; display: inline-block;">
+                <a href="test-report-template.html?test=${encodedTestName}" target="_blank" class="btn" style="text-decoration: none; display: inline-block;">
                   View Full Test Details
                 </a>
-                <a href="../${escapedTestName}/html-report/index.html" target="_blank" class="btn" style="text-decoration: none; display: inline-block; background-color: #6c757d; border-color: #6c757d;">
+                <a href="${escapedTestName}/html-report/index.html" target="_blank" class="btn" style="text-decoration: none; display: inline-block; background-color: #6c757d; border-color: #6c757d;">
                   Open Playwright Report
                 </a>
               </div>
