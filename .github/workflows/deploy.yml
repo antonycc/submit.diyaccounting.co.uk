@@ -2441,6 +2441,7 @@ jobs:
           aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
           echo "Uploading test report JSON files and index pages to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "test-report*.json" --include "*.txt" --include "*.html"
+          find target/behaviour-test-results -name 'test-report-*.json' -exec aws s3 cp {} s3://${BUCKET_NAME?}/tests/ \;
           find target/behaviour-test-results -name 'test-report-*.json' -exec basename {} \; > target/behaviour-test-results/test-reports-index.txt
           echo "Test reports index:"
           cat target/behaviour-test-results/test-reports-index.txt
