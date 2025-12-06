@@ -1786,7 +1786,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.environment-name }}-submit-diyaccounting-co-uk'
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
@@ -2014,7 +2014,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.environment-name }}-submit-diyaccounting-co-uk'
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
@@ -2129,7 +2129,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.environment-name }}-submit-diyaccounting-co-uk'
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
@@ -2242,7 +2242,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.deployment-name }}'
+          scripts/export-test-dynamodb.sh '${{ needs.names.outputs.environment-name }}-submit-diyaccounting-co-uk'
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
