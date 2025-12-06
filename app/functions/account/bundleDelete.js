@@ -186,6 +186,7 @@ function http404NotFound(request, message, responseHeaders) {
     headers: {
       ...(responseHeaders || {}),
       "x-request-id": reqId,
+      "x-correlationid": reqId,
       ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
       ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     },

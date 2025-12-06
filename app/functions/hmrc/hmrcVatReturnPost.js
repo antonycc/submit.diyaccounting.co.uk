@@ -178,6 +178,9 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${hmrcAccessToken}`,
     "x-request-id": context.get("requestId"),
+    ...(context.get("correlationId") || context.get("requestId")
+      ? { "x-correlationid": context.get("correlationId") || context.get("requestId") }
+      : {}),
   };
   const hmrcRequestBody = {
     periodKey,

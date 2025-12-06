@@ -59,6 +59,12 @@ export function apiEndpoint(app) {
  * Lambda handler (for AWS Lambda + API Gateway).
  */
 export async function handler(event) {
+  // Correlation extraction: seed context from inbound headers
+  const inboundHeaders = event.headers || {};
+  const requestIdHeader = inboundHeaders["x-request-id"] || inboundHeaders["X-Request-Id"] || null;
+  const correlationIdHeader = inboundHeaders["x-correlationid"] || inboundHeaders["X-CorrelationId"] || null;
+  if (requestIdHeader) context.set("requestId", requestIdHeader);
+  if (correlationIdHeader || requestIdHeader) context.set("correlationId", correlationIdHeader || requestIdHeader);
   const requestId = context.get("requestId");
 
   const method = event.requestContext?.http?.method;
@@ -147,6 +153,11 @@ export async function handler(event) {
 
   // Prepare request options
   const headers = { ...event.headers, host: targetBase.host };
+  // Ensure x-correlationid is forwarded upstream
+  if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
+    const cid = context.get("correlationId") || context.get("requestId");
+    if (cid) headers["x-correlationid"] = cid;
+  }
   const options = { method, headers };
 
   const start = Date.now();
@@ -180,9 +191,15 @@ export async function handler(event) {
   await saveBreakerState(mapping.prefix, errors, openSince);
 
   logger.info({ requestId, mapping, statusCode: resp.statusCode, msg: "Returning proxy response" });
+  // Ensure proxy reply includes x-correlationid back to caller
+  const replyHeaders = { ...(resp.headers || {}) };
+  if (!replyHeaders["x-correlationid"] && !replyHeaders["X-CorrelationId"]) {
+    const cid = headers["x-correlationid"] || context.get("correlationId") || requestId;
+    if (cid) replyHeaders["x-correlationid"] = cid;
+  }
   return {
     statusCode: resp.statusCode,
-    headers: resp.headers,
+    headers: replyHeaders,
     body: resp.body,
   };
 }
