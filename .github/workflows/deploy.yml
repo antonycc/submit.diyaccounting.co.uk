@@ -1800,18 +1800,15 @@ jobs:
             --testFile 'behaviour-tests/bundles.behaviour.test.js' \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
-          mv -v target/behaviour-test-results/test-report-html-report.json \
-            target/behaviour-test-results/test-report-bundle.json \
-          ;
         shell: bash
 
       - name: List artefacts
         if: ${{ !cancelled() }}
         run: |
           echo "Behaviour test results files:"
-          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          find target/behaviour-test-results/ -type f -exec ls -l {} \;
           echo "Test report files:"
-          find target/test-reports/ - type f -exec ls -l {} \;
+          find target/test-reports/ -type f -exec ls -l {} \;
         shell: bash
 
       - name: Upload artifacts (results)
@@ -1918,18 +1915,15 @@ jobs:
             --testFile 'behaviour-tests/vatObligations.behaviour.test.js' \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
-          mv -v target/behaviour-test-results/test-report-html-report.json \
-            target/behaviour-test-results/test-report-obligation-sandbox.json \
-          ;
         shell: bash
 
       - name: List artefacts
         if: ${{ !cancelled() }}
         run: |
           echo "Behaviour test results files:"
-          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          find target/behaviour-test-results/ -type f -exec ls -l {} \;
           echo "Test report files:"
-          find target/test-reports/ - type f -exec ls -l {} \;
+          find target/test-reports/ -type f -exec ls -l {} \;
         shell: bash
 
       - name: Upload artifacts (results)
@@ -2034,18 +2028,15 @@ jobs:
             --testFile 'behaviour-tests/vatObligations.behaviour.test.js' \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
-          mv -v target/behaviour-test-results/test-report-html-report.json \
-            target/behaviour-test-results/test-report-obligation.json \
-          ;
         shell: bash
 
       - name: List artefacts
         if: ${{ !cancelled() }}
         run: |
           echo "Behaviour test results files:"
-          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          find target/behaviour-test-results/ -type f -exec ls -l {} \;
           echo "Test report files:"
-          find target/test-reports/ - type f -exec ls -l {} \;
+          find target/test-reports/ -type f -exec ls -l {} \;
         shell: bash
 
       - name: Upload artifacts (results)
@@ -2152,18 +2143,15 @@ jobs:
             --testFile 'behaviour-tests/submitVat.behaviour.test.js' \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
-          mv -v target/behaviour-test-results/test-report-html-report.json \
-            target/behaviour-test-results/test-report-submit-vat-sandbox.json \
-          ;
         shell: bash
 
       - name: List artefacts
         if: ${{ !cancelled() }}
         run: |
           echo "Behaviour test results files:"
-          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          find target/behaviour-test-results/ -type f -exec ls -l {} \;
           echo "Test report files:"
-          find target/test-reports/ - type f -exec ls -l {} \;
+          find target/test-reports/ -type f -exec ls -l {} \;
         shell: bash
 
       - name: Upload artifacts (results)
@@ -2268,18 +2256,15 @@ jobs:
             --testFile 'behaviour-tests/submitVat.behaviour.test.js' \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
-          mv -v target/behaviour-test-results/test-report-html-report.json \
-            target/behaviour-test-results/test-report-submit-vat.json \
-          ;
         shell: bash
 
       - name: List artefacts
         if: ${{ !cancelled() }}
         run: |
           echo "Behaviour test results files:"
-          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          find target/behaviour-test-results/ -type f -exec ls -l {} \;
           echo "Test report files:"
-          find target/test-reports/ - type f -exec ls -l {} \;
+          find target/test-reports/ -type f -exec ls -l {} \;
         shell: bash
 
       - name: Upload artifacts (results)
@@ -2371,7 +2356,7 @@ jobs:
         shell: bash
         run: |
           echo "Behaviour test results files:"
-          find target/behaviour-test-results/ - type f -exec ls -l {} \;
+          find target/behaviour-test-results/ -type f -exec ls -l {} \;
 
       - name: Download reports - bundle
         if: ${{ !cancelled() }}
@@ -2418,7 +2403,7 @@ jobs:
         shell: bash
         run: |
           echo "Test report files:"
-          find target/test-reports/ - type f -exec ls -l {} \;
+          find target/test-reports/ -type f -exec ls -l {} \;
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
