@@ -6,6 +6,11 @@
  * This script exports data from all DynamoDB tables (bundles, hmrc-api-requests, receipts)
  * for the test users identified by their sub values. The output is in JSON Lines format.
  *
+ * Output files (no timestamps):
+ *   - bundles.jsonl
+ *   - receipts.jsonl
+ *   - hmrc-api-requests.jsonl
+ *
  * Usage:
  *   node scripts/export-dynamodb-for-test-users.js <deployment-name> <user-sub> [user-sub2 ...]
  *
@@ -104,55 +109,57 @@ async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
   // Ensure output directory exists
   fs.mkdirSync(outputDir, { recursive: true });
 
-  // Export each table
-  const allData = [];
+  // Export each table to its own JSONL file (no timestamps in filenames)
+  const fileNames = {
+    bundles: "bundles.jsonl",
+    receipts: "receipts.jsonl",
+    hmrcApiRequests: "hmrc-api-requests.jsonl",
+  };
+
+  let totalItems = 0;
 
   for (const [tableType, tableName] of Object.entries(tableNames)) {
+    const outputFilePath = path.join(outputDir, fileNames[tableType]);
     try {
       const items = await scanTableForHashedSubs(docClient, tableName, hashedSubs);
+      totalItems += items.length;
 
-      // Add table name to each item for context (matches existing pattern in app/test-helpers/dynamodbExporter.js)
-      for (const item of items) {
-        allData.push({
-          tableName,
-          ...item,
-        });
+      if (items.length > 0) {
+        const jsonLines = items.map((item) => JSON.stringify(item)).join("\n");
+        fs.writeFileSync(outputFilePath, jsonLines, "utf8");
+      } else {
+        // Ensure an empty file exists if there are no items or table is missing
+        fs.writeFileSync(outputFilePath, "", "utf8");
+      }
+
+      console.log(`Written ${items.length} item(s) to ${outputFilePath}`);
+
+      // Cat the generated JSONL file to console (each item is one line)
+      try {
+        const raw = fs.readFileSync(outputFilePath, "utf-8");
+        console.log(`── BEGIN ${path.basename(outputFilePath)} ──`);
+        process.stdout.write(raw);
+        if (!raw.endsWith("\n")) process.stdout.write("\n");
+        console.log(`── END ${path.basename(outputFilePath)} ──`);
+      } catch (catErr) {
+        console.warn(`Failed to print ${outputFilePath}: ${catErr.message}`);
       }
     } catch (error) {
       console.error(`Failed to export ${tableType} table (${tableName}):`, error.message);
+      // Still create an empty file to maintain expected outputs
+      try {
+        fs.writeFileSync(outputFilePath, "", "utf8");
+        console.log(`Created empty export file: ${outputFilePath}`);
+        // Print empty file markers for consistency
+        console.log(`── BEGIN ${path.basename(outputFilePath)} (empty) ──`);
+        console.log(`── END ${path.basename(outputFilePath)} ──`);
+      } catch (e) {
+        console.error(`Failed to create empty export file for ${tableType}:`, e.message);
+      }
     }
   }
 
-  // Write to JSON Lines file
-  if (allData.length > 0) {
-    // Format timestamp for filenames: replace colons with dashes, remove milliseconds
-    const timestamp = new Date().toISOString().replace(/:/g, "-").replace(/\..+/, "");
-    const outputFileName = `dynamodb-export-${timestamp}.jsonl`;
-    const outputFilePath = path.join(outputDir, outputFileName);
-
-    const jsonLines = allData.map((item) => JSON.stringify(item)).join("\n");
-    fs.writeFileSync(outputFilePath, jsonLines, "utf8");
-
-    console.log(`\n✅ Export completed successfully`);
-    console.log(`   Exported ${allData.length} items from ${Object.keys(tableNames).length} tables`);
-    console.log(`   Output file: ${outputFilePath}\n`);
-
-    // Write a summary file (without sensitive user subs)
-    const summaryFileName = `dynamodb-export-summary-${timestamp}.json`;
-    const summaryFilePath = path.join(outputDir, summaryFileName);
-    const summary = {
-      timestamp: new Date().toISOString(),
-      deploymentName,
-      userCount: userSubs.length,
-      tables: tableNames,
-      itemCount: allData.length,
-      outputFile: outputFileName,
-    };
-    fs.writeFileSync(summaryFilePath, JSON.stringify(summary, null, 2), "utf8");
-    console.log(`   Summary file: ${summaryFilePath}\n`);
-  } else {
-    console.log(`\n⚠️  No data found for specified users in any table\n`);
-  }
+  console.log(`\n✅ Export completed. Wrote ${Object.keys(tableNames).length} file(s) with a total of ${totalItems} item(s).\n`);
 }
 
 // Main execution

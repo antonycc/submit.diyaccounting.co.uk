@@ -22,6 +22,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,19 +33,8 @@ const REPORTS_DIR = path.join(PROJECT_ROOT, "target/test-reports/html-report");
 const OUTPUT_DIR = path.join(PROJECT_ROOT, "target/behaviour-test-results");
 
 // -------------------------
-// Logging helpers
+// Logging helpers (simplified)
 // -------------------------
-const START_TS = Date.now();
-const LOG_LEVEL = (process.env.REPORT_LOG_LEVEL || "verbose").toLowerCase();
-const LEVELS = { quiet: 0, info: 1, verbose: 2, debug: 3 };
-const CUR_LEVEL = LEVELS[LOG_LEVEL] ?? LEVELS.verbose;
-
-function nowTs() {
-  const d = new Date();
-  const iso = d.toISOString();
-  const rel = ((Date.now() - START_TS) / 1000).toFixed(3).padStart(7, " ");
-  return `${iso} (+${rel}s)`;
-}
 
 function fmtBytes(n) {
   if (n == null || Number.isNaN(n)) return "?";
@@ -65,29 +55,19 @@ function truncList(arr, n = 5) {
 }
 
 function logInfo(msg) {
-  if (CUR_LEVEL >= LEVELS.info) console.log(`${nowTs()} ℹ️  ${msg}`);
+  console.log(msg);
 }
 function logOk(msg) {
-  if (CUR_LEVEL >= LEVELS.info) console.log(`${nowTs()} ✓  ${msg}`);
+  console.log(msg);
 }
 function logWarn(msg) {
-  if (CUR_LEVEL >= LEVELS.info) console.warn(`${nowTs()} ⚠️  ${msg}`);
+  console.log(msg);
 }
 function logDebug(msg) {
-  if (CUR_LEVEL >= LEVELS.debug) console.log(`${nowTs()} 🔎 ${msg}`);
+  console.log(msg);
 }
 function logStep(msg) {
-  if (CUR_LEVEL >= LEVELS.info) console.log(`${nowTs()} ▶️  ${msg}`);
-}
-
-function startTimer(label) {
-  const t0 = process.hrtime.bigint();
-  return () => {
-    const t1 = process.hrtime.bigint();
-    const ms = Number(t1 - t0) / 1e6;
-    if (CUR_LEVEL >= LEVELS.verbose) console.log(`${nowTs()} ⏱️  ${label} took ${ms.toFixed(1)}ms`);
-    return ms;
-  };
+  console.log(msg);
 }
 
 // -------------------------
@@ -146,21 +126,18 @@ function readFilePayload(filePath, label) {
  * Read and parse JSONL file
  */
 function readJsonlFile(filePath) {
-  const stop = startTimer(`readJsonlFile(${path.basename(filePath)})`);
   if (!fs.existsSync(filePath)) {
     logWarn(`JSONL file not found: ${filePath}`);
-    stop();
     return [];
   }
 
   let content = "";
   try {
     const size = fs.statSync(filePath)?.size;
-    logDebug(`Reading JSONL (${fmtBytes(size)}) from ${filePath}`);
+    logDebug(`Open JSONL file (${fmtBytes(size)}): ${filePath}`);
     content = fs.readFileSync(filePath, "utf-8");
   } catch (e) {
     logWarn(`Failed to read JSONL file: ${e.message}`);
-    stop();
     return [];
   }
 
@@ -169,143 +146,98 @@ function readJsonlFile(filePath) {
   const lines = content.split("\n").filter((line) => line.trim());
   for (const [i, line] of lines.entries()) {
     try {
-      parsed.push(JSON.parse(line));
+      const obj = JSON.parse(line);
+      parsed.push(obj);
+      // Log URL submissions with method/status when available
+      const url = obj?.request?.url || obj?.url;
+      if (url) {
+        const method = obj?.request?.method || obj?.method || "";
+        const status = obj?.response?.status || obj?.status || "";
+        const parts = ["HMRC API request" + (method ? ` ${method}` : ""), url, status ? `(status ${status})` : ""].filter(Boolean);
+        logInfo(parts.join(" "));
+      }
     } catch (e) {
       failures++;
       logWarn(`JSONL parse error at line ${i + 1}: ${e.message}`);
     }
   }
   logOk(`Parsed ${parsed.length} JSONL entries (${failures} failed)`);
-  stop();
   return parsed;
 }
 
 /**
- * Find testContext.json in a directory recursively
+ * Find first file by name using system 'find' (portable to macOS/Linux)
+ * Falls back to null if not found or on error.
+ */
+function findFirstByName(baseDir, fileName) {
+  try {
+    const output = execFileSync("find", [baseDir, "-type", "f", "-name", fileName, "-print", "-quit"], {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (output.length > 0) {
+      return path.resolve(output[0]);
+    }
+  } catch (_) {
+    // ignore and return null
+  }
+  return null;
+}
+
+/**
+ * Find testContext.json under a directory using 'find'
  */
 function findTestContext(dir) {
-  const stop = startTimer(`findTestContext in ${dir}`);
+  logDebug(`Explore dir for testContext.json: ${dir}`);
   if (!fs.existsSync(dir)) {
     logWarn(`Directory does not exist: ${dir}`);
-    stop();
     return null;
   }
-
-  let entries = [];
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch (e) {
-    logWarn(`Failed to read directory ${dir}: ${e.message}`);
-    stop();
-    return null;
+  const found = findFirstByName(dir, "testContext.json");
+  if (found) {
+    logOk(`Found testContext.json at ${found}`);
+    return found;
   }
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-
-    if (entry.isFile() && entry.name === "testContext.json") {
-      logOk(`Found testContext.json at ${fullPath}`);
-      stop();
-      return fullPath;
-    }
-
-    if (entry.isDirectory()) {
-      const found = findTestContext(fullPath);
-      if (found) {
-        stop();
-        return found;
-      }
-    }
-  }
-
   logDebug(`No testContext.json under ${dir}`);
-  stop();
   return null;
 }
 
 /**
- * Find hmrc-api-requests.jsonl in a directory
+ * Find hmrc-api-requests.jsonl under a directory using 'find'
  */
 function findHmrcApiRequests(dir) {
-  const stop = startTimer(`findHmrcApiRequests in ${dir}`);
+  logDebug(`Explore dir for hmrc-api-requests.jsonl: ${dir}`);
   if (!fs.existsSync(dir)) {
     logWarn(`Directory does not exist: ${dir}`);
-    stop();
     return null;
   }
-
-  let entries = [];
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch (e) {
-    logWarn(`Failed to read directory ${dir}: ${e.message}`);
-    stop();
-    return null;
+  const found = findFirstByName(dir, "hmrc-api-requests.jsonl");
+  if (found) {
+    logOk(`Found hmrc-api-requests.jsonl at ${found}`);
+    return found;
   }
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-
-    if (entry.isFile() && entry.name === "hmrc-api-requests.jsonl") {
-      logOk(`Found hmrc-api-requests.jsonl at ${fullPath}`);
-      stop();
-      return fullPath;
-    }
-
-    if (entry.isDirectory()) {
-      const found = findHmrcApiRequests(fullPath);
-      if (found) {
-        stop();
-        return found;
-      }
-    }
-  }
-
   logDebug(`No hmrc-api-requests.jsonl under ${dir}`);
-  stop();
   return null;
 }
 
 /**
- * Find figures.json in a directory recursively
+ * Find figures.json in a directory using 'find'
  */
 function findFiguresJson(dir) {
-  const stop = startTimer(`findFiguresJson in ${dir}`);
+  logDebug(`Explore dir for figures.json: ${dir}`);
   if (!fs.existsSync(dir)) {
     logWarn(`Directory does not exist: ${dir}`);
-    stop();
     return null;
   }
-
-  let entries = [];
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch (e) {
-    logWarn(`Failed to read directory ${dir}: ${e.message}`);
-    stop();
-    return null;
+  const found = findFirstByName(dir, "figures.json");
+  if (found) {
+    logOk(`Found figures.json at ${found}`);
+    return found;
   }
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-
-    if (entry.isFile() && entry.name === "figures.json") {
-      logOk(`Found figures.json at ${fullPath}`);
-      stop();
-      return fullPath;
-    }
-
-    if (entry.isDirectory()) {
-      const found = findFiguresJson(fullPath);
-      if (found) {
-        stop();
-        return found;
-      }
-    }
-  }
-
   logDebug(`No figures.json under ${dir}`);
-  stop();
   return null;
 }
 
@@ -362,7 +294,6 @@ const STATUS_PATTERNS = {
  * in target/behaviour-test-results. No HTML parsing fallback.
  */
 function getPlaywrightReportStatus(testName) {
-  const stop = startTimer(`getPlaywrightReportStatus(${testName})`);
   const indexPath = path.join(REPORTS_DIR, "index.html");
   const exists = fs.existsSync(indexPath);
   logInfo(`Playwright HTML report ${exists ? "exists" : "missing"}: ${indexPath}`);
@@ -384,7 +315,7 @@ function getPlaywrightReportStatus(testName) {
         result.failedTests = lastRun.failedTests;
       }
       const ftPreview = Array.isArray(result.failedTests) ? truncList(result.failedTests) : [];
-      logOk(`Status: ${result.status}${ftPreview.length ? `, failedTests: ${ftPreview.length}` : ""}`);
+      logOk(`Derived test status from .last-run.json: ${result.status}${ftPreview.length ? `, failedTests: ${ftPreview.length}` : ""}`);
       if (ftPreview.length) logDebug(`Failed tests preview: ${JSON.stringify(ftPreview)}`);
     } else {
       logWarn(`.last-run.json not found in ${RESULTS_DIR}`);
@@ -392,8 +323,7 @@ function getPlaywrightReportStatus(testName) {
   } catch (e) {
     logWarn(`Failed to read .last-run.json: ${e.message}`);
   }
-
-  stop();
+  logInfo(`Test outcome: ${result.status}`);
   return result;
 }
 
@@ -429,6 +359,15 @@ function findTestArtifacts(testName) {
       logOk(`Read figures.json (${figuresPath}) with ${artifacts.screenshots.length} curated screenshots`);
       const preview = truncList(artifacts.screenshots);
       if (preview.length) logDebug(`Screenshot preview: ${preview.join(", ")}`);
+
+      // Also copy figures.json to a stable location for consumers
+      try {
+        const dest = path.join(OUTPUT_DIR, `${testName}-figures.json`);
+        fs.copyFileSync(figuresPath, dest);
+        logOk(`Copied figures.json to ${dest}`);
+      } catch (copyErr) {
+        logWarn(`Failed to copy figures.json: ${copyErr.message}`);
+      }
     } catch (e) {
       logWarn(`Failed to read figures.json at ${figuresPath}: ${e.message}`);
     }
@@ -438,6 +377,7 @@ function findTestArtifacts(testName) {
   if (artifacts.screenshots.length === 0) {
     // Recursively find screenshots and videos
     function findFiles(dir, relativePath = "") {
+      logDebug(`Scan directory for screenshots: ${dir}`);
       const entries = fs.readdirSync(dir, { withFileTypes: true });
 
       for (const entry of entries) {
@@ -445,19 +385,21 @@ function findTestArtifacts(testName) {
         const relPath = path.join(relativePath, entry.name);
 
         if (entry.isDirectory()) {
+          logDebug(`Enter dir: ${fullPath}`);
           findFiles(fullPath, relPath);
         } else if (entry.isFile()) {
           if (entry.name.endsWith(".png") || entry.name.endsWith(".jpg") || entry.name.endsWith(".jpeg")) {
             artifacts.screenshots.push(relPath);
+            logInfo(`Found screenshot: ${relPath}`);
           }
         }
       }
     }
 
     try {
-      const stop = startTimer(`scan screenshots for ${testName}`);
-      findFiles(testDir || RESULTS_DIR);
-      stop();
+      const scanRoot = testDir || RESULTS_DIR;
+      logInfo(`Scan screenshots starting at: ${scanRoot}`);
+      findFiles(scanRoot);
       const preview = truncList(artifacts.screenshots);
       if (artifacts.screenshots.length) logDebug(`Found ${artifacts.screenshots.length} screenshots (preview: ${preview.join(", ")})`);
     } catch (e) {
@@ -487,7 +429,6 @@ function findTestArtifacts(testName) {
  */
 function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, overrides = {}) {
   logStep(`Generating report for: ${testName}`);
-  const stop = startTimer(`generateTestReport(${testName})`);
 
   // Read testContext.json
   let testContext = {};
@@ -514,6 +455,17 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
       logOk(`Read ${hmrcApiRequests.length} HMRC API requests`);
       const preview = truncList(hmrcApiRequests.map((r) => r?.request?.url || r?.url || "?"));
       if (preview.length) logDebug(`API request URL preview: ${preview.join(", ")}`);
+
+      // Cat the JSONL file so each entry is visible one-per-line
+      try {
+        const raw = fs.readFileSync(hmrcApiRequestsPath, "utf-8");
+        logInfo(`── BEGIN ${path.basename(hmrcApiRequestsPath)} ──`);
+        process.stdout.write(raw);
+        if (!raw.endsWith("\n")) process.stdout.write("\n");
+        logInfo(`── END ${path.basename(hmrcApiRequestsPath)} ──`);
+      } catch (catErr) {
+        logWarn(`Failed to print ${hmrcApiRequestsPath}: ${catErr.message}`);
+      }
     } catch (e) {
       logWarn(`Failed to read HMRC API requests: ${e.message}`);
     }
@@ -570,8 +522,6 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
   } catch (_) {
     logOk(`Generated ${reportFileName}`);
   }
-
-  stop();
   return reportFileName;
 }
 

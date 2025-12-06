@@ -71,6 +71,18 @@ export async function exportTableToJsonLines(tableName, endpoint, outputPath) {
 
     logger.info(`[dynamodb-export]: ✅ Exported ${itemCount} items from table '${tableName}' to '${outputPath}'`);
 
+    // Cat the generated JSONL file to console (one JSON object per line)
+    try {
+      const raw = fs.readFileSync(outputPath, "utf-8");
+      logger.info(`[dynamodb-export]: ── BEGIN ${path.basename(outputPath)} ──`);
+      // Print raw content as-is so each item is on its own line
+      process.stdout.write(raw);
+      if (!raw.endsWith("\n")) process.stdout.write("\n");
+      logger.info(`[dynamodb-export]: ── END ${path.basename(outputPath)} ──`);
+    } catch (catErr) {
+      logger.warn(`[dynamodb-export]: Failed to print ${outputPath}: ${catErr.message}`);
+    }
+
     return {
       itemCount,
       filePath: outputPath,
@@ -83,6 +95,11 @@ export async function exportTableToJsonLines(tableName, endpoint, outputPath) {
     if (error.name === "ResourceNotFoundException") {
       logger.warn(`[dynamodb-export]: ⚠️ Table '${tableName}' not found. Creating empty export file.`);
       fs.writeFileSync(outputPath, "", "utf-8");
+      // Print (empty) file to console for consistency
+      try {
+        logger.info(`[dynamodb-export]: ── BEGIN ${path.basename(outputPath)} (empty) ──`);
+        logger.info(`[dynamodb-export]: ── END ${path.basename(outputPath)} ──`);
+      } catch (_) {}
       return {
         itemCount: 0,
         filePath: outputPath,
