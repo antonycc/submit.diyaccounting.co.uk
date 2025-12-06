@@ -97,6 +97,7 @@ public class SubmitSharedNames {
     public String hmrcStackId;
     public String accountStackId;
     public String apiStackId;
+    public String containerStackId;
     public String opsStackId;
     public String proxyStackId;
     public String selfDestructStackId;
@@ -314,6 +315,7 @@ public class SubmitSharedNames {
         this.hmrcStackId = "%s-app-HmrcStack".formatted(props.deploymentName);
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
+        this.containerStackId = "%s-app-ContainerStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
         this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
         this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
