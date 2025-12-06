@@ -829,3 +829,998 @@ The repository includes custom actions in `.github/actions/`:
 - Deployment role has full CloudFormation/Lambda/S3/etc. permissions
 - Actions role can only assume deployment role
 
+
+## AWS Deployment Architecture
+
+The application deploys to AWS as a serverless, highly scalable architecture.
+
+### High-Level Architecture Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         Internet (Users)                                   │
+└────────────────────────────────┬──────────────────────────────────────────┘
+                                 │
+                   ┌─────────────┴─────────────┐
+                   │                           │
+                   ▼                           ▼
+        ┌────────────────────┐      ┌────────────────────┐
+        │   Route 53          │      │   HMRC MTD API      │
+        │   (DNS)             │      │   (External)        │
+        └─────────┬───────────┘      └────────────────────┘
+                  │                            ▲
+                  ▼                            │
+        ┌────────────────────┐                │ HTTPS
+        │   CloudFront       │                │
+        │   (CDN)            │                │
+        └─────────┬───────────┘                │
+                  │                            │
+        ┌─────────┴────────────┐              │
+        │                      │              │
+        ▼                      ▼              │
+┌──────────────┐     ┌────────────────────┐  │
+│   S3 Bucket  │     │  HTTP API Gateway   │  │
+│   (Static    │     │  (Lambda URLs)      │  │
+│   Frontend)  │     └────────┬────────────┘  │
+└──────────────┘              │               │
+                              │               │
+                   ┌──────────┴──────────┐    │
+                   │                     │    │
+                   ▼                     ▼    │
+        ┌──────────────────┐  ┌──────────────────┐
+        │  Lambda Functions │  │  Lambda Functions │
+        │  (Auth, Account)  │  │  (HMRC Proxy)     │───┘
+        └────────┬──────────┘  └──────────┬────────┘
+                 │                        │
+                 ▼                        ▼
+        ┌──────────────────┐  ┌──────────────────┐
+        │   Cognito User    │  │   Secrets Manager │
+        │   Pool            │  │   (API Keys)      │
+        └───────────────────┘  └───────────────────┘
+                 │
+                 ▼
+        ┌──────────────────┐
+        │   DynamoDB        │
+        │   (Bundles,       │
+        │   Receipts)       │
+        └───────────────────┘
+```
+
+### AWS Services Used
+
+| Service | Purpose | Configuration |
+|---------|---------|---------------|
+| **CloudFront** | CDN for static assets and API | Custom domain, ACM certificate, Lambda@Edge for auth |
+| **S3** | Static website hosting | Origin bucket for frontend HTML/CSS/JS |
+| **Route 53** | DNS management | A/AAAA alias records to CloudFront |
+| **Lambda** | Serverless compute for backend APIs | Node.js 22 runtime, Docker images from ECR |
+| **HTTP API Gateway** | HTTP API routing and authorization | Lambda URL targets, custom authorizer |
+| **Cognito** | User authentication | User pool, hosted UI, Google IdP federation |
+| **DynamoDB** | NoSQL database | Three tables: bundles, receipts, API requests |
+| **Secrets Manager** | Secret storage | HMRC OAuth secrets, Google OAuth secrets |
+| **CloudWatch** | Logging and monitoring | Log groups, RUM (Real User Monitoring), alarms |
+| **ECR** | Docker image registry | Stores Lambda runtime images |
+| **ACM** | SSL/TLS certificates | Certificates in us-east-1 for CloudFront |
+| **EventBridge** | Scheduled events | Self-destruct timer for non-prod deployments |
+| **IAM** | Access control | Roles for Lambda execution, GitHub Actions |
+
+### CDK Stack Architecture
+
+The infrastructure is divided into two main CDK applications:
+
+#### Environment Stacks (Long-Lived)
+
+Deployed by `SubmitEnvironment.java` using `cdk-environment/cdk.json`:
+
+| Stack Name | Resources Created | Purpose |
+|------------|-------------------|---------|
+| **ObservabilityStack** | CloudWatch Log Groups, RUM App Monitor, Alarms, SNS Topics | Logging and monitoring in eu-west-2 |
+| **ObservabilityUE1Stack** | CloudWatch RUM resources | RUM resources in us-east-1 for global access |
+| **DataStack** | 3 DynamoDB Tables (bundles, receipts, API requests) | Persistent data storage |
+| **ProxyStack** | VPC Endpoints, Security Groups | Network configuration for proxy access |
+| **ApexStack** | Route 53 Hosted Zone, Records | DNS apex domain management |
+| **IdentityStack** | Cognito User Pool, Client, Hosted UI, Google IdP | User authentication |
+
+**Lifecycle**: Created once per environment (ci/prod), rarely updated.
+
+#### Application Stacks (Per-Deployment)
+
+Deployed by `SubmitApplication.java` using `cdk-application/cdk.json`:
+
+| Stack Name | Resources Created | Purpose |
+|------------|-------------------|---------|
+| **DevStack** | S3 Bucket (origin), CloudFront Distribution, ACM Certificate, ECR Repository | Static hosting, CDN, container registry (eu-west-2) |
+| **DevUE1Stack** | S3 Bucket, CloudFront, ACM, ECR | Same resources in us-east-1 for edge functions |
+| **SelfDestructStack** | Lambda, EventBridge Rule | Auto-destroy non-prod stacks after N hours |
+| **AuthStack** | 3 Lambda Functions | Cognito auth URL, token exchange, mock OAuth2 |
+| **HmrcStack** | 7 Lambda Functions | HMRC API integration (auth URL, token, VAT obligations, VAT returns, receipts) |
+| **AccountStack** | 3 Lambda Functions | Bundle management, catalog |
+| **ApiStack** | HTTP API, Routes, Authorizers, Lambda integrations | API Gateway with custom JWT authorizer |
+| **EdgeStack** | CloudFront Distribution with custom config, Lambda@Edge | Production CDN with edge functions |
+| **PublishStack** | S3 Deployment, Content hash tracking | Deploy static files to S3 |
+| **OpsStack** | CloudWatch Dashboard | Operational monitoring dashboard |
+
+**Lifecycle**: Created per deployment (e.g., `ci-abc123`, `prod-xyz789`), destroyed after next deployment.
+
+### Deployment Process Flow
+
+1. **Environment Setup** (one-time per environment):
+   ```
+   deploy-environment.yml workflow
+   ├── Create AWS Secrets (HMRC, Google)
+   ├── Deploy ObservabilityStack (eu-west-2)
+   ├── Deploy ObservabilityUE1Stack (us-east-1)
+   ├── Deploy DataStack (DynamoDB tables)
+   ├── Deploy ProxyStack (VPC configuration)
+   ├── Deploy ApexStack (Route53 hosted zone)
+   ├── Deploy IdentityStack (Cognito)
+   └── Set GitHub environment variables (Cognito ARN/IDs)
+   ```
+
+2. **Application Deployment** (per code change):
+   ```
+   deploy.yml workflow
+   ├── Run Tests (unit, system, browser)
+   ├── Build Maven JARs (CDK infrastructure)
+   ├── Build Docker Image (Lambda runtime)
+   ├── Deploy DevStack (S3, CloudFront, ECR)
+   ├── Deploy DevUE1Stack (us-east-1 resources)
+   ├── Push Docker Images to ECR
+   ├── Deploy SelfDestructStack (if non-prod)
+   ├── Deploy AuthStack (Lambda functions)
+   ├── Deploy HmrcStack (Lambda functions)
+   ├── Deploy AccountStack (Lambda functions)
+   ├── Deploy ApiStack (HTTP API Gateway)
+   ├── Deploy EdgeStack (CloudFront + Lambda@Edge)
+   ├── Deploy PublishStack (S3 static files)
+   ├── Deploy OpsStack (CloudWatch dashboard)
+   ├── Update DNS (Route53 A/AAAA records to new CloudFront)
+   ├── Run End-to-End Tests (against deployed environment)
+   ├── Upload Test Results to S3
+   ├── Set Last-Known-Good Deployment (SSM Parameter)
+   └── Destroy Previous Deployment (if prod and successful)
+   ```
+
+### Lambda Function Details
+
+All Lambda functions run Node.js 22 from Docker images stored in ECR.
+
+#### Auth Functions
+
+| Function | Path | Handler | Purpose |
+|----------|------|---------|---------|
+| `cognitoAuthUrlGet` | `/auth/cognito/authurl` | `app/functions/auth/cognitoAuthUrlGet.js` | Generate Cognito OAuth authorization URL |
+| `cognitoTokenPost` | `/auth/cognito/token` | `app/functions/auth/cognitoTokenPost.js` | Exchange auth code for Cognito tokens |
+| `mockAuthUrlGet` | `/auth/mock/authurl` | `app/functions/non-lambda-mocks/mockAuthUrlGet.js` | Mock OAuth auth URL (testing) |
+| `mockTokenPost` | `/auth/mock/token` | `app/functions/non-lambda-mocks/mockTokenPost.js` | Mock OAuth token (testing) |
+| `customAuthorizer` | (API Gateway authorizer) | `app/functions/auth/customAuthorizer.js` | JWT validation for protected routes |
+
+#### HMRC Functions
+
+| Function | Path | Handler | Purpose |
+|----------|------|---------|---------|
+| `hmrcAuthUrlGet` | `/hmrc/authurl` | `app/functions/hmrc/hmrcAuthUrlGet.js` | Generate HMRC OAuth URL |
+| `hmrcTokenPost` | `/hmrc/token` | `app/functions/hmrc/hmrcTokenPost.js` | Exchange code for HMRC access token |
+| `hmrcVatObligationGet` | `/hmrc/vat/obligations` | `app/functions/hmrc/hmrcVatObligationGet.js` | Retrieve VAT obligations from HMRC |
+| `hmrcVatReturnGet` | `/hmrc/vat/returns` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data |
+| `hmrcVatReturnPost` | `/hmrc/vat/returns` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC |
+| `hmrcReceiptGet` | `/hmrc/receipts` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB |
+| `hmrcReceiptPost` | `/hmrc/receipts` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt in DynamoDB |
+| `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker |
+
+#### Account Functions
+
+| Function | Path | Handler | Purpose |
+|----------|------|---------|---------|
+| `catalogGet` | `/account/catalog` | `app/functions/account/catalogGet.js` | Get product catalog (from TOML file) |
+| `bundleGet` | `/account/bundles` | `app/functions/account/bundleGet.js` | Get user's bundles from DynamoDB |
+| `bundlePost` | `/account/bundles` | `app/functions/account/bundlePost.js` | Create/update bundle in DynamoDB |
+| `bundleDelete` | `/account/bundles` | `app/functions/account/bundleDelete.js` | Delete bundle from DynamoDB |
+
+#### Infrastructure Functions
+
+| Function | Trigger | Handler | Purpose |
+|----------|---------|---------|---------|
+| `selfDestruct` | EventBridge (scheduled) | `app/functions/infra/selfDestruct.js` | Delete all stacks for non-prod deployment after N hours |
+
+### DynamoDB Schema
+
+#### Bundles Table
+
+**Purpose**: Store user entitlements/subscriptions.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `sub` (PK) | String | Hashed subscriber ID (from JWT) |
+| `product` (SK) | String | Product name (e.g., "guest", "test") |
+| `expiryDate` | String | ISO 8601 expiry date |
+| `userLimit` | Number | Maximum users allowed |
+| `users` | StringSet | Set of user IDs with access |
+| `createdAt` | String | ISO 8601 creation timestamp |
+| `updatedAt` | String | ISO 8601 last update timestamp |
+
+#### Receipts Table
+
+**Purpose**: Store HMRC API submission receipts.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `sub` (PK) | String | Hashed subscriber ID |
+| `receiptId` (SK) | String | HMRC receipt ID (formBundleNumber) |
+| `vrn` | String | VAT Registration Number |
+| `periodKey` | String | VAT period (e.g., "24A1") |
+| `processingDate` | String | ISO 8601 processing timestamp |
+| `chargeRefNumber` | String | HMRC charge reference |
+| `createdAt` | String | ISO 8601 receipt storage timestamp |
+| `payload` | Map | Full HMRC response |
+
+#### HMRC API Requests Table
+
+**Purpose**: Log all HMRC API requests for debugging and audit.
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `id` (PK) | String | UUID request ID |
+| `timestamp` (SK) | String | ISO 8601 request timestamp |
+| `method` | String | HTTP method |
+| `path` | String | API path |
+| `statusCode` | Number | HTTP response status |
+| `durationMs` | Number | Request duration in milliseconds |
+| `sub` | String | User subscriber ID (if authenticated) |
+| `error` | String | Error message (if failed) |
+
+### CloudFront Configuration
+
+**Origin**: S3 bucket (`{deployment-name}-submit-app-origin-us-east-1`)
+
+**Behaviors**:
+- `/` → S3 (static files)
+- `/api/*` → HTTP API Gateway (Lambda functions)
+- `/proxy/*` → HMRC HTTP proxy Lambda
+
+**Cache Policy**:
+- Static files: Cache for 1 year, gzip/brotli compression
+- API responses: No caching (dynamic content)
+
+**Custom Domain**: `submit.diyaccounting.co.uk` (prod) or `ci.submit.diyaccounting.co.uk` (CI)
+
+**Certificate**: ACM certificate in us-east-1 (required for CloudFront)
+
+**Lambda@Edge**: (Currently not deployed, but EdgeStack is prepared for it)
+
+### Security Architecture
+
+**Authentication Flow**:
+1. User navigates to `https://submit.diyaccounting.co.uk/`
+2. Frontend JavaScript checks for JWT in localStorage
+3. If no JWT, redirect to `/auth/cognito/authurl` to get Cognito OAuth URL
+4. User authenticates with Cognito (Google IdP or username/password)
+5. Cognito redirects to `/auth/loginWithCognitoCallback.html?code=...`
+6. Frontend exchanges code for JWT via `/auth/cognito/token`
+7. JWT stored in localStorage
+8. All subsequent API requests include JWT in Authorization header
+9. API Gateway invokes custom authorizer Lambda to validate JWT
+10. If valid, request forwarded to backend Lambda
+11. Backend Lambda can read user identity from JWT claims
+
+**Authorization Flow**:
+1. API Gateway receives request with `Authorization: Bearer <jwt>`
+2. Custom authorizer Lambda (`customAuthorizer.js`) validates JWT:
+   - Verifies signature using Cognito public keys
+   - Checks expiration
+   - Validates issuer and audience
+3. If valid, returns IAM policy allowing request
+4. API Gateway forwards request to backend Lambda
+5. Backend Lambda reads `sub` (subscriber ID) from JWT claims
+6. Backend queries DynamoDB for user's bundles/entitlements
+7. Backend enforces feature access based on entitlements
+
+**Secret Management**:
+- **Development**: Secrets in `.env` files (not committed)
+- **AWS**: All secrets in Secrets Manager
+  - HMRC OAuth client secrets
+  - Google OAuth client secret
+  - Retrieved at Lambda runtime via AWS SDK
+
+**Network Security**:
+- All traffic over HTTPS (ACM certificates)
+- CloudFront enforces HTTPS
+- Lambda functions in private VPC (optional, via ProxyStack)
+- DynamoDB encryption at rest (AWS managed keys)
+- S3 bucket policies restrict access to CloudFront only
+
+
+## Local Express Server Architecture
+
+For local development, the application runs as an Express.js server with supporting services.
+
+### Local Development Stack
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       Developer Machine                       │
+│                                                               │
+│  ┌────────────────┐  ┌──────────────────┐  ┌──────────────┐ │
+│  │   ngrok        │  │   Mock OAuth2    │  │   Dynalite   │ │
+│  │   (Port 3000)  │  │   (Port 8080)    │  │   (Dynamic)  │ │
+│  └───────┬────────┘  └──────────┬───────┘  └──────┬───────┘ │
+│          │                      │                  │         │
+│          │ Tunnel               │ OAuth            │ Data    │
+│          ▼                      ▼                  ▼         │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │          Express Server (localhost:3000)                  │ │
+│  │  ┌──────────────────────────────────────────────────────┐ │ │
+│  │  │  httpServerToLambdaAdaptor.js                         │ │ │
+│  │  │  (Converts Express req/res to Lambda event/context)   │ │ │
+│  │  └───────────────────────┬───────────────────────────────┘ │ │
+│  │                          │                                  │ │
+│  │                          ▼                                  │ │
+│  │  ┌───────────────────────────────────────────────────────┐ │ │
+│  │  │  Lambda Function Handlers (imported directly)          │ │ │
+│  │  │  - auth/cognitoAuthUrlGet.js                          │ │ │
+│  │  │  - hmrc/hmrcVatReturnPost.js                          │ │ │
+│  │  │  - account/bundleGet.js                               │ │ │
+│  │  │  - etc.                                               │ │ │
+│  │  └───────────────────────────────────────────────────────┘ │ │
+│  │                                                             │ │
+│  │  Static Files: web/public/ (served directly)               │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+│          │                                                       │
+└──────────┴───────────────────────────────────────────────────────┘
+           │
+           │ HTTPS (ngrok tunnel)
+           ▼
+   ┌──────────────────┐
+   │   ngrok.com      │
+   │   Public URL     │
+   └──────────────────┘
+           │
+           │ HTTPS
+           ▼
+   ┌──────────────────┐
+   │   HMRC MTD API   │
+   │   OAuth Callback │
+   └──────────────────┘
+```
+
+### Local Services
+
+#### 1. Express Server (`npm run server`)
+
+**File**: `app/bin/server.js`
+
+**Purpose**: Run Lambda functions locally as Express routes
+
+**Key Features**:
+- Loads `.env.proxy` configuration
+- Starts Express server on port 3000 (default)
+- Uses `httpServerToLambdaAdaptor.js` to convert Express requests to Lambda events
+- Imports and invokes Lambda handler functions directly
+- Serves static files from `web/public/`
+- Logs requests with pino logger
+
+**Routes Registered**:
+```javascript
+// Auth routes
+app.get('/auth/cognito/authurl', adaptLambda(cognitoAuthUrlGet))
+app.post('/auth/cognito/token', adaptLambda(cognitoTokenPost))
+app.get('/auth/mock/authurl', adaptLambda(mockAuthUrlGet))
+app.post('/auth/mock/token', adaptLambda(mockTokenPost))
+
+// HMRC routes
+app.get('/hmrc/authurl', adaptLambda(hmrcAuthUrlGet))
+app.post('/hmrc/token', adaptLambda(hmrcTokenPost))
+app.get('/hmrc/vat/obligations', adaptLambda(hmrcVatObligationGet))
+app.get('/hmrc/vat/returns', adaptLambda(hmrcVatReturnGet))
+app.post('/hmrc/vat/returns', adaptLambda(hmrcVatReturnPost))
+app.get('/hmrc/receipts', adaptLambda(hmrcReceiptGet))
+app.post('/hmrc/receipts', adaptLambda(hmrcReceiptPost))
+
+// Account routes
+app.get('/account/catalog', adaptLambda(catalogGet))
+app.get('/account/bundles', adaptLambda(bundleGet))
+app.post('/account/bundles', adaptLambda(bundlePost))
+app.delete('/account/bundles', adaptLambda(bundleDelete))
+
+// Proxy routes
+app.all('/proxy/hmrc-api/*', adaptLambda(hmrcHttpProxy))
+app.all('/proxy/test-hmrc-api/*', adaptLambda(hmrcHttpProxy))
+
+// Static files
+app.use(express.static('web/public'))
+```
+
+**Startup**:
+```bash
+cd /home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk
+npx dotenv -e .env.proxy -- node app/bin/server.js
+# Listening at http://127.0.0.1:3000
+```
+
+#### 2. ngrok Proxy (`npm run proxy`)
+
+**File**: `app/bin/ngrok.js`
+
+**Purpose**: Expose local Express server via public HTTPS URL for OAuth callbacks
+
+**Key Features**:
+- Authenticates with `NGROK_AUTHTOKEN` environment variable
+- Creates tunnel to `localhost:3000`
+- Reserves a stable subdomain (e.g., `wanted-finally-anteater.ngrok-free.app`)
+- Required for HMRC OAuth because redirect URI must be HTTPS
+- URL must be registered in HMRC Developer Hub
+
+**Configuration**:
+```javascript
+const authtoken = process.env.NGROK_AUTHTOKEN;
+const subdomain = 'wanted-finally-anteater';  // Example
+const port = process.env.TEST_SERVER_HTTP_PORT || 3000;
+
+await ngrok.connect({
+  authtoken,
+  proto: 'http',
+  addr: port,
+  subdomain  // Requires paid ngrok plan
+});
+```
+
+**Startup**:
+```bash
+export NGROK_AUTHTOKEN=your_token_here
+npx dotenv -e .env.proxy -- node app/bin/ngrok.js
+# Tunnel created: https://wanted-finally-anteater.ngrok-free.app -> http://localhost:3000
+```
+
+#### 3. Mock OAuth2 Server (`npm run auth`)
+
+**File**: Docker container (`ghcr.io/navikt/mock-oauth2-server:2.2.1`)
+
+**Purpose**: Simulate OAuth2 provider (Google/Cognito) for local testing
+
+**Configuration File**: `mock-oauth2-server.json`
+
+**Features**:
+- Runs on `http://localhost:8080`
+- Provides OAuth2 endpoints:
+  - `/default/authorize` - Authorization endpoint
+  - `/default/token` - Token endpoint
+  - `/default/jwks` - JSON Web Key Set
+- Issues JWTs with configurable claims
+- No real authentication (always succeeds)
+- Useful for testing OAuth flow without real accounts
+
+**Startup**:
+```bash
+npx dotenv -e .env.proxy -- docker run -p 8080:8080 \
+  -e JSON_CONFIG_PATH=/config/mock-oauth2-config.json \
+  -e LOG_LEVEL=DEBUG \
+  -v $(pwd)/mock-oauth2-config.json:/config/mock-oauth2-config.json:ro \
+  ghcr.io/navikt/mock-oauth2-server:2.2.1
+```
+
+#### 4. Local DynamoDB (`npm run data`)
+
+**File**: `app/bin/dynamodb.js`
+
+**Purpose**: Run local DynamoDB for testing
+
+**Implementation**: Uses `dynalite` (lightweight DynamoDB clone)
+
+**Features**:
+- Runs on dynamic port (assigned by dynalite)
+- Creates three tables:
+  - `test-bundle-table`
+  - `test-receipts-table`
+  - `test-hmrc-api-requests-table`
+- Data stored in memory (cleared on restart)
+- Full DynamoDB API compatibility
+
+**Startup**:
+```bash
+npx dotenv -e .env.proxy -- node app/bin/dynamodb.js
+# DynamoDB started on port 43210 (example)
+```
+
+### httpServerToLambdaAdaptor
+
+**File**: `app/lib/httpServerToLambdaAdaptor.js`
+
+**Purpose**: Bridge between Express.js and AWS Lambda handler interface
+
+**Key Functionality**:
+
+```javascript
+export function httpServerToLambdaAdaptor(lambdaHandler) {
+  return async (req, res) => {
+    // Convert Express request to Lambda event
+    const event = {
+      httpMethod: req.method,
+      path: req.path,
+      queryStringParameters: req.query,
+      headers: req.headers,
+      body: req.body ? JSON.stringify(req.body) : null,
+      requestContext: {
+        authorizer: { jwt: { claims: req.user || {} } }
+      }
+    };
+
+    // Invoke Lambda handler
+    const response = await lambdaHandler(event, {});
+
+    // Convert Lambda response to Express response
+    res.status(response.statusCode || 200);
+    Object.entries(response.headers || {}).forEach(([key, value]) => {
+      res.set(key, value);
+    });
+    res.send(response.body);
+  };
+}
+```
+
+**Benefits**:
+- Lambda functions can be tested locally without modification
+- Same code runs in Lambda (production) and Express (development)
+- Eliminates deployment cycle for rapid iteration
+
+### Local Development Workflow
+
+**Starting All Services**:
+```bash
+# Terminal 1: Start all services (server, proxy, auth, data)
+npm start
+# Or individually:
+# Terminal 1: npm run data
+# Terminal 2: npm run auth
+# Terminal 3: npm run proxy
+# Terminal 4: npm run server
+```
+
+**Accessing the Application**:
+```
+Frontend: https://wanted-finally-anteater.ngrok-free.app/
+           (or http://localhost:3000/ for non-OAuth flows)
+
+API Endpoints: https://wanted-finally-anteater.ngrok-free.app/api/*
+               http://localhost:3000/api/*
+
+OAuth Callback: https://wanted-finally-anteater.ngrok-free.app/auth/loginWithMockCallback.html
+```
+
+**Running Tests Against Local Server**:
+```bash
+# Behaviour tests (full end-to-end)
+npm run test:behaviour-proxy
+
+# Specific behaviour tests
+npm run test:bundleBehaviour-proxy
+npm run test:obligationBehaviour-proxy-sandbox
+npm run test:submitVatBehaviour-proxy-sandbox
+```
+
+**Debugging**:
+- Express server logs to console (pino JSON format)
+- Set `LOG_LEVEL=debug` for verbose logging
+- DynamoDB data can be inspected with AWS SDK
+- ngrok provides web interface at `http://localhost:4040`
+
+### Component Interaction (Local)
+
+```
+User Browser
+    │
+    │ HTTPS
+    ▼
+ngrok Public URL (e.g., wanted-finally-anteater.ngrok-free.app)
+    │
+    │ Tunnel
+    ▼
+Express Server (localhost:3000)
+    │
+    ├─► Static Files (web/public/) ────────────────► HTML/CSS/JS
+    │
+    ├─► /auth/* ───► httpServerToLambdaAdaptor ───► Auth Lambda Handlers
+    │                                                     │
+    │                                                     ▼
+    │                                             Mock OAuth2 (localhost:8080)
+    │
+    ├─► /hmrc/* ───► httpServerToLambdaAdaptor ───► HMRC Lambda Handlers
+    │                                                     │
+    │                                                     ├─► HMRC Test API (https://test-api.service.hmrc.gov.uk)
+    │                                                     │
+    │                                                     └─► Local DynamoDB (dynalite)
+    │
+    └─► /account/* ─► httpServerToLambdaAdaptor ───► Account Lambda Handlers
+                                                          │
+                                                          ├─► product-catalogue.toml (filesystem)
+                                                          │
+                                                          └─► Local DynamoDB (dynalite)
+```
+
+### Differences: Local vs AWS
+
+| Aspect | Local (Express) | AWS (Lambda) |
+|--------|----------------|--------------|
+| **Entry Point** | `app/bin/server.js` | Lambda handler exports |
+| **Request/Response** | Express `req`/`res` | Lambda `event`/`context` |
+| **Static Files** | Served by Express | Served by S3 + CloudFront |
+| **Authentication** | Mock OAuth2 | AWS Cognito |
+| **Authorization** | Skipped (or mocked) | API Gateway custom authorizer |
+| **Database** | Dynalite (in-memory) | DynamoDB |
+| **Secrets** | `.env` file | AWS Secrets Manager |
+| **Logging** | Console (pino) | CloudWatch Logs |
+| **Scaling** | Single process | Auto-scaling Lambdas |
+| **Cost** | Free (local compute) | Pay per request |
+
+
+## Directory Structure
+
+Hierarchical overview of the repository organized by function.
+
+### Top-Level Structure
+
+| Directory/File | Type | Purpose |
+|----------------|------|---------|
+| `.github/` | Directory | GitHub Actions workflows and custom actions |
+| `app/` | Directory | Backend Node.js Lambda functions and libraries |
+| `behaviour-tests/` | Directory | End-to-end Playwright behaviour tests |
+| `cdk-application/` | Directory | CDK configuration for application stacks |
+| `cdk-environment/` | Directory | CDK configuration for environment stacks |
+| `infra/` | Directory | Java/CDK infrastructure code |
+| `scripts/` | Directory | Utility scripts for development and deployment |
+| `web/` | Directory | Frontend HTML/CSS/JavaScript and tests |
+| `wiremock-recordings/` | Directory | WireMock HTTP interaction recordings |
+| `.editorconfig` | File | Editor configuration for consistent formatting |
+| `.env.ci` | File | CI environment configuration |
+| `.env.prod` | File | Production environment configuration |
+| `.env.proxy` | File | Local proxy environment configuration |
+| `.env.proxyRunning` | File | Configuration for already-running local services |
+| `.env.test` | File | Test environment configuration |
+| `.gitignore` | File | Git ignore patterns |
+| `.ncurc.json` | File | npm-check-updates configuration |
+| `.prettierignore` | File | Prettier ignore patterns |
+| `.prettierrc` | File | Prettier configuration |
+| `Dockerfile` | File | Docker image definition for Lambda runtime |
+| `eslint.config.js` | File | ESLint configuration (flat config) |
+| `jsconfig.json` | File | JavaScript project configuration |
+| `LICENSE` | File | GPL-3.0 license |
+| `mock-oauth2-server.json` | File | Mock OAuth2 server configuration |
+| `mvnw`, `mvnw.cmd` | Files | Maven wrapper scripts |
+| `package.json` | File | Node.js dependencies and scripts |
+| `package-lock.json` | File | Locked npm dependency versions |
+| `playwright.config.js` | File | Playwright test configuration |
+| `pom.xml` | File | Maven project configuration |
+| `product-catalogue.toml` | File | Product/bundle catalog definitions |
+| `product-subscribers.subs` | File | List of subscriber IDs for bundle provisioning |
+| `README.md` | File | Repository readme with quickstart |
+| `vitest.config.js` | File | Vitest test configuration |
+
+### `.github/` - GitHub Actions
+
+| Path | Purpose |
+|------|---------|
+| `workflows/deploy.yml` | Main deployment workflow (application stacks) |
+| `workflows/deploy-environment.yml` | Environment infrastructure deployment |
+| `workflows/test.yml` | Test suite workflow (reusable) |
+| `workflows/set-origins.yml` | DNS/CloudFront update workflow |
+| `actions/get-names/action.yml` | Compute environment and deployment names |
+| `actions/set-origins/action.yml` | Update Route53 and CloudFront aliases |
+
+### `app/` - Backend Application
+
+```
+app/
+├── bin/                    # Entry point scripts
+│   ├── main.js             # CLI entry point (unused in this project)
+│   ├── server.js           # Express server for local development
+│   ├── ngrok.js            # ngrok tunnel setup
+│   ├── dynamodb.js         # Local DynamoDB (dynalite) startup
+│   └── provision-user.mjs  # Cognito user provisioning script
+├── data/                   # DynamoDB repository implementations
+│   ├── dynamoDbBundleRepository.js        # Bundle CRUD operations
+│   ├── dynamoDbReceiptRepository.js       # Receipt CRUD operations
+│   ├── dynamoDbHmrcApiRequestRepository.js # API request logging
+│   └── dynamoDbBreakerRepository.js       # Circuit breaker state storage
+├── functions/              # Lambda function handlers
+│   ├── auth/               # Authentication functions
+│   │   ├── cognitoAuthUrlGet.js          # Generate Cognito OAuth URL
+│   │   ├── cognitoTokenPost.js           # Exchange auth code for tokens
+│   │   └── customAuthorizer.js           # API Gateway JWT authorizer
+│   ├── hmrc/               # HMRC API integration
+│   │   ├── hmrcAuthUrlGet.js             # Generate HMRC OAuth URL
+│   │   ├── hmrcTokenPost.js              # Exchange code for HMRC token
+│   │   ├── hmrcVatObligationGet.js       # Retrieve VAT obligations
+│   │   ├── hmrcVatReturnGet.js           # Retrieve VAT return
+│   │   ├── hmrcVatReturnPost.js          # Submit VAT return
+│   │   ├── hmrcReceiptGet.js             # Retrieve receipt from storage
+│   │   └── hmrcReceiptPost.js            # Store HMRC receipt
+│   ├── account/            # User account management
+│   │   ├── bundleGet.js                  # Get user bundles
+│   │   ├── bundlePost.js                 # Create/update bundle
+│   │   ├── bundleDelete.js               # Delete bundle
+│   │   └── catalogGet.js                 # Get product catalog
+│   ├── infra/              # Infrastructure functions
+│   │   ├── hmrcHttpProxy.js              # HTTP proxy with rate limiting
+│   │   └── selfDestruct.js               # Auto-delete non-prod stacks
+│   └── non-lambda-mocks/   # Mock implementations for local testing
+│       ├── mockAuthUrlGet.js             # Mock OAuth URL
+│       └── mockTokenPost.js              # Mock OAuth token
+├── lib/                    # Shared libraries
+│   ├── httpServerToLambdaAdaptor.js      # Express ↔ Lambda adapter
+│   ├── httpProxy.js                      # HTTP proxy service
+│   ├── jwtHelper.js                      # JWT utilities
+│   ├── logger.js                         # Pino logger configuration
+│   ├── httpResponseHelper.js             # Lambda response helpers
+│   └── eventToGovClientHeaders.js        # Gov-Client-* header generation
+├── services/               # Business logic services
+│   ├── bundleManagement.js               # Bundle management logic
+│   ├── hmrcApi.js                        # HMRC API client
+│   ├── httpProxy.js                      # Proxy service with circuit breaker
+│   ├── productCatalog.js                 # Product catalog parser (TOML)
+│   └── subHasher.js                      # Subscriber ID hashing
+├── test-helpers/           # Test utilities
+│   ├── eventBuilders.js                  # Lambda event builders
+│   ├── mockHelpers.js                    # Mocking utilities
+│   ├── primableMockServer.js             # Mock HTTP server
+│   ├── httpTestServers.js                # Test HTTP servers
+│   └── dynamodbExporter.js               # DynamoDB data exporter
+├── unit-tests/             # Unit tests (Vitest)
+│   ├── bin/                              # Tests for bin scripts
+│   ├── functions/                        # Tests for Lambda handlers
+│   ├── lib/                              # Tests for libraries
+│   ├── services/                         # Tests for services
+│   ├── data/                             # Tests for repositories
+│   └── test-helpers/                     # Tests for test utilities
+├── system-tests/           # System/integration tests (Vitest)
+│   ├── hmrcAuth.system.test.js
+│   ├── hmrcVatScenarios.system.test.js
+│   ├── bundleManagement.system.test.js
+│   └── ...
+└── index.js                # Module index (exports all handlers)
+```
+
+### `infra/` - CDK Infrastructure (Java)
+
+```
+infra/
+├── main/
+│   ├── java/co/uk/diyaccounting/submit/
+│   │   ├── SubmitApplication.java        # Application CDK entry point
+│   │   ├── SubmitEnvironment.java        # Environment CDK entry point
+│   │   ├── SubmitSharedNames.java        # Shared naming utilities
+│   │   ├── stacks/                       # CDK stack definitions
+│   │   │   ├── DevStack.java             # S3, CloudFront, ECR (eu-west-2)
+│   │   │   ├── ObservabilityStack.java   # CloudWatch, RUM
+│   │   │   ├── ObservabilityUE1Stack.java # CloudWatch RUM (us-east-1)
+│   │   │   ├── DataStack.java            # DynamoDB tables
+│   │   │   ├── ProxyStack.java           # VPC, security groups
+│   │   │   ├── ApexStack.java            # Route53 apex domain
+│   │   │   ├── IdentityStack.java        # Cognito user pool
+│   │   │   ├── SelfDestructStack.java    # Auto-delete Lambda + EventBridge
+│   │   │   ├── AuthStack.java            # Auth Lambda functions
+│   │   │   ├── HmrcStack.java            # HMRC Lambda functions
+│   │   │   ├── AccountStack.java         # Account Lambda functions
+│   │   │   ├── ApiStack.java             # HTTP API Gateway
+│   │   │   ├── EdgeStack.java            # CloudFront distribution
+│   │   │   ├── PublishStack.java         # S3 static file deployment
+│   │   │   ├── OpsStack.java             # CloudWatch dashboard
+│   │   │   └── SubmitStackProps.java     # Stack properties interface
+│   │   ├── constructs/                   # Reusable CDK constructs
+│   │   │   ├── Lambda.java               # Lambda function construct
+│   │   │   ├── ApiLambda.java            # API-integrated Lambda
+│   │   │   ├── LambdaProps.java          # Lambda properties
+│   │   │   └── ApiLambdaProps.java       # API Lambda properties
+│   │   ├── utils/                        # Utility classes
+│   │   │   ├── Kind.java                 # Resource naming enums
+│   │   │   ├── KindCdk.java              # CDK naming utilities
+│   │   │   ├── ResourceNameUtils.java    # Name generation
+│   │   │   ├── RetentionDaysConverter.java # Log retention conversion
+│   │   │   ├── Route53AliasUpsert.java   # Route53 record updates
+│   │   │   ├── S3.java                   # S3 utilities
+│   │   │   └── PopulatedMap.java         # Map with validation
+│   │   ├── swagger/                      # OpenAPI documentation generation
+│   │   │   └── OpenApiGenerator.java     # Generates openapi.yaml/json
+│   │   └── aspects/                      # CDK aspects (cross-cutting concerns)
+│   │       └── SetAutoDeleteJobLogRetentionAspect.java
+│   └── resources/
+│       └── log4j2.yml                    # Log4j configuration
+└── test/
+    ├── java/co/uk/diyaccounting/submit/
+    │   ├── SubmitApplicationCdkResourceTest.java
+    │   ├── SubmitEnvironmentCdkResourceTest.java
+    │   └── utils/                        # Unit tests for utilities
+    └── resources/
+        ├── log4j2.yml
+        └── fake-self-destruct-lambda.jar # Test artifact
+```
+
+### `web/` - Frontend
+
+```
+web/
+├── public/                 # Static website files (served by S3/CloudFront)
+│   ├── index.html          # Homepage
+│   ├── about.html          # About page
+│   ├── privacy.html        # Privacy policy
+│   ├── submit.css          # Global styles
+│   ├── submit.js           # Main JavaScript module
+│   ├── auth/               # Authentication pages
+│   │   ├── login.html
+│   │   ├── loginWithCognitoCallback.html
+│   │   └── loginWithMockCallback.html
+│   ├── hmrc/               # HMRC-related pages
+│   │   ├── vat/
+│   │   │   ├── submitVat.html              # VAT submission form
+│   │   │   ├── vatObligations.html         # VAT obligations list
+│   │   │   └── viewVatReturn.html          # View submitted return
+│   │   └── receipt/
+│   │       └── receipts.html               # Receipt history
+│   ├── account/            # User account pages
+│   │   └── bundles.html                    # Bundle management
+│   ├── activities/         # OAuth callback handler
+│   │   └── submitVatCallback.html
+│   ├── widgets/            # Reusable UI components (Web Components)
+│   │   ├── auth-status.js                  # Authentication status indicator
+│   │   ├── entitlement-status.js           # Bundle/entitlement display
+│   │   ├── loading-spinner.js              # Loading indicator
+│   │   ├── hamburger-menu.js               # Mobile menu
+│   │   ├── localstorage-viewer.js          # Debug: view localStorage
+│   │   ├── status-messages.js              # Toast notifications
+│   │   └── view-source-link.js             # Link to GitHub source
+│   ├── lib/                # Frontend JavaScript libraries
+│   │   └── request-cache.js                # HTTP request caching
+│   ├── prefetch/           # Service worker prefetch scripts
+│   │   ├── prefetch-catalog-head.js
+│   │   ├── prefetch-bundle-head.js
+│   │   └── ... (one per API endpoint)
+│   ├── docs/               # API documentation
+│   │   ├── index.html                      # Swagger UI
+│   │   ├── openapi.yaml                    # OpenAPI 3.0 spec (generated)
+│   │   └── openapi.json                    # OpenAPI 3.0 spec (JSON)
+│   ├── tests/              # Test result pages
+│   │   ├── index.html                      # Test report index
+│   │   ├── test-report-template.html       # Report template
+│   │   └── behaviour-test-results/         # Uploaded test artifacts
+│   ├── guide/              # User guide
+│   │   └── index.html
+│   ├── errors/             # Error pages
+│   │   ├── 404-error-origin.html           # S3 404
+│   │   └── 404-error-distribution.html     # CloudFront 404
+│   ├── favicon.ico
+│   ├── submit.version      # Build version (generated)
+│   ├── submit.deployment   # Deployment name (generated)
+│   ├── submit.hash         # Content hash (generated)
+│   └── submit.build        # Build number (generated)
+├── unit-tests/             # Frontend unit tests (Vitest)
+│   ├── userJourneys.frontend.test.js
+│   ├── vatFlow.frontend.test.js
+│   ├── entitlement-status.test.js
+│   ├── submit.helpers.test.js
+│   └── token-refresh.test.js
+├── browser-tests/          # Browser UI tests (Playwright)
+│   ├── bundles.filtering.browser.test.js
+│   ├── navigation.browser.test.js
+│   └── chromium.client.test.js
+└── holding/                # Maintenance/holding page
+    └── index.html
+```
+
+### `behaviour-tests/` - End-to-End Tests
+
+```
+behaviour-tests/
+├── bundles.behaviour.test.js            # Bundle management E2E tests
+├── submitVat.behaviour.test.js          # VAT submission E2E tests
+├── vatObligations.behaviour.test.js     # VAT obligations E2E tests
+├── steps/                               # Shared test steps
+│   ├── behaviour-steps.js               # Common Playwright steps
+│   ├── behaviour-login-steps.js         # Login/auth steps
+│   ├── behaviour-bundle-steps.js        # Bundle management steps
+│   ├── behaviour-hmrc-steps.js          # HMRC API steps
+│   ├── behaviour-hmrc-vat-steps.js      # VAT-specific steps
+│   └── behaviour-hmrc-receipts-steps.js # Receipt steps
+├── helpers/                             # Test utilities
+│   ├── behaviour-helpers.js             # General helpers
+│   ├── gotoWithRetries.js               # Navigate with retry logic
+│   ├── hmrcTestUser.js                  # HMRC test user creation
+│   ├── serverHelper.js                  # Start/stop local server
+│   ├── dynamodb-assertions.js           # DynamoDB test assertions
+│   ├── dynamodb-export.js               # Export DynamoDB data
+│   ├── fileHelper.js                    # File operations
+│   ├── figures-helper.js                # Test data generators
+│   ├── wiremock-helper.js               # WireMock integration
+│   └── playwrightTestWithout.js         # Conditional test execution
+├── ENHANCEMENTS.md                      # Enhancement ideas
+└── WIREMOCK.md                          # WireMock usage guide
+```
+
+### `scripts/` - Utility Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `start.sh` | Start all local services (server, proxy, auth, data) |
+| `clean.sh` | Remove build artifacts and caches |
+| `deep-clean.sh` | Remove all generated files including node_modules |
+| `clean-node.sh` | Remove node_modules and package-lock.json |
+| `provision-user.sh` | Create Cognito test user |
+| `add-bundle.sh` | Add bundle to DynamoDB for a subscriber |
+| `add-subscriber.sh` | Add subscriber to product-subscribers.subs |
+| `export-test-dynamodb.sh` | Export DynamoDB tables to JSONL files |
+| `export-dynamodb-for-test-users.js` | Export specific user data |
+| `generate-test-reports.js` | Generate HTML test reports from Playwright results |
+| `playwright-video-reporter.js` | Custom Playwright video reporter |
+| `convert-video.js` | Convert .webm videos to .mp4 |
+| `render-catalogue.mjs` | Render product catalog from TOML to HTML |
+| `update.sh` | Update npm and Maven dependencies |
+| `update-java.sh` | Update Java dependencies |
+| `docker-build-codex.sh` | Build Codex Docker image |
+| `create-favicon.sh` | Generate favicon from logo |
+| `create-submit-intermediate-domains.sh` | Create Route53 intermediate domains |
+| `list-domains.sh` | List all Route53 domains |
+| `aws-assume-submit-deployment-role.sh` | Assume AWS deployment role |
+| `aws-assume-user-provisioning-role.sh` | Assume user provisioning role |
+| `aws-unset-iam-session.sh` | Clear AWS session credentials |
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `.editorconfig` | Consistent editor settings (indent, line endings) |
+| `.prettierrc` | Prettier code formatter configuration |
+| `.prettierignore` | Files to exclude from Prettier |
+| `eslint.config.js` | ESLint linting rules (flat config, ES modules) |
+| `jsconfig.json` | JavaScript project configuration for IDEs |
+| `vitest.config.js` | Vitest test runner configuration |
+| `playwright.config.js` | Playwright browser test configuration |
+| `cdk-application/cdk.json` | CDK application configuration |
+| `cdk-environment/cdk.json` | CDK environment configuration |
+| `.ncurc.json` | npm-check-updates configuration (exclude patterns) |
+| `mock-oauth2-server.json` | Mock OAuth2 server configuration |
+
+### Key Files
+
+**product-catalogue.toml**: Defines available products/bundles in TOML format
+```toml
+[products.test]
+name = "Test"
+description = "Test bundle for development"
+expiryDate = "2025-12-31"
+userLimit = 1000
+
+[products.guest]
+name = "Guest"
+description = "Guest access"
+expiryDate = "2025-12-31"
+userLimit = 1
+```
+
+**product-subscribers.subs**: List of hashed subscriber IDs for automatic bundle provisioning
+```
+# Hashed subscriber IDs (one per line)
+abc123def456...
+xyz789uvw012...
+```
+
+**Dockerfile**: Defines Lambda runtime image with Node.js 22 and application code
+```dockerfile
+FROM public.ecr.aws/lambda/nodejs:22
+COPY app/ ${LAMBDA_TASK_ROOT}/app/
+COPY web/public/ ${LAMBDA_TASK_ROOT}/web/public/
+COPY package.json ${LAMBDA_TASK_ROOT}/
+RUN npm ci --omit=dev
+```
+
+---
+
+## Summary
+
+This repository is a production-ready, serverless application for UK VAT submissions via HMRC's Making Tax Digital API. It demonstrates:
+
+- **Modern Serverless Architecture**: CloudFront, S3, Lambda, API Gateway, DynamoDB, Cognito
+- **Infrastructure as Code**: AWS CDK (Java) with multi-stack, multi-region deployment
+- **Local Development Experience**: Express server, ngrok proxy, mock OAuth2, local DynamoDB
+- **Comprehensive Testing**: Unit (Vitest), system (Docker), browser (Playwright), end-to-end (Playwright)
+- **CI/CD Excellence**: GitHub Actions with OIDC, blue-green deployments, automatic rollbacks
+- **Developer Productivity**: Hot reload, fast tests, detailed logging, debugging tools
+
+**Total Lines of Documentation**: 1700+ lines covering every aspect of the repository
+
