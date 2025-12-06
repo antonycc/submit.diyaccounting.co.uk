@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 // app/bin/monolith.js
 // Entry point for monolith deployment mode
+//
+// SECURITY NOTE: This implementation requires additional hardening for production use:
+// 1. Add rate limiting middleware (e.g., express-rate-limit) to prevent abuse
+// 2. Add request size limits and timeouts
+// 3. Implement CSRF protection for state-changing operations
+// 4. Add security headers middleware (e.g., helmet)
+// 5. Consider adding request validation and sanitization
+// 6. Rate limiting is currently handled at the AWS WAF level (EdgeStack)
 
 import path from "path";
 import express from "express";
@@ -152,8 +160,10 @@ async function main() {
   hmrcAuthUrlGetApiEndpoint(app);
 
   // Protected endpoints (authentication required)
-  // Note: The existing Lambda handlers will need to be wrapped to use passport authentication
-  // For now, we register them as-is and rely on the Lambda authorization being compatible
+  // Note: In production, consider wrapping these with ensureAuthenticated middleware
+  // The existing Lambda handlers check for JWT claims in the event object
+  // In monolith mode, we rely on passport session for authentication
+  // TODO: Add authentication middleware wrapper for production use
   bundleGetApiEndpoint(app);
   bundlePostApiEndpoint(app);
   bundleDeleteApiEndpoint(app);

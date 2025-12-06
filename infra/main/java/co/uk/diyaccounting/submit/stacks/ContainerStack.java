@@ -128,12 +128,38 @@ public class ContainerStack extends Stack {
         // Create IAM role for App Runner instance (runtime)
         Role instanceRole = Role.Builder.create(this, props.resourceNamePrefix() + "-InstanceRole")
                 .assumedBy(new ServicePrincipal("tasks.apprunner.amazonaws.com"))
-                .managedPolicies(List.of(
-                        // Add policies for DynamoDB, SSM Parameter Store, Secrets Manager
-                        ManagedPolicy.fromAwsManagedPolicyName("AmazonDynamoDBFullAccess"),
-                        ManagedPolicy.fromAwsManagedPolicyName("AmazonSSMReadOnlyAccess"),
-                        ManagedPolicy.fromAwsManagedPolicyName("SecretsManagerReadWrite")))
                 .build();
+
+        // Add granular DynamoDB permissions for specific tables only
+        instanceRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of(
+                        "dynamodb:GetItem",
+                        "dynamodb:PutItem",
+                        "dynamodb:UpdateItem",
+                        "dynamodb:DeleteItem",
+                        "dynamodb:Query",
+                        "dynamodb:Scan",
+                        "dynamodb:BatchGetItem",
+                        "dynamodb:BatchWriteItem"))
+                .resources(List.of(
+                        props.bundlesTableArn(),
+                        props.receiptsTableArn(),
+                        props.hmrcApiRequestsTableArn(),
+                        // Allow access to indexes as well
+                        props.bundlesTableArn() + "/index/*",
+                        props.receiptsTableArn() + "/index/*",
+                        props.hmrcApiRequestsTableArn() + "/index/*"))
+                .build());
+
+        // Add Secrets Manager read permissions
+        instanceRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"))
+                .resources(List.of(
+                        props.hmrcClientSecretArn(), props.hmrcSandboxClientSecretArn(), "*" // Allow Google secret
+                        ))
+                .build());
 
         // Add inline policy for specific resources
         instanceRole.addToPolicy(PolicyStatement.Builder.create()

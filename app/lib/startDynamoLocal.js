@@ -116,9 +116,11 @@ export async function startDynamoDBLocal(options = {}) {
  * Starts the DynamoDB Local process and creates required tables.
  *
  * @param {Object} options - Options for bootstrapping
+ * @param {number} options.startupTimeoutMs - Timeout for DynamoDB Local startup (default: 3000ms)
  * @returns {Promise<Object>} Object with endpoint and stop function
  */
 export async function bootstrapDynamoLocal(options = {}) {
+  const { startupTimeoutMs = 3000 } = options;
   // Check if DYNAMODB_ENDPOINT is already set (e.g., pointing to external DynamoDB)
   if (process.env.DYNAMODB_ENDPOINT) {
     logger.info(`Using existing DynamoDB endpoint: ${process.env.DYNAMODB_ENDPOINT}`);
