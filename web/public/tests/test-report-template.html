@@ -42,6 +42,32 @@
         color: #555;
       }
 
+      /* Twistie (details/summary) styling to mimic h3 appearance */
+      details > summary {
+        font-size: 1.1rem;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #555;
+        cursor: pointer;
+        list-style: none;
+      }
+
+      details > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      /* Add a simple disclosure triangle */
+      details > summary::before {
+        content: "▸";
+        display: inline-block;
+        margin-right: 0.5rem;
+        transition: transform 0.15s ease-in-out;
+      }
+
+      details[open] > summary::before {
+        transform: rotate(90deg);
+      }
+
       .status {
         display: inline-block;
         padding: 4px 12px;
@@ -215,9 +241,11 @@
       }
 
       .video-container video {
+        width: 50%; /* approximately half the container width */
         max-width: 100%;
         height: auto;
         display: block;
+        margin: 0 auto; /* center the video */
       }
 
       .screenshot-gallery {
@@ -282,10 +310,12 @@
 
       <h2>Test Artifacts</h2>
       <div id="artifactsSection">
-        <h3>Videos</h3>
-        <div id="videosSection">
-          <p>No videos found for this test.</p>
-        </div>
+        <details id="videosDetails">
+          <summary>Videos</summary>
+          <div id="videosSection">
+            <p>No videos found for this test.</p>
+          </div>
+        </details>
         <h3>Screenshots</h3>
         <div id="screenshotsSection">
           <p>No screenshots found for this test.</p>
@@ -294,13 +324,17 @@
 
       <h2>Test Configuration</h2>
       <div id="testSourceSection">
-        <h3 id="testSourceFilename">Test Source File</h3>
-        <pre id="testSourceContent"></pre>
+        <details id="testSourceDetails">
+          <summary><span id="testSourceFilename">Test Source File</span></summary>
+          <pre id="testSourceContent"></pre>
+        </details>
       </div>
 
       <div id="envConfigSection">
-        <h3 id="envConfigFilename">Environment Configuration</h3>
-        <pre id="envConfigContent"></pre>
+        <details id="envConfigDetails">
+          <summary><span id="envConfigFilename">Environment Configuration</span></summary>
+          <pre id="envConfigContent"></pre>
+        </details>
       </div>
     </div>
 
@@ -410,12 +444,12 @@
           // Handle different data structures - could be direct or nested
           const httpRequest = req.httpRequest || req;
           const httpResponse = req.httpResponse || req.response;
-          
+
           const method = escapeHtml((httpRequest.method || req.method || "GET").toUpperCase());
           const url = escapeHtml(httpRequest.path || httpRequest.url || req.url || req.path || "unknown");
           const requestHeaders = httpRequest.headers || {};
           const requestBody = httpRequest.body || httpRequest.data || req.body || req.data;
-          
+
           const statusCode = httpResponse?.statusCode || httpResponse?.status || "";
           const responseHeaders = httpResponse?.headers || {};
           const responseBody = httpResponse?.body || httpResponse?.data;
@@ -427,7 +461,7 @@
                 ${url}
                 ${statusCode ? `<span class="${statusCode < 400 ? 'status-success' : 'status-error'}" style="margin-left: 1rem;">Status: ${statusCode}</span>` : ''}
               </h4>
-              
+
               <h5>Request:</h5>
               <pre><strong>Method:</strong> ${method}
 <strong>URL:</strong> ${url}${Object.keys(requestHeaders).length > 0 ? `
@@ -435,7 +469,7 @@
 ${escapeHtml(JSON.stringify(requestHeaders, null, 2))}` : ''}${requestBody ? `
 <strong>Body:</strong>
 ${escapeHtml(typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody, null, 2))}` : ''}</pre>
-              
+
               ${httpResponse ? `
               <h5>Response:</h5>
               <pre>${statusCode ? `<strong>Status:</strong> ${statusCode}
@@ -489,7 +523,7 @@ ${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(re
         const screenshotsSection = document.getElementById("screenshotsSection");
         if (artifacts.screenshots && artifacts.screenshots.length > 0) {
           let html = '<div class="screenshot-gallery">';
-          
+
           // Use figures metadata if available
           if (artifacts.figures && artifacts.figures.length > 0) {
             artifacts.figures.forEach((figure, index) => {
@@ -524,7 +558,7 @@ ${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(re
               `;
             });
           }
-          
+
           html += "</div>";
           screenshotsSection.innerHTML = html;
         } else {

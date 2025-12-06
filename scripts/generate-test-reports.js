@@ -9,11 +9,14 @@
  * 3. Generates test-report-<test-name>.json files
  * 4. Generates test-reports-index.txt listing all reports
  *
- * Usage:
- *   node scripts/generate-test-reports.js
+ * Usage (direct mode only):
+ *   node scripts/generate-test-reports.js \
+ *     --testName <name> \
+ *     [--testFile <path/to/test-file.js>] \
+ *     [--envFile <path/to/.env>]
  *
- * Reads from: target/behaviour-test-results/
- * Writes to: web/public/tests/
+ * Notes:
+ * - The provided values are used as-is. The script does not derive or auto-discover tests.
  */
 
 import fs from "node:fs";
@@ -25,56 +28,198 @@ const __dirname = path.dirname(__filename);
 
 const PROJECT_ROOT = path.join(__dirname, "..");
 const RESULTS_DIR = path.join(PROJECT_ROOT, "target/behaviour-test-results");
-const OUTPUT_DIR = path.join(PROJECT_ROOT, "web/public/tests");
+const REPORTS_DIR = path.join(PROJECT_ROOT, "target/test-reports/html-report");
+const OUTPUT_DIR = path.join(PROJECT_ROOT, "target/behaviour-test-results");
+
+// -------------------------
+// Logging helpers
+// -------------------------
+const START_TS = Date.now();
+const LOG_LEVEL = (process.env.REPORT_LOG_LEVEL || "verbose").toLowerCase();
+const LEVELS = { quiet: 0, info: 1, verbose: 2, debug: 3 };
+const CUR_LEVEL = LEVELS[LOG_LEVEL] ?? LEVELS.verbose;
+
+function nowTs() {
+  const d = new Date();
+  const iso = d.toISOString();
+  const rel = ((Date.now() - START_TS) / 1000).toFixed(3).padStart(7, " ");
+  return `${iso} (+${rel}s)`;
+}
+
+function fmtBytes(n) {
+  if (n == null || Number.isNaN(n)) return "?";
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0;
+  let v = n;
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024;
+    i++;
+  }
+  return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)}${units[i]}`;
+}
+
+function truncList(arr, n = 5) {
+  if (!Array.isArray(arr)) return [];
+  if (arr.length <= n) return arr;
+  return [...arr.slice(0, n), `…(+${arr.length - n} more)`];
+}
+
+function logInfo(msg) {
+  if (CUR_LEVEL >= LEVELS.info) console.log(`${nowTs()} ℹ️  ${msg}`);
+}
+function logOk(msg) {
+  if (CUR_LEVEL >= LEVELS.info) console.log(`${nowTs()} ✓  ${msg}`);
+}
+function logWarn(msg) {
+  if (CUR_LEVEL >= LEVELS.info) console.warn(`${nowTs()} ⚠️  ${msg}`);
+}
+function logDebug(msg) {
+  if (CUR_LEVEL >= LEVELS.debug) console.log(`${nowTs()} 🔎 ${msg}`);
+}
+function logStep(msg) {
+  if (CUR_LEVEL >= LEVELS.info) console.log(`${nowTs()} ▶️  ${msg}`);
+}
+
+function startTimer(label) {
+  const t0 = process.hrtime.bigint();
+  return () => {
+    const t1 = process.hrtime.bigint();
+    const ms = Number(t1 - t0) / 1e6;
+    if (CUR_LEVEL >= LEVELS.verbose) console.log(`${nowTs()} ⏱️  ${label} took ${ms.toFixed(1)}ms`);
+    return ms;
+  };
+}
+
+// -------------------------
+// CLI helpers
+// -------------------------
+function parseCliArgs(argv = process.argv.slice(2)) {
+  const out = { testName: null, testFile: null, envFile: null };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const next = () => (i + 1 < argv.length ? argv[i + 1] : undefined);
+    if (a === "--testName" || a === "--test-name" || a === "-n") {
+      out.testName = next();
+      i++;
+    } else if (a === "--testFile" || a === "--test-file" || a === "-t") {
+      out.testFile = next();
+      i++;
+    } else if (a === "--envFile" || a === "--env-file" || a === "-e") {
+      out.envFile = next();
+      i++;
+    } else if (a === "--help" || a === "-h") {
+      out.help = true;
+    }
+  }
+  return out;
+}
+
+function toProjectRelative(filePath) {
+  try {
+    const rel = path.relative(PROJECT_ROOT, path.resolve(filePath));
+    if (!rel || rel.startsWith("..")) return filePath; // outside project
+    return rel;
+  } catch (_) {
+    return filePath;
+  }
+}
+
+function readFilePayload(filePath, label) {
+  if (!filePath) return null;
+  const p = path.isAbsolute(filePath) ? filePath : path.join(PROJECT_ROOT, filePath);
+  if (!fs.existsSync(p)) {
+    logWarn(`${label} not found: ${p}`);
+    return null;
+  }
+  try {
+    const size = fs.statSync(p)?.size;
+    const rel = toProjectRelative(p);
+    logDebug(`Reading ${label} ${rel} (${fmtBytes(size)})`);
+    return { filename: rel, content: fs.readFileSync(p, "utf-8") };
+  } catch (e) {
+    logWarn(`Failed to read ${label}: ${e.message}`);
+    return null;
+  }
+}
 
 /**
  * Read and parse JSONL file
  */
 function readJsonlFile(filePath) {
+  const stop = startTimer(`readJsonlFile(${path.basename(filePath)})`);
   if (!fs.existsSync(filePath)) {
+    logWarn(`JSONL file not found: ${filePath}`);
+    stop();
     return [];
   }
 
-  const content = fs.readFileSync(filePath, "utf-8");
-  return content
-    .split("\n")
-    .filter((line) => line.trim())
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch (e) {
-        console.warn(`Failed to parse JSONL line: ${line}`);
-        return null;
-      }
-    })
-    .filter((item) => item !== null);
+  let content = "";
+  try {
+    const size = fs.statSync(filePath)?.size;
+    logDebug(`Reading JSONL (${fmtBytes(size)}) from ${filePath}`);
+    content = fs.readFileSync(filePath, "utf-8");
+  } catch (e) {
+    logWarn(`Failed to read JSONL file: ${e.message}`);
+    stop();
+    return [];
+  }
+
+  let parsed = [];
+  let failures = 0;
+  const lines = content.split("\n").filter((line) => line.trim());
+  for (const [i, line] of lines.entries()) {
+    try {
+      parsed.push(JSON.parse(line));
+    } catch (e) {
+      failures++;
+      logWarn(`JSONL parse error at line ${i + 1}: ${e.message}`);
+    }
+  }
+  logOk(`Parsed ${parsed.length} JSONL entries (${failures} failed)`);
+  stop();
+  return parsed;
 }
 
 /**
  * Find testContext.json in a directory recursively
  */
 function findTestContext(dir) {
+  const stop = startTimer(`findTestContext in ${dir}`);
   if (!fs.existsSync(dir)) {
+    logWarn(`Directory does not exist: ${dir}`);
+    stop();
     return null;
   }
 
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (e) {
+    logWarn(`Failed to read directory ${dir}: ${e.message}`);
+    stop();
+    return null;
+  }
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
 
     if (entry.isFile() && entry.name === "testContext.json") {
+      logOk(`Found testContext.json at ${fullPath}`);
+      stop();
       return fullPath;
     }
 
     if (entry.isDirectory()) {
       const found = findTestContext(fullPath);
       if (found) {
+        stop();
         return found;
       }
     }
   }
 
+  logDebug(`No testContext.json under ${dir}`);
+  stop();
   return null;
 }
 
@@ -82,28 +227,122 @@ function findTestContext(dir) {
  * Find hmrc-api-requests.jsonl in a directory
  */
 function findHmrcApiRequests(dir) {
+  const stop = startTimer(`findHmrcApiRequests in ${dir}`);
   if (!fs.existsSync(dir)) {
+    logWarn(`Directory does not exist: ${dir}`);
+    stop();
     return null;
   }
 
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (e) {
+    logWarn(`Failed to read directory ${dir}: ${e.message}`);
+    stop();
+    return null;
+  }
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
 
     if (entry.isFile() && entry.name === "hmrc-api-requests.jsonl") {
+      logOk(`Found hmrc-api-requests.jsonl at ${fullPath}`);
+      stop();
       return fullPath;
     }
 
     if (entry.isDirectory()) {
       const found = findHmrcApiRequests(fullPath);
       if (found) {
+        stop();
         return found;
       }
     }
   }
 
+  logDebug(`No hmrc-api-requests.jsonl under ${dir}`);
+  stop();
   return null;
+}
+
+/**
+ * Find figures.json in a directory recursively
+ */
+function findFiguresJson(dir) {
+  const stop = startTimer(`findFiguresJson in ${dir}`);
+  if (!fs.existsSync(dir)) {
+    logWarn(`Directory does not exist: ${dir}`);
+    stop();
+    return null;
+  }
+
+  let entries = [];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (e) {
+    logWarn(`Failed to read directory ${dir}: ${e.message}`);
+    stop();
+    return null;
+  }
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isFile() && entry.name === "figures.json") {
+      logOk(`Found figures.json at ${fullPath}`);
+      stop();
+      return fullPath;
+    }
+
+    if (entry.isDirectory()) {
+      const found = findFiguresJson(fullPath);
+      if (found) {
+        stop();
+        return found;
+      }
+    }
+  }
+
+  logDebug(`No figures.json under ${dir}`);
+  stop();
+  return null;
+}
+
+/**
+ * Try to locate a test-specific directory that matches the provided testName.
+ * Prefers an exact match, then any subdirectory whose name starts with the testName.
+ */
+function findMatchingTestDir(baseDir, testName) {
+  const exact = path.join(baseDir, testName);
+  if (fs.existsSync(exact) && fs.statSync(exact).isDirectory()) return exact;
+
+  // Find candidate dirs starting with the test name
+  let candidates = [];
+  try {
+    const entries = fs.readdirSync(baseDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (entry.name.startsWith(`${testName}`)) {
+        const full = path.join(baseDir, entry.name);
+        let mtimeMs = 0;
+        try {
+          mtimeMs = fs.statSync(full).mtimeMs;
+        } catch (_) {}
+        candidates.push({ full, mtimeMs });
+      }
+    }
+  } catch (e) {
+    logWarn(`Failed to scan for matching test dir in ${baseDir}: ${e.message}`);
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Prefer most recently modified directory
+  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  const chosen = candidates[0]?.full ?? null;
+  if (chosen) logInfo(`Matched test directory for '${testName}': ${chosen}`);
+  return chosen;
 }
 
 /**
@@ -119,130 +358,46 @@ const STATUS_PATTERNS = {
 
 /**
  * Check if playwright report exists and extract test status
+ * Sources status (and failedTests when available) ONLY from .last-run.json
+ * in target/behaviour-test-results. No HTML parsing fallback.
  */
 function getPlaywrightReportStatus(testName) {
-  const reportDir = path.join(PROJECT_ROOT, "target/test-reports", testName, "html-report");
-  const indexPath = path.join(reportDir, "index.html");
+  const stop = startTimer(`getPlaywrightReportStatus(${testName})`);
+  const indexPath = path.join(REPORTS_DIR, "index.html");
+  const exists = fs.existsSync(indexPath);
+  logInfo(`Playwright HTML report ${exists ? "exists" : "missing"}: ${indexPath}`);
 
-  if (!fs.existsSync(indexPath)) {
-    return { exists: false, status: "unknown" };
-  }
+  // Start with defaults
+  const result = { exists, status: "unknown" };
 
+  // Prefer .last-run.json for authoritative status and failedTests
   try {
-    const html = fs.readFileSync(indexPath, "utf-8");
-
-    // Look for Playwright report status indicators
-    // Check for passed and failed test counts
-    const passedMatch = html.match(STATUS_PATTERNS.passed);
-    const failedMatch = html.match(STATUS_PATTERNS.failed);
-
-    const passedCount = passedMatch ? parseInt(passedMatch[1]) : 0;
-    const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
-
-    console.log(`  ℹ Status detection for ${testName}: passed=${passedCount}, failed=${failedCount}`);
-
-    // If we have failed tests, status is failed
-    if (failedCount > 0) {
-      return { exists: true, status: "failed" };
-    }
-
-    // If we have passed tests and no failures (or 0 failed), status is passed
-    if (passedCount > 0) {
-      return { exists: true, status: "passed" };
-    }
-
-    // Check for alternative patterns in newer Playwright versions
-    // Look for test results summary
-    if (html.match(STATUS_PATTERNS.allPassed) || html.match(STATUS_PATTERNS.checkPassed)) {
-      return { exists: true, status: "passed" };
-    }
-
-    // Check for class-based indicators as fallback
-    if (html.includes('class="passed"') || html.includes("✓")) {
-      if (html.includes('class="failed"') || html.includes("test failed")) {
-        return { exists: true, status: "failed" };
+    const lastRunPath = path.join(RESULTS_DIR, ".last-run.json");
+    if (fs.existsSync(lastRunPath)) {
+      logDebug(`Reading last-run metadata from ${lastRunPath}`);
+      const content = fs.readFileSync(lastRunPath, "utf-8");
+      const lastRun = JSON.parse(content);
+      if (typeof lastRun.status === "string") {
+        result.status = lastRun.status;
       }
-      return { exists: true, status: "passed" };
+      if (Array.isArray(lastRun.failedTests)) {
+        result.failedTests = lastRun.failedTests;
+      }
+      const ftPreview = Array.isArray(result.failedTests) ? truncList(result.failedTests) : [];
+      logOk(`Status: ${result.status}${ftPreview.length ? `, failedTests: ${ftPreview.length}` : ""}`);
+      if (ftPreview.length) logDebug(`Failed tests preview: ${JSON.stringify(ftPreview)}`);
+    } else {
+      logWarn(`.last-run.json not found in ${RESULTS_DIR}`);
     }
-
-    if (html.includes('class="failed"') || html.includes("test failed")) {
-      return { exists: true, status: "failed" };
-    }
-
-    // If report exists but we couldn't determine status, check content size
-    // A substantial report usually means tests ran successfully
-    if (html.length > 1000) {
-      console.log(`  ℹ Could not determine exact status for ${testName}, defaulting to passed (report exists with ${html.length} chars)`);
-      return { exists: true, status: "passed" };
-    }
-    
-    // If report is too small or empty, status is unknown
-    console.log(`  ⚠ Report for ${testName} is too small (${html.length} chars), status unknown`);
-    return { exists: true, status: "unknown" };
   } catch (e) {
-    console.warn(`Failed to read playwright report: ${e.message}`);
-    return { exists: false, status: "unknown" };
+    logWarn(`Failed to read .last-run.json: ${e.message}`);
   }
+
+  stop();
+  return result;
 }
 
-/**
- * Find test source file based on test name
- */
-function findTestSourceFile(testName) {
-  // Map test names to their source files
-  const testFileMap = {
-    bundle: "behaviour-tests/bundles.behaviour.test.js",
-    obligation: "behaviour-tests/vatObligations.behaviour.test.js",
-    "obligation-sandbox": "behaviour-tests/vatObligations.behaviour.test.js",
-    "submit-vat": "behaviour-tests/submitVat.behaviour.test.js",
-    "submit-vat-sandbox": "behaviour-tests/submitVat.behaviour.test.js",
-  };
-
-  const testFile = testFileMap[testName];
-  if (!testFile) {
-    return null;
-  }
-
-  const filePath = path.join(PROJECT_ROOT, testFile);
-  if (fs.existsSync(filePath)) {
-    try {
-      return {
-        filename: testFile,
-        content: fs.readFileSync(filePath, "utf-8"),
-      };
-    } catch (e) {
-      console.warn(`  ⚠ Failed to read test file: ${e.message}`);
-      return null;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Find environment config based on test name
- * Note: Currently returns .env.ci for all tests, but testName parameter
- * is available for future environment-specific config selection
- */
-function findEnvConfig(testName) {
-  // Determine which environment config file to use
-  const envFile = ".env.ci";
-  const filePath = path.join(PROJECT_ROOT, envFile);
-
-  if (fs.existsSync(filePath)) {
-    try {
-      return {
-        filename: envFile,
-        content: fs.readFileSync(filePath, "utf-8"),
-      };
-    } catch (e) {
-      console.warn(`  ⚠ Failed to read env config: ${e.message}`);
-      return null;
-    }
-  }
-
-  return null;
-}
+// (Legacy auto-derivation helpers removed)
 
 /**
  * Find screenshots and videos for a test, preferring curated figures.json
@@ -255,22 +410,27 @@ function findTestArtifacts(testName) {
   };
 
   // Look in behaviour test results directory
-  const testResultsDir = path.join(PROJECT_ROOT, "target/behaviour-test-results", testName);
-  if (!fs.existsSync(testResultsDir)) {
+  if (!fs.existsSync(RESULTS_DIR)) {
+    logWarn(`No test results dir for '${testName}': ${RESULTS_DIR}`);
     return artifacts;
   }
 
+  // Determine a likely test-specific directory
+  const testDir = findMatchingTestDir(RESULTS_DIR, testName);
+
   // First, try to read figures.json which contains curated screenshots
-  const figuresPath = path.join(testResultsDir, "figures.json");
-  if (fs.existsSync(figuresPath)) {
+  const figuresPath = (testDir && findFiguresJson(testDir)) || findFiguresJson(RESULTS_DIR);
+  if (figuresPath && fs.existsSync(figuresPath)) {
     try {
       const figuresData = JSON.parse(fs.readFileSync(figuresPath, "utf-8"));
       artifacts.figures = figuresData;
       // Extract screenshot filenames from figures.json
       artifacts.screenshots = figuresData.map((fig) => fig.filename).filter((f) => f != null && f !== "");
-      console.log(`  ✓ Found figures.json with ${artifacts.screenshots.length} curated screenshots`);
+      logOk(`Read figures.json (${figuresPath}) with ${artifacts.screenshots.length} curated screenshots`);
+      const preview = truncList(artifacts.screenshots);
+      if (preview.length) logDebug(`Screenshot preview: ${preview.join(", ")}`);
     } catch (e) {
-      console.warn(`  ⚠ Failed to read figures.json: ${e.message}`);
+      logWarn(`Failed to read figures.json at ${figuresPath}: ${e.message}`);
     }
   }
 
@@ -295,24 +455,28 @@ function findTestArtifacts(testName) {
     }
 
     try {
-      findFiles(testResultsDir);
+      const stop = startTimer(`scan screenshots for ${testName}`);
+      findFiles(testDir || RESULTS_DIR);
+      stop();
+      const preview = truncList(artifacts.screenshots);
+      if (artifacts.screenshots.length) logDebug(`Found ${artifacts.screenshots.length} screenshots (preview: ${preview.join(", ")})`);
     } catch (e) {
-      console.warn(`  ⚠ Failed to find test artifacts: ${e.message}`);
+      logWarn(`Failed to find test artifacts: ${e.message}`);
     }
   }
 
   // Find video for this specific test (should be only one at root level)
-  // Videos are typically named with timestamps, look for .webm or .mp4 at the root of testResultsDir
+  // Videos are typically named with timestamps, look for .webm or .mp4 at the root of RESULTS_DIR
   try {
-    const entries = fs.readdirSync(testResultsDir, { withFileTypes: true });
+    const entries = fs.readdirSync(RESULTS_DIR, { withFileTypes: true });
     for (const entry of entries) {
       if (entry.isFile() && (entry.name.endsWith(".webm") || entry.name.endsWith(".mp4"))) {
         artifacts.videos.push(entry.name);
-        console.log(`  ✓ Found video: ${entry.name}`);
+        logOk(`Found video: ${entry.name}`);
       }
     }
   } catch (e) {
-    console.warn(`  ⚠ Failed to find videos: ${e.message}`);
+    logWarn(`Failed to find videos: ${e.message}`);
   }
 
   return artifacts;
@@ -321,20 +485,24 @@ function findTestArtifacts(testName) {
 /**
  * Generate a test report JSON file
  */
-function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
-  console.log(`Generating report for: ${testName}`);
+function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, overrides = {}) {
+  logStep(`Generating report for: ${testName}`);
+  const stop = startTimer(`generateTestReport(${testName})`);
 
   // Read testContext.json
   let testContext = {};
   if (testContextPath && fs.existsSync(testContextPath)) {
     try {
+      const size = fs.statSync(testContextPath)?.size;
       testContext = JSON.parse(fs.readFileSync(testContextPath, "utf-8"));
-      console.log(`  ✓ Read testContext from ${testContextPath}`);
+      logOk(`Read testContext from ${testContextPath} (${fmtBytes(size)})`);
+      const keys = Object.keys(testContext || {});
+      if (keys.length) logDebug(`testContext keys: ${keys.join(", ")}`);
     } catch (e) {
-      console.warn(`  ⚠ Failed to read testContext: ${e.message}`);
+      logWarn(`Failed to read testContext: ${e.message}`);
     }
   } else {
-    console.log(`  ℹ No testContext found for ${testName}`);
+    logInfo(`No testContext found for ${testName}`);
   }
 
   // Read hmrc-api-requests.jsonl
@@ -342,36 +510,38 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
   if (hmrcApiRequestsPath && fs.existsSync(hmrcApiRequestsPath)) {
     try {
       hmrcApiRequests = readJsonlFile(hmrcApiRequestsPath);
-      console.log(`  ✓ Read ${hmrcApiRequests.length} HMRC API requests`);
+      logOk(`Read ${hmrcApiRequests.length} HMRC API requests`);
+      const preview = truncList(hmrcApiRequests.map((r) => r?.request?.url || r?.url || "?"));
+      if (preview.length) logDebug(`API request URL preview: ${preview.join(", ")}`);
     } catch (e) {
-      console.warn(`  ⚠ Failed to read HMRC API requests: ${e.message}`);
+      logWarn(`Failed to read HMRC API requests: ${e.message}`);
     }
   } else {
-    console.log(`  ℹ No HMRC API requests found for ${testName}`);
+    logInfo(`No HMRC API requests found for ${testName}`);
   }
 
   // Get playwright report status
   const playwrightReport = getPlaywrightReportStatus(testName);
 
-  // Get test source file
-  const testSourceFile = findTestSourceFile(testName);
+  // Get test source file (CLI-provided; no auto-derivation)
+  const testSourceFile = overrides.testSourceFile ?? null;
   if (testSourceFile) {
-    console.log(`  ✓ Read test source file: ${testSourceFile.filename}`);
+    logOk(`Read test source file: ${testSourceFile.filename}`);
   }
 
-  // Get environment config
-  const envConfig = findEnvConfig(testName);
+  // Get environment config (CLI-provided; no auto-derivation)
+  const envConfig = overrides.envConfig ?? null;
   if (envConfig) {
-    console.log(`  ✓ Read environment config: ${envConfig.filename}`);
+    logOk(`Read environment config: ${envConfig.filename}`);
   }
 
   // Get test artifacts (screenshots and videos)
   const artifacts = findTestArtifacts(testName);
   if (artifacts.screenshots.length > 0) {
-    console.log(`  ✓ Found ${artifacts.screenshots.length} screenshot(s)`);
+    logOk(`Found ${artifacts.screenshots.length} screenshot(s)`);
   }
   if (artifacts.videos.length > 0) {
-    console.log(`  ✓ Found ${artifacts.videos.length} video(s)`);
+    logOk(`Found ${artifacts.videos.length} video(s)`);
   }
 
   // Build report object
@@ -391,10 +561,16 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
   const reportPath = path.join(OUTPUT_DIR, reportFileName);
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2), "utf-8");
+  const payload = JSON.stringify(report, null, 2);
+  fs.writeFileSync(reportPath, payload, "utf-8");
+  try {
+    const size = fs.statSync(reportPath)?.size;
+    logOk(`Generated ${reportFileName} (${fmtBytes(size)})`);
+  } catch (_) {
+    logOk(`Generated ${reportFileName}`);
+  }
 
-  console.log(`  ✓ Generated ${reportFileName}`);
-
+  stop();
   return reportFileName;
 }
 
@@ -405,20 +581,25 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath) {
 function findTestData(testName) {
   // Try to find a directory matching this test name in the behaviour test results
   if (!fs.existsSync(RESULTS_DIR)) {
+    logWarn(`Results directory missing: ${RESULTS_DIR}`);
     return { testContextPath: null, hmrcApiRequestsPath: null };
   }
 
   // Look for test-specific subdirectory first
   const testSpecificDir = path.join(RESULTS_DIR, testName);
   if (fs.existsSync(testSpecificDir)) {
+    logInfo(`Searching test-specific data in ${testSpecificDir}`);
     const testContextPath = findTestContext(testSpecificDir);
     const hmrcApiRequestsPath = findHmrcApiRequests(testSpecificDir);
+    logDebug(`findTestData result (specific): testContext=${!!testContextPath}, api=${!!hmrcApiRequestsPath}`);
     return { testContextPath, hmrcApiRequestsPath };
   }
 
   // Fallback to searching entire results directory
+  logInfo(`Searching fallback data in ${RESULTS_DIR}`);
   const testContextPath = findTestContext(RESULTS_DIR);
   const hmrcApiRequestsPath = findHmrcApiRequests(RESULTS_DIR);
+  logDebug(`findTestData result (fallback): testContext=${!!testContextPath}, api=${!!hmrcApiRequestsPath}`);
 
   return { testContextPath, hmrcApiRequestsPath };
 }
@@ -427,64 +608,50 @@ function findTestData(testName) {
  * Main execution
  */
 function main() {
-  console.log("=== Generating Test Reports ===");
-  console.log(`Results directory: ${RESULTS_DIR}`);
-  console.log(`Output directory: ${OUTPUT_DIR}`);
+  logStep("=== Generating Test Reports ===");
+  logInfo(`Project root: ${PROJECT_ROOT}`);
+  logInfo(`Results directory: ${RESULTS_DIR}`);
+  logInfo(`Reports directory: ${REPORTS_DIR}`);
+  logInfo(`Output directory: ${OUTPUT_DIR}`);
+  logDebug(`Node ${process.version} | cwd=${process.cwd()}`);
   console.log("");
 
   // Create output directory
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  // Find all test reports directories
-  const testReportsDir = path.join(PROJECT_ROOT, "target/test-reports");
-  if (!fs.existsSync(testReportsDir)) {
-    console.warn("⚠ No test reports directory found");
+  // Parse CLI arguments
+  const args = parseCliArgs();
+  if (args.help) {
+    console.log(
+      `\nUsage (direct mode):\n  node scripts/generate-test-reports.js --testName <name> [--testFile <path>] [--envFile <path>]\n`,
+    );
     process.exit(0);
   }
 
-  const reportFiles = [];
-  const testDirs = fs
-    .readdirSync(testReportsDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
-
-  console.log(`Found ${testDirs.length} test report directories`);
-  console.log("");
-
-  for (const testName of testDirs) {
-    if (testName === "html-report") {
-      continue; // Skip the combined report directory
-    }
-
-    // Find test-specific data
-    const { testContextPath, hmrcApiRequestsPath } = findTestData(testName);
-
-    if (!testContextPath && !hmrcApiRequestsPath) {
-      console.log(`  ℹ No test data found for ${testName}, creating minimal report`);
-      // Still create a report with just the playwright info
-      const reportFileName = generateTestReport(testName, null, null);
-      reportFiles.push(reportFileName);
-      continue;
-    }
-
-    // Generate report
-    const reportFileName = generateTestReport(testName, testContextPath, hmrcApiRequestsPath);
-    reportFiles.push(reportFileName);
+  if (!args.testName) {
+    console.error("\nError: --testName is required.\n");
+    console.log(`Usage:\n  node scripts/generate-test-reports.js --testName <name> [--testFile <path>] [--envFile <path>]\n`);
+    process.exit(1);
   }
 
-  // Generate index file
-  if (reportFiles.length > 0) {
-    const indexPath = path.join(OUTPUT_DIR, "test-reports-index.txt");
-    fs.writeFileSync(indexPath, reportFiles.join("\n") + "\n", "utf-8");
-    console.log("");
-    console.log(`✓ Generated test-reports-index.txt with ${reportFiles.length} reports`);
-  } else {
-    console.log("");
-    console.log("⚠ No test reports generated");
-  }
+  // Direct mode only: explicit testName (and optional file paths)
+  const testName = args.testName;
+  logOk(`Direct mode: generating report for test '${testName}'`);
+
+  const overrides = {
+    testSourceFile: args.testFile ? readFilePayload(args.testFile, "test file") : null,
+    envConfig: args.envFile ? readFilePayload(args.envFile, "env file") : null,
+  };
+
+  const { testContextPath, hmrcApiRequestsPath } = findTestData(testName);
+  const singleReportFile = generateTestReport(testName, testContextPath, hmrcApiRequestsPath, overrides);
+
+  // Generate index file for single report
+  const indexPath = path.join(OUTPUT_DIR, "test-reports-index.txt");
+  fs.writeFileSync(indexPath, singleReportFile + "\n", "utf-8");
 
   console.log("");
-  console.log("=== Test Report Generation Complete ===");
+  logStep("=== Test Report Generation Complete ===");
 }
 
 main();
