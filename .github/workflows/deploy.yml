@@ -2440,7 +2440,7 @@ jobs:
           echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
           echo "Uploading test report JSON files and index pages to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "test-report*.json"
+          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "test-report*.json" --include "*.txt" --include "*.html"
 
   convert-video:
     name: 'convert web test video to mp4'
