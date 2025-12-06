@@ -102,8 +102,10 @@ public class SubmitContainer {
 
         // Determine primary environment (account/region)
         Environment primaryEnv = KindCdk.buildPrimaryEnvironment();
-        Environment usEast1Env =
-                Environment.builder().region("us-east-1").account(primaryEnv.getAccount()).build();
+        Environment usEast1Env = Environment.builder()
+                .region("us-east-1")
+                .account(primaryEnv.getAccount())
+                .build();
 
         var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
         nameProps.envName = envName;
@@ -137,7 +139,8 @@ public class SubmitContainer {
                 String.format("/%s/submit/google/client_secret", envName));
 
         var hmrcClientSecretArn = envOr("HMRC_CLIENT_SECRET_ARN", containerProps.hmrcClientSecretArn);
-        var hmrcSandboxClientSecretArn = envOr("HMRC_SANDBOX_CLIENT_SECRET_ARN", containerProps.hmrcSandboxClientSecretArn);
+        var hmrcSandboxClientSecretArn =
+                envOr("HMRC_SANDBOX_CLIENT_SECRET_ARN", containerProps.hmrcSandboxClientSecretArn);
 
         // Create DevStack (ECR repository and development resources)
         infof(
@@ -297,7 +300,8 @@ public class SubmitContainer {
 
     public static SubmitContainerProps loadContainerProps(Construct scope, String pathPrefix) {
         SubmitContainerProps props = SubmitContainerProps.Builder.create().build();
-        var cdkPath = Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
+        var cdkPath =
+                Paths.get((pathPrefix == null ? "" : pathPrefix) + "cdk.json").toAbsolutePath();
         if (!cdkPath.toFile().exists()) {
             infof("Cannot find container properties (cdk.json) at %s", cdkPath);
         } else {

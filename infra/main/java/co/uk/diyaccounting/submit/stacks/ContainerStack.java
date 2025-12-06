@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
-import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -152,8 +151,8 @@ public class ContainerStack extends Stack {
         // Create IAM role for App Runner access (for pulling ECR images)
         Role accessRole = Role.Builder.create(this, props.resourceNamePrefix() + "-AccessRole")
                 .assumedBy(new ServicePrincipal("build.apprunner.amazonaws.com"))
-                .managedPolicies(
-                        List.of(ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSAppRunnerServicePolicyForECRAccess")))
+                .managedPolicies(List.of(
+                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSAppRunnerServicePolicyForECRAccess")))
                 .build();
 
         // Build environment variables for the container
@@ -189,9 +188,7 @@ public class ContainerStack extends Stack {
         environmentVariables.put("DIY_SUBMIT_BASE_URL", baseUrl);
 
         // Cookie secret parameter
-        environmentVariables.put(
-                "COOKIE_SECRET_PARAM",
-                String.format("/%s/submit/cookie_secret", props.envName()));
+        environmentVariables.put("COOKIE_SECRET_PARAM", String.format("/%s/submit/cookie_secret", props.envName()));
 
         // Convert environment variables to App Runner format
         List<CfnService.KeyValuePairProperty> environmentList = environmentVariables.entrySet().stream()
@@ -204,10 +201,7 @@ public class ContainerStack extends Stack {
         // Create App Runner service
         String imageUri = String.format(
                 "%s.dkr.ecr.%s.amazonaws.com/%s:%s",
-                props.getEnv().getAccount(),
-                props.getEnv().getRegion(),
-                ecrRepositoryName,
-                props.baseImageTag());
+                props.getEnv().getAccount(), props.getEnv().getRegion(), ecrRepositoryName, props.baseImageTag());
 
         this.appRunnerService = CfnService.Builder.create(this, props.resourceNamePrefix() + "-AppRunnerService")
                 .serviceName(props.resourceNamePrefix() + "-monolith")

@@ -24,12 +24,7 @@ const logger = createLogger({ source: "app/lib/startDynamoLocal.js" });
  * @returns {Promise<Object>} Object with endpoint and stop function
  */
 export async function startDynamoDBLocal(options = {}) {
-  const {
-    jarPath = "/opt/dynamodb-local/DynamoDBLocal.jar",
-    dbPath = "/data/dynamodb",
-    port = 8000,
-    sharedDb = true,
-  } = options;
+  const { jarPath = "/opt/dynamodb-local/DynamoDBLocal.jar", dbPath = "/data/dynamodb", port = 8000, sharedDb = true } = options;
 
   const host = "127.0.0.1";
   const endpoint = `http://${host}:${port}`;
@@ -38,15 +33,7 @@ export async function startDynamoDBLocal(options = {}) {
   logger.info(`JAR path: ${jarPath}`);
   logger.info(`Database path: ${dbPath}`);
 
-  const args = [
-    `-Djava.library.path=/opt/dynamodb-local/DynamoDBLocal_lib`,
-    "-jar",
-    jarPath,
-    "-port",
-    String(port),
-    "-dbPath",
-    dbPath,
-  ];
+  const args = [`-Djava.library.path=/opt/dynamodb-local/DynamoDBLocal_lib`, "-jar", jarPath, "-port", String(port), "-dbPath", dbPath];
 
   if (sharedDb) {
     args.push("-sharedDb");

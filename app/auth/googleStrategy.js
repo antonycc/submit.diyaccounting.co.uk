@@ -144,11 +144,11 @@ export function ensureAuthenticated(req, res, next) {
 export function getUserFromRequest(req) {
   if (req.user) {
     return {
-      sub: req.user.googleId,
-      email: req.user.email,
-      username: req.user.displayName,
+      "sub": req.user.googleId,
+      "email": req.user.email,
+      "username": req.user.displayName,
       "cognito:username": req.user.displayName,
-      scope: "read write", // Default scope for compatibility
+      "scope": "read write", // Default scope for compatibility
     };
   }
   return null;
