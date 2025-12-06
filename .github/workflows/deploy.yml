@@ -2436,11 +2436,11 @@ jobs:
         shell: bash
         run: |
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive --verbose
+          aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
           echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive --verbose
+          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
           echo "Uploading test report JSON files and index pages to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --include "test-report*.json" --verbose
+          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/ --recursive --exclude "*" --include "test-report*.json"
 
   convert-video:
     name: 'convert web test video to mp4'

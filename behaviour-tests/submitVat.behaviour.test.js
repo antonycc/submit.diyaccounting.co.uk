@@ -296,6 +296,8 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   }
   await goToHomePage(page, screenshotPath);
 
+  // TODO: First query obligations, forcing a test scenario to match the return we'll submit if possible.
+
   /* ************ */
   /* `SUBMIT VAT  */
   /* ************ */

@@ -313,6 +313,27 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   // TODO: When in sandbox mode, trigger each test scenario in turn, going back to home page each time
+  // Get's stuck here:
+  // 1 [obligation-behaviour-tests] › behaviour-tests/vatObligations.behaviour.test.js:174:1 › Click through: View VAT obligations from HMRC › The user fills in the VAT obligations form with VRN and date range
+  //   [USER INTERACTION] Filling: #vrn with value: "529633133" - Entering VAT registration number
+  //   [USER INTERACTION] Filling: #fromDate with value: "2025-01-07" - Entering from date
+  //   [USER INTERACTION] Filling: #toDate with value: "2025-11-01" - Entering to date
+  if (isSandboxMode()) {
+    /* ************************************* */
+    /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
+    /* ************************************* */
+
+    await initVatObligations(page, screenshotPath);
+    await fillInVatObligations(
+      page,
+      testVatNumber,
+      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "open", testScenario: "DYNAMIC" },
+      screenshotPath,
+    );
+    await submitVatObligationsForm(page, screenshotPath);
+    await verifyVatObligationsResults(page, screenshotPath);
+    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  }
 
   /* ****************** */
   /*  Extract user sub  */
