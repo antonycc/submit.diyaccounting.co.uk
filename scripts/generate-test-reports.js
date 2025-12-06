@@ -507,6 +507,7 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
 
   // Read hmrc-api-requests.jsonl
   let hmrcApiRequests = [];
+  logInfo(`Reading HMRC API requests from: ${hmrcApiRequestsPath}`);
   if (hmrcApiRequestsPath && fs.existsSync(hmrcApiRequestsPath)) {
     try {
       hmrcApiRequests = readJsonlFile(hmrcApiRequestsPath);
