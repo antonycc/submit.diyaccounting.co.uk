@@ -110,7 +110,11 @@ export async function handler(event) {
     } catch (error) {
       return {
         statusCode: 401,
-        headers: { "Content-Type": "application/json", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify(error),
       };
     }
@@ -121,7 +125,12 @@ export async function handler(event) {
       logger.error({ message: "Failed to parse request body as JSON" });
       return {
         statusCode: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify({ error: "Invalid JSON in request body" }),
       };
     }
@@ -131,7 +140,12 @@ export async function handler(event) {
     if (!requestedBundle) {
       return {
         statusCode: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify({ error: "Missing bundleId in request" }),
       };
     }
@@ -146,7 +160,12 @@ export async function handler(event) {
       logger.info({ message: "User already has requested bundle:", requestedBundle });
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify({
           status: "already_granted",
           message: "Bundle already granted to user",
@@ -162,7 +181,12 @@ export async function handler(event) {
       logger.error({ message: "[Catalog bundle] Bundle not found in catalog:", requestedBundle });
       return {
         statusCode: 404,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify({ error: "bundle_not_found", message: `Bundle '${requestedBundle}' not found in catalog` }),
       };
     }
@@ -172,7 +196,12 @@ export async function handler(event) {
       logger.warn({ message: "[Catalog bundle] Unknown qualifier in bundle request:", qualifier: check.unknown });
       return {
         statusCode: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify({ error: "unknown_qualifier", qualifier: check.unknown }),
       };
     }
@@ -180,7 +209,12 @@ export async function handler(event) {
       logger.warn({ message: "[Catalog bundle] Qualifier mismatch for bundle request:", reason: check.reason });
       return {
         statusCode: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify({ error: "qualifier_mismatch" }),
       };
     }
@@ -190,7 +224,12 @@ export async function handler(event) {
       // nothing to persist
       return {
         statusCode: 200,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "x-request-id": requestId },
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "x-request-id": requestId,
+          "x-correlationid": requestId,
+        },
         body: JSON.stringify({
           status: "granted",
           granted: true,

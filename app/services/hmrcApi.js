@@ -101,6 +101,11 @@ export async function hmrcHttpGet(
       ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     },
   };
+  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
+  if (!httpRequest.headers["x-correlationid"] && !httpRequest.headers["X-CorrelationId"]) {
+    const cid = context.get("correlationId") || context.get("requestId");
+    if (cid) httpRequest.headers["x-correlationid"] = cid;
+  }
 
   logger.info({
     message: `Request to GET ${hmrcRequestUrl}`,
@@ -192,6 +197,11 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     },
     body: JSON.stringify(hmrcRequestBody),
   };
+  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
+  if (!httpRequest.headers["x-correlationid"] && !httpRequest.headers["X-CorrelationId"]) {
+    const cid = context.get("correlationId") || context.get("requestId");
+    if (cid) httpRequest.headers["x-correlationid"] = cid;
+  }
 
   logger.info({
     message: `Request to POST ${hmrcRequestUrl}`,

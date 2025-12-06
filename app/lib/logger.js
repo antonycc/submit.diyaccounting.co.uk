@@ -70,11 +70,13 @@ export const logger = pino(
       const requestId = context.get("requestId") || null;
       const amznTraceId = context.get("amznTraceId") || null;
       const traceparent = context.get("traceparent") || null;
+      const correlationId = context.get("correlationId") || null;
       return {
         time: new Date().toISOString(),
         ...(requestId ? { requestId } : {}),
         ...(amznTraceId ? { amznTraceId } : {}),
         ...(traceparent ? { traceparent } : {}),
+        ...(correlationId ? { correlationId } : {}),
       };
     },
     // formatters: {

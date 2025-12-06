@@ -438,9 +438,28 @@
           return;
         }
 
-        let html = `<p>Found ${requests.length} HMRC API request(s) logged during test execution:</p>`;
+        // Filter to only include requests whose traceparent matches observedTraceparent
+        const observed = report?.testContext?.testData?.observedTraceparent;
+        const filtered = Array.isArray(requests)
+          ? requests.filter((req) => {
+              const httpRequest = req.httpRequest || req;
+              const headers = httpRequest?.headers || {};
+              const headerTraceparent = headers.traceparent || headers.Traceparent;
+              const topLevelTraceparent = req.traceparent || req.Traceparent;
+              const candidate = headerTraceparent || topLevelTraceparent || null;
+              if (!observed) return true; // if no observed in report, show all
+              return candidate === observed;
+            })
+          : [];
 
-        requests.forEach((req, index) => {
+        if (filtered.length === 0) {
+          section.innerHTML = `<p>No HMRC API requests matched observed traceparent${observed ? `: ${escapeHtml(observed)}` : ""}.</p>`;
+          return;
+        }
+
+        let html = `<p>Found ${filtered.length} HMRC API request(s) for observed trace.</p>`;
+
+        filtered.forEach((req, index) => {
           // Handle different data structures - could be direct or nested
           const httpRequest = req.httpRequest || req;
           const httpResponse = req.httpResponse || req.response;
