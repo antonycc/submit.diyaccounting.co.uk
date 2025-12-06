@@ -1787,6 +1787,7 @@ jobs:
         run: |
           chmod +x scripts/export-test-dynamodb.sh
           scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
+        env:
           AWS_REGION: ${{ env.AWS_REGION }}
           RESULTS_DIR: target/behaviour-test-results
 
