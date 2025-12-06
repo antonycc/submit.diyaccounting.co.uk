@@ -310,14 +310,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await fillInVatObligations(page, testVatNumber, { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
   await submitVatObligationsForm(page, screenshotPath);
 
-  // /* ************ */
-  // /* `SUBMIT VAT  */
-  // /* ************ */
-  //
-  // await initSubmitVat(page, screenshotPath);
-  // await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath);
-  // await submitFormVat(page, screenshotPath);
-
   /* ************ */
   /* `HMRC AUTH   */
   /* ************ */

@@ -312,6 +312,8 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   await verifyVatObligationsResults(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
+  //YOU ARE HERE, ABOUT TO START SANDBOX TEST SCENARIOS
+
   // TODO: When in sandbox mode, trigger each test scenario in turn, going back to home page each time
   // Get's stuck here:
   // 1 [obligation-behaviour-tests] › behaviour-tests/vatObligations.behaviour.test.js:174:1 › Click through: View VAT obligations from HMRC › The user fills in the VAT obligations form with VRN and date range
