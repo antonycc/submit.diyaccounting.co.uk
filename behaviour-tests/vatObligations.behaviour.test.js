@@ -415,6 +415,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   // Select and copy key screenshots, then generate figures.json
   const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
 
+  // TODO: Pick examples with all then HMRC API form submissions and response data
   const keyScreenshotPatterns = [
     "init.*vat.*obligation", // VAT obligations form
     "fill.*vat.*obligation", // VAT obligations form filled
