@@ -992,7 +992,7 @@ jobs:
 
   deploy-container:
     name: 'deploy container (monolith)'
-    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode == 'monolith' || env.DEPLOYMENT_MODE == 'monolith') }}
+    if: ${{ inputs.skipDeploy != 'true' && inputs.deploymentMode == 'monolith' }}
     needs:
       - names
       - skip-deploy-check
