@@ -321,22 +321,22 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   //   [USER INTERACTION] Filling: #fromDate with value: "2025-01-07" - Entering from date
   //   [USER INTERACTION] Filling: #toDate with value: "2025-11-01" - Entering to date
   // See: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/obligations-api/3.0/oas/page#/paths/~1obligations~1details~1%7Bnino%7D~1income-and-expenditure/get
-  // if (isSandboxMode()) {
-  //   /* ************************************* */
-  //   /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
-  //   /* ************************************* */
-  //
-  //   await initVatObligations(page, screenshotPath);
-  //   await fillInVatObligations(
-  //     page,
-  //     testVatNumber,
-  //     { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "open", testScenario: "DYNAMIC" },
-  //     screenshotPath,
-  //   );
-  //   await submitVatObligationsForm(page, screenshotPath);
-  //   await verifyVatObligationsResults(page, screenshotPath);
-  //   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
-  // }
+  if (isSandboxMode()) {
+    /* ************************************* */
+    /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
+    /* ************************************* */
+
+    await initVatObligations(page, screenshotPath);
+    await fillInVatObligations(
+      page,
+      testVatNumber,
+      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Fulfilled", testScenario: "Monthly - Three Met" },
+      screenshotPath,
+    );
+    await submitVatObligationsForm(page, screenshotPath);
+    await verifyVatObligationsResults(page, screenshotPath);
+    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  }
 
   /* ****************** */
   /*  Extract user sub  */
