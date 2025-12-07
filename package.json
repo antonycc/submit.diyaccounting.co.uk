@@ -68,7 +68,10 @@
     "mock": "wiremock --port 9090 --root-dir wiremock-recordings --verbose --preserve-host-header",
     "cloudfront:set-origins": "node ./app/actions/set-apex-origins.mjs",
     "set-apex-origins": "node ./app/actions/set-apex-origins.mjs",
-    "wiremock:server": "wiremock --port 9090 --root-dir wiremock-recordings --disable-banner"
+    "wiremock:server": "wiremock --port 9090 --root-dir wiremock-recordings --disable-banner",
+    "docker:build-local": "./scripts/docker-build-local.sh",
+    "docker:run-monolith": "./scripts/docker-run-monolith.sh",
+    "docker:monolith": "npm run docker:build-local && npm run docker:run-monolith"
   },
   "keywords": [],
   "author": "",
