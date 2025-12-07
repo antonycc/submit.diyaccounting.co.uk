@@ -1,0 +1,125 @@
+Review of copilot/dual-deployment-options branch and needed change requests
+High‑level summary of changes on the branch
+
+The copilot/dual‑deployment‑options branch adds a new “monolith” deployment mode alongside the existing serverless Lambda architecture.
+It introduces a containerised app based on AWS App Runner and Express, using Google OAuth via passport.js, and reuses the same DynamoDB tables provisioned by the SubmitEnvironment CDK stacks. Key changes include:
+
+Infrastructure: A new CDK entry point (SubmitContainer.java) and associated ContainerStack for App Runner, alongside updates to DataStack to create a sessionsTable, and modifications to SubmitSharedNames and cdk.json to add new stack names and context parameters.
+
+Application code: A monolith.js entrypoint starts Express, configures Google OAuth using googleStrategy.js, and mounts existing Lambda handlers as Express routes. User refresh tokens are stored in DynamoDB via dynamoDbUserRepository.js and secrets are read from AWS Systems Manager Parameter Store with local caching (parameterStore.js). The Dockerfile and docker-entrypoint.sh now support both lambda and monolith modes.
+
+Testing: Playwright behaviour tests were updated to capture screenshots and logs via loggedClick/loggedFill, and new npm scripts and test variants (test:bundleBehaviour-docker, etc.) start a dynalite server and run the same journeys against the containerised monolith. A docker-container-test job in test.yml builds the image, runs dynalite and verifies /health endpoint.
+
+Documentation: DEPLOYMENT_MODES.md and sections of REPOSITORY_DOCUMENTATION.md explain the two modes, how to build and run the container locally, and list security hardening tasks still required, such as rate limiting, security headers, CSRF protection, and session management
+github.com
+github.com
+.
+
+Local dev scripts: New scripts (docker:monolith, docker:start-for-tests, etc.) allow building and running the monolith with dynalite for local persistence.
+
+Gaps relative to our desired design
+
+The branch implements many of the requested features, but several critical elements remain incomplete or deviate from the agreed design:
+
+CI/CD parameterisation – The main deployment workflow (deploy.yml) has not been refactored to accept a deploymentMode or MONOLITH_DEPLOY flag. It still deploys the serverless stacks by default and never invokes the SubmitContainer CDK. There is no job to synthesize or deploy cdk-container or to switch behaviour test jobs to run against the monolith. Similarly, destroy.yml does not destroy the container stacks.
+
+Shared SubmitEnvironment.java – While SubmitEnvironment remains unchanged, there is no refactoring to allow both serverless and monolith stacks to coexist in the same environment controlled by a flag. The new CDK entry point stands separate rather than re‑using environment stacks for both modes.
+
+Security hardening – The Express app warns that it still lacks production‑grade protections: rate limiting, request body size limits, CSRF protection, secure headers, and request validation
+github.com
+. These must be implemented before production use.
+
+Session storage – Sessions use cookie-session with an optional Parameter Store secret. For horizontal scaling or multi‑node clusters, a DynamoDB‑backed session store (connect-dynamodb) or another shared session mechanism should be used. Additionally, there is no TTL or cleanup for refresh tokens in DynamoDB.
+
+Consistent local environment – The monolith uses AWS DynamoDB in production, but local scripts rely on dynalite. There is no script to start the Java DynamoDB Local JAR with a persistent volume; dynalite is run as a Node process. We proposed including a DynamoDB Local JAR in the image and mounting a volume for persistence, but this has not been implemented.
+
+Behaviour test toggles in CI – The behaviour test jobs in deploy.yml are not parameterised to run against the monolith. The new Docker test variants exist, but there is no integration into the CI pipeline.
+
+Self‑destruct and destroy scripts – The new container stack includes a SelfDestructStack, but destroy.yml does not remove the container stacks and there is no option to destroy only the monolith deployment.
+
+Dockerfile duplication and local mode – The Dockerfile supports both lambda and monolith, but there is no parameter to include the DynamoDB Local JAR or dynalite at runtime. The test mode in docker-entrypoint.sh refers to server.js, but this is inconsistent with our design to start a local server with dynalite on the same container.
+
+Monitoring and alerts – While the OpsStack exists, there is no update to ensure App Runner metrics, logs and health checks are integrated into dashboards and alerts, and to test these in staging.
+
+Parameter Store caching – The parameter caching uses an in‑memory cache with a default 1‑hour TTL, but there is no invalidation or warm‑up strategy across multiple nodes. Provide guidance or code for distributed caching or prefetching secrets on startup.
+
+Test coverage – Unit tests exist for the new modules (dynamoDbUserRepository and parameterStore), but there are no integration tests to verify OAuth flows, session storage, or error handling. The Playwright tests have been extended but should run against both serverless and monolith modes to ensure consistent behaviour.
+
+Change requests (prompt instructions)
+
+Below is a concise prompt you could feed into an agentic coding system to complete the work. It scopes the changes precisely and should be acted upon step‑by‑step.
+
+Prompt for coding agent: You are working on the submit.diyaccounting.co.uk repository on branch copilot/dual-deployment-options. Your goal is to finish the dual‑deployment feature so that users can deploy either the existing serverless architecture or the new containerised monolith from the same repository. Follow these tasks carefully and do not deviate:
+
+Parameterise the deployment workflows:
+
+Modify .github/workflows/deploy.yml to accept an input deploymentMode with values serverless (default) or monolith.
+
+When deploymentMode is serverless, run the existing jobs to build and deploy the cdk-application stacks. When monolith, skip the serverless stack deploy jobs and instead add a new job that builds the Java project and runs cdk synth/cdk deploy for cdk-container using the SubmitContainer entry point. Set environment variables and context so that the container stack picks up the correct table ARNs and secrets. The job should push the container image to ECR and deploy the App Runner service.
+
+Add a job to run the appropriate behaviour tests: use the existing test jobs for serverless; for monolith, call the Docker‑based test scripts (test:bundleBehaviour-docker, etc.), ensuring they are executed with the same .env.ci configuration. Provide a matrix to test both modes.
+
+Expose an option (testOnly) to skip deployment and only run tests, similar to the existing workflow.
+
+Update destroy workflow: Extend .github/workflows/destroy.yml so it can destroy container stacks when deploymentMode=monolith. Use cdk destroy on cdk-container and clean up ECR images. Ensure the workflow remains idempotent and handles missing stacks gracefully.
+
+Refactor SubmitEnvironment.java and CDK stacks for shared resources: Create a shared SubmitEnvironment that provisions the environment‑wide resources (CloudTrail, DynamoDB tables, S3 buckets, etc.) exactly once. Both SubmitApplication (serverless) and SubmitContainer (monolith) should reference this environment. Move the sessions table into the environment stack so both modes use the same table. Verify that DataStack and SubmitSharedNames produce consistent table names and ARNs.
+
+Implement production‑grade security in the monolith: Enhance monolith.js by adding:
+
+express-rate-limit with sensible per‑IP limits.
+
+Request body size limits (express.json({ limit: '1mb' })) and timeouts.
+
+CSRF protection for any state‑changing endpoints (csurf middleware).
+
+HTTP security headers via helmet.
+
+Middleware to validate inputs to each route, aligning with the existing API validators used in Lambda handlers.
+
+Replace cookie-session with connect-dynamodb or a similar session store, using the sessionsTable for storage, and configure TTLs.
+
+Improve local persistence: Include the DynamoDB Local (or dynalite) JAR in the repository and modify the Dockerfile so that when APP_MODE=test or local, the entrypoint launches the local database on a mounted volume before starting the Node app. Provide a script to create tables and seed test data. Update the local scripts to use this instead of a transient in‑memory dynalite process.
+
+Add container‑mode variants of CDK deploy scripts: Create two new npm scripts (cdk:deploy-monolith, cdk:destroy-monolith) that run cdk synth and cdk deploy for cdk-container. Parameterise environment variables (e.g. ENVIRONMENT_NAME, DEPLOYMENT_NAME, BASE_IMAGE_TAG). Use these scripts in the new workflow jobs.
+
+Update documentation:
+
+Refresh REPOSITORY_DOCUMENTATION.md and DEPLOYMENT_MODES.md to reflect the final design: both deployment modes share the same environment and data plane; how to use deploymentMode flag; how secrets are stored and cached; how to run tests locally and in CI; and include the new security considerations.
+
+Document how to scale the monolith horizontally: instruct users to rely on DynamoDB as the central state store and avoid session stickiness. Mention global tables if multi‑region is desired and adjust Route 53/CloudFront accordingly.
+
+Expand tests:
+
+Ensure integration tests verify Google OAuth login, refresh token storage and retrieval from DynamoDB, session persistence across restarts, and error handling for missing secrets.
+
+Add tests for the security middleware (e.g., rate limiting returns 429, CSRF token required for POSTs).
+
+Ensure Playwright behaviour tests run in both modes by using the deploymentMode matrix in CI.
+
+Integrate monitoring: Update the OpsStack to collect App Runner metrics (CPU, memory, request count) and integrate them into CloudWatch dashboards and alarms. Add health check alarms for the /health endpoint. Ensure logs are shipped to CloudWatch.
+
+Miscellaneous fixes:
+
+Resolve any remaining test failures (e.g. adjust the expected DynamoDB table count to include the sessions table).
+
+Add a docker/setup-buildx step in CI to avoid multi‑arch issues with Docker images.
+
+Add an environment variable in cdk-ci and cdk-prod scripts to set deploymentMode for monolith deployments.
+
+Path to production confidence
+
+Once the above changes are complete, you should be able to:
+
+Build and run the monolith locally with persistent DynamoDB Local using npm run docker:monolith and run Playwright tests via test:bundleBehaviour-docker, etc. This ensures local parity with the deployed container.
+
+Deploy to AWS by setting deploymentMode=monolith in the deploy.yml workflow dispatch. The workflow will build and push the container image, deploy the SubmitContainer stacks, and run behaviour tests against the App Runner URL behind CloudFront.
+
+Use destroy.yml with deploymentMode=monolith to remove the container stacks and ECR images. The self‑destruct stack will handle automatic teardown of non‑production environments.
+
+Rerun the tests in both modes regularly to detect regressions and verify that the same business logic behaves identically.
+
+
+Monitor the production App Runner service via CloudWatch dashboards and alarms, verifying scale‑to‑zero behaviour and container health.
+
+By completing these change requests, the repository will satisfy the dual‑deployment requirements and align with the design envisioned during this chat. The system will be more secure, easier to operate, and thoroughly tested across both deployment modes.
