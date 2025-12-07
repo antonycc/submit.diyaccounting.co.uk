@@ -11,7 +11,7 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
     // Click "VAT Return Submission" on activities page
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-start-submission.png` });
-    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT return submission");
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT return submission", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-start-submission.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -25,11 +25,11 @@ export async function fillInVat(page, hmrcVatNumber, hmrcVatPeriodKey, hmrcVatDu
     // Fill out the VAT form using the correct field IDs from submitVat.html
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-submission.png` });
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number");
+    await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
     await page.waitForTimeout(100);
-    await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key");
+    await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key", { screenshotPath });
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount");
+    await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount", { screenshotPath });
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-submission.png` });
     await expect(page.locator("#submitBtn")).toBeVisible();
@@ -47,7 +47,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
     await page.focus("#submitBtn");
     // Expect the HMRC permission page to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
-    await loggedClick(page, "#submitBtn", "Submitting VAT form");
+    await loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submission-submit.png` });
     const applicationName = "DIY Accounting Submit";
     await page.waitForLoadState("networkidle");
@@ -181,7 +181,7 @@ export async function initVatObligations(page, screenshotPath = defaultScreensho
   await test.step(`The user navigates to ${activityButtonText} and sees the obligations form`, async () => {
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations.png` });
-    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Obligations");
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Obligations", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -204,14 +204,14 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
     const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
 
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");
+    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-fill-in.png` });
     await page.waitForTimeout(50);
     // Fill optional filters (map to actual form field IDs)
-    await loggedFill(page, "#fromDate", from, "Entering from date");
+    await loggedFill(page, "#fromDate", from, "Entering from date", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-fill-in.png` });
     await page.waitForTimeout(50);
-    await loggedFill(page, "#toDate", to, "Entering to date");
+    await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
     await page.waitForTimeout(50);
     await page.focus("#status");
@@ -240,7 +240,7 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
     // Take a focus change screenshot between last cell entry and submit
     await page.focus("#retrieveBtn");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png` });
-    await loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form");
+    await loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-submit.png` });
@@ -280,7 +280,7 @@ export async function initViewVatReturn(page, screenshotPath = defaultScreenshot
   await test.step(`The user navigates to ${activityButtonText} and sees the return form`, async () => {
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-init.png` });
-    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting View VAT Return");
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting View VAT Return", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-init.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -297,10 +297,10 @@ export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = D
   await test.step("The user fills in the view VAT return form with VRN and period key", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-fill-in.png` });
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number");
+    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-fill-in.png` });
     await page.waitForTimeout(100);
-    await loggedFill(page, "#periodKey", periodKey, "Entering period key");
+    await loggedFill(page, "#periodKey", periodKey, "Entering period key", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-fill-in.png` });
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-view-vat-fill-in-filled.png` });
@@ -313,7 +313,7 @@ export async function submitViewVatReturnForm(page, screenshotPath = defaultScre
     // Focus change before submit
     await page.focus("#retrieveBtn");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-submit.png` });
-    await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form");
+    await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-submit.png` });
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-submit.png` });

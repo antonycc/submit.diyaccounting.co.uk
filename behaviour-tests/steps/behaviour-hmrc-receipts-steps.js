@@ -9,13 +9,13 @@ export async function goToReceiptsPageUsingHamburgerMenu(page, screenshotPath = 
   await test.step("The user opens the menu to view receipts and navigates to the Receipts page", async () => {
     console.log("Opening hamburger menu to go to receipts...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hamburger.png` });
-    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu for receipts");
+    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu for receipts", { screenshotPath });
     await page.waitForTimeout(500);
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-02-hamburger-menu-receipts.png`,
     });
     await expect(page.getByRole("link", { name: "Receipts" })).toBeVisible({ timeout: 16000 });
-    await loggedClick(page, "a:has-text('Receipts')", "Clicking Receipts in hamburger menu");
+    await loggedClick(page, "a:has-text('Receipts')", "Clicking Receipts in hamburger menu", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-hamburger-clicked.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -40,7 +40,7 @@ export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = de
     if (hasReceipts) {
       console.log("Found receipts, clicking on first receipt...");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-receipts-page-found.png` });
-      await firstReceiptLink.click();
+      await loggedClick(page, firstReceiptLink, "Open first receipt", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-receipts-page-clicked.png` });
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(500);
