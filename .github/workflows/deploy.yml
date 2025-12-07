@@ -55,6 +55,22 @@ on:
           - 'false'
         required: false
         default: 'false'
+      deploymentMode:
+        description: 'Deployment mode: serverless (Lambda) or monolith (App Runner)'
+        type: choice
+        options:
+          - 'serverless'
+          - 'monolith'
+        required: false
+        default: 'serverless'
+      testMode:
+        description: 'Test mode: local (separate services) or docker (containerized)'
+        type: choice
+        options:
+          - 'local'
+          - 'docker'
+        required: false
+        default: 'local'
   push:
     branches:
       - '**'
@@ -105,6 +121,8 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
   GITHUB_REF_TO_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+  DEPLOYMENT_MODE: ${{ inputs.deploymentMode || 'serverless' }}
+  TEST_MODE: ${{ inputs.testMode || 'local' }}
 
 jobs:
 
@@ -232,7 +250,11 @@ jobs:
 
       - name: Run behaviour tests - bundle
         run: |
-          npm run test:bundleBehaviour-proxy || exit_code=$? \
+          if [ "${{ inputs.testMode || 'local' }}" = "docker" ]; then
+            npm run test:bundleBehaviour-docker || exit_code=$?
+          else
+            npm run test:bundleBehaviour-proxy || exit_code=$?
+          fi \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -241,6 +263,7 @@ jobs:
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          TEST_MODE: ${{ inputs.testMode || 'local' }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -296,7 +319,11 @@ jobs:
 
       - name: Run behaviour tests - obligation
         run: |
-          npm run test:obligationBehaviour-proxy || exit_code=$? \
+          if [ "${{ inputs.testMode || 'local' }}" = "docker" ]; then
+            npm run test:obligationBehaviour-docker || exit_code=$?
+          else
+            npm run test:obligationBehaviour-proxy || exit_code=$?
+          fi \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -308,6 +335,7 @@ jobs:
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           # HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          TEST_MODE: ${{ inputs.testMode || 'local' }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -363,7 +391,11 @@ jobs:
 
       - name: Run behaviour tests - submit vat
         run: |
-          npm run test:submitVatBehaviour-proxy || exit_code=$? \
+          if [ "${{ inputs.testMode || 'local' }}" = "docker" ]; then
+            npm run test:submitVatBehaviour-docker || exit_code=$?
+          else
+            npm run test:submitVatBehaviour-proxy || exit_code=$?
+          fi \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
           ;
@@ -375,6 +407,7 @@ jobs:
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           #HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          TEST_MODE: ${{ inputs.testMode || 'local' }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
@@ -957,8 +990,82 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
+  deploy-container:
+    name: 'deploy container (monolith)'
+    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode == 'monolith' || env.DEPLOYMENT_MODE == 'monolith') }}
+    needs:
+      - names
+      - skip-deploy-check
+      - deploy-dev
+      - mvn-package
+      - push-images
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy Container Stack (CDK)
+        run: |
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-container \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.deployment-name }}-container-* \
+                --require-approval never \
+                --ci true \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-container.out/cdk-outputs-container.json \
+          && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
+          DEPLOYMENT_MODE: 'monolith'
+
   deploy-auth:
     name: 'deploy auth'
+    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
     needs:
       - names
       - skip-deploy-check
@@ -1035,6 +1142,7 @@ jobs:
 
   deploy-hmrc:
     name: 'deploy hmrc'
+    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
     needs:
       - names
       - skip-deploy-check
@@ -1112,6 +1220,7 @@ jobs:
 
   deploy-account:
     name: 'deploy account'
+    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
     needs:
       - names
       - skip-deploy-check
@@ -1191,6 +1300,7 @@ jobs:
 
   deploy-api:
     name: 'deploy api'
+    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
     needs:
       - names
       - skip-deploy-check
@@ -1283,10 +1393,6 @@ jobs:
       - skip-deploy-check
       - mvn-package
       - push-images
-      - deploy-auth
-      - deploy-hmrc
-      - deploy-account
-      - deploy-api
     runs-on: ubuntu-24.04
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
