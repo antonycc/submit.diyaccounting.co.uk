@@ -33,6 +33,10 @@ export async function fillInVat(page, hmrcVatNumber, hmrcVatPeriodKey, hmrcVatDu
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-submission.png` });
     await expect(page.locator("#submitBtn")).toBeVisible();
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-submission-pagedown.png` });
   });
 }
 
@@ -101,6 +105,11 @@ export async function completeVat(page, baseUrl, screenshotPath = defaultScreens
 
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-complete-vat-waiting.png` });
 
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-complete-vat-pagedown.png` });
+
       // if (checkServersAreRunning) {
       //  await checkServersAreRunning();
       // }
@@ -111,22 +120,26 @@ export async function completeVat(page, baseUrl, screenshotPath = defaultScreens
         const currentUrl = page.url();
         const maybeSlash = baseUrl.endsWith("/") ? "" : "/";
         if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
-          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-complete-vat-going-back.png` });
+          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-complete-vat-going-back.png` });
           console.log(`Navigating back to submitVat.html from ${currentUrl}`);
           await page.goto(`${baseUrl}${maybeSlash}activities/submitVat.html`);
           await page.waitForLoadState("networkidle");
         } else if (currentUrl.includes("chrome-error://")) {
           console.log("Chrome error page detected, navigating directly to submitVat.html");
-          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-complete-vat-error.png` });
+          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-complete-vat-error.png` });
           await page.goto(`${baseUrl}${maybeSlash}activities/submitVat.html`);
           await page.waitForLoadState("networkidle");
         }
       }
 
       await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-0-receipt.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
       await page.waitForTimeout(500);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-complete-vat-receipt.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-complete-vat-pagedown.png` });
     },
     { timeout: 40000 },
   );
@@ -151,6 +164,11 @@ export async function verifyVatSubmission(page, screenshotPath = defaultScreensh
     // Verify the form is hidden after successful submission
     await expect(page.locator("#vatForm")).toBeHidden();
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-verify-vat.png` });
+
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-verify-vat-pagedown.png` });
 
     console.log("VAT submission flow completed successfully");
   });
@@ -196,17 +214,23 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
     await loggedFill(page, "#toDate", to, "Entering to date");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
     await page.waitForTimeout(50);
+    await page.focus("#status");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-pre-status-fill-in.png` });
     if (status) {
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-fill-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
       await page.selectOption("#status", String(status));
     }
     if (testScenario) {
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-fill-in.png` });
       await page.selectOption("#testScenario", String(testScenario));
     }
 
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-fill-in.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-fill-in-pagedown.png` });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -220,6 +244,10 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-submit.png` });
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-submit-pagedown.png` });
   });
 }
 
@@ -236,11 +264,12 @@ export async function verifyVatObligationsResults(page, screenshotPath = default
     await expect(obligationsTable).toBeVisible();
 
     console.log("VAT obligations retrieval completed successfully");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-success.png` });
 
-    // If results likely scroll, capture a pagedown
+    // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-results-pagedown.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-results-pagedown.png` });
   });
 }
 
