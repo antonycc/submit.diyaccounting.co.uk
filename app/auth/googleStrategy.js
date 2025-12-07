@@ -21,16 +21,26 @@ export async function configureGooglePassport() {
   // Get Google OAuth credentials
   const clientID = process.env.GOOGLE_CLIENT_ID;
   if (!clientID) {
-    throw new Error("GOOGLE_CLIENT_ID environment variable is required");
+    logger.warn("GOOGLE_CLIENT_ID not set - OAuth will not be available");
+    logger.info("For testing without OAuth, you can skip authentication");
+    return; // Skip OAuth configuration in test/dev mode
   }
 
   const clientSecretParam = process.env.GOOGLE_CLIENT_SECRET_PARAM;
   if (!clientSecretParam) {
-    throw new Error("GOOGLE_CLIENT_SECRET_PARAM environment variable is required");
+    logger.warn("GOOGLE_CLIENT_SECRET_PARAM not set - OAuth will not be available");
+    return; // Skip OAuth configuration in test/dev mode
   }
 
   // Fetch client secret from Parameter Store
-  const clientSecret = await getSecret(clientSecretParam);
+  let clientSecret;
+  try {
+    clientSecret = await getSecret(clientSecretParam);
+  } catch (error) {
+    logger.warn(`Failed to fetch Google client secret from Parameter Store: ${error.message}`);
+    logger.info("OAuth will not be available - continuing without authentication");
+    return; // Skip OAuth configuration if secret fetch fails
+  }
 
   const baseUrl = process.env.APP_BASE_URL || process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000";
   const callbackURL = `${baseUrl}/auth/google/callback`;

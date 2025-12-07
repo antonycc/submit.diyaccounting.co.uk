@@ -76,7 +76,10 @@
     "docker:stop-tests": "./scripts/docker-stop-tests.sh",
     "test:bundleBehaviour-docker": "npm run docker:start-for-tests && npm run test:bundleBehaviour-proxy; EXIT_CODE=$?; npm run docker:stop-tests; exit $EXIT_CODE",
     "test:obligationBehaviour-docker": "npm run docker:start-for-tests && npm run test:obligationBehaviour-proxy; EXIT_CODE=$?; npm run docker:stop-tests; exit $EXIT_CODE",
-    "test:submitVatBehaviour-docker": "npm run docker:start-for-tests && npm run test:submitVatBehaviour-proxy; EXIT_CODE=$?; npm run docker:stop-tests; exit $EXIT_CODE"
+    "test:submitVatBehaviour-docker": "npm run docker:start-for-tests && npm run test:submitVatBehaviour-proxy; EXIT_CODE=$?; npm run docker:stop-tests; exit $EXIT_CODE",
+    "cdk:synth-container": "cd cdk-container && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation && cd ..",
+    "cdk-container-ci": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=ci npm run cdk:synth-container && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests",
+    "cdk-container-prod": "./mvnw clean verify -DskipTests && ENVIRONMENT_NAME=prod npm run cdk:synth-container && git restore web/public/submit.deployment web/public/submit.env || true && npm run clean && ./mvnw clean compile -DskipTests"
   },
   "keywords": [],
   "author": "",

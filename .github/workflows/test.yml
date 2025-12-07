@@ -254,6 +254,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -295,10 +298,21 @@ jobs:
             -e DIY_SUBMIT_BASE_URL=http://localhost:3000 \
             submit-monolith:test
           
+          # Give container a moment to start
+          sleep 2
+          
+          # Check if container is still running
+          if ! docker ps | grep -q submit-test-container; then
+            echo "Container failed to start or exited immediately"
+            docker logs submit-test-container
+            exit 1
+          fi
+          
           # Wait for container to be healthy (max 30 seconds)
           for i in {1..30}; do
             if curl -f http://localhost:3000/health > /dev/null 2>&1; then
               echo "Container is healthy!"
+              docker logs submit-test-container | tail -20
               exit 0
             fi
             echo "Waiting for container... ($i/30)"
@@ -306,7 +320,10 @@ jobs:
           done
           
           echo "Container failed to become healthy"
+          echo "=== Container logs ==="
           docker logs submit-test-container
+          echo "=== Container status ==="
+          docker ps -a | grep submit-test-container
           exit 1
 
       - name: Cleanup
@@ -423,3 +440,108 @@ jobs:
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+  npm-test-cdk-container-ci:
+    name: 'npm test cdk container (CI)'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: verify
+        id: mvn-verify
+        shell: bash
+        run: |
+          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
+        id: self-destruct-start
+        shell: bash
+        run: |
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
+
+      - name: test cdk container
+        id: test-cdk-container
+        shell: bash
+        run: npm run cdk-container-ci
+        env:
+          ENVIRONMENT_NAME: 'ci'
+          DEPLOYMENT_NAME: 'ci'
+          DEPLOYMENT_MODE: 'monolith'
+          SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-verify.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
+          SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
+
+  npm-test-cdk-container-prod:
+    name: 'npm test cdk container (prod)'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: verify
+        id: mvn-verify
+        shell: bash
+        run: |
+          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
+        id: self-destruct-start
+        shell: bash
+        run: |
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
+
+      - name: test cdk container
+        id: test-cdk-container
+        shell: bash
+        run: npm run cdk-container-prod
+        env:
+          ENVIRONMENT_NAME: 'prod'
+          DEPLOYMENT_NAME: 'prod'
+          DEPLOYMENT_MODE: 'monolith'
+          SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
