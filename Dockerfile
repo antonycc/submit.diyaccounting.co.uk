@@ -2,9 +2,6 @@
 # Supports both Lambda and monolith (App Runner) deployment modes
 FROM public.ecr.aws/lambda/nodejs:22
 
-# Install Java for DynamoDB Local (required for monolith mode)
-RUN yum install -y java-17-amazon-corretto wget unzip && yum clean all
-
 WORKDIR /var/task
 
 # Copy package files and install dependencies
@@ -22,16 +19,6 @@ COPY app/index.js app/index.js
 
 # Copy static web files (for monolith mode)
 COPY web/public web/public
-
-# Download DynamoDB Local for persistence in monolith mode
-RUN mkdir -p /opt/dynamodb-local && \
-    cd /opt/dynamodb-local && \
-    wget -q https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.tar.gz && \
-    tar -xzf dynamodb_local_latest.tar.gz && \
-    rm dynamodb_local_latest.tar.gz
-
-# Create data directory for DynamoDB Local persistence
-RUN mkdir -p /data/dynamodb
 
 # Copy and make executable the entrypoint script
 COPY docker-entrypoint.sh ./

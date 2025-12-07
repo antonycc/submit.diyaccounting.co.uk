@@ -21,10 +21,10 @@ This repository supports two deployment modes to AWS:
 - **Compute**: AWS App Runner (containerized Node.js)
 - **API Routing**: Express.js in container
 - **Authentication**: Passport.js + Google OAuth (no Cognito)
-- **Database**: DynamoDB Local (in-container) + DynamoDB (for backups)
+- **Database**: DynamoDB (managed, from SubmitEnvironment)
 - **Static Assets**: S3 + CloudFront (same as serverless)
 - **Cost**: Scales to zero when idle, pay per vCPU/memory
-- **Cold Start**: ~5-10 seconds (container startup + DynamoDB Local)
+- **Cold Start**: ~2-5 seconds (container startup)
 - **Scaling**: Automatic, but container-based
 
 ## When to Use Each Mode
@@ -39,9 +39,9 @@ This repository supports two deployment modes to AWS:
 ### Use Monolith Mode When:
 - You want scale-to-zero with a single container
 - You prefer traditional application architecture
-- You want to minimize AWS service dependencies
-- You need local state (DynamoDB Local)
+- You want to share DynamoDB tables across deployments
 - You want simpler deployment (one container vs many Lambdas)
+- You prefer a single service boundary
 
 ## Architecture Comparison
 
@@ -54,9 +54,9 @@ CloudFront → API Gateway → Lambda Functions → DynamoDB
 
 ### Monolith Architecture
 ```
-CloudFront → App Runner Container → DynamoDB Local (primary)
-                 ↓                       ↓
-         Passport.js                DynamoDB (backup)
+CloudFront → App Runner Container → DynamoDB (from SubmitEnvironment)
+                 ↓
+         Passport.js
                  ↓
          Google OAuth
 ```
@@ -175,8 +175,6 @@ npx dotenv -e ../.env.prod -- npx cdk deploy --all
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID | From Google Console |
 | `GOOGLE_CLIENT_SECRET_PARAM` | Parameter Store name for secret | `/prod/submit/google/client_secret` |
 | `COOKIE_SECRET_PARAM` | Parameter Store name for cookie secret | `/prod/submit/cookie_secret` |
-| `DYNAMODB_LOCAL_PORT` | Port for DynamoDB Local | `8000` |
-| `DYNAMODB_LOCAL_DATA_PATH` | Path for persistent data | `/data/dynamodb` |
 | `PORT` | Express server port | `3000` |
 
 ### Shared Environment Variables
@@ -199,14 +197,11 @@ Both modes use these variables:
 - Point-in-time recovery available
 
 ### Monolith Mode
-- Primary: DynamoDB Local (in-container, ephemeral)
-- Secondary: AWS DynamoDB (for backup/sync)
-- Data path: `/data/dynamodb` (can be mounted volume)
-
-**Note**: For production monolith deployments, consider:
-1. Using EFS for persistent `/data/dynamodb` storage
-2. Periodic exports to S3
-3. Sync to AWS DynamoDB for disaster recovery
+- All data stored in AWS DynamoDB (same as serverless)
+- Uses the same tables from SubmitEnvironment deployment
+- Shares data plane with serverless mode
+- Automatic backups via AWS Backup
+- Point-in-time recovery available
 
 ## Security Considerations
 
@@ -265,20 +260,20 @@ Both modes use these variables:
 
 ## Migration Between Modes
 
+Both modes share the same DynamoDB tables from SubmitEnvironment, making migration straightforward:
+
 ### From Serverless to Monolith
-1. Export DynamoDB data
-2. Deploy container stack
-3. Import data to DynamoDB Local
-4. Update DNS to point to new CloudFront distribution
-5. Decommission Lambda stacks (optional)
+1. Deploy container stack (uses existing DynamoDB tables)
+2. Update DNS to point to new CloudFront distribution
+3. Decommission Lambda stacks (optional)
 
 ### From Monolith to Serverless
-1. Export DynamoDB Local data
-2. Import to AWS DynamoDB
-3. Deploy serverless stacks
-4. Configure Cognito user pool
-5. Update DNS to point to serverless CloudFront
-6. Decommission container stack (optional)
+1. Deploy serverless stacks (uses existing DynamoDB tables)
+2. Configure Cognito user pool
+3. Update DNS to point to serverless CloudFront
+4. Decommission container stack (optional)
+
+**Note**: User OAuth tokens are stored differently (Cognito vs DynamoDB), so users will need to re-authenticate after migration.
 
 ## Troubleshooting
 
@@ -291,14 +286,14 @@ Both modes use these variables:
 ### Monolith Mode
 - Check App Runner service logs in CloudWatch
 - Verify container health check endpoint `/health`
-- Check DynamoDB Local startup logs
 - Verify Parameter Store secrets are accessible
-- Check IAM role permissions
+- Check IAM role permissions for DynamoDB access
 - Verify Google OAuth redirect URIs
+- Check DynamoDB table connectivity
 
 ## Further Reading
 
 - [AWS App Runner Documentation](https://docs.aws.amazon.com/apprunner/)
-- [DynamoDB Local Documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html)
+- [Amazon DynamoDB Documentation](https://docs.aws.amazon.com/dynamodb/)
 - [Passport.js Documentation](http://www.passportjs.org/)
 - [Express.js Best Practices](https://expressjs.com/en/advanced/best-practice-security.html)

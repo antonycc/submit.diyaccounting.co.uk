@@ -27,8 +27,8 @@ import software.constructs.Construct;
 
 /**
  * ContainerStack provisions an AWS App Runner service for the monolith deployment mode.
- * This stack runs the entire application as a single container with DynamoDB Local,
- * Google OAuth via passport.js, and secrets from Parameter Store.
+ * This stack runs the entire application as a single container that connects to AWS DynamoDB
+ * (from SubmitEnvironment), uses Google OAuth via passport.js, and loads secrets from Parameter Store.
  */
 public class ContainerStack extends Stack {
 
@@ -189,12 +189,10 @@ public class ContainerStack extends Stack {
         environmentVariables.put("DEPLOYMENT_NAME", props.deploymentName());
         environmentVariables.put("AWS_REGION", props.getEnv().getRegion());
 
-        // DynamoDB configuration
+        // DynamoDB configuration - uses AWS DynamoDB from SubmitEnvironment
         environmentVariables.put("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName);
         environmentVariables.put("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         environmentVariables.put("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", props.sharedNames().hmrcApiRequestsTableName);
-        environmentVariables.put("DYNAMODB_LOCAL_PORT", "8000");
-        environmentVariables.put("DYNAMODB_LOCAL_DATA_PATH", "/data/dynamodb");
 
         // Google OAuth configuration
         environmentVariables.put("GOOGLE_CLIENT_ID", props.googleClientId());

@@ -9,6 +9,11 @@
 // 4. Add security headers middleware (e.g., helmet)
 // 5. Consider adding request validation and sanitization
 // 6. Rate limiting is currently handled at the AWS WAF level (EdgeStack)
+//
+// DATA STORAGE: This monolith uses AWS DynamoDB for all persistence:
+// - User sessions stored in DynamoDB (via connect-dynamodb or cookie-session)
+// - OAuth tokens stored in DynamoDB via dynamoDbUserRepository
+// - Application data in DynamoDB tables from SubmitEnvironment
 
 import path from "path";
 import express from "express";
@@ -17,7 +22,6 @@ import passport from "passport";
 import { fileURLToPath } from "url";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { createLogger } from "../lib/logger.js";
-import { bootstrapDynamoLocal } from "../lib/startDynamoLocal.js";
 import { configureGooglePassport, ensureAuthenticated, getUserFromRequest } from "../auth/googleStrategy.js";
 import { getSecret } from "../lib/parameterStore.js";
 
@@ -46,19 +50,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  */
 async function main() {
   logger.info("Starting monolith application...");
+  logger.info("Using AWS DynamoDB for all data persistence (tables from SubmitEnvironment)");
 
-  // Step 1: Bootstrap DynamoDB Local
-  logger.info("Bootstrapping DynamoDB Local...");
-  const dynamoLocal = await bootstrapDynamoLocal({
-    port: parseInt(process.env.DYNAMODB_LOCAL_PORT || "8000", 10),
-    dbPath: process.env.DYNAMODB_LOCAL_DATA_PATH || "/data/dynamodb",
-  });
-
-  // Step 2: Configure Google OAuth with Passport
+  // Step 1: Configure Google OAuth with Passport
   logger.info("Configuring Google OAuth...");
   await configureGooglePassport();
 
-  // Step 3: Create Express application
+  // Step 2: Create Express application
   const app = express();
 
   // Parse request bodies
@@ -88,7 +86,9 @@ async function main() {
     next();
   });
 
-  // Step 4: Configure session management
+  // Step 3: Configure session management
+  // Note: Using cookie-session for simplicity. For production at scale,
+  // consider using connect-dynamodb to store sessions in DynamoDB
   logger.info("Configuring session management...");
   const cookieSecretParam = process.env.COOKIE_SECRET_PARAM;
   let cookieSecret = "dev-secret-change-in-production";
@@ -115,11 +115,11 @@ async function main() {
     }),
   );
 
-  // Step 5: Initialize Passport
+  // Step 4: Initialize Passport
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Step 6: Set up authentication routes
+  // Step 5: Set up authentication routes
   app.get("/auth/google", passport.authenticate("google"));
 
   app.get(
@@ -151,10 +151,10 @@ async function main() {
     }
   });
 
-  // Step 7: Serve static files
+  // Step 6: Serve static files
   app.use(express.static(path.join(__dirname, "../../web/public")));
 
-  // Step 8: Register API endpoints
+  // Step 7: Register API endpoints
   // Public endpoints (no authentication required)
   catalogGetApiEndpoint(app);
   hmrcAuthUrlGetApiEndpoint(app);
@@ -175,7 +175,7 @@ async function main() {
   hmrcReceiptGetApiEndpoint(app);
   hmrcHttpProxyEndpoint(app);
 
-  // Step 9: Health check endpoint
+  // Step 8: Health check endpoint
   app.get("/health", (req, res) => {
     res.json({
       status: "ok",
@@ -192,12 +192,12 @@ async function main() {
     });
   });
 
-  // Step 10: Fallback to index.html for SPA routing
+  // Step 9: Fallback to index.html for SPA routing
   app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, "../../web/public/index.html"));
   });
 
-  // Step 11: Start the server
+  // Step 10: Start the server
   const port = parseInt(process.env.PORT || process.env.TEST_SERVER_HTTP_PORT || "3000", 10);
   const server = app.listen(port, "0.0.0.0", () => {
     const message = `Monolith server listening at http://0.0.0.0:${port}`;
@@ -205,14 +205,11 @@ async function main() {
     logger.info(message);
   });
 
-  // Step 12: Handle graceful shutdown
+  // Step 11: Handle graceful shutdown
   const gracefulShutdown = async (signal) => {
     logger.info(`\nReceived ${signal}. Shutting down gracefully...`);
-    server.close(async () => {
+    server.close(() => {
       logger.info("HTTP server closed");
-      if (dynamoLocal && dynamoLocal.stop) {
-        await dynamoLocal.stop();
-      }
       process.exit(0);
     });
 
