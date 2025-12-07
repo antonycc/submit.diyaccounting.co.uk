@@ -117,6 +117,23 @@ async function main() {
     next();
   });
 
+  // Health check endpoint (before session middleware to avoid DynamoDB dependency)
+  app.get("/health", (req, res) => {
+    res.json({
+      status: "ok",
+      mode: "monolith",
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "ok",
+      mode: "monolith",
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // CORS middleware for local development
   app.use((req, res, next) => {
     const origin = req.headers.origin;
@@ -157,23 +174,33 @@ async function main() {
   const sessionTableName = process.env.SESSIONS_DYNAMODB_TABLE_NAME || process.env.SESSIONS_TABLE_NAME || "submit-sessions";
   const dynamoDBEndpoint = process.env.DYNAMODB_ENDPOINT;
 
+  // Create DynamoDB client
+  const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
+  const dynamoClientConfig = {
+    region: process.env.AWS_REGION || "us-east-1",
+  };
+
+  // Add endpoint for local development (dynalite)
+  if (dynamoDBEndpoint) {
+    dynamoClientConfig.endpoint = dynamoDBEndpoint;
+    dynamoClientConfig.credentials = {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || "dummy",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "dummy",
+    };
+    logger.info(`Using DynamoDB endpoint: ${dynamoDBEndpoint}`);
+  }
+
+  const dynamoClient = new DynamoDBClient(dynamoClientConfig);
+
+  logger.info(`Using DynamoDB session table: ${sessionTableName}`);
+
   const storeOptions = {
+    client: dynamoClient,
     table: sessionTableName,
     hashKey: "sessionId",
     prefix: "sess:",
     ttl: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   };
-
-  // Add endpoint for local development (dynalite)
-  if (dynamoDBEndpoint) {
-    storeOptions.client = {
-      endpoint: dynamoDBEndpoint,
-      region: process.env.AWS_REGION || "us-east-1",
-    };
-    logger.info(`Using DynamoDB endpoint: ${dynamoDBEndpoint}`);
-  }
-
-  logger.info(`Using DynamoDB session table: ${sessionTableName}`);
 
   app.use(
     session({
@@ -260,24 +287,7 @@ async function main() {
   hmrcReceiptGetApiEndpoint(app);
   hmrcHttpProxyEndpoint(app);
 
-  // Step 8: Health check endpoint
-  app.get("/health", (req, res) => {
-    res.json({
-      status: "ok",
-      mode: "monolith",
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  app.get("/api/health", (req, res) => {
-    res.json({
-      status: "ok",
-      mode: "monolith",
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  // Step 9: Fallback to index.html for SPA routing
+  // Step 8: Fallback to index.html for SPA routing
   app.get(/.*/, (req, res) => {
     res.sendFile(path.join(__dirname, "../../web/public/index.html"));
   });

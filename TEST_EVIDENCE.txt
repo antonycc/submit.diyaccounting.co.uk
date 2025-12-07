@@ -1,0 +1,92 @@
+=== Docker Container Test Evidence ===
+Date: Sun Dec  7 18:06:52 UTC 2025
+Commit: 8de98fa0104f314565b6315921b6c7d49a5d8de1
+
+1. Building Docker image...
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.05kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for public.ecr.aws/lambda/nodejs:22
+#2 DONE 0.2s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [ 1/14] FROM public.ecr.aws/lambda/nodejs:22@sha256:26c5841c166143d02d998956c48a27812c1bca44295ff09f326e024000179b9a
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 8.21kB done
+#5 DONE 0.0s
+
+#6 [ 2/14] WORKDIR /var/task
+#6 CACHED
+
+#7 [ 3/14] COPY package.json package-lock.json product-catalogue.toml ./
+#7 CACHED
+
+#8 [10/14] COPY app/auth app/auth
+#8 CACHED
+
+#9 [ 6/14] COPY app/functions app/functions
+#9 CACHED
+
+#10 [ 4/14] RUN npm ci --omit=dev
+#10 CACHED
+
+#11 [ 5/14] COPY app/lib app/lib
+#11 CACHED
+
+#12 [12/14] COPY web/public web/public
+#12 CACHED
+
+#13 [ 9/14] COPY app/bin app/bin
+#13 CACHED
+
+#14 [13/14] COPY docker-entrypoint.sh ./
+#14 CACHED
+
+#15 [ 7/14] COPY app/data app/data
+#15 CACHED
+
+#16 [11/14] COPY app/index.js app/index.js
+#16 CACHED
+
+#17 [ 8/14] COPY app/services app/services
+#17 CACHED
+
+#18 [14/14] RUN chmod +x docker-entrypoint.sh
+#18 CACHED
+
+#19 exporting to image
+#19 exporting layers done
+#19 writing image sha256:aa07da870f766e1ec733eea8c6c2dfc1d69ca4e666d18cb545c9a74d75857a13 done
+#19 naming to docker.io/library/submit-monolith:test done
+#19 DONE 0.0s
+
+2. Starting dynalite...
+Dynalite started with PID 6654
+
+3. Starting Docker container...
+Container ID: ed526c76b2c1999258fb1f93afebc3ecede3c6c8a61eedec3e6f40aac788f4a1
+
+4. Testing health endpoint...
+✅ Health check PASSED at attempt 1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    72  100    72    0     0  10048      0 --:--:-- --:--:-- --:--:-- 10285
+{"status":"ok","mode":"monolith","timestamp":"2025-12-07T18:07:04.550Z"}{"level":30,"source":"app/auth/googleStrategy.js","time":"2025-12-07T18:06:57.853Z","msg":"Configuring Google OAuth strategy for passport.js"}
+{"level":40,"source":"app/auth/googleStrategy.js","time":"2025-12-07T18:06:57.853Z","msg":"GOOGLE_CLIENT_ID not set - OAuth will not be available"}
+{"level":30,"source":"app/auth/googleStrategy.js","time":"2025-12-07T18:06:57.853Z","msg":"For testing without OAuth, you can skip authentication"}
+{"level":30,"source":"app/bin/monolith.js","time":"2025-12-07T18:06:57.859Z","msg":"Configuring DynamoDB session store..."}
+{"level":40,"source":"app/bin/monolith.js","time":"2025-12-07T18:06:57.859Z","msg":"SESSION_SECRET_PARAM not set, using default session secret (not secure for production)"}
+{"level":30,"source":"app/bin/monolith.js","time":"2025-12-07T18:06:57.859Z","msg":"Using DynamoDB endpoint: http://host.docker.internal:9000"}
+{"level":30,"source":"app/bin/monolith.js","time":"2025-12-07T18:06:57.861Z","msg":"Using DynamoDB session table: test-submit-sessions"}
+Monolith server listening at http://0.0.0.0:3000
+{"level":30,"source":"app/bin/monolith.js","time":"2025-12-07T18:06:57.869Z","msg":"Monolith server listening at http://0.0.0.0:3000"}
+{"level":30,"source":"app/bin/monolith.js","time":"2025-12-07T18:07:04.550Z","msg":"HTTP GET /health"}
+submit-test-container

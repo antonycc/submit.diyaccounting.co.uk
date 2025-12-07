@@ -212,6 +212,41 @@ export async function ensureProxyStateTableExists(tableName, endpoint) {
   }
 }
 
+// Create sessions table for monolith session storage if it doesn't exist
+export async function ensureSessionsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring sessions table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [{ AttributeName: "sessionId", KeyType: "HASH" }],
+          AttributeDefinitions: [{ AttributeName: "sessionId", AttributeType: "S" }],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const bundleTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
@@ -240,6 +275,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     if (proxyStateTableName) {
       await ensureProxyStateTableExists(proxyStateTableName, endpoint);
+    }
+    
+    // Create sessions table for monolith mode
+    const sessionsTableName = process.env.SESSIONS_DYNAMODB_TABLE_NAME || process.env.SESSIONS_TABLE_NAME;
+    if (sessionsTableName) {
+      await ensureSessionsTableExists(sessionsTableName, endpoint);
     }
 
     logger.info("DynamoDB Local server is running. Press CTRL-C to stop.");
