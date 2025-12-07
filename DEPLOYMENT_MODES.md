@@ -18,14 +18,16 @@ This repository supports two deployment modes to AWS:
 - **Scaling**: Automatic, concurrent execution
 
 ### Monolith Mode
-- **Compute**: AWS App Runner (containerized Node.js)
+- **Compute**: AWS App Runner (containerized Node.js 22)
 - **API Routing**: Express.js in container
 - **Authentication**: Passport.js + Google OAuth (no Cognito)
-- **Database**: DynamoDB (managed, from SubmitEnvironment)
+- **Sessions**: DynamoDB-backed (connect-dynamodb with TTL)
+- **Database**: DynamoDB (managed, shared from SubmitEnvironment)
 - **Static Assets**: S3 + CloudFront (same as serverless)
+- **Security**: Helmet, rate limiting, CSRF protection, request validation
 - **Cost**: Scales to zero when idle, pay per vCPU/memory
 - **Cold Start**: ~2-5 seconds (container startup)
-- **Scaling**: Automatic, but container-based
+- **Scaling**: Horizontal auto-scaling with stateless containers
 
 ## When to Use Each Mode
 
@@ -188,6 +190,7 @@ Both modes use these variables:
 - `BUNDLE_DYNAMODB_TABLE_NAME` - Bundles table name
 - `RECEIPTS_DYNAMODB_TABLE_NAME` - Receipts table name
 - `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME` - API requests table name
+- `SESSIONS_DYNAMODB_TABLE_NAME` - Sessions table name (monolith mode)
 
 ## Data Persistence
 
@@ -198,8 +201,14 @@ Both modes use these variables:
 
 ### Monolith Mode
 - All data stored in AWS DynamoDB (same as serverless)
-- Uses the same tables from SubmitEnvironment deployment
-- Shares data plane with serverless mode
+- Uses the same tables from SubmitEnvironment deployment:
+  - **Bundles** - User activities and receipts
+  - **Receipts** - HMRC submission receipts
+  - **HMRC API Requests** - Audit trail of HMRC interactions
+  - **Sessions** - User session data (connect-dynamodb)
+- Shares data plane with serverless mode (easy migration between modes)
+- Session persistence: DynamoDB-backed with automatic TTL cleanup (24 hours)
+- Stateless containers: All session state in DynamoDB for horizontal scaling
 - Automatic backups via AWS Backup
 - Point-in-time recovery available
 
@@ -212,20 +221,29 @@ Both modes use these variables:
 - WAF rules at CloudFront
 
 ### Monolith Mode
-- IAM role for App Runner instance
-- Passport.js session management
+- IAM role for App Runner instance (granular, table-specific permissions)
+- Passport.js session management with DynamoDB backend
 - Express middleware for authorization
 - WAF rules at CloudFront
-- **Note**: Add rate limiting middleware for production
+- **✅ Production-grade security implemented**:
+  - ✅ Rate limiting (express-rate-limit): 100 req/15min per IP, 10 req/15min for auth
+  - ✅ Security headers (helmet): CSP, HSTS, X-Frame-Options, etc.
+  - ✅ CSRF protection: Custom token-based validation for state-changing requests
+  - ✅ Request validation: 1MB body size limit, input parsing security
+  - ✅ Session security: DynamoDB-backed sessions with 24hr TTL
+  - ✅ HTTPS only: App Runner enforces TLS 1.2+
+  - ✅ IAM permissions: Scoped to specific table ARNs (no wildcards)
 
 **Production Security Checklist for Monolith**:
-- [ ] Add rate limiting (express-rate-limit)
-- [ ] Add security headers (helmet)
-- [ ] Implement CSRF protection
-- [ ] Add request validation
-- [ ] Configure session timeouts
-- [ ] Enable HTTPS only
-- [ ] Review IAM permissions
+- [x] Rate limiting (express-rate-limit) - **Implemented**
+- [x] Security headers (helmet) - **Implemented**
+- [x] CSRF protection - **Implemented (custom tokens)**
+- [x] Request validation - **Implemented (size limits, parsing)**
+- [x] Session management - **Implemented (DynamoDB-backed with TTL)**
+- [x] HTTPS only - **Enforced by App Runner**
+- [x] IAM permissions - **Reviewed and scoped**
+- [ ] Consider adding additional request validators for specific endpoints
+- [ ] Consider adding express-validator for input sanitization
 
 ## Monitoring and Logging
 
