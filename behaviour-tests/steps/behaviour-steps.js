@@ -31,7 +31,7 @@ export async function goToHomePage(page, screenshotPath = defaultScreenshotPath)
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-page.png` });
     await Promise.all([
       page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
-      loggedClick(page, "button:has-text('Back to Home')", "Back to Home"),
+      loggedClick(page, "button:has-text('Back to Home')", "Back to Home", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-home.png` });
     await page.waitForTimeout(500);
@@ -44,12 +44,12 @@ export async function goToHomePageUsingHamburgerMenu(page, screenshotPath = defa
     // Return to home via hamburger menu
     console.log("Returning to home via hamburger menu...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-hamburger.png` });
-    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu to go home");
+    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu to go home", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home-hamburger-clicked-menu.png` });
     await expect(page.getByRole("link", { name: "Home" })).toBeVisible({ timeout: 10000 });
     await Promise.all([
       page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
-      loggedClick(page, "a:has-text('Home')", "Clicking Home in hamburger menu"),
+      loggedClick(page, "a:has-text('Home')", "Clicking Home in hamburger menu", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-home.png` });
   });
@@ -66,7 +66,7 @@ export async function consentToDataCollection(page, screenshotPath = defaultScre
     if (isConsentVisible) {
       console.log("CloudWatch RUM analytics consent dialog is visible, accepting...");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-consent-dialog.png` });
-      await page.click(consentSelector);
+      await loggedClick(page, consentSelector, "Accept CloudWatch RUM consent", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-consent-accepted.png` });
     } else {
       console.log("CloudWatch RUM analytics consent dialog not shown, continuing...");

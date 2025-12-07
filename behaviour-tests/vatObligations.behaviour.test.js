@@ -330,7 +330,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     await fillInVatObligations(
       page,
       testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Fulfilled", testScenario: "Monthly - Three Met" },
+      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, // status: "Fulfilled", testScenario: "Monthly - Three Met" },
       screenshotPath,
     );
     await submitVatObligationsForm(page, screenshotPath);
