@@ -266,12 +266,14 @@ Behaviour tests use Playwright to test complete user journeys against running in
 | `test:bundleBehaviour-proxy-mock` | `TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:bundleBehaviour` | Replays recorded HTTP interactions |
 | `test:bundleBehaviour-ci` | `npx dotenv -e .env.ci -- npm run test:bundleBehaviour` | Tests against CI environment |
 | `test:bundleBehaviour-prod` | `npx dotenv -e .env.prod -- npm run test:bundleBehaviour` | Tests against production environment |
+| `test:bundleBehaviour-docker` | `npm run docker:start-for-tests && npm run test:bundleBehaviour-proxy ; npm run docker:stop-tests` | **Tests against containerized monolith**: Starts Docker container, runs tests, cleans up |
 | **VAT Obligation Tests** | | |
 | `test:obligationBehaviour` | `playwright test --project=obligation-behaviour-tests` | **VAT obligation journey tests**: Tests retrieving VAT obligations |
 | `test:obligationBehaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:obligationBehaviour ; npm run test-report ...` | Tests locally and generates HTML report |
 | `test:obligationBehaviour-proxy-sandbox` | `HMRC_ACCOUNT=sandbox npm run test:obligationBehaviour-proxy` | Tests with HMRC sandbox API |
 | `test:obligationBehaviour-ci` | `npx dotenv -e .env.ci -- npm run test:obligationBehaviour` | Tests against CI environment |
 | `test:obligationBehaviour-prod` | `npx dotenv -e .env.prod -- npm run test:obligationBehaviour` | Tests against production |
+| `test:obligationBehaviour-docker` | `npm run docker:start-for-tests && npm run test:obligationBehaviour-proxy ; npm run docker:stop-tests` | **Tests against containerized monolith**: Starts Docker container, runs tests, cleans up |
 | **VAT Submission Tests** | | |
 | `test:submitVatBehaviour` | `playwright test --project=submit-vat-behaviour-tests` | **VAT submission journey tests**: Tests full VAT return submission |
 | `test:submitVatBehaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:submitVatBehaviour` | Tests submission locally |
@@ -279,6 +281,24 @@ Behaviour tests use Playwright to test complete user journeys against running in
 | `test:submitVatBehaviour-proxyRunning` | `npx dotenv -e .env.proxyRunning -- npm run test:submitVatBehaviour` | Tests against already-running services |
 | `test:submitVatBehaviour-ci` | `npx dotenv -e .env.ci -- npm run test:submitVatBehaviour` | Tests against CI environment |
 | `test:submitVatBehaviour-prod` | `npx dotenv -e .env.prod -- npm run test:submitVatBehaviour` | Tests against production |
+| `test:submitVatBehaviour-docker` | `npm run docker:start-for-tests && npm run test:submitVatBehaviour-proxy ; npm run docker:stop-tests` | **Tests against containerized monolith**: Starts Docker container, runs tests, cleans up |
+
+#### Docker-Based Behaviour Tests
+
+All behavior tests have Docker variants that run against a containerized monolith instead of native Express server:
+
+- **`test:bundleBehaviour-docker`**: Bundle tests against Docker container
+- **`test:obligationBehaviour-docker`**: Obligation tests against Docker container  
+- **`test:submitVatBehaviour-docker`**: VAT submission tests against Docker container
+
+These variants:
+1. Build the Docker image if needed
+2. Start a detached container with dynalite
+3. Wait for container health check
+4. Run the same behavior tests
+5. Clean up container and dynalite
+
+Use these to verify the monolith deployment mode works correctly before deploying to AWS.
 
 #### Comprehensive Test Suites
 
@@ -330,6 +350,11 @@ Behaviour tests use Playwright to test complete user journeys against running in
 | Script | Command | Description |
 |--------|---------|-------------|
 | `docker:build` | `docker build -t submit-base:latest -f Dockerfile .` | **Build Docker image**: Creates base Docker image with Node.js dependencies and application code |
+| `docker:build-local` | `./scripts/docker-build-local.sh` | **Build monolith Docker image**: Builds image for local containerized development |
+| `docker:run-monolith` | `./scripts/docker-run-monolith.sh` | **Run monolith container**: Starts container with dynalite for local development |
+| `docker:monolith` | `npm run docker:build-local && npm run docker:run-monolith` | **Build and run monolith**: Complete workflow for local containerized development |
+| `docker:start-for-tests` | `./scripts/docker-run-for-tests.sh` | **Start container for tests**: Starts detached container for behavior tests |
+| `docker:stop-tests` | `./scripts/docker-stop-tests.sh` | **Stop test container**: Stops and removes test container and dynalite |
 
 ### Playwright Setup
 
@@ -903,6 +928,46 @@ The application deploys to AWS as a serverless, highly scalable architecture.
 | **ACM** | SSL/TLS certificates | Certificates in us-east-1 for CloudFront |
 | **EventBridge** | Scheduled events | Self-destruct timer for non-prod deployments |
 | **IAM** | Access control | Roles for Lambda execution, GitHub Actions |
+
+### Deployment Modes
+
+The repository supports two deployment modes that share the same codebase and DynamoDB tables:
+
+#### Serverless Mode (Default)
+
+- **Compute**: AWS Lambda functions (one per API endpoint)
+- **Routing**: HTTP API Gateway with Lambda URL targets
+- **Authentication**: AWS Cognito + Google IdP
+- **Cold Start**: ~100-300ms
+- **Scaling**: Automatic, concurrent execution
+- **Cost**: Pay per request, no idle costs
+
+#### Monolith Mode (Containerized)
+
+- **Compute**: AWS App Runner (single container with Express.js)
+- **Routing**: Express.js application routes
+- **Authentication**: Passport.js + Google OAuth (no Cognito)
+- **Cold Start**: ~2-5s (container startup)
+- **Scaling**: Automatic with scale-to-zero
+- **Cost**: Pay per vCPU/memory when running, scales to $0 when idle
+
+Both modes:
+- Share the same DynamoDB tables from SubmitEnvironment
+- Use the same CloudFront distribution and S3 static hosting
+- Use the same business logic (Lambda handlers reused via Express adapter)
+- Support the same HMRC MTD API integration
+
+**When to use Monolith Mode**:
+- Simpler architecture (one container vs many Lambdas)
+- Prefer traditional application model
+- Want stateless containers with AWS-managed data plane
+- Need easier local development with Docker
+
+**Deployment**:
+- Serverless: `SubmitApplication.java` (cdk-application/)
+- Monolith: `SubmitContainer.java` (cdk-container/)
+
+See `DEPLOYMENT_MODES.md` for detailed comparison and deployment instructions.
 
 ### CDK Stack Architecture
 

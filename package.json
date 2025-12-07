@@ -71,7 +71,12 @@
     "wiremock:server": "wiremock --port 9090 --root-dir wiremock-recordings --disable-banner",
     "docker:build-local": "./scripts/docker-build-local.sh",
     "docker:run-monolith": "./scripts/docker-run-monolith.sh",
-    "docker:monolith": "npm run docker:build-local && npm run docker:run-monolith"
+    "docker:monolith": "npm run docker:build-local && npm run docker:run-monolith",
+    "docker:start-for-tests": "./scripts/docker-run-for-tests.sh",
+    "docker:stop-tests": "./scripts/docker-stop-tests.sh",
+    "test:bundleBehaviour-docker": "npm run docker:start-for-tests && npm run test:bundleBehaviour-proxy ; npm run docker:stop-tests",
+    "test:obligationBehaviour-docker": "npm run docker:start-for-tests && npm run test:obligationBehaviour-proxy ; npm run docker:stop-tests",
+    "test:submitVatBehaviour-docker": "npm run docker:start-for-tests && npm run test:submitVatBehaviour-proxy ; npm run docker:stop-tests"
   },
   "keywords": [],
   "author": "",
