@@ -24,6 +24,7 @@ public class DataStack extends Stack {
     public ITable receiptsTable;
     public ITable bundlesTable;
     public ITable hmrcApiRequestsTable;
+    public ITable sessionsTable;
 
     @Value.Immutable
     public interface DataStackProps extends StackProps, SubmitStackProps {
@@ -122,6 +123,22 @@ public class DataStack extends Stack {
                 this.hmrcApiRequestsTable.getTableName(),
                 this.hmrcApiRequestsTable.getNode().getId());
 
+        // Create DynamoDB table for session storage (used by monolith mode)
+        this.sessionsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-SessionsTable")
+                .tableName(props.sharedNames().sessionsTableName)
+                .partitionKey(Attribute.builder()
+                        .name("sessionId")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
+                .timeToLiveAttribute("ttl") // Enable TTL for automatic session expiry
+                .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
+                .build();
+        infof(
+                "Created sessions DynamoDB table with name %s and id %s",
+                this.sessionsTable.getTableName(),
+                this.sessionsTable.getNode().getId());
+
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
@@ -130,6 +147,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
+        cfnOutput(this, "SessionsTableName", this.sessionsTable.getTableName());
+        cfnOutput(this, "SessionsTableArn", this.sessionsTable.getTableArn());
 
         infof(
                 "DataStack %s created successfully for %s",

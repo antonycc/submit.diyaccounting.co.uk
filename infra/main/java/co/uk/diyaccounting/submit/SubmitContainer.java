@@ -54,6 +54,7 @@ public class SubmitContainer {
         public String bundlesTableArn;
         public String receiptsTableArn;
         public String hmrcApiRequestsTableArn;
+        public String sessionsTableArn;
         public String hostedZoneId;
         public String certificateArn;
         public String docRootPath;
@@ -203,6 +204,7 @@ public class SubmitContainer {
                         .bundlesTableArn(containerProps.bundlesTableArn)
                         .receiptsTableArn(containerProps.receiptsTableArn)
                         .hmrcApiRequestsTableArn(containerProps.hmrcApiRequestsTableArn)
+                        .sessionsTableArn(containerProps.sessionsTableArn)
                         .build());
         this.containerStack.addDependency(devStack);
 

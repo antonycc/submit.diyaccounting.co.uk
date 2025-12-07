@@ -86,6 +86,8 @@ public class ContainerStack extends Stack {
 
         String hmrcApiRequestsTableArn();
 
+        String sessionsTableArn();
+
         static ImmutableContainerStackProps.Builder builder() {
             return ImmutableContainerStackProps.builder();
         }
@@ -146,10 +148,12 @@ public class ContainerStack extends Stack {
                         props.bundlesTableArn(),
                         props.receiptsTableArn(),
                         props.hmrcApiRequestsTableArn(),
+                        props.sessionsTableArn(),
                         // Allow access to indexes as well
                         props.bundlesTableArn() + "/index/*",
                         props.receiptsTableArn() + "/index/*",
-                        props.hmrcApiRequestsTableArn() + "/index/*"))
+                        props.hmrcApiRequestsTableArn() + "/index/*",
+                        props.sessionsTableArn() + "/index/*"))
                 .build());
 
         // Add Secrets Manager read permissions
@@ -193,6 +197,7 @@ public class ContainerStack extends Stack {
         environmentVariables.put("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName);
         environmentVariables.put("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         environmentVariables.put("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", props.sharedNames().hmrcApiRequestsTableName);
+        environmentVariables.put("SESSIONS_DYNAMODB_TABLE_NAME", props.sharedNames().sessionsTableName);
 
         // Google OAuth configuration
         environmentVariables.put("GOOGLE_CLIENT_ID", props.googleClientId());

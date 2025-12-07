@@ -18,6 +18,7 @@
     "bundlesTableArn": "",
     "receiptsTableArn": "",
     "hmrcApiRequestsTableArn": "",
+    "sessionsTableArn": "",
     "cloudTrailEnabled": "true",
     "subDomainName": "submit",
     "baseImageTag": "latest",
