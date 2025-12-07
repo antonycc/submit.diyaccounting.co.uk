@@ -2,7 +2,7 @@
 
 Submit UK VAT returns via HMRC’s Making Tax Digital (MTD) APIs. Run locally with ngrok, a mock OAuth2 server, and local DynamoDB; deploy to AWS using Java CDK (CloudFront + S3 static hosting, Lambda URL backends, Cognito optional).
 
-Quickstart — Local (your own ngrok domain + HMRC sandbox)
+Quickstart — Local (your own ngrok domain + HMRC sandbox).
 
 Prerequisites
 - Node.js 22+
