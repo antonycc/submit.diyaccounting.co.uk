@@ -30,5 +30,6 @@ EXPOSE 3000
 # Set default APP_MODE to lambda (can be overridden)
 ENV APP_MODE=lambda
 
-# Use the entrypoint script to determine runtime mode
-CMD ["./docker-entrypoint.sh"]
+# Override the Lambda base image ENTRYPOINT to use our script
+# This allows the same image to run in both Lambda and monolith modes
+ENTRYPOINT ["./docker-entrypoint.sh"]
