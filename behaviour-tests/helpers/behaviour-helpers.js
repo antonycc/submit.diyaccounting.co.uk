@@ -218,12 +218,7 @@ const ensureDirSync = (dirPath) => {
 
 // take a post-focus screenshot using an auto path to avoid changing all call sites
 const autoFocusScreenshot = async (page, context) => {
-  const autoPath = path.join(
-    "target",
-    "behaviour-test-results",
-    "screenshots",
-    "auto-focus"
-  );
+  const autoPath = path.join("target", "behaviour-test-results", "screenshots", "auto-focus");
   ensureDirSync(autoPath);
   const slug = toSlug(context || "focus");
   const file = `${timestamp()}-01-focus-${slug || "target"}.png`;
@@ -236,63 +231,52 @@ const autoFocusScreenshot = async (page, context) => {
 
 // Accepts either a selector string or a Playwright Locator
 export const loggedClick = async (page, selectorOrLocator, description = "", options = undefined) =>
-  await test.step(
-    description
-      ? `The user clicks ${description}`
-      : `The user clicks selector ${selectorOrLocator}`,
-    async () => {
-      const opts = options && typeof options === "object" ? options : {};
-      const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
-      const selector = isLocator ? undefined : selectorOrLocator;
-      const locator = isLocator ? selectorOrLocator : page.locator(selector);
+  await test.step(description ? `The user clicks ${description}` : `The user clicks selector ${selectorOrLocator}`, async () => {
+    const opts = options && typeof options === "object" ? options : {};
+    const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
+    const selector = isLocator ? undefined : selectorOrLocator;
+    const locator = isLocator ? selectorOrLocator : page.locator(selector);
 
-      console.log(
-        `[USER INTERACTION] Clicking: ${isLocator ? "[Locator]" : selector} ${
-          description ? "- " + description : ""
-        }`,
-      );
+    console.log(`[USER INTERACTION] Clicking: ${isLocator ? "[Locator]" : selector} ${description ? "- " + description : ""}`);
 
-      // Wait for element to be visible and stable before clicking
-      await (isLocator
-        ? locator.waitFor({ state: "visible", timeout: 30000 })
-        : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+    // Wait for element to be visible and stable before clicking
+    await (isLocator
+      ? locator.waitFor({ state: "visible", timeout: 30000 })
+      : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
 
-      // Explicitly focus the element before clicking
-      try {
-        if (isLocator) {
-          await locator.focus();
-        } else {
-          await page.focus(selector);
-        }
-      } catch (e) {
-        console.warn(`[WARN] Failed to focus before click: ${e.message}`);
-      }
-
-      // Screenshot just after focus change
-      if (opts.screenshotPath) {
-        const labelSlug = toSlug(opts.focusLabel || description || (isLocator ? "locator" : selector));
-        const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
-        try {
-          ensureDirSync(opts.screenshotPath);
-          await page.screenshot({ path: path.join(opts.screenshotPath, name) });
-        } catch (e) {
-          console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
-        }
+    // Explicitly focus the element before clicking
+    try {
+      if (isLocator) {
+        await locator.focus();
       } else {
-        await autoFocusScreenshot(page, description || (isLocator ? "locator" : selector));
+        await page.focus(selector);
       }
+    } catch (e) {
+      console.warn(`[WARN] Failed to focus before click: ${e.message}`);
+    }
 
-      // Perform the click
-      await (isLocator ? locator.click() : page.click(selector));
-    },
-  );
+    // Screenshot just after focus change
+    if (opts.screenshotPath) {
+      const labelSlug = toSlug(opts.focusLabel || description || (isLocator ? "locator" : selector));
+      const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
+      try {
+        ensureDirSync(opts.screenshotPath);
+        await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+      } catch (e) {
+        console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
+      }
+    } else {
+      await autoFocusScreenshot(page, description || (isLocator ? "locator" : selector));
+    }
+
+    // Perform the click
+    await (isLocator ? locator.click() : page.click(selector));
+  });
 
 // Accepts either a selector string or a Playwright Locator
 export const loggedFill = async (page, selectorOrLocator, value, description = "", options = undefined) =>
   await test.step(
-    description
-      ? `The user fills ${description} with "${value}"`
-      : `The user fills selector ${selectorOrLocator} with "${value}"`,
+    description ? `The user fills ${description} with "${value}"` : `The user fills selector ${selectorOrLocator} with "${value}"`,
     async () => {
       const opts = options && typeof options === "object" ? options : {};
       const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
@@ -300,9 +284,7 @@ export const loggedFill = async (page, selectorOrLocator, value, description = "
       const locator = isLocator ? selectorOrLocator : page.locator(selector);
 
       console.log(
-        `[USER INTERACTION] Filling: ${isLocator ? "[Locator]" : selector} with value: "${value}" ${
-          description ? "- " + description : ""
-        }`,
+        `[USER INTERACTION] Filling: ${isLocator ? "[Locator]" : selector} with value: "${value}" ${description ? "- " + description : ""}`,
       );
 
       // Wait for visibility and focus before filling

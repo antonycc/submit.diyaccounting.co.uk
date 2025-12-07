@@ -136,8 +136,7 @@ public class DataStack extends Stack {
                 .build();
         infof(
                 "Created sessions DynamoDB table with name %s and id %s",
-                this.sessionsTable.getTableName(),
-                this.sessionsTable.getNode().getId());
+                this.sessionsTable.getTableName(), this.sessionsTable.getNode().getId());
 
         Aspects.of(this).add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_DAYS));
 
