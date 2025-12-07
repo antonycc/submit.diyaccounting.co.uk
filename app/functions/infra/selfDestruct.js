@@ -23,6 +23,8 @@ export async function handler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.OPS_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.PUBLISH_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.EDGE_STACK_NAME);
+    // For monolith mode, we have CONTAINER_STACK instead of API/AUTH/HMRC/ACCOUNT stacks
+    addStackNameIfPresent(stacksToDelete, process.env.CONTAINER_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.API_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.AUTH_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.HMRC_STACK_NAME);

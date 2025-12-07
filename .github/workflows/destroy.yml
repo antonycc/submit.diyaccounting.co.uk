@@ -462,6 +462,22 @@ jobs:
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 
+      - name: Destroy Submit Container (if exists)
+        continue-on-error: true
+        run: |
+          cd cdk-container && \
+            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk destroy \
+              --all \
+              --force \
+          && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
+          WEBSITE_HASH: 'placeholder'
+
       - name: CDK stacks after
         if: ${{ !cancelled() }}
         run: |

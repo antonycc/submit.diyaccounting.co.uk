@@ -164,7 +164,8 @@ public class SelfDestructStack extends Stack {
                                                         "ecr:*",
                                                         "cloudwatch:*",
                                                         "acm:*",
-                                                        "events:*"))
+                                                        "events:*",
+                                                        "apprunner:*"))
                                                 .resources(List.of("*"))
                                                 .build()))
                                 .build()))
@@ -178,6 +179,7 @@ public class SelfDestructStack extends Stack {
         putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
         putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
         putIfNotNull(selfDestructLambdaEnv, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
+        putIfNotNull(selfDestructLambdaEnv, "CONTAINER_STACK_NAME", props.sharedNames().containerStackId);
         putIfNotNull(selfDestructLambdaEnv, "API_STACK_NAME", props.sharedNames().apiStackId);
         putIfNotNull(selfDestructLambdaEnv, "OPS_STACK_NAME", props.sharedNames().opsStackId);
         putIfNotNull(selfDestructLambdaEnv, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);
