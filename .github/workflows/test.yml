@@ -243,6 +243,78 @@ jobs:
         run: |
           ./mvnw clean test
 
+  docker-container-test:
+    name: 'docker container build and health check'
+    runs-on: ubuntu-latest
+    needs:
+      - names
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build Docker image for monolith
+        run: |
+          docker build -t submit-monolith:test -f Dockerfile .
+
+      - name: Start dynalite for local DynamoDB
+        run: |
+          npm run data &
+          sleep 3
+        env:
+          TEST_DYNAMODB: run
+          DYNAMODB_PORT: 9000
+
+      - name: Start container and verify health
+        run: |
+          # Start container in detached mode
+          docker run -d \
+            --name submit-test-container \
+            -p 3000:3000 \
+            --add-host=host.docker.internal:host-gateway \
+            -e APP_MODE=monolith \
+            -e NODE_ENV=test \
+            -e PORT=3000 \
+            -e AWS_REGION=us-east-1 \
+            -e AWS_ACCESS_KEY_ID=dummy \
+            -e AWS_SECRET_ACCESS_KEY=dummy \
+            -e DYNAMODB_ENDPOINT=http://host.docker.internal:9000 \
+            -e BUNDLE_DYNAMODB_TABLE_NAME=test-submit-bundles \
+            -e RECEIPTS_DYNAMODB_TABLE_NAME=test-submit-receipts \
+            -e HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME=test-submit-hmrc-api-requests \
+            -e SESSIONS_DYNAMODB_TABLE_NAME=test-submit-sessions \
+            -e DIY_SUBMIT_BASE_URL=http://localhost:3000 \
+            submit-monolith:test
+          
+          # Wait for container to be healthy (max 30 seconds)
+          for i in {1..30}; do
+            if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+              echo "Container is healthy!"
+              exit 0
+            fi
+            echo "Waiting for container... ($i/30)"
+            sleep 1
+          done
+          
+          echo "Container failed to become healthy"
+          docker logs submit-test-container
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop submit-test-container || true
+          docker rm submit-test-container || true
+
   npm-test-cdk-ci:
     name: 'npm test cdk-ci'
     needs:

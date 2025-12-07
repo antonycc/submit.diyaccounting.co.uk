@@ -74,9 +74,9 @@
     "docker:monolith": "npm run docker:build-local && npm run docker:run-monolith",
     "docker:start-for-tests": "./scripts/docker-run-for-tests.sh",
     "docker:stop-tests": "./scripts/docker-stop-tests.sh",
-    "test:bundleBehaviour-docker": "npm run docker:start-for-tests && npm run test:bundleBehaviour-proxy ; npm run docker:stop-tests",
-    "test:obligationBehaviour-docker": "npm run docker:start-for-tests && npm run test:obligationBehaviour-proxy ; npm run docker:stop-tests",
-    "test:submitVatBehaviour-docker": "npm run docker:start-for-tests && npm run test:submitVatBehaviour-proxy ; npm run docker:stop-tests"
+    "test:bundleBehaviour-docker": "npm run docker:start-for-tests && npm run test:bundleBehaviour-proxy; EXIT_CODE=$?; npm run docker:stop-tests; exit $EXIT_CODE",
+    "test:obligationBehaviour-docker": "npm run docker:start-for-tests && npm run test:obligationBehaviour-proxy; EXIT_CODE=$?; npm run docker:stop-tests; exit $EXIT_CODE",
+    "test:submitVatBehaviour-docker": "npm run docker:start-for-tests && npm run test:submitVatBehaviour-proxy; EXIT_CODE=$?; npm run docker:stop-tests; exit $EXIT_CODE"
   },
   "keywords": [],
   "author": "",

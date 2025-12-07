@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # Run Docker container in monolith mode for behavior testing
 # This script starts the container and waits for it to be healthy
+# 
+# For tests requiring OAuth (HMRC/Google), ensure ngrok proxy is running first:
+#   npm run proxy &
+#   sleep 5
+#   npm run docker:start-for-tests
+#
+# The ngrok proxy (https://wanted-finally-anteater.ngrok-free.app) provides
+# a stable HTTPS endpoint registered with HMRC and Google for OAuth callbacks.
+
 set -euo pipefail
 
 echo "Starting Docker container for behavior tests..."
@@ -23,10 +32,19 @@ fi
 # Override APP_MODE for monolith
 export APP_MODE=monolith
 
+# Start mock OAuth2 server for local testing (if not using real HMRC/Google)
+echo "Starting mock OAuth2 server..."
+npm run auth &
+OAUTH_PID=$!
+sleep 2
+
 # Start dynalite in the background for local DynamoDB
 echo "Starting dynalite for local DynamoDB..."
 npm run data &
 DYNALITE_PID=$!
+
+# Save PIDs for cleanup
+echo $OAUTH_PID > /tmp/submit-oauth.pid
 
 # Give dynalite time to start and create tables
 sleep 3
@@ -86,11 +104,18 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
   docker stop submit-test-container
   docker rm submit-test-container
   kill $DYNALITE_PID 2>/dev/null || true
+  kill $OAUTH_PID 2>/dev/null || true
   exit 1
 fi
 
 echo "Container started successfully. Run tests now."
-echo "To stop: npm run docker:stop-tests"
+echo ""
+echo "NOTE: For tests requiring OAuth with HMRC/Google:"
+echo "  - Ensure ngrok proxy is running: npm run proxy"
+echo "  - The proxy provides: https://wanted-finally-anteater.ngrok-free.app"
+echo "  - This is the registered callback URL for OAuth"
+echo ""
+echo "To stop all services: npm run docker:stop-tests"
 
 # Save PIDs for cleanup
 echo $DYNALITE_PID > /tmp/submit-dynalite.pid
