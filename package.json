@@ -84,7 +84,7 @@
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.943.0",
-    "@aws-sdk/client-dynamodb": "^3.943.0",
+    "@aws-sdk/client-dynamodb": "^3.946.0",
     "@aws-sdk/lib-dynamodb": "^3.943.0",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@ngrok/ngrok": "^1.6.0",
