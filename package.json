@@ -74,7 +74,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@aws-sdk/client-cloudformation": "^3.943.0",
-    "@aws-sdk/client-secrets-manager": "^3.943.0",
+    "@aws-sdk/client-secrets-manager": "^3.946.0",
     "@aws-sdk/util-dynamodb": "^3.943.0",
     "@iarna/toml": "^3.0.0",
     "aws-jwt-verify": "^5.1.1",
