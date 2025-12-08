@@ -121,7 +121,6 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
   GITHUB_REF_TO_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-  DEPLOYMENT_MODE: ${{ inputs.deploymentMode || 'serverless' }}
   TEST_MODE: ${{ inputs.testMode || 'local' }}
 
 jobs:
@@ -1065,7 +1064,7 @@ jobs:
 
   deploy-auth:
     name: 'deploy auth'
-    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
+    if: ${{ inputs.skipDeploy != 'true' && inputs.deploymentMode != 'monolith' }}
     needs:
       - names
       - skip-deploy-check
@@ -1142,7 +1141,7 @@ jobs:
 
   deploy-hmrc:
     name: 'deploy hmrc'
-    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
+    if: ${{ inputs.skipDeploy != 'true' && inputs.deploymentMode != 'monolith' }}
     needs:
       - names
       - skip-deploy-check
@@ -1220,7 +1219,7 @@ jobs:
 
   deploy-account:
     name: 'deploy account'
-    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
+    if: ${{ inputs.skipDeploy != 'true' && inputs.deploymentMode != 'monolith' }}
     needs:
       - names
       - skip-deploy-check
@@ -1300,7 +1299,7 @@ jobs:
 
   deploy-api:
     name: 'deploy api'
-    if: ${{ inputs.skipDeploy != 'true' && (inputs.deploymentMode != 'monolith' && env.DEPLOYMENT_MODE != 'monolith') }}
+    if: ${{ inputs.skipDeploy != 'true' && inputs.deploymentMode != 'monolith' }}
     needs:
       - names
       - skip-deploy-check
