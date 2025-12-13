@@ -190,9 +190,9 @@ export async function initVatObligations(page, screenshotPath = defaultScreensho
   });
 }
 
-export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}, screenshotPath = defaultScreenshotPath) {
+export async function fillInVatObligations(page, obligationsQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the VAT obligations form with VRN and date range", async () => {
-    const { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = options || {};
+    const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = obligationsQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png` });
 
     // Compute a wide date range with likely hits if not provided
@@ -204,7 +204,7 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
     const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
 
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number", { screenshotPath });
+    await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-fill-in.png` });
     await page.waitForTimeout(50);
     // Fill optional filters (map to actual form field IDs)
@@ -267,8 +267,9 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
   });
 }
 
-export async function verifyVatObligationsResults(page, screenshotPath = defaultScreenshotPath) {
+export async function verifyVatObligationsResults(page, obligationsQuery, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees VAT obligations results displayed", async () => {
+    const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = obligationsQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
     await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
