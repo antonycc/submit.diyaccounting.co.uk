@@ -53,9 +53,9 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-bundle.png` });
     let addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
     // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
-    // If the "Added ✓" button is not visible, wait 1000ms and try again and do that up to 5 times.
+    // If the "Added ✓" button is not visible, wait 1000ms and try again.
     if (!(await addedLocator.isVisible())) {
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 2; i++) {
         console.log(`"Added ✓ ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-bundle-waiting.png` });
         await page.waitForTimeout(1000);
@@ -91,9 +91,9 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-request-bundle.png` });
     let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
     // await expect(page.getByText("Request test")).toBeVisible();
-    // If the "Request test" button is not visible, wait 1000ms and try again and do that up to 5 times.
+    // If the "Request test" button is not visible, wait 1000ms and try again.
     if (!(await requestTestLocator.isVisible())) {
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 2; i++) {
         console.log(`"Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/5)`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-request-bundle-waiting.png` });
         await page.waitForTimeout(1000);
