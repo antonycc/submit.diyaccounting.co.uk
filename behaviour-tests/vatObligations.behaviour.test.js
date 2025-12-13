@@ -171,6 +171,15 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
+async function requestAndVerifyObligations(page, obligationsQuery) {
+  // Fulfilled obligations
+  await initVatObligations(page, screenshotPath);
+  await fillInVatObligations(page, obligationsQuery.vatNumber, obligationsQuery, screenshotPath);
+  await submitVatObligationsForm(page, screenshotPath);
+  await verifyVatObligationsResults(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+}
+
 test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo) => {
   // Compute test URL based on which servers are running
   const testUrl =
@@ -312,55 +321,62 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   await verifyVatObligationsResults(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
-  //YOU ARE HERE, ABOUT TO START SANDBOX TEST SCENARIOS
-
-  // TODO: When in sandbox mode, trigger each test scenario in turn, going back to home page each time
-  // Get's stuck here:
-  // 1 [obligation-behaviour-tests] › behaviour-tests/vatObligations.behaviour.test.js:174:1 › Click through: View VAT obligations from HMRC › The user fills in the VAT obligations form with VRN and date range
-  //   [USER INTERACTION] Filling: #vrn with value: "529633133" - Entering VAT registration number
-  //   [USER INTERACTION] Filling: #fromDate with value: "2025-01-07" - Entering from date
-  //   [USER INTERACTION] Filling: #toDate with value: "2025-11-01" - Entering to date
-  // See: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/obligations-api/3.0/oas/page#/paths/~1obligations~1details~1%7Bnino%7D~1income-and-expenditure/get
+  /* ************************************* */
+  /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
+  /* ************************************* */
   if (isSandboxMode()) {
-    /* ************************************* */
-    /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
-    /* ************************************* */
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      /* No test scenario */
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      status: "Open",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      status: "Fulfilled",
+      /* No test scenario */
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "Monthly - Three Met",
+    });
 
-    // Fulfilled obligations
-    await initVatObligations(page, screenshotPath);
-    await fillInVatObligations(
-      page,
-      testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Fulfilled" }, // testScenario: "Monthly - Three Met" },
-      screenshotPath,
-    );
-    await submitVatObligationsForm(page, screenshotPath);
-    await verifyVatObligationsResults(page, screenshotPath);
-    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
-
-    // Open obligations
-    await initVatObligations(page, screenshotPath);
-    await fillInVatObligations(
-      page,
-      testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Open" }, // testScenario: "Monthly - Three Met" },
-      screenshotPath,
-    );
-    await submitVatObligationsForm(page, screenshotPath);
-    await verifyVatObligationsResults(page, screenshotPath);
-    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
-
-    // All obligations: Monthly - Three Met
-    await initVatObligations(page, screenshotPath);
-    await fillInVatObligations(
-      page,
-      testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario: "Monthly - Three Met" },
-      screenshotPath,
-    );
-    await submitVatObligationsForm(page, screenshotPath);
-    await verifyVatObligationsResults(page, screenshotPath);
-    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+    // // Open obligations
+    // await initVatObligations(page, screenshotPath);
+    // await fillInVatObligations(
+    //   page,
+    //   testVatNumber,
+    //   { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Open" }, // testScenario: "Monthly - Three Met" },
+    //   screenshotPath,
+    // );
+    // await submitVatObligationsForm(page, screenshotPath);
+    // await verifyVatObligationsResults(page, screenshotPath);
+    // await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+    //
+    // // All obligations: Monthly - Three Met
+    // await initVatObligations(page, screenshotPath);
+    // await fillInVatObligations(
+    //   page,
+    //   testVatNumber,
+    //   { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario: "Monthly - Three Met" },
+    //   screenshotPath,
+    // );
+    // await submitVatObligationsForm(page, screenshotPath);
+    // await verifyVatObligationsResults(page, screenshotPath);
+    // await goToHomePageUsingHamburgerMenu(page, screenshotPath);
   }
 
   /* ****************** */
