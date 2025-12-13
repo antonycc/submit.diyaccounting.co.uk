@@ -269,6 +269,12 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
 
 export async function verifyVatObligationsResults(page, obligationsQuery, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees VAT obligations results displayed", async () => {
+    // Back-compat: support verifyVatObligationsResults(page, screenshotPath)
+    if (arguments.length === 2 && typeof obligationsQuery === "string") {
+      screenshotPath = obligationsQuery;
+      obligationsQuery = {};
+    }
+
     const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = obligationsQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
     await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
@@ -279,6 +285,199 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     // Verify the table is displayed
     const obligationsTable = page.locator("#obligationsTable");
     await expect(obligationsTable).toBeVisible();
+
+    // Parse table rows into structured data for assertions
+    const rowLocator = page.locator("#obligationsTable table tbody tr");
+    const rowCount = await rowLocator.count();
+    expect(rowCount).toBeGreaterThan(0);
+
+    const rows = [];
+    for (let i = 0; i < rowCount; i++) {
+      const r = rowLocator.nth(i);
+      const periodKey = (await r.locator("td").nth(0).innerText()).trim();
+      const start = (await r.locator("td").nth(1).innerText()).trim();
+      const end = (await r.locator("td").nth(2).innerText()).trim();
+      const due = (await r.locator("td").nth(3).innerText()).trim();
+      const statusText = (await r.locator("td").nth(4).innerText()).trim();
+      const statusCode = statusText.includes("Open") ? "O" : statusText.includes("Fulfilled") ? "F" : statusText;
+      const received = (await r.locator("td").nth(5).innerText()).trim();
+      const actionText = (await r.locator("td").nth(6).innerText()).trim();
+      rows.push({ periodKey, start, end, due, statusText, statusCode, received, actionText });
+    }
+
+    // Generic assertions
+    // - periodKey must be present
+    for (const r of rows) {
+      expect(r.periodKey).toBeTruthy();
+    }
+
+    // - If a status filter was provided, all rows should match it
+    if (status) {
+      const statusValue = String(status) === "Open" ? "O" : String(status) === "Fulfilled" ? "F" : String(status);
+      for (const r of rows) {
+        expect(r.statusCode, `Expected all rows to have status ${statusValue} but found ${r.statusCode} for ${r.periodKey}`).toBe(
+          statusValue,
+        );
+      }
+    }
+
+    // - Action button should reflect status
+    for (const r of rows) {
+      if (r.statusCode === "F") {
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(6).getByRole("button")).toHaveText(/View Return/);
+        expect(r.actionText).toContain("View Return");
+      } else if (r.statusCode === "O") {
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(6).getByRole("button")).toHaveText(/Submit Return/);
+        expect(r.actionText).toContain("Submit Return");
+      }
+    }
+
+    // - If a date range was provided, sanity check row dates are within range (where values are not '-')
+    // function parseDate(s) {
+    //   if (!s || s === "-") return null;
+    //   const d = new Date(s);
+    //   return isNaN(d.getTime()) ? null : d;
+    // }
+    // const fromD = hmrcVatPeriodFromDate ? parseDate(hmrcVatPeriodFromDate) : null;
+    // const toD = hmrcVatPeriodToDate ? parseDate(hmrcVatPeriodToDate) : null;
+    // if (fromD || toD) {
+    //   for (const r of rows) {
+    //     const startD = parseDate(r.start);
+    //     const endD = parseDate(r.end);
+    //     if (fromD && startD) expect(startD.getTime()).toBeGreaterThanOrEqual(fromD.getTime());
+    //     if (toD && endD) expect(endD.getTime()).toBeLessThanOrEqual(toD.getTime());
+    //   }
+    // }
+
+    // Scenario-specific expectations based on Gov-Test-Scenario
+    const fulfilledCount = rows.filter((r) => r.statusCode === "F").length;
+    const openCount = rows.filter((r) => r.statusCode === "O").length;
+
+    const hasScenario = !!testScenario;
+    if (!hasScenario) {
+      // Only check default scenario shape when no explicit status filter was applied
+      if (!status) {
+        expect(fulfilledCount + openCount).toBeGreaterThan(1);
+      }
+    } else
+      switch (testScenario) {
+        case "QUARTERLY_NONE_MET":
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "QUARTERLY_ONE_MET":
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "QUARTERLY_TWO_MET":
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "QUARTERLY_THREE_MET":
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "QUARTERLY_FOUR_MET":
+          expect(fulfilledCount).toBe(4);
+          break;
+        case "MONTHLY_NONE_MET":
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "MONTHLY_ONE_MET":
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "MONTHLY_TWO_MET":
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "MONTHLY_THREE_MET":
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "MONTHLY_OBS_01_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "MONTHLY_OBS_02_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "MONTHLY_OBS_03_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "MONTHLY_OBS_04_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "MONTHLY_OBS_05_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(4);
+          break;
+        case "MONTHLY_OBS_06_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(5);
+          break;
+        case "MONTHLY_OBS_07_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(6);
+          break;
+        case "MONTHLY_OBS_08_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(7);
+          break;
+        case "MONTHLY_OBS_09_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(8);
+          break;
+        case "MONTHLY_OBS_10_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(9);
+          break;
+        case "MONTHLY_OBS_11_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(10);
+          break;
+        case "MONTHLY_OBS_12_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(12);
+          break;
+        case "MONTHLY_OBS_12_FULFILLED":
+          expect(fulfilledCount).toBe(12);
+          break;
+        case "QUARTERLY_OBS_01_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "QUARTERLY_OBS_02_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "QUARTERLY_OBS_03_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "QUARTERLY_OBS_04_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "QUARTERLY_OBS_04_FULFILLED":
+          expect(openCount).toBe(0);
+          expect(fulfilledCount).toBe(4);
+          break;
+        case "MULTIPLE_OPEN_MONTHLY":
+          expect(openCount).toBe(2);
+          break;
+        case "MULTIPLE_OPEN_QUARTERLY":
+          expect(openCount).toBe(2);
+          break;
+        case "OBS_SPANS_MULTIPLE_YEARS":
+          expect(openCount).toBeGreaterThanOrEqual(1);
+          break;
+        case "INSOLVENT_TRADER":
+          break;
+        case "NOT_FOUND":
+          expect(openCount).toBe(0);
+          expect(fulfilledCount).toBe(0);
+          break;
+        default:
+          // Unknown scenario: rely on generic checks only
+          break;
+      }
 
     console.log("VAT obligations retrieval completed successfully");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-success.png` });

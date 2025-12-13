@@ -82,8 +82,8 @@ const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
-const hmrcVatPeriodFromDate = "2025-01-07";
-const hmrcVatPeriodToDate = "2025-11-01";
+const hmrcVatPeriodFromDate = "2025-01-01";
+const hmrcVatPeriodToDate = "2025-12-01";
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -335,6 +335,31 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
   /* ************************************* */
   if (isSandboxMode()) {
+    /**
+     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-md-vat-api-1.0.yaml)
+     *
+     * GET /organisations/vat/{vrn}/obligations
+     *  - Default (No header value): Quarterly obligations and one is fulfilled
+     *  - QUARTERLY_NONE_MET: Quarterly obligations and none are fulfilled
+     *  - QUARTERLY_ONE_MET: Quarterly obligations and one is fulfilled
+     *  - QUARTERLY_TWO_MET: Quarterly obligations and two are fulfilled
+     *  - QUARTERLY_FOUR_MET: Quarterly obligations and four are fulfilled
+     *  - MONTHLY_NONE_MET: Monthly obligations and none are fulfilled
+     *  - MONTHLY_ONE_MET: Monthly obligations and one month is fulfilled
+     *  - MONTHLY_TWO_MET: Monthly obligations and two months are fulfilled
+     *  - MONTHLY_THREE_MET: Monthly obligations and three months are fulfilled
+     *  - MONTHLY_OBS_01_OPEN: 2018 monthly obligations, month 01 is open
+     *  - MONTHLY_OBS_06_OPEN: 2018 monthly obligations, month 06 is open; previous months fulfilled
+     *  - MONTHLY_OBS_12_FULFILLED: 2018 monthly obligations; all fulfilled
+     *  - QUARTERLY_OBS_01_OPEN: 2018 quarterly obligations, quarter 01 is open
+     *  - QUARTERLY_OBS_02_OPEN: 2018 quarterly obligations, quarter 02 is open; previous quarters fulfilled
+     *  - QUARTERLY_OBS_04_FULFILLED: 2018 quarterly obligations; all fulfilled
+     *  - MULTIPLE_OPEN_MONTHLY: 2018 monthly obligations; two are open
+     *  - MULTIPLE_OPEN_QUARTERLY: 2018 quarterly obligations; two are open
+     *  - OBS_SPANS_MULTIPLE_YEARS: One obligation spans 2018-2019
+     *  - INSOLVENT_TRADER: Client is an insolvent trader
+     *  - NOT_FOUND: No data found
+     */
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
@@ -360,15 +385,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
-      /* All status values */
-      testScenario: "MONTHLY_THREE_MET",
-    });
-
-    // Add coverage for each developer test scenario
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
       testScenario: "QUARTERLY_NONE_MET",
     });
     await requestAndVerifyObligations(page, {
@@ -382,12 +398,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
       testScenario: "QUARTERLY_TWO_MET",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "QUARTERLY_THREE_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
@@ -413,7 +423,12 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodToDate,
       testScenario: "MONTHLY_TWO_MET",
     });
-    // MONTHLY_THREE_MET already covered above
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_THREE_MET",
+    });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
@@ -424,67 +439,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_02_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_03_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_04_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_05_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
       testScenario: "MONTHLY_OBS_06_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_07_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_08_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_09_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_10_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_11_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "MONTHLY_OBS_12_OPEN",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
@@ -508,18 +463,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
-      testScenario: "QUARTERLY_OBS_03_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "QUARTERLY_OBS_04_OPEN",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
       testScenario: "QUARTERLY_OBS_04_FULFILLED",
     });
     await requestAndVerifyObligations(page, {
@@ -534,30 +477,24 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodToDate,
       testScenario: "MULTIPLE_OPEN_QUARTERLY",
     });
-
-    // // Open obligations
-    // await initVatObligations(page, screenshotPath);
-    // await fillInVatObligations(
-    //   page,
-    //   testVatNumber,
-    //   { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Open" }, // testScenario: "Monthly - Three Met" },
-    //   screenshotPath,
-    // );
-    // await submitVatObligationsForm(page, screenshotPath);
-    // await verifyVatObligationsResults(page, screenshotPath);
-    // await goToHomePageUsingHamburgerMenu(page, screenshotPath);
-    //
-    // // All obligations: Monthly - Three Met
-    // await initVatObligations(page, screenshotPath);
-    // await fillInVatObligations(
-    //   page,
-    //   testVatNumber,
-    //   { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario: "Monthly - Three Met" },
-    //   screenshotPath,
-    // );
-    // await submitVatObligationsForm(page, screenshotPath);
-    // await verifyVatObligationsResults(page, screenshotPath);
-    // await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "OBS_SPANS_MULTIPLE_YEARS",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "INSOLVENT_TRADER",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "NOT_FOUND",
+    });
   }
 
   /* ****************** */

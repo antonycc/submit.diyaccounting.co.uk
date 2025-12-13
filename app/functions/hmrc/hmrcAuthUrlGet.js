@@ -14,6 +14,11 @@ export function apiEndpoint(app) {
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
+  app.head("/api/v1/hmrc/authUrl", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
 }
 
 export function extractAndValidateParameters(event, errorMessages) {
