@@ -79,6 +79,8 @@ export default defineConfig({
       size: { width: 1280, height: 1446 }, // (optional)
       // Playwright always uses .webm for video
     },
+    // Match viewport to video size so screenshots and recordings align
+    viewport: { width: 1280, height: 1446 },
     // Screenshot options
     screenshot: "on",
     // Screenshots are png by default, but jpeg is also possible
