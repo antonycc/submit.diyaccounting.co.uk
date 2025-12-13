@@ -67,9 +67,13 @@ export const logger = pino(
     // Add an ISO time field as a normal JSON property
     mixin() {
       // Pull correlation fields from shared context; ensure we never leak old values
+      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
       const requestId = context.get("requestId") || null;
+      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
       const amznTraceId = context.get("amznTraceId") || null;
+      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
       const traceparent = context.get("traceparent") || null;
+      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
       const correlationId = context.get("correlationId") || null;
       return {
         time: new Date().toISOString(),

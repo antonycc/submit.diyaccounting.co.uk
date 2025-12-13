@@ -1,6 +1,3 @@
-/* eslint-env browser */
-// eslint-disable-next-line no-redeclare
-/* global RTCPeerConnection */
 // Generic utility functions for submit application
 
 // Check authentication status on page load and validate token expiry
@@ -61,6 +58,7 @@ function checkTokenExpiry(accessToken, idToken) {
               }, 3000);
             }
           }
+          return undefined;
         })
         .catch((err) => {
           console.error("Token refresh error on page load:", err);
@@ -85,6 +83,7 @@ function checkTokenExpiry(accessToken, idToken) {
       ensureSession({ force: false, minTTLms: fiveMinutes })
         .then(() => {
           console.log("Preemptive token refresh successful");
+          return undefined;
         })
         .catch((err) => {
           console.warn("Preemptive token refresh failed:", err);
@@ -212,7 +211,9 @@ function generateRandomState() {
         tp = generateTraceparent();
         try {
           ss?.setItem?.("traceparent", tp);
-        } catch {}
+        } catch (err) {
+          console.warn("Failed to save traceparent to sessionStorage:", err.message);
+        }
       }
       return tp;
     }
@@ -220,7 +221,9 @@ function generateRandomState() {
     function generateRequestId() {
       try {
         if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to use crypto.randomUUID for request ID generation:", err.message);
+      }
       // Fallback to 32-hex entropy
       return randomHex(16) + randomHex(16);
     }
@@ -231,7 +234,9 @@ function generateRandomState() {
       if (carried) {
         try {
           ss?.removeItem?.("redirectXRequestId");
-        } catch {}
+        } catch (err) {
+          console.warn("Failed to remove redirectXRequestId from sessionStorage:", err.message);
+        }
         return carried;
       }
       return null;
@@ -244,17 +249,23 @@ function generateRandomState() {
       lastXRequestId = v || "";
       try {
         if (v) window.sessionStorage?.setItem?.("lastXRequestId", v);
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to save lastXRequestId to sessionStorage:", err.message);
+      }
       // Record the time we last saw an x-request-id so the UI can display it
       try {
         lastXRequestIdSeenAt = new Date().toISOString();
         window.sessionStorage?.setItem?.("lastXRequestIdSeenAt", lastXRequestIdSeenAt);
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to save lastXRequestIdSeenAt to sessionStorage:", err.message);
+      }
       try {
         window.dispatchEvent(
           new CustomEvent("correlation:update", { detail: { lastXRequestId: lastXRequestId, seenAt: lastXRequestIdSeenAt } }),
         );
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to dispatch correlation:update event:", err.message);
+      }
     }
 
     window.getTraceparent = function () {
@@ -268,7 +279,9 @@ function generateRandomState() {
         const id = generateRequestId();
         try {
           window.sessionStorage?.setItem?.("redirectXRequestId", id);
-        } catch {}
+        } catch (err) {
+          console.warn("Failed to save redirectXRequestId to sessionStorage:", err.message);
+        }
         return id;
       },
       // Avoid referencing an undeclared identifier in some test environments
@@ -371,7 +384,9 @@ function fetchWithId(url, opts = {}) {
   function copy(text) {
     try {
       navigator.clipboard?.writeText?.(text);
-    } catch {}
+    } catch (err) {
+      console.warn("Failed to copy to clipboard:", err.message);
+    }
   }
 
   function render() {
@@ -426,7 +441,9 @@ function fetchWithId(url, opts = {}) {
       try {
         const enabled = !!window.__debugEnabled__;
         container.style.display = enabled ? "inline-flex" : "none";
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to check debug enabled flag for correlation widget:", err.message);
+      }
     } catch (e) {
       // Non-fatal UI enhancement
       console.warn("Failed to render correlation widget", e);
@@ -517,7 +534,11 @@ function fetchWithId(url, opts = {}) {
   // If user logs in/out in another tab, try to re-evaluate
   window.addEventListener("storage", (e) => {
     if (e.key === "cognitoIdToken" || e.key === "userInfo") {
-      userHasTestBundle().then(applyVisibility);
+      userHasTestBundle()
+        .then(applyVisibility)
+        .catch((err) => {
+          console.warn("Failed to apply visibility after storage change:", err.message);
+        });
     }
   });
 })();
@@ -620,13 +641,18 @@ async function ensureSession({ minTTLms = 30000, force = false } = {}) {
         if (newAccess && newAccess !== prevAccess) {
           try {
             window.requestCache?.invalidate?.("/api/");
-          } catch {}
+          } catch (err) {
+            console.warn("Failed to invalidate request cache:", err.message);
+          }
           try {
             localStorage.setItem("auth:lastUpdate", String(Date.now()));
-          } catch {}
+          } catch (err) {
+            console.warn("Failed to save auth:lastUpdate to localStorage:", err.message);
+          }
         }
         return newAccess;
-      } catch {
+      } catch (err) {
+        console.warn("Failed to refresh access token:", err.message, err.stack);
         return accessToken;
       } finally {
         __ensureSessionInflight = null;
@@ -779,10 +805,14 @@ try {
     if (e.key === "cognitoAccessToken") {
       try {
         window.requestCache?.invalidate?.("/api/");
-      } catch {}
+      } catch (err) {
+        console.warn("Failed to invalidate request cache on storage change:", err.message);
+      }
     }
   });
-} catch {}
+} catch (err) {
+  console.warn("Failed to initialize token expiry check:", err.message, err.stack);
+}
 
 // VAT submission API function
 async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {

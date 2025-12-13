@@ -1,4 +1,3 @@
-/* eslint-env browser */
 // Entitlement Status Widget
 // Shows the current page's activity entitlement status in the header
 

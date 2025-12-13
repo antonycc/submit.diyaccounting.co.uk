@@ -1,4 +1,3 @@
-/* eslint-env browser */
 (function () {
   // Lightweight, reusable status & loading UI helper shared across pages
   // Usage:

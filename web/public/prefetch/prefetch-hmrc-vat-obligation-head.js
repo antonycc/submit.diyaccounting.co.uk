@@ -6,7 +6,9 @@
     try {
       const accessToken = localStorage.getItem("cognitoAccessToken");
       if (accessToken) headers["X-Authorization"] = `Bearer ${accessToken}`;
-    } catch {}
+    } catch (err) {
+      console.warn("Failed to retrieve cognitoAccessToken from localStorage for HEAD request to", url, ":", err.message);
+    }
     const response = await fetch(url, { method: "HEAD", headers });
     console.log(`HEAD ${url} -> ${response.status} ${response.statusText}`);
   } catch (err) {

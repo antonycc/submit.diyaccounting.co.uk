@@ -1,4 +1,3 @@
-/* eslint-env browser */
 (function () {
   // Load and display view source link
   async function loadViewSourceLink() {
@@ -28,8 +27,9 @@
               if (enabled) {
                 viewSourceLink.style.display = "inline";
               }
-            } catch (e) {
+            } catch (err) {
               // If anything goes wrong, do not force visibility
+              console.warn("Failed to check debug enabled flag for view-source-link:", err.message, err.stack);
             }
           }
         }

@@ -315,7 +315,9 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     } else if (response?.headers && typeof response.headers === "object") {
       responseHeadersObj = { ...response.headers };
     }
-  } catch {}
+  } catch (err) {
+    logger.warn({ message: "Failed to extract response headers", error: err.message, stack: err.stack });
+  }
   const httpResponse = {
     statusCode: response.status,
     headers: responseHeadersObj,
