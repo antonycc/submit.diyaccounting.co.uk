@@ -1202,16 +1202,40 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       ensurePrivacyLink();
-      bootstrapRumConfigFromMeta();
-      showConsentBannerIfNeeded();
-      maybeInitRum();
+      // Initialize RUM on page load
+      (function initializeRumOnPageLoad() {
+        // Bootstrap RUM configuration from meta tags
+        bootstrapRumConfigFromMeta();
+
+        // Attempt to initialize RUM (will show consent banner if needed)
+        maybeInitRum();
+
+        // If user consents later, this will handle it
+        document.addEventListener("consent-granted", (event) => {
+          if (event.detail.type === "rum") {
+            maybeInitRum();
+          }
+        });
+      })();
       setRumUserIdIfAvailable();
     });
   } else {
     ensurePrivacyLink();
-    bootstrapRumConfigFromMeta();
-    showConsentBannerIfNeeded();
-    maybeInitRum();
+    // Initialize RUM on page load
+    (function initializeRumOnPageLoad() {
+      // Bootstrap RUM configuration from meta tags
+      bootstrapRumConfigFromMeta();
+
+      // Attempt to initialize RUM (will show consent banner if needed)
+      maybeInitRum();
+
+      // If user consents later, this will handle it
+      document.addEventListener("consent-granted", (event) => {
+        if (event.detail.type === "rum") {
+          maybeInitRum();
+        }
+      });
+    })();
     setRumUserIdIfAvailable();
   }
   // Update user id on cross-tab login changes
