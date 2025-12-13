@@ -336,14 +336,14 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       vatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
-      status: "Open",
+      status: "O",
     });
     await requestAndVerifyObligations(page, {
       vatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
       /* All status values */
-      status: "Fulfilled",
+      status: "F",
       /* No test scenario */
     });
     await requestAndVerifyObligations(page, {
@@ -351,7 +351,178 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
       /* All status values */
-      testScenario: "Monthly - Three Met",
+      testScenario: "MONTHLY_THREE_MET",
+    });
+
+    // Add coverage for each developer test scenario
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_NONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_ONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_TWO_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_THREE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_FOUR_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_NONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_ONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_TWO_MET",
+    });
+    // MONTHLY_THREE_MET already covered above
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_01_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_02_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_03_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_04_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_05_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_06_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_07_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_08_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_09_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_10_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_11_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_12_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MONTHLY_OBS_12_FULFILLED",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_OBS_01_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_OBS_02_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_OBS_03_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_OBS_04_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "QUARTERLY_OBS_04_FULFILLED",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MULTIPLE_OPEN_MONTHLY",
+    });
+    await requestAndVerifyObligations(page, {
+      vatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testScenario: "MULTIPLE_OPEN_QUARTERLY",
     });
 
     // // Open obligations

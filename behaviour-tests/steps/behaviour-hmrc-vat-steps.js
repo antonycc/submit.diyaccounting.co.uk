@@ -217,10 +217,12 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
     await page.focus("#status");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-pre-status-fill-in.png` });
     if (status) {
+      // Accept both label ("Open"/"Fulfilled") and value ("O"/"F")
+      const statusValue = String(status) === "Open" ? "O" : String(status) === "Fulfilled" ? "F" : String(status);
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
-      await page.selectOption("#status", String(status));
+      await page.selectOption("#status", statusValue);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-filled-in.png` });
     }
     if (testScenario) {
@@ -228,7 +230,12 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
-      await page.selectOption("#testScenario", String(testScenario));
+      // Prefer selecting by value; if the caller provided a label, fall back to selecting by label
+      try {
+        await page.selectOption("#testScenario", String(testScenario));
+      } catch (_e) {
+        await page.selectOption("#testScenario", { label: String(testScenario) });
+      }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
 
