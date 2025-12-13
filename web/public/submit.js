@@ -463,12 +463,10 @@ function fetchWithId(url, opts = {}) {
 
   async function userHasTestBundle() {
     try {
-      const idToken = localStorage.getItem("cognitoIdToken");
       const userInfo = localStorage.getItem("userInfo");
-      if (!idToken || !userInfo) return false;
-      const resp = await fetch("/api/v1/bundle", {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
+      if (!userInfo) return false;
+      // Use window.fetchWithIdToken for automatic token refresh and retry on 401
+      const resp = await window.fetchWithIdToken("/api/v1/bundle", {});
       if (!resp.ok) return false;
       const data = await resp.json();
       const bundles = Array.isArray(data?.bundles) ? data.bundles : [];

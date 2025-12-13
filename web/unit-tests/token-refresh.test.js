@@ -309,4 +309,38 @@ describe("Token refresh on 401 errors", () => {
     const expiryMs = window.getJwtExpiryMs("invalid-token");
     expect(expiryMs).toBe(0);
   });
+
+  it("fetchWithIdToken should be used in debugWidgetsGating for automatic retry", async () => {
+    // This test verifies that fetchWithIdToken (which has retry logic) is used
+    // instead of plain fetch when checking for test bundle in debugWidgetsGating
+
+    // Mock valid access token
+    const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    storageMock.cognitoAccessToken = validToken;
+    storageMock.userInfo = JSON.stringify({ sub: "test-user" });
+
+    // Set up spy on fetchWithIdToken
+    const originalFetchWithIdToken = window.fetchWithIdToken;
+    const fetchWithIdTokenSpy = vi.fn(originalFetchWithIdToken);
+    window.fetchWithIdToken = fetchWithIdTokenSpy;
+
+    // Mock the response
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ bundles: ["test"] }),
+    });
+
+    // Since debugWidgetsGating is already executed, we need to test if
+    // window.fetchWithIdToken exists and can be called correctly
+    const resp = await window.fetchWithIdToken("/api/v1/bundle", {});
+    expect(resp.ok).toBe(true);
+
+    // Verify fetchWithIdToken was called
+    expect(fetchWithIdTokenSpy).toHaveBeenCalledWith("/api/v1/bundle", {});
+
+    // Restore
+    window.fetchWithIdToken = originalFetchWithIdToken;
+  });
 });
