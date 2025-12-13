@@ -1824,3 +1824,950 @@ This repository is a production-ready, serverless application for UK VAT submiss
 
 **Total Lines of Documentation**: 1700+ lines covering every aspect of the repository
 
+
+## Amazon CloudWatch RUM (Real User Monitoring)
+
+The application includes a **partially implemented** Amazon CloudWatch RUM integration for frontend performance monitoring and error tracking. This section documents how the RUM components are designed to interact and identifies the work remaining to complete the implementation.
+
+### Overview
+
+Amazon CloudWatch RUM is a real user monitoring service that collects client-side performance metrics, errors, and HTTP request telemetry from actual user sessions in web browsers. The integration includes:
+
+- **Backend Infrastructure**: CDK stacks creating AWS resources (RUM App Monitor, Cognito Identity Pool, IAM roles)
+- **Frontend Integration**: HTML meta tags and JavaScript code to initialize the RUM client
+- **Deployment Pipeline**: Workflow steps to inject runtime configuration into static files
+- **Privacy Compliance**: User consent banner before enabling telemetry collection
+
+### Architecture Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         User's Browser                                    │
+│                                                                            │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │ Static HTML Page (index.html, submitVat.html, etc.)                 │ │
+│  │                                                                       │ │
+│  │  <meta name="rum:appMonitorId" content="abc123...">                 │ │
+│  │  <meta name="rum:region" content="eu-west-2">                       │ │
+│  │  <meta name="rum:identityPoolId" content="eu-west-2:xyz...">       │ │
+│  │  <meta name="rum:guestRoleArn" content="arn:aws:iam::...">         │ │
+│  └───────────────────────────┬──────────────────────────────────────────┘ │
+│                              │                                             │
+│                              ▼                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │ submit.js (RUM Initialization JavaScript)                           │ │
+│  │                                                                       │ │
+│  │  1. bootstrapRumConfigFromMeta() - Read meta tags                   │ │
+│  │  2. showConsentBannerIfNeeded() - Display consent UI                │ │
+│  │  3. hasRumConsent() - Check localStorage for consent                │ │
+│  │  4. maybeInitRum() - Conditionally initialize RUM                   │ │
+│  │     └─> loadScript(cwr.js) - Load AWS RUM web client                │ │
+│  │         └─> window.cwr('config', {...}) - Configure RUM             │ │
+│  │             └─> setRumUserIdIfAvailable() - Set user ID             │ │
+│  └───────────────────────────┬──────────────────────────────────────────┘ │
+│                              │                                             │
+│                              ▼                                             │
+│  ┌──────────────────────────────────────────────────────────────────────┐ │
+│  │ AWS RUM Web Client (cwr.js)                                          │ │
+│  │ Loaded from: https://client.rum.${region}.amazonaws.com/1.16.0/cwr.js│ │
+│  │                                                                       │ │
+│  │  - Captures page load timings (LCP, FID, CLS)                       │ │
+│  │  - Records JavaScript errors                                         │ │
+│  │  - Monitors HTTP requests                                            │ │
+│  │  - Tracks user interactions                                          │ │
+│  └───────────────────────────┬──────────────────────────────────────────┘ │
+│                              │                                             │
+└──────────────────────────────┼─────────────────────────────────────────────┘
+                               │ HTTPS (authenticated with guest role)
+                               ▼
+                  ┌────────────────────────────┐
+                  │ AWS Cognito Identity Pool  │
+                  │ (Unauthenticated Identities)│
+                  │                             │
+                  │ Assumes: RUM Guest Role     │
+                  │ Policy: rum:PutRumEvents    │
+                  └─────────────┬───────────────┘
+                                │
+                                ▼
+                  ┌────────────────────────────┐
+                  │ Amazon CloudWatch RUM       │
+                  │ Data Plane Endpoint         │
+                  │                             │
+                  │ https://dataplane.rum.      │
+                  │   ${region}.amazonaws.com   │
+                  └─────────────┬───────────────┘
+                                │
+                                ▼
+                  ┌────────────────────────────┐
+                  │ CloudWatch RUM App Monitor  │
+                  │ Name: ${env}-rum            │
+                  │                             │
+                  │ - Stores raw events (30 days)│
+                  │ - Generates metrics          │
+                  │ - Publishes to CloudWatch    │
+                  └─────────────┬───────────────┘
+                                │
+                                ▼
+                  ┌────────────────────────────┐
+                  │ CloudWatch Metrics          │
+                  │ Namespace: AWS/RUM          │
+                  │                             │
+                  │ - WebVitalsLargestContentfulPaint (LCP) │
+                  │ - WebVitalsInteractionToNextPaint (INP) │
+                  │ - JsErrorCount               │
+                  │ - HttpRequestCount           │
+                  └─────────────┬───────────────┘
+                                │
+                                ▼
+                  ┌────────────────────────────┐
+                  │ CloudWatch Alarms           │
+                  │                             │
+                  │ - rum-lcp-p75 > 4s          │
+                  │ - rum-js-errors >= 5        │
+                  └─────────────────────────────┘
+                                │
+                                ▼
+                  ┌────────────────────────────┐
+                  │ CloudWatch Dashboard        │
+                  │ Name: ${env}-frontend       │
+                  │                             │
+                  │ - RUM p75 LCP (ms)          │
+                  │ - RUM p75 INP (ms)          │
+                  │ - RUM JS Errors (5m sum)    │
+                  └─────────────────────────────┘
+```
+
+### Component Details
+
+#### 1. Backend Infrastructure (CDK/Java)
+
+**File**: `infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java`
+
+**Created Resources**:
+
+##### a. Cognito Identity Pool (for Unauthenticated Access)
+```java
+CfnIdentityPool rumIdentityPool = CfnIdentityPool.Builder.create(
+    this, props.resourceNamePrefix() + "-RumIdentityPool")
+  .allowUnauthenticatedIdentities(true)
+  .build();
+```
+- **Purpose**: Enables unauthenticated browsers to assume temporary AWS credentials
+- **Why Needed**: RUM client must authenticate to send telemetry data to AWS
+- **Security**: Scoped down with IAM role that only allows `rum:PutRumEvents`
+
+##### b. IAM Guest Role (for RUM Client Authentication)
+```java
+Role rumGuestRole = Role.Builder.create(this, props.resourceNamePrefix() + "-RumGuestRole")
+  .assumedBy(new FederatedPrincipal(
+    "cognito-identity.amazonaws.com",
+    Map.of("StringEquals", Map.of("cognito-identity.amazonaws.com:aud", rumIdentityPool.getRef()),
+           "ForAnyValue:StringLike", Map.of("cognito-identity.amazonaws.com:amr", "unauthenticated")),
+    "sts:AssumeRoleWithWebIdentity"))
+  .build();
+
+rumGuestRole.addToPolicy(PolicyStatement.Builder.create()
+  .actions(List.of("rum:PutRumEvents"))
+  .resources(List.of("*"))
+  .build());
+```
+- **Purpose**: Grants permission for unauthenticated identities to publish RUM events
+- **Trust Policy**: Only allows Cognito Identity Pool to assume role
+- **Permissions**: Minimal - only `rum:PutRumEvents` action
+
+##### c. RUM App Monitor
+```java
+String rumAppName = props.resourceNamePrefix() + "-rum";
+CfnAppMonitor rumMonitor = CfnAppMonitor.Builder.create(this, props.resourceNamePrefix() + "-RumAppMonitor")
+  .name(rumAppName)
+  .domainList(List.of(props.sharedNames().deploymentDomainName))
+  .appMonitorConfiguration(CfnAppMonitor.AppMonitorConfigurationProperty.builder()
+    .sessionSampleRate(1.0)  // 100% of sessions
+    .allowCookies(true)
+    .enableXRay(true)
+    .guestRoleArn(rumGuestRole.getRoleArn())
+    .identityPoolId(rumIdentityPool.getRef())
+    .telemetries(List.of("performance", "errors", "http"))
+    .build())
+  .build();
+```
+- **Purpose**: Central configuration for RUM data collection
+- **Domain List**: Restricts telemetry to specified domains (e.g., `ci.submit.diyaccounting.co.uk`)
+- **Session Sample Rate**: 1.0 = 100% of sessions are monitored
+- **Telemetries**:
+  - `performance`: Web Vitals (LCP, FID, CLS, INP)
+  - `errors`: JavaScript errors and exceptions
+  - `http`: HTTP request timings and status codes
+- **X-Ray**: Enables distributed tracing integration
+
+##### d. CloudWatch Alarms
+```java
+Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumLcpP75Alarm")
+  .alarmName(props.resourceNamePrefix() + "-rum-lcp-p75")
+  .metric(lcpP75)
+  .threshold(4000)  // 4 seconds
+  .evaluationPeriods(2)
+  .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+  .alarmDescription("RUM p75 LCP > 4s")
+  .build();
+
+Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumJsErrorAlarm")
+  .alarmName(props.resourceNamePrefix() + "-rum-js-errors")
+  .metric(jsErrors)
+  .threshold(5)
+  .evaluationPeriods(1)
+  .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+  .alarmDescription("RUM JavaScript errors >= 5 in 5 minutes")
+  .build();
+```
+- **LCP Alarm**: Triggers if 75th percentile Largest Contentful Paint exceeds 4 seconds
+- **JS Error Alarm**: Triggers if 5+ JavaScript errors occur within 5 minutes
+
+##### e. CloudWatch Dashboard
+```java
+Dashboard frontendDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-FrontendDashboard")
+  .dashboardName(props.resourceNamePrefix() + "-frontend")
+  .widgets(frontendRows)
+  .build();
+```
+- **Widgets**:
+  - RUM p75 LCP (ms) - Largest Contentful Paint at 75th percentile
+  - RUM p75 INP (ms) - Interaction to Next Paint at 75th percentile
+  - RUM JS Errors (5m sum) - Total JavaScript errors in 5-minute windows
+
+##### f. CloudFormation Outputs
+```java
+cfnOutput(this, "RumAppMonitorId", rumMonitor.getAttrId());
+cfnOutput(this, "RumIdentityPoolId", rumIdentityPool.getRef());
+cfnOutput(this, "RumGuestRoleArn", rumGuestRole.getRoleArn());
+cfnOutput(this, "RumRegion", this.getRegion());
+```
+- **Purpose**: Export values needed by frontend deployment
+- **Consumed By**: GitHub Actions workflow (`deploy.yml`)
+
+**Deployment**: Created by `deploy-environment.yml` workflow as part of environment setup (one-time per environment).
+
+#### 2. Frontend Integration (HTML/JavaScript)
+
+##### a. HTML Meta Tags (Placeholders)
+
+**Files**: All HTML files in `web/public/`:
+- `index.html`
+- `auth/login.html`, `auth/loginWithCognitoCallback.html`, `auth/loginWithMockCallback.html`
+- `account/bundles.html`
+- `hmrc/vat/submitVat.html`, `hmrc/vat/vatObligations.html`, `hmrc/vat/viewVatReturn.html`
+- `hmrc/receipt/receipts.html`
+- `activities/submitVatCallback.html`
+- `errors/404-error-origin.html`, `errors/404-error-distribution.html`
+- `privacy.html`
+
+**Example** (from `index.html`):
+```html
+<!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+<meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+<meta name="rum:region" content="${AWS_REGION}" />
+<meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+<meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+```
+
+**Purpose**: Store RUM configuration in HTML metadata for JavaScript to read at runtime.
+
+**Placeholder Syntax**: Uses `${VARIABLE_NAME}` format, replaced during deployment.
+
+##### b. JavaScript RUM Client Integration
+
+**File**: `web/public/submit.js`
+
+**Key Functions**:
+
+###### bootstrapRumConfigFromMeta()
+```javascript
+function bootstrapRumConfigFromMeta() {
+  if (window.__RUM_CONFIG__) return;
+  const appMonitorId = readMeta("rum:appMonitorId");
+  const region = readMeta("rum:region");
+  const identityPoolId = readMeta("rum:identityPoolId");
+  const guestRoleArn = readMeta("rum:guestRoleArn");
+  if (appMonitorId && region && identityPoolId && guestRoleArn) {
+    window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
+    localStorage.setItem("rum.config", JSON.stringify(window.__RUM_CONFIG__));
+  }
+}
+```
+- **Purpose**: Read RUM configuration from HTML meta tags
+- **Stores**: Configuration in `window.__RUM_CONFIG__` and localStorage
+- **⚠️ Issue**: This function is **never called** in the current implementation
+
+###### hasRumConsent()
+```javascript
+function hasRumConsent() {
+  return localStorage.getItem("consent.rum") === "granted" || 
+         localStorage.getItem("consent.analytics") === "granted";
+}
+```
+- **Purpose**: Check if user has granted consent for RUM tracking
+- **Privacy**: Required before initializing RUM client (GDPR/CCPA compliance)
+
+###### showConsentBannerIfNeeded()
+```javascript
+function showConsentBannerIfNeeded() {
+  if (hasRumConsent()) return;
+  // Create consent banner with Accept/Decline buttons
+  // ...
+  document.getElementById("consent-accept").onclick = () => {
+    localStorage.setItem("consent.rum", "granted");
+    document.body.removeChild(banner);
+    maybeInitRum();  // Initialize RUM after consent
+  };
+}
+```
+- **Purpose**: Display consent banner if user hasn't responded
+- **UI**: Fixed position banner at bottom of screen with "Accept" and "Decline" buttons
+- **Storage**: Stores user choice in localStorage (`consent.rum`)
+
+###### maybeInitRum()
+```javascript
+async function maybeInitRum() {
+  if (!window.__RUM_CONFIG__) return;
+  if (!hasRumConsent()) {
+    showConsentBannerIfNeeded();
+    return;
+  }
+  if (window.__RUM_INIT_DONE__) return;
+  const c = window.__RUM_CONFIG__;
+  const version = "1.16.0";
+  const clientUrl = `https://client.rum.${c.region}.amazonaws.com/${version}/cwr.js`;
+  await loadScript(clientUrl);
+  if (typeof window.cwr === "function") {
+    window.cwr("config", {
+      sessionSampleRate: c.sessionSampleRate ?? 1,
+      guestRoleArn: c.guestRoleArn,
+      identityPoolId: c.identityPoolId,
+      endpoint: `https://dataplane.rum.${c.region}.amazonaws.com`,
+      telemetries: ["performance", "errors", "http"],
+      allowCookies: true,
+      enableXRay: true,
+      appMonitorId: c.appMonitorId,
+      region: c.region,
+    });
+    window.__RUM_INIT_DONE__ = true;
+    rumReady();
+    setRumUserIdIfAvailable();
+  }
+}
+```
+- **Purpose**: Initialize AWS RUM web client after consent is granted
+- **Dependencies**:
+  - `window.__RUM_CONFIG__` must be populated
+  - User consent must be granted
+- **Steps**:
+  1. Load RUM client script from AWS CDN (`cwr.js`)
+  2. Configure client with App Monitor ID, Identity Pool, etc.
+  3. Enable telemetries (performance, errors, http)
+  4. Set user ID if authenticated
+
+###### setRumUserIdIfAvailable()
+```javascript
+async function setRumUserIdIfAvailable() {
+  const userInfo = localStorage.getItem("userInfo");
+  if (!userInfo) return;
+  const user = JSON.parse(userInfo);
+  const rawId = user.sub || user.username || user.email;
+  const hashed = await sha256Hex(String(rawId));
+  if (window.cwr) {
+    window.cwr("setUserId", hashed);
+  }
+}
+```
+- **Purpose**: Associate RUM events with hashed user ID
+- **Privacy**: User ID is SHA-256 hashed before sending to AWS
+- **Source**: Reads from `userInfo` in localStorage (populated after Cognito login)
+
+##### c. Privacy Policy Disclosure
+
+**File**: `web/public/privacy.html`
+
+Contains disclosure text:
+```html
+<p>We use Amazon CloudWatch RUM to collect performance metrics such as page load times,
+JavaScript errors, and HTTP request timings from your browser to our API.</p>
+```
+
+#### 3. Deployment Pipeline (GitHub Actions)
+
+**File**: `.github/workflows/deploy.yml`
+
+**Job**: `deploy-publish` (runs after `deploy-edge` and before static file upload)
+
+##### Step 1: Resolve RUM Configuration from CloudFormation
+```yaml
+- name: Resolve RUM config from ObservabilityStack
+  id: rum-config
+  run: |
+    STACK_NAME="${{ needs.names.outputs.environment-name }}-env-ObservabilityStack"
+    JSON=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "${{ env.AWS_REGION }}")
+    RUM_APP_MONITOR_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumAppMonitorId") | .OutputValue')
+    RUM_IDENTITY_POOL_ID=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumIdentityPoolId") | .OutputValue')
+    RUM_GUEST_ROLE_ARN=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumGuestRoleArn") | .OutputValue')
+    RUM_REGION=$(echo "$JSON" | jq -r '.Stacks[0].Outputs[] | select(.OutputKey=="RumRegion") | .OutputValue')
+    echo "RUM_APP_MONITOR_ID=$RUM_APP_MONITOR_ID" >> $GITHUB_OUTPUT
+    echo "RUM_IDENTITY_POOL_ID=$RUM_IDENTITY_POOL_ID" >> $GITHUB_OUTPUT
+    echo "RUM_GUEST_ROLE_ARN=$RUM_GUEST_ROLE_ARN" >> $GITHUB_OUTPUT
+    echo "RUM_REGION=$RUM_REGION" >> $GITHUB_OUTPUT
+```
+- **Purpose**: Query CloudFormation stack outputs for RUM configuration
+- **Stack Name**: `{environment}-env-ObservabilityStack` (e.g., `ci-env-ObservabilityStack`)
+- **Outputs**: Stores RUM values as step outputs for next step
+
+##### Step 2: Inject RUM Values into HTML Files
+```yaml
+- name: Inject RUM placeholders into HTML files
+  env:
+    RUM_APP_MONITOR_ID: ${{ steps.rum-config.outputs.RUM_APP_MONITOR_ID }}
+    RUM_IDENTITY_POOL_ID: ${{ steps.rum-config.outputs.RUM_IDENTITY_POOL_ID }}
+    RUM_GUEST_ROLE_ARN: ${{ steps.rum-config.outputs.RUM_GUEST_ROLE_ARN }}
+    AWS_REGION: ${{ steps.rum-config.outputs.RUM_REGION || env.AWS_REGION }}
+  run: |
+    find web/public -type f -name "*.html" -print0 | xargs -0 -I{} bash -lc '
+      perl -0777 -pe "s/\\$\\{RUM_APP_MONITOR_ID\\}/$ENV{RUM_APP_MONITOR_ID}/g; 
+                      s/\\$\\{AWS_REGION\\}/$ENV{AWS_REGION}/g; 
+                      s/\\$\\{RUM_IDENTITY_POOL_ID\\}/$ENV{RUM_IDENTITY_POOL_ID}/g; 
+                      s/\\$\\{RUM_GUEST_ROLE_ARN\\}/$ENV{RUM_GUEST_ROLE_ARN}/g" -i "{}"'
+```
+- **Purpose**: Replace placeholders in all HTML files with actual RUM configuration
+- **Tool**: Uses Perl for in-place multi-line substitution
+- **Files**: All `*.html` files under `web/public/`
+- **Timing**: Happens **before** `PublishStack` deploys files to S3
+
+**Result**: HTML files in S3 contain real RUM configuration values, e.g.:
+```html
+<meta name="rum:appMonitorId" content="abc123-def456-ghi789" />
+<meta name="rum:region" content="eu-west-2" />
+<meta name="rum:identityPoolId" content="eu-west-2:12345678-1234-1234-1234-123456789abc" />
+<meta name="rum:guestRoleArn" content="arn:aws:iam::887764105431:role/ci-RumGuestRole-XYZ123" />
+```
+
+### Data Flow Sequence
+
+#### Deployment Time (GitHub Actions)
+
+```
+1. deploy-environment.yml
+   └─> Deploy ObservabilityStack
+       └─> Create:
+           - Cognito Identity Pool (unauthenticated)
+           - IAM Guest Role (rum:PutRumEvents)
+           - RUM App Monitor (ci-rum / prod-rum)
+           - CloudWatch Alarms (LCP, JS errors)
+           - CloudWatch Dashboard (ci-frontend / prod-frontend)
+       └─> Output:
+           - RumAppMonitorId
+           - RumIdentityPoolId
+           - RumGuestRoleArn
+           - RumRegion
+
+2. deploy.yml (deploy-publish job)
+   └─> Query CloudFormation for RUM outputs
+   └─> Inject RUM values into HTML files (replace ${...} placeholders)
+   └─> Deploy PublishStack
+       └─> Upload modified HTML files to S3
+       └─> Invalidate CloudFront cache
+```
+
+#### Runtime (User Browser)
+
+```
+1. User navigates to https://submit.diyaccounting.co.uk/
+   └─> CloudFront serves index.html from S3
+
+2. Browser parses HTML
+   └─> Finds <meta name="rum:appMonitorId" content="abc123...">
+   └─> Finds <meta name="rum:region" content="eu-west-2">
+   └─> Finds <meta name="rum:identityPoolId" content="...">
+   └─> Finds <meta name="rum:guestRoleArn" content="...">
+
+3. Browser loads submit.js
+   └─> ⚠️ MISSING: bootstrapRumConfigFromMeta() should be called here
+   └─> ⚠️ MISSING: maybeInitRum() should be called here
+   └─> Result: RUM client is never initialized
+
+4. If RUM were initialized properly:
+   └─> Check consent: hasRumConsent()
+       ├─> If no consent: showConsentBannerIfNeeded()
+       │   └─> User clicks "Accept"
+       │       └─> maybeInitRum()
+       └─> If has consent: maybeInitRum()
+   └─> maybeInitRum() executes:
+       ├─> Load https://client.rum.eu-west-2.amazonaws.com/1.16.0/cwr.js
+       ├─> window.cwr('config', { appMonitorId, region, identityPoolId, guestRoleArn, ... })
+       ├─> RUM client requests temporary credentials from Cognito Identity Pool
+       │   └─> Assumes RumGuestRole
+       │       └─> Gets temporary AWS credentials (access key, secret, session token)
+       ├─> RUM client begins collecting telemetry:
+       │   ├─> Performance: LCP, FID, CLS, INP, navigation timing
+       │   ├─> Errors: Uncaught exceptions, console.error calls
+       │   └─> HTTP: Fetch/XHR requests (URL, status, duration)
+       └─> RUM client sends batched events to:
+           https://dataplane.rum.eu-west-2.amazonaws.com
+
+5. CloudWatch RUM Data Plane:
+   └─> Validates events (checks RUM Guest Role permissions)
+   └─> Stores raw events in RUM App Monitor (30-day retention)
+   └─> Aggregates into CloudWatch metrics:
+       - AWS/RUM / WebVitalsLargestContentfulPaint (dimension: application_name=ci-rum)
+       - AWS/RUM / WebVitalsInteractionToNextPaint
+       - AWS/RUM / JsErrorCount
+       - AWS/RUM / HttpRequestCount
+
+6. CloudWatch:
+   └─> Evaluates alarms against metrics:
+       - If LCP p75 > 4s for 2 periods → Alarm state
+       - If JS errors >= 5 in 5 minutes → Alarm state
+   └─> Updates dashboard:
+       - ci-frontend dashboard shows real-time graphs
+```
+
+### Configuration by Environment
+
+| Configuration | CI (`ci.submit.diyaccounting.co.uk`) | Production (`submit.diyaccounting.co.uk`) |
+|---------------|--------------------------------------|------------------------------------------|
+| **Stack Name** | `ci-env-ObservabilityStack` | `prod-env-ObservabilityStack` |
+| **RUM App Monitor Name** | `ci-rum` | `prod-rum` |
+| **Cognito Identity Pool** | `ci-RumIdentityPool-{hash}` | `prod-RumIdentityPool-{hash}` |
+| **IAM Guest Role** | `ci-RumGuestRole-{hash}` | `prod-RumGuestRole-{hash}` |
+| **Dashboard Name** | `ci-frontend` | `prod-frontend` |
+| **Alarm Names** | `ci-rum-lcp-p75`, `ci-rum-js-errors` | `prod-rum-lcp-p75`, `prod-rum-js-errors` |
+| **Domain Allow List** | `ci.submit.diyaccounting.co.uk` | `submit.diyaccounting.co.uk` |
+| **Session Sample Rate** | 1.0 (100%) | 1.0 (100%) |
+| **Telemetries** | performance, errors, http | performance, errors, http |
+| **Region** | eu-west-2 | eu-west-2 |
+
+### Security Architecture
+
+#### Authentication Flow
+
+```
+User's Browser (Anonymous)
+    │
+    │ 1. Read RUM config from meta tags
+    ▼
+window.__RUM_CONFIG__ = {
+  appMonitorId: "abc123...",
+  region: "eu-west-2",
+  identityPoolId: "eu-west-2:xyz...",
+  guestRoleArn: "arn:aws:iam::...:role/ci-RumGuestRole-..."
+}
+    │
+    │ 2. Load RUM client: cwr.js
+    ▼
+window.cwr('config', { ... })
+    │
+    │ 3. Request temporary credentials
+    ▼
+AWS Cognito Identity Pool (Unauthenticated)
+    │
+    │ 4. AssumeRoleWithWebIdentity
+    ▼
+RUM Guest Role
+  - Trust Policy: cognito-identity.amazonaws.com:aud = {identityPoolId}
+  - Policy: Allow rum:PutRumEvents on all resources
+    │
+    │ 5. Return temporary credentials (valid 1 hour)
+    ▼
+RUM Client (cwr.js)
+  - Credentials: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
+    │
+    │ 6. Send telemetry events (signed with credentials)
+    ▼
+CloudWatch RUM Data Plane
+  - Endpoint: https://dataplane.rum.eu-west-2.amazonaws.com
+  - Validates: Signature, rum:PutRumEvents permission, domain allow list
+    │
+    │ 7. Accept events
+    ▼
+RUM App Monitor
+  - Store raw events (30 days)
+  - Generate CloudWatch metrics
+```
+
+#### IAM Permissions
+
+**RUM Guest Role Policy**:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "rum:PutRumEvents",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**Trust Policy**:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "cognito-identity.amazonaws.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "cognito-identity.amazonaws.com:aud": "{identityPoolId}"
+        },
+        "ForAnyValue:StringLike": {
+          "cognito-identity.amazonaws.com:amr": "unauthenticated"
+        }
+      }
+    }
+  ]
+}
+```
+
+### Privacy and Compliance
+
+#### GDPR/CCPA Compliance
+
+- **Consent Banner**: Displayed before RUM initialization
+- **Opt-Out**: Users can decline tracking (consent stored in localStorage)
+- **Hashed User IDs**: SHA-256 hash applied before sending user identifiers
+- **Privacy Policy**: Disclosure in `/privacy.html`
+- **Data Retention**: 30 days for raw events, metrics retained per CloudWatch settings
+- **No PII**: RUM client does not automatically collect PII (names, emails, passwords)
+
+#### Data Collected
+
+| Data Type | Examples | Purpose |
+|-----------|----------|---------|
+| **Performance Metrics** | LCP, FID, CLS, INP, page load time | Identify slow pages |
+| **JavaScript Errors** | Uncaught exceptions, console.error messages | Debug frontend issues |
+| **HTTP Requests** | URL path, status code, duration | Monitor API performance |
+| **Navigation Events** | Page views, route changes | Understand user journeys |
+| **User Session** | Session ID (generated by RUM), hashed user ID | Group events by session |
+| **Device Info** | Browser version, OS, screen resolution | Segment performance by device |
+
+**NOT Collected**:
+- User input (form fields, keystrokes)
+- Passwords or authentication tokens
+- Full URLs (query parameters are excluded by default)
+- IP addresses (handled by AWS, not sent to application)
+
+### Monitoring and Alerting
+
+#### CloudWatch Metrics
+
+| Metric Name | Namespace | Dimensions | Statistic | Description |
+|-------------|-----------|------------|-----------|-------------|
+| `WebVitalsLargestContentfulPaint` | `AWS/RUM` | `application_name` | p75, p50, p90 | Time to render largest content element (ms) |
+| `WebVitalsInteractionToNextPaint` | `AWS/RUM` | `application_name` | p75, p50, p90 | Interaction responsiveness (ms) |
+| `WebVitalsFirstInputDelay` | `AWS/RUM` | `application_name` | p75, p50, p90 | Time to first user interaction (ms) |
+| `WebVitalsCumulativeLayoutShift` | `AWS/RUM` | `application_name` | p75, p50, p90 | Visual stability score |
+| `JsErrorCount` | `AWS/RUM` | `application_name` | sum | Number of JavaScript errors |
+| `HttpRequestCount` | `AWS/RUM` | `application_name`, `http.status_code` | sum | Number of HTTP requests by status |
+| `HttpRequestDuration` | `AWS/RUM` | `application_name` | average, p75 | HTTP request latency (ms) |
+
+#### CloudWatch Alarms
+
+| Alarm Name | Metric | Threshold | Evaluation | Action |
+|------------|--------|-----------|------------|--------|
+| `ci-rum-lcp-p75` | LCP p75 | > 4000 ms | 2 periods (10 min) | Notify via SNS (if configured) |
+| `ci-rum-js-errors` | JsErrorCount | >= 5 errors | 1 period (5 min) | Notify via SNS (if configured) |
+
+**Note**: Current implementation creates alarms but does not configure SNS notifications. Alarms will show in CloudWatch console but won't send notifications.
+
+#### CloudWatch Dashboard
+
+**Dashboard Name**: `ci-frontend` (for CI environment)
+
+**Widgets**:
+1. **RUM p75 LCP (ms)** - Line graph, 5-minute periods
+2. **RUM p75 INP (ms)** - Line graph, 5-minute periods
+3. **RUM JS Errors (5m sum)** - Line graph, 5-minute windows
+
+**Access**: Dashboard URL is output by ObservabilityStack:
+```
+https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=ci-frontend
+```
+
+### Testing Strategy
+
+#### Unit Tests (Missing)
+
+**Recommended tests** (not yet implemented):
+
+1. **RUM Configuration Parsing** (`web/unit-tests/rum-config.test.js`)
+   - Test `bootstrapRumConfigFromMeta()` reads meta tags correctly
+   - Test fallback when meta tags are missing
+   - Test localStorage caching of config
+
+2. **RUM Consent Logic** (`web/unit-tests/rum-consent.test.js`)
+   - Test `hasRumConsent()` with various localStorage values
+   - Test consent banner display/hide logic
+   - Test consent banner acceptance/decline
+
+3. **RUM Initialization** (`web/unit-tests/rum-init.test.js`)
+   - Test `maybeInitRum()` only initializes once
+   - Test initialization skipped without consent
+   - Test initialization skipped without config
+   - Mock `loadScript()` and `window.cwr`
+
+#### Integration Tests (Missing)
+
+**Recommended tests**:
+
+1. **CDK ObservabilityStack** (`infra/test/java/.../ObservabilityStackTest.java`)
+   - Test RUM App Monitor is created with correct configuration
+   - Test Cognito Identity Pool allows unauthenticated
+   - Test IAM Guest Role has rum:PutRumEvents permission
+   - Test alarms are created with correct thresholds
+
+2. **Deployment Workflow** (manual or E2E test)
+   - Test RUM placeholders are replaced in HTML files
+   - Test deployed HTML contains real RUM config values
+   - Test meta tags are present in deployed pages
+
+#### End-to-End Tests (Missing)
+
+**Recommended tests** (`behaviour-tests/rum.behaviour.test.js`):
+
+1. **RUM Client Loads**
+   - Navigate to deployed page
+   - Wait for consent banner (if first visit)
+   - Click "Accept"
+   - Verify `cwr.js` script is loaded
+   - Verify `window.cwr` function exists
+   - Verify `window.__RUM_INIT_DONE__` is true
+
+2. **RUM Events Sent**
+   - Initialize RUM client
+   - Trigger navigation event
+   - Wait for network request to `dataplane.rum.*.amazonaws.com`
+   - Verify request has valid signature
+   - Verify request body contains events
+
+3. **RUM Metrics in CloudWatch**
+   - Run behaviour test that generates known events (errors, page loads)
+   - Wait 5 minutes for metric aggregation
+   - Query CloudWatch for `AWS/RUM` metrics
+   - Verify metrics exist for test session
+
+### Known Issues and Limitations
+
+#### Critical Issues (Prevent RUM from Working)
+
+1. **❌ RUM Client Never Initialized**
+   - **Problem**: `bootstrapRumConfigFromMeta()` is defined but never called
+   - **Impact**: `window.__RUM_CONFIG__` is never populated
+   - **Result**: `maybeInitRum()` exits early because config is missing
+   - **Fix Required**: Call `bootstrapRumConfigFromMeta()` on page load
+   - **Suggested Fix**:
+     ```javascript
+     if (typeof document !== "undefined" && document.readyState === "loading") {
+       document.addEventListener("DOMContentLoaded", () => {
+         bootstrapRumConfigFromMeta();
+         maybeInitRum();
+       });
+     } else if (typeof document !== "undefined") {
+       bootstrapRumConfigFromMeta();
+       maybeInitRum();
+     }
+     ```
+
+2. **❌ No Page Load Trigger**
+   - **Problem**: `maybeInitRum()` is only called after consent banner acceptance
+   - **Impact**: On subsequent visits (after consent granted), RUM is not initialized
+   - **Fix Required**: Call `maybeInitRum()` on every page load
+
+#### Moderate Issues (Reduce RUM Effectiveness)
+
+3. **⚠️ No SNS Notifications for Alarms**
+   - **Problem**: Alarms are created but not connected to SNS topics
+   - **Impact**: Alarms trigger but no one is notified
+   - **Fix**: Add SNS topic and subscription to ObservabilityStack
+
+4. **⚠️ No RUM Tests**
+   - **Problem**: No automated tests verify RUM initialization
+   - **Impact**: Regressions can break RUM silently
+   - **Fix**: Add unit tests for RUM JavaScript functions
+
+5. **⚠️ Placeholder Validation**
+   - **Problem**: No check that placeholders were successfully replaced
+   - **Impact**: If replacement fails, HTML contains literal `${RUM_APP_MONITOR_ID}`
+   - **Fix**: Add validation step after placeholder injection
+
+#### Minor Issues (Future Enhancements)
+
+6. **ℹ️ Hardcoded RUM Client Version**
+   - **Problem**: RUM client version (`1.16.0`) is hardcoded in `submit.js`
+   - **Impact**: Manual code change needed to update RUM client
+   - **Enhancement**: Make version configurable or use "latest" URL
+
+7. **ℹ️ No Sampling Configuration**
+   - **Problem**: Session sample rate is hardcoded to 1.0 (100%)
+   - **Impact**: High-traffic sites may incur unnecessary RUM costs
+   - **Enhancement**: Make sample rate configurable per environment
+
+8. **ℹ️ No Custom Events**
+   - **Problem**: Application doesn't record custom RUM events
+   - **Impact**: Can't track business-specific actions (VAT submission, auth flow)
+   - **Enhancement**: Add `window.cwr('recordEvent', {...})` for key actions
+
+### Deployment Verification
+
+After deploying to an environment, verify RUM is working:
+
+#### 1. Check Backend Resources (AWS Console)
+
+**CloudWatch RUM App Monitors**:
+```bash
+aws rum list-app-monitors --region eu-west-2
+```
+Expected output: Shows `ci-rum` or `prod-rum`
+
+**Cognito Identity Pools**:
+```bash
+aws cognito-identity list-identity-pools --max-results 10 --region eu-west-2
+```
+Expected output: Shows `ci-RumIdentityPool` or `prod-RumIdentityPool`
+
+**IAM Roles**:
+```bash
+aws iam list-roles | grep RumGuestRole
+```
+Expected output: Shows `ci-RumGuestRole-{hash}`
+
+#### 2. Check HTML Files (Deployed)
+
+**Fetch deployed HTML**:
+```bash
+curl -s https://ci.submit.diyaccounting.co.uk/index.html | grep -A 3 "rum:"
+```
+
+Expected output (placeholders replaced):
+```html
+<meta name="rum:appMonitorId" content="abc123-def456-ghi789" />
+<meta name="rum:region" content="eu-west-2" />
+<meta name="rum:identityPoolId" content="eu-west-2:12345678-..." />
+<meta name="rum:guestRoleArn" content="arn:aws:iam::887764105431:role/ci-RumGuestRole-..." />
+```
+
+**Bad output** (placeholders not replaced):
+```html
+<meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+```
+This indicates the deployment workflow's placeholder injection step failed.
+
+#### 3. Check Browser Console (Runtime)
+
+**Open Developer Tools**:
+1. Navigate to `https://ci.submit.diyaccounting.co.uk/`
+2. Open browser console (F12 → Console tab)
+3. Type: `window.__RUM_CONFIG__`
+
+**Expected** (if working):
+```javascript
+{
+  appMonitorId: "abc123-def456-ghi789",
+  region: "eu-west-2",
+  identityPoolId: "eu-west-2:12345678-...",
+  guestRoleArn: "arn:aws:iam::887764105431:role/ci-RumGuestRole-...",
+  sessionSampleRate: 1
+}
+```
+
+**Actual** (current implementation):
+```javascript
+undefined  // Because bootstrapRumConfigFromMeta() is never called
+```
+
+#### 4. Check RUM Client Loaded (Runtime)
+
+**Browser console**:
+```javascript
+typeof window.cwr
+```
+
+**Expected** (if working): `"function"`
+
+**Actual** (current): `"undefined"`
+
+#### 5. Check Network Requests (Runtime)
+
+**Open Developer Tools**:
+1. Network tab
+2. Filter: `rum.amazonaws.com`
+
+**Expected** (if working):
+- Request to `https://client.rum.eu-west-2.amazonaws.com/1.16.0/cwr.js`
+- Requests to `https://dataplane.rum.eu-west-2.amazonaws.com` (telemetry data)
+
+**Actual** (current): No requests (RUM client never loaded)
+
+#### 6. Check CloudWatch Metrics (After Traffic)
+
+**Wait 5-10 minutes after generating traffic, then**:
+```bash
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/RUM \
+  --metric-name JsErrorCount \
+  --dimensions Name=application_name,Value=ci-rum \
+  --start-time 2025-01-01T00:00:00Z \
+  --end-time 2025-01-01T23:59:59Z \
+  --period 300 \
+  --statistics Sum \
+  --region eu-west-2
+```
+
+**Expected** (if working): Datapoints with non-zero values
+
+**Actual** (current): Empty datapoints (no RUM data collected)
+
+### Cost Analysis
+
+**RUM Pricing** (as of 2025, eu-west-2):
+- **Events**: $1.00 per 100,000 RUM events
+- **Storage**: Included (30-day retention)
+- **CloudWatch Metrics**: Standard CloudWatch pricing
+- **CloudWatch Dashboard**: $3.00 per dashboard per month
+
+**Example Monthly Cost** (CI environment with 1,000 sessions/month):
+- Sessions: 1,000
+- Events per session: ~50 (page loads, errors, HTTP requests)
+- Total events: 50,000
+- **RUM cost**: $0.50/month
+- **Dashboard cost**: $3.00/month
+- **CloudWatch metrics**: ~$0.10/month (custom metrics)
+- **Total**: ~$3.60/month
+
+**Production Environment** (10,000 sessions/month):
+- Total events: 500,000
+- **RUM cost**: $5.00/month
+- **Dashboard cost**: $3.00/month
+- **Total**: ~$8.00/month
+
+**Note**: Cognito Identity Pool and IAM roles have no cost.
+
+### Summary of Current State
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **Backend Infrastructure** | ✅ Complete | ObservabilityStack creates all AWS resources |
+| **CloudFormation Outputs** | ✅ Complete | RUM config exported correctly |
+| **Deployment Workflow** | ✅ Complete | Resolves outputs and injects into HTML |
+| **HTML Meta Tags** | ✅ Complete | Placeholders replaced with real values |
+| **JavaScript Functions** | ⚠️ Defined | All functions written but not wired up |
+| **Page Load Initialization** | ❌ Missing | `bootstrapRumConfigFromMeta()` never called |
+| **RUM Client Loading** | ❌ Missing | `maybeInitRum()` never called on page load |
+| **Consent Banner** | ⚠️ Partial | Banner shows only if consent not granted |
+| **Tests** | ❌ Missing | No unit, integration, or E2E tests |
+| **Documentation** | ✅ Complete | This document |
+
+### Work Remaining
+
+See `_developers/RUM_PLAN.md` for detailed implementation steps to complete the RUM rollout.
