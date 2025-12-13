@@ -217,20 +217,29 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
     await page.focus("#status");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-pre-status-fill-in.png` });
     if (status) {
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
       await page.selectOption("#status", String(status));
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-filled-in.png` });
     }
     if (testScenario) {
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-fill-in.png` });
+      await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
       await page.selectOption("#testScenario", String(testScenario));
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
 
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageUp");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-obligations-fill-in.png` });
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-fill-in-pagedown.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-obligations-fill-in-pagedown.png` });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }

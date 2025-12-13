@@ -326,11 +326,36 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
     /* ************************************* */
 
+    // Fulfilled obligations
     await initVatObligations(page, screenshotPath);
     await fillInVatObligations(
       page,
       testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, // status: "Fulfilled", testScenario: "Monthly - Three Met" },
+      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Fulfilled" }, // testScenario: "Monthly - Three Met" },
+      screenshotPath,
+    );
+    await submitVatObligationsForm(page, screenshotPath);
+    await verifyVatObligationsResults(page, screenshotPath);
+    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+
+    // Open obligations
+    await initVatObligations(page, screenshotPath);
+    await fillInVatObligations(
+      page,
+      testVatNumber,
+      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Open" }, // testScenario: "Monthly - Three Met" },
+      screenshotPath,
+    );
+    await submitVatObligationsForm(page, screenshotPath);
+    await verifyVatObligationsResults(page, screenshotPath);
+    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+
+    // All obligations: Monthly - Three Met
+    await initVatObligations(page, screenshotPath);
+    await fillInVatObligations(
+      page,
+      testVatNumber,
+      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario: "Monthly - Three Met" },
       screenshotPath,
     );
     await submitVatObligationsForm(page, screenshotPath);
