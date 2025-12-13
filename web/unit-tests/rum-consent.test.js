@@ -130,9 +130,7 @@ describe("RUM Consent", () => {
 
       const hasConsent = () => {
         try {
-          return (
-            localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-          );
+          return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
           return false;
         }
@@ -146,9 +144,7 @@ describe("RUM Consent", () => {
 
       const hasConsent = () => {
         try {
-          return (
-            localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-          );
+          return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
           return false;
         }
@@ -163,9 +159,7 @@ describe("RUM Consent", () => {
 
       const hasConsent = () => {
         try {
-          return (
-            localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-          );
+          return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
           return false;
         }
@@ -179,9 +173,7 @@ describe("RUM Consent", () => {
 
       const hasConsent = () => {
         try {
-          return (
-            localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-          );
+          return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
           return false;
         }
@@ -193,9 +185,7 @@ describe("RUM Consent", () => {
     it("should return false if no consent recorded", () => {
       const hasConsent = () => {
         try {
-          return (
-            localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-          );
+          return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
           return false;
         }
@@ -213,10 +203,7 @@ describe("RUM Consent", () => {
 
       const hasConsent = () => {
         try {
-          return (
-            brokenLocalStorage.getItem("consent.rum") === "granted" ||
-            brokenLocalStorage.getItem("consent.analytics") === "granted"
-          );
+          return brokenLocalStorage.getItem("consent.rum") === "granted" || brokenLocalStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
           return false;
         }
@@ -230,7 +217,7 @@ describe("RUM Consent", () => {
     it("should not create banner if consent already granted", () => {
       // Clear any existing banner from initialization
       domElements = {};
-      
+
       storageMock["consent.rum"] = "granted";
 
       const hasConsent = () => localStorage.getItem("consent.rum") === "granted";
@@ -412,9 +399,7 @@ describe("RUM Consent", () => {
       localStorage.setItem("consent.analytics", "granted");
 
       const hasConsent = () => {
-        return (
-          localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-        );
+        return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
       };
 
       expect(hasConsent()).toBe(true);
@@ -426,9 +411,7 @@ describe("RUM Consent", () => {
 
       // The function checks OR, so if either is granted, it returns true
       const hasConsent = () => {
-        return (
-          localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-        );
+        return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
       };
 
       expect(hasConsent()).toBe(true);
@@ -438,9 +421,7 @@ describe("RUM Consent", () => {
       localStorage.setItem("consent.analytics", "granted");
 
       const hasConsent = () => {
-        return (
-          localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted"
-        );
+        return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
       };
 
       // Banner should not be shown

@@ -302,12 +302,7 @@ describe("RUM Configuration", () => {
         guestRoleArn: "arn:aws:iam::123:role/Test",
       };
 
-      const isValid = !!(
-        validConfig.appMonitorId &&
-        validConfig.region &&
-        validConfig.identityPoolId &&
-        validConfig.guestRoleArn
-      );
+      const isValid = !!(validConfig.appMonitorId && validConfig.region && validConfig.identityPoolId && validConfig.guestRoleArn);
 
       expect(isValid).toBe(true);
     });
@@ -320,12 +315,7 @@ describe("RUM Configuration", () => {
         guestRoleArn: "arn:aws:iam::123:role/Test",
       };
 
-      const isValid = !!(
-        invalidConfig.appMonitorId &&
-        invalidConfig.region &&
-        invalidConfig.identityPoolId &&
-        invalidConfig.guestRoleArn
-      );
+      const isValid = !!(invalidConfig.appMonitorId && invalidConfig.region && invalidConfig.identityPoolId && invalidConfig.guestRoleArn);
 
       expect(isValid).toBe(false);
     });
@@ -338,12 +328,7 @@ describe("RUM Configuration", () => {
         guestRoleArn: "arn:aws:iam::123:role/Test",
       };
 
-      const isValid = !!(
-        invalidConfig.appMonitorId &&
-        invalidConfig.region &&
-        invalidConfig.identityPoolId &&
-        invalidConfig.guestRoleArn
-      );
+      const isValid = !!(invalidConfig.appMonitorId && invalidConfig.region && invalidConfig.identityPoolId && invalidConfig.guestRoleArn);
 
       expect(isValid).toBe(false);
     });
