@@ -1,7 +1,7 @@
 // behaviour-tests/behaviour-hmrc-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
+import { loggedFill, timestamp, loggedClick } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-steps";
 
@@ -13,7 +13,7 @@ export async function acceptCookiesHmrc(page, screenshotPath = defaultScreenshot
     if (await acceptCookiesButton.isVisible()) {
       console.log("[USER INTERACTION] Clicking: Accept additional cookies button - Accepting cookies");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-accepting-cookies.png` });
-      await acceptCookiesButton.click();
+      await loggedClick(page, acceptCookiesButton, "Accept additional cookies");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-accepted-cookies.png` });
     }
     // Hide the cookies message if it's still visible
@@ -22,7 +22,7 @@ export async function acceptCookiesHmrc(page, screenshotPath = defaultScreenshot
     if (await hideCookiesButton.isVisible()) {
       console.log("[USER INTERACTION] Clicking: Hide cookies message button - Hiding cookies message");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-accept-cookies-hide-clicking.png` });
-      await hideCookiesButton.click();
+      await loggedClick(page, hideCookiesButton, "Hide cookies message");
       await page.screenshot({
         path: `${screenshotPath}/${timestamp()}-06-hid-cookies-message.png`,
       });
@@ -45,7 +45,7 @@ export async function goToHmrcAuth(page, screenshotPath = defaultScreenshotPath)
 
     console.log(`[USER INTERACTION] Clicking: Continue button - Continuing with HMRC permission`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submit-permission.png` });
-    await page.getByRole("button", { name: "Continue" }).click();
+    await loggedClick(page, page.getByRole("button", { name: "Continue" }), "Continue");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
 
@@ -61,7 +61,7 @@ export async function initHmrcAuth(page, screenshotPath = defaultScreenshotPath)
     // Submit the sign in and expect the credentials form to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-init-hmrc-auth.png` });
     console.log(`[USER INTERACTION] Clicking: Sign in to HMRC button - Starting HMRC authentication`);
-    await page.getByRole("button", { name: "Sign in to the HMRC online service" }).click();
+    await loggedClick(page, page.getByRole("button", { name: "Sign in to the HMRC online service" }), "Sign in to the HMRC online service");
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-init-hmrc-auth.png` });
@@ -86,7 +86,7 @@ export async function submitHmrcAuth(page, screenshotPath = defaultScreenshotPat
   await test.step("The user submits HMRC credentials, expecting to be prompted to grant permission", async () => {
     console.log(`[USER INTERACTION] Clicking: Sign in button - Submitting HMRC credentials`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hmrc-auth.png` });
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await loggedClick(page, page.getByRole("button", { name: "Sign in" }), "Sign in");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-hmrc-auth-clicked.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -99,7 +99,7 @@ export async function grantPermissionHmrcAuth(page, screenshotPath = defaultScre
   await test.step("The user grants permission to HMRC and returns to the application", async () => {
     //  Submit the give permission form
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-give-permission-hmrc-auth.png` });
-    await page.click("#givePermission");
+    await loggedClick(page, "#givePermission", "Give permission");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-give-permission-hmrc-auth-clicked.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);

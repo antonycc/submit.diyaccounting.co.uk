@@ -8,7 +8,7 @@ const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behavio
 export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user chooses to log in from the home page and arrives at the sign-in options", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-login.png` });
-    await loggedClick(page, "a:has-text('Log in')", "Clicking login link");
+    await loggedClick(page, "a:has-text('Log in')", "Clicking login link", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-login-clicked.png` });
 
     // Login
@@ -77,7 +77,7 @@ export async function logOutAndExpectToBeLoggedOut(page, screenshotPath = defaul
     await Promise.all([
       // some implementations may redirect; we tolerate no URL change by catching
       page.waitForURL(/index\.html$|\/$/, { waitUntil: "domcontentloaded", timeout: 15000 }).catch(() => {}),
-      page.click("a:has-text('Logout')"),
+      loggedClick(page, "a:has-text('Logout')", "Logout", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-home.png` });
     await expect(page.getByText("Not logged in")).toBeVisible({ timeout: 15000 });
@@ -88,7 +88,7 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
   await test.step("Continue with Google via Amazon Cognito", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png` });
     await expect(page.getByText("Continue with Google via Amazon Cognito")).toBeVisible();
-    await loggedClick(page, "button:has-text('Continue with Google via Amazon Cognito')", "Continue with Google via Amazon Cognito");
+    await loggedClick(page, "button:has-text('Continue with Google via Amazon Cognito')", "Continue with Google via Amazon Cognito", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({
@@ -103,7 +103,7 @@ export async function selectOidcCognitoAuth(page, screenshotPath = defaultScreen
     await expect(cognitoBtn).toBeVisible({ timeout: 2000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-button.png` });
 
-    await cognitoBtn.click();
+    await loggedClick(page, cognitoBtn, "Cognito OIDC", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-cognito-button-clicked.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -116,7 +116,7 @@ export async function selectOidcCognitoAuth(page, screenshotPath = defaultScreen
 
 export async function fillInCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("Fill in some login details", async () => {
-    await page.getByRole("button", { name: "Fill Form" }).click();
+    await loggedClick(page, page.getByRole("button", { name: "Fill Form" }), "Fill Form", { screenshotPath });
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-auth-form-filled.png` });
   });
@@ -125,7 +125,7 @@ export async function fillInCognitoAuth(page, screenshotPath = defaultScreenshot
 export async function submitCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("Home page has logged in user email", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submitting-auth.png` });
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await loggedClick(page, page.getByRole("button", { name: "Sign in" }), "Sign in", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-auth.png` });
@@ -136,7 +136,7 @@ export async function initMockAuth(page, screenshotPath = defaultScreenshotPath)
   await test.step("The user continues with the mock identity provider and sees the sign-in form", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-init-mock-auth.png` });
     await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
-    await loggedClick(page, "button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider");
+    await loggedClick(page, "button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-init-mock-auth.png` });
@@ -148,7 +148,7 @@ export async function fillInMockAuth(page, testAuthUsername, screenshotPath = de
   await test.step("The user enters a username and identity claims for the session", async () => {
     // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-mock.png` });
-    await loggedFill(page, 'input[name="username"]', `${testAuthUsername}`, "Entering username");
+    await loggedFill(page, 'input[name="username"]', `${testAuthUsername}`, "Entering username", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-mock-filled-username.png` });
     await page.waitForTimeout(100);
 
@@ -157,7 +157,7 @@ export async function fillInMockAuth(page, testAuthUsername, screenshotPath = de
     const identityToken = {
       email: `${testAuthUsername}@example.com`,
     };
-    await loggedFill(page, 'textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims");
+    await loggedFill(page, 'textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-moc-filled-claims.png` });
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-fill-in-mock.png` });
@@ -169,7 +169,7 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
     // Home page has logged in user email
     // <input class="button-primary" type="submit" value="Sign-in">
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-mock.png` });
-    await loggedClick(page, 'input[type="submit"][value="Sign-in"]', "Submitting sign-in form");
+    await loggedClick(page, 'input[type="submit"][value="Sign-in"]', "Submitting sign-in form", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-mock-signed-in.png` });

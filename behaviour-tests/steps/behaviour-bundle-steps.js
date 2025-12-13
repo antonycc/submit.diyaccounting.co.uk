@@ -11,12 +11,12 @@ export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPa
     console.log("Opening hamburger menu...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-bundles-page-hamburger-menu.png` });
     await expect(page.locator("button.hamburger-btn")).toBeVisible({ timeout: 10000 });
-    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu");
+    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-hamburger-menu.png` });
     await expect(page.getByRole("link", { name: "Bundles", exact: true })).toBeVisible({ timeout: 16000 });
     await Promise.all([
       page.waitForURL(/bundles\.html/, { waitUntil: "domcontentloaded", timeout: 30000 }),
-      loggedClick(page, "a[href*='bundles.html']", "Clicking Bundles in hamburger menu"),
+      loggedClick(page, "a[href*='bundles.html']", "Clicking Bundles in hamburger menu", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page-hamburger-menu.png` });
     await page.waitForTimeout(500);
@@ -35,7 +35,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     page.once("dialog", (dialog) => dialog.accept());
     await Promise.all([
       // No navigation expected, just UI update
-      loggedClick(page, "#removeAllBtn", "Remove All Bundles"),
+      loggedClick(page, "#removeAllBtn", "Remove All Bundles", { screenshotPath }),
     ]);
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-02-removing-all-bundles-clicked.png`,
@@ -114,7 +114,7 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
         return;
       }
     }
-    await loggedClick(page, `button:has-text('Request ${bundleName}')`, `Request ${bundleName}`);
+    await loggedClick(page, `button:has-text('Request ${bundleName}')`, `Request ${bundleName}`, { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-bundle-clicked.png` });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle.png` });
     await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).toBeVisible({ timeout: 16000 });

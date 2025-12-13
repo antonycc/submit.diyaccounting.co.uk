@@ -35,11 +35,15 @@ import { assertHmrcApiRequestExists, assertHmrcApiRequestValues, assertConsisten
 import {
   completeVat,
   fillInVat,
+  fillInVatObligations,
   fillInViewVatReturn,
   initSubmitVat,
+  initVatObligations,
   initViewVatReturn,
   submitFormVat,
+  submitVatObligationsForm,
   submitViewVatReturnForm,
+  verifyVatObligationsResults,
   verifyVatSubmission,
   verifyViewVatReturnResults,
 } from "./steps/behaviour-hmrc-vat-steps.js";
@@ -88,6 +92,8 @@ const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
+const hmrcVatPeriodFromDate = "2025-01-07";
+const hmrcVatPeriodToDate = "2025-11-01";
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -296,7 +302,31 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   }
   await goToHomePage(page, screenshotPath);
 
-  // TODO: First query obligations, forcing a test scenario to match the return we'll submit if possible.
+  /* ******************* */
+  /*  GET OBLIGATIONS    */
+  /* ******************* */
+
+  await initVatObligations(page, screenshotPath);
+  await fillInVatObligations(page, testVatNumber, { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
+  await submitVatObligationsForm(page, screenshotPath);
+
+  /* ************ */
+  /* `HMRC AUTH   */
+  /* ************ */
+
+  await acceptCookiesHmrc(page, screenshotPath);
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
+
+  /* ******************** */
+  /*  VIEW OBLIGATIONS    */
+  /* ******************** */
+
+  await verifyVatObligationsResults(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ************ */
   /* `SUBMIT VAT  */
@@ -310,7 +340,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* `HMRC AUTH   */
   /* ************ */
 
-  await acceptCookiesHmrc(page, screenshotPath);
+  //await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
   await initHmrcAuth(page, screenshotPath);
   await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
@@ -455,6 +485,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   // Select and copy key screenshots, then generate figures.json
   const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
 
+  // TODO: Pick examples with all then HMRC API form submissions and response data
   const keyScreenshotPatterns = [
     "submit.*vat.*form", // VAT form submission
     "complete.*vat", // VAT submission completion
