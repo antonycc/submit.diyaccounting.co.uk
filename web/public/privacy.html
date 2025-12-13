@@ -55,7 +55,7 @@
         </div>
       </div>
       <h1 style="text-align: center">Privacy Policy</h1>
-      <p class="muted" style="text-align: center">Last updated: 27 Oct 2025</p>
+      <p class="muted" style="text-align: center">Last updated: December 13, 2024</p>
     </header>
 
     <main>
@@ -68,18 +68,41 @@
 
       <section>
         <h2>What we collect</h2>
+        <h3>Real User Monitoring (RUM)</h3>
+        <p>
+          We use Amazon CloudWatch RUM to collect performance and error data from your browser. This helps us improve the application's
+          speed, reliability, and user experience. RUM only starts after you click "Accept" in the consent banner.
+        </p>
+
+        <h4>Data Collected by RUM</h4>
+        <ul>
+          <li><strong>Performance Metrics</strong>: Page load times, render times, interaction delays (Core Web Vitals: LCP, INP, CLS)</li>
+          <li><strong>JavaScript Errors</strong>: Unhandled exceptions and error messages</li>
+          <li><strong>HTTP Requests</strong>: API request URLs (without query parameters), status codes, durations</li>
+          <li><strong>Navigation Events</strong>: Pages visited, route changes</li>
+          <li>
+            <strong>Device Information</strong>: Browser type/version, operating system, screen resolution, viewport size
+          </li>
+          <li>
+            <strong>Session Information</strong>: Anonymous session ID, hashed user ID (if logged in - we hash your identifier in the
+            browser before sending)
+          </li>
+        </ul>
+
+        <h4>Data NOT Collected by RUM</h4>
+        <ul>
+          <li>Form input data (e.g., VAT numbers, financial figures)</li>
+          <li>Passwords or authentication tokens</li>
+          <li>Full URLs with query parameters or personal identifiers</li>
+          <li>IP addresses (AWS receives them for request routing but we do not store or process them)</li>
+        </ul>
+
+        <h4>Other Data We Collect</h4>
         <ul>
           <li>
-            Real User Monitoring (RUM) performance data (only after you consent): page load timing, Core Web Vitals (LCP, INP, CLS),
-            JavaScript errors, and HTTP request timings from your browser to our API. This is provided by Amazon CloudWatch RUM.
-          </li>
-          <li>
-            A pseudonymous user identifier for correlation. When you are logged in, we hash your user identifier in the browser and send
-            only the hash to RUM. We do not send your raw identifier to RUM.
-          </li>
-          <li>
             Operational logs from our infrastructure (e.g., CloudFront/WAF request logs, API Gateway access logs), which contain request
-            metadata such as timestamps, paths, response codes, and IP addresses as seen by our edge or origin services.
+            metadata such as timestamps, paths, response codes, and IP addresses as seen by our edge or origin services. These are collected
+            automatically by AWS for security and operational reasons.
           </li>
         </ul>
       </section>
@@ -106,10 +129,13 @@
       <section>
         <h2>Data retention</h2>
         <ul>
-          <li>CloudWatch RUM retains events for 30 days by default. Aggregated dashboards may reflect anonymized trends.</li>
           <li>
-            Other AWS logs (e.g., CloudFront, API access logs) have retention policies configured in our account and are generally kept for
-            short operational periods unless required for security investigations.
+            <strong>CloudWatch RUM</strong>: Raw RUM events are stored by AWS for 30 days. Aggregated metrics are retained longer for trend
+            analysis, but contain no personally identifiable information.
+          </li>
+          <li>
+            <strong>Other AWS logs</strong> (e.g., CloudFront, API access logs): Have retention policies configured in our account and are
+            generally kept for short operational periods (typically 30-90 days) unless required for security investigations or compliance.
           </li>
         </ul>
       </section>
@@ -135,7 +161,18 @@
 
       <section>
         <h2>Data processors</h2>
-        <p>We use Amazon Web Services (AWS) to host and operate the website, API, and monitoring services.</p>
+        <p>
+          We use Amazon Web Services (AWS) to host and operate the website, API, and monitoring services. RUM data is processed by AWS in
+          the EU West (London) region. AWS is GDPR-compliant and acts as a data processor on our behalf.
+        </p>
+        <p>AWS services we use include:</p>
+        <ul>
+          <li><strong>Amazon CloudWatch RUM</strong>: Real user monitoring and performance analytics</li>
+          <li><strong>Amazon CloudFront</strong>: Content delivery and edge caching</li>
+          <li><strong>AWS Lambda</strong>: Serverless API functions</li>
+          <li><strong>Amazon DynamoDB</strong>: Data storage for receipts and user bundles</li>
+          <li><strong>Amazon Cognito</strong>: User authentication</li>
+        </ul>
       </section>
 
       <section>
