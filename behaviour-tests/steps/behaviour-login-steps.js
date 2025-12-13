@@ -88,7 +88,9 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
   await test.step("Continue with Google via Amazon Cognito", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png` });
     await expect(page.getByText("Continue with Google via Amazon Cognito")).toBeVisible();
-    await loggedClick(page, "button:has-text('Continue with Google via Amazon Cognito')", "Continue with Google via Amazon Cognito", { screenshotPath });
+    await loggedClick(page, "button:has-text('Continue with Google via Amazon Cognito')", "Continue with Google via Amazon Cognito", {
+      screenshotPath,
+    });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({

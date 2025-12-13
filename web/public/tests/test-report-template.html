@@ -478,25 +478,49 @@
               <h4>
                 <span class="api-method ${method.toLowerCase()}">${method}</span>
                 ${url}
-                ${statusCode ? `<span class="${statusCode < 400 ? 'status-success' : 'status-error'}" style="margin-left: 1rem;">Status: ${statusCode}</span>` : ''}
+                ${statusCode ? `<span class="${statusCode < 400 ? "status-success" : "status-error"}" style="margin-left: 1rem;">Status: ${statusCode}</span>` : ""}
               </h4>
 
               <h5>Request:</h5>
               <pre><strong>Method:</strong> ${method}
-<strong>URL:</strong> ${url}${Object.keys(requestHeaders).length > 0 ? `
+<strong>URL:</strong> ${url}${
+            Object.keys(requestHeaders).length > 0
+              ? `
 <strong>Headers:</strong>
-${escapeHtml(JSON.stringify(requestHeaders, null, 2))}` : ''}${requestBody ? `
+${escapeHtml(JSON.stringify(requestHeaders, null, 2))}`
+              : ""
+          }${
+            requestBody
+              ? `
 <strong>Body:</strong>
-${escapeHtml(typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody, null, 2))}` : ''}</pre>
+${escapeHtml(typeof requestBody === "string" ? requestBody : JSON.stringify(requestBody, null, 2))}`
+              : ""
+          }</pre>
 
-              ${httpResponse ? `
+              ${
+                httpResponse
+                  ? `
               <h5>Response:</h5>
-              <pre>${statusCode ? `<strong>Status:</strong> ${statusCode}
-` : ''}${Object.keys(responseHeaders).length > 0 ? `<strong>Headers:</strong>
+              <pre>${
+                statusCode
+                  ? `<strong>Status:</strong> ${statusCode}
+`
+                  : ""
+              }${
+                Object.keys(responseHeaders).length > 0
+                  ? `<strong>Headers:</strong>
 ${escapeHtml(JSON.stringify(responseHeaders, null, 2))}
-` : ''}${responseBody ? `<strong>Body:</strong>
-${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(responseBody, null, 2))}` : ''}</pre>
-              ` : ''}
+`
+                  : ""
+              }${
+                responseBody
+                  ? `<strong>Body:</strong>
+${escapeHtml(typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody, null, 2))}`
+                  : ""
+              }</pre>
+              `
+                  : ""
+              }
             </div>
           `;
         });
@@ -517,11 +541,11 @@ ${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(re
                 <p><strong>Test Recording: ${escapeHtml(video)}</strong></p>
                 <video controls>`;
             // Add appropriate source based on file extension
-            if (videoExt.endsWith('.webm')) {
+            if (videoExt.endsWith(".webm")) {
               html += `<source src="${videoPath}" type="video/webm">`;
               // Also try mp4 if converted
-              html += `<source src="${videoPath.replace('.webm', '.mp4')}" type="video/mp4">`;
-            } else if (videoExt.endsWith('.mp4')) {
+              html += `<source src="${videoPath.replace(".webm", ".mp4")}" type="video/mp4">`;
+            } else if (videoExt.endsWith(".mp4")) {
               html += `<source src="${videoPath}" type="video/mp4">`;
             } else {
               // Generic fallback
@@ -547,7 +571,7 @@ ${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(re
           if (artifacts.figures && artifacts.figures.length > 0) {
             artifacts.figures.forEach((figure, index) => {
               const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(figure.filename)}`;
-              const caption = figure.caption || `Screenshot ${(figure.order ?? index + 1)}`;
+              const caption = figure.caption || `Screenshot ${figure.order ?? index + 1}`;
               html += `
                 <div class="screenshot-item">
                   <a href="${screenshotPath}" target="_blank">
@@ -555,7 +579,7 @@ ${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(re
                   </a>
                   <div class="screenshot-caption">
                     <strong>${escapeHtml(caption)}</strong><br>
-                    ${escapeHtml(figure.description || '')}
+                    ${escapeHtml(figure.description || "")}
                   </div>
                 </div>
               `;
@@ -564,7 +588,7 @@ ${escapeHtml(typeof responseBody === 'string' ? responseBody : JSON.stringify(re
             // Fallback to simple list if no figures metadata
             artifacts.screenshots.forEach((screenshot) => {
               const screenshotPath = `behaviour-test-results/${report.testName}/${escapeHtml(screenshot)}`;
-              const filename = screenshot.split('/').pop();
+              const filename = screenshot.split("/").pop();
               html += `
                 <div class="screenshot-item">
                   <a href="${screenshotPath}" target="_blank">

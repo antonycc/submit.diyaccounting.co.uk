@@ -118,7 +118,7 @@ export function extractRequest(event) {
   context.set("requestId", requestId || null);
   context.set("amznTraceId", amznTraceId || null);
   context.set("traceparent", traceparent || null);
-  context.set("correlationId", correlationId || (requestId || null));
+  context.set("correlationId", correlationId || requestId || null);
   if (event.headers) {
     try {
       let baseRequestUrl;
