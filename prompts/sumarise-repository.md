@@ -272,7 +272,7 @@ repository-contents.txt:
 ./behaviour-tests/steps/behaviour-login-steps.js
 ./behaviour-tests/submitVat.behaviour.test.js
 ./behaviour-tests/WIREMOCK.md
-./behaviour-tests/vatObligations.behaviour.test.js
+./behaviour-tests/getVatObligations.behaviour.test.js
 ./behaviour-tests/helpers/wiremock-helper.js
 ./behaviour-tests/helpers/figures-helper.js
 ./behaviour-tests/helpers/dynamodb-export.js

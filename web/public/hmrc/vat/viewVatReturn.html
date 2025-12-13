@@ -65,9 +65,9 @@
             <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
             <select id="testScenario" name="testScenario">
               <option value="">Default</option>
-              <option value="SINGLE_LIABILITY">Single Liability</option>
-              <option value="MULTIPLE_LIABILITIES">Multiple Liabilities</option>
-              <option value="NOT_FOUND">Return Not Found</option>
+              <!-- Values aligned with _developers/reference/hmrc-md-vat-api-1.0.yaml (GET /organisations/vat/{vrn}/returns/{periodKey}) -->
+              <option value="DATE_RANGE_TOO_LARGE">Date Range Too Large</option>
+              <option value="INSOLVENT_TRADER">Insolvent Trader</option>
             </select>
             <div class="help-text">Test different HMRC sandbox scenarios</div>
           </div>

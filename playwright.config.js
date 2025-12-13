@@ -7,7 +7,13 @@ export default defineConfig({
       name: "behaviour-tests",
       testDir: "behaviour-tests",
       // testMatch: ["**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
-      testMatch: ["**/vatObligations.behaviour.test.js", "**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
+      testMatch: [
+        "**/getVatObligations.behaviour.test.js",
+        "**/submitVat.behaviour.test.js",
+        "**/bundles.behaviour.test.js",
+        "**/postVatReturn.behaviour.test.js",
+        "**/getVatReturn.behaviour.test.js",
+      ],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 120_000,
@@ -23,7 +29,23 @@ export default defineConfig({
     {
       name: "obligation-behaviour-tests",
       testDir: "behaviour-tests",
-      testMatch: ["**/vatObligations.behaviour.test.js"],
+      testMatch: ["**/getVatObligations.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 120_000,
+    },
+    {
+      name: "post-vat-return-behaviour-tests",
+      testDir: "behaviour-tests",
+      testMatch: ["**/postVatReturn.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 120_000,
+    },
+    {
+      name: "get-vat-return-behaviour-tests",
+      testDir: "behaviour-tests",
+      testMatch: ["**/getVatReturn.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 120_000,
@@ -54,7 +76,7 @@ export default defineConfig({
     // Save a video for every test
     video: {
       mode: "on", // 'on', 'retain-on-failure', or 'off'
-      size: { width: 1280, height: 1024 }, // (optional)
+      size: { width: 1280, height: 1446 }, // (optional)
       // Playwright always uses .webm for video
     },
     // Screenshot options

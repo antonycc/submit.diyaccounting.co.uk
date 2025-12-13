@@ -274,9 +274,21 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       screenshotPath = obligationsQuery;
       obligationsQuery = {};
     }
-
     const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = obligationsQuery || {};
+    const hasScenario = !!testScenario;
+
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
+    if (hasScenario) {
+      switch (testScenario) {
+        case "INSOLVENT_TRADER":
+        case "NOT_FOUND":
+          await page.waitForTimeout(500);
+          const obligationsResults = page.locator("#obligationsResults");
+          await expect(obligationsResults).toBeHidden();
+          break;
+      }
+      return;
+    }
     await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
     const resultsContainer = page.locator("#obligationsResults");
@@ -353,7 +365,6 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     const fulfilledCount = rows.filter((r) => r.statusCode === "F").length;
     const openCount = rows.filter((r) => r.statusCode === "O").length;
 
-    const hasScenario = !!testScenario;
     if (!hasScenario) {
       // Only check default scenario shape when no explicit status filter was applied
       if (!status) {

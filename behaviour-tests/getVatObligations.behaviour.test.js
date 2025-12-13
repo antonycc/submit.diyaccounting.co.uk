@@ -1,4 +1,4 @@
-// behaviour-tests/vatObligations.behaviour.test.js
+// behaviour-tests/getVatObligations.behaviour.test.js
 
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";

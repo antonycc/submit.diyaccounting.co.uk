@@ -13,7 +13,7 @@ All changes apply to the `./behaviour-tests` directory and improve the quality, 
 The behaviour test `submitVat.behaviour.test.js` was writing to DynamoDB with 3 different hashed subs:
 
 1. **OAuth token exchange**: `3790039d...` - Used `unknown-user-${uuid}` because no userSub available
-2. **VAT return POST**: `04f8996d...` - Correct userSub from bundle enforcement  
+2. **VAT return POST**: `04f8996d...` - Correct userSub from bundle enforcement
 3. **VAT return GET**: `d4eba781...` - Wrong due to parameter order bug
 
 ### Root Cause
@@ -23,7 +23,7 @@ In `app/functions/hmrc/hmrcVatReturnGet.js` line 166:
 // BEFORE (incorrect)
 const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub);
 
-// AFTER (correct) 
+// AFTER (correct)
 const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {}, auditForUserSub);
 ```
 
@@ -49,7 +49,7 @@ Fixed the parameter order when calling `hmrcHttpGet` to include empty `{}` for q
 **Result**: Now VAT POST and VAT GET requests use the same userSub, reducing from 3 to 2 unique hashed subs (OAuth token exchange still uses a UUID since it happens before authentication).
 
 ### Fix 2: Ensure vatObligations Test DynamoDB Writing is Consistent
-**File**: `behaviour-tests/vatObligations.behaviour.test.js`
+**File**: `behaviour-tests/getVatObligations.behaviour.test.js`
 
 Verified that the VAT obligations test was already calling `hmrcHttpGet` correctly with all parameters in the right order. Added assertions to validate the consistency.
 
@@ -63,12 +63,12 @@ Added comprehensive DynamoDB assertions:
 - Assert OAuth token exchange request exists
 - Assert VAT return POST exists with correct method and status code
 - Assert request body contains submitted periodKey and vatDueSales
-- Assert VAT return GET exists with correct method and status code  
+- Assert VAT return GET exists with correct method and status code
 - Assert response body contains expected periodKey and vatDueSales
 - Assert consistent hashedSub across authenticated requests
 
 ### Fix 4: Add DynamoDB Assertion Tests to vatObligations
-**File**: `behaviour-tests/vatObligations.behaviour.test.js`
+**File**: `behaviour-tests/getVatObligations.behaviour.test.js`
 
 Added DynamoDB assertions:
 - Assert OAuth token exchange request exists
@@ -77,10 +77,10 @@ Added DynamoDB assertions:
 - Assert consistent hashedSub across authenticated requests
 
 ### Fix 5-7: Enhance testContext.json for All Tests
-**Files**: 
+**Files**:
 - `behaviour-tests/bundles.behaviour.test.js`
 - `behaviour-tests/submitVat.behaviour.test.js`
-- `behaviour-tests/vatObligations.behaviour.test.js`
+- `behaviour-tests/getVatObligations.behaviour.test.js`
 
 Enhanced testContext.json with additional useful metadata:
 
@@ -98,10 +98,10 @@ Enhanced testContext.json with additional useful metadata:
 - **submitVat/vatObligations**: `isSandboxMode` - Boolean indicating sandbox mode
 
 ### Fix 8-10: Create figures.json for All Tests
-**Files**: 
+**Files**:
 - `behaviour-tests/bundles.behaviour.test.js`
 - `behaviour-tests/submitVat.behaviour.test.js`
-- `behaviour-tests/vatObligations.behaviour.test.js`
+- `behaviour-tests/getVatObligations.behaviour.test.js`
 **Helper**: `behaviour-tests/helpers/figures-helper.js` (new)
 
 Created automated screenshot selection and documentation:
@@ -129,7 +129,7 @@ Created automated screenshot selection and documentation:
 4. Receipt page with submitted returns
 5. Retrieved VAT return results
 
-**vatObligations.behaviour.test.js**:
+**getVatObligations.behaviour.test.js**:
 1. VAT obligations form initial state
 2. VAT obligations form filled with parameters
 3. HMRC authorization page

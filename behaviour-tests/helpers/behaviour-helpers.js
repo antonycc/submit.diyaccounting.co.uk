@@ -54,6 +54,11 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
   let stop;
   let endpoint;
   if (runDynamoDb === "run") {
+    // Prefer an ephemeral random port to avoid EADDRINUSE collisions across test runs
+    if (!process.env.DYNAMODB_PORT || String(process.env.DYNAMODB_PORT).trim() === "") {
+      process.env.DYNAMODB_PORT = "0"; // let dynalite choose a free port
+      logger.info("[dynamodb]: DYNAMODB_PORT not set; using ephemeral port (0)");
+    }
     logger.info("[dynamodb]: Starting dynalite (local DynamoDB) server...");
     const started = await startDynamoDB();
     stop = started.stop;
