@@ -1,4 +1,3 @@
-/* eslint-env browser */
 (function () {
   function pickDisplayName(user) {
     const candidates = ["given_name", "name", "email", "sub"];

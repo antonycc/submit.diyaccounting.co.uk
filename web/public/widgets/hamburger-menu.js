@@ -1,4 +1,3 @@
-/* eslint-env browser */
 (function () {
   // Hamburger menu toggle functionality
   function toggleMenu() {

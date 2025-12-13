@@ -175,8 +175,8 @@ export async function listUserReceipts(userSub) {
       // Format: {ISO8601-timestamp}-{formBundleNumber}
       // ISO timestamps end with 'Z', so find the hyphen after 'Z'
       const zIndex = item.receiptId.indexOf("Z-");
-      let timestamp = item.receiptId;
-      let formBundleNumber = item.receiptId;
+      let timestamp;
+      let formBundleNumber;
 
       if (zIndex > 0) {
         // Found 'Z-', so split there

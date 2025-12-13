@@ -58,6 +58,7 @@ export function apiEndpoint(app) {
 /**
  * Lambda handler (for AWS Lambda + API Gateway).
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity -- Complex handler needs refactoring in future PR
 export async function handler(event) {
   // Correlation extraction: seed context from inbound headers
   const inboundHeaders = event.headers || {};

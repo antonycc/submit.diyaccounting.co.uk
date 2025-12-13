@@ -6,7 +6,13 @@
  */
 export function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
-  return Buffer.from(json).toString("base64").replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  // Replace base64 padding and make URL-safe by replacing + with - and / with _
+  // Use non-backtracking approach to avoid ReDoS: trim trailing = chars one at a time
+  let encoded = Buffer.from(json).toString("base64");
+  while (encoded.endsWith("=")) {
+    encoded = encoded.slice(0, -1);
+  }
+  return encoded.replace(/\+/g, "-").replace(/\//g, "_");
 }
 
 /**

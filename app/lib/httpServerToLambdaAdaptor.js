@@ -24,7 +24,14 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
     if (authorization && authorization.startsWith("Bearer ")) {
       bearerToken = authorization.substring("Bearer ".length);
     }
-  } catch {}
+  } catch (err) {
+    logger.warn({
+      message: "Failed to extract bearer token from authorization header",
+      authorization,
+      error: err.message,
+      stack: err.stack,
+    });
+  }
   const jwtPayload = decodeJwtNoVerify(bearerToken);
 
   const lambdaEvent = {

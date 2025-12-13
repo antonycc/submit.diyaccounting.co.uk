@@ -1,4 +1,3 @@
-/* eslint-env browser */
 // Minimal client module (page-level, promise-deduped)
 // - In-memory only (page-scoped)
 // - Deduplicates in-flight GET requests

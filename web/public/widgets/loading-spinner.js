@@ -1,4 +1,3 @@
-/* eslint-env browser */
 (function () {
   // Loading state management
   function showLoading() {

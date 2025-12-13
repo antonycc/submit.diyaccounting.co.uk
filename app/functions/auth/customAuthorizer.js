@@ -77,9 +77,8 @@ export async function handler(event) {
 
     const token = tokenMatch[1].trim();
 
-    let payload;
     const jwtVerifier = getVerifier();
-    payload = await jwtVerifier.verify(token);
+    const payload = await jwtVerifier.verify(token);
 
     logger.info({
       message: "JWT token verified successfully",

@@ -96,7 +96,9 @@ export function startHmrcMockServer() {
         stop: async () => {
           try {
             server.close();
-          } catch {}
+          } catch (err) {
+            console.warn("Failed to close mock server:", err.message, err.stack);
+          }
         },
       });
     });
