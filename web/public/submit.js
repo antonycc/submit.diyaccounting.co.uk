@@ -1128,17 +1128,19 @@ async function maybeInitRum() {
   // Validate all required config values before attempting to use them
   // Note: If config was set, it already passed placeholder validation in bootstrapRumConfigFromMeta
   // This is a defensive check in case config was set via localStorage or other means
-  if (
-    !c.appMonitorId ||
-    !c.region ||
-    !c.identityPoolId ||
-    !c.guestRoleArn ||
+  const missingValues = !c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn;
+  const hasPlaceholders =
     isUnresolvedPlaceholder(c.appMonitorId) ||
     isUnresolvedPlaceholder(c.region) ||
     isUnresolvedPlaceholder(c.identityPoolId) ||
-    isUnresolvedPlaceholder(c.guestRoleArn)
-  ) {
-    console.debug("RUM config contains unresolved placeholders or missing values, skipping initialization");
+    isUnresolvedPlaceholder(c.guestRoleArn);
+
+  if (missingValues || hasPlaceholders) {
+    if (hasPlaceholders) {
+      console.debug("RUM config contains unresolved template placeholders, skipping initialization");
+    } else {
+      console.debug("RUM config missing required values, skipping initialization");
+    }
     return;
   }
 
