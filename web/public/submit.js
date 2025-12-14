@@ -798,16 +798,16 @@ async function authorizedFetch(input, init = {}) {
   // TODO: Does this still need X-Authorization instead of Authorization? - Retest when otherwise stable.
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
 
-  const first = await fetchWithPolling(input, { ...init, headers });
+  const response = await fetchWithPolling(input, { ...init, headers });
 
   // Handle 403 Forbidden - likely missing bundle entitlement
-  if (first.status === 403) {
-    await handle403Error(first);
-    return first; // Return the 403 response for caller to handle
+  if (response.status === 403) {
+    await handle403Error(response);
+    return response; // Return the 403 response for caller to handle
   }
 
   // Handle 401 Unauthorized - token expired or invalid
-  if (first.status !== 401) return first;
+  if (response.status !== 401) return response;
 
   // One-time retry after forcing refresh
   // Note: Token refresh only works if backend supports refresh_token grant type
@@ -823,17 +823,17 @@ async function authorizedFetch(input, init = {}) {
           window.location.href = "/auth/login.html";
         }, 2000);
       }
-      return first;
+      return response;
     }
   } catch (e) {
     console.warn("Token refresh error:", e);
-    return first;
+    return response;
   }
 
-  const headers2 = new Headers(init.headers || {});
-  const at2 = localStorage.getItem("cognitoAccessToken");
-  if (at2) headers2.set("X-Authorization", `Bearer ${at2}`);
-  return fetchWithPolling(input, { ...init, headers: headers2 });
+  const refreshedHeaders = new Headers(init.headers || {});
+  const refreshedAccessToken = localStorage.getItem("cognitoAccessToken");
+  if (refreshedAccessToken) refreshedHeaders.set("X-Authorization", `Bearer ${refreshedAccessToken}`);
+  return fetchWithPolling(input, { ...init, headers: refreshedHeaders });
 }
 
 // Expose authorizedFetch globally for HTML usage

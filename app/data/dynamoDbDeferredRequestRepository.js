@@ -63,9 +63,8 @@ export async function putDeferredRequest(clientRequestId, userSub, requestParams
       ...options,
     };
 
-    // Calculate TTL as 1 hour (requests should complete quickly)
-    const ttlDate = new Date();
-    ttlDate.setHours(now.getHours() + 1);
+    // Calculate TTL as 1 hour - use safer date arithmetic
+    const ttlDate = new Date(now.getTime() + 3600000); // Add 1 hour in milliseconds
     item.ttl = Math.floor(ttlDate.getTime() / 1000);
     item.ttl_datestamp = ttlDate.toISOString();
 

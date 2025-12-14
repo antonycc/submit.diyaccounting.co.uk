@@ -86,9 +86,17 @@ export async function executeWithDeferral(asyncFunction, event, request, request
 
   // Create a promise that races between the actual function and timeout
   const functionPromise = asyncFunction();
-  const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ timedOut: true }), timeout));
+  let timeoutId;
+  const timeoutPromise = new Promise((resolve) => {
+    timeoutId = setTimeout(() => resolve({ timedOut: true }), timeout);
+  });
 
   const result = await Promise.race([functionPromise, timeoutPromise]);
+
+  // Clear timeout if function completed first
+  if (timeoutId !== undefined) {
+    clearTimeout(timeoutId);
+  }
 
   if (result && result.timedOut) {
     // Timeout occurred - store request and return 202
@@ -122,6 +130,14 @@ export async function executeWithDeferral(asyncFunction, event, request, request
           return updateDeferredRequest(clientRequestId, "FAILED", null, {
             message: asyncError.message,
             stack: asyncError.stack,
+          });
+        })
+        .catch((updateError) => {
+          // Handle DynamoDB update failures
+          logger.error({
+            message: "Failed to update deferred request status",
+            clientRequestId,
+            error: updateError.message,
           });
         });
 

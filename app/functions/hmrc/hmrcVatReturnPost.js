@@ -168,7 +168,8 @@ export async function handler(event) {
     };
 
     // Execute with deferred support - will return 202 if timeout occurs
-    const requestParams = { vatNumber, periodKey: normalizedPeriodKey, numVatDue, hmrcAccount };
+    // Note: Exclude sensitive financial data from stored request params
+    const requestParams = { vatNumber, periodKey: normalizedPeriodKey, hmrcAccount };
     return await executeWithDeferral(asyncOperation, event, request, requestParams, userSub);
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
