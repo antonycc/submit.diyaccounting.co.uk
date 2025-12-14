@@ -1124,7 +1124,23 @@ async function maybeInitRum() {
   }
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
-  if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
+
+  // Helper to validate config values (check for unresolved placeholders)
+  function isValidConfigValue(val) {
+    return val && !val.includes("${") && !val.includes("$ENV{");
+  }
+
+  // Validate all required config values before attempting to use them
+  if (
+    !isValidConfigValue(c.appMonitorId) ||
+    !isValidConfigValue(c.region) ||
+    !isValidConfigValue(c.identityPoolId) ||
+    !isValidConfigValue(c.guestRoleArn)
+  ) {
+    console.debug("RUM config contains unresolved placeholders, skipping initialization");
+    return;
+  }
+
   const version = "1.16.0";
   const clientUrl = `https://client.rum.${c.region}.amazonaws.com/${version}/cwr.js`;
   try {
@@ -1198,7 +1214,15 @@ function bootstrapRumConfigFromMeta() {
   const region = readMeta("rum:region");
   const identityPoolId = readMeta("rum:identityPoolId");
   const guestRoleArn = readMeta("rum:guestRoleArn");
-  if (appMonitorId && region && identityPoolId && guestRoleArn) {
+
+  // Helper to check if a value is a valid config value (not a placeholder)
+  function isValidValue(val) {
+    // Check if value exists, is not empty, and doesn't look like an unresolved template variable
+    return val && val.trim() !== "" && !val.includes("${") && !val.includes("$ENV{");
+  }
+
+  // Only set config if all values are valid (not placeholders)
+  if (isValidValue(appMonitorId) && isValidValue(region) && isValidValue(identityPoolId) && isValidValue(guestRoleArn)) {
     window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
     try {
       localStorage.setItem("rum.config", JSON.stringify(window.__RUM_CONFIG__));
