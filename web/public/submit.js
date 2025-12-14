@@ -169,6 +169,105 @@ function generateRandomState() {
   return `${now}${perf}`;
 }
 
+// Generate a client request ID for deferred execution tracking
+function generateClientRequestId() {
+  try {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
+    }
+  } catch (error) {
+    console.warn("Failed to generate client request ID:", error);
+  }
+  // Fallback
+  const timestamp = Date.now();
+  const random = generateRandomState();
+  return `client-${timestamp}-${random}`;
+}
+
+/**
+ * Fetch with automatic polling for 202 Accepted responses
+ * @param {string} url - The URL to fetch
+ * @param {object} options - Fetch options
+ * @param {number} maxRetries - Maximum number of retries (default 30)
+ * @param {number} initialDelay - Initial delay in ms (default 100)
+ * @returns {Promise<Response>} The final response
+ */
+async function fetchWithPolling(url, options = {}, maxRetries = 30, initialDelay = 100) {
+  // Ensure we have a client request ID for tracking
+  const headers = new Headers(options.headers || {});
+  if (!headers.has("X-Client-Request-Id") && !headers.has("x-client-request-id")) {
+    const clientRequestId = generateClientRequestId();
+    headers.set("X-Client-Request-Id", clientRequestId);
+    console.log("Generated client request ID:", clientRequestId);
+  }
+
+  // Make initial request
+  let response = await fetch(url, { ...options, headers });
+
+  // If not 202, return immediately
+  if (response.status !== 202) {
+    return response;
+  }
+
+  // Handle 202 Accepted with polling
+  console.log("Received 202 Accepted, starting polling...");
+  const responseData = await response.json();
+  const clientRequestId = responseData.clientRequestId || response.headers.get("X-Client-Request-Id");
+  const retryAfter = responseData.retryAfter || 100;
+
+  // Show status message if available
+  if (typeof window !== "undefined" && window.showStatus) {
+    window.showStatus("Request is processing on the server, checking for results...", "info");
+  }
+
+  let retries = 0;
+  let delay = Math.max(initialDelay, retryAfter);
+
+  while (retries < maxRetries) {
+    // Wait before polling
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    // Parse the original URL to add continuation parameter
+    const continuationUrl = new URL(url, window.location.origin);
+    continuationUrl.searchParams.set("x-continuation", "true");
+
+    // Poll for result
+    console.log(`Polling attempt ${retries + 1}/${maxRetries} (delay: ${delay}ms)...`);
+
+    // Update status message
+    if (typeof window !== "undefined" && window.showStatus && retries % 5 === 0) {
+      window.showStatus(`Still processing... (attempt ${retries + 1})`, "info");
+    }
+
+    const pollHeaders = new Headers(headers);
+    pollHeaders.set("X-Client-Request-Id", clientRequestId);
+
+    response = await fetch(continuationUrl.toString(), {
+      ...options,
+      method: "GET", // Continuation is always GET
+      headers: pollHeaders,
+      body: undefined, // Remove body for GET request
+    });
+
+    // If not 202, we have a final result
+    if (response.status !== 202) {
+      console.log(`Polling completed with status ${response.status}`);
+      return response;
+    }
+
+    // Still processing, exponential backoff
+    retries++;
+    delay = Math.min(delay * 1.5, 5000); // Cap at 5 seconds
+  }
+
+  // Max retries exceeded
+  console.warn("Max polling retries exceeded");
+  if (typeof window !== "undefined" && window.showStatus) {
+    window.showStatus("Request is taking longer than expected. Please try again later.", "warning");
+  }
+  return response;
+}
+
 // Correlation and tracing: install a fetch interceptor that
 // - Ensures a W3C traceparent header is sent with every backend request
 // - Generates a high-entropy x-request-id per request
@@ -699,7 +798,7 @@ async function authorizedFetch(input, init = {}) {
   // TODO: Does this still need X-Authorization instead of Authorization? - Retest when otherwise stable.
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
 
-  const first = await fetchWithId(input, { ...init, headers });
+  const first = await fetchWithPolling(input, { ...init, headers });
 
   // Handle 403 Forbidden - likely missing bundle entitlement
   if (first.status === 403) {
@@ -734,7 +833,7 @@ async function authorizedFetch(input, init = {}) {
   const headers2 = new Headers(init.headers || {});
   const at2 = localStorage.getItem("cognitoAccessToken");
   if (at2) headers2.set("X-Authorization", `Bearer ${at2}`);
-  return fetchWithId(input, { ...init, headers: headers2 });
+  return fetchWithPolling(input, { ...init, headers: headers2 });
 }
 
 // Expose authorizedFetch globally for HTML usage
@@ -1279,6 +1378,8 @@ if (typeof window !== "undefined") {
   window.removeStatusMessage = removeStatusMessage;
   // Loading functions are now in loading-spinner.js
   window.generateRandomState = generateRandomState;
+  window.generateClientRequestId = generateClientRequestId;
+  window.fetchWithPolling = fetchWithPolling;
   window.getAuthUrl = getAuthUrl;
   window.submitVat = submitVat;
   window.logReceipt = logReceipt;
