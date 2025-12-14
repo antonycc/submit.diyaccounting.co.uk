@@ -1125,19 +1125,20 @@ async function maybeInitRum() {
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
 
-  // Helper to validate config values (check for unresolved placeholders)
-  function isValidConfigValue(val) {
-    return val && !val.includes("${") && !val.includes("$ENV{");
-  }
-
   // Validate all required config values before attempting to use them
+  // Note: If config was set, it already passed placeholder validation in bootstrapRumConfigFromMeta
+  // This is a defensive check in case config was set via localStorage or other means
   if (
-    !isValidConfigValue(c.appMonitorId) ||
-    !isValidConfigValue(c.region) ||
-    !isValidConfigValue(c.identityPoolId) ||
-    !isValidConfigValue(c.guestRoleArn)
+    !c.appMonitorId ||
+    !c.region ||
+    !c.identityPoolId ||
+    !c.guestRoleArn ||
+    isUnresolvedPlaceholder(c.appMonitorId) ||
+    isUnresolvedPlaceholder(c.region) ||
+    isUnresolvedPlaceholder(c.identityPoolId) ||
+    isUnresolvedPlaceholder(c.guestRoleArn)
   ) {
-    console.debug("RUM config contains unresolved placeholders, skipping initialization");
+    console.debug("RUM config contains unresolved placeholders or missing values, skipping initialization");
     return;
   }
 
@@ -1208,6 +1209,16 @@ function readMeta(name) {
   const el = document.querySelector(`meta[name="${name}"]`);
   return el && el.content ? el.content.trim() : "";
 }
+
+// Helper to check if a value looks like an unresolved template placeholder
+function isUnresolvedPlaceholder(val) {
+  if (!val) return false;
+  const str = String(val);
+  // Check for common template patterns: ${, $ENV{, {{
+  // Using simple string checks instead of regex to avoid ReDoS concerns
+  return str.includes("${") || str.includes("$ENV{") || str.includes("{{");
+}
+
 function bootstrapRumConfigFromMeta() {
   if (window.__RUM_CONFIG__) return;
   const appMonitorId = readMeta("rum:appMonitorId");
@@ -1215,14 +1226,17 @@ function bootstrapRumConfigFromMeta() {
   const identityPoolId = readMeta("rum:identityPoolId");
   const guestRoleArn = readMeta("rum:guestRoleArn");
 
-  // Helper to check if a value is a valid config value (not a placeholder)
-  function isValidValue(val) {
-    // Check if value exists, is not empty, and doesn't look like an unresolved template variable
-    return val && val.trim() !== "" && !val.includes("${") && !val.includes("$ENV{");
-  }
-
-  // Only set config if all values are valid (not placeholders)
-  if (isValidValue(appMonitorId) && isValidValue(region) && isValidValue(identityPoolId) && isValidValue(guestRoleArn)) {
+  // Only set config if all values exist and don't contain unresolved placeholders
+  if (
+    appMonitorId &&
+    region &&
+    identityPoolId &&
+    guestRoleArn &&
+    !isUnresolvedPlaceholder(appMonitorId) &&
+    !isUnresolvedPlaceholder(region) &&
+    !isUnresolvedPlaceholder(identityPoolId) &&
+    !isUnresolvedPlaceholder(guestRoleArn)
+  ) {
     window.__RUM_CONFIG__ = { appMonitorId, region, identityPoolId, guestRoleArn, sessionSampleRate: 1 };
     try {
       localStorage.setItem("rum.config", JSON.stringify(window.__RUM_CONFIG__));
