@@ -24,6 +24,7 @@ import {
   http403ForbiddenFromBundleEnforcement,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
+import { executeWithDeferral } from "../../services/deferredExecution.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnGet.js" });
 
@@ -65,7 +66,13 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "HMRC_SANDBOX_BASE_URI", "BUNDLE_DYNAMODB_TABLE_NAME", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv([
+    "HMRC_BASE_URI",
+    "HMRC_SANDBOX_BASE_URI",
+    "BUNDLE_DYNAMODB_TABLE_NAME",
+    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+    "DEFERRED_REQUESTS_DYNAMODB_TABLE_NAME",
+  ]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];
@@ -126,25 +133,34 @@ export async function handler(event) {
   let hmrcResponse;
   try {
     logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
-    ({ vatReturn, hmrcResponse } = await getVatReturn(
-      vrn,
-      periodKey,
-      hmrcAccessToken,
-      govClientHeaders,
-      testScenario,
-      hmrcAccount,
-      userSub,
-    ));
-    // Generate error responses based on HMRC response
-    if (hmrcResponse && !hmrcResponse.ok) {
-      if (hmrcResponse.status === 403) {
-        return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
-      } else if (hmrcResponse.status === 404) {
-        return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
-      } else {
-        return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
+
+    // Wrap the async operation with deferred execution support
+    const asyncOperation = async () => {
+      const result = await getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, userSub);
+
+      // Generate error responses based on HMRC response
+      if (result.hmrcResponse && !result.hmrcResponse.ok) {
+        if (result.hmrcResponse.status === 403) {
+          return http403ForbiddenFromHmrcResponse(hmrcAccessToken, result.hmrcResponse, responseHeaders);
+        } else if (result.hmrcResponse.status === 404) {
+          return http404NotFoundFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+        } else {
+          return http500ServerErrorFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+        }
       }
-    }
+
+      // Return successful response
+      logger.info({ message: "Successfully retrieved VAT return", vrn, periodKey });
+      return http200OkResponse({
+        request,
+        headers: { ...responseHeaders },
+        data: result.vatReturn,
+      });
+    };
+
+    // Execute with deferred support - will return 202 if timeout occurs
+    const requestParams = { vrn, periodKey, testScenario, hmrcAccount };
+    return await executeWithDeferral(asyncOperation, event, request, requestParams, userSub);
   } catch (error) {
     logger.error({ message: "Error while retrieving VAT return from HMRC", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
@@ -154,14 +170,6 @@ export async function handler(event) {
       error: error.message,
     });
   }
-
-  // Return successful response
-  logger.info({ message: "Successfully retrieved VAT return", vrn, periodKey });
-  return http200OkResponse({
-    request,
-    headers: { ...responseHeaders },
-    data: vatReturn,
-  });
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response

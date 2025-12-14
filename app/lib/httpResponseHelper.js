@@ -81,6 +81,21 @@ export function http401UnauthorizedResponse({ request, headers, message, error }
   });
 }
 
+export function http202AcceptedResponse({ request, headers, message, data }) {
+  const merged = { ...(headers || {}) };
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
+  return httpResponse({
+    statusCode: 202,
+    request,
+    headers: merged,
+    data: { message, ...data },
+    levelledLogger: logger.info.bind(logger),
+  });
+}
+
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   const merged = { ...(headers || {}) };
   // Always provide an x-request-id for client correlation; generate if not supplied

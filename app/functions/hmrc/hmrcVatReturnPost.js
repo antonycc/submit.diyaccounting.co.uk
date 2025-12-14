@@ -20,6 +20,7 @@ import {
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
 } from "../../services/hmrcApi.js";
+import { executeWithDeferral } from "../../services/deferredExecution.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -70,7 +71,13 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {
-  validateEnv(["HMRC_BASE_URI", "RECEIPTS_DYNAMODB_TABLE_NAME", "BUNDLE_DYNAMODB_TABLE_NAME", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv([
+    "HMRC_BASE_URI",
+    "RECEIPTS_DYNAMODB_TABLE_NAME",
+    "BUNDLE_DYNAMODB_TABLE_NAME",
+    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+    "DEFERRED_REQUESTS_DYNAMODB_TABLE_NAME",
+  ]);
 
   const { request } = extractRequest(event);
   let errorMessages = [];
@@ -137,15 +144,43 @@ export async function handler(event) {
       vatNumber,
       periodKey: normalizedPeriodKey,
     });
-    ({ receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
-      normalizedPeriodKey,
-      numVatDue,
-      vatNumber,
-      hmrcAccount,
-      hmrcAccessToken,
-      govClientHeaders,
-      userSub,
-    ));
+
+    // Wrap the async operation with deferred execution support
+    const asyncOperation = async () => {
+      const result = await submitVat(
+        normalizedPeriodKey,
+        numVatDue,
+        vatNumber,
+        hmrcAccount,
+        hmrcAccessToken,
+        govClientHeaders,
+        userSub,
+      );
+
+      // Generate error responses based on HMRC response
+      if (!result.hmrcResponse.ok) {
+        return generateHmrcErrorResponseWithRetryAdvice(
+          request,
+          result.hmrcResponse,
+          result.hmrcResponseBody,
+          hmrcAccessToken,
+          responseHeaders,
+        );
+      }
+
+      // Generate a success response
+      return http200OkResponse({
+        request,
+        headers: { ...responseHeaders },
+        data: {
+          receipt: result.receipt,
+        },
+      });
+    };
+
+    // Execute with deferred support - will return 202 if timeout occurs
+    const requestParams = { vatNumber, periodKey: normalizedPeriodKey, numVatDue, hmrcAccount };
+    return await executeWithDeferral(asyncOperation, event, request, requestParams, userSub);
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
     logger.error({
@@ -155,20 +190,6 @@ export async function handler(event) {
     });
     throw error;
   }
-
-  // Generate error responses based on HMRC response
-  if (!hmrcResponse.ok) {
-    return generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders);
-  }
-
-  // Generate a success response
-  return http200OkResponse({
-    request,
-    headers: { ...responseHeaders },
-    data: {
-      receipt,
-    },
-  });
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
