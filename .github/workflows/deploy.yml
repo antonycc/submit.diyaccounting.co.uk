@@ -230,6 +230,10 @@ jobs:
            npm install
            npx playwright install chromium --with-deps
 
+      - name: Inject empty RUM placeholders for test environment
+        run: |
+          ./scripts/inject-rum-test-placeholders.sh
+
       - name: Run behaviour tests - bundle
         run: |
           npm run test:bundleBehaviour-proxy || exit_code=$? \
@@ -293,6 +297,10 @@ jobs:
         run: |
           npm install
           npx playwright install chromium --with-deps
+
+      - name: Inject empty RUM placeholders for test environment
+        run: |
+          ./scripts/inject-rum-test-placeholders.sh
 
       - name: Run behaviour tests - obligation
         run: |
@@ -360,6 +368,10 @@ jobs:
         run: |
           npm install
           npx playwright install chromium --with-deps
+
+      - name: Inject empty RUM placeholders for test environment
+        run: |
+          ./scripts/inject-rum-test-placeholders.sh
 
       - name: Run behaviour tests - submit vat
         run: |
