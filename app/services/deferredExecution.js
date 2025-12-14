@@ -41,10 +41,19 @@ export function extractOrGenerateClientRequestId(event) {
     return clientRequestId;
   }
 
-  // Generate a new one
+  // Generate a new one using crypto if available
+  try {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+  } catch (error) {
+    logger.warn({ message: "Failed to generate UUID using crypto.randomUUID", error: error.message });
+  }
+
+  // Fallback to timestamp-based generation
   const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 15);
-  return `gen-${timestamp}-${random}`;
+  const perfNow = typeof performance !== "undefined" && performance.now ? performance.now().toString(36) : "0";
+  return `gen-${timestamp}-${perfNow}`;
 }
 
 /**

@@ -129,8 +129,6 @@ export async function handler(event) {
   }
 
   // Processing
-  let vatReturn;
-  let hmrcResponse;
   try {
     logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
 

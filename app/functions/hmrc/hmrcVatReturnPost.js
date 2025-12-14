@@ -135,9 +135,6 @@ export async function handler(event) {
   }
 
   // Processing
-  let receipt;
-  let hmrcResponse;
-  let hmrcResponseBody;
   try {
     logger.info({
       message: "Submitting VAT return to HMRC",
@@ -147,15 +144,7 @@ export async function handler(event) {
 
     // Wrap the async operation with deferred execution support
     const asyncOperation = async () => {
-      const result = await submitVat(
-        normalizedPeriodKey,
-        numVatDue,
-        vatNumber,
-        hmrcAccount,
-        hmrcAccessToken,
-        govClientHeaders,
-        userSub,
-      );
+      const result = await submitVat(normalizedPeriodKey, numVatDue, vatNumber, hmrcAccount, hmrcAccessToken, govClientHeaders, userSub);
 
       // Generate error responses based on HMRC response
       if (!result.hmrcResponse.ok) {

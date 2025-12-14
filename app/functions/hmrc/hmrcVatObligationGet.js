@@ -136,8 +136,6 @@ export async function handler(event) {
   }
 
   // Processing
-  let obligations;
-  let hmrcResponse;
   try {
     // Check if we should use stubbed data
     logger.info({ message: "Checking for stubbed VAT obligations data", testScenario });
