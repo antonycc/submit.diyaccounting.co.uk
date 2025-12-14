@@ -165,7 +165,7 @@ jobs:
       - run: npm run test:coverage
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: coverage-reports
@@ -237,14 +237,11 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: behaviour-test-artifacts-bundle
           retention-days: 30
@@ -253,7 +250,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: behaviour-test-reports-bundle
           retention-days: 30
@@ -262,76 +259,9 @@ jobs:
 
       - name: Upload artifacts (dynamodb exports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: behaviour-test-dynamodb-bundle
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/**/*.jsonl
-
-  behaviour-test-obligation:
-    name: 'behaviour test - obligation (proxy)'
-    needs:
-      - names
-      - behaviour-test-bundle
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - obligation
-        run: |
-          npm run test:obligationBehaviour-proxy || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-          HMRC_ACCOUNT: sandbox
-          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          # HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: behaviour-test-artifacts-obligation
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: behaviour-test-reports-obligation
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: behaviour-test-dynamodb-obligation
           retention-days: 30
           path: |
             target/behaviour-test-results/**/*.jsonl
@@ -340,7 +270,7 @@ jobs:
     name: 'behaviour test - submit vat (proxy)'
     needs:
       - names
-      - behaviour-test-obligation
+      - behaviour-test-bundle
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -368,17 +298,13 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          #HMRC_CLIENT_SECRET: ${{ secrets.HMRC_CLIENT_SECRET }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: behaviour-test-artifacts-submit-vat
           retention-days: 30
@@ -387,7 +313,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: behaviour-test-reports-submit-vat
           retention-days: 30
@@ -396,9 +322,198 @@ jobs:
 
       - name: Upload artifacts (dynamodb exports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: behaviour-test-dynamodb-submit-vat
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/**/*.jsonl
+
+  behaviour-test-obligation:
+    name: 'behaviour test - obligation (proxy)'
+    needs:
+      - names
+      - behaviour-test-submit-vat
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Run behaviour tests - obligation
+        run: |
+          npm run test:obligationBehaviour-proxy || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-artifacts-obligation
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-reports-obligation
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+      - name: Upload artifacts (dynamodb exports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-dynamodb-obligation
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/**/*.jsonl
+
+  behaviour-test-post-vat-return:
+    name: 'behaviour test - post vat return (proxy)'
+    needs:
+      - names
+      - behaviour-test-obligation
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Run behaviour tests - post-vat-return
+        run: |
+          npm run test:postVatReturnBehaviour-proxy || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-artifacts-post-vat-return
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-reports-post-vat-return
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+      - name: Upload artifacts (dynamodb exports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-dynamodb-post-vat-return
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/**/*.jsonl
+
+  behaviour-test-get-vat-return:
+    name: 'behaviour test - get vat return (proxy)'
+    needs:
+      - names
+      - behaviour-test-post-vat-return
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Run behaviour tests - get-vat-return
+        run: |
+          npm run test:getVatReturnBehaviour-proxy || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-artifacts-get-vat-return
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-reports-get-vat-return
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+      - name: Upload artifacts (dynamodb exports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-dynamodb-get-vat-return
           retention-days: 30
           path: |
             target/behaviour-test-results/**/*.jsonl
@@ -489,7 +604,7 @@ jobs:
           docker save -o docker-image/image.tar "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: docker-image
           path: docker-image/image.tar
@@ -1813,7 +1928,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-artifacts-bundle
           retention-days: 30
@@ -1822,7 +1937,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-reports-bundle
           retention-days: 30
@@ -1928,7 +2043,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-artifacts-obligation-sandbox
           retention-days: 30
@@ -1937,7 +2052,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-reports-obligation-sandbox
           retention-days: 30
@@ -2041,7 +2156,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-artifacts-obligation
           retention-days: 30
@@ -2050,7 +2165,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-reports-obligation
           retention-days: 30
@@ -2156,7 +2271,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-artifacts-submit-vat-sandbox
           retention-days: 30
@@ -2165,7 +2280,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-reports-submit-vat-sandbox
           retention-days: 30
@@ -2269,7 +2384,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-artifacts-submit-vat
           retention-days: 30
@@ -2278,7 +2393,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-reports-submit-vat
           retention-days: 30
@@ -2546,7 +2661,7 @@ jobs:
 
       - name: Upload artifacts (converted videos)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: web-test-artifacts-converted
           retention-days: 30
