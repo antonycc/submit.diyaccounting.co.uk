@@ -40,7 +40,15 @@ export default defineConfig(({ mode }) => {
             },
           },
           include: ["app/unit-tests/*.test.js", "app/unit-tests/*/*.test.js", "app/system-tests/*.test.js", "web/unit-tests/*.test.js"],
-          exclude: ["web/browser-tests/*.test.js", "manually-run-tests/*.test.js", "behaviour-tests/*.test.js"],
+          exclude: [
+            "app/bin/*",
+            "app/test-helpers/*",
+            "app/unit-tests/lib/*",
+            "app/functions/non-lambda-mocks/*",
+            "web/browser-tests/*.test.js",
+            "manually-run-tests/*.test.js",
+            "behaviour-tests/*.test.js",
+          ],
         },
       ],
       coverage: {
@@ -49,6 +57,10 @@ export default defineConfig(({ mode }) => {
         reporter: ["text", "json", "html"],
         include: ["app/**/*.js"],
         exclude: [
+          "app/bin/*",
+          "app/test-helpers/*",
+          "app/unit-tests/lib/*",
+          "app/functions/non-lambda-mocks/*",
           "**/dist/**",
           "**/entrypoint/**",
           "app/unit-tests/*.test.js",

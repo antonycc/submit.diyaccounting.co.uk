@@ -34,7 +34,7 @@
     "test:app-unit": "npx vitest --run app/unit-tests/*.test.js app/unit-tests/*/*.test.js",
     "test:web-unit": "npx vitest --run web/unit-tests/*.test.js",
     "test:unit": "npx vitest --run app/unit-tests/*.test.js app/unit-tests/*/*.test.js web/unit-tests/*.test.js",
-    "test:coverage": "npx vitest --coverage --run app/unit-tests/*.test.js app/unit-tests/*/*.test.js",
+    "test:coverage": "npx vitest --coverage --run app/unit-tests/*.test.js app/unit-tests/*/*.test.js app/system-tests/*.test.js",
     "test:system": "npx vitest --run app/system-tests/*.test.js",
     "test:browser": "playwright test --project=browser-tests web/browser-tests/*.test.js",
     "playwright:install": "npx playwright install chromium --with-deps",
