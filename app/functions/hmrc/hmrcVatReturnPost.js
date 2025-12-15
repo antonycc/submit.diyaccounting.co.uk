@@ -234,7 +234,6 @@ export async function submitVat(
     hmrcRequestBody,
     auditForUserSub,
   );
-
   // TODO: Move this into the proxy
   if (hmrcAccount && hmrcAccount === "sandbox") {
     if (testScenario === "HMRC_API_HTTP_500") {
