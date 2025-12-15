@@ -11,7 +11,7 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
-    <script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script>
+    <!--script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script-->
     <script async src="../../prefetch/prefetch-hmrc-vat-return-get-head.js"></script>
   </head>
   <body>
@@ -68,6 +68,10 @@
               <!-- Values aligned with _developers/reference/hmrc-md-vat-api-1.0.yaml (GET /organisations/vat/{vrn}/returns/{periodKey}) -->
               <option value="DATE_RANGE_TOO_LARGE">Date Range Too Large</option>
               <option value="INSOLVENT_TRADER">Insolvent Trader</option>
+              <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+              <option value="HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              <option value="HMRC_API_HTTP_503">HMRC API responds with 503</option>
+              <option value="HMRC_API_HTTP_SLOW">HMRC API responds slowly</option>
             </select>
             <div class="help-text">Test different HMRC sandbox scenarios</div>
           </div>
@@ -141,13 +145,6 @@
           const sandboxIndicator = document.getElementById("sandboxIndicator");
           if (sandboxIndicator) {
             sandboxIndicator.classList.add("visible");
-          }
-        }
-
-        if (hmrcAccount === "sandbox") {
-          const devSection = document.getElementById("developerSection");
-          if (devSection) {
-            devSection.style.display = "block";
           }
         }
 

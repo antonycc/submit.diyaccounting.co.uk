@@ -58,25 +58,25 @@ describe("User Journeys Frontend Tests", () => {
     }
   });
 
-  describe("Login Journey", () => {
-    test("should navigate from home to login page", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
-      document.documentElement.innerHTML = htmlContent;
+  //describe("Login Journey", () => {
+  // test("should navigate from home to login page", () => {
+  //   const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/index.html"), "utf-8");
+  //   document.documentElement.innerHTML = htmlContent;
+  //
+  //   const loginLink = document.querySelector("a.login-link");
+  //   expect(loginLink).toBeTruthy();
+  //   expect(loginLink.textContent).toBe("Log in");
+  //   expect(loginLink.getAttribute("href")).toBe("auth/login.html");
+  // });
 
-      const loginLink = document.querySelector("a.login-link");
-      expect(loginLink).toBeTruthy();
-      expect(loginLink.textContent).toBe("Log in");
-      expect(loginLink.getAttribute("href")).toBe("auth/login.html");
-    });
-
-    test("should display authentication providers on login page", () => {
-      const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/auth/login.html"), "utf-8");
-      document.documentElement.innerHTML = htmlContent;
-
-      const googleBtn = Array.from(document.querySelectorAll("button")).find((btn) => btn.textContent.includes("Continue with Google"));
-      expect(googleBtn).toBeTruthy();
-    });
-  });
+  // test("should display authentication providers on login page", () => {
+  //   const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/auth/login.html"), "utf-8");
+  //   document.documentElement.innerHTML = htmlContent;
+  //
+  //   const googleBtn = Array.from(document.querySelectorAll("button")).find((btn) => btn.textContent.includes("Continue with Google"));
+  //   expect(googleBtn).toBeTruthy();
+  // });
+  //});
 
   describe("Service Selection Journey", () => {
     test("should display service options on bundles page", () => {

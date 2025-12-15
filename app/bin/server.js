@@ -49,7 +49,7 @@ app.use((req, res, next) => {
   }
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,HEAD,OPTIONS");
   // Private Network Access preflight response header if requested by Chromium
   if (req.headers["access-control-request-private-network"] === "true") {
     res.setHeader("Access-Control-Allow-Private-Network", "true");

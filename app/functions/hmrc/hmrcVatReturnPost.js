@@ -1,4 +1,4 @@
-// app/functions/submitVat.js
+// app/functions/hmrcVatReturnPost.js
 
 import { createLogger, context } from "../../lib/logger.js";
 import {
@@ -8,6 +8,7 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
+  http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
@@ -31,13 +32,13 @@ export function apiEndpoint(app) {
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+    httpResponse.status(200).send();
   });
 }
 
 export function extractAndValidateParameters(event, errorMessages) {
+  const queryParams = event.queryStringParameters || {};
+  const { "Gov-Test-Scenario": testScenario } = queryParams;
   const parsedBody = parseRequestBody(event);
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
   // TODO: Remove the alternate paths at source, then remove this compatibility code
@@ -68,7 +69,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
   }
 
-  return { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount };
+  return { vatNumber, periodKey, hmrcAccessToken, numVatDue, testScenario, hmrcAccount };
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -96,7 +97,10 @@ export async function handler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
+  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, testScenario, hmrcAccount } = extractAndValidateParameters(
+    event,
+    errorMessages,
+  );
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
@@ -130,6 +134,14 @@ export async function handler(event) {
     return buildValidationError(request, [err.toString()], responseHeaders);
   }
 
+  if (hmrcAccount && hmrcAccount === "sandbox" && testScenario === "SUBMIT_API_HTTP_500") {
+    return http500ServerErrorResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: `Simulated server error for testing scenario: ${testScenario}`,
+    });
+  }
+
   // Processing
   let receipt;
   let hmrcResponse;
@@ -148,6 +160,7 @@ export async function handler(event) {
       hmrcAccessToken,
       govClientHeaders,
       userSub,
+      testScenario,
     ));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
@@ -175,7 +188,16 @@ export async function handler(event) {
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcAccessToken, govClientHeaders, auditForUserSub) {
+export async function submitVat(
+  periodKey,
+  vatDue,
+  vatNumber,
+  hmrcAccount,
+  hmrcAccessToken,
+  govClientHeaders,
+  auditForUserSub,
+  testScenario,
+) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
@@ -212,6 +234,24 @@ export async function submitVat(periodKey, vatDue, vatNumber, hmrcAccount, hmrcA
     hmrcRequestBody,
     auditForUserSub,
   );
+
+  // TODO: Move this into the proxy
+  if (hmrcAccount && hmrcAccount === "sandbox") {
+    if (testScenario === "HMRC_API_HTTP_500") {
+      logger.error({ message: `Simulated server error for testing scenario: ${testScenario}` });
+      hmrcResponse.ok = false;
+      hmrcResponse.status = 500;
+    } else if (testScenario === "HMRC_API_HTTP_503") {
+      logger.error({ message: `Simulated server unavailable for testing scenario: ${testScenario}` });
+      hmrcResponse.ok = false;
+      hmrcResponse.status = 503;
+    } else if (testScenario === "HMRC_API_HTTP_SLOW") {
+      const slowTime = 10000;
+      logger.info({ message: `Simulating slow HMRC API response for testing scenario (waiting...): ${testScenario}`, slowTime });
+      await new Promise((resolve) => setTimeout(resolve, slowTime));
+      logger.info({ message: `Simulating slow HMRC API response for testing scenario (waited): ${testScenario}`, slowTime });
+    }
+  }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };
 }

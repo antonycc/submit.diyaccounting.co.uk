@@ -12,9 +12,9 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
-    <script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script>
+    <!--script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script-->
     <script async src="../../prefetch/prefetch-hmrc-vat-return-head.js"></script>
-    <script async src="../../prefetch/prefetch-hmrc-receipt-head.js"></script>
+    <!--script async src="../../prefetch/prefetch-hmrc-receipt-head.js"></script-->
   </head>
   <body>
     <header>
@@ -89,6 +89,10 @@
               <option value="DUPLICATE_SUBMISSION">Duplicate Submission</option>
               <option value="TAX_PERIOD_NOT_ENDED">Tax Period Not Ended</option>
               <option value="INSOLVENT_TRADER">Insolvent Trader</option>
+              <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+              <option value="HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              <option value="HMRC_API_HTTP_503">HMRC API responds with 503</option>
+              <option value="HMRC_API_HTTP_SLOW">HMRC API responds slowly</option>
             </select>
             <div class="help-text">Test different HMRC sandbox error scenarios</div>
           </div>
@@ -226,11 +230,10 @@
       function handleOAuthCallback() {
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         if (accessToken) {
-          console.log("OAuth callback handler (accessToken found)");
-          // If we have an access token, continue with submission
+          console.log("OAuth callback handler (code present, auto-continue)");
           continueVatSubmission();
         } else {
-          console.log("OAuth callback handler (no accessToken found)");
+          console.log("OAuth callback handler (no action taken)");
         }
       }
 

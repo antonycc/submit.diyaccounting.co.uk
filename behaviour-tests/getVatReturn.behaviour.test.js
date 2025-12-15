@@ -153,33 +153,10 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 async function requestAndVerifyViewReturn(page, { vrn, periodKey, testScenario }) {
-  // View VAT return WITHOUT performing HMRC auth here.
-  // HMRC authentication should occur only once, earlier in the flow when a return is submitted.
   await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, vrn, periodKey, screenshotPath);
-  if (testScenario) {
-    try {
-      await page.getByRole("button", { name: /Show Developer Options/i }).click();
-    } catch {}
-    try {
-      await page.selectOption("#testScenario", String(testScenario));
-    } catch {
-      await page.selectOption("#testScenario", { label: String(testScenario) });
-    }
-  }
+  await fillInViewVatReturn(page, vrn, periodKey, testScenario, screenshotPath);
   await submitViewVatReturnForm(page, screenshotPath);
-  if (!testScenario) {
-    await verifyViewVatReturnResults(page, screenshotPath);
-  } else {
-    await test.step("The user sees a retrieval error message for sandbox scenario", async () => {
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(500);
-      const statusContainer = page.locator("#statusMessagesContainer");
-      await expect(statusContainer).toBeVisible();
-      const statusText = (await statusContainer.innerText()).toLowerCase();
-      expect(statusText).toMatch(/failed|error|not found/);
-    });
-  }
+  await verifyViewVatReturnResults(page, testScenario, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 }
 
@@ -241,8 +218,9 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   /* ********************************************** */
   /*  ENSURE A VAT RETURN EXISTS (single submission) */
   /* ********************************************** */
+
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, screenshotPath);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
@@ -250,19 +228,20 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
   await submitHmrcAuth(page, screenshotPath);
   await grantPermissionHmrcAuth(page, screenshotPath);
-  await completeVat(page, baseUrl, screenshotPath);
-  await verifyVatSubmission(page, screenshotPath);
+  await completeVat(page, baseUrl, null, screenshotPath);
+  await verifyVatSubmission(page, null, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
-  /* *************************** */
-  /*  VIEW VAT RETURN (SIMPLE)   */
-  /* *************************** */
-  // Perform the first view without re-running HMRC auth (already granted above)
+  /* **************** */
+  /*  VIEW VAT RETURN */
+  /* **************** */
+
   await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey });
 
   /* ************************************* */
   /*  VIEW VAT RETURN: TEST SCENARIOS      */
   /* ************************************* */
+
   if (isSandboxMode()) {
     /**
      * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-md-vat-api-1.0.yaml)

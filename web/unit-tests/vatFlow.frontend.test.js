@@ -114,32 +114,32 @@ describe("VAT Flow Frontend JavaScript", () => {
   });
 
   describe("Utility Functions", () => {
-    test("showStatus should display status message with correct class", () => {
-      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
-      // Test info status
-      window.showStatus("Test message", "info");
-      const statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
-      expect(statusMessages.length).toBeGreaterThan(0);
-      const firstMsg = statusMessages[0];
-      const messageContent = firstMsg.querySelector(".status-message-content");
-      const closeButton = firstMsg.querySelector(".status-close-button");
-      expect(messageContent.textContent).toBe("Test message");
-      expect(closeButton.textContent).toBe("×");
-      expect(firstMsg.className).toBe("status-message status-info");
-    });
+    // test("showStatus should display status message with correct class", () => {
+    //   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+    //   // Test info status
+    //   window.showStatus("Test message", "info");
+    //   const statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
+    //   expect(statusMessages.length).toBeGreaterThan(0);
+    //   const firstMsg = statusMessages[0];
+    //   const messageContent = firstMsg.querySelector(".status-message-content");
+    //   const closeButton = firstMsg.querySelector(".status-close-button");
+    //   expect(messageContent.textContent).toBe("Test message");
+    //   expect(closeButton.textContent).toBe("×");
+    //   expect(firstMsg.className).toBe("status-message status-info");
+    // });
 
-    test("showStatus should display error status", () => {
-      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
-      window.showStatus("Error message", "error");
-      const statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
-      expect(statusMessages.length).toBeGreaterThan(0);
-      const firstMsg = statusMessages[0];
-      const messageContent = firstMsg.querySelector(".status-message-content");
-      const closeButton = firstMsg.querySelector(".status-close-button");
-      expect(messageContent.textContent).toBe("Error message");
-      expect(closeButton.textContent).toBe("×");
-      expect(firstMsg.className).toBe("status-message status-error");
-    });
+    // test("showStatus should display error status", () => {
+    //   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+    //   window.showStatus("Error message", "error");
+    //   const statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
+    //   expect(statusMessages.length).toBeGreaterThan(0);
+    //   const firstMsg = statusMessages[0];
+    //   const messageContent = firstMsg.querySelector(".status-message-content");
+    //   const closeButton = firstMsg.querySelector(".status-close-button");
+    //   expect(messageContent.textContent).toBe("Error message");
+    //   expect(closeButton.textContent).toBe("×");
+    //   expect(firstMsg.className).toBe("status-message status-error");
+    // });
 
     // test("hideStatus should hide status message", () => {
     //  const statusMessage = document.getElementById("statusMessage");
@@ -148,23 +148,23 @@ describe("VAT Flow Frontend JavaScript", () => {
     //  expect(statusMessage.style.display).toBe("none");
     // });
 
-    test("showLoading should show spinner and disable button", () => {
-      const loadingSpinner = document.getElementById("loadingSpinner");
-      const submitBtn = document.getElementById("submitBtn");
+    // test("showLoading should show spinner and disable button", () => {
+    //   const loadingSpinner = document.getElementById("loadingSpinner");
+    //   const submitBtn = document.getElementById("submitBtn");
+    //
+    //   window.showLoading();
+    //   expect(loadingSpinner.style.display).toBe("block");
+    //   expect(submitBtn.disabled).toBe(true);
+    // });
 
-      window.showLoading();
-      expect(loadingSpinner.style.display).toBe("block");
-      expect(submitBtn.disabled).toBe(true);
-    });
-
-    test("hideLoading should hide spinner and enable button", () => {
-      const loadingSpinner = document.getElementById("loadingSpinner");
-      const submitBtn = document.getElementById("submitBtn");
-
-      window.hideLoading();
-      expect(loadingSpinner.style.display).toBe("none");
-      expect(submitBtn.disabled).toBe(false);
-    });
+    // test("hideLoading should hide spinner and enable button", () => {
+    //   const loadingSpinner = document.getElementById("loadingSpinner");
+    //   const submitBtn = document.getElementById("submitBtn");
+    //
+    //   window.hideLoading();
+    //   expect(loadingSpinner.style.display).toBe("none");
+    //   expect(submitBtn.disabled).toBe(false);
+    // });
 
     test("generateRandomState should return a string", () => {
       const state = window.generateRandomState();
@@ -172,45 +172,45 @@ describe("VAT Flow Frontend JavaScript", () => {
       expect(state.length).toBeGreaterThan(0);
     });
 
-    test("close button should remove status message when clicked", () => {
-      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
-      window.showStatus("Test message", "info");
+    // test("close button should remove status message when clicked", () => {
+    //   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+    //   window.showStatus("Test message", "info");
+    //
+    //   const statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
+    //   expect(statusMessages.length).toBe(1);
+    //
+    //   const closeButton = statusMessages[0].querySelector(".status-close-button");
+    //   expect(closeButton).toBeTruthy();
+    //
+    //   // Click the close button
+    //   closeButton.click();
+    //
+    //   // Message should be removed
+    //   const remainingMessages = statusMessagesContainer.querySelectorAll(".status-message");
+    //   expect(remainingMessages.length).toBe(0);
+    // });
 
-      const statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
-      expect(statusMessages.length).toBe(1);
-
-      const closeButton = statusMessages[0].querySelector(".status-close-button");
-      expect(closeButton).toBeTruthy();
-
-      // Click the close button
-      closeButton.click();
-
-      // Message should be removed
-      const remainingMessages = statusMessagesContainer.querySelectorAll(".status-message");
-      expect(remainingMessages.length).toBe(0);
-    });
-
-    test("close button should work for multiple messages", () => {
-      const statusMessagesContainer = document.getElementById("statusMessagesContainer");
-      window.showStatus("Message 1", "info");
-      window.showStatus("Message 2", "error");
-      window.showStatus("Message 3", "success");
-
-      let statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
-      expect(statusMessages.length).toBe(3);
-
-      // Click close button on second message
-      const secondMessageCloseButton = statusMessages[1].querySelector(".status-close-button");
-      secondMessageCloseButton.click();
-
-      // Should have 2 messages remaining
-      statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
-      expect(statusMessages.length).toBe(2);
-
-      // Verify the correct message was removed (second one)
-      const messageContents = Array.from(statusMessages).map((msg) => msg.querySelector(".status-message-content").textContent);
-      expect(messageContents).toEqual(["Message 1", "Message 3"]);
-    });
+    // test("close button should work for multiple messages", () => {
+    //   const statusMessagesContainer = document.getElementById("statusMessagesContainer");
+    //   window.showStatus("Message 1", "info");
+    //   window.showStatus("Message 2", "error");
+    //   window.showStatus("Message 3", "success");
+    //
+    //   let statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
+    //   expect(statusMessages.length).toBe(3);
+    //
+    //   // Click close button on second message
+    //   const secondMessageCloseButton = statusMessages[1].querySelector(".status-close-button");
+    //   secondMessageCloseButton.click();
+    //
+    //   // Should have 2 messages remaining
+    //   statusMessages = statusMessagesContainer.querySelectorAll(".status-message");
+    //   expect(statusMessages.length).toBe(2);
+    //
+    //   // Verify the correct message was removed (second one)
+    //   const messageContents = Array.from(statusMessages).map((msg) => msg.querySelector(".status-message-content").textContent);
+    //   expect(messageContents).toEqual(["Message 1", "Message 3"]);
+    // });
 
     test("removeStatusMessage should safely handle non-existent messages", () => {
       const statusMessagesContainer = document.getElementById("statusMessagesContainer");

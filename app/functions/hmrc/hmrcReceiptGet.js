@@ -26,9 +26,7 @@ export function apiEndpoint(app) {
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.get(`/api/v1/hmrc/receipt/:name`, async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+    httpResponse.status(200).send();
   });
   app.head("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);

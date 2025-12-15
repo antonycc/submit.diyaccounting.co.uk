@@ -141,40 +141,17 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 async function requestAndVerifySubmitReturn(page, { vatNumber, periodKey, vatDue, testScenario }) {
-  // Submit VAT form and verify results WITHOUT performing HMRC auth here.
-  // HMRC authentication should occur only once, during the first form submission in the main flow.
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, vatNumber, periodKey, vatDue, screenshotPath);
-  // If a sandbox scenario is specified, reveal developer options and set it
-  if (testScenario) {
-    try {
-      await page.getByRole("button", { name: /Show Developer Options/i }).click();
-    } catch {}
-    try {
-      await page.selectOption("#testScenario", String(testScenario));
-    } catch {
-      await page.selectOption("#testScenario", { label: String(testScenario) });
-    }
-  }
+  await fillInVat(page, vatNumber, periodKey, vatDue, testScenario, screenshotPath);
   await submitFormVat(page, screenshotPath);
-
-  if (!testScenario) {
-    // Success path (post-auth) — by now, permission should already have been granted.
-    await completeVat(page, baseUrl, screenshotPath);
-    await verifyVatSubmission(page, screenshotPath);
-  } else {
-    // Error path: expect an error status and no receipt
-    await test.step("The user sees a submission error message for sandbox scenario", async () => {
-      await page.waitForLoadState("networkidle");
-      // Wait a little for status update to render
-      await page.waitForTimeout(500);
-      const statusContainer = page.locator("#statusMessagesContainer");
-      await expect(statusContainer).toBeVisible();
-      const statusText = (await statusContainer.innerText()).toLowerCase();
-      expect(statusText).toMatch(/failed|error/);
-      await expect(page.locator("#receiptDisplay")).toBeHidden();
-    });
-  }
+  await acceptCookiesHmrc(page, screenshotPath);
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
+  await completeVat(page, baseUrl, testScenario, screenshotPath);
+  await verifyVatSubmission(page, testScenario, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 }
 
@@ -241,7 +218,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* *************************** */
   // First submission: perform HMRC AUTH only this first time
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, screenshotPath);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -257,8 +234,8 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* **************************** */
   /*  SUBMIT VAT RETURN: VERIFY   */
   /* **************************** */
-  await completeVat(page, baseUrl, screenshotPath);
-  await verifyVatSubmission(page, screenshotPath);
+  await completeVat(page, baseUrl, null, screenshotPath);
+  await verifyVatSubmission(page, null, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ************************************* */

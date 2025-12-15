@@ -172,6 +172,7 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
 }
 
 export function addOnPageLogging(page) {
+  // Always capture console and page errors (useful, low volume)
   page.on("console", (msg) => {
     console.log(`[BROWSER CONSOLE ${msg.type()}]: ${msg.text()}`);
   });
@@ -180,21 +181,26 @@ export function addOnPageLogging(page) {
     console.log(`[BROWSER ERROR]: ${error.message}`);
   });
 
-  // Add comprehensive HTTP request/response logging
-  page.on("request", (request) => {
-    console.log(`[HTTP REQUEST] ${request.method()} ${request.url()}`);
-    console.log(`[HTTP REQUEST HEADERS] ${JSON.stringify(request.headers(), null, 2)}`);
-    if (request.postData()) {
-      console.log(`[HTTP REQUEST BODY] ${request.postData()}`);
-    }
-  });
+  // Verbose network logging can flood CI logs and cause timeouts.
+  // Enable only when explicitly requested via env flag.
+  const verboseHttp = String(process.env.TEST_VERBOSE_HTTP_LOGS || "").toLowerCase() === "true";
 
-  page.on("response", (response) => {
-    console.log(`[HTTP RESPONSE] ${response.status()} ${response.url()}`);
-    console.log(`[HTTP RESPONSE HEADERS] ${JSON.stringify(response.headers(), null, 2)}`);
-  });
+  if (verboseHttp) {
+    page.on("request", (request) => {
+      console.log(`[HTTP REQUEST] ${request.method()} ${request.url()}`);
+      console.log(`[HTTP REQUEST HEADERS] ${JSON.stringify(request.headers(), null, 2)}`);
+      if (request.postData()) {
+        console.log(`[HTTP REQUEST BODY] ${request.postData()}`);
+      }
+    });
 
-  // Add request failure logging
+    page.on("response", (response) => {
+      console.log(`[HTTP RESPONSE] ${response.status()} ${response.url()}`);
+      console.log(`[HTTP RESPONSE HEADERS] ${JSON.stringify(response.headers(), null, 2)}`);
+    });
+  }
+
+  // Always log failed requests — these are important for diagnosing errors
   page.on("requestfailed", (request) => {
     console.log(`[HTTP REQUEST FAILED] ${request.method()} ${request.url()} - ${request.failure()?.errorText}`);
   });

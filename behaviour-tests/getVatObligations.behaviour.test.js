@@ -372,12 +372,12 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
       status: "O",
+      /* No test scenario */
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
-      /* All status values */
       status: "F",
       /* No test scenario */
     });
@@ -385,114 +385,133 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "QUARTERLY_NONE_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "QUARTERLY_ONE_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "QUARTERLY_TWO_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "QUARTERLY_FOUR_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MONTHLY_NONE_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MONTHLY_ONE_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MONTHLY_TWO_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MONTHLY_THREE_MET",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MONTHLY_OBS_01_OPEN",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MONTHLY_OBS_06_OPEN",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MONTHLY_OBS_12_FULFILLED",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "QUARTERLY_OBS_01_OPEN",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "QUARTERLY_OBS_02_OPEN",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "QUARTERLY_OBS_04_FULFILLED",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MULTIPLE_OPEN_MONTHLY",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "MULTIPLE_OPEN_QUARTERLY",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "OBS_SPANS_MULTIPLE_YEARS",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "INSOLVENT_TRADER",
     });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
+      /* All status values */
       testScenario: "NOT_FOUND",
     });
   }
