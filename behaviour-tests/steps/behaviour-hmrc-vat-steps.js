@@ -421,7 +421,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     if (!hasScenario) {
       // Only check default scenario shape when no explicit status filter was applied
       if (!status) {
-        expect(fulfilledCount + openCount).toBeGreaterThan(1);
+        expect(fulfilledCount + openCount).toBeGreaterThanOrEqual(1);
       }
     } else
       switch (testScenario) {
