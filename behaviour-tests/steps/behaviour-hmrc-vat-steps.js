@@ -1,7 +1,15 @@
 // behaviour-tests/behaviour-hmrc-vat-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, loggedFill, timestamp, isSandboxMode } from "../helpers/behaviour-helpers.js";
+import {
+  loggedClick,
+  loggedFill,
+  loggedGoto,
+  loggedFocus,
+  loggedSelectOption,
+  timestamp,
+  isSandboxMode,
+} from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-vat-steps";
 
@@ -44,15 +52,8 @@ export async function fillInVat(
     if (testScenario) {
       await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-clicked-options.png` });
-      // Prefer selecting by value; if the caller provided a label, fall back to selecting by label
-      try {
-        await page.selectOption("#testScenario", String(testScenario));
-        page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-selected-scenario.png` });
-      } catch (error) {
-        console.log(`Failed to select test scenario ${testScenario} error: ${JSON.stringify(error)}`);
-        await page.selectOption("#testScenario", { label: String(testScenario) });
-        page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-selected-scenario-try-2.png` });
-      }
+      await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-selected-scenario.png` });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-options-shown.png` });
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png` });
@@ -66,7 +67,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
   await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
     // Focus change before submit
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submission-submit.png` });
-    await page.focus("#submitBtn");
+    await loggedFocus(page, "#submitBtn", "the Submit button", { screenshotPath });
     // Expect the HMRC permission page to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
     await loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath });
@@ -158,12 +159,17 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
             await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-complete-vat-going-back.png` });
             console.log(`Navigating back to submitVat.html from ${currentUrl}`);
-            await page.goto(`${baseUrl}${maybeSlash}activities/submitVat.html`);
+            await loggedGoto(page, `${baseUrl}${maybeSlash}activities/submitVat.html`, "back to Submit VAT page", screenshotPath);
             await page.waitForLoadState("networkidle");
           } else if (currentUrl.includes("chrome-error://")) {
             console.log("Chrome error page detected, navigating directly to submitVat.html");
             await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-complete-vat-error.png` });
-            await page.goto(`${baseUrl}${maybeSlash}activities/submitVat.html`);
+            await loggedGoto(
+              page,
+              `${baseUrl}${maybeSlash}activities/submitVat.html`,
+              "back to Submit VAT page (from error)",
+              screenshotPath,
+            );
             await page.waitForLoadState("networkidle");
           }
         }
@@ -266,7 +272,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
     await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
     await page.waitForTimeout(50);
-    await page.focus("#status");
+    await loggedFocus(page, "#status", "the obligations status filter", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-pre-status-fill-in.png` });
     if (status) {
       console.log(`Filling in status filter ${status}`);
@@ -275,7 +281,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
-      await page.selectOption("#status", statusValue);
+      await loggedSelectOption(page, "#status", statusValue, "obligations status", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-filled-in.png` });
     }
     if (testScenario) {
@@ -283,13 +289,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
-      // Prefer selecting by value; if the caller provided a label, fall back to selecting by label
-      try {
-        await page.selectOption("#testScenario", String(testScenario));
-      } catch (error) {
-        console.log(`Failed to select test scenario ${testScenario} error: ${JSON.stringify(error)}`);
-        await page.selectOption("#testScenario", { label: String(testScenario) });
-      }
+      await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
 
@@ -308,7 +308,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
 export async function submitVatObligationsForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the VAT obligations form", async () => {
     // Take a focus change screenshot between last cell entry and submit
-    await page.focus("#retrieveBtn");
+    await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png` });
     await loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
@@ -398,33 +398,18 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       }
     }
 
-    // - If a date range was provided, sanity check row dates are within range (where values are not '-')
-    // function parseDate(s) {
-    //   if (!s || s === "-") return null;
-    //   const d = new Date(s);
-    //   return isNaN(d.getTime()) ? null : d;
-    // }
-    // const fromD = hmrcVatPeriodFromDate ? parseDate(hmrcVatPeriodFromDate) : null;
-    // const toD = hmrcVatPeriodToDate ? parseDate(hmrcVatPeriodToDate) : null;
-    // if (fromD || toD) {
-    //   for (const r of rows) {
-    //     const startD = parseDate(r.start);
-    //     const endD = parseDate(r.end);
-    //     if (fromD && startD) expect(startD.getTime()).toBeGreaterThanOrEqual(fromD.getTime());
-    //     if (toD && endD) expect(endD.getTime()).toBeLessThanOrEqual(toD.getTime());
-    //   }
-    // }
-
     // Scenario-specific expectations based on Gov-Test-Scenario
     const fulfilledCount = rows.filter((r) => r.statusCode === "F").length;
     const openCount = rows.filter((r) => r.statusCode === "O").length;
 
     if (!hasScenario) {
+      console.log(`No test scenario ${fulfilledCount} fulfilled obligations and ${openCount} open obligations`);
       // Only check default scenario shape when no explicit status filter was applied
       if (!status) {
         expect(fulfilledCount + openCount).toBeGreaterThanOrEqual(1);
       }
-    } else
+    } else {
+      console.log(`Scenario ${testScenario} expected ${fulfilledCount} fulfilled obligations and ${openCount} open obligations`);
       switch (testScenario) {
         case "QUARTERLY_NONE_MET":
           expect(fulfilledCount).toBe(0);
@@ -543,6 +528,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
           // Unknown scenario: rely on generic checks only
           break;
       }
+    }
 
     console.log("VAT obligations retrieval completed successfully");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-success.png` });
@@ -612,7 +598,7 @@ export async function fillInViewVatReturn(
 export async function submitViewVatReturnForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the view VAT return form", async () => {
     // Focus change before submit
-    await page.focus("#retrieveBtn");
+    await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-submit.png` });
     await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-submit.png` });

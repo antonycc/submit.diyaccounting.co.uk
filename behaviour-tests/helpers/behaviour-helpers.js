@@ -346,6 +346,119 @@ export const loggedGoto = async (page, url, description = "", screenshotPath = d
     );
   });
 
+// Accepts either a selector string or a Playwright Locator
+export const loggedFocus = async (page, selectorOrLocator, description = "", options = undefined) =>
+  await test.step(description ? `The user focuses ${description}` : `The user focuses selector ${selectorOrLocator}`, async () => {
+    const opts = options && typeof options === "object" ? options : {};
+    const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
+    const selector = isLocator ? undefined : selectorOrLocator;
+    const locator = isLocator ? selectorOrLocator : page.locator(selector);
+
+    console.log(`[USER INTERACTION] Focusing: ${isLocator ? "[Locator]" : selector} ${description ? "- " + description : ""}`);
+
+    await (isLocator
+      ? locator.waitFor({ state: "visible", timeout: 30000 })
+      : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+
+    // Perform the focus
+    try {
+      if (isLocator) {
+        await locator.focus();
+      } else {
+        await page.focus(selector);
+      }
+    } catch (e) {
+      // Do not silently swallow focus bugs — rethrow after logging
+      console.warn(`[WARN] Failed to focus target: ${e.message}`);
+      throw e;
+    }
+
+    // Screenshot just after focus change
+    if (opts.screenshotPath) {
+      const labelSlug = toSlug(opts.focusLabel || description || (isLocator ? "locator" : selector));
+      const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
+      try {
+        ensureDirSync(opts.screenshotPath);
+        await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+      } catch (e) {
+        console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
+      }
+    } else {
+      await autoFocusScreenshot(page, description || (isLocator ? "locator" : selector));
+    }
+  });
+
+// Accepts either a selector string or a Playwright Locator
+// valueOrOptions can be: string|number|{value,label}|Array of those
+export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions, description = "", options = undefined) =>
+  await test.step(
+    description
+      ? `The user selects ${description}`
+      : `The user selects on ${typeof selectorOrLocator === "string" ? selectorOrLocator : "[Locator]"}`,
+    async () => {
+      const opts = options && typeof options === "object" ? options : {};
+      const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
+      const selector = isLocator ? undefined : selectorOrLocator;
+      const locator = isLocator ? selectorOrLocator : page.locator(selector);
+
+      const valueLog = typeof valueOrOptions === "object" ? JSON.stringify(valueOrOptions) : String(valueOrOptions);
+      console.log(
+        `[USER INTERACTION] Selecting option on ${isLocator ? "[Locator]" : selector} value: ${valueLog} ${
+          description ? "- " + description : ""
+        }`,
+      );
+
+      // Ensure element is visible and focused before selection
+      await (isLocator
+        ? locator.waitFor({ state: "visible", timeout: 30000 })
+        : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+
+      try {
+        if (isLocator) {
+          await locator.focus();
+        } else {
+          await page.focus(selector);
+        }
+      } catch (e) {
+        console.warn(`[WARN] Failed to focus before select: ${e.message}`);
+      }
+
+      // Screenshot just after focus change
+      if (opts.screenshotPath) {
+        const labelSlug = toSlug(opts.focusLabel || description || (isLocator ? "locator" : selector));
+        const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
+        try {
+          ensureDirSync(opts.screenshotPath);
+          await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+        } catch (e) {
+          console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
+        }
+      } else {
+        await autoFocusScreenshot(page, description || (isLocator ? "locator" : selector));
+      }
+
+      // Perform selection with value-first, fallback-to-label behavior when given a primitive
+      const performSelect = async (val) => (isLocator ? locator.selectOption(val) : page.selectOption(selector, val));
+
+      if (valueOrOptions === undefined || valueOrOptions === null) {
+        throw new Error("loggedSelectOption requires a value or options argument");
+      }
+
+      if (typeof valueOrOptions === "string" || typeof valueOrOptions === "number") {
+        const valueStr = String(valueOrOptions);
+        try {
+          await performSelect(valueStr);
+        } catch (error) {
+          console.log(`Failed to select by value '${valueStr}' error: ${JSON.stringify(error)} — retrying by label`);
+          await performSelect({ label: valueStr });
+        }
+      } else {
+        // Caller provided explicit options object/array — do not silently change semantics
+        await performSelect(valueOrOptions);
+      }
+    },
+  );
+
 // Generate timestamp for file naming
 export function timestamp() {
   const now = new Date();
