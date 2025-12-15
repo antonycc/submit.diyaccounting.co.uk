@@ -269,6 +269,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
     await page.focus("#status");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-pre-status-fill-in.png` });
     if (status) {
+      console.log(`Filling in status filter ${status}`);
       // Accept both label ("Open"/"Fulfilled") and value ("O"/"F")
       const statusValue = String(status) === "Open" ? "O" : String(status) === "Fulfilled" ? "F" : String(status);
       // Scroll, capture a pagedown
