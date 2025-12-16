@@ -497,9 +497,12 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
     logOk(`Found ${artifacts.videos.length} video(s)`);
   }
 
+  // Prefer explicit testId from testContext when present
+  const finalTestName = (testContext && typeof testContext.testId === "string" && testContext.testId.trim()) || testName;
+
   // Build report object
   const report = {
-    testName,
+    testName: finalTestName,
     generatedAt: new Date().toISOString(),
     testContext,
     hmrcApiRequests,
@@ -510,7 +513,7 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
   };
 
   // Write report file
-  const reportFileName = `test-report-${testName}.json`;
+  const reportFileName = `test-report-${finalTestName}.json`;
   const reportPath = path.join(OUTPUT_DIR, reportFileName);
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -595,11 +598,14 @@ function main() {
   };
 
   const { testContextPath, hmrcApiRequestsPath } = findTestData(testName);
-  const singleReportFile = generateTestReport(testName, testContextPath, hmrcApiRequestsPath, overrides);
+  generateTestReport(testName, testContextPath, hmrcApiRequestsPath, overrides);
 
-  // Generate index file for single report
+  // Rebuild index file by scanning all test-report-*.json in OUTPUT_DIR
   const indexPath = path.join(OUTPUT_DIR, "test-reports-index.txt");
-  fs.writeFileSync(indexPath, singleReportFile + "\n", "utf-8");
+  const reportFiles = (fs.existsSync(OUTPUT_DIR) ? fs.readdirSync(OUTPUT_DIR) : [])
+    .filter((f) => f.startsWith("test-report-") && f.endsWith(".json"))
+    .sort();
+  fs.writeFileSync(indexPath, reportFiles.map((f) => f + "\n").join(""), "utf-8");
 
   console.log("");
   logStep("=== Test Report Generation Complete ===");

@@ -68,14 +68,14 @@
 
     "test:postVatReturnBehaviour": "playwright test --project=post-vat-return-behaviour-tests",
     "test:postVatReturnBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:postVatReturnBehaviour",
-    "test:postVatReturnBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:postVatReturnBehaviour-proxy ; npm run test-report -- --testName get-vat-return --testFile ./behaviour-tests/postVatReturn.behaviour.test.js --envFile .env.proxy",
+    "test:postVatReturnBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:postVatReturnBehaviour-proxy ; npm run test-report -- --testName post-vat-return-sandbox --testFile ./behaviour-tests/postVatReturn.behaviour.test.js --envFile .env.proxy",
     "test:postVatReturnBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npm run test:postVatReturnBehaviour-proxy",
     "test:postVatReturnBehaviour-ci": "npx dotenv -e .env.ci   -- npm run test:postVatReturnBehaviour",
     "test:postVatReturnBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:postVatReturnBehaviour",
 
     "test:getVatReturnBehaviour": "playwright test --project=get-vat-return-behaviour-tests",
     "test:getVatReturnBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:getVatReturnBehaviour",
-    "test:getVatReturnBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:getVatReturnBehaviour-proxy ; npm run test-report -- --testName get-vat-return --testFile ./behaviour-tests/getVatReturn.behaviour.test.js --envFile .env.proxy",
+    "test:getVatReturnBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:getVatReturnBehaviour-proxy ; npm run test-report -- --testName get-vat-return-sandbox --testFile ./behaviour-tests/getVatReturn.behaviour.test.js --envFile .env.proxy",
     "test:getVatReturnBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npm run test:getVatReturnBehaviour-proxy",
     "test:getVatReturnBehaviour-ci": "npx dotenv -e .env.ci   -- npm run test:getVatReturnBehaviour",
     "test:getVatReturnBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:getVatReturnBehaviour",

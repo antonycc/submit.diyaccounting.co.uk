@@ -95,6 +95,11 @@ let observedTraceparent = null;
 
 test.setTimeout(300_000);
 
+// Explicit, stable test ID for reporting
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.annotations.push({ type: "test-id", description: "post-vat-return-sandbox" });
+});
+
 test.beforeAll(async ({ page }, testInfo) => {
   if (!envFilePath) {
     throw new Error("Environment variable DIY_SUBMIT_ENV_FILEPATH is not set, assuming no environment; not attempting tests.");
@@ -372,6 +377,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
 
   // Build testContext.json
   const testContext = {
+    testId: "post-vat-return-sandbox",
     name: testInfo.title,
     title: "Submit VAT Return (Single API Focus: POST)",
     description: "Submits VAT returns to HMRC with default and sandbox Gov-Test-Scenario variations.",
