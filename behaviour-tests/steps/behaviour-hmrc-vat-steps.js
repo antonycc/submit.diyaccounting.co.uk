@@ -328,7 +328,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       screenshotPath = obligationsQuery;
       obligationsQuery = {};
     }
-    const { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = obligationsQuery || {};
+    const { status, testScenario } = obligationsQuery || {};
     const hasScenario = !!testScenario;
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
