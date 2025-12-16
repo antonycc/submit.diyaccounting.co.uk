@@ -1577,9 +1577,41 @@ jobs:
           AWS_REGION: ${{ steps.rum-config.outputs.RUM_REGION || env.AWS_REGION }}
         run: |
           set -euo pipefail
-          echo "Injecting RUM config into HTML files under web/public"
-          find web/public -type f -name "*.html" -print0 | xargs -0 -I{} bash -lc '
-            perl -0777 -pe "s/\\$\\{RUM_APP_MONITOR_ID\\}/$ENV{RUM_APP_MONITOR_ID}/g; s/\\$\\{AWS_REGION\\}/$ENV{AWS_REGION}/g; s/\\$\\{RUM_IDENTITY_POOL_ID\\}/$ENV{RUM_IDENTITY_POOL_ID}/g; s/\\$\\{RUM_GUEST_ROLE_ARN\\}/$ENV{RUM_GUEST_ROLE_ARN}/g" -i "{}"'
+
+          echo 'Injecting RUM config into HTML files under web/public'
+          echo '----------------------------------------------------'
+
+          # Fail early if required variables are missing
+            : "${RUM_APP_MONITOR_ID:?Missing RUM_APP_MONITOR_ID}"
+            : "${RUM_IDENTITY_POOL_ID:?Missing RUM_IDENTITY_POOL_ID}"
+            : "${RUM_GUEST_ROLE_ARN:?Missing RUM_GUEST_ROLE_ARN}"
+            : "${AWS_REGION:?Missing AWS_REGION}"
+
+          # Escape sed replacement strings safely
+            escape_sed_replacement() {
+            printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'
+          }
+
+          RUM_APP_MONITOR_ID_ESCAPED="$(escape_sed_replacement "${RUM_APP_MONITOR_ID}")"
+          RUM_IDENTITY_POOL_ID_ESCAPED="$(escape_sed_replacement "${RUM_IDENTITY_POOL_ID}")"
+          RUM_GUEST_ROLE_ARN_ESCAPED="$(escape_sed_replacement "${RUM_GUEST_ROLE_ARN}")"
+          AWS_REGION_ESCAPED="$(escape_sed_replacement "${AWS_REGION}")"
+
+          # Find and process HTML files safely (null-delimited)
+          find web/public -type f -name '*.html' -print0 |
+          while IFS= read -r -d '' html_file; do
+            echo "Processing ${html_file}"
+
+            # Perform in-place replacements (case-insensitive placeholders)
+            sed -i \
+            -e "s|\${RUM_APP_MONITOR_ID}|${RUM_APP_MONITOR_ID_ESCAPED}|gI" \
+            -e "s|\${RUM_IDENTITY_POOL_ID}|${RUM_IDENTITY_POOL_ID_ESCAPED}|gI" \
+            -e "s|\${RUM_GUEST_ROLE_ARN}|${RUM_GUEST_ROLE_ARN_ESCAPED}|gI" \
+            -e "s|\${AWS_REGION}|${AWS_REGION_ESCAPED}|gI" \
+            "${html_file}"
+          done
+
+          echo 'RUM placeholder injection complete'
 
       - name: Compute hash of static website content
         id: publish-hash
