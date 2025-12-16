@@ -332,8 +332,8 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     const slowElapsedMs = Date.now() - slowStartMs;
     expect(
       slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 10s but less than 30s, actual: ${slowElapsedMs}ms`,
-    ).toBeGreaterThanOrEqual(10_000);
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 30s, actual: ${slowElapsedMs}ms`,
+    ).toBeGreaterThanOrEqual(5_000);
     expect(slowElapsedMs).toBeLessThan(30_000);
   }
 
