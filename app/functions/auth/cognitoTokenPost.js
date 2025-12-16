@@ -24,12 +24,28 @@ export function apiEndpoint(app) {
 export function extractAndValidateParameters(event, errorMessages) {
   const decoded = Buffer.from(event.body || "", "base64").toString("utf-8");
   const searchParams = new URLSearchParams(decoded);
+
+  const grantType = searchParams.get("grant_type");
   const code = searchParams.get("code");
+  const refreshToken = searchParams.get("refresh_token");
 
-  // Collect validation errors for required fields
-  if (!code) errorMessages.push("Missing code from event body");
+  if (!grantType) {
+    errorMessages.push("Missing grant_type from event body");
+    return {};
+  }
 
-  return { code };
+  if (grantType === "authorization_code") {
+    if (!code) errorMessages.push("Missing code from event body");
+    return { grantType, code };
+  }
+
+  if (grantType === "refresh_token") {
+    if (!refreshToken) errorMessages.push("Missing refresh_token from event body");
+    return { grantType, refreshToken };
+  }
+
+  errorMessages.push(`Unsupported grant_type: ${grantType}`);
+  return {};
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -39,7 +55,7 @@ export async function handler(event) {
   const { request } = extractRequest(event);
   const errorMessages = [];
 
-  // If HEAD request, return 200 OK immediately after bundle enforcement
+  // If HEAD request, return 200 OK immediately
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({
       request,
@@ -49,35 +65,53 @@ export async function handler(event) {
   }
 
   // Extract and validate parameters
-  const { code } = extractAndValidateParameters(event, errorMessages);
+  const { grantType, code, refreshToken } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = {};
-
-  // Validation errors
   if (errorMessages.length > 0) {
-    return buildValidationError(request, errorMessages, responseHeaders);
+    return buildValidationError(request, errorMessages, {});
   }
 
-  // Processing
-  logger.info({ message: "Exchanging authorization code for Cognito access token" });
-  const tokenResponse = await exchangeCodeForToken(code);
+  let tokenResponse;
+
+  if (grantType === "authorization_code") {
+    logger.info({ message: "Exchanging authorization code for Cognito access token" });
+    tokenResponse = await exchangeCodeForToken(code);
+  } else if (grantType === "refresh_token") {
+    logger.info({ message: "Refreshing Cognito access token" });
+    tokenResponse = await exchangeRefreshTokenForToken(refreshToken);
+  }
+
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
 }
 
-// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+// Service adaptor: authorization_code
 export async function exchangeCodeForToken(code) {
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithCognitoCallback.html`;
-  const cognitoClientId = process.env.COGNITO_CLIENT_ID;
-  const CognitoBaseUri = process.env.COGNITO_BASE_URI;
 
-  const url = `${CognitoBaseUri}/oauth2/token`;
-  const body = {
-    grant_type: "authorization_code",
-    client_id: cognitoClientId,
-    redirect_uri: redirectUri,
-    code,
+  const url = `${process.env.COGNITO_BASE_URI}/oauth2/token`;
+
+  return {
+    url,
+    body: {
+      grant_type: "authorization_code",
+      client_id: process.env.COGNITO_CLIENT_ID,
+      redirect_uri: redirectUri,
+      code,
+    },
   };
+}
 
-  return { url, body };
+// Service adaptor: refresh_token
+export async function exchangeRefreshTokenForToken(refreshToken) {
+  const url = `${process.env.COGNITO_BASE_URI}/oauth2/token`;
+
+  return {
+    url,
+    body: {
+      grant_type: "refresh_token",
+      client_id: process.env.COGNITO_CLIENT_ID,
+      refresh_token: refreshToken,
+    },
+  };
 }
