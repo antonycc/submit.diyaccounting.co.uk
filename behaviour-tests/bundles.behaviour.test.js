@@ -147,7 +147,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page, screenshotPath);
+  addOnPageLogging(page);
 
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");

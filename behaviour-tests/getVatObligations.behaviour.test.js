@@ -188,7 +188,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page, screenshotPath);
+  addOnPageLogging(page);
 
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");

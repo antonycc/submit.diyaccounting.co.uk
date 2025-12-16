@@ -164,7 +164,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       ? `http://127.0.0.1:${httpServerPort}/`
       : baseUrl;
 
-  addOnPageLogging(page, screenshotPath);
+  addOnPageLogging(page);
 
   page.on("response", (response) => {
     try {
