@@ -169,7 +169,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   page.on("response", (response) => {
     try {
       if (observedTraceparent) return;
-      const headers = response.headers?.() ?? response.headers?.() ?? {};
+      const headers = response.headers?.() ?? {};
       const h = typeof headers === "function" ? headers() : headers;
       const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
       if (tp) observedTraceparent = tp;
