@@ -1,6 +1,22 @@
-Please perform a deep analysis of every file from my repository in the list below and create some markdown context that I can copy/paste that contains increasingly more detailed descriptions of each directory, then down to the file levels. i.e. the top section under `#` should describe the top-level directory, then list the files and directories at the top level in a table with a sentence on each file/dir next to the file/dir; then the child sections under `##` should cover each directory under the top level, describing what that directory contains, with a table showing files and directories, and continue all the way down to the leaf nodes. At the start of the file have a top `#` section summarising the whole repository, and more top `#` sections for each of `package.json`, `pom.xml` describing what operations they support and what they do in a sub-section each (e.g. what `npm run build` will do and what `./mvnw clean verify` will do specifically in this `pom.xml`, not general Maven padding). Include an environment config section first saying what needs to be in `.env`, then cover each of `.env.ci`, `.env.prod`, `.env.proxy`, `.env.proxyRunning` and `.env.test`. Also include a top-level section describing the GitHub Actions workflows with a section on each of the workflows (`deploy.yml`, `deploy-environment.yml`, `test.yml`, `set-origins.yml`) covering what they do and the parameters they accept. Also please describe the AWS deployment in detail and the local Express-based running in detail, with a text-based description of how the components interact with each other.
+Please perform a deep analysis of every file from my repository in the list below and create some
+markdown context that I can copy/paste that contains increasingly more detailed descriptions of each
+directory, then down to the file levels. i.e. the top section under `#` should describe the top-level
+directory, then list the files and directories at the top level in a table with a sentence on each
+file/dir next to the file/dir; then the child sections under `##` should cover each directory under
+the top level, describing what that directory contains, with a table showing files and directories,
+and continue all the way down to the leaf nodes. At the start of the file have a top `#` section
+summarising the whole repository, and more top `#` sections for each of `package.json`, `pom.xml`
+describing what operations they support and what they do in a sub-section each (e.g. what `npm run build`
+will do and what `./mvnw clean verify` will do specifically in this `pom.xml`, not general Maven padding).
+Include an environment config section first saying what needs to be in `.env`, then cover each of
+`.env.ci`, `.env.prod`, `.env.proxy`, `.env.proxyRunning` and `.env.test`. Also include a top-level
+section describing the GitHub Actions workflows with a section on each of the workflows
+(`deploy.yml`, `deploy-environment.yml`, `test.yml`, `set-origins.yml`) covering what they do and the
+parameters they accept. Also please describe the AWS deployment in detail and the local Express-based
+running in detail, with a text-based description of how the components interact with each other.
 
-Please make the report as information dense as possible, I shall be using this to enhance my use of AI agents by giving them all the local context up front.
+Please make the report as information dense as possible, I shall be using this to enhance my use of AI
+agents by giving them all the local context up front.
 
 Redacted .env example:
 ```
@@ -76,16 +92,16 @@ repository-contents.txt:
 ./app/bin/dynamodb.js
 ./app/bin/main.js
 ./app/bin/provision-user.mjs
-./app/unit-tests/behaviour-test-helpers/gotoWithRetries.test.js
-./app/unit-tests/behaviour-test-helpers/hmrcTestUser.test.js
 ./app/unit-tests/bin/server.test.js
 ./app/unit-tests/bin/ngrok.test.js
 ./app/unit-tests/main.test.js
+./app/unit-tests/httpServerToLambdaAdaptor.test.js
 ./app/unit-tests/input.webm
 ./app/unit-tests/lib/govClientTestHeader.js
 ./app/unit-tests/test-helpers/mockHelpers.test.js
 ./app/unit-tests/test-helpers/eventBuilders.test.js
 ./app/unit-tests/functions/hmrcReceiptPost.test.js
+./app/unit-tests/functions/selfDestruct.test.js
 ./app/unit-tests/functions/bundleGet.handler.test.js
 ./app/unit-tests/functions/httpProxy.overwire.test.js
 ./app/unit-tests/functions/hmrcHttpProxy.handler.test.js
@@ -105,21 +121,32 @@ repository-contents.txt:
 ./app/unit-tests/data/dynamoDbBreakerStore.test.js
 ./app/unit-tests/services/subHasher.test.js
 ./app/unit-tests/services/productCatalog.test.js
+./app/unit-tests/services/hmrcApi.test.js
 ./app/unit-tests/services/httpProxy.test.js
 ./app/unit-tests/services/bundleManagement.test.js
 ./app/index.js
+./app/system-tests/breakerRepository.system.test.js
 ./app/system-tests/hmrcVatScenarios.system.test.js
+./app/system-tests/selfDestruct.system.test.js
 ./app/system-tests/hmrcAuth.system.test.js
 ./app/system-tests/productCatalog.system.test.js
 ./app/system-tests/video.webm
 ./app/system-tests/dynamoDbBundleStore.system.test.js
 ./app/system-tests/dynamoDbReceiptStore.system.test.js
+./app/system-tests/customAuthorizer.system.test.js
 ./app/system-tests/convertVideo.system.test.js
 ./app/system-tests/hmrcVatObligationJourney.system.test.js
+./app/system-tests/httpProxy.system.test.js
 ./app/system-tests/hmrcVatJourney.system.test.js
+./app/system-tests/rum-placeholders.system.test.js
+./app/system-tests/accountCatalog.system.test.js
 ./app/system-tests/provisionUser.system.test.js
+./app/system-tests/accountBundles.system.test.js
+./app/system-tests/bundlePost.system.test.js
+./app/system-tests/cognitoAuth.system.test.js
 ./app/system-tests/hmrcReceipt.system.test.js
 ./app/system-tests/bundleManagement.journeys.system.test.js
+./app/system-tests/hmrcHttpProxy.system.test.js
 ./app/system-tests/bundleManagement.system.test.js
 ./app/lib/httpServerToLambdaAdaptor.js
 ./app/lib/logger.js
@@ -162,12 +189,14 @@ repository-contents.txt:
 ./app/services/bundleManagement.js
 ./app/services/subHasher.js
 ./LICENSE
+./.output.txt
 ./Dockerfile
 ./web/unit-tests/userJourneys.frontend.test.js
 ./web/unit-tests/vatFlow.frontend.test.js
-./web/unit-tests/entitlement-status.test.js
 ./web/unit-tests/submit.helpers.test.js
 ./web/unit-tests/token-refresh.test.js
+./web/unit-tests/rum-consent.test.js
+./web/unit-tests/rum-config.test.js
 ./web/public/guide/index.html
 ./web/public/favicon.ico
 ./web/public/index.html
@@ -228,6 +257,7 @@ repository-contents.txt:
 ./.ncurc.json
 ./playwright.config.js
 ./vitest.config.js
+./REPOSITORY_DOCUMENTATION.md
 ./.prettierignore
 ./.editorconfig
 ./README.md
@@ -262,6 +292,7 @@ repository-contents.txt:
 ./scripts/create-submit-intermediate-domains.sh
 ./scripts/aws-unset-iam-session.sh
 ./.prettierrc
+./behaviour-tests/getVatReturn.behaviour.test.js
 ./behaviour-tests/ENHANCEMENTS.md
 ./behaviour-tests/bundles.behaviour.test.js
 ./behaviour-tests/steps/behaviour-steps.js
@@ -272,6 +303,7 @@ repository-contents.txt:
 ./behaviour-tests/steps/behaviour-login-steps.js
 ./behaviour-tests/submitVat.behaviour.test.js
 ./behaviour-tests/WIREMOCK.md
+./behaviour-tests/postVatReturn.behaviour.test.js
 ./behaviour-tests/getVatObligations.behaviour.test.js
 ./behaviour-tests/helpers/wiremock-helper.js
 ./behaviour-tests/helpers/figures-helper.js
@@ -283,5 +315,49 @@ repository-contents.txt:
 ./behaviour-tests/helpers/dynamodb-assertions.js
 ./behaviour-tests/helpers/playwrightTestWithout.js
 ./eslint.config.js
-
+./coverage/index.html
+./coverage/block-navigation.js
+./coverage/prettify.js
+./coverage/prettify.css
+./coverage/lib/jwtHelper.js.html
+./coverage/lib/index.html
+./coverage/lib/httpResponseHelper.js.html
+./coverage/lib/httpProxy.js.html
+./coverage/lib/logger.js.html
+./coverage/lib/eventToGovClientHeaders.js.html
+./coverage/lib/httpServerToLambdaAdaptor.js.html
+./coverage/functions/infra/index.html
+./coverage/functions/infra/hmrcHttpProxy.js.html
+./coverage/functions/infra/selfDestruct.js.html
+./coverage/functions/auth/index.html
+./coverage/functions/auth/cognitoTokenPost.js.html
+./coverage/functions/auth/customAuthorizer.js.html
+./coverage/functions/auth/cognitoAuthUrlGet.js.html
+./coverage/functions/hmrc/hmrcReceiptGet.js.html
+./coverage/functions/hmrc/index.html
+./coverage/functions/hmrc/hmrcAuthUrlGet.js.html
+./coverage/functions/hmrc/hmrcVatObligationGet.js.html
+./coverage/functions/hmrc/hmrcVatReturnPost.js.html
+./coverage/functions/hmrc/hmrcVatReturnGet.js.html
+./coverage/functions/hmrc/hmrcReceiptPost.js.html
+./coverage/functions/hmrc/hmrcTokenPost.js.html
+./coverage/functions/account/bundleGet.js.html
+./coverage/functions/account/bundlePost.js.html
+./coverage/functions/account/index.html
+./coverage/functions/account/catalogGet.js.html
+./coverage/functions/account/bundleDelete.js.html
+./coverage/sorter.js
+./coverage/data/index.html
+./coverage/data/dynamoDbBreakerRepository.js.html
+./coverage/data/dynamoDbHmrcApiRequestRepository.js.html
+./coverage/data/dynamoDbBundleRepository.js.html
+./coverage/data/dynamoDbReceiptRepository.js.html
+./coverage/base.css
+./coverage/services/hmrcApi.js.html
+./coverage/services/index.html
+./coverage/services/httpProxy.js.html
+./coverage/services/bundleManagement.js.html
+./coverage/services/subHasher.js.html
+./coverage/services/productCatalog.js.html
+./coverage/coverage-final.json
 ```
