@@ -44,7 +44,12 @@ import {
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { assertHmrcApiRequestExists, assertHmrcApiRequestValues, assertConsistentHashedSub } from "./helpers/dynamodb-assertions.js";
+import {
+  assertHmrcApiRequestExists,
+  assertHmrcApiRequestValues,
+  assertConsistentHashedSub,
+  readDynamoDbExport,
+} from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -109,12 +114,6 @@ test.beforeAll(async ({ page }, testInfo) => {
     ...originalEnv,
   };
 
-  // Run servers needed for the test
-  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
-  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
-  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
-
   // Clean up any existing artefacts from previous test runs
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
@@ -139,6 +138,12 @@ test.beforeAll(async ({ page }, testInfo) => {
     process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
     process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
   }
+
+  // Run servers needed for the test (after env overrides so child sees them)
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -188,7 +193,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page, screenshotPath);
+  addOnPageLogging(page);
 
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
@@ -198,7 +203,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   page.on("response", (response) => {
     try {
       if (observedTraceparent) return;
-      const headers = response.headers?.() ?? response.headers?.() ?? {};
+      const headers = response.headers?.() ?? {};
       const h = typeof headers === "function" ? headers() : headers;
       const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
       if (tp) {
@@ -367,20 +372,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       /* All status values */
       /* No test scenario */
     });
-    // await requestAndVerifyObligations(page, {
-    //   hmrcVatNumber: testVatNumber,
-    //   hmrcVatPeriodFromDate,
-    //   hmrcVatPeriodToDate,
-    //   status: "O",
-    //   /* No test scenario */
-    // });
-    // await requestAndVerifyObligations(page, {
-    //   hmrcVatNumber: testVatNumber,
-    //   hmrcVatPeriodFromDate,
-    //   hmrcVatPeriodToDate,
-    //   status: "F",
-    //   /* No test scenario */
-    // });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
@@ -586,6 +577,18 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
+
+    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
+    if (wiremockMode && wiremockMode !== "off") {
+      const records = readDynamoDbExport(hmrcApiRequestsFile);
+      expect(records.length).toBeGreaterThan(0);
+      for (const r of records) {
+        expect(
+          r.url?.startsWith(`http://localhost:${wiremockPort}`),
+          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
+        ).toBe(true);
+      }
+    }
   }
 
   /* ****************** */

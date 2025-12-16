@@ -1,22 +1,22 @@
 # Security & Compliance Hardening Prompt
 
-Analyze the current identity and authentication implementation and integrations (AWS Cognito, HMRC OAuth 2.0) and enhance security posture while ensuring compliance readiness for production deployment.
+Analyze the application’s authentication, authorization, data handling, and infrastructure posture as implemented in this repository — AWS Cognito (with Google IdP), HMRC OAuth 2.0 integration, AWS Lambda (Node.js), CloudFront/S3 static hosting, and DynamoDB — and enhance security while ensuring compliance readiness for production deployments.
 
 Focus on:
 - Comprehensive security audit and vulnerability assessment
-- OIDC-specific security patterns and attack vector mitigation
-- Compliance framework validation (SOC2, PCI DSS, GDPR, HIPAA considerations)
+- OAuth 2.0/OIDC integration patterns and attack vector mitigation relevant to Cognito + HMRC
+- Compliance framework validation (GDPR, ISO 27001, SOC 2)
 - Advanced threat protection and monitoring capabilities
 - Security incident response procedures and automation
 - Token lifecycle management and revocation strategies
 - Rate limiting, DDoS protection, and abuse prevention
 - Penetration testing frameworks and security validation
 
-## OIDC-Specific Security Areas
+## Identity, OAuth 2.0, and OIDC Security Areas
 
 Examine these critical OIDC provider security domains:
 
-### Identity and Authentication Security
+### Identity and Authentication Security (Cognito + Google IdP)
 - Multi-factor authentication integration patterns
 - Credential stuffing and brute force protection
 - Session management and timeout policies
@@ -33,7 +33,7 @@ Examine these critical OIDC provider security domains:
 - Token binding and proof-of-possession validation
 - JWKS rotation and key management automation
 
-### OAuth 2.0 and OIDC Flow Security
+### OAuth 2.0 and OIDC Flow Security (HMRC + Cognito)
 - Authorization code injection attack prevention
 - PKCE implementation validation and enforcement
 - Redirect URI validation and allowlist management
@@ -52,9 +52,9 @@ Examine these critical OIDC provider security domains:
 
 ## Compliance and Governance Framework
 
-Address regulatory and compliance requirements:
+Address regulatory and compliance requirements appropriate for this project:
 
-### SOC2 Type II Preparation
+### SOC 2 Type II Preparation
 - Security control documentation and evidence collection
 - Access control reviews and privilege management
 - Data processing and retention policy implementation
@@ -62,7 +62,7 @@ Address regulatory and compliance requirements:
 - Vulnerability management and patch procedures
 - Third-party vendor risk assessment
 
-### GDPR and Privacy Compliance
+### GDPR and Privacy Compliance (UK/EU)
 - Data protection impact assessment (DPIA) for identity data
 - Consent management and withdrawal mechanisms
 - Right to erasure (data deletion) implementation
@@ -70,18 +70,15 @@ Address regulatory and compliance requirements:
 - Privacy by design architectural review
 - Cross-border data transfer security measures
 
-### Industry-Specific Compliance
-- PCI DSS considerations for payment-related authentication
-- HIPAA compliance patterns for healthcare identity
-- FedRAMP security controls for government use
+### Additional Framework Alignment
 - ISO 27001 security management system alignment
-- Financial services regulations (PSD2, Open Banking)
+- Financial services considerations (e.g., protecting HMRC identifiers and VAT data)
 
-## Infrastructure Security Hardening
+## Infrastructure Security Hardening (AWS)
 
 Strengthen the AWS serverless architecture:
 
-### Lambda Function Security
+### Lambda Function Security (Node.js)
 - Runtime security and dependency vulnerability scanning
 - Environment variable encryption and secrets management
 - Function execution role privilege minimization
@@ -105,7 +102,7 @@ Strengthen the AWS serverless architecture:
 - SSL/TLS configuration and HSTS enforcement
 - Real-time logging and threat detection
 
-### API Gateway and Endpoint Security
+### API/Lambda Endpoint and Proxy Security
 - Request validation and input sanitization
 - SQL injection and XSS attack prevention
 - API versioning security considerations
@@ -145,13 +142,17 @@ Implement comprehensive security monitoring:
 
 Provide specific, actionable security improvements that:
 
-### Immediate Security Wins
+### Immediate Security Wins (Repo-Specific)
 - Implement security headers (CSP, HSTS, X-Frame-Options)
 - Add rate limiting to all authentication endpoints
 - Enable AWS GuardDuty and Security Hub
 - Configure CloudTrail for comprehensive audit logging
 - Implement secrets rotation for JWT signing keys
 - Add input validation and sanitization everywhere
+ - Validate and minimize Gov-Client/Gov-Vendor headers; avoid logging sensitive identifiers
+ - Store HMRC OAuth client secrets in AWS Secrets Manager via configured `*_SECRET_ARN`s; remove plaintext secrets from `.env`
+ - Verify Lambda execution roles are least-privilege for DynamoDB tables (`bundles`, `receipts`, `hmrc-api-requests`)
+ - Ensure CloudFront Origin Access Control (OAC) and S3 bucket policies prevent public writes
 
 ### Progressive Security Enhancements
 - Deploy AWS WAF with OWASP top 10 protection
@@ -189,5 +190,5 @@ Consider the impact on:
 
 Focus on creating a security-first culture while maintaining the serverless architecture's advantages of scalability, cost-effectiveness, and operational simplicity.
 
-> Formatting and style: Defer to the repo’s formatters — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for details.
-> Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.
+> Formatting and style: Defer to the repo’s formatters — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use `npm run formatting` / `npm run formatting-fix`. See README for details.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

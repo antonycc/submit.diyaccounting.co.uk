@@ -31,6 +31,7 @@ Produce a high‑quality Pull Request that:
 2. Deep Analysis of Selected Cluster
    - Read surrounding context of each TODO in the cluster.
    - Identify required code paths, data contracts, and external integrations.
+   - Trace both local execution (Express server) and production execution paths (Lambda adaptor) to ensure parity before running tests.
    - Define acceptance criteria for “done” across all items in the cluster.
 
 3. Plan → Implement → Iterate (LLM multi‑iteration loop)
@@ -45,6 +46,9 @@ Produce a high‑quality Pull Request that:
      - Unit tests: `npm run test:unit` (or `npm run test`)
      - System: `npm run test:system`
      - Behaviour/Browser (if relevant): `npm run test:behaviour` / `npm run test:browser`
+       - For proxy environment, prefer `npm run test:behaviour-proxy`
+       - Behaviour tests are very verbose — pipe output to a file, e.g.:
+         - `npm run test:behaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`
    - For Java/CDK:
      - Build/validate: `npm run build` (Maven + Spotless checks)
    - Add/extend tests to cover new behaviours; stabilize flaky tests encountered during execution.
@@ -76,6 +80,7 @@ Use these as inspiration; do not attempt to fix everything at once. Choose ONE c
 - Preserve security properties (least privilege IAM, secrets handling, logging) and privacy of any HMRC/Gov headers.
 - Be incremental and reversible; keep commits logical and small.
 - Keep infrastructure and application concerns separated appropriately; respect existing architecture boundaries.
+ - Avoid unnecessary formatting changes; rely on repo scripts `npm run formatting` / `npm run formatting-fix` when needed.
 
 ## Success Criteria
 

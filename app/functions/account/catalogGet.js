@@ -10,6 +10,7 @@ const logger = createLogger({ source: "app/functions/account/catalogGet.js" });
 let cached = null; // { json, etag, lastModified, object, validated }
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/* v8 ignore start */
 export function apiEndpoint(app) {
   app.get("/api/v1/catalog", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -20,6 +21,7 @@ export function apiEndpoint(app) {
     httpResponse.status(200).send();
   });
 }
+/* v8 ignore stop */
 
 // HTTP request/response, aware Lambda handler function
 export async function handler(event) {

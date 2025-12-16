@@ -19,6 +19,7 @@ import { getUserSub } from "../../lib/jwtHelper.js";
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptPost.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/* v8 ignore start */
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -29,6 +30,7 @@ export function apiEndpoint(app) {
     httpResponse.status(200).send();
   });
 }
+/* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages, userSub) {
   const parsedBody = parseRequestBody(event);
