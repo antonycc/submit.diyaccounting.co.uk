@@ -11,7 +11,7 @@ vi.mock("../data/dynamoDbHmrcApiRequestRepository.js", () => ({
   putHmrcApiRequest: vi.fn().mockResolvedValue(undefined),
 }));
 
-describe("System: Cognito Auth Flow (cognitoAuthUrl + cognitoToken)", () => {
+describe("System: Cognito Auth Flow (authUrl + token)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     Object.assign(process.env, setupTestEnv());
@@ -25,21 +25,30 @@ describe("System: Cognito Auth Flow (cognitoAuthUrl + cognitoToken)", () => {
     });
 
     const res = await cognitoAuthUrlGetHandler(event);
+
     expect(res.statusCode).toBe(200);
+
     const body = parseResponseBody(res);
     expect(body).toHaveProperty("authUrl");
     expect(body.authUrl).toContain("/oauth2/authorize");
     expect(body.authUrl).toContain(`client_id=${encodeURIComponent(process.env.COGNITO_CLIENT_ID)}`);
-    expect(body.authUrl).toContain(`state=state-123`);
+    expect(body.authUrl).toContain("state=state-123");
     expect(body.authUrl).toContain(encodeURIComponent("/auth/loginWithCognitoCallback.html"));
   });
 
   it("should return 400 when state is missing", async () => {
-    const event = buildLambdaEvent({ method: "GET", path: "/api/v1/cognito/authUrl", queryStringParameters: {} });
+    const event = buildLambdaEvent({
+      method: "GET",
+      path: "/api/v1/cognito/authUrl",
+      queryStringParameters: {},
+    });
+
     const res = await cognitoAuthUrlGetHandler(event);
+
     expect(res.statusCode).toBe(400);
+
     const body = parseResponseBody(res);
-    expect(body.message).toMatch(/Missing state/);
+    expect(body.message).toMatch(/Missing state/i);
   });
 
   it("should return 200 for HEAD on authUrl", async () => {
@@ -48,18 +57,45 @@ describe("System: Cognito Auth Flow (cognitoAuthUrl + cognitoToken)", () => {
     expect(res.statusCode).toBe(200);
   });
 
-  it("should validate missing code on token exchange", async () => {
-    const event = buildLambdaEvent({ method: "POST", path: "/api/v1/cognito/token" });
-    // cognitoTokenPost expects base64 form body; we send empty to trigger validation error
+  it("should return 400 when grant_type is missing on token exchange", async () => {
+    const event = buildLambdaEvent({
+      method: "POST",
+      path: "/api/v1/cognito/token",
+    });
+
     event.body = Buffer.from("").toString("base64");
+
     const res = await cognitoTokenPostHandler(event);
+
     expect(res.statusCode).toBe(400);
+
     const body = parseResponseBody(res);
-    expect(body.message).toMatch(/Missing code/);
+    expect(body.message).toMatch(/Missing grant_type/i);
   });
 
-  it("should exchange code for token and return tokens (fetch mocked)", async () => {
+  it("should validate missing code for authorization_code grant", async () => {
+    const event = buildLambdaEvent({
+      method: "POST",
+      path: "/api/v1/cognito/token",
+    });
+
+    const form = new URLSearchParams({
+      grant_type: "authorization_code",
+    }).toString();
+
+    event.body = Buffer.from(form).toString("base64");
+
+    const res = await cognitoTokenPostHandler(event);
+
+    expect(res.statusCode).toBe(400);
+
+    const body = parseResponseBody(res);
+    expect(body.message).toMatch(/Missing code/i);
+  });
+
+  it("should exchange authorization_code for tokens", async () => {
     const mockFetch = setupFetchMock();
+
     mockHmrcSuccess(mockFetch, {
       access_token: "access-123",
       id_token: "id-456",
@@ -68,16 +104,60 @@ describe("System: Cognito Auth Flow (cognitoAuthUrl + cognitoToken)", () => {
       token_type: "Bearer",
     });
 
-    const event = buildLambdaEvent({ method: "POST", path: "/api/v1/cognito/token" });
-    const form = new URLSearchParams({ code: "auth-code-123" }).toString();
+    const event = buildLambdaEvent({
+      method: "POST",
+      path: "/api/v1/cognito/token",
+    });
+
+    const form = new URLSearchParams({
+      grant_type: "authorization_code",
+      code: "auth-code-123",
+    }).toString();
+
     event.body = Buffer.from(form).toString("base64");
 
     const res = await cognitoTokenPostHandler(event);
+
     expect(res.statusCode).toBe(200);
+
     const body = parseResponseBody(res);
     expect(body).toMatchObject({
       accessToken: "access-123",
       hmrcAccessToken: "access-123",
+      tokenType: "Bearer",
+      expiresIn: 3600,
+    });
+  });
+
+  it("should exchange refresh_token for new access token", async () => {
+    const mockFetch = setupFetchMock();
+
+    mockHmrcSuccess(mockFetch, {
+      access_token: "access-456",
+      expires_in: 3600,
+      token_type: "Bearer",
+    });
+
+    const event = buildLambdaEvent({
+      method: "POST",
+      path: "/api/v1/cognito/token",
+    });
+
+    const form = new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: "refresh-123",
+    }).toString();
+
+    event.body = Buffer.from(form).toString("base64");
+
+    const res = await cognitoTokenPostHandler(event);
+
+    expect(res.statusCode).toBe(200);
+
+    const body = parseResponseBody(res);
+    expect(body).toMatchObject({
+      accessToken: "access-456",
+      hmrcAccessToken: "access-456",
       tokenType: "Bearer",
       expiresIn: 3600,
     });
