@@ -239,19 +239,19 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
 
   const keyScreenshotPatterns = [
-    "goto.*bundles.*page", // Bundles page navigation
-    "clear.*bundle", // Clearing bundles
-    "request.*bundle", // Requesting a bundle
-    "ensure.*bundle", // Bundle present/added
-    "added.*test", // Test bundle added confirmation
+    "04.*home.*page",
+    "02.*removing.*all.*bundles.*clicked",
+    "01.*request.*bundle",
+    "05.*ensure.*bundle.*adding",
+    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu",
   ];
 
   const screenshotDescriptions = {
-    "goto.*bundles.*page": "Bundles management page showing available bundle types and current selections",
-    "clear.*bundle": "Bundles page after clearing all bundles showing empty state",
-    "request.*bundle": "Bundle request in progress with Test bundle being added",
-    "ensure.*bundle": "Bundle successfully added showing confirmation with checkmark",
-    "added.*test": "Test bundle successfully added and visible in the bundles list",
+    "04.*home.*page": "The home page with no bundles",
+    "02.*removing.*all.*bundles.*clicked": "Removing all bundles",
+    "01.*request.*bundle": "The request the Test bundle",
+    "05.*ensure.*bundle.*adding": "Added the Test bundle",
+    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu": "The home page with activities from bundles",
   };
 
   const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);

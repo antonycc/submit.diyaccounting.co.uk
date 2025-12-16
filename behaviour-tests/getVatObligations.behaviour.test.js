@@ -637,21 +637,18 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   // Select and copy key screenshots, then generate figures.json
   const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
 
-  // TODO: Pick examples with all then HMRC API form submissions and response data
   const keyScreenshotPatterns = [
-    "init.*vat.*obligation", // VAT obligations form
-    "fill.*vat.*obligation", // VAT obligations form filled
-    "hmrc.*auth", // HMRC authorization screen
-    "verify.*vat.*obligation.*result", // VAT obligations results
-    "vat.*obligation.*result", // Alternative obligations results pattern
+    "00.*focus.*submitting.*vat.*obligations.*form",
+    "03.*obligations.*submit",
+    "04.*obligations.*results.*pagedown",
+    "00.*focus.*a.*developer.*test.*scenario",
   ];
 
   const screenshotDescriptions = {
-    "init.*vat.*obligation": "VAT obligations form initial state ready for user input",
-    "fill.*vat.*obligation": "VAT obligations form filled with VAT number and date range parameters",
-    "hmrc.*auth": "HMRC authorization page where user grants permission to access VAT obligations data",
-    "verify.*vat.*obligation.*result": "VAT obligations results page displaying retrieved obligation periods and their status",
-    "vat.*obligation.*result": "Retrieved VAT obligations showing due dates and submission deadlines",
+    "00.*focus.*submitting.*vat.*obligations.*form": "Filling in VAT obligations form",
+    "03.*obligations.*submit": "Submitting VAT obligations form",
+    "04.*obligations.*results.*pagedown": "Viewing VAT obligations results",
+    "00.*focus.*a.*developer.*test.*scenario": "Submitting VAT obligations form with a test scenario",
   };
 
   const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);

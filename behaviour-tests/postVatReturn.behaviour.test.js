@@ -375,6 +375,38 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     }
   }
 
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "10.*fill.*in.*submission.*pagedown",
+    "02.*complete.*vat.*receipt",
+    "01.*submit.*hmrc.*auth",
+    "06.*view.*vat.*fill.*in.*filled",
+    "04.*view.*vat.*return.*results",
+  ];
+
+  const screenshotDescriptions = {
+    "10.*fill.*in.*submission.*pagedown": "VAT return form filled out with test data including VAT number, period key, and amount due",
+    "02.*complete.*vat.*receipt": "Successful VAT return submission confirmation showing receipt details from HMRC",
+    "01.*submit.*hmrc.*auth": "HMRC authorization page where user authenticates with HMRC",
+    "06.*view.*vat.*fill.*in.*filled": "VAT query form filled out with test data including VAT number and period key",
+    "04.*view.*vat.*return.*results": "Retrieved VAT return data showing previously submitted values",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
   // Build testContext.json
   const testContext = {
     testId: "post-vat-return-sandbox",
