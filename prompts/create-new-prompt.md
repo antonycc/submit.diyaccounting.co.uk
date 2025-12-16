@@ -105,7 +105,7 @@ The new prompt must meet these mandatory requirements:
 - Include security best practices assessment (IAM least privilege, encryption, logging)
 - Complete the internal review process as described in the "Mandatory Internal Review Process" section above.
 - Integrate seamlessly with the existing prompt system
-- Provide clear, actionable guidance specific to OIDC provider development
+- Provide clear, actionable guidance specific to this repository (MTD VAT submission, HMRC APIs, AWS serverless, Cognito)
 - Include rollback and deployment risk assessment
 
 Focus on creating something that would be genuinely useful and that represents the most impactful improvement opportunity currently missing from the prompt collection.

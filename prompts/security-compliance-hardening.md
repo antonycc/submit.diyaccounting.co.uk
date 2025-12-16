@@ -14,7 +14,7 @@ Focus on:
 
 ## Identity, OAuth 2.0, and OIDC Security Areas
 
-Examine these critical OIDC provider security domains:
+Examine these critical identity and authorization security domains:
 
 ### Identity and Authentication Security (Cognito + Google IdP)
 - Multi-factor authentication integration patterns
