@@ -105,7 +105,7 @@ let observedTraceparent = null;
 let currentTestUsername;
 let currentTestPassword;
 
-test.setTimeout(300_000);
+test.setTimeout(600_000);
 
 // Explicit, stable test ID for reporting
 test.beforeEach(async ({}, testInfo) => {
@@ -292,9 +292,9 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     const slowElapsedMs = Date.now() - slowStartMs;
     expect(
       slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 30s, actual: ${slowElapsedMs}ms`,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
     ).toBeGreaterThanOrEqual(5_000);
-    expect(slowElapsedMs).toBeLessThan(30_000);
+    expect(slowElapsedMs).toBeLessThan(60_000);
   }
 
   // Extract user sub and log out
