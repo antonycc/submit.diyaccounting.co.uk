@@ -39,8 +39,6 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages) {
-  const queryParams = event.queryStringParameters || {};
-  const { "Gov-Test-Scenario": testScenario } = queryParams;
   const parsedBody = parseRequestBody(event);
   const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
   // TODO: Remove the alternate paths at source, then remove this compatibility code
@@ -71,7 +69,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
   }
 
-  return { vatNumber, periodKey, hmrcAccessToken, numVatDue, testScenario, hmrcAccount };
+  return { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount };
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -99,14 +97,12 @@ export async function handler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, testScenario, hmrcAccount } = extractAndValidateParameters(
-    event,
-    errorMessages,
-  );
+  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
+  const govTestScenarioHeader = govClientHeaders["Gov-Test-Scenario"];
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Normalise periodKey to uppercase for HMRC if provided as string
@@ -136,11 +132,12 @@ export async function handler(event) {
     return buildValidationError(request, [err.toString()], responseHeaders);
   }
 
-  if (hmrcAccount && hmrcAccount === "sandbox" && testScenario === "SUBMIT_API_HTTP_500") {
+  logger.info({ "Checking for test scenario": govTestScenarioHeader });
+  if (govTestScenarioHeader === "SUBMIT_API_HTTP_500") {
     return http500ServerErrorResponse({
       request,
       headers: { ...responseHeaders },
-      message: `Simulated server error for testing scenario: ${testScenario}`,
+      message: `Simulated server error for testing scenario: ${govTestScenarioHeader}`,
     });
   }
 
@@ -162,7 +159,7 @@ export async function handler(event) {
       hmrcAccessToken,
       govClientHeaders,
       userSub,
-      testScenario,
+      govTestScenarioHeader,
     ));
   } catch (error) {
     // Preserve original behavior expected by tests: bubble up network errors
@@ -198,7 +195,7 @@ export async function submitVat(
   hmrcAccessToken,
   govClientHeaders,
   auditForUserSub,
-  testScenario,
+  govTestScenarioHeader,
 ) {
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
@@ -222,36 +219,37 @@ export async function submitVat(
     totalAcquisitionsExVAT: 0,
     finalised: true,
   };
+  let hmrcResponseBody;
+  let hmrcResponse = {};
 
-  // let hmrcResponseBody;
-  // let hmrcResponse;
   const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
-  logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
-  // Perform HTTP call
-  const { hmrcResponse, hmrcResponseBody } = await hmrcHttpPost(
-    hmrcRequestUrl,
-    hmrcRequestHeaders,
-    govClientHeaders,
-    hmrcRequestBody,
-    auditForUserSub,
-  );
-  // TODO: Move this into the proxy
-  if (hmrcAccount && hmrcAccount === "sandbox") {
-    if (testScenario === "HMRC_API_HTTP_500") {
-      logger.error({ message: `Simulated server error for testing scenario: ${testScenario}` });
-      hmrcResponse.ok = false;
-      hmrcResponse.status = 500;
-    } else if (testScenario === "HMRC_API_HTTP_503") {
-      logger.error({ message: `Simulated server unavailable for testing scenario: ${testScenario}` });
-      hmrcResponse.ok = false;
-      hmrcResponse.status = 503;
-    } else if (testScenario === "HMRC_API_HTTP_SLOW") {
+  /* v8 ignore start */
+  // TODO: Move the error simulation into the proxy
+  if (govTestScenarioHeader === "SUBMIT_HMRC_API_HTTP_500") {
+    logger.error({ message: `Simulated server error for testing scenario: ${govTestScenarioHeader}` });
+    hmrcResponse.ok = false;
+    hmrcResponse.status = 500;
+  } else if (govTestScenarioHeader === "SUBMIT_HMRC_API_HTTP_503") {
+    logger.error({ message: `Simulated server unavailable for testing scenario: ${govTestScenarioHeader}` });
+    hmrcResponse.ok = false;
+    hmrcResponse.status = 503;
+  } else {
+    if (govTestScenarioHeader === "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
+      // Strip Gov-Test-Scenario from headers to avoid triggering reject from HMRC
+      delete hmrcRequestHeaders["Gov-Test-Scenario"];
+      delete govClientHeaders["Gov-Test-Scenario"];
       const slowTime = 10000;
-      logger.info({ message: `Simulating slow HMRC API response for testing scenario (waiting...): ${testScenario}`, slowTime });
+      logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waiting...): ${govTestScenarioHeader}`, slowTime });
       await new Promise((resolve) => setTimeout(resolve, slowTime));
-      logger.info({ message: `Simulating slow HMRC API response for testing scenario (waited): ${testScenario}`, slowTime });
+      logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waited): ${govTestScenarioHeader}`, slowTime });
     }
+    /* v8 ignore stop */
+    logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
+    const httpResult = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
+    logger.info({ message: `Received HMRC response: ${JSON.stringify(httpResult.hmrcResponse)}`, httpResult });
+    hmrcResponse = httpResult.hmrcResponse;
+    hmrcResponseBody = httpResult.hmrcResponseBody;
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };

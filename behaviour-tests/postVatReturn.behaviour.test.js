@@ -295,6 +295,41 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       vatDue: hmrcVatDueAmount,
       testScenario: "INSOLVENT_TRADER",
     });
+
+    // Custom forced error scenarios
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_API_HTTP_500",
+    });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_HMRC_API_HTTP_500",
+    });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    });
+
+    // Slow scenario should take >= 10s but < 30s end-to-end
+    const slowStartMs = Date.now();
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+    });
+    const slowElapsedMs = Date.now() - slowStartMs;
+    expect(
+      slowElapsedMs,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 10s but less than 30s, actual: ${slowElapsedMs}ms`,
+    ).toBeGreaterThanOrEqual(10_000);
+    expect(slowElapsedMs).toBeLessThan(30_000);
   }
 
   // Extract user sub and log out
