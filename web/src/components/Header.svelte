@@ -1,14 +1,14 @@
 <script>
-  import { link } from 'svelte-spa-router';
-  import { authStore, userName } from '../stores/authStore.js';
-  import { bundlesStore } from '../stores/bundlesStore.js';
-  
+  import { link } from "svelte-spa-router";
+  import { authStore, userName } from "../stores/authStore.js";
+  import { bundlesStore } from "../stores/bundlesStore.js";
+
   let menuOpen = false;
-  
+
   function toggleMenu() {
     menuOpen = !menuOpen;
   }
-  
+
   function closeMenu() {
     menuOpen = false;
   }
@@ -19,9 +19,7 @@
   }
 
   // Get entitlement status text
-  $: entitlementText = $bundlesStore.length > 0 
-    ? `Bundles: ${$bundlesStore.length}` 
-    : 'Activity: unrestricted';
+  $: entitlementText = $bundlesStore.length > 0 ? `Bundles: ${$bundlesStore.length}` : "Activity: unrestricted";
 </script>
 
 <header>
@@ -36,7 +34,7 @@
         <a href="/about" use:link on:click={closeMenu}>About</a>
       </div>
     </div>
-    
+
     <div class="auth-section">
       <span class="entitlement-status">{entitlementText}</span>
       {#if $authStore.isAuthenticated}
@@ -48,7 +46,7 @@
       {/if}
     </div>
   </div>
-  
+
   <h1>DIY Accounting Submit</h1>
   <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
 </header>

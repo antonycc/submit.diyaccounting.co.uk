@@ -7,6 +7,7 @@ import security from "eslint-plugin-security";
 import sonarjs from "eslint-plugin-sonarjs";
 import react from "eslint-plugin-react";
 import importPlugin from "eslint-plugin-import";
+import svelte from "eslint-plugin-svelte";
 
 const modifiedGoogleConfig = { ...google, rules: { ...google.rules } };
 delete modifiedGoogleConfig.rules["valid-jsdoc"];
@@ -76,7 +77,12 @@ export default [
   },
   // Browser environment for web scripts
   {
-    files: ["web/public/**/*.js", "web/browser-tests/**/*.js", "web/unit-tests/**/*.js"],
+    files: [
+      "web/public/**/*.js",
+      "web/src/**/*.js",
+      "web/browser-tests/**/*.js",
+      "web/unit-tests/**/*.js",
+    ],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -86,6 +92,21 @@ export default [
     rules: {
       // Allow eval in tests for testing purposes
       "sonarjs/code-eval": "off",
+    },
+  },
+  // Svelte files
+  ...svelte.configs["flat/recommended"],
+  {
+    files: ["**/*.svelte"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+    rules: {
+      // Svelte-specific rules
+      "no-unused-vars": "off", // Svelte uses variables in templates
+      "no-undef": "off", // Svelte has its own scope
     },
   },
   {
@@ -112,6 +133,8 @@ export default [
       "scripts/",
       "behaviour-tests/",
       "web/browser-tests/",
+      // Vite build output
+      "web/public/assets/",
     ],
   },
 ];

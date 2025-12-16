@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived } from "svelte/store";
 
 function createBundlesStore() {
   const { subscribe, set, update } = writable([]);
@@ -6,13 +6,13 @@ function createBundlesStore() {
   return {
     subscribe,
     set,
-    add: (bundle) => update(bundles => [...bundles, bundle]),
-    remove: (bundleId) => update(bundles => bundles.filter(b => b.product !== bundleId)),
+    add: (bundle) => update((bundles) => [...bundles, bundle]),
+    remove: (bundleId) => update((bundles) => bundles.filter((b) => b.product !== bundleId)),
     refresh: async (authToken) => {
       try {
-        const response = await fetch('/api/account/bundles', {
+        const response = await fetch("/api/account/bundles", {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
+            Authorization: `Bearer ${authToken}`,
           },
         });
         if (response.ok) {
@@ -20,7 +20,7 @@ function createBundlesStore() {
           set(data.bundles || []);
         }
       } catch (error) {
-        console.error('Failed to fetch bundles:', error);
+        console.error("Failed to fetch bundles:", error);
       }
     },
   };
@@ -29,6 +29,6 @@ function createBundlesStore() {
 export const bundlesStore = createBundlesStore();
 
 // Derived store to check if user has specific entitlements
-export const hasEntitlement = derived(bundlesStore, $bundles => (productId) => {
-  return $bundles.some(bundle => bundle.product === productId);
+export const hasEntitlement = derived(bundlesStore, ($bundles) => (productId) => {
+  return $bundles.some((bundle) => bundle.product === productId);
 });

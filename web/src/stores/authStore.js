@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived } from "svelte/store";
 
 // Auth state
 function createAuthStore() {
@@ -11,12 +11,12 @@ function createAuthStore() {
   });
 
   // Initialize from localStorage
-  if (typeof window !== 'undefined') {
-    const accessToken = localStorage.getItem('cognitoAccessToken');
-    const idToken = localStorage.getItem('cognitoIdToken');
-    const refreshToken = localStorage.getItem('cognitoRefreshToken');
-    const userInfoStr = localStorage.getItem('userInfo');
-    
+  if (typeof window !== "undefined") {
+    const accessToken = localStorage.getItem("cognitoAccessToken");
+    const idToken = localStorage.getItem("cognitoIdToken");
+    const refreshToken = localStorage.getItem("cognitoRefreshToken");
+    const userInfoStr = localStorage.getItem("userInfo");
+
     if (accessToken && userInfoStr) {
       set({
         accessToken,
@@ -31,13 +31,13 @@ function createAuthStore() {
   return {
     subscribe,
     login: (tokens, userInfo) => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cognitoAccessToken', tokens.accessToken);
-        localStorage.setItem('cognitoIdToken', tokens.idToken);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cognitoAccessToken", tokens.accessToken);
+        localStorage.setItem("cognitoIdToken", tokens.idToken);
         if (tokens.refreshToken) {
-          localStorage.setItem('cognitoRefreshToken', tokens.refreshToken);
+          localStorage.setItem("cognitoRefreshToken", tokens.refreshToken);
         }
-        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        localStorage.setItem("userInfo", JSON.stringify(userInfo));
       }
       set({
         ...tokens,
@@ -46,11 +46,11 @@ function createAuthStore() {
       });
     },
     logout: () => {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('cognitoAccessToken');
-        localStorage.removeItem('cognitoIdToken');
-        localStorage.removeItem('cognitoRefreshToken');
-        localStorage.removeItem('userInfo');
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("cognitoAccessToken");
+        localStorage.removeItem("cognitoIdToken");
+        localStorage.removeItem("cognitoRefreshToken");
+        localStorage.removeItem("userInfo");
       }
       set({
         accessToken: null,
@@ -61,12 +61,12 @@ function createAuthStore() {
       });
     },
     updateTokens: (tokens) => {
-      update(state => {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('cognitoAccessToken', tokens.accessToken);
-          localStorage.setItem('cognitoIdToken', tokens.idToken);
+      update((state) => {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("cognitoAccessToken", tokens.accessToken);
+          localStorage.setItem("cognitoIdToken", tokens.idToken);
           if (tokens.refreshToken) {
-            localStorage.setItem('cognitoRefreshToken', tokens.refreshToken);
+            localStorage.setItem("cognitoRefreshToken", tokens.refreshToken);
           }
         }
         return {
@@ -81,6 +81,4 @@ function createAuthStore() {
 export const authStore = createAuthStore();
 
 // Derived store for user display name
-export const userName = derived(authStore, $auth => 
-  $auth.userInfo?.name || $auth.userInfo?.email || 'User'
-);
+export const userName = derived(authStore, ($auth) => $auth.userInfo?.name || $auth.userInfo?.email || "User");

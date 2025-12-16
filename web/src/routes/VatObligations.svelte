@@ -1,10 +1,13 @@
 <script>
-  import { push } from 'svelte-spa-router';
-  import { authStore } from '../stores/authStore.js';
+  import { onMount } from "svelte";
+  import { push } from "svelte-spa-router";
+  import { authStore } from "../stores/authStore.js";
 
-  if (!$authStore.isAuthenticated) {
-    push('/auth/login');
-  }
+  onMount(() => {
+    if (!$authStore.isAuthenticated) {
+      push("/auth/login");
+    }
+  });
 </script>
 
 <div class="form-container">

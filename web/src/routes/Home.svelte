@@ -1,11 +1,11 @@
 <script>
-  import { link } from 'svelte-spa-router';
-  import { onMount } from 'svelte';
-  import { authStore } from '../stores/authStore.js';
-  import { bundlesStore } from '../stores/bundlesStore.js';
-  import { api } from '../lib/api.js';
-  
-  let loading = false;
+  import { link } from "svelte-spa-router";
+  import { onMount } from "svelte";
+  import { authStore } from "../stores/authStore.js";
+  import { bundlesStore } from "../stores/bundlesStore.js";
+  import { api } from "../lib/api.js";
+
+  const loading = false;
   let catalog = [];
   let activities = [];
 
@@ -16,7 +16,7 @@
         const bundlesData = await api.getBundles();
         bundlesStore.set(bundlesData.bundles || []);
       } catch (error) {
-        console.error('Failed to fetch bundles:', error);
+        console.error("Failed to fetch bundles:", error);
       }
     }
 
@@ -24,39 +24,39 @@
     try {
       const catalogData = await api.getCatalog();
       catalog = catalogData.products || [];
-      
+
       // Build activities list
       activities = [
         {
-          id: 'vat-obligations',
-          name: 'View VAT Obligations',
-          description: 'Check your VAT filing obligations from HMRC',
-          path: '/hmrc/vat/vatObligations',
+          id: "vat-obligations",
+          name: "View VAT Obligations",
+          description: "Check your VAT filing obligations from HMRC",
+          path: "/hmrc/vat/vatObligations",
           requiredBundle: null,
         },
         {
-          id: 'submit-vat',
-          name: 'Submit VAT Return',
-          description: 'Submit a VAT return to HMRC',
-          path: '/hmrc/vat/submitVat',
+          id: "submit-vat",
+          name: "Submit VAT Return",
+          description: "Submit a VAT return to HMRC",
+          path: "/hmrc/vat/submitVat",
           requiredBundle: null,
         },
         {
-          id: 'view-receipts',
-          name: 'View Receipts',
-          description: 'View your HMRC submission receipts',
-          path: '/hmrc/receipt/receipts',
+          id: "view-receipts",
+          name: "View Receipts",
+          description: "View your HMRC submission receipts",
+          path: "/hmrc/receipt/receipts",
           requiredBundle: null,
         },
       ];
     } catch (error) {
-      console.error('Failed to fetch catalog:', error);
+      console.error("Failed to fetch catalog:", error);
     }
   });
 
   function canAccessActivity(activity) {
     if (!activity.requiredBundle) return true;
-    return $bundlesStore.some(b => b.product === activity.requiredBundle);
+    return $bundlesStore.some((b) => b.product === activity.requiredBundle);
   }
 </script>
 
@@ -67,13 +67,8 @@
     <div class="loading-spinner">Loading...</div>
   {:else}
     <div class="activities-grid">
-      {#each activities as activity}
-        <a 
-          href={activity.path} 
-          use:link 
-          class="activity-card"
-          class:disabled={!canAccessActivity(activity)}
-        >
+      {#each activities as activity (activity.id)}
+        <a href={activity.path} use:link class="activity-card" class:disabled={!canAccessActivity(activity)}>
           <h3>{activity.name}</h3>
           <p>{activity.description}</p>
           {#if !canAccessActivity(activity)}
@@ -87,13 +82,7 @@
       <p style="margin-bottom: 1em; color: #666; font-style: italic">
         Need more choices? Select additional bundles to expand your available activities.
       </p>
-      <a 
-        href="/account/bundles" 
-        use:link 
-        class="btn btn-success"
-      >
-        Add Bundle
-      </a>
+      <a href="/account/bundles" use:link class="btn btn-success"> Add Bundle </a>
     </div>
   {/if}
 </div>

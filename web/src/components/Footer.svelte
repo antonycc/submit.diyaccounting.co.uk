@@ -1,6 +1,6 @@
 <script>
   // Get version info from environment or build
-  const version = import.meta.env.VITE_APP_VERSION || '0.0.2-4';
+  const version = import.meta.env.VITE_APP_VERSION || "0.0.2-4";
 </script>
 
 <footer>

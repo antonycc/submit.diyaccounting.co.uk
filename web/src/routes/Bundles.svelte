@@ -1,9 +1,9 @@
 <script>
-  import { onMount } from 'svelte';
-  import { api } from '../lib/api.js';
-  import { bundlesStore } from '../stores/bundlesStore.js';
-  import { authStore } from '../stores/authStore.js';
-  import { push } from 'svelte-spa-router';
+  import { onMount } from "svelte";
+  import { api } from "../lib/api.js";
+  import { bundlesStore } from "../stores/bundlesStore.js";
+  import { authStore } from "../stores/authStore.js";
+  import { push } from "svelte-spa-router";
 
   let loading = true;
   let error = null;
@@ -14,21 +14,18 @@
 
   onMount(async () => {
     if (!$authStore.isAuthenticated) {
-      push('/auth/login');
+      push("/auth/login");
       return;
     }
 
     try {
       // Fetch catalog and user bundles
-      const [catalogData, bundlesData] = await Promise.all([
-        api.getCatalog(),
-        api.getBundles(),
-      ]);
+      const [catalogData, bundlesData] = await Promise.all([api.getCatalog(), api.getBundles()]);
 
       catalog = catalogData.products || [];
       bundlesStore.set(bundlesData.bundles || []);
     } catch (err) {
-      console.error('Failed to load bundles:', err);
+      console.error("Failed to load bundles:", err);
       error = err.message;
     } finally {
       loading = false;
@@ -42,13 +39,13 @@
       const data = await api.getBundles();
       bundlesStore.set(data.bundles || []);
     } catch (err) {
-      console.error('Failed to add bundle:', err);
+      console.error("Failed to add bundle:", err);
       error = err.message;
     }
   }
 
   async function removeBundle(productId) {
-    if (!confirm('Are you sure you want to remove this bundle?')) {
+    if (!confirm("Are you sure you want to remove this bundle?")) {
       return;
     }
 
@@ -58,22 +55,20 @@
       const data = await api.getBundles();
       bundlesStore.set(data.bundles || []);
     } catch (err) {
-      console.error('Failed to remove bundle:', err);
+      console.error("Failed to remove bundle:", err);
       error = err.message;
     }
   }
 
   function hasBundle(productId) {
-    return userBundles.some(b => b.product === productId);
+    return userBundles.some((b) => b.product === productId);
   }
 </script>
 
 <div class="form-container">
   <h2>Manage Your Bundles</h2>
-  
-  <p style="margin-bottom: 2em; color: #666">
-    Bundles give you access to additional features and activities.
-  </p>
+
+  <p style="margin-bottom: 2em; color: #666">Bundles give you access to additional features and activities.</p>
 
   {#if error}
     <div class="alert alert-error">
@@ -88,19 +83,14 @@
       <h3>Your Active Bundles</h3>
       {#if userBundles.length > 0}
         <div class="bundles-list">
-          {#each userBundles as bundle}
+          {#each userBundles as bundle (bundle.product)}
             <div class="bundle-card active">
               <div class="bundle-info">
                 <h4>{bundle.productName || bundle.product}</h4>
                 <p>Expires: {new Date(bundle.expiryDate).toLocaleDateString()}</p>
                 <p>User limit: {bundle.userLimit}</p>
               </div>
-              <button 
-                class="btn btn-danger btn-small" 
-                on:click={() => removeBundle(bundle.product)}
-              >
-                Remove
-              </button>
+              <button class="btn btn-danger btn-small" on:click={() => removeBundle(bundle.product)}> Remove </button>
             </div>
           {/each}
         </div>
@@ -112,21 +102,16 @@
     <div class="bundles-section">
       <h3>Available Bundles</h3>
       <div class="bundles-list">
-        {#each catalog as product}
+        {#each catalog as product (product.id)}
           <div class="bundle-card">
             <div class="bundle-info">
               <h4>{product.name}</h4>
-              <p>{product.description || 'No description'}</p>
+              <p>{product.description || "No description"}</p>
             </div>
             {#if hasBundle(product.id)}
               <span class="badge badge-active">Active</span>
             {:else}
-              <button 
-                class="btn btn-primary btn-small" 
-                on:click={() => addBundle(product.id)}
-              >
-                Add Bundle
-              </button>
+              <button class="btn btn-primary btn-small" on:click={() => addBundle(product.id)}> Add Bundle </button>
             {/if}
           </div>
         {/each}

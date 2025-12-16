@@ -1,55 +1,63 @@
 <script>
-  import { onMount } from 'svelte';
-  import { push } from 'svelte-spa-router';
-  import { api } from '../lib/api.js';
-  import { authStore } from '../stores/authStore.js';
+  import { onMount } from "svelte";
+  import { push } from "svelte-spa-router";
+  import { api } from "../lib/api.js";
+  import { authStore } from "../stores/authStore.js";
 
   let loading = true;
   let error = null;
 
   onMount(async () => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    const isMock = window.location.pathname.includes('Mock');
+    const code = params.get("code");
+    const state = params.get("state");
+    const isMock = window.location.pathname.includes("Mock");
 
     if (!code) {
-      error = 'No authorization code received';
+      error = "No authorization code received";
       loading = false;
       return;
     }
 
     try {
       const data = isMock
-        ? await fetch('/api/auth/mock/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        ? await fetch("/api/auth/mock/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ code, state }),
-          }).then(r => r.json())
+          }).then((r) => r.json())
         : await api.exchangeCognitoToken(code, state);
 
       if (data.accessToken && data.idToken) {
         // Decode ID token to get user info (simple JWT decode)
-        const base64Url = data.idToken.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const userInfo = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => 
-          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-        ).join('')));
+        const base64Url = data.idToken.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const userInfo = JSON.parse(
+          decodeURIComponent(
+            atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join(""),
+          ),
+        );
 
-        authStore.login({
-          accessToken: data.accessToken,
-          idToken: data.idToken,
-          refreshToken: data.refreshToken,
-        }, userInfo);
+        authStore.login(
+          {
+            accessToken: data.accessToken,
+            idToken: data.idToken,
+            refreshToken: data.refreshToken,
+          },
+          userInfo,
+        );
 
         // Redirect to home
-        push('/');
+        push("/");
       } else {
-        error = 'Invalid response from authentication server';
+        error = "Invalid response from authentication server";
       }
     } catch (err) {
-      console.error('Token exchange error:', err);
-      error = err.message || 'Failed to complete authentication';
+      console.error("Token exchange error:", err);
+      error = err.message || "Failed to complete authentication";
     } finally {
       loading = false;
     }
@@ -91,8 +99,12 @@
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   .alert {

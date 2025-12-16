@@ -1,27 +1,37 @@
-import { defineConfig } from 'vite';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { resolve } from 'path';
+import { defineConfig } from "vite";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
+import { resolve } from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [svelte()],
-  root: 'web/src',
+  root: "web/src",
   build: {
-    outDir: '../public',
-    emptyOutDir: false, // Don't empty the directory - preserve docs/, tests/, etc.
+    outDir: "../public",
+    emptyOutDir: false, // Don't empty the directory - preserve docs/, tests/, special files
     rollupOptions: {
       output: {
         // Keep consistent naming for easier debugging
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        entryFileNames: "assets/[name]-[hash].js",
+        chunkFileNames: "assets/[name]-[hash].js",
+        assetFileNames: (assetInfo) => {
+          // Keep favicon in root
+          if (assetInfo.name === "favicon.ico") {
+            return "[name][extname]";
+          }
+          // Keep images in images/ directory
+          if (assetInfo.name && /\.(png|jpg|jpeg|gif|svg)$/.test(assetInfo.name)) {
+            return "images/[name][extname]";
+          }
+          return "assets/[name]-[hash][extname]";
+        },
       },
     },
   },
-  publicDir: 'public',
+  publicDir: "public",
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'web/src'),
+      "@": resolve(__dirname, "web/src"),
     },
   },
   server: {
@@ -29,20 +39,20 @@ export default defineConfig({
     strictPort: false,
     proxy: {
       // Proxy API calls to Express server during development
-      '/api': {
-        target: 'http://localhost:3000',
+      "/api": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
-      '/auth': {
-        target: 'http://localhost:3000',
+      "/auth": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
-      '/hmrc': {
-        target: 'http://localhost:3000',
+      "/hmrc": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
-      '/account': {
-        target: 'http://localhost:3000',
+      "/account": {
+        target: "http://localhost:3000",
         changeOrigin: true,
       },
     },

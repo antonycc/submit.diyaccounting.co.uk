@@ -1,8 +1,8 @@
 <script>
-  import { onMount } from 'svelte';
-  import { push } from 'svelte-spa-router';
-  import { api } from '../lib/api.js';
-  import { authStore } from '../stores/authStore.js';
+  import { onMount } from "svelte";
+  import { push } from "svelte-spa-router";
+  import { api } from "../lib/api.js";
+  import { authStore } from "../stores/authStore.js";
 
   let useMock = false;
   let loading = false;
@@ -11,7 +11,7 @@
   onMount(() => {
     // Check if already authenticated
     if ($authStore.isAuthenticated) {
-      push('/');
+      push("/");
     }
   });
 
@@ -20,18 +20,16 @@
     error = null;
 
     try {
-      const data = useMock 
-        ? await fetch('/api/auth/mock/authurl').then(r => r.json())
-        : await api.getCognitoAuthUrl();
-      
+      const data = useMock ? await fetch("/api/auth/mock/authurl").then((r) => r.json()) : await api.getCognitoAuthUrl();
+
       if (data.authUrl) {
         window.location.href = data.authUrl;
       } else {
-        error = 'Failed to get authorization URL';
+        error = "Failed to get authorization URL";
       }
     } catch (err) {
-      console.error('Login error:', err);
-      error = err.message || 'An error occurred during login';
+      console.error("Login error:", err);
+      error = err.message || "An error occurred during login";
     } finally {
       loading = false;
     }
@@ -40,10 +38,8 @@
 
 <div class="form-container">
   <h2>Log in to DIY Accounting Submit</h2>
-  
-  <p style="margin-bottom: 2em; color: #666">
-    You need to log in to submit VAT returns and access your account.
-  </p>
+
+  <p style="margin-bottom: 2em; color: #666">You need to log in to submit VAT returns and access your account.</p>
 
   {#if error}
     <div class="alert alert-error">
@@ -52,12 +48,8 @@
   {/if}
 
   <div class="login-options">
-    <button 
-      class="btn btn-primary btn-large" 
-      on:click={handleLogin} 
-      disabled={loading}
-    >
-      {loading ? 'Redirecting...' : 'Log in with Cognito'}
+    <button class="btn btn-primary btn-large" on:click={handleLogin} disabled={loading}>
+      {loading ? "Redirecting..." : "Log in with Cognito"}
     </button>
 
     <div class="divider">or</div>

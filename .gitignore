@@ -351,3 +351,4 @@ fabric.properties
 
 # HMRC test user credentials
 /hmrc-test-user.json
+\n# Vite build cache\nweb/src/.vite/

@@ -5,6 +5,7 @@
   "tabWidth": 2,
   "useTabs": false,
   "quoteProps": "consistent",
+  "plugins": ["prettier-plugin-svelte"],
   "overrides": [
     {
       "files": ".prettierrc",
@@ -14,6 +15,15 @@
       "files": "*.html",
       "options": {
         "parser": "html",
+        "printWidth": 140,
+        "tabWidth": 2,
+        "useTabs": false
+      }
+    },
+    {
+      "files": "*.svelte",
+      "options": {
+        "parser": "svelte",
         "printWidth": 140,
         "tabWidth": 2,
         "useTabs": false
