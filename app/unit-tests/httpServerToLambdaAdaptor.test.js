@@ -78,6 +78,44 @@ describe("unit: httpServerToLambdaAdaptor.buildLambdaEventFromHttpRequest", () =
     expect(claims.email).toBe("test@test.submit.diyaccunting.co.uk");
     expect(claims.scope).toBe("read write");
   });
+
+  it("does not throw when Authorization header is missing and still builds event", () => {
+    const httpRequest = makeHttpRequest({
+      headers: { host: "example.com:8443" },
+    });
+    const evt = buildLambdaEventFromHttpRequest(httpRequest);
+    expect(evt.headers.host).toBe("example.com:8443");
+    const claims = evt.requestContext.authorizer.lambda.jwt.claims;
+    // When no token, our hardening should avoid crashing; fixed fields still present
+    expect(claims["cognito:username"]).toBe("test");
+    expect(claims.email).toBe("test@test.submit.diyaccunting.co.uk");
+    expect(claims.scope).toBe("read write");
+  });
+
+  it("prefers x-authorization over authorization when both present", () => {
+    const tokenA = makeJwt({ sub: "from-auth" });
+    const tokenX = makeJwt({ sub: "from-x-auth" });
+    const httpRequest = makeHttpRequest({
+      headers: {
+        "host": "h:1",
+        "authorization": `Bearer ${tokenA}`,
+        "x-authorization": `Bearer ${tokenX}`,
+      },
+    });
+    const evt = buildLambdaEventFromHttpRequest(httpRequest);
+    const claims = evt.requestContext.authorizer.lambda.jwt.claims;
+    expect(claims.sub).toBe("from-x-auth");
+  });
+
+  it("handles malformed Authorization header gracefully", () => {
+    const httpRequest = makeHttpRequest({
+      headers: { authorization: "NotBearer token", host: "h:1" },
+    });
+    const evt = buildLambdaEventFromHttpRequest(httpRequest);
+    expect(evt.headers.host).toBe("h:1");
+    const claims = evt.requestContext.authorizer.lambda.jwt.claims;
+    expect(claims["cognito:username"]).toBe("test");
+  });
 });
 
 describe("unit: httpServerToLambdaAdaptor.buildHttpResponseFromLambdaResult", () => {
