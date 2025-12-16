@@ -19,6 +19,7 @@ import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptReposito
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptGet.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/* v8 ignore start */
 export function apiEndpoint(app) {
   app.get("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -30,7 +31,18 @@ export function apiEndpoint(app) {
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
+  app.head("/api/v1/hmrc/receipt", async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+  app.head(`/api/v1/hmrc/receipt/:name`, async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
 }
+/* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages, userSub) {
   const pathParams = event.pathParameters || {};

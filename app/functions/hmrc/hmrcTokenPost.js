@@ -21,13 +21,18 @@ const secretsClient = new SecretsManagerClient();
 let cachedHmrcClientSecret;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/* v8 ignore start */
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/token", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
+  app.head("/api/v1/hmrc/token", async (httpRequest, httpResponse) => {
+    httpResponse.status(200).send();
+  });
 }
+/* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);

@@ -8,14 +8,31 @@ export const test = base.extend({
     const context = await browser.newContext({ ...contextOptions, recordVideo });
     await context.route("**/*", (route) => {
       const url = route.request().url();
-      // block GA / gtag / GTM endpoints
+      // block RUM/ GA / gtag / GTM endpoints / HMRC all.js
       if (
+        url.startsWith("https://client.rum") ||
+        url.startsWith("https://test-www.tax.service.gov.uk/api-test-login/assets/lib/govuk-frontend/dist/govuk/all.js") ||
         url.startsWith("https://www.google-analytics.com/g/collect") ||
         url.startsWith("https://www.googletagmanager.com/") ||
         url.includes("analytics.js") ||
         url.includes("gtag/js")
       ) {
-        return route.abort();
+        const isGaScript =
+          url.includes("analytics.js") ||
+          url.includes("gtag/js") ||
+          url.includes("/gtm.js") ||
+          url.includes("/all.js") ||
+          url.includes("/cwr.js");
+        const isScriptRequest = isGaScript || route.request().resourceType() === "script";
+        return route.fulfill({
+          status: 204,
+          headers: {
+            "access-control-allow-origin": "*",
+            "cache-control": "no-store",
+            ...(isScriptRequest ? { "content-type": "application/javascript" } : { "content-type": "text/plain; charset=utf-8" }),
+          },
+          body: "", // empty body as requested
+        });
       }
       return route.continue();
     });

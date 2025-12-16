@@ -388,7 +388,7 @@ The `pom.xml` file configures the Java-based AWS CDK infrastructure code.
 **What it does specifically in this pom.xml**:
 
 1. **Clean Phase**: Removes `target/` directory
-2. **Compile Phase**: 
+2. **Compile Phase**:
    - Compiles Java sources from `infra/main/java`
    - Processes Immutables annotations to generate value classes
    - JVM args: `-Xshare:off`, `-XX:+EnableDynamicAgentLoading`, `-Xlint:-options`
@@ -749,7 +749,7 @@ Application Stacks:
 **Job Flow**:
 
 1. **names**: Compute environment and deployment names
-2. **set-origins**: 
+2. **set-origins**:
    - Look up CloudFront distribution ID by tag `OriginFor` if not provided
    - Call `.github/actions/set-origins` action to:
      - Add CloudFront alternate domain name (CNAME) for apex domain
@@ -1710,7 +1710,7 @@ web/
 behaviour-tests/
 ├── bundles.behaviour.test.js            # Bundle management E2E tests
 ├── submitVat.behaviour.test.js          # VAT submission E2E tests
-├── vatObligations.behaviour.test.js     # VAT obligations E2E tests
+├── getVatObligations.behaviour.test.js     # VAT obligations E2E tests
 ├── steps/                               # Shared test steps
 │   ├── behaviour-steps.js               # Common Playwright steps
 │   ├── behaviour-login-steps.js         # Login/auth steps
@@ -2101,7 +2101,7 @@ function bootstrapRumConfigFromMeta() {
 ###### hasRumConsent()
 ```javascript
 function hasRumConsent() {
-  return localStorage.getItem("consent.rum") === "granted" || 
+  return localStorage.getItem("consent.rum") === "granted" ||
          localStorage.getItem("consent.analytics") === "granted";
 }
 ```
@@ -2229,9 +2229,9 @@ JavaScript errors, and HTTP request timings from your browser to our API.</p>
     AWS_REGION: ${{ steps.rum-config.outputs.RUM_REGION || env.AWS_REGION }}
   run: |
     find web/public -type f -name "*.html" -print0 | xargs -0 -I{} bash -lc '
-      perl -0777 -pe "s/\\$\\{RUM_APP_MONITOR_ID\\}/$ENV{RUM_APP_MONITOR_ID}/g; 
-                      s/\\$\\{AWS_REGION\\}/$ENV{AWS_REGION}/g; 
-                      s/\\$\\{RUM_IDENTITY_POOL_ID\\}/$ENV{RUM_IDENTITY_POOL_ID}/g; 
+      perl -0777 -pe "s/\\$\\{RUM_APP_MONITOR_ID\\}/$ENV{RUM_APP_MONITOR_ID}/g;
+                      s/\\$\\{AWS_REGION\\}/$ENV{AWS_REGION}/g;
+                      s/\\$\\{RUM_IDENTITY_POOL_ID\\}/$ENV{RUM_IDENTITY_POOL_ID}/g;
                       s/\\$\\{RUM_GUEST_ROLE_ARN\\}/$ENV{RUM_GUEST_ROLE_ARN}/g" -i "{}"'
 ```
 - **Purpose**: Replace placeholders in all HTML files with actual RUM configuration

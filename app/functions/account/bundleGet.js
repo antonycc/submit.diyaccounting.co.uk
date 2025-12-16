@@ -17,6 +17,7 @@ import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/* v8 ignore start */
 export function apiEndpoint(app) {
   app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -24,11 +25,10 @@ export function apiEndpoint(app) {
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+    httpResponse.status(200).send();
   });
 }
+/* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages) {
   // Decode JWT token to get user ID

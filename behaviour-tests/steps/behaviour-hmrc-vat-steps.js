@@ -1,7 +1,15 @@
 // behaviour-tests/behaviour-hmrc-vat-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, loggedFill, timestamp, isSandboxMode } from "../helpers/behaviour-helpers.js";
+import {
+  loggedClick,
+  loggedFill,
+  loggedGoto,
+  loggedFocus,
+  loggedSelectOption,
+  timestamp,
+  isSandboxMode,
+} from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-vat-steps";
 
@@ -20,23 +28,38 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
   });
 }
 
-export async function fillInVat(page, hmrcVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath = defaultScreenshotPath) {
+export async function fillInVat(
+  page,
+  hmrcVatNumber,
+  hmrcVatPeriodKey,
+  hmrcVatDueAmount,
+  testScenario = null,
+  screenshotPath = defaultScreenshotPath,
+) {
   await test.step("The user completes the VAT form with valid values and sees the Submit button", async () => {
     // Fill out the VAT form using the correct field IDs from submitVat.html
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-submission.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-submission.png` });
     await page.waitForTimeout(100);
     await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
     await page.waitForTimeout(100);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-filled.png` });
     await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key", { screenshotPath });
     await page.waitForTimeout(100);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-filled.png` });
     await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount", { screenshotPath });
     await page.waitForTimeout(100);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-submission.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-filled.png` });
+    if (testScenario) {
+      await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-clicked-options.png` });
+      await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-selected-scenario.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-options-shown.png` });
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png` });
     await expect(page.locator("#submitBtn")).toBeVisible();
-    // Scroll, capture a pagedown
-    await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-submission-pagedown.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-fill-in-submission-pagedown.png` });
   });
 }
 
@@ -44,7 +67,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
   await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
     // Focus change before submit
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submission-submit.png` });
-    await page.focus("#submitBtn");
+    await loggedFocus(page, "#submitBtn", "the Submit button", { screenshotPath });
     // Expect the HMRC permission page to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
     await loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath });
@@ -58,120 +81,155 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
   });
 }
 
-export async function completeVat(page, baseUrl, screenshotPath = defaultScreenshotPath) {
-  await test.step(
-    "The user waits for the VAT submission to complete and for the receipt to appear",
-    async () => {
-      // Wait for the submission process to complete and receipt to be displayed
-      console.log("Waiting for VAT submission to complete and receipt to be displayed...");
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-complete-vat-waiting.png` });
-
-      // Check current page URL and elements
-      console.log(`Current URL: ${page.url()}`);
-
-      // Check if page has loaded correctly
-      const pageTitle = await page.title();
-      console.log(`Page title: ${pageTitle}`);
-
-      // Wait for the page to be fully loaded
+export async function completeVat(page, baseUrl, testScenario = null, screenshotPath = defaultScreenshotPath) {
+  if (testScenario) {
+    await test.step("The user sees a submission error message for sandbox scenario", async () => {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       await page.waitForLoadState("networkidle");
-
-      // Check if basic DOM elements exist
-      const bodyExists = await page.locator("body").count();
-      console.log(`Body element exists: ${bodyExists > 0}`);
-
-      const mainContentExists = await page.locator("#mainContent").count();
-      console.log(`Main content element exists: ${mainContentExists > 0}`);
-
-      const receiptExists = await page.locator("#receiptDisplay").count();
-      console.log(`Receipt element exists: ${receiptExists > 0}`);
-
-      if (receiptExists > 0) {
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-complete-vat-receipt.png` });
-        const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
-        console.log(`Receipt element style: ${receiptStyle}`);
-      }
-
-      const formExists = await page.locator("#vatForm").count();
-      console.log(`Form element exists: ${formExists > 0}`);
-
-      if (formExists > 0) {
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-complete-vat-form.png` });
-        const formStyle = await page.locator("#vatForm").getAttribute("style");
-        console.log(`Form element style: ${formStyle}`);
-        const receiptVisible = await page.locator("#receiptDisplay").isVisible();
-        console.log(`Receipt element visible: ${receiptVisible}`);
-      }
-
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-complete-vat-waiting.png` });
-
-      // Scroll, capture a pagedown
-      await page.keyboard.press("PageDown");
-      await page.waitForTimeout(200);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-complete-vat-pagedown.png` });
-
-      // if (checkServersAreRunning) {
-      //  await checkServersAreRunning();
-      // }
-
-      // If elements don't exist, try to navigate back to the correct page
-      if (receiptExists === 0 && formExists === 0) {
-        console.log("DOM elements missing, checking if we need to reload the page...");
-        const currentUrl = page.url();
-        const maybeSlash = baseUrl.endsWith("/") ? "" : "/";
-        if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
-          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-complete-vat-going-back.png` });
-          console.log(`Navigating back to submitVat.html from ${currentUrl}`);
-          await page.goto(`${baseUrl}${maybeSlash}activities/submitVat.html`);
-          await page.waitForLoadState("networkidle");
-        } else if (currentUrl.includes("chrome-error://")) {
-          console.log("Chrome error page detected, navigating directly to submitVat.html");
-          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-complete-vat-error.png` });
-          await page.goto(`${baseUrl}${maybeSlash}activities/submitVat.html`);
-          await page.waitForLoadState("networkidle");
-        }
-      }
-
-      await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
+      // Wait a little for status update to render
       await page.waitForTimeout(500);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
-      // Scroll, capture a pagedown
-      await page.keyboard.press("PageDown");
-      await page.waitForTimeout(200);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-complete-vat-pagedown.png` });
-    },
-    { timeout: 40000 },
-  );
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
+      const statusContainer = page.locator("#statusMessagesContainer");
+      await expect(statusContainer).toBeVisible();
+      const statusText = (await statusContainer.innerText()).toLowerCase();
+      expect(statusText).toMatch(/failed|error/);
+      await expect(page.locator("#receiptDisplay")).toBeHidden();
+    });
+  } else {
+    await test.step(
+      "The user waits for the VAT submission to complete and for the receipt to appear",
+      async () => {
+        // Wait for the submission process to complete and receipt to be displayed
+        console.log("Waiting for VAT submission to complete and receipt to be displayed...");
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-complete-vat-waiting.png` });
+
+        // Check current page URL and elements
+        console.log(`Current URL: ${page.url()}`);
+
+        // Check if page has loaded correctly
+        const pageTitle = await page.title();
+        console.log(`Page title: ${pageTitle}`);
+
+        // Wait for the page to be fully loaded
+        await page.waitForLoadState("networkidle");
+
+        // Check if basic DOM elements exist
+        const bodyExists = await page.locator("body").count();
+        console.log(`Body element exists: ${bodyExists > 0}`);
+
+        const mainContentExists = await page.locator("#mainContent").count();
+        console.log(`Main content element exists: ${mainContentExists > 0}`);
+
+        const receiptExists = await page.locator("#receiptDisplay").count();
+        console.log(`Receipt element exists: ${receiptExists > 0}`);
+
+        if (receiptExists > 0) {
+          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-complete-vat-receipt.png` });
+          const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
+          console.log(`Receipt element style: ${receiptStyle}`);
+        }
+
+        const formExists = await page.locator("#vatForm").count();
+        console.log(`Form element exists: ${formExists > 0}`);
+
+        if (formExists > 0) {
+          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-complete-vat-form.png` });
+          const formStyle = await page.locator("#vatForm").getAttribute("style");
+          console.log(`Form element style: ${formStyle}`);
+          const receiptVisible = await page.locator("#receiptDisplay").isVisible();
+          console.log(`Receipt element visible: ${receiptVisible}`);
+        }
+
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-complete-vat-waiting.png` });
+
+        // Scroll, capture a pagedown
+        await page.keyboard.press("PageDown");
+        await page.waitForTimeout(200);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-complete-vat-pagedown.png` });
+
+        // if (checkServersAreRunning) {
+        //  await checkServersAreRunning();
+        // }
+
+        // If elements don't exist, try to navigate back to the correct page
+        if (receiptExists === 0 && formExists === 0) {
+          console.log("DOM elements missing, checking if we need to reload the page...");
+          const currentUrl = page.url();
+          const maybeSlash = baseUrl.endsWith("/") ? "" : "/";
+          if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
+            await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-complete-vat-going-back.png` });
+            console.log(`Navigating back to submitVat.html from ${currentUrl}`);
+            await loggedGoto(page, `${baseUrl}${maybeSlash}activities/submitVat.html`, "back to Submit VAT page", screenshotPath);
+            await page.waitForLoadState("networkidle");
+          } else if (currentUrl.includes("chrome-error://")) {
+            console.log("Chrome error page detected, navigating directly to submitVat.html");
+            await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-complete-vat-error.png` });
+            await loggedGoto(
+              page,
+              `${baseUrl}${maybeSlash}activities/submitVat.html`,
+              "back to Submit VAT page (from error)",
+              screenshotPath,
+            );
+            await page.waitForLoadState("networkidle");
+          }
+        }
+
+        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
+        // Scroll, capture a pagedown
+        await page.keyboard.press("PageDown");
+        await page.waitForTimeout(200);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-complete-vat-pagedown.png` });
+      },
+      { timeout: 40000 },
+    );
+  }
 }
 
-export async function verifyVatSubmission(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user sees a successful VAT submission receipt and the VAT form is hidden", async () => {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat.png` });
-    const receiptDisplay = page.locator("#receiptDisplay");
-    await expect(receiptDisplay).toBeVisible();
+export async function verifyVatSubmission(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
+  if (testScenario) {
+    await test.step("The user sees a submission error message for sandbox scenario", async () => {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
+      await page.waitForLoadState("networkidle");
+      // Wait a little for status update to render
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
+      const statusContainer = page.locator("#statusMessagesContainer");
+      await expect(statusContainer).toBeVisible();
+      const statusText = (await statusContainer.innerText()).toLowerCase();
+      expect(statusText).toMatch(/failed|error/);
+      await expect(page.locator("#receiptDisplay")).toBeHidden();
+    });
+  } else {
+    await test.step("The user sees a successful VAT submission receipt and the VAT form is hidden", async () => {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat.png` });
+      const receiptDisplay = page.locator("#receiptDisplay");
+      await expect(receiptDisplay).toBeVisible();
 
-    // Check for the success message
-    const successHeader = receiptDisplay.locator("h3");
-    await expect(successHeader).toContainText("VAT Return Submitted Successfully");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-submitted.png` });
+      // Check for the success message
+      const successHeader = receiptDisplay.locator("h3");
+      await expect(successHeader).toContainText("VAT Return Submitted Successfully");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-submitted.png` });
 
-    // Verify receipt details are populated
-    // await expect(page.locator("#formBundleNumber")).toContainText("123456789-bundle");
-    // await expect(page.locator("#chargeRefNumber")).toContainText("123456789-charge");
-    await expect(page.locator("#processingDate")).not.toBeEmpty();
+      // Verify receipt details are populated
+      // await expect(page.locator("#formBundleNumber")).toContainText("123456789-bundle");
+      // await expect(page.locator("#chargeRefNumber")).toContainText("123456789-charge");
+      await expect(page.locator("#processingDate")).not.toBeEmpty();
 
-    // Verify the form is hidden after successful submission
-    await expect(page.locator("#vatForm")).toBeHidden();
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-verify-vat.png` });
+      // Verify the form is hidden after successful submission
+      await expect(page.locator("#vatForm")).toBeHidden();
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-verify-vat.png` });
 
-    // Scroll, capture a pagedown
-    await page.keyboard.press("PageDown");
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-verify-vat-pagedown.png` });
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-verify-vat-pagedown.png` });
 
-    console.log("VAT submission flow completed successfully");
-  });
+      console.log("VAT submission flow completed successfully");
+    });
+  }
 }
 
 /* VAT Obligations Journey Steps */
@@ -190,9 +248,9 @@ export async function initVatObligations(page, screenshotPath = defaultScreensho
   });
 }
 
-export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}, screenshotPath = defaultScreenshotPath) {
+export async function fillInVatObligations(page, obligationsQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the VAT obligations form with VRN and date range", async () => {
-    const { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = options || {};
+    const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = obligationsQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png` });
 
     // Compute a wide date range with likely hits if not provided
@@ -204,7 +262,7 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
     const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
 
     await page.waitForTimeout(100);
-    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number", { screenshotPath });
+    await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-fill-in.png` });
     await page.waitForTimeout(50);
     // Fill optional filters (map to actual form field IDs)
@@ -214,13 +272,16 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
     await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
     await page.waitForTimeout(50);
-    await page.focus("#status");
+    await loggedFocus(page, "#status", "the obligations status filter", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-pre-status-fill-in.png` });
     if (status) {
+      console.log(`Filling in status filter ${status}`);
+      // Accept both label ("Open"/"Fulfilled") and value ("O"/"F")
+      const statusValue = String(status) === "Open" ? "O" : String(status) === "Fulfilled" ? "F" : String(status);
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
-      await page.selectOption("#status", String(status));
+      await loggedSelectOption(page, "#status", statusValue, "obligations status", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-filled-in.png` });
     }
     if (testScenario) {
@@ -228,7 +289,7 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
-      await page.selectOption("#testScenario", String(testScenario));
+      await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
 
@@ -247,7 +308,7 @@ export async function fillInVatObligations(page, hmrcTestVatNumber, options = {}
 export async function submitVatObligationsForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the VAT obligations form", async () => {
     // Take a focus change screenshot between last cell entry and submit
-    await page.focus("#retrieveBtn");
+    await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png` });
     await loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
@@ -260,9 +321,28 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
   });
 }
 
-export async function verifyVatObligationsResults(page, screenshotPath = defaultScreenshotPath) {
+export async function verifyVatObligationsResults(page, obligationsQuery, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees VAT obligations results displayed", async () => {
+    // Back-compat: support verifyVatObligationsResults(page, screenshotPath)
+    if (arguments.length === 2 && typeof obligationsQuery === "string") {
+      screenshotPath = obligationsQuery;
+      obligationsQuery = {};
+    }
+    const { status, testScenario } = obligationsQuery || {};
+    const hasScenario = !!testScenario;
+
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
+    if (hasScenario) {
+      switch (testScenario) {
+        case "INSOLVENT_TRADER":
+        case "NOT_FOUND":
+          await page.waitForTimeout(500);
+          const obligationsResults = page.locator("#obligationsResults");
+          await expect(obligationsResults).toBeHidden();
+          break;
+      }
+      return;
+    }
     await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
     const resultsContainer = page.locator("#obligationsResults");
@@ -271,6 +351,184 @@ export async function verifyVatObligationsResults(page, screenshotPath = default
     // Verify the table is displayed
     const obligationsTable = page.locator("#obligationsTable");
     await expect(obligationsTable).toBeVisible();
+
+    // Parse table rows into structured data for assertions
+    const rowLocator = page.locator("#obligationsTable table tbody tr");
+    const rowCount = await rowLocator.count();
+    expect(rowCount).toBeGreaterThan(0);
+
+    const rows = [];
+    for (let i = 0; i < rowCount; i++) {
+      const r = rowLocator.nth(i);
+      const periodKey = (await r.locator("td").nth(0).innerText()).trim();
+      const start = (await r.locator("td").nth(1).innerText()).trim();
+      const end = (await r.locator("td").nth(2).innerText()).trim();
+      const due = (await r.locator("td").nth(3).innerText()).trim();
+      const statusText = (await r.locator("td").nth(4).innerText()).trim();
+      const statusCode = statusText.includes("Open") ? "O" : statusText.includes("Fulfilled") ? "F" : statusText;
+      const received = (await r.locator("td").nth(5).innerText()).trim();
+      const actionText = (await r.locator("td").nth(6).innerText()).trim();
+      rows.push({ periodKey, start, end, due, statusText, statusCode, received, actionText });
+    }
+
+    // Generic assertions
+    // - periodKey must be present
+    for (const r of rows) {
+      expect(r.periodKey).toBeTruthy();
+    }
+
+    // - If a status filter was provided, all rows should match it
+    if (status) {
+      const statusValue = String(status) === "Open" ? "O" : String(status) === "Fulfilled" ? "F" : String(status);
+      for (const r of rows) {
+        expect(r.statusCode, `Expected all rows to have status ${statusValue} but found ${r.statusCode} for ${r.periodKey}`).toBe(
+          statusValue,
+        );
+      }
+    }
+
+    // - Action button should reflect status
+    for (const r of rows) {
+      if (r.statusCode === "F") {
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(6).getByRole("button")).toHaveText(/View Return/);
+        expect(r.actionText).toContain("View Return");
+      } else if (r.statusCode === "O") {
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(6).getByRole("button")).toHaveText(/Submit Return/);
+        expect(r.actionText).toContain("Submit Return");
+      }
+    }
+
+    // Scenario-specific expectations based on Gov-Test-Scenario
+    const fulfilledCount = rows.filter((r) => r.statusCode === "F").length;
+    const openCount = rows.filter((r) => r.statusCode === "O").length;
+
+    if (!hasScenario) {
+      console.log(`No test scenario ${fulfilledCount} fulfilled obligations and ${openCount} open obligations`);
+      // Only check default scenario shape when no explicit status filter was applied
+      if (!status) {
+        expect(fulfilledCount + openCount).toBeGreaterThanOrEqual(1);
+      }
+    } else {
+      console.log(`Scenario ${testScenario} expected ${fulfilledCount} fulfilled obligations and ${openCount} open obligations`);
+      switch (testScenario) {
+        case "QUARTERLY_NONE_MET":
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "QUARTERLY_ONE_MET":
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "QUARTERLY_TWO_MET":
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "QUARTERLY_THREE_MET":
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "QUARTERLY_FOUR_MET":
+          expect(fulfilledCount).toBe(4);
+          break;
+        case "MONTHLY_NONE_MET":
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "MONTHLY_ONE_MET":
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "MONTHLY_TWO_MET":
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "MONTHLY_THREE_MET":
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "MONTHLY_OBS_01_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "MONTHLY_OBS_02_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "MONTHLY_OBS_03_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "MONTHLY_OBS_04_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "MONTHLY_OBS_05_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(4);
+          break;
+        case "MONTHLY_OBS_06_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(5);
+          break;
+        case "MONTHLY_OBS_07_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(6);
+          break;
+        case "MONTHLY_OBS_08_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(7);
+          break;
+        case "MONTHLY_OBS_09_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(8);
+          break;
+        case "MONTHLY_OBS_10_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(9);
+          break;
+        case "MONTHLY_OBS_11_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(10);
+          break;
+        case "MONTHLY_OBS_12_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(12);
+          break;
+        case "MONTHLY_OBS_12_FULFILLED":
+          expect(fulfilledCount).toBe(12);
+          break;
+        case "QUARTERLY_OBS_01_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(0);
+          break;
+        case "QUARTERLY_OBS_02_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(1);
+          break;
+        case "QUARTERLY_OBS_03_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(2);
+          break;
+        case "QUARTERLY_OBS_04_OPEN":
+          expect(openCount).toBe(1);
+          expect(fulfilledCount).toBe(3);
+          break;
+        case "QUARTERLY_OBS_04_FULFILLED":
+          expect(openCount).toBe(0);
+          expect(fulfilledCount).toBe(4);
+          break;
+        case "MULTIPLE_OPEN_MONTHLY":
+          expect(openCount).toBe(2);
+          break;
+        case "MULTIPLE_OPEN_QUARTERLY":
+          expect(openCount).toBe(2);
+          break;
+        case "OBS_SPANS_MULTIPLE_YEARS":
+          expect(openCount).toBeGreaterThanOrEqual(1);
+          break;
+        case "INSOLVENT_TRADER":
+          break;
+        case "NOT_FOUND":
+          expect(openCount).toBe(0);
+          expect(fulfilledCount).toBe(0);
+          break;
+        default:
+          // Unknown scenario: rely on generic checks only
+          break;
+      }
+    }
 
     console.log("VAT obligations retrieval completed successfully");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-success.png` });
@@ -302,7 +560,13 @@ export async function initViewVatReturn(page, screenshotPath = defaultScreenshot
 // const DEFAULT_PERIOD_KEY = "24A1";
 const DEFAULT_PERIOD_KEY = "18A1";
 
-export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = DEFAULT_PERIOD_KEY, screenshotPath = defaultScreenshotPath) {
+export async function fillInViewVatReturn(
+  page,
+  hmrcTestVatNumber,
+  periodKey = DEFAULT_PERIOD_KEY,
+  testScenario = null,
+  screenshotPath = defaultScreenshotPath,
+) {
   await test.step("The user fills in the view VAT return form with VRN and period key", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-fill-in.png` });
     await page.waitForTimeout(100);
@@ -311,8 +575,22 @@ export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = D
     await page.waitForTimeout(100);
     await loggedFill(page, "#periodKey", periodKey, "Entering period key", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-fill-in.png` });
+    if (testScenario) {
+      await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-view-vat-fill-in.png` });
+      // Prefer selecting by value; if the caller provided a label, fall back to selecting by label
+      try {
+        await page.selectOption("#testScenario", String(testScenario));
+      } catch (error) {
+        console.log(`Failed to select test scenario ${testScenario} error: ${JSON.stringify(error)}`);
+        await page.selectOption("#testScenario", { label: String(testScenario) });
+      }
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-view-vat-filled-in.png` });
+    }
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-view-vat-fill-in-filled.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-view-vat-fill-in-filled.png` });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -320,7 +598,7 @@ export async function fillInViewVatReturn(page, hmrcTestVatNumber, periodKey = D
 export async function submitViewVatReturnForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the view VAT return form", async () => {
     // Focus change before submit
-    await page.focus("#retrieveBtn");
+    await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-submit.png` });
     await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-submit.png` });
@@ -329,22 +607,36 @@ export async function submitViewVatReturnForm(page, screenshotPath = defaultScre
   });
 }
 
-export async function verifyViewVatReturnResults(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user sees VAT return details displayed", async () => {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
-    await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results.png` });
-    const resultsContainer = page.locator("#returnResults");
-    await expect(resultsContainer).toBeVisible();
+export async function verifyViewVatReturnResults(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
+  if (testScenario) {
+    await test.step("The user sees a retrieval error message for sandbox scenario", async () => {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(500);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results-error.png` });
+      const statusContainer = page.locator("#statusMessagesContainer");
+      await expect(statusContainer).toBeVisible();
+      const statusText = (await statusContainer.innerText()).toLowerCase();
+      expect(statusText).toMatch(/failed|error|not found/);
+      console.log("View VAT return expected error for sandbox scenario successfully");
+    });
+  } else {
+    await test.step("The user sees VAT return details displayed", async () => {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
+      await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results.png` });
+      const resultsContainer = page.locator("#returnResults");
+      await expect(resultsContainer).toBeVisible();
 
-    // Verify the details are displayed
-    const returnDetails = page.locator("#returnDetails");
-    await expect(returnDetails).toBeVisible();
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-results.png` });
-    await page.keyboard.press("PageDown");
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-results.png` });
+      // Verify the details are displayed
+      const returnDetails = page.locator("#returnDetails");
+      await expect(returnDetails).toBeVisible();
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-results.png` });
+      await page.keyboard.press("PageDown");
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-results.png` });
 
-    console.log("View VAT return completed successfully");
-  });
+      console.log("View VAT return completed successfully");
+    });
+  }
 }

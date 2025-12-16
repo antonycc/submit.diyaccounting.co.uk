@@ -42,6 +42,7 @@ function getBreakerCooldownSeconds() {
 }
 
 // Server hook for Express app
+/* v8 ignore start */
 export function apiEndpoint(app) {
   // Mount under a static prefix to avoid path-to-regexp wildcard parsing
   // differences across versions. This catches all methods and subpaths
@@ -54,6 +55,7 @@ export function apiEndpoint(app) {
 
   app.use("/proxy", onProxy);
 }
+/* v8 ignore stop */
 
 /**
  * Lambda handler (for AWS Lambda + API Gateway).

@@ -31,7 +31,12 @@ import {
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { assertHmrcApiRequestExists, assertHmrcApiRequestValues, assertConsistentHashedSub } from "./helpers/dynamodb-assertions.js";
+import {
+  assertHmrcApiRequestExists,
+  assertHmrcApiRequestValues,
+  assertConsistentHashedSub,
+  readDynamoDbExport,
+} from "./helpers/dynamodb-assertions.js";
 import {
   completeVat,
   fillInVat,
@@ -92,8 +97,8 @@ const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
-const hmrcVatPeriodFromDate = "2025-01-07";
-const hmrcVatPeriodToDate = "2025-11-01";
+const hmrcVatPeriodFromDate = "2025-01-01";
+const hmrcVatPeriodToDate = "2025-12-01";
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -124,19 +129,6 @@ test.beforeAll(async ({ page }, testInfo) => {
     ...originalEnv,
   };
 
-  // Run servers needed for the test
-  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
-  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
-  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
-
-  // Clean up any existing artefacts from previous test runs
-  const outputDir = testInfo.outputPath("");
-  fs.mkdirSync(outputDir, { recursive: true });
-  deleteUserSubTxt(outputDir);
-  deleteHashedUserSubTxt(outputDir);
-  deleteTraceparentTxt(outputDir);
-
   wiremockMode = process.env.TEST_WIREMOCK || "off";
   wiremockPort = process.env.WIREMOCK_PORT || 9090;
 
@@ -154,6 +146,19 @@ test.beforeAll(async ({ page }, testInfo) => {
     process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
     process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
   }
+
+  // Run servers needed for the test (after env overrides so child sees them)
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
+
+  // Clean up any existing artefacts from previous test runs
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  deleteUserSubTxt(outputDir);
+  deleteHashedUserSubTxt(outputDir);
+  deleteTraceparentTxt(outputDir);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -194,7 +199,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page, screenshotPath);
+  addOnPageLogging(page);
 
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
@@ -204,7 +209,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   page.on("response", (response) => {
     try {
       if (observedTraceparent) return;
-      const headers = response.headers?.() ?? response.headers?.() ?? {};
+      const headers = response.headers?.() ?? {};
       const h = typeof headers === "function" ? headers() : headers;
       const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
       if (tp) {
@@ -302,38 +307,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   }
   await goToHomePage(page, screenshotPath);
 
-  /* ******************* */
-  /*  GET OBLIGATIONS    */
-  /* ******************* */
-
-  await initVatObligations(page, screenshotPath);
-  await fillInVatObligations(page, testVatNumber, { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
-  await submitVatObligationsForm(page, screenshotPath);
-
-  /* ************ */
-  /* `HMRC AUTH   */
-  /* ************ */
-
-  await acceptCookiesHmrc(page, screenshotPath);
-  await goToHmrcAuth(page, screenshotPath);
-  await initHmrcAuth(page, screenshotPath);
-  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
-  await submitHmrcAuth(page, screenshotPath);
-  await grantPermissionHmrcAuth(page, screenshotPath);
-
-  /* ******************** */
-  /*  VIEW OBLIGATIONS    */
-  /* ******************** */
-
-  await verifyVatObligationsResults(page, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
-
-  /* ************ */
-  /* `SUBMIT VAT  */
-  /* ************ */
+  /* *********** */
+  /* `SUBMIT VAT */
+  /* *********** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, screenshotPath);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -347,12 +326,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await submitHmrcAuth(page, screenshotPath);
   await grantPermissionHmrcAuth(page, screenshotPath);
 
-  /* ************** */
-  /* `COMPLETE VAT  */
-  /* ************** */
+  /* ******************* */
+  /* `SUBMIT VAT RESULTS */
+  /* ******************* */
 
-  await completeVat(page, baseUrl, screenshotPath);
-  await verifyVatSubmission(page, screenshotPath);
+  await completeVat(page, baseUrl, null, screenshotPath);
+  await verifyVatSubmission(page, null, screenshotPath);
 
   /* ********** */
   /*  RECEIPTS  */
@@ -368,19 +347,41 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   // Now attempt to view the VAT return that was just submitted
   await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, testVatNumber, hmrcVatPeriodKey, screenshotPath);
+  await fillInViewVatReturn(page, testVatNumber, hmrcVatPeriodKey, null, screenshotPath);
   await submitViewVatReturnForm(page, screenshotPath);
-
-  // TODO: When in sandbox mode, trigger each submit vat test scenario in turn, going back to home page each time
 
   /* ******************* */
   /*  VIEW VAT RESULTS   */
   /* ******************* */
 
-  await verifyViewVatReturnResults(page, screenshotPath);
+  await verifyViewVatReturnResults(page, null, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
-  // TODO: When in sandbox mode, trigger each view vat test scenario in turn, going back to home page each time
+  /* ******************* */
+  /*  VIEW OBLIGATIONS   */
+  /* ******************* */
+
+  await initVatObligations(page, screenshotPath);
+  await fillInVatObligations(page, { hmrcVatNumber: testVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
+  await submitVatObligationsForm(page, screenshotPath);
+
+  /* ************ */
+  /* `HMRC AUTH   */
+  /* ************ */
+
+  // await acceptCookiesHmrc(page, screenshotPath);
+  // await goToHmrcAuth(page, screenshotPath);
+  // await initHmrcAuth(page, screenshotPath);
+  // await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
+  // await submitHmrcAuth(page, screenshotPath);
+  // await grantPermissionHmrcAuth(page, screenshotPath);
+
+  /* ************************** */
+  /*  VIEW OBLIGATIONS RESULTS  */
+  /* ************************** */
+
+  await verifyVatObligationsResults(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ****************** */
   /*  Extract user sub  */
@@ -476,6 +477,18 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
+
+    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
+    if (wiremockMode && wiremockMode !== "off") {
+      const records = readDynamoDbExport(hmrcApiRequestsFile);
+      expect(records.length).toBeGreaterThan(0);
+      for (const r of records) {
+        expect(
+          r.url?.startsWith(`http://localhost:${wiremockPort}`),
+          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
+        ).toBe(true);
+      }
+    }
   }
 
   /* ****************** */

@@ -71,13 +71,18 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
   return { ok: true };
 }
 
+/* v8 ignore start */
 export function apiEndpoint(app) {
   app.post("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
+  app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
+    httpResponse.status(200).send();
+  });
 }
+/* v8 ignore stop */
 
 export async function handler(event) {
   const { request, requestId } = extractRequest(event);

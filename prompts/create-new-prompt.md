@@ -8,13 +8,14 @@ Review the existing prompts and their focus areas:
 - `todo-inator.md` - Execute a themed batch of TODOs to completion with tests and verification
 - `security-compliance-hardening.md` - Security posture and compliance readiness improvements
 - `create-new-prompt.md` - Identify gaps and define a new strategic prompt
+- `sumarise-repository.md` - Generate an information-dense hierarchical summary of the repository
 - `what-next-for-mtd-vat-submission.md` - Roadmap to HMRC readiness and VAT submission capability
 
 ## Task: Create a New Strategic Prompt
 
 Based on your analysis of the repository structure, codebase, architecture, and existing prompts, create a new prompt that addresses an important gap or opportunity that would provide significant value.
 
-**CRITICAL**: Before creating any new prompt, you must conduct rigorous multi-perspective analysis following these coding guidelines:
+**CRITICAL**: Before creating any new prompt, you must conduct rigorous multi-perspective analysis following these implementation guidelines for this repository:
 - Adhere to AWS Well-Architected principles
 - Apply security best practices (IAM least privilege, encryption, logging)
 - Use infrastructure-as-code best practices for CDK code
@@ -62,16 +63,15 @@ Your new prompt should:
 
 ### 1. Identify the Gap
 - Analyze what aspects of repository improvement are not covered by existing prompts
-- Consider the repository's specific domain (OIDC provider, serverless architecture, AWS CDK)
-- Look for opportunities in OIDC-specific areas like:
-  - Token validation and JWT security patterns
-  - OAuth 2.0 and OpenID Connect flow implementations
-  - Identity federation and provider integration
-  - JWKS (JSON Web Key Set) management and rotation
-  - Authorization code and refresh token lifecycle
-  - OIDC discovery endpoint optimization
-  - Provider-specific security patterns and compliance
-  - Serverless authentication architecture patterns
+- Consider the repository's specific domain (MTD VAT submission app, AWS serverless architecture, AWS CDK in Java)
+- Look for opportunities specifically relevant to this repo, such as:
+  - HMRC OAuth 2.0 flow robustness (auth URL, token exchange, sandbox vs prod clients)
+  - HMRC VAT API integrations (obligations, returns, receipts) including error handling and retries
+  - Local Express ↔ AWS Lambda adaptor correctness and parity
+  - DynamoDB data access patterns (bundles, receipts, HMRC API request logging)
+  - CloudFront/S3 static site deployment constraints and cache behaviors
+  - CI workflows and test execution strategy (Vitest, Playwright)
+  - Environment configuration via `.env.*` and secrets handling
 
 ### 2. Create the Prompt File
 - Create a new markdown file in the `prompts/` directory with a descriptive filename
@@ -100,15 +100,15 @@ Your new prompt should:
 
 The new prompt must meet these mandatory requirements:
 - Address a genuine gap not covered by existing prompts
-- Be strategically valuable for the repository's OIDC provider goals
+- Be strategically valuable for the repository's MTD VAT submission goals
 - Follow AWS Well-Architected principles (security, reliability, performance, cost optimization, operational excellence)
 - Include security best practices assessment (IAM least privilege, encryption, logging)
 - Complete the internal review process as described in the "Mandatory Internal Review Process" section above.
 - Integrate seamlessly with the existing prompt system
-- Provide clear, actionable guidance specific to OIDC provider development
+- Provide clear, actionable guidance specific to this repository (MTD VAT submission, HMRC APIs, AWS serverless, Cognito)
 - Include rollback and deployment risk assessment
 
 Focus on creating something that would be genuinely useful and that represents the most impactful improvement opportunity currently missing from the prompt collection.
 
-> Formatting and style: Follow the repo’s formatters — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for IDE setup and links.
-> Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.
+> Formatting and style: Follow the repo’s formatters — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use `npm run formatting` / `npm run formatting-fix`. See README for IDE setup and links.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where heavy reformatting would be jarring.

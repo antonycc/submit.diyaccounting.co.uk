@@ -1,28 +1,23 @@
-// app/unit-tests/functions/customAuthorizer.test.js
+// app/system-tests/customAuthorizer.system.test.js
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Mock aws-jwt-verify CognitoJwtVerifier
+// Mock aws-jwt-verify to avoid network/keys
 const mockVerify = vi.fn();
-vi.mock("aws-jwt-verify", () => {
-  return {
-    CognitoJwtVerifier: {
-      create: vi.fn().mockReturnValue({ verify: mockVerify }),
-    },
-  };
-});
+vi.mock("aws-jwt-verify", () => ({
+  CognitoJwtVerifier: {
+    create: vi.fn().mockReturnValue({ verify: mockVerify }),
+  },
+}));
 
 function makeEvent(headers = {}, arn = "arn:aws:execute-api:eu-west-2:123456789012:abc123/prod/GET/resource") {
-  return {
-    routeArn: arn,
-    headers,
-    requestContext: {},
-  };
+  return { routeArn: arn, headers, requestContext: {} };
 }
 
-describe("functions/auth/customAuthorizer", () => {
+describe("System: customAuthorizer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     Object.assign(process.env, {

@@ -4,8 +4,6 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// TODO Read from .env file
-
 export function buildGovClientTestHeaders() {
   const govClientBrowserJSUserAgentHeader = "test-browser-js-user-agent";
   const govClientDeviceIDHeader = "test-device-id";

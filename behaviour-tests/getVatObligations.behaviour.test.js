@@ -1,4 +1,4 @@
-// behaviour-tests/vatObligations.behaviour.test.js
+// behaviour-tests/getVatObligations.behaviour.test.js
 
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
@@ -44,7 +44,12 @@ import {
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { assertHmrcApiRequestExists, assertHmrcApiRequestValues, assertConsistentHashedSub } from "./helpers/dynamodb-assertions.js";
+import {
+  assertHmrcApiRequestExists,
+  assertHmrcApiRequestValues,
+  assertConsistentHashedSub,
+  readDynamoDbExport,
+} from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -82,8 +87,8 @@ const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
-const hmrcVatPeriodFromDate = "2025-01-07";
-const hmrcVatPeriodToDate = "2025-11-01";
+const hmrcVatPeriodFromDate = "2025-01-01";
+const hmrcVatPeriodToDate = "2025-12-01";
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -96,7 +101,7 @@ let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
 
-test.setTimeout(300_000);
+test.setTimeout(900_000);
 
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
@@ -108,12 +113,6 @@ test.beforeAll(async ({ page }, testInfo) => {
   process.env = {
     ...originalEnv,
   };
-
-  // Run servers needed for the test
-  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
-  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
-  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   // Clean up any existing artefacts from previous test runs
   const outputDir = testInfo.outputPath("");
@@ -139,6 +138,12 @@ test.beforeAll(async ({ page }, testInfo) => {
     process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
     process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
   }
+
+  // Run servers needed for the test (after env overrides so child sees them)
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -171,6 +176,15 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
+async function requestAndVerifyObligations(page, obligationsQuery) {
+  // Fulfilled obligations
+  await initVatObligations(page, screenshotPath);
+  await fillInVatObligations(page, obligationsQuery, screenshotPath);
+  await submitVatObligationsForm(page, screenshotPath);
+  await verifyVatObligationsResults(page, obligationsQuery, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+}
+
 test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo) => {
   // Compute test URL based on which servers are running
   const testUrl =
@@ -179,7 +193,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page, screenshotPath);
+  addOnPageLogging(page);
 
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
@@ -189,7 +203,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   page.on("response", (response) => {
     try {
       if (observedTraceparent) return;
-      const headers = response.headers?.() ?? response.headers?.() ?? {};
+      const headers = response.headers?.() ?? {};
       const h = typeof headers === "function" ? headers() : headers;
       const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
       if (tp) {
@@ -291,7 +305,17 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /* ******************* */
 
   await initVatObligations(page, screenshotPath);
-  await fillInVatObligations(page, testVatNumber, { hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
+  await fillInVatObligations(
+    page,
+    {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      /* No test scenario */
+    },
+    screenshotPath,
+  );
   await submitVatObligationsForm(page, screenshotPath);
 
   /* ************ */
@@ -312,55 +336,175 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   await verifyVatObligationsResults(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
-  //YOU ARE HERE, ABOUT TO START SANDBOX TEST SCENARIOS
-
-  // TODO: When in sandbox mode, trigger each test scenario in turn, going back to home page each time
-  // Get's stuck here:
-  // 1 [obligation-behaviour-tests] › behaviour-tests/vatObligations.behaviour.test.js:174:1 › Click through: View VAT obligations from HMRC › The user fills in the VAT obligations form with VRN and date range
-  //   [USER INTERACTION] Filling: #vrn with value: "529633133" - Entering VAT registration number
-  //   [USER INTERACTION] Filling: #fromDate with value: "2025-01-07" - Entering from date
-  //   [USER INTERACTION] Filling: #toDate with value: "2025-11-01" - Entering to date
-  // See: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/obligations-api/3.0/oas/page#/paths/~1obligations~1details~1%7Bnino%7D~1income-and-expenditure/get
+  /* ************************************* */
+  /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
+  /* ************************************* */
   if (isSandboxMode()) {
-    /* ************************************* */
-    /*  GET OBLIGATIONS WITH TEST SCENARIOS  */
-    /* ************************************* */
-
-    // Fulfilled obligations
-    await initVatObligations(page, screenshotPath);
-    await fillInVatObligations(
-      page,
-      testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Fulfilled" }, // testScenario: "Monthly - Three Met" },
-      screenshotPath,
-    );
-    await submitVatObligationsForm(page, screenshotPath);
-    await verifyVatObligationsResults(page, screenshotPath);
-    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
-
-    // Open obligations
-    await initVatObligations(page, screenshotPath);
-    await fillInVatObligations(
-      page,
-      testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status: "Open" }, // testScenario: "Monthly - Three Met" },
-      screenshotPath,
-    );
-    await submitVatObligationsForm(page, screenshotPath);
-    await verifyVatObligationsResults(page, screenshotPath);
-    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
-
-    // All obligations: Monthly - Three Met
-    await initVatObligations(page, screenshotPath);
-    await fillInVatObligations(
-      page,
-      testVatNumber,
-      { hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario: "Monthly - Three Met" },
-      screenshotPath,
-    );
-    await submitVatObligationsForm(page, screenshotPath);
-    await verifyVatObligationsResults(page, screenshotPath);
-    await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+    /**
+     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-md-vat-api-1.0.yaml)
+     *
+     * GET /organisations/vat/{vrn}/obligations
+     *  - Default (No header value): Quarterly obligations and one is fulfilled
+     *  - QUARTERLY_NONE_MET: Quarterly obligations and none are fulfilled
+     *  - QUARTERLY_ONE_MET: Quarterly obligations and one is fulfilled
+     *  - QUARTERLY_TWO_MET: Quarterly obligations and two are fulfilled
+     *  - QUARTERLY_FOUR_MET: Quarterly obligations and four are fulfilled
+     *  - MONTHLY_NONE_MET: Monthly obligations and none are fulfilled
+     *  - MONTHLY_ONE_MET: Monthly obligations and one month is fulfilled
+     *  - MONTHLY_TWO_MET: Monthly obligations and two months are fulfilled
+     *  - MONTHLY_THREE_MET: Monthly obligations and three months are fulfilled
+     *  - MONTHLY_OBS_01_OPEN: 2018 monthly obligations, month 01 is open
+     *  - MONTHLY_OBS_06_OPEN: 2018 monthly obligations, month 06 is open; previous months fulfilled
+     *  - MONTHLY_OBS_12_FULFILLED: 2018 monthly obligations; all fulfilled
+     *  - QUARTERLY_OBS_01_OPEN: 2018 quarterly obligations, quarter 01 is open
+     *  - QUARTERLY_OBS_02_OPEN: 2018 quarterly obligations, quarter 02 is open; previous quarters fulfilled
+     *  - QUARTERLY_OBS_04_FULFILLED: 2018 quarterly obligations; all fulfilled
+     *  - MULTIPLE_OPEN_MONTHLY: 2018 monthly obligations; two are open
+     *  - MULTIPLE_OPEN_QUARTERLY: 2018 quarterly obligations; two are open
+     *  - OBS_SPANS_MULTIPLE_YEARS: One obligation spans 2018-2019
+     *  - INSOLVENT_TRADER: Client is an insolvent trader
+     *  - NOT_FOUND: No data found
+     */
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      /* No test scenario */
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "QUARTERLY_NONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "QUARTERLY_ONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "QUARTERLY_TWO_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "QUARTERLY_FOUR_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MONTHLY_NONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MONTHLY_ONE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MONTHLY_TWO_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MONTHLY_THREE_MET",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MONTHLY_OBS_01_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MONTHLY_OBS_06_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MONTHLY_OBS_12_FULFILLED",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "QUARTERLY_OBS_01_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "QUARTERLY_OBS_02_OPEN",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "QUARTERLY_OBS_04_FULFILLED",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MULTIPLE_OPEN_MONTHLY",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "MULTIPLE_OPEN_QUARTERLY",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "OBS_SPANS_MULTIPLE_YEARS",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "INSOLVENT_TRADER",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "NOT_FOUND",
+    });
   }
 
   /* ****************** */
@@ -433,6 +577,18 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
+
+    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
+    if (wiremockMode && wiremockMode !== "off") {
+      const records = readDynamoDbExport(hmrcApiRequestsFile);
+      expect(records.length).toBeGreaterThan(0);
+      for (const r of records) {
+        expect(
+          r.url?.startsWith(`http://localhost:${wiremockPort}`),
+          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
+        ).toBe(true);
+      }
+    }
   }
 
   /* ****************** */

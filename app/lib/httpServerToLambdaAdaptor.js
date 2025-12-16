@@ -32,7 +32,8 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
       stack: err.stack,
     });
   }
-  const jwtPayload = decodeJwtNoVerify(bearerToken);
+  // Decode JWT payload if present; avoid spreading null/undefined
+  const jwtPayload = decodeJwtNoVerify(bearerToken) || {};
 
   const lambdaEvent = {
     requestContext: {
@@ -40,7 +41,7 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
         lambda: {
           jwt: {
             claims: {
-              ...jwtPayload,
+              ...(jwtPayload || {}),
               "cognito:username": "test",
               "email": "test@test.submit.diyaccunting.co.uk",
               "scope": "read write",

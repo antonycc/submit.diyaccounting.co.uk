@@ -80,19 +80,6 @@ test.beforeAll(async ({ page }, testInfo) => {
     ...originalEnv,
   };
 
-  // Run local servers as needed for the tests
-  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
-  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
-  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
-
-  // Clean up any existing artefacts from previous test runs
-  const outputDir = testInfo.outputPath("");
-  fs.mkdirSync(outputDir, { recursive: true });
-  deleteUserSubTxt(outputDir);
-  deleteHashedUserSubTxt(outputDir);
-  deleteTraceparentTxt(outputDir);
-
   if (wiremockMode === "record" || wiremockMode === "mock") {
     const targets = [];
     if (process.env.HMRC_BASE_URI) targets.push(process.env.HMRC_BASE_URI);
@@ -107,6 +94,19 @@ test.beforeAll(async ({ page }, testInfo) => {
     process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
     process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
   }
+
+  // Run local servers after env overrides
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
+
+  // Clean up any existing artefacts from previous test runs
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  deleteUserSubTxt(outputDir);
+  deleteHashedUserSubTxt(outputDir);
+  deleteTraceparentTxt(outputDir);
 
   console.log("beforeAll hook completed successfully");
 });
@@ -147,7 +147,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       : baseUrl;
 
   // Add console logging to capture browser messages
-  addOnPageLogging(page, screenshotPath);
+  addOnPageLogging(page);
 
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
@@ -157,7 +157,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   page.on("response", (response) => {
     try {
       if (observedTraceparent) return;
-      const headers = response.headers?.() ?? response.headers?.() ?? {};
+      const headers = response.headers?.() ?? {};
       const h = typeof headers === "function" ? headers() : headers;
       const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
       if (tp) {

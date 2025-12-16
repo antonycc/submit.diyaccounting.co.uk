@@ -16,6 +16,7 @@ on:
           - auto-select
           - todo-inator
           - security-compliance-hardening
+          - sumarise-repository
           - create-new-prompt
           - what-next-for-mtd-vat-submission
       target_branch:

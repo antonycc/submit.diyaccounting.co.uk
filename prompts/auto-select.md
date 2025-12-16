@@ -8,6 +8,7 @@ Analyze the current repository and all available prompts in the `./prompts` dire
    - `todo-inator.md` - Complete a cluster of related TODOs end-to-end with iterative implementation and verification
    - `security-compliance-hardening.md` - Strengthen security posture and compliance readiness for production
    - `create-new-prompt.md` - Identify gaps and design a new strategic prompt for the repository
+   - `sumarise-repository.md` - Produce an information-dense, hierarchical repository summary for agent context
    - `what-next-for-mtd-vat-submission.md` - Plan the path to HMRC approval and real customer VAT submissions
 
 2. **Repository Analysis**: Evaluate the current state of the repository across all areas:
@@ -78,7 +79,9 @@ Begin your response with:
 - Provide concrete, actionable recommendations
 - Focus on changes that can be implemented incrementally
 - Maintain compatibility with existing functionality
-- Consider the project's AWS serverless architecture, Cognito identity usage, and HMRC OAuth 2.0 integration context
+- Consider the project's AWS serverless architecture, Cognito (with Google IdP) usage, and HMRC OAuth 2.0 integration context
+- Before running tests, trace the relevant code paths (local Express and Lambda adaptor) and fix obvious defects found by inspection
+- Behaviour tests can be very verbose — pipe output to a file when running (e.g. `npm run test:behaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`)
 
-> Formatting and style: Use the repository’s tooling — ESLint (flat config) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Run npm run formatting / npm run formatting-fix. See README → Code style, formatting, and IDE setup.
-> Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.
+> Formatting and style: Use the repository’s tooling — ESLint (flat config) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Run `npm run formatting` / `npm run formatting-fix`. See README → Code style, formatting, and IDE setup.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

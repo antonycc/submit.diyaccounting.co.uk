@@ -323,13 +323,6 @@
       </div>
 
       <h2>Test Configuration</h2>
-      <div id="testSourceSection">
-        <details id="testSourceDetails">
-          <summary><span id="testSourceFilename">Test Source File</span></summary>
-          <pre id="testSourceContent"></pre>
-        </details>
-      </div>
-
       <div id="envConfigSection">
         <details id="envConfigDetails">
           <summary><span id="envConfigFilename">Environment Configuration</span></summary>
@@ -415,9 +408,6 @@
 
         // Render test artifacts
         renderArtifacts(report.artifacts || {});
-
-        // Render test source file
-        renderTestSource(report.testSourceFile);
 
         // Render environment config
         renderEnvConfig(report.envConfig);
@@ -606,19 +596,6 @@ ${escapeHtml(typeof responseBody === "string" ? responseBody : JSON.stringify(re
           screenshotsSection.innerHTML = html;
         } else {
           screenshotsSection.innerHTML = "<p>No screenshots found for this test.</p>";
-        }
-      }
-
-      function renderTestSource(testSourceFile) {
-        const section = document.getElementById("testSourceSection");
-        const filenameElement = document.getElementById("testSourceFilename");
-        const contentElement = document.getElementById("testSourceContent");
-
-        if (testSourceFile && testSourceFile.content) {
-          filenameElement.textContent = `Test Source File: ${testSourceFile.filename}`;
-          contentElement.textContent = testSourceFile.content;
-        } else {
-          section.style.display = "none";
         }
       }
 

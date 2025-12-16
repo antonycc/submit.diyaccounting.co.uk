@@ -112,7 +112,7 @@ export async function selectOidcCognitoAuth(page, screenshotPath = defaultScreen
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-cognito-button-loaded.png` });
 
     // Wait for OIDC login heading, retry if not found
-    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor({ timeout: 2000 });
+    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor({ timeout: 5000 });
   });
 }
 

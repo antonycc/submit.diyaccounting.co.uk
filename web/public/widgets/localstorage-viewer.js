@@ -114,11 +114,14 @@
     if (lsvContainer) {
       lsvContainer.innerHTML = buttonHTML;
     } else {
-      // document.body.insertAdjacentHTML("beforeend", buttonHTML);
+      // Container not present on this page; fail gracefully without injecting
+      // to avoid runtime errors on pages that do not include the footer slot.
     }
 
     const btn = document.getElementById("lsv-button");
-    btn.addEventListener("click", openModalWithLocalStorage);
+    if (btn) {
+      btn.addEventListener("click", openModalWithLocalStorage);
+    }
   }
 
   injectButton();

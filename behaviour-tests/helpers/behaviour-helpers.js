@@ -54,6 +54,11 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
   let stop;
   let endpoint;
   if (runDynamoDb === "run") {
+    // Prefer an ephemeral random port to avoid EADDRINUSE collisions across test runs
+    if (!process.env.DYNAMODB_PORT || String(process.env.DYNAMODB_PORT).trim() === "") {
+      process.env.DYNAMODB_PORT = "0"; // let dynalite choose a free port
+      logger.info("[dynamodb]: DYNAMODB_PORT not set; using ephemeral port (0)");
+    }
     logger.info("[dynamodb]: Starting dynalite (local DynamoDB) server...");
     const started = await startDynamoDB();
     stop = started.stop;
@@ -167,6 +172,7 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
 }
 
 export function addOnPageLogging(page) {
+  // Always capture console and page errors (useful, low volume)
   page.on("console", (msg) => {
     console.log(`[BROWSER CONSOLE ${msg.type()}]: ${msg.text()}`);
   });
@@ -175,21 +181,26 @@ export function addOnPageLogging(page) {
     console.log(`[BROWSER ERROR]: ${error.message}`);
   });
 
-  // Add comprehensive HTTP request/response logging
-  page.on("request", (request) => {
-    console.log(`[HTTP REQUEST] ${request.method()} ${request.url()}`);
-    console.log(`[HTTP REQUEST HEADERS] ${JSON.stringify(request.headers(), null, 2)}`);
-    if (request.postData()) {
-      console.log(`[HTTP REQUEST BODY] ${request.postData()}`);
-    }
-  });
+  // Verbose network logging can flood CI logs and cause timeouts.
+  // Enable only when explicitly requested via env flag.
+  const verboseHttp = String(process.env.TEST_VERBOSE_HTTP_LOGS || "").toLowerCase() === "true";
 
-  page.on("response", (response) => {
-    console.log(`[HTTP RESPONSE] ${response.status()} ${response.url()}`);
-    console.log(`[HTTP RESPONSE HEADERS] ${JSON.stringify(response.headers(), null, 2)}`);
-  });
+  if (verboseHttp) {
+    page.on("request", (request) => {
+      console.log(`[HTTP REQUEST] ${request.method()} ${request.url()}`);
+      console.log(`[HTTP REQUEST HEADERS] ${JSON.stringify(request.headers(), null, 2)}`);
+      if (request.postData()) {
+        console.log(`[HTTP REQUEST BODY] ${request.postData()}`);
+      }
+    });
 
-  // Add request failure logging
+    page.on("response", (response) => {
+      console.log(`[HTTP RESPONSE] ${response.status()} ${response.url()}`);
+      console.log(`[HTTP RESPONSE HEADERS] ${JSON.stringify(response.headers(), null, 2)}`);
+    });
+  }
+
+  // Always log failed requests — these are important for diagnosing errors
   page.on("requestfailed", (request) => {
     console.log(`[HTTP REQUEST FAILED] ${request.method()} ${request.url()} - ${request.failure()?.errorText}`);
   });
@@ -334,6 +345,119 @@ export const loggedGoto = async (page, url, description = "", screenshotPath = d
       screenshotPath,
     );
   });
+
+// Accepts either a selector string or a Playwright Locator
+export const loggedFocus = async (page, selectorOrLocator, description = "", options = undefined) =>
+  await test.step(description ? `The user focuses ${description}` : `The user focuses selector ${selectorOrLocator}`, async () => {
+    const opts = options && typeof options === "object" ? options : {};
+    const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
+    const selector = isLocator ? undefined : selectorOrLocator;
+    const locator = isLocator ? selectorOrLocator : page.locator(selector);
+
+    console.log(`[USER INTERACTION] Focusing: ${isLocator ? "[Locator]" : selector} ${description ? "- " + description : ""}`);
+
+    await (isLocator
+      ? locator.waitFor({ state: "visible", timeout: 30000 })
+      : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+
+    // Perform the focus
+    try {
+      if (isLocator) {
+        await locator.focus();
+      } else {
+        await page.focus(selector);
+      }
+    } catch (e) {
+      // Do not silently swallow focus bugs — rethrow after logging
+      console.warn(`[WARN] Failed to focus target: ${e.message}`);
+      throw e;
+    }
+
+    // Screenshot just after focus change
+    if (opts.screenshotPath) {
+      const labelSlug = toSlug(opts.focusLabel || description || (isLocator ? "locator" : selector));
+      const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
+      try {
+        ensureDirSync(opts.screenshotPath);
+        await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+      } catch (e) {
+        console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
+      }
+    } else {
+      await autoFocusScreenshot(page, description || (isLocator ? "locator" : selector));
+    }
+  });
+
+// Accepts either a selector string or a Playwright Locator
+// valueOrOptions can be: string|number|{value,label}|Array of those
+export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions, description = "", options = undefined) =>
+  await test.step(
+    description
+      ? `The user selects ${description}`
+      : `The user selects on ${typeof selectorOrLocator === "string" ? selectorOrLocator : "[Locator]"}`,
+    async () => {
+      const opts = options && typeof options === "object" ? options : {};
+      const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
+      const selector = isLocator ? undefined : selectorOrLocator;
+      const locator = isLocator ? selectorOrLocator : page.locator(selector);
+
+      const valueLog = typeof valueOrOptions === "object" ? JSON.stringify(valueOrOptions) : String(valueOrOptions);
+      console.log(
+        `[USER INTERACTION] Selecting option on ${isLocator ? "[Locator]" : selector} value: ${valueLog} ${
+          description ? "- " + description : ""
+        }`,
+      );
+
+      // Ensure element is visible and focused before selection
+      await (isLocator
+        ? locator.waitFor({ state: "visible", timeout: 30000 })
+        : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+
+      try {
+        if (isLocator) {
+          await locator.focus();
+        } else {
+          await page.focus(selector);
+        }
+      } catch (e) {
+        console.warn(`[WARN] Failed to focus before select: ${e.message}`);
+      }
+
+      // Screenshot just after focus change
+      if (opts.screenshotPath) {
+        const labelSlug = toSlug(opts.focusLabel || description || (isLocator ? "locator" : selector));
+        const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
+        try {
+          ensureDirSync(opts.screenshotPath);
+          await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+        } catch (e) {
+          console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
+        }
+      } else {
+        await autoFocusScreenshot(page, description || (isLocator ? "locator" : selector));
+      }
+
+      // Perform selection with value-first, fallback-to-label behavior when given a primitive
+      const performSelect = async (val) => (isLocator ? locator.selectOption(val) : page.selectOption(selector, val));
+
+      if (valueOrOptions === undefined || valueOrOptions === null) {
+        throw new Error("loggedSelectOption requires a value or options argument");
+      }
+
+      if (typeof valueOrOptions === "string" || typeof valueOrOptions === "number") {
+        const valueStr = String(valueOrOptions);
+        try {
+          await performSelect(valueStr);
+        } catch (error) {
+          console.log(`Failed to select by value '${valueStr}' error: ${JSON.stringify(error)} — retrying by label`);
+          await performSelect({ label: valueStr });
+        }
+      } else {
+        // Caller provided explicit options object/array — do not silently change semantics
+        await performSelect(valueOrOptions);
+      }
+    },
+  );
 
 // Generate timestamp for file naming
 export function timestamp() {

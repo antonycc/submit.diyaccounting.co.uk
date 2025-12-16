@@ -9,10 +9,12 @@ import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
 export function getHmrcBaseUrl(hmrcAccount) {
-  // TODO: Ensure we always have these when otherwise stable and remove defaults
-  return hmrcAccount === "sandbox"
-    ? process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk"
-    : process.env.HMRC_BASE_URI || "https://api.service.hmrc.gov.uk";
+  const isSandbox = hmrcAccount === "sandbox";
+  const base = isSandbox ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
+  if (!base || String(base).trim() === "") {
+    throw new Error(`Missing required environment variable ${isSandbox ? "HMRC_SANDBOX_BASE_URI" : "HMRC_BASE_URI"}`);
+  }
+  return base;
 }
 
 export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenario = null) {
