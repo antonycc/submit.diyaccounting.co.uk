@@ -2556,17 +2556,17 @@ jobs:
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-artifacts-post-vat-return
+          name: web-test-artifacts-post-vat-return-sandbox
           path: |
-            target/behaviour-test-results/post-vat-return/
+            target/behaviour-test-results/post-vat-return-sandbox/
 
       - name: Download artifacts - getVatReturn sandbox
         if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-artifacts-get-vat-return
+          name: web-test-artifacts-get-vat-return-sandbox
           path: |
-            target/behaviour-test-results/get-vat-return/
+            target/behaviour-test-results/get-vat-return-sandbox/
 
       - name: Download artifacts - obligation sandbox
         if: ${{ !cancelled() }}
