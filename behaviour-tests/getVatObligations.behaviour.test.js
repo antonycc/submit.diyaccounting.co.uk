@@ -367,20 +367,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       /* All status values */
       /* No test scenario */
     });
-    // await requestAndVerifyObligations(page, {
-    //   hmrcVatNumber: testVatNumber,
-    //   hmrcVatPeriodFromDate,
-    //   hmrcVatPeriodToDate,
-    //   status: "O",
-    //   /* No test scenario */
-    // });
-    // await requestAndVerifyObligations(page, {
-    //   hmrcVatNumber: testVatNumber,
-    //   hmrcVatPeriodFromDate,
-    //   hmrcVatPeriodToDate,
-    //   status: "F",
-    //   /* No test scenario */
-    // });
     await requestAndVerifyObligations(page, {
       hmrcVatNumber: testVatNumber,
       hmrcVatPeriodFromDate,
