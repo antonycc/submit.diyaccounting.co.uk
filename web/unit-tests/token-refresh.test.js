@@ -9,6 +9,9 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const submitJsPath = path.join(process.cwd(), "web/public/submit.js");
 const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 
+// Node-safe base64url encoding for JWT payloads
+const b64url = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64url");
+
 describe("Token refresh on 401 errors", () => {
   let originalFetch;
   let fetchMock;
@@ -103,7 +106,7 @@ describe("Token refresh on 401 errors", () => {
   it("fetchWithIdToken should add Authorization header with idToken", async () => {
     // Mock a valid access token to skip refresh logic
     const validFutureExp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
-    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: validFutureExp })}.test`;
     storageMock.cognitoAccessToken = validToken;
 
     fetchMock.mockResolvedValueOnce({
@@ -131,7 +134,7 @@ describe("Token refresh on 401 errors", () => {
 
   it("fetchWithIdToken should retry on 401 after token refresh", async () => {
     // Mock expired access token to trigger refresh
-    const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: 1 }))}.test`;
+    const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: 1 })}.test`;
     storageMock.cognitoAccessToken = expiredToken;
 
     // First call returns 401
@@ -174,7 +177,7 @@ describe("Token refresh on 401 errors", () => {
 
     // Mock valid access token
     const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
-    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: validFutureExp })}.test`;
     storageMock.cognitoAccessToken = validToken;
 
     fetchMock.mockResolvedValueOnce({
@@ -192,7 +195,7 @@ describe("Token refresh on 401 errors", () => {
   it("fetchWithIdToken should handle non-401 errors gracefully", async () => {
     // Mock valid access token
     const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
-    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: validFutureExp })}.test`;
     storageMock.cognitoAccessToken = validToken;
 
     // First call returns 500
@@ -211,7 +214,7 @@ describe("Token refresh on 401 errors", () => {
   it("fetchWithIdToken should preserve custom headers", async () => {
     // Mock valid access token
     const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
-    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: validFutureExp })}.test`;
     storageMock.cognitoAccessToken = validToken;
 
     fetchMock.mockResolvedValueOnce({
@@ -244,7 +247,7 @@ describe("Token refresh on 401 errors", () => {
   it("fetchWithIdToken should handle 403 errors and show user-friendly message", async () => {
     // Mock valid access token
     const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
-    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: validFutureExp })}.test`;
     storageMock.cognitoAccessToken = validToken;
 
     // Mock 403 response
@@ -264,7 +267,7 @@ describe("Token refresh on 401 errors", () => {
   it("authorizedFetch should handle 403 errors gracefully", async () => {
     // Mock valid access token
     const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
-    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: validFutureExp })}.test`;
     storageMock.cognitoAccessToken = validToken;
 
     // Mock 403 response
@@ -284,7 +287,7 @@ describe("Token refresh on 401 errors", () => {
   it("checkTokenExpiry should detect expired tokens", () => {
     // Create expired tokens
     const expiredExp = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
-    const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: expiredExp }))}.test`;
+    const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: expiredExp })}.test`;
 
     // Mock showStatus
     window.showStatus = vi.fn();
@@ -298,7 +301,7 @@ describe("Token refresh on 401 errors", () => {
 
   it("getJwtExpiryMs should parse JWT expiry correctly", () => {
     const futureExp = Math.floor(Date.now() / 1000) + 3600;
-    const token = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: futureExp }))}.test`;
+    const token = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: futureExp })}.test`;
 
     const expiryMs = window.getJwtExpiryMs(token);
 
@@ -316,7 +319,7 @@ describe("Token refresh on 401 errors", () => {
 
     // Mock valid access token
     const validFutureExp = Math.floor(Date.now() / 1000) + 3600;
-    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${btoa(JSON.stringify({ exp: validFutureExp }))}.test`;
+    const validToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: validFutureExp })}.test`;
     storageMock.cognitoAccessToken = validToken;
     storageMock.userInfo = JSON.stringify({ sub: "test-user" });
 

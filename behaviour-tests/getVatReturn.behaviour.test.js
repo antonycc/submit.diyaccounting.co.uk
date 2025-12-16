@@ -49,7 +49,12 @@ import {
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { assertConsistentHashedSub, assertHmrcApiRequestExists, assertHmrcApiRequestValues } from "./helpers/dynamodb-assertions.js";
+import {
+  assertConsistentHashedSub,
+  assertHmrcApiRequestExists,
+  assertHmrcApiRequestValues,
+  readDynamoDbExport,
+} from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -109,17 +114,7 @@ test.beforeAll(async ({ page }, testInfo) => {
 
   process.env = { ...originalEnv };
 
-  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
-  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
-  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
-
-  const outputDir = testInfo.outputPath("");
-  fs.mkdirSync(outputDir, { recursive: true });
-  deleteUserSubTxt(outputDir);
-  deleteHashedUserSubTxt(outputDir);
-  deleteTraceparentTxt(outputDir);
-
+  // WireMock first so server sees overrides
   wiremockMode = process.env.TEST_WIREMOCK || "off";
   wiremockPort = process.env.WIREMOCK_PORT || 9090;
   if (wiremockMode === "record" || wiremockMode === "mock") {
@@ -130,6 +125,18 @@ test.beforeAll(async ({ page }, testInfo) => {
     process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
     process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
   }
+
+  // Start services after env overrides
+  dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
+  mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
+  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
+
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  deleteUserSubTxt(outputDir);
+  deleteHashedUserSubTxt(outputDir);
+  deleteTraceparentTxt(outputDir);
 });
 
 test.afterAll(async () => {
@@ -278,6 +285,18 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     assertHmrcApiRequestValues(getRequest, { "httpRequest.method": "GET" });
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "View VAT GET test");
     expect(hashedSubs.length).toBeGreaterThan(0);
+
+    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
+    if (wiremockMode && wiremockMode !== "off") {
+      const records = readDynamoDbExport(hmrcApiRequestsFile);
+      expect(records.length).toBeGreaterThan(0);
+      for (const r of records) {
+        expect(
+          r.url?.startsWith(`http://localhost:${wiremockPort}`),
+          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
+        ).toBe(true);
+      }
+    }
   }
 
   // Build testContext.json
