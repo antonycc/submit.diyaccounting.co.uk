@@ -505,6 +505,45 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       /* All status values */
       testScenario: "NOT_FOUND",
     });
+
+    // Custom forced error scenarios (mirrors POST tests)
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "SUBMIT_API_HTTP_500",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "SUBMIT_HMRC_API_HTTP_500",
+    });
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    });
+
+    // Slow scenario should take >= 10s but < 30s end-to-end
+    const slowStartMs = Date.now();
+    await requestAndVerifyObligations(page, {
+      hmrcVatNumber: testVatNumber,
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      /* All status values */
+      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+    });
+    const slowElapsedMs = Date.now() - slowStartMs;
+    expect(
+      slowElapsedMs,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 10s but less than 30s, actual: ${slowElapsedMs}ms`,
+    ).toBeGreaterThanOrEqual(10_000);
+    expect(slowElapsedMs).toBeLessThan(30_000);
   }
 
   /* ****************** */

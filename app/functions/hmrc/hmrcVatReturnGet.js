@@ -124,17 +124,30 @@ export async function handler(event) {
     return buildValidationError(request, [err.toString()], responseHeaders);
   }
 
+  // Keep local override for test scenarios in a consistent variable name
+  const govTestScenarioHeader = govClientHeaders["Gov-Test-Scenario"] || testScenario;
+
+  // Simulate an immediate API (this lambda) failure for testing, mirroring POST handler
+  logger.info({ "Checking for test scenario": govTestScenarioHeader });
+  if (govTestScenarioHeader === "SUBMIT_API_HTTP_500") {
+    return http500ServerErrorResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: `Simulated server error for testing scenario: ${govTestScenarioHeader}`,
+    });
+  }
+
   // Processing
   let vatReturn;
   let hmrcResponse;
   try {
-    logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario });
+    logger.info({ message: "Checking for stubbed VAT return data", vrn, periodKey, testScenario: govTestScenarioHeader });
     ({ vatReturn, hmrcResponse } = await getVatReturn(
       vrn,
       periodKey,
       hmrcAccessToken,
       govClientHeaders,
-      testScenario,
+      govTestScenarioHeader,
       hmrcAccount,
       userSub,
     ));
@@ -170,7 +183,37 @@ export async function handler(event) {
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub) {
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
-  const hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, {}, auditForUserSub);
+  let hmrcResponse = {};
+  /* v8 ignore start */
+  // TODO: Move the error simulation into the proxy (mirrors POST implementation)
+  if (testScenario === "SUBMIT_HMRC_API_HTTP_500") {
+    logger.error({ message: `Simulated server error for testing scenario: ${testScenario}` });
+    hmrcResponse.ok = false;
+    hmrcResponse.status = 500;
+  } else if (testScenario === "SUBMIT_HMRC_API_HTTP_503") {
+    logger.error({ message: `Simulated server unavailable for testing scenario: ${testScenario}` });
+    hmrcResponse.ok = false;
+    hmrcResponse.status = 503;
+  } else {
+    if (testScenario === "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
+      // Strip Gov-Test-Scenario from headers to avoid triggering reject from HMRC
+      delete govClientHeaders["Gov-Test-Scenario"];
+      const slowTime = 10000;
+      logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waiting...): ${testScenario}`, slowTime });
+      await new Promise((resolve) => setTimeout(resolve, slowTime));
+      logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waited): ${testScenario}`, slowTime });
+    }
+    /* v8 ignore stop */
+    hmrcResponse = await hmrcHttpGet(
+      hmrcRequestUrl,
+      hmrcAccessToken,
+      govClientHeaders,
+      testScenario === "SUBMIT_HMRC_API_HTTP_SLOW_10S" ? null : testScenario,
+      hmrcAccount,
+      {},
+      auditForUserSub,
+    );
+  }
 
   if (!hmrcResponse.ok) {
     // Consumers of this function may choose to map these to HTTP responses

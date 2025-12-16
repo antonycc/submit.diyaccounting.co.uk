@@ -259,6 +259,37 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
      */
     await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey, testScenario: "DATE_RANGE_TOO_LARGE" });
     await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey, testScenario: "INSOLVENT_TRADER" });
+
+    // Custom forced error scenarios (mirrors POST tests)
+    await requestAndVerifyViewReturn(page, {
+      vrn: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      testScenario: "SUBMIT_API_HTTP_500",
+    });
+    await requestAndVerifyViewReturn(page, {
+      vrn: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      testScenario: "SUBMIT_HMRC_API_HTTP_500",
+    });
+    await requestAndVerifyViewReturn(page, {
+      vrn: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    });
+
+    // Slow scenario should take >= 10s but < 30s end-to-end
+    const slowStartMs = Date.now();
+    await requestAndVerifyViewReturn(page, {
+      vrn: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+    });
+    const slowElapsedMs = Date.now() - slowStartMs;
+    expect(
+      slowElapsedMs,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 10s but less than 30s, actual: ${slowElapsedMs}ms`,
+    ).toBeGreaterThanOrEqual(10_000);
+    expect(slowElapsedMs).toBeLessThan(30_000);
   }
 
   // Extract user sub and log out
