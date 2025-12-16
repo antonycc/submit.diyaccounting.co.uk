@@ -1,207 +1,396 @@
-# DIY Accounting Submit - GitHub Copilot Instructions
+# DIY Accounting Submit - GitHub Copilot Code Review Instructions
 
-**ALWAYS** follow these instructions first and fallback to additional search and context gathering only if the information here is incomplete or found to be in error.
+## Purpose
 
-## Working Effectively
+These instructions guide GitHub Copilot's code review agent to provide specialized, high-quality reviews for this repository. The focus is on **analysis and understanding** rather than test execution.
 
-### Bootstrap the Repository
-```bash
-# Install Node.js dependencies (requires Node.js 20+, prefers 22+)
-npm install --ignore-engines
-# Note: npm install fails due to Playwright browser download issues and Node version mismatch
-# Always use --ignore-engines to bypass Node version warnings
+## Repository Documentation
 
-# Build Java/CDK components (requires Java 17+)
-./mvnw clean package -Dmaven.compiler.source=17 -Dmaven.compiler.target=17
-# NEVER CANCEL: Maven build takes 45 seconds. Set timeout to 90+ seconds.
-# Note: pom.xml specifies Java 21 but works with Java 17 using compiler overrides
+**Primary Reference**: See [`./REPOSITORY_DOCUMENTATION.md`](../REPOSITORY_DOCUMENTATION.md) for comprehensive technical documentation including:
+
+- Complete architecture overview (AWS serverless stack)
+- All npm scripts in `package.json` with detailed descriptions
+- Maven/CDK build process and stack organization
+- Environment configuration (`.env.test`, `.env.ci`, `.env.proxy`, `.env.prod`)
+- Testing strategy (unit, system, browser, behaviour)
+- GitHub Actions CI/CD workflows
+- Directory structure and file purposes
+- AWS deployment architecture and security model
+
+**When reviewing code**, reference REPOSITORY_DOCUMENTATION.md to understand context, verify script usage, and check consistency with documented patterns.
+
+## Code Review Philosophy
+
+### Favor Analysis Over Execution
+
+As a code review agent, prioritize **static analysis and code comprehension** over running tests:
+
+1. **Read and understand** code paths by tracing through files
+2. **Mentally dry-run** logic to identify potential issues
+3. **Validate consistency** with existing patterns and conventions
+4. **Check references** against documented scripts and configuration
+5. **Suggest tests** when appropriate, but let developers/CI run them
+
+**Note**: The `.junie/guidelines.md` file describes behavior for the Junie custom agent, which emphasizes continuous testing and iteration. As a code review agent, your role is complementary - you provide thoughtful analysis while Junie handles execution and testing.
+
+### Analysis Workflow
+
+When reviewing code changes:
+
+1. **Understand the context**
+   - What problem is being solved?
+   - Which components/files are affected?
+   - What are the environmental implications?
+
+2. **Trace code paths**
+   - Follow execution flow through functions/modules
+   - Identify dependencies and side effects
+   - Check error handling and edge cases
+
+3. **Validate against patterns**
+   - Does it match existing code style?
+   - Are naming conventions consistent?
+   - Is it using documented npm scripts correctly?
+
+4. **Consider cross-cutting concerns**
+   - Security implications (secrets, IAM, input validation)
+   - Performance and cost (Lambda execution, DynamoDB queries)
+   - Testing coverage (are appropriate tests included?)
+   - Environmental differences (test vs. CI vs. prod)
+
+5. **Suggest minimal changes**
+   - Focus on surgical, targeted improvements
+   - Preserve working code unless fixing security issues
+   - Match local style over enforcing global style rules
+
+## Repository Patterns and Conventions
+
+### Code Style and Formatting
+
+**JavaScript/TypeScript** (ES Modules):
+- **Linter**: ESLint with flat config (`eslint.config.js`)
+- **Formatter**: Prettier (`.prettierrc`)
+- **Scripts**: `npm run linting`, `npm run linting-fix`, `npm run formatting`, `npm run formatting-fix`
+- **Convention**: Always check/fix before committing: `npm run linting-fix && npm run formatting-fix`
+
+**Java** (AWS CDK Infrastructure):
+- **Formatter**: Spotless with Palantir Java Format (100-column width)
+- **Scripts**: `./mvnw spotless:check`, `./mvnw spotless:apply`
+- **Convention**: Runs during Maven `install` phase, fails build if not formatted
+
+**General Style Rule**: Match existing local style rather than forcing global rules when it would be disruptive. Only change style in code you're already modifying.
+
+### Testing Strategy
+
+This repository uses a **four-tier testing pyramid**:
+
+1. **Unit Tests** (Vitest): Fast, isolated tests of individual functions/modules
+   - Location: `app/unit-tests/`, `web/unit-tests/`
+   - Run: `npm run test:unit` (~4 seconds)
+   - Focus: Business logic, helpers, utilities
+
+2. **System Tests** (Vitest + Docker): Integration tests with real dependencies
+   - Location: `app/system-tests/`
+   - Run: `npm run test:system` (~6 seconds)
+   - Focus: Service integration, Docker containers (DynamoDB, OAuth2)
+
+3. **Browser Tests** (Playwright): UI component tests in real browser
+   - Location: `web/browser-tests/`
+   - Run: `npm run test:browser` (~30+ seconds)
+   - Focus: Frontend widgets, navigation, client-side logic
+
+4. **Behaviour Tests** (Playwright): End-to-end user journey tests
+   - Location: `behaviour-tests/`
+   - Run: `npm run test:behaviour` (with environment variants: `-proxy`, `-ci`, `-prod`)
+   - Focus: Complete flows (auth, VAT submission, bundles, receipts)
+
+**Default test command**: `npm test` runs unit + system tests (~4 seconds, 108 tests)
+
+### Environment Configuration
+
+The repository supports **four environments** via `.env` files:
+
+| Environment | File | Purpose |
+|------------|------|---------|
+| **test** | `.env.test` | Unit/system tests with mocked services |
+| **proxy** | `.env.proxy` | Local development with ngrok, mock OAuth2, local DynamoDB |
+| **ci** | `.env.ci` | Continuous integration with real AWS resources |
+| **prod** | `.env.prod` | Production deployment |
+
+**Key environment variables** to be aware of:
+- `ENVIRONMENT_NAME`: `test`, `ci`, or `prod`
+- `DEPLOYMENT_NAME`: Unique deployment identifier
+- `DIY_SUBMIT_BASE_URL`: Application base URL
+- `HMRC_BASE_URI`: HMRC API endpoint (test or prod)
+- `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`: AWS Cognito configuration
+- `*_DYNAMODB_TABLE_NAME`: DynamoDB table names
+- `*_CLIENT_SECRET_ARN`: AWS Secrets Manager ARNs (never plain secrets in env files)
+
+### AWS CDK Architecture
+
+The infrastructure is divided into **two CDK applications**:
+
+1. **Environment Stacks** (`cdk-environment/`): Long-lived, shared resources
+   - ObservabilityStack (CloudWatch RUM, logs, alarms)
+   - DataStack (DynamoDB tables)
+   - ProxyStack (VPC endpoints)
+   - ApexStack (Route53 DNS)
+   - IdentityStack (Cognito user pool)
+   - Deployed by: `deploy-environment.yml` workflow
+
+2. **Application Stacks** (`cdk-application/`): Per-deployment resources
+   - DevStack (S3, CloudFront, ECR)
+   - AuthStack, HmrcStack, AccountStack (Lambda functions)
+   - ApiStack (HTTP API Gateway)
+   - EdgeStack (CloudFront distribution)
+   - PublishStack (static file deployment)
+   - OpsStack (monitoring dashboard)
+   - SelfDestructStack (auto-cleanup for non-prod)
+   - Deployed by: `deploy.yml` workflow
+
+**Entry points**:
+- `infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java`
+- `infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java`
+
+### Available npm Scripts
+
+See REPOSITORY_DOCUMENTATION.md Section "Package.json Operations" for the complete reference of all npm scripts. Key scripts include:
+
+**Build & Deploy**:
+- `npm run build` - Full Maven build + restore deployment markers
+- `npm start` - Start all local services (proxy, auth, data, server)
+- `npm run server` - Start Express server on port 3000
+
+**Testing**:
+- `npm test` - Default: unit + system tests
+- `npm run test:unit` - Unit tests only
+- `npm run test:system` - System tests only
+- `npm run test:browser` - Playwright browser tests
+- `npm run test:behaviour` - End-to-end behaviour tests
+
+**Code Quality**:
+- `npm run formatting` - Check JS/Java formatting
+- `npm run formatting-fix` - Auto-fix JS/Java formatting
+- `npm run linting` - Check ESLint rules
+- `npm run linting-fix` - Auto-fix ESLint issues
+
+**Local Development**:
+- `npm run proxy` - Start ngrok proxy
+- `npm run auth` - Start mock OAuth2 server (Docker)
+- `npm run data` - Start local DynamoDB (dynalite)
+
+## Code Review Focus Areas
+
+### Security Considerations
+
+**Critical**: Always check for security issues in code changes:
+
+1. **Secrets Management**
+   - ❌ Never commit secrets to code or environment files
+   - ✅ Use AWS Secrets Manager ARNs in `.env.ci` and `.env.prod`
+   - ✅ Export secrets in shell for local development
+   - Check: Search for patterns like `client_secret`, `password`, API keys
+
+2. **IAM Permissions**
+   - Check Lambda execution roles for least privilege
+   - Verify CDK-created roles follow principle of minimal access
+   - Look for overly broad wildcards in IAM policies (`Resource: "*"`)
+
+3. **Input Validation**
+   - Validate and sanitize user input in Lambda functions
+   - Check for SQL injection risks (though DynamoDB SDK helps here)
+   - Verify OAuth state parameter validation
+
+4. **Authentication & Authorization**
+   - Ensure protected routes use custom authorizer
+   - Check JWT validation logic in `app/functions/auth/customAuthorizer.js`
+   - Verify bundle entitlement checks before feature access
+
+### Consistency with Patterns
+
+**Naming Conventions**:
+- Lambda function files: `{feature}{Method}.js` (e.g., `hmrcVatReturnPost.js`)
+- CDK stacks: `{Purpose}Stack` (e.g., `AuthStack`, `HmrcStack`)
+- DynamoDB tables: `{env}-submit-{purpose}` (e.g., `ci-submit-bundles`)
+- Environment variables: `{SERVICE}_{RESOURCE}_ARN` format
+- npm scripts: Use `:` separator for variants (e.g., `test:unit`, `test:behaviour-proxy`)
+
+**Error Handling**:
+- Lambda functions should catch errors and return appropriate HTTP status codes
+- Use structured logging with Pino logger
+- Include correlation IDs for request tracing
+
+**Testing Patterns**:
+- Unit tests use Vitest with `happy-dom` for DOM testing
+- System tests use `testcontainers` pattern with Docker
+- Behaviour tests use Playwright with page object pattern
+- Mock external APIs with MSW (Mock Service Worker)
+
+### Environmental Impact
+
+When reviewing changes, consider impact across **all four environments**:
+
+1. **Test environment** (`.env.test`):
+   - Uses mocked/stubbed services
+   - Fast, isolated, no external dependencies
+   - Safe to break temporarily during development
+
+2. **Proxy environment** (`.env.proxy`):
+   - Local development setup
+   - Requires ngrok, Docker for OAuth2/DynamoDB
+   - Changes should work locally for developers
+
+3. **CI environment** (`.env.ci`):
+   - Real AWS resources but short-lived
+   - Automated testing in GitHub Actions
+   - Self-destructs after 8 hours (SelfDestructStack)
+
+4. **Production environment** (`.env.prod`):
+   - Real users and data
+   - High reliability and security requirements
+   - Changes must be backwards compatible
+
+**Red flags**:
+- Hard-coded environment names or URLs
+- Assumptions about resource existence (check environment stack deployment)
+- Different behavior in test vs. prod due to missing mocks
+
+### Testing Implications
+
+When reviewing code changes, check:
+
+1. **Are new tests included?**
+   - New functions/features should have unit tests
+   - New API endpoints should have system/behaviour tests
+   - UI changes should have browser tests
+
+2. **Do existing tests need updates?**
+   - Check if mocks need to match new behavior
+   - Update test data/fixtures if format changed
+   - Verify test names still match what they test
+
+3. **Is test coverage appropriate?**
+   - Business logic: High unit test coverage expected
+   - Integration points: System tests for happy path + errors
+   - User journeys: Behaviour tests for critical flows only
+
+4. **Are tests discoverable?**
+   - Test files follow `*.test.js` naming convention
+   - Located in appropriate directory (`unit-tests/`, `system-tests/`, etc.)
+   - Can be run via documented npm scripts
+
+### Performance and Cost Considerations
+
+**AWS Lambda**:
+- Cold start times (Node.js 22 runtime, Docker images from ECR)
+- Memory allocation (default: check CDK stack definitions)
+- Execution duration (DynamoDB queries, HMRC API calls)
+
+**DynamoDB**:
+- On-demand billing (no provisioned capacity)
+- Query efficiency (use partition key + sort key)
+- Item size limits (400 KB per item)
+
+**CloudFront**:
+- Cache policy configuration (static vs. dynamic content)
+- Origin request optimization
+- CloudWatch RUM costs (events per session)
+
+**Cost red flags**:
+- Unbounded loops or recursive calls in Lambda
+- Full table scans on DynamoDB
+- Excessive CloudWatch log volume
+- 100% session sampling in RUM (consider lower rate for prod)
+
+## Common Patterns to Recognize
+
+### Lambda Function Pattern
+
+```javascript
+// Standard Lambda function structure
+export const handler = async (event, context) => {
+  try {
+    // 1. Extract parameters from event (query, path, headers, body)
+    // 2. Validate input
+    // 3. Perform business logic
+    // 4. Call AWS services (DynamoDB, Secrets Manager, etc.)
+    // 5. Return successful response
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(result)
+    };
+  } catch (error) {
+    // 6. Log error and return appropriate status code
+    logger.error({ error, event }, 'Lambda execution failed');
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Internal server error' })
+    };
+  }
+};
 ```
 
-### Run Tests
-```bash
-# Fast unit tests - run these frequently during development
-npm run test:unit
-# Duration: 4 seconds. NEVER CANCEL: Set timeout to 15+ seconds.
+### CDK Stack Pattern
 
-# System tests with Docker containers
-npm run test:system
-# Duration: 6 seconds. NEVER CANCEL: Set timeout to 30+ seconds.
+```java
+// Standard CDK stack structure
+public class ExampleStack extends Stack {
+    public ExampleStack(final Construct scope, final String id, final ExampleStackProps props) {
+        super(scope, id, props);
 
-# All core tests (excludes browser/behavior tests)
-npm test
-# Duration: 4 seconds (18 test files, 108 tests). NEVER CANCEL: Set timeout to 15+ seconds.
+        // 1. Create IAM roles
+        // 2. Create Lambda functions (from Docker images)
+        // 3. Create API Gateway routes
+        // 4. Create CloudWatch alarms/dashboards
+        // 5. Output important values (ARNs, URLs)
+    }
+}
 ```
 
-### Run the Application Locally
-```bash
-# Start the Express server
-npm run server
-# Starts server on http://127.0.0.1:3000
-# Uses .env.proxy configuration by default
-# ALWAYS verify server starts by checking "Listening at http://127.0.0.1:3000" message
+### Environment Variable Pattern
+
+```javascript
+// Reading environment variables with fallbacks
+const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME || 'default-table';
+const region = process.env.AWS_REGION || 'eu-west-2';
+
+// For secrets, use AWS Secrets Manager
+const secretArn = process.env.HMRC_CLIENT_SECRET_ARN;
+if (!secretArn) {
+  throw new Error('HMRC_CLIENT_SECRET_ARN is required');
+}
 ```
 
-### Code Quality
-```bash
-# Check linting (has many errors in _developers/test-archive/ files)
-npm run linting
-# Duration: 12 seconds. Set timeout to 30+ seconds.
+## Recommended Review Checklist
 
-# Fix auto-fixable linting issues
-npm run linting-fix
+When reviewing a pull request, work through these checks:
 
-# Check code formatting
-npm run formatting
-# Duration: 3 seconds. Set timeout to 15+ seconds.
+- [ ] **Read the PR description** - Understand the goal and context
+- [ ] **Review changed files** - What components are affected?
+- [ ] **Trace code paths** - Follow execution flow mentally
+- [ ] **Check security** - Any secrets, IAM, or input validation issues?
+- [ ] **Validate consistency** - Naming, patterns, error handling match existing code?
+- [ ] **Verify scripts** - Any new/changed npm scripts documented correctly?
+- [ ] **Consider environments** - Impact on test/proxy/ci/prod?
+- [ ] **Check tests** - Are appropriate tests included/updated?
+- [ ] **Review performance** - Any Lambda/DynamoDB/CloudFront concerns?
+- [ ] **Validate references** - Do script names match `package.json`?
+- [ ] **Check style** - Does formatting match repository conventions?
+- [ ] **Suggest improvements** - Can code be simpler, clearer, more maintainable?
 
-# Fix formatting issues
-npm run formatting-fix
+## Resources and References
 
-# ALWAYS run before committing:
-npm run linting-fix && npm run formatting-fix
-```
+- **Repository Documentation**: [`./REPOSITORY_DOCUMENTATION.md`](../REPOSITORY_DOCUMENTATION.md)
+- **README**: [`./README.md`](../README.md)
+- **Package Scripts**: [`./package.json`](../package.json)
+- **Maven Build**: [`./pom.xml`](../pom.xml)
+- **ESLint Config**: [`./eslint.config.js`](../eslint.config.js)
+- **Vitest Config**: [`./vitest.config.js`](../vitest.config.js)
+- **Playwright Config**: [`./playwright.config.js`](../playwright.config.js)
+- **GitHub Workflows**: [`./.github/workflows/`](../workflows/)
 
-### Browser/Behavior Tests (Optional - Require Playwright Setup)
-```bash
-# Install Playwright browsers separately (if needed)
-npx playwright install chromium --with-deps
-# NOTE: May fail due to network issues with browser downloads
+---
 
-# Browser tests for UI components
-npm run test:browser
-# NEVER CANCEL: Can take 30+ seconds. Set timeout to 60+ seconds.
-
-# End-to-end behavior tests
-npm run test:behaviour
-# NEVER CANCEL: Can take 45+ seconds. Set timeout to 120+ seconds.
-```
-
-## Architecture Overview
-
-This is a full-stack AWS serverless application:
-- **Frontend**: Static HTML/CSS/JS served via CloudFront
-- **Backend**: Node.js Express server + AWS Lambda functions
-- **Infrastructure**: AWS CDK (Java) for deployment
-- **Testing**: Multi-tier testing with Vitest (unit/system) and Playwright (browser/behavior)
-
-## Validation Scenarios
-
-### ALWAYS Test After Making Changes
-1. **Core functionality validation**:
-   ```bash
-   npm test
-   ```
-
-2. **Server startup validation**:
-   ```bash
-   npm run server
-   # Verify "Listening at http://127.0.0.1:3000" appears
-   # Stop with Ctrl+C
-   ```
-
-3. **Code quality validation**:
-   ```bash
-   npm run linting && npm run formatting
-   ```
-
-### Manual Testing Scenarios
-Manual testing should be performed using the **proxy environment**. This requires starting several services using the npm scripts provided in `package.json`:
-
-1. **Start supporting services in separate terminals:**
-   - Ngrok proxy:
-     ```bash
-     npm run proxy
-     ```
-   - Mock OAuth2 server:
-     ```bash
-     npm run auth
-     ```
-   - Dynamo storage:
-     ```bash
-     npm run data
-     ```
-
-2. **Start the Express server:**
-     ```bash
-     npm run server
-     ```
-
-3. **Manual test flows:**
-   - **VAT Submission Flow**:
-     - Open: http://127.0.0.1:3000/submitVat.html
-     - Fill form with test data (VAT number: 176540158, Period: 24A1, Amount: 1000.00)
-     - Verify form validation and submission process
-   - **Bundle/Entitlement System**:
-     - Open: http://127.0.0.1:3000/bundles.html
-     - Test requesting different bundles (Test, Guest, etc.)
-     - Verify activities appear in http://127.0.0.1:3000/index.html
-   - **Receipt System**:
-     - Open: http://127.0.0.1:3000/receipts.html
-     - Verify receipt display and storage functionality
-
-**Note:**
-- All services must be running for full manual testing coverage.
-
-## Common Issues & Workarounds
-
-### Node.js Version Issues
-- **Problem**: Package requires Node 22+, system has Node 20
-- **Solution**: Always use `npm install --ignore-engines`
-
-### Java Version Issues
-- **Problem**: pom.xml specifies Java 21, system has Java 17
-- **Solution**: Use compiler overrides: `-Dmaven.compiler.source=17 -Dmaven.compiler.target=17`
-
-### CDK Synthesis Issues
-- **Problem**: `npx cdk synth` fails with missing environment variables
-- **Solution**: CDK requires AWS environment variables. For local development, use test commands instead.
-
-### Test Timeouts
-- **Problem**: Long-running operations may timeout with default settings
-- **Solution**: Always set appropriate timeouts:
-  - Unit tests: 15+ seconds
-  - System tests: 30+ seconds
-  - Browser tests: 60+ seconds
-  - Behavior tests: 120+ seconds
-  - Maven builds: 90+ seconds
-
-## Key Project Files
-
-### Configuration
-- `package.json` - Node.js dependencies and scripts
-- `pom.xml` - Java/CDK build configuration
-- `vitest.config.js` - Test configuration
-- `playwright.config.js` - Browser test configuration
-- `eslint.config.js` - Linting rules
-
-### Source Code
-- `app/` - Backend Express server and Lambda functions
-- `web/public/` - Frontend static files
-- `infra/` - AWS CDK infrastructure code (Java)
-- `behaviour-tests/` - End-to-end Playwright tests
-
-### Environment Files
-- `.env.test` - Test environment configuration
-- `.env.proxy` - Local development configuration
-- `.env.ci` - CI environment configuration
-
-## Deployment Notes
-
-- AWS CDK deployment requires Java 17+, Docker, and AWS CLI
-- GitHub Actions workflows handle CI/CD with multi-stage testing
-- Local development uses mock services (OAuth2, DynamoDB) for testing
-
-## Critical Timing Expectations
-
-**NEVER CANCEL** any of these operations before the specified timeout:
-- `npm install`: 60 seconds (due to Playwright downloads)
-- `./mvnw clean package`: 90 seconds
-- `npm test`: 15 seconds
-- `npm run test:system`: 30 seconds (includes Docker container startup)
-- `npm run test:browser`: 60 seconds (browser automation)
-- `npm run test:behaviour`: 120 seconds (full end-to-end flows)
-
-Always build and exercise your changes through the test suites and manual validation scenarios before considering the work complete.
-
-> Formatting and style: Respect the repo’s formatting tools — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for details.
-> Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.
+**Remember**: Your role as a code review agent is to provide thoughtful, analytical feedback based on understanding the code and its context. Leave test execution to developers and CI systems. Focus on what you do best: pattern recognition, consistency checking, and architectural guidance.
