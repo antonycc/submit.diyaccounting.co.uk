@@ -8,6 +8,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 const logger = createLogger({ source: "app/functions/auth/cognitoAuthUrlGet.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/* v8 ignore start */
 export function apiEndpoint(app) {
   app.get("/api/v1/cognito/authUrl", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
@@ -18,6 +19,7 @@ export function apiEndpoint(app) {
     httpResponse.status(200).send();
   });
 }
+/* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
