@@ -379,10 +379,83 @@ public class EdgeStack extends Stack {
             Path wafJsonPath = Path.of("infra/policies/waf.json");
             String json = Files.readString(wafJsonPath, StandardCharsets.UTF_8);
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(json, new TypeReference<List<CfnWebACL.RuleProperty>>() {});
+            List<Map<String, Object>> rulesData =
+                    mapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
+
+            return rulesData.stream().map(this::buildRuleProperty).toList();
         } catch (Exception e) {
             throw new RuntimeException("Failed to load WAF rules from infra/policies/waf.json: " + e.getMessage(), e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private CfnWebACL.RuleProperty buildRuleProperty(Map<String, Object> ruleData) {
+        CfnWebACL.RuleProperty.Builder builder = CfnWebACL.RuleProperty.builder()
+                .name((String) ruleData.get("name"))
+                .priority(((Number) ruleData.get("priority")).intValue());
+
+        // Handle visibility config
+        Map<String, Object> visConfig = (Map<String, Object>) ruleData.get("visibilityConfig");
+        if (visConfig != null) {
+            builder.visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                    .cloudWatchMetricsEnabled((Boolean) visConfig.get("cloudWatchMetricsEnabled"))
+                    .metricName((String) visConfig.get("metricName"))
+                    .sampledRequestsEnabled((Boolean) visConfig.get("sampledRequestsEnabled"))
+                    .build());
+        }
+
+        // Handle statement
+        Map<String, Object> statement = (Map<String, Object>) ruleData.get("statement");
+        if (statement != null) {
+            CfnWebACL.StatementProperty.Builder stmtBuilder = CfnWebACL.StatementProperty.builder();
+
+            // Rate based statement
+            if (statement.containsKey("rateBasedStatement")) {
+                Map<String, Object> rateStmt = (Map<String, Object>) statement.get("rateBasedStatement");
+                stmtBuilder.rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                        .limit(((Number) rateStmt.get("limit")).longValue())
+                        .aggregateKeyType((String) rateStmt.get("aggregateKeyType"))
+                        .build());
+            }
+
+            // Managed rule group statement
+            if (statement.containsKey("managedRuleGroupStatement")) {
+                Map<String, Object> managedStmt = (Map<String, Object>) statement.get("managedRuleGroupStatement");
+                stmtBuilder.managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
+                        .name((String) managedStmt.get("name"))
+                        .vendorName((String) managedStmt.get("vendorName"))
+                        .ruleActionOverrides(List.of()) // Empty override list to prevent conflicts
+                        .build());
+            }
+
+            builder.statement(stmtBuilder.build());
+        }
+
+        // Handle action (for rate limit rule)
+        if (ruleData.containsKey("action")) {
+            Map<String, Object> action = (Map<String, Object>) ruleData.get("action");
+            CfnWebACL.RuleActionProperty.Builder actionBuilder = CfnWebACL.RuleActionProperty.builder();
+
+            if (action.containsKey("block")) {
+                actionBuilder.block(CfnWebACL.BlockActionProperty.builder().build());
+            }
+
+            builder.action(actionBuilder.build());
+        }
+
+        // Handle override action (for managed rule groups)
+        if (ruleData.containsKey("overrideAction")) {
+            Map<String, Object> overrideAction = (Map<String, Object>) ruleData.get("overrideAction");
+            CfnWebACL.OverrideActionProperty.Builder overrideBuilder = CfnWebACL.OverrideActionProperty.builder();
+
+            if (overrideAction.containsKey("none")) {
+                overrideBuilder.none(Map.of());
+            }
+
+            builder.overrideAction(overrideBuilder.build());
+        }
+
+        return builder.build();
     }
 
     private String loadContentSecurityPolicy() {
