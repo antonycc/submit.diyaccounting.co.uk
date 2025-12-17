@@ -369,7 +369,7 @@ public class EdgeStack extends Stack {
         // 3. CloudWatch Logs destination that points at your log group
         CfnDeliveryDestination cfLogsDestination = new CfnDeliveryDestination(
                 this,
-                props.resourceNamePrefix() + "-CfAccessLogsOriginDestination",
+                props.resourceNamePrefix() + "-CfLogsDest",
                 CfnDeliveryDestinationProps.builder()
                         // Name is arbitrary; keep it stable but does not need to be the log group name
                         .name(props.sharedNames().distributionAccessLogDeliveryOriginDestinationName)
@@ -380,7 +380,7 @@ public class EdgeStack extends Stack {
         // 4. Delivery source that represents the CloudFront distribution
         CfnDeliverySource cfLogsSource = new CfnDeliverySource(
                 this,
-                props.resourceNamePrefix() + "-CfAccessLogsOriginSource",
+                props.resourceNamePrefix() + "-CfLogsSource",
                 CfnDeliverySourceProps.builder()
                         .name(props.sharedNames()
                                 .distributionAccessLogDeliveryOriginSourceName) // <-- use the shared variable
@@ -391,7 +391,7 @@ public class EdgeStack extends Stack {
         // 5. Delivery that connects source to destination
         CfnDelivery cfLogsDelivery = new CfnDelivery(
                 this,
-                props.resourceNamePrefix() + "-CfAccessLogsOriginDelivery",
+                props.resourceNamePrefix() + "-CfLogsOrigDel",
                 CfnDeliveryProps.builder()
                         // *** IMPORTANT: must exactly match the Name above ***
                         .deliverySourceName(props.sharedNames().distributionAccessLogDeliveryOriginSourceName)
