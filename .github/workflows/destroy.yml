@@ -287,7 +287,7 @@ jobs:
               local stack_info=$(aws cloudformation describe-stacks \
                 --region "$REGION" \
                 --query "Stacks[?starts_with(StackName, '${deployment_name}-')].CreationTime" \
-                --output text 2>/dev/null || echo "")
+                --output text 2>/dev/null | tr '\t' '\n' || echo "")
               
               if [ -n "$stack_info" ]; then
                 echo "Found stacks in $REGION for $deployment_name" >&2
