@@ -42,9 +42,15 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
@@ -167,69 +173,7 @@ public class EdgeStack extends Stack {
                 .defaultAction(CfnWebACL.DefaultActionProperty.builder()
                         .allow(CfnWebACL.AllowActionProperty.builder().build())
                         .build())
-                .rules(List.of(
-                        // Rate limiting rule - 2000 requests per 5 minutes per IP
-                        CfnWebACL.RuleProperty.builder()
-                                .name("RateLimitRule")
-                                .priority(1)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
-                                                .limit(2000L) // requests per 5 minutes
-                                                .aggregateKeyType("IP")
-                                                .build())
-                                        .build())
-                                .action(CfnWebACL.RuleActionProperty.builder()
-                                        .block(CfnWebACL.BlockActionProperty.builder()
-                                                .build())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("RateLimitRule")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // AWS managed rule for known bad inputs
-                        CfnWebACL.RuleProperty.builder()
-                                .name("AWSManagedRulesKnownBadInputsRuleSet")
-                                .priority(2)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
-                                                .name("AWSManagedRulesKnownBadInputsRuleSet")
-                                                .vendorName("AWS")
-                                                .ruleActionOverrides(
-                                                        List.of()) // Empty override list to prevent conflicts
-                                                .build())
-                                        .build())
-                                .overrideAction(CfnWebACL.OverrideActionProperty.builder()
-                                        .none(Map.of())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("AWSManagedRulesKnownBadInputsRuleSet")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // AWS managed rule for common rule set (SQL injection, XSS, etc.)
-                        CfnWebACL.RuleProperty.builder()
-                                .name("AWSManagedRulesCommonRuleSet")
-                                .priority(3)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
-                                                .name("AWSManagedRulesCommonRuleSet")
-                                                .vendorName("AWS")
-                                                .ruleActionOverrides(
-                                                        List.of()) // Empty override list to prevent conflicts
-                                                .build())
-                                        .build())
-                                .overrideAction(CfnWebACL.OverrideActionProperty.builder()
-                                        .none(Map.of())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("AWSManagedRulesCommonRuleSet")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build()))
+                .rules(loadWafRules())
                 .description(
                         "WAF WebACL for OIDC provider CloudFront distribution - provides rate limiting and protection against common attacks")
                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
@@ -300,11 +244,7 @@ public class EdgeStack extends Stack {
 //                        .build())
             .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                 .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
-                    .contentSecurityPolicy("default-src 'self'; "
-                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com; "
-                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com; "
-                        + "img-src 'self' data:; "
-                        + "style-src 'self' 'unsafe-inline';")
+                    .contentSecurityPolicy(loadContentSecurityPolicy())
                     .override(true)
                     .build())
                 .build())
@@ -430,6 +370,28 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
+    }
+
+    private List<CfnWebACL.RuleProperty> loadWafRules() {
+        try {
+            Path wafJsonPath = Path.of("infra/policies/waf.json");
+            String json = Files.readString(wafJsonPath, StandardCharsets.UTF_8);
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(json, new TypeReference<List<CfnWebACL.RuleProperty>>() {});
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load WAF rules from infra/policies/waf.json: " + e.getMessage(), e);
+        }
+    }
+
+    private String loadContentSecurityPolicy() {
+        try {
+            Path cspPath = Path.of("infra/policies/csp.txt");
+            String csp = Files.readString(cspPath, StandardCharsets.UTF_8);
+            // Normalize whitespace: collapse runs into single spaces, trim edges
+            return csp.replaceAll("\\s+", " ").trim();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load CSP from infra/policies/csp.txt: " + e.getMessage(), e);
+        }
     }
 
     public BehaviorOptions createBehaviorOptionsForApiGateway(
