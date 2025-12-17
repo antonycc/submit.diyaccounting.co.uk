@@ -2298,7 +2298,7 @@ JavaScript errors, and HTTP request timings from your browser to our API.</p>
        │       └─> maybeInitRum()
        └─> If has consent: maybeInitRum()
    └─> maybeInitRum() executes:
-       ├─> Load https://client.rum.eu-west-2.amazonaws.com/1.16.0/cwr.js
+       ├─> Load https://client.rum.us-east-1.amazonaws.com/1.16.0/cwr.js
        ├─> window.cwr('config', { appMonitorId, region, identityPoolId, guestRoleArn, ... })
        ├─> RUM client requests temporary credentials from Cognito Identity Pool
        │   └─> Assumes RumGuestRole
@@ -2704,7 +2704,7 @@ typeof window.cwr
 2. Filter: `rum.amazonaws.com`
 
 **Expected** (if working):
-- Request to `https://client.rum.eu-west-2.amazonaws.com/1.16.0/cwr.js`
+- Request to `https://client.rum.us-east-1.amazonaws.com/1.16.0/cwr.js`
 - Requests to `https://dataplane.rum.eu-west-2.amazonaws.com` (telemetry data)
 
 **Actual** (current): No requests (RUM client never loaded)

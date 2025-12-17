@@ -1125,9 +1125,7 @@ async function maybeInitRum() {
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
-  // Determine client version from meta tag, default to 'latest' to avoid pinning to retired versions
-  const version = readMeta("rum:clientVersion") || "latest";
-  const clientUrl = `https://client.rum.${c.region}.amazonaws.com/${version}/cwr.js`;
+  const clientUrl = `https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js`;
   try {
     await loadScript(clientUrl);
     if (typeof window.cwr === "function") {

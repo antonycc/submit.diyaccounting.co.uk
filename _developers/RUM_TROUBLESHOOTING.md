@@ -1,6 +1,6 @@
 # Amazon CloudWatch RUM Troubleshooting Guide
 
-**Created**: 2024-12-13  
+**Created**: 2024-12-13
 **Purpose**: Help developers and operators diagnose and resolve RUM implementation issues
 
 ---
@@ -131,7 +131,7 @@ document.getElementById('consent-banner')
 
 // Check if consent check is working
 function hasConsent() {
-  return localStorage.getItem('consent.rum') === 'granted' || 
+  return localStorage.getItem('consent.rum') === 'granted' ||
          localStorage.getItem('consent.analytics') === 'granted';
 }
 hasConsent()
@@ -393,7 +393,7 @@ Environment: ci (https://ci.submit.diyaccounting.co.uk)
 Browser: Chrome 120 on macOS 14
 Symptom: RUM client not loading, window.cwr undefined
 Console Error: None
-Network: No requests to client.rum.eu-west-2.amazonaws.com
+Network: No requests to client.rum.us-east-1.amazonaws.com
 window.__RUM_CONFIG__: {"appMonitorId":"","region":"eu-west-2",...}
 Diagnosis: appMonitorId is empty string - placeholder not replaced
 ```
