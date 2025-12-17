@@ -273,6 +273,13 @@ jobs:
             
             echo "Checking age of deployment: $deployment_name" >&2
             
+            # Validate deployment name format to prevent injection
+            if ! [[ "$deployment_name" =~ ^(ci|prod)-[a-zA-Z0-9-]+$ ]]; then
+              echo "Invalid deployment name format: $deployment_name" >&2
+              echo "-1"
+              return
+            fi
+            
             # Find all stacks for this deployment in both regions
             for REGION in eu-west-2 us-east-1; do
               local stack_info=$(aws cloudformation describe-stacks \
@@ -288,7 +295,13 @@ jobs:
                   [ -z "$creation_time" ] && continue
                   
                   # Convert creation time to epoch seconds
-                  local epoch=$(date -d "$creation_time" +%s 2>/dev/null || echo "0")
+                  local epoch=$(date -d "$creation_time" +%s 2>/dev/null)
+                  
+                  # Skip if date parsing failed
+                  if [ -z "$epoch" ] || [ "$epoch" -le 0 ]; then
+                    echo "Failed to parse creation time: $creation_time" >&2
+                    continue
+                  fi
                   
                   if [ "$epoch" -gt "$most_recent_timestamp" ]; then
                     most_recent_timestamp="$epoch"
@@ -298,7 +311,7 @@ jobs:
             done
             
             if [ "$most_recent_timestamp" -eq 0 ]; then
-              echo "No stacks found for deployment $deployment_name" >&2
+              echo "No valid stacks found for deployment $deployment_name" >&2
               echo "-1"
               return
             fi
