@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -56,6 +57,7 @@ public class SubmitSharedNames {
 
     public final List<PublishedLambda> publishedApiLambdas = new ArrayList<>();
 
+    public String hostedZoneName;
     public String deploymentDomainName;
     public String envDomainName;
     public String cognitoDomainName;
@@ -264,6 +266,7 @@ public class SubmitSharedNames {
 
     public SubmitSharedNames(SubmitSharedNamesProps props) {
         this();
+        this.hostedZoneName = props.hostedZoneName;
         this.envDomainName = props.envName.equals("prod")
                 ? "%s.%s".formatted(props.subDomainName, props.hostedZoneName)
                 : "%s.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);

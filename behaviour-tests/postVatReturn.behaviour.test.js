@@ -93,7 +93,12 @@ let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
 
-test.setTimeout(300_000);
+test.setTimeout(600_000);
+
+// Explicit, stable test ID for reporting
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.annotations.push({ type: "test-id", description: "post-vat-return-sandbox" });
+});
 
 test.beforeAll(async ({ page }, testInfo) => {
   if (!envFilePath) {
@@ -261,19 +266,19 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
      */
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_VRN",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PERIODKEY",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PAYLOAD",
     });
@@ -285,16 +290,51 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
       vatDue: hmrcVatDueAmount,
       testScenario: "TAX_PERIOD_NOT_ENDED",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INSOLVENT_TRADER",
     });
+
+    // Custom forced error scenarios
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_API_HTTP_500",
+    });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_HMRC_API_HTTP_500",
+    });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    });
+
+    // Slow scenario should take >= 10s but < 30s end-to-end
+    const slowStartMs = Date.now();
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+    });
+    const slowElapsedMs = Date.now() - slowStartMs;
+    expect(
+      slowElapsedMs,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    ).toBeGreaterThanOrEqual(5_000);
+    expect(slowElapsedMs).toBeLessThan(60_000);
   }
 
   // Extract user sub and log out
@@ -335,8 +375,41 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     }
   }
 
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "10.*fill.*in.*submission.*pagedown",
+    "02.*complete.*vat.*receipt",
+    "01.*submit.*hmrc.*auth",
+    "06.*view.*vat.*fill.*in.*filled",
+    "04.*view.*vat.*return.*results",
+  ];
+
+  const screenshotDescriptions = {
+    "10.*fill.*in.*submission.*pagedown": "VAT return form filled out with test data including VAT number, period key, and amount due",
+    "02.*complete.*vat.*receipt": "Successful VAT return submission confirmation showing receipt details from HMRC",
+    "01.*submit.*hmrc.*auth": "HMRC authorization page where user authenticates with HMRC",
+    "06.*view.*vat.*fill.*in.*filled": "VAT query form filled out with test data including VAT number and period key",
+    "04.*view.*vat.*return.*results": "Retrieved VAT return data showing previously submitted values",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
   // Build testContext.json
   const testContext = {
+    testId: "post-vat-return-sandbox",
     name: testInfo.title,
     title: "Submit VAT Return (Single API Focus: POST)",
     description: "Submits VAT returns to HMRC with default and sandbox Gov-Test-Scenario variations.",

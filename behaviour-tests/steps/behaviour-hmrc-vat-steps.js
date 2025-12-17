@@ -82,7 +82,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
 }
 
 export async function completeVat(page, baseUrl, testScenario = null, screenshotPath = defaultScreenshotPath) {
-  if (testScenario) {
+  if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a submission error message for sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       await page.waitForLoadState("networkidle");
@@ -189,7 +189,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
 }
 
 export async function verifyVatSubmission(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
-  if (testScenario) {
+  if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a submission error message for sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       await page.waitForLoadState("networkidle");
@@ -608,7 +608,7 @@ export async function submitViewVatReturnForm(page, screenshotPath = defaultScre
 }
 
 export async function verifyViewVatReturnResults(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
-  if (testScenario) {
+  if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a retrieval error message for sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
       await page.waitForLoadState("networkidle");
@@ -622,19 +622,19 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
     });
   } else {
     await test.step("The user sees VAT return details displayed", async () => {
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-return-results-waiting.png` });
       await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png` });
       const resultsContainer = page.locator("#returnResults");
       await expect(resultsContainer).toBeVisible();
 
       // Verify the details are displayed
       const returnDetails = page.locator("#returnDetails");
       await expect(returnDetails).toBeVisible();
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-return-results.png` });
       await page.keyboard.press("PageDown");
       await page.waitForTimeout(200);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-results.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-view-vat-return-results.png` });
 
       console.log("View VAT return completed successfully");
     });

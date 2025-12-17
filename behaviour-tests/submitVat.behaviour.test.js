@@ -498,21 +498,20 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   // Select and copy key screenshots, then generate figures.json
   const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
 
-  // TODO: Pick examples with all then HMRC API form submissions and response data
   const keyScreenshotPatterns = [
-    "submit.*vat.*form", // VAT form submission
-    "complete.*vat", // VAT submission completion
-    "hmrc.*auth", // HMRC authorization screen
-    "receipt", // Receipt display
-    "view.*vat.*return.*result", // VAT return results
+    "10.*fill.*in.*submission.*pagedown",
+    "02.*complete.*vat.*receipt",
+    "01.*submit.*hmrc.*auth",
+    "06.*view.*vat.*fill.*in.*filled",
+    "04.*view.*vat.*return.*results",
   ];
 
   const screenshotDescriptions = {
-    "submit.*vat.*form": "VAT return form filled out with test data including VAT number, period key, and amount due",
-    "complete.*vat": "Successful VAT return submission confirmation showing receipt details from HMRC",
-    "hmrc.*auth": "HMRC authorization page where user grants permission to access VAT data",
-    "receipt": "Receipt page displaying submitted VAT returns and their confirmation details",
-    "view.*vat.*return.*result": "Retrieved VAT return data showing previously submitted values",
+    "10.*fill.*in.*submission.*pagedown": "VAT return form filled out with test data including VAT number, period key, and amount due",
+    "02.*complete.*vat.*receipt": "Successful VAT return submission confirmation showing receipt details from HMRC",
+    "01.*submit.*hmrc.*auth": "HMRC authorization page where user authenticates with HMRC",
+    "06.*view.*vat.*fill.*in.*filled": "VAT query form filled out with test data including VAT number and period key",
+    "04.*view.*vat.*return.*results": "Retrieved VAT return data showing previously submitted values",
   };
 
   const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);

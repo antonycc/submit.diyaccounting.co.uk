@@ -47,6 +47,14 @@ on:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '8'
+      generateTestScenarios:
+        description: 'Generate test scenarios for behaviour tests'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'true'
       convertTestVideo:
         description: 'Convert test video to mp4 format'
         type: choice
@@ -331,6 +339,7 @@ jobs:
 
   behaviour-test-obligation:
     name: 'behaviour test - obligation (proxy)'
+    if: ${{ inputs.generateTestScenarios == 'true' }}
     needs:
       - names
       - behaviour-test-submit-vat
@@ -394,6 +403,7 @@ jobs:
 
   behaviour-test-post-vat-return:
     name: 'behaviour test - post vat return (proxy)'
+    if: ${{ inputs.generateTestScenarios == 'true' }}
     needs:
       - names
       - behaviour-test-obligation
@@ -457,6 +467,7 @@ jobs:
 
   behaviour-test-get-vat-return:
     name: 'behaviour test - get vat return (proxy)'
+    if: ${{ inputs.generateTestScenarios == 'true' }}
     needs:
       - names
       - behaviour-test-post-vat-return
@@ -2205,7 +2216,7 @@ jobs:
             target/test-reports/
 
   web-test-post-vat-return-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.generateTestScenarios == 'true' }}
     name: 'web test post vat return sandbox'
     needs:
       - names
@@ -2320,7 +2331,7 @@ jobs:
             target/test-reports/
 
   web-test-get-vat-return-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.generateTestScenarios == 'true' }}
     name: 'web test get vat return sandbox'
     needs:
       - names
@@ -2435,7 +2446,7 @@ jobs:
             target/test-reports/
 
   web-test-obligation-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.generateTestScenarios == 'true' }}
     name: 'web test obligation sandbox'
     needs:
       - names
@@ -2585,7 +2596,7 @@ jobs:
             target/behaviour-test-results/bundle/
 
       - name: Download artifacts - postVatReturn sandbox
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-post-vat-return-sandbox
@@ -2593,7 +2604,7 @@ jobs:
             target/behaviour-test-results/post-vat-return-sandbox/
 
       - name: Download artifacts - getVatReturn sandbox
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-get-vat-return-sandbox
@@ -2640,7 +2651,7 @@ jobs:
             target/test-reports/bundle/
 
       - name: Download reports - postVatReturn sandbox
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-post-vat-return-sandbox
@@ -2648,7 +2659,7 @@ jobs:
             target/test-reports/post-vat-return-sandbox/
 
       - name: Download reports - getVatReturn sandbox
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-get-vat-return-sandbox
