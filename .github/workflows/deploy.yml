@@ -48,7 +48,7 @@ on:
         required: false
         default: '8'
       skipTestScenarios:
-        description: 'Generate test scenarios for behaviour tests'
+        description: 'Skip test scenarios for behaviour tests'
         type: choice
         options:
           - 'true'
