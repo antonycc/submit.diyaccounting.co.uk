@@ -26,6 +26,11 @@ import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersCorsBehavior;
+import software.amazon.awscdk.services.cloudfront.ResponseCustomHeader;
+import software.amazon.awscdk.services.cloudfront.ResponseCustomHeadersBehavior;
+import software.amazon.awscdk.services.cloudfront.ResponseSecurityHeadersBehavior;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentSecurityPolicy;
 import software.amazon.awscdk.services.cloudfront.S3OriginAccessControl;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
 import software.amazon.awscdk.services.cloudfront.Signing;
@@ -278,18 +283,52 @@ public class EdgeStack extends Stack {
                 S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
         // infof("Created BucketOrigin with bucket: %s", this.originBucket.getBucketName());
 
+        // Define a custom Response Headers Policy with CSP that allows AWS RUM client + dataplane
+        ResponseHeadersPolicy webResponseHeadersPolicy = ResponseHeadersPolicy.Builder
+                .create(this, props.resourceNamePrefix() + "-WebHeadersPolicy")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-web-headers-policy")
+                .comment("CORS + security headers with CSP allowing CloudWatch RUM client & dataplane")
+                .corsBehavior(ResponseHeadersCorsBehavior.builder()
+                        .accessControlAllowCredentials(false)
+                        .accessControlAllowHeaders(List.of("*"))
+                        .accessControlAllowMethods(List.of("GET", "HEAD", "OPTIONS"))
+                        .accessControlAllowOrigins(List.of("*"))
+                        .accessControlExposeHeaders(List.of())
+                        .accessControlMaxAge(software.amazon.awscdk.Duration.seconds(600))
+                        .originOverride(true)
+                        .build())
+                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                                .contentSecurityPolicy(
+                                        "default-src 'self'; "
+                                                + "script-src 'self' https://client.rum.eu-west-2.amazonaws.com https://unpkg.com; "
+                                                + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://api.ipify.org https://ipapi.co https://httpbin.org; "
+                                                + "img-src 'self' data: https://avatars.githubusercontent.com https://github.com; "
+                                                + "style-src 'self' 'unsafe-inline' https://unpkg.com;")
+                                .override(true)
+                                .build())
+                        .build())
+                // keep space for future custom headers if needed
+                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
+                        .customHeaders(List.of(
+                                // No custom headers at present
+                                new ResponseCustomHeader[] {}))
+                        .build())
+                .build();
+
         BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
                 .origin(localOrigin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+                .responseHeadersPolicy(webResponseHeadersPolicy)
                 .compress(true)
                 .build();
 
         // Create additional behaviours for the API Gateway Lambda origins
         HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
-        BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(props.apiGatewayUrl());
+        BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(
+                props.apiGatewayUrl(), webResponseHeadersPolicy);
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
 
@@ -398,7 +437,8 @@ public class EdgeStack extends Stack {
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }
 
-    public BehaviorOptions createBehaviorOptionsForApiGateway(String apiGatewayUrl) {
+    public BehaviorOptions createBehaviorOptionsForApiGateway(String apiGatewayUrl,
+            ResponseHeadersPolicy responseHeadersPolicy) {
         // Extract the host from the API Gateway URL (e.g., "https://abc123.execute-api.us-east-1.amazonaws.com/" ->
         // "abc123.execute-api.us-east-1.amazonaws.com")
         var apiGatewayHost = getHostFromUrl(apiGatewayUrl);
@@ -411,7 +451,7 @@ public class EdgeStack extends Stack {
                 .cachePolicy(CachePolicy.CACHING_DISABLED)
                 .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT_AND_SECURITY_HEADERS)
+                .responseHeadersPolicy(responseHeadersPolicy)
                 .build();
     }
 
