@@ -198,7 +198,7 @@ describe("RUM Consent", () => {
           
           return consentValue === "granted" || localStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
-          return true; // Graceful degradation
+          return false; // Respect privacy when localStorage is disabled
         }
       };
 
