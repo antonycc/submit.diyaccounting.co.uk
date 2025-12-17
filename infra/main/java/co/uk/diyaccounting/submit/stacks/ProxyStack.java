@@ -1,11 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
-import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import org.immutables.value.Value;
-import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
@@ -30,6 +26,8 @@ import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class ProxyStack extends Stack {
 
@@ -92,10 +90,6 @@ public class ProxyStack extends Stack {
 
     public ProxyStack(Construct scope, String id, StackProps stackProps, ProxyStackProps props) {
         super(scope, id, stackProps);
-
-        // Apply auto-delete aspect for log retention
-        Aspects.of(this)
-                .add(new SetAutoDeleteJobLogRetentionAspect(props.deploymentName(), RetentionDays.THREE_MONTHS));
 
         // Create DynamoDB table for proxy state (rate limiting and circuit breaker)
         this.proxyStateTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ProxyStateTable")

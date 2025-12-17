@@ -270,9 +270,9 @@ jobs:
           get_deployment_age_hours() {
             local deployment_name="$1"
             local most_recent_timestamp=0
-            
+
             echo "Checking age of deployment: $deployment_name" >&2
-            
+
             # Validate deployment name format to prevent injection
             # Only alphanumeric, hyphens allowed - safe for JMESPath query
             if ! [[ "$deployment_name" =~ ^(ci|prod)-[a-zA-Z0-9-]+$ ]]; then
@@ -280,7 +280,7 @@ jobs:
               echo "-1"
               return
             fi
-            
+
             # Find all stacks for this deployment in both regions
             # The deployment_name is safe to interpolate after validation above
             for REGION in eu-west-2 us-east-1; do
@@ -288,46 +288,46 @@ jobs:
                 --region "$REGION" \
                 --query "Stacks[?starts_with(StackName, '${deployment_name}-')].CreationTime" \
                 --output text 2>/dev/null | tr '\t' '\n' || echo "")
-              
+
               if [ -n "$stack_info" ]; then
                 echo "Found stacks in $REGION for $deployment_name" >&2
-                
+
                 # Process each creation time
                 while IFS= read -r creation_time; do
                   [ -z "$creation_time" ] && continue
-                  
+
                   # Convert creation time to epoch seconds
                   local epoch=$(date -d "$creation_time" +%s 2>/dev/null)
-                  
+
                   # Skip if date parsing failed or returned invalid value
                   if [ -z "$epoch" ]; then
                     echo "Failed to parse creation time: $creation_time" >&2
                     continue
                   fi
-                  
+
                   if ! [[ "$epoch" =~ ^[0-9]+$ ]] || [ "$epoch" -le 0 ]; then
                     echo "Invalid epoch value: $epoch for creation time: $creation_time" >&2
                     continue
                   fi
-                  
+
                   if [ "$epoch" -gt "$most_recent_timestamp" ]; then
                     most_recent_timestamp="$epoch"
                   fi
                 done <<< "$stack_info"
               fi
             done
-            
+
             if [ "$most_recent_timestamp" -eq 0 ]; then
               echo "No valid stacks found for deployment $deployment_name" >&2
               echo "-1"
               return
             fi
-            
+
             # Calculate age in hours
             local current_timestamp=$(date +%s)
             local age_seconds=$((current_timestamp - most_recent_timestamp))
             local age_hours=$((age_seconds / 3600))
-            
+
             echo "Deployment $deployment_name age: $age_hours hours (most recent stack created at $(date -d "@$most_recent_timestamp" -Iseconds))" >&2
             echo "$age_hours"
           }
@@ -382,17 +382,17 @@ jobs:
 
             # Check if deployment is old enough to be destroyed
             DEPLOYMENT_AGE_HOURS=$(get_deployment_age_hours "$DEPLOYMENT_NAME")
-            
+
             if [ "$DEPLOYMENT_AGE_HOURS" -eq -1 ]; then
               echo "Could not determine age for $DEPLOYMENT_NAME, skipping"
               continue
             fi
-            
+
             if [ "$DEPLOYMENT_AGE_HOURS" -lt "$SELF_DESTRUCT_DELAY_HOURS" ]; then
               echo "Skipping $DEPLOYMENT_NAME as it is only $DEPLOYMENT_AGE_HOURS hours old (minimum age: $SELF_DESTRUCT_DELAY_HOURS hours)"
               continue
             fi
-            
+
             echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_DELAY_HOURS hours), eligible for destruction"
 
             SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME"
@@ -525,6 +525,12 @@ jobs:
 
       - name: Build CDK
         run: ./mvnw --errors clean verify -DskipTests
+
+      - name: Empty origin bucket
+        shell: bash
+        run: |
+          aws s3 rm s3://${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1 --recursive \
+            || echo "Origin bucket already empty or does not exist"
 
       - name: Destroy Submit Application
         run: |

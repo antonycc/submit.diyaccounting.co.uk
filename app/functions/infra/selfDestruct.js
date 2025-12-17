@@ -2,6 +2,9 @@
 
 import { CloudFormationClient, DeleteStackCommand, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
+import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+
+const s3 = new S3Client({ region: process.env.AWS_REGION || "eu-west-2" });
 
 export async function handler(event, context) {
   const client = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });
@@ -17,6 +20,10 @@ export async function handler(event, context) {
   let request = "Not created";
   try {
     request = extractRequest(event);
+
+    if (process.env.EDGE_ORIGIN_BUCKET) {
+      await emptyBucket(process.env.EDGE_ORIGIN_BUCKET);
+    }
 
     // Stack deletion order (reverse of creation dependency order)
     const stacksToDelete = [];
@@ -159,4 +166,34 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
 
   console.log(`Timeout waiting for stack ${stackName} deletion.`);
   return false;
+}
+
+async function emptyBucket(bucketName) {
+  console.log(`Emptying bucket: ${bucketName}`);
+
+  let continuationToken;
+  do {
+    const list = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: bucketName,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    if (list.Contents && list.Contents.length > 0) {
+      await s3.send(
+        new DeleteObjectsCommand({
+          Bucket: bucketName,
+          Delete: {
+            Objects: list.Contents.map((o) => ({ Key: o.Key })),
+            Quiet: true,
+          },
+        }),
+      );
+    }
+
+    continuationToken = list.IsTruncated ? list.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  console.log(`Bucket ${bucketName} emptied`);
 }
