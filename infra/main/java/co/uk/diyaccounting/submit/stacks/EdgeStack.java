@@ -71,6 +71,9 @@ public class EdgeStack extends Stack {
     public final String aliasRecordDomainName;
     public final String aliasRecordV6DomainName;
 
+    private static final String CF_LOGS_SOURCE_NAME = "cf-src";
+    private static final String CF_LOGS_DEST_NAME = "cf-dest";
+
     @Value.Immutable
     public interface EdgeStackProps extends StackProps, SubmitStackProps {
 
@@ -371,8 +374,7 @@ public class EdgeStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-CfLogsDest",
                 CfnDeliveryDestinationProps.builder()
-                        // Name is arbitrary; keep it stable but does not need to be the log group name
-                        .name(props.sharedNames().distributionAccessLogDeliveryOriginDestinationName)
+                        .name(CF_LOGS_DEST_NAME)
                         .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
                         .outputFormat("json") // or "w3c"/"parquet" if you prefer
                         .build());
@@ -382,8 +384,7 @@ public class EdgeStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-CfLogsSource",
                 CfnDeliverySourceProps.builder()
-                        .name(props.sharedNames()
-                                .distributionAccessLogDeliveryOriginSourceName) // <-- use the shared variable
+                        .name(CF_LOGS_SOURCE_NAME)
                         .logType("ACCESS_LOGS") // required for CloudFront
                         .resourceArn(distributionArn) // ARN of the distribution
                         .build());
@@ -393,8 +394,7 @@ public class EdgeStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-CfLogsOrigDel",
                 CfnDeliveryProps.builder()
-                        // *** IMPORTANT: must exactly match the Name above ***
-                        .deliverySourceName(props.sharedNames().distributionAccessLogDeliveryOriginSourceName)
+                        .deliverySourceName(CF_LOGS_SOURCE_NAME)
                         .deliveryDestinationArn(cfLogsDestination.getAttrArn())
                         // optional: customise fields and delimiter
                         // .fieldDelimiter("\t")
@@ -415,7 +415,7 @@ public class EdgeStack extends Stack {
 
         // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront (replaces deprecated deleteExisting)
         co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
-                this, props.resourceNamePrefix() + "-AliasRecord", zone, recordName, this.distribution.getDomainName());
+            this, "AliasRecord", zone, recordName, this.distribution.getDomainName());
         // Capture the FQDN for outputs
         this.aliasRecordDomainName = (recordName == null || recordName.isBlank())
                 ? zone.getZoneName()
