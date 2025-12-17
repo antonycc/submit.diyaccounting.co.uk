@@ -1,8 +1,13 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.aspects.SetAutoDeleteJobLogRetentionAspect;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Aspects;
 import software.amazon.awscdk.Duration;
@@ -27,12 +32,6 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.rum.CfnAppMonitor;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ObservabilityStack extends Stack {
 
@@ -197,11 +196,9 @@ public class ObservabilityStack extends Stack {
         CfnAppMonitor rumMonitor = CfnAppMonitor.Builder.create(this, props.resourceNamePrefix() + "-RumAppMonitor")
                 .name(rumAppName)
                 .domainList(List.of(
-                    props.sharedNames().deploymentDomainName,
-                    props.sharedNames().envDomainName,
-                    props.sharedNames().hostedZoneName
-                    )
-                )
+                        props.sharedNames().deploymentDomainName,
+                        props.sharedNames().envDomainName,
+                        props.sharedNames().hostedZoneName))
                 .appMonitorConfiguration(CfnAppMonitor.AppMonitorConfigurationProperty.builder()
                         .sessionSampleRate(1.0)
                         .allowCookies(true)
