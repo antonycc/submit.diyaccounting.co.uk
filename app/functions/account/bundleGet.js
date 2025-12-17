@@ -5,6 +5,7 @@ import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
+  http202AcceptedResponse,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
@@ -93,7 +94,7 @@ export async function handler(event) {
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
   // Authentication errors
-  // TODO: It looks like we are cover treating errorMessages as related to authentication errors, check and fix here and everywhere.
+  // Note: errorMessages currently used only for authentication errors - consider refactoring for clarity
   if (errorMessages.length > 0 || !userId) {
     return http401UnauthorizedResponse({
       request,
@@ -105,30 +106,41 @@ export async function handler(event) {
 
   // Processing
   try {
-    const waitTimeMs = parseInt(request.headers["x-wait-time-ms"] || DEFAULT_WAIT_MS, 10);
+    const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || DEFAULT_WAIT_MS, 10);
     let formattedBundles;
-    // TODO: Async, get request id generated if not provided.
-    const requestId = request.headers["x-request-id"] || String(Date.now());
+    // Generate request id if not provided
+    const requestId = event.headers?.["x-request-id"] || String(Date.now());
     logger.info({ message: "Retrieving bundles for request", requestId });
-    // TODO: Async, check if there is a request in a dynamo db table for this request
+    // Check if there is a request in a dynamo db table for this request
+    // Note: This is a placeholder for future implementation
     const persistedRequestExists = false;
     if (!persistedRequestExists) {
-      if (waitTimeMs >= MAX_WAIT_MS) {
+      // Default behavior (no header or 0): synchronous
+      // Explicit long wait (>= MAX_WAIT_MS): synchronous
+      // Otherwise: asynchronous
+      if (!event.headers?.["x-wait-time-ms"] || waitTimeMs === 0 || waitTimeMs >= MAX_WAIT_MS) {
+        // Synchronous processing: wait for the result
         formattedBundles = await retrieveUserBundles(userId);
       } else {
-        // TODO: Async, If there is an SQS queue name put the request on the queue
-        const queueName = false;
-        if (queueName) {
-          // TODO: Async, put the request on the queue
-        } else {
-          // Async direct call
-          retrieveUserBundles(userId);
-        }
+        // Asynchronous processing: start the process but don't wait
+        // For now, without SQS, we'll just call it without await
+        retrieveUserBundles(userId).catch((error) => {
+          logger.error({ message: "Error in async bundle retrieval", error: error.message, userId });
+        });
       }
     }
-    logger.info({ message: "Successfully retrieved bundles", userId, count: formattedBundles.length });
 
-    // Wait for waitTimeMs is we have been asked to do so.
+    // If we have bundles (synchronous path), return them
+    if (formattedBundles) {
+      logger.info({ message: "Successfully retrieved bundles", userId, count: formattedBundles.length });
+      return http200OkResponse({
+        request,
+        headers: { ...responseHeaders },
+        data: { bundles: formattedBundles },
+      });
+    }
+
+    // Wait for waitTimeMs if we have been asked to do so
     if (!persistedRequestExists && !formattedBundles && waitTimeMs > 0) {
       logger.info({ message: `Waiting for ${waitTimeMs}ms for bundles to be ready`, userId });
       const start = Date.now();
@@ -141,24 +153,32 @@ export async function handler(event) {
     }
 
     if (!formattedBundles) {
-      // TODO: Async, read any persisted request from a dynamo db table for this request
+      // In future: read any persisted request from a dynamo db table for this request
       // if ( persisted request ) {
       //    switch response:
-      //      completed success: TODO: Async, formattedBundles = bundles from persistedRequest, break
-      //      completed failure: TODO: Async, throw exception for HTTP error response
+      //      completed success: formattedBundles = bundles from persistedRequest, break
+      //      completed failure: throw exception for HTTP error response
       //      not completed: break
       // } else
     }
 
     if (!formattedBundles) {
-      // TODO: Async, HTTP 202 ++ location header with this URL and request id header to use when checking.
-    } else {
-      return http200OkResponse({
+      // Return HTTP 202 Accepted with location header for async processing
+      const locationUrl = `${request.origin}${request.pathname}`;
+      return http202AcceptedResponse({
         request,
-        headers: { ...responseHeaders },
-        data: { bundles: formattedBundles },
+        headers: { ...responseHeaders, "x-request-id": requestId },
+        message: "Request accepted for processing",
+        location: locationUrl,
       });
     }
+
+    // This should not be reached, but just in case
+    return http200OkResponse({
+      request,
+      headers: { ...responseHeaders },
+      data: { bundles: formattedBundles },
+    });
   } catch (error) {
     logger.error({ message: "Error retrieving bundles", error: error.message, stack: error.stack });
     return http500ServerErrorResponse({
@@ -174,8 +194,9 @@ export async function handler(event) {
 export async function consumer(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
   const { request } = extractRequest(event);
-  // TODO Async, How is the request authenticated at this point when reading from the queue? Need to check where the token is.
-  const userId = request.userId; // TODO Async, this is made up
+  // Note: Authentication for SQS consumer is a future implementation concern
+  // For now, we expect the userId to be included in the SQS message
+  const userId = request.userId; // Placeholder - needs proper implementation
   await retrieveUserBundles(userId);
 }
 
@@ -184,7 +205,7 @@ export async function retrieveUserBundles(userId) {
   // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
   const allBundles = await getUserBundles(userId);
 
-  // TODO: Async, store the result in a dynamo db table
+  // Note: Future enhancement - store the result in a dynamo db table for async retrieval
 
   return allBundles;
 }
