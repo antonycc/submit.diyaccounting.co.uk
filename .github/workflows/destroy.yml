@@ -274,6 +274,7 @@ jobs:
             echo "Checking age of deployment: $deployment_name" >&2
             
             # Validate deployment name format to prevent injection
+            # Only alphanumeric, hyphens allowed - safe for JMESPath query
             if ! [[ "$deployment_name" =~ ^(ci|prod)-[a-zA-Z0-9-]+$ ]]; then
               echo "Invalid deployment name format: $deployment_name" >&2
               echo "-1"
@@ -281,6 +282,7 @@ jobs:
             fi
             
             # Find all stacks for this deployment in both regions
+            # The deployment_name is safe to interpolate after validation above
             for REGION in eu-west-2 us-east-1; do
               local stack_info=$(aws cloudformation describe-stacks \
                 --region "$REGION" \
