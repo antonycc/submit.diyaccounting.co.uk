@@ -1,0 +1,50 @@
+[
+  {
+    "name": "RateLimitRule",
+    "priority": 1,
+    "action": { "block": {} },
+    "statement": {
+      "rateBasedStatement": {
+        "limit": 2000,
+        "aggregateKeyType": "IP"
+      }
+    },
+    "visibilityConfig": {
+      "cloudWatchMetricsEnabled": true,
+      "metricName": "RateLimitRule",
+      "sampledRequestsEnabled": true
+    }
+  },
+  {
+    "name": "AWSManagedRulesKnownBadInputsRuleSet",
+    "priority": 2,
+    "overrideAction": { "none": {} },
+    "statement": {
+      "managedRuleGroupStatement": {
+        "vendorName": "AWS",
+        "name": "AWSManagedRulesKnownBadInputsRuleSet"
+      }
+    },
+    "visibilityConfig": {
+      "cloudWatchMetricsEnabled": true,
+      "metricName": "AWSManagedRulesKnownBadInputsRuleSet",
+      "sampledRequestsEnabled": true
+    }
+  },
+  {
+    "name": "AWSManagedRulesCommonRuleSet",
+    "priority": 3,
+    "overrideAction": { "none": {} },
+    "statement": {
+      "managedRuleGroupStatement": {
+        "vendorName": "AWS",
+        "name": "AWSManagedRulesCommonRuleSet"
+      }
+    },
+    "visibilityConfig": {
+      "cloudWatchMetricsEnabled": true,
+      "metricName": "AWSManagedRulesCommonRuleSet",
+      "sampledRequestsEnabled": true
+    }
+  }
+]
