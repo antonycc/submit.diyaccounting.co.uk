@@ -301,16 +301,26 @@ public class EdgeStack extends Stack {
                         .accessControlMaxAge(software.amazon.awscdk.Duration.seconds(600))
                         .originOverride(true)
                         .build())
-                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
-                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
-                                .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://unpkg.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://api.ipify.org https://ipapi.co https://httpbin.org; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://github.com; "
-                                        + "style-src 'self' 'unsafe-inline' https://unpkg.com;")
-                                .override(true)
-                                .build())
-                        .build())
+//                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+//                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+//                                .contentSecurityPolicy("default-src 'self'; "
+//                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://unpkg.com; "
+//                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://api.ipify.org https://ipapi.co https://httpbin.org; "
+//                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://github.com; "
+//                                        + "style-src 'self' 'unsafe-inline' https://unpkg.com;")
+//                                .override(true)
+//                                .build())
+//                        .build())
+            .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                    .contentSecurityPolicy("default-src 'self'; "
+                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com; "
+                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com; "
+                        + "img-src 'self' data:; "
+                        + "style-src 'self' 'unsafe-inline';")
+                    .override(true)
+                    .build())
+                .build())
                 // keep space for future custom headers if needed
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
                         .customHeaders(List.of(
