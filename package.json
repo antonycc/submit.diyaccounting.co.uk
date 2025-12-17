@@ -43,14 +43,12 @@
     "test:behaviour": "playwright test --project=behaviour-tests",
     "test:behaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:behaviour",
     "test:behaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npx dotenv -e .env.proxy -- npm run test:behaviour",
-
     "test:bundleBehaviour": "playwright test --project=bundle-behaviour-tests",
     "test:bundleBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:bundleBehaviour",
     "test:bundleBehaviour-proxy-record": "TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:bundleBehaviour",
     "test:bundleBehaviour-proxy-mock": "TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:bundleBehaviour",
     "test:bundleBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:bundleBehaviour",
     "test:bundleBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:bundleBehaviour",
-
     "test:submitVatBehaviour": "playwright test --project=submit-vat-behaviour-tests",
     "test:submitVatBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:submitVatBehaviour",
     "test:submitVatBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:submitVatBehaviour-proxy ; npm run test-report -- --testName obligation --testFile ./behaviour-tests/submitVat.behaviour.test.js --envFile .env.proxy",
@@ -58,28 +56,24 @@
     "test:submitVatBehaviour-proxyRunning": "npx dotenv -e .env.proxyRunning -- npm run test:submitVatBehaviour",
     "test:submitVatBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:submitVatBehaviour",
     "test:submitVatBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:submitVatBehaviour",
-
     "test:obligationBehaviour": "playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:obligationBehaviour",
     "test:obligationBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:obligationBehaviour-proxy ; npm run test-report -- --testName obligation --testFile behaviour-tests/getVatObligations.behaviour.test.js --envFile .env.proxy",
     "test:obligationBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npm run test:obligationBehaviour-proxy",
     "test:obligationBehaviour-ci": "npx dotenv -e .env.ci   -- npm run test:obligationBehaviour",
     "test:obligationBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:obligationBehaviour",
-
     "test:postVatReturnBehaviour": "playwright test --project=post-vat-return-behaviour-tests",
     "test:postVatReturnBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:postVatReturnBehaviour",
     "test:postVatReturnBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:postVatReturnBehaviour-proxy ; npm run test-report -- --testName post-vat-return-sandbox --testFile ./behaviour-tests/postVatReturn.behaviour.test.js --envFile .env.proxy",
     "test:postVatReturnBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npm run test:postVatReturnBehaviour-proxy",
     "test:postVatReturnBehaviour-ci": "npx dotenv -e .env.ci   -- npm run test:postVatReturnBehaviour",
     "test:postVatReturnBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:postVatReturnBehaviour",
-
     "test:getVatReturnBehaviour": "playwright test --project=get-vat-return-behaviour-tests",
     "test:getVatReturnBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:getVatReturnBehaviour",
     "test:getVatReturnBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:getVatReturnBehaviour-proxy ; npm run test-report -- --testName get-vat-return-sandbox --testFile ./behaviour-tests/getVatReturn.behaviour.test.js --envFile .env.proxy",
     "test:getVatReturnBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npm run test:getVatReturnBehaviour-proxy",
     "test:getVatReturnBehaviour-ci": "npx dotenv -e .env.ci   -- npm run test:getVatReturnBehaviour",
     "test:getVatReturnBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:getVatReturnBehaviour",
-
     "test-report": "node scripts/generate-test-reports.js --testName html-report",
     "server": "npx dotenv -e .env.proxy -- node app/bin/server.js",
     "proxy": "npx dotenv -e .env.proxy -- node app/bin/ngrok.js",
@@ -95,6 +89,7 @@
   "license": "GPL-3.0",
   "dependencies": {
     "@aws-sdk/client-cloudformation": "^3.948.0",
+    "@aws-sdk/client-s3": "^3.954.0",
     "@aws-sdk/client-secrets-manager": "^3.950.0",
     "@aws-sdk/util-dynamodb": "^3.948.0",
     "@iarna/toml": "^3.0.0",
