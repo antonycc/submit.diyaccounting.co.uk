@@ -297,9 +297,14 @@ jobs:
                   # Convert creation time to epoch seconds
                   local epoch=$(date -d "$creation_time" +%s 2>/dev/null)
                   
-                  # Skip if date parsing failed
-                  if [ -z "$epoch" ] || [ "$epoch" -le 0 ]; then
+                  # Skip if date parsing failed or returned invalid value
+                  if [ -z "$epoch" ]; then
                     echo "Failed to parse creation time: $creation_time" >&2
+                    continue
+                  fi
+                  
+                  if ! [[ "$epoch" =~ ^[0-9]+$ ]] || [ "$epoch" -le 0 ]; then
+                    echo "Invalid epoch value: $epoch for creation time: $creation_time" >&2
                     continue
                   fi
                   
