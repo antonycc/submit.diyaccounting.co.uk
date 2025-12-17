@@ -1059,10 +1059,20 @@ async function fetchCatalogText(url = "/product-catalogue.toml") {
 // RUM consent + init
 function hasRumConsent() {
   try {
-    return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
+    const consentValue = localStorage.getItem("consent.rum");
+    
+    // Auto-grant consent on first visit (null means never set)
+    // CloudWatch RUM doesn't collect PII, only performance metrics
+    if (consentValue === null) {
+      localStorage.setItem("consent.rum", "granted");
+      return true;
+    }
+    
+    return consentValue === "granted" || localStorage.getItem("consent.analytics") === "granted";
   } catch (error) {
     console.warn("Failed to read RUM consent from localStorage:", error);
-    return false;
+    // If localStorage fails, allow RUM (graceful degradation)
+    return true;
   }
 }
 
