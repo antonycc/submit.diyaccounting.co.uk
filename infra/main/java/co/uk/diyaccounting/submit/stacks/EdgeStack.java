@@ -55,6 +55,9 @@ import software.constructs.Construct;
 
 public class EdgeStack extends Stack {
 
+    private static final String WAF_RULES_PATH = "infra/policies/waf.json";
+    private static final String CSP_POLICY_PATH = "infra/policies/csp.txt";
+
     public Bucket originBucket;
     // public IBucket originAccessLogBucket;
     public final Distribution distribution;
@@ -376,7 +379,7 @@ public class EdgeStack extends Stack {
 
     private List<CfnWebACL.RuleProperty> loadWafRules() {
         try {
-            Path wafJsonPath = Path.of("infra/policies/waf.json");
+            Path wafJsonPath = Path.of(WAF_RULES_PATH);
             String json = Files.readString(wafJsonPath, StandardCharsets.UTF_8);
             ObjectMapper mapper = new ObjectMapper();
             List<Map<String, Object>> rulesData =
@@ -384,7 +387,7 @@ public class EdgeStack extends Stack {
 
             return rulesData.stream().map(this::buildRuleProperty).toList();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load WAF rules from infra/policies/waf.json: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to load WAF rules from " + WAF_RULES_PATH + ": " + e.getMessage(), e);
         }
     }
 
@@ -460,12 +463,12 @@ public class EdgeStack extends Stack {
 
     private String loadContentSecurityPolicy() {
         try {
-            Path cspPath = Path.of("infra/policies/csp.txt");
+            Path cspPath = Path.of(CSP_POLICY_PATH);
             String csp = Files.readString(cspPath, StandardCharsets.UTF_8);
             // Normalize whitespace: collapse runs into single spaces, trim edges
             return csp.replaceAll("\\s+", " ").trim();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load CSP from infra/policies/csp.txt: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to load CSP from " + CSP_POLICY_PATH + ": " + e.getMessage(), e);
         }
     }
 
