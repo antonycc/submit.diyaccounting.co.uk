@@ -47,14 +47,14 @@ on:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
         default: '8'
-      generateTestScenarios:
-        description: 'Generate test scenarios for behaviour tests'
+      skipTestScenarios:
+        description: 'Skip test scenarios for behaviour tests'
         type: choice
         options:
           - 'true'
           - 'false'
         required: false
-        default: 'true'
+        default: 'false'
       convertTestVideo:
         description: 'Convert test video to mp4 format'
         type: choice
@@ -339,7 +339,7 @@ jobs:
 
   behaviour-test-obligation:
     name: 'behaviour test - obligation (proxy)'
-    if: ${{ inputs.generateTestScenarios == 'true' }}
+    if: ${{ inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-submit-vat
@@ -403,7 +403,7 @@ jobs:
 
   behaviour-test-post-vat-return:
     name: 'behaviour test - post vat return (proxy)'
-    if: ${{ inputs.generateTestScenarios == 'true' }}
+    if: ${{ inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-obligation
@@ -467,7 +467,7 @@ jobs:
 
   behaviour-test-get-vat-return:
     name: 'behaviour test - get vat return (proxy)'
-    if: ${{ inputs.generateTestScenarios == 'true' }}
+    if: ${{ inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-post-vat-return
@@ -2216,7 +2216,7 @@ jobs:
             target/test-reports/
 
   web-test-post-vat-return-sandbox:
-    if: ${{ !cancelled() && inputs.generateTestScenarios == 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     name: 'web test post vat return sandbox'
     needs:
       - names
@@ -2331,7 +2331,7 @@ jobs:
             target/test-reports/
 
   web-test-get-vat-return-sandbox:
-    if: ${{ !cancelled() && inputs.generateTestScenarios == 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     name: 'web test get vat return sandbox'
     needs:
       - names
@@ -2446,7 +2446,7 @@ jobs:
             target/test-reports/
 
   web-test-obligation-sandbox:
-    if: ${{ !cancelled() && inputs.generateTestScenarios == 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     name: 'web test obligation sandbox'
     needs:
       - names

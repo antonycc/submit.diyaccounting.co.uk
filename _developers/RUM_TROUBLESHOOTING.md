@@ -1,6 +1,6 @@
 # Amazon CloudWatch RUM Troubleshooting Guide
 
-**Created**: 2024-12-13  
+**Created**: 2024-12-13
 **Purpose**: Help developers and operators diagnose and resolve RUM implementation issues
 
 ---
@@ -131,7 +131,7 @@ document.getElementById('consent-banner')
 
 // Check if consent check is working
 function hasConsent() {
-  return localStorage.getItem('consent.rum') === 'granted' || 
+  return localStorage.getItem('consent.rum') === 'granted' ||
          localStorage.getItem('consent.analytics') === 'granted';
 }
 hasConsent()
@@ -173,14 +173,61 @@ curl -s https://ci.submit.diyaccounting.co.uk/index.html | grep "rum:appMonitorI
 **Possible Causes**:
 1. ObservabilityStack not deployed in production
 2. Different placeholder replacement logic between environments
-3. Content Security Policy (CSP) blocking RUM scripts in production
+3. Content Security Policy (CSP) blocking RUM scripts or inline script execution - **See `_developers/CSP_INLINE_SCRIPT_FIX.md` for details and solution**
 4. Firewall/WAF blocking RUM dataplane requests
 
 **Solutions**:
 - Verify ObservabilityStack exists in production account
 - Check deployment logs for environment-specific issues
 - Review CloudFront/WAF rules that might block RUM requests
-- Check browser console for CSP violations
+- Check browser console for CSP violations (should reference CSP_INLINE_SCRIPT_FIX.md if inline scripts are blocked)
+- Verify CSP includes `'unsafe-inline'` in script-src directive (EdgeStack.java and ApexStack.java)
+
+---
+
+### 6. Content Security Policy (CSP) Blocking Inline Scripts
+
+**Symptoms**:
+- Browser console shows CSP violation: "Executing inline script violates..."
+- Page elements fail to render (e.g., `#dynamicActivities` not visible)
+- Playwright tests timeout waiting for page elements
+- RUM may or may not initialize depending on timing
+
+**Diagnosis**:
+```javascript
+// In browser console, check for CSP errors
+// Look for: "Executing inline script violates the following Content Security Policy directive"
+
+// Check current CSP header
+fetch(window.location.href).then(r => r.headers.get('content-security-policy'))
+
+// Verify inline scripts exist in page
+document.querySelectorAll('script:not([src])').length
+// Should be > 0 if inline scripts present
+```
+
+**Possible Causes**:
+1. CSP `script-src` directive missing `'unsafe-inline'` keyword
+2. EdgeStack.java or ApexStack.java CSP configuration too restrictive
+3. CloudWatch RUM client library injecting blocked inline scripts
+4. Recent CDK deployment reverted CSP changes
+
+**Solutions**:
+- **Primary fix**: Add `'unsafe-inline'` to CSP script-src directive (see `_developers/CSP_INLINE_SCRIPT_FIX.md`)
+- Verify EdgeStack.java line ~304 includes: `"script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://unpkg.com;"`
+- Verify ApexStack.java line ~227 includes same CSP configuration
+- Redeploy CDK stacks to apply updated CloudFront response headers policy
+- Clear browser cache and test in incognito mode
+
+**Quick Test**:
+```bash
+# Check deployed CSP header
+curl -I https://ci.submit.diyaccounting.co.uk/ | grep -i content-security-policy
+
+# Should include: script-src 'self' 'unsafe-inline' https://client.rum...
+```
+
+**Reference**: See `_developers/CSP_INLINE_SCRIPT_FIX.md` for complete documentation including security implications and alternatives.
 
 ---
 
@@ -393,7 +440,7 @@ Environment: ci (https://ci.submit.diyaccounting.co.uk)
 Browser: Chrome 120 on macOS 14
 Symptom: RUM client not loading, window.cwr undefined
 Console Error: None
-Network: No requests to client.rum.eu-west-2.amazonaws.com
+Network: No requests to client.rum.us-east-1.amazonaws.com
 window.__RUM_CONFIG__: {"appMonitorId":"","region":"eu-west-2",...}
 Diagnosis: appMonitorId is empty string - placeholder not replaced
 ```
