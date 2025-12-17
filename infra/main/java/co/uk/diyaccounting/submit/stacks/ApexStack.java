@@ -210,7 +210,7 @@ public class ApexStack extends Stack {
         // Define a custom Response Headers Policy with CSP that allows AWS RUM client + dataplane
         ResponseHeadersPolicy webResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-ApexWebHeadersPolicy")
-                .responseHeadersPolicyName(props.resourceNamePrefix() + "-apex-web-headers-policy")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-apex-whp")
                 .comment("CORS + security headers with CSP allowing CloudWatch RUM client & dataplane")
                 .corsBehavior(ResponseHeadersCorsBehavior.builder()
                         .accessControlAllowCredentials(false)
