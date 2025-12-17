@@ -116,7 +116,7 @@ export async function handler(event) {
       if (waitTimeMs >= MAX_WAIT_MS) {
         formattedBundles = await retrieveUserBundles(userId);
       } else {
-        // TODO: Async, If there is a queue name put the request on the queue
+        // TODO: Async, If there is an SQS queue name put the request on the queue
         const queueName = false;
         if (queueName) {
           // TODO: Async, put the request on the queue
