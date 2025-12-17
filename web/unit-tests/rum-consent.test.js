@@ -206,7 +206,7 @@ describe("RUM Consent", () => {
       expect(localStorage.getItem("consent.rum")).toBe("granted");
     });
 
-    it("should return true if localStorage throws error (graceful degradation)", () => {
+    it("should return false if localStorage throws error (respect privacy)", () => {
       const brokenLocalStorage = {
         getItem() {
           throw new Error("localStorage unavailable");
@@ -217,11 +217,11 @@ describe("RUM Consent", () => {
         try {
           return brokenLocalStorage.getItem("consent.rum") === "granted" || brokenLocalStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
-          return true; // Allow RUM on localStorage failure
+          return false; // Respect privacy when localStorage is disabled
         }
       };
 
-      expect(hasConsent()).toBe(true);
+      expect(hasConsent()).toBe(false);
     });
   });
 

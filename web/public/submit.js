@@ -1071,8 +1071,9 @@ function hasRumConsent() {
     return consentValue === "granted" || localStorage.getItem("consent.analytics") === "granted";
   } catch (error) {
     console.warn("Failed to read RUM consent from localStorage:", error);
-    // If localStorage fails, allow RUM (graceful degradation)
-    return true;
+    // If localStorage fails, respect privacy and don't enable RUM
+    // This prevents tracking when localStorage is intentionally disabled
+    return false;
   }
 }
 
