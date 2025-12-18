@@ -1145,7 +1145,8 @@ async function maybeInitRum() {
       z.onerror = function (e) {
         console.warn("Failed to load RUM client:", e);
       };
-      document.head.insertBefore(z, document.getElementsByTagName("script")[0]);
+      // Append to head instead of insertBefore to avoid issues with script tag location
+      document.head.appendChild(z);
     })(
       "cwr",
       c.appMonitorId,
