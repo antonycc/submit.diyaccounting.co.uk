@@ -14,6 +14,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "../../services/bundleManagement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
+import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
@@ -49,6 +50,79 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   const userId = decodedToken.sub;
   return { userId };
+}
+
+// Helper function to check if an async request exists
+async function checkPersistedRequest(userId, requestId) {
+  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  if (!asyncTableName) {
+    return null;
+  }
+
+  try {
+    return await getAsyncRequest(userId, requestId);
+  } catch (error) {
+    logger.warn({ message: "Error checking for persisted request", error: error.message, requestId });
+    return null;
+  }
+}
+
+// Helper function to initiate async processing
+async function initiateAsyncProcessing(userId, requestId) {
+  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  if (asyncTableName) {
+    try {
+      await putAsyncRequest(userId, requestId, "pending");
+    } catch (error) {
+      logger.error({ message: "Error storing pending request", error: error.message, requestId });
+    }
+  }
+
+  // Start async processing
+  retrieveUserBundles(userId, requestId).catch((error) => {
+    logger.error({ message: "Error in async bundle retrieval", error: error.message, userId, requestId });
+    // Try to mark as failed in DynamoDB
+    if (asyncTableName) {
+      putAsyncRequest(userId, requestId, "failed", { error: error.message }).catch((err) => {
+        logger.error({ message: "Error storing failed request state", error: err.message, requestId });
+      });
+    }
+  });
+}
+
+// Helper function to wait and poll for async completion
+async function waitForAsyncCompletion(userId, requestId, waitTimeMs) {
+  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  if (!asyncTableName || waitTimeMs <= 0) {
+    return null;
+  }
+
+  logger.info({ message: `Waiting for ${waitTimeMs}ms for bundles to be ready`, userId });
+  const start = Date.now();
+  let persistedRequest = null;
+
+  while (Date.now() - start < waitTimeMs) {
+    // Sleep for a short duration to avoid busy-waiting
+    const delay = 100;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+
+    // Check if request has completed
+    try {
+      persistedRequest = await getAsyncRequest(userId, requestId);
+      if (persistedRequest?.status === "completed" && persistedRequest?.data?.bundles) {
+        return persistedRequest.data.bundles;
+      } else if (persistedRequest?.status === "failed") {
+        throw new Error(persistedRequest.data?.error || "Request processing failed");
+      }
+    } catch (error) {
+      if (error.message && error.message.includes("failed")) {
+        throw error;
+      }
+      logger.warn({ message: "Error checking request status", error: error.message, requestId });
+    }
+  }
+
+  return null;
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -111,22 +185,21 @@ export async function handler(event) {
     // Generate request id if not provided
     const requestId = event.headers?.["x-request-id"] || String(Date.now());
     logger.info({ message: "Retrieving bundles for request", requestId });
+
     // Check if there is a request in a dynamo db table for this request
-    // Note: This is a placeholder for future implementation
-    const persistedRequestExists = false;
+    const persistedRequest = await checkPersistedRequest(userId, requestId);
+    const persistedRequestExists = !!persistedRequest;
+
     if (!persistedRequestExists) {
       // Default behavior (no header or 0): synchronous
       // Explicit long wait (>= MAX_WAIT_MS): synchronous
       // Otherwise: asynchronous
       if (!event.headers?.["x-wait-time-ms"] || waitTimeMs === 0 || waitTimeMs >= MAX_WAIT_MS) {
         // Synchronous processing: wait for the result
-        formattedBundles = await retrieveUserBundles(userId);
+        formattedBundles = await retrieveUserBundles(userId, requestId);
       } else {
         // Asynchronous processing: start the process but don't wait
-        // For now, without SQS, we'll just call it without await
-        retrieveUserBundles(userId).catch((error) => {
-          logger.error({ message: "Error in async bundle retrieval", error: error.message, userId });
-        });
+        await initiateAsyncProcessing(userId, requestId);
       }
     }
 
@@ -141,25 +214,17 @@ export async function handler(event) {
     }
 
     // Wait for waitTimeMs if we have been asked to do so
-    if (!persistedRequestExists && !formattedBundles && waitTimeMs > 0) {
-      logger.info({ message: `Waiting for ${waitTimeMs}ms for bundles to be ready`, userId });
-      const start = Date.now();
-      while (Date.now() - start < waitTimeMs) {
-        // Sleep for a short duration to avoid busy-waiting
-        const delay = 100;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        logger.info({ message: `Waited one step of ${delay}ms out of ${waitTimeMs}ms for bundles to be ready`, userId });
-      }
+    if (!formattedBundles && waitTimeMs > 0) {
+      formattedBundles = await waitForAsyncCompletion(userId, requestId, waitTimeMs);
     }
 
-    if (!formattedBundles) {
-      // In future: read any persisted request from a dynamo db table for this request
-      // if ( persisted request ) {
-      //    switch response:
-      //      completed success: formattedBundles = bundles from persistedRequest, break
-      //      completed failure: throw exception for HTTP error response
-      //      not completed: break
-      // } else
+    // Check persisted request one more time after waiting
+    if (!formattedBundles && persistedRequest) {
+      if (persistedRequest.status === "completed" && persistedRequest.data?.bundles) {
+        formattedBundles = persistedRequest.data.bundles;
+      } else if (persistedRequest.status === "failed") {
+        throw new Error(persistedRequest.data?.error || "Request processing failed");
+      }
     }
 
     if (!formattedBundles) {
@@ -201,11 +266,18 @@ export async function consumer(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function retrieveUserBundles(userId) {
+export async function retrieveUserBundles(userId, requestId = null) {
   // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
   const allBundles = await getUserBundles(userId);
 
-  // Note: Future enhancement - store the result in a dynamo db table for async retrieval
+  // Store the result in a dynamo db table for async retrieval
+  if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+    try {
+      await putAsyncRequest(userId, requestId, "completed", { bundles: allBundles });
+    } catch (error) {
+      logger.error({ message: "Error storing completed request", error: error.message, requestId });
+    }
+  }
 
   return allBundles;
 }
