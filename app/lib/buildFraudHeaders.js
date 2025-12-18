@@ -34,7 +34,7 @@ export function buildFraudHeaders(event) {
     return (
       !ip.startsWith("10.") &&
       !ip.startsWith("192.168.") &&
-      !ip.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./) &&
+      !ip.match(/^172\.(1\d|2\d|3[0-1])\./) &&
       !ip.startsWith("127.") &&
       !ip.startsWith("::1") &&
       !ip.startsWith("fe80:")

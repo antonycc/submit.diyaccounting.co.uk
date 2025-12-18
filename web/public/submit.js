@@ -1110,6 +1110,7 @@ function showConsentBannerIfNeeded() {
   };
 }
 
+// eslint-disable-next-line no-unused-vars
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -1134,10 +1135,11 @@ async function maybeInitRum() {
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
-  
+
   try {
     // Use AWS RUM's proper initialization pattern with self-executing function
     // This creates the command queue and loads the client script
+    /* eslint-disable sonarjs/no-parameter-reassignment */
     (function (n, i, v, r, s, config, u, x, z) {
       x = window.AwsRumClient = { q: [], n: n, i: i, v: v, r: r, c: config, u: u };
       window[n] = function (c, p) {
@@ -1170,13 +1172,15 @@ async function maybeInitRum() {
         telemetries: ["performance", "errors", "http"],
         allowCookies: true,
         enableXRay: true,
-      }
+      },
     );
+    /* eslint-enable sonarjs/no-parameter-reassignment */
   } catch (e) {
     console.warn("Failed to init RUM:", e);
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 async function sha256Hex(text) {
   const enc = new TextEncoder();
   const data = enc.encode(text);

@@ -39,7 +39,7 @@ export default function eventToGovClientHeaders(event, detectedIP) {
 
   // Handle IP detection - if browser sent "SERVER_DETECT", extract IP from request headers
   let govClientPublicIPHeader = sanitize(h("Gov-Client-Public-IP"));
-  
+
   // Use fraudHeaders for vendor IP, or fall back to detected IP
   const govVendorPublicIPHeader = fraudHeaders["Gov-Vendor-Public-IP"] || detectedIP;
 
