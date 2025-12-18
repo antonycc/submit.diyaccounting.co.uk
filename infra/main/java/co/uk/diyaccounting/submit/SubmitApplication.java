@@ -154,6 +154,11 @@ public class SubmitApplication {
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
+        
+        // Fraud prevention header configuration - allow environment variable override
+        var fraudVendorLicenseIds = envOr("FRAUD_VENDOR_LICENSE_IDS", appProps.fraudVendorLicenseIds, null);
+        var fraudVendorProductName = envOr("FRAUD_VENDOR_PRODUCT_NAME", appProps.fraudVendorProductName, "DIY Accounting Submit");
+        var fraudVendorVersion = envOr("FRAUD_VENDOR_VERSION", appProps.fraudVendorVersion, null);
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
@@ -236,9 +241,9 @@ public class SubmitApplication {
                         .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
                         .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
-                        .fraudVendorLicenseIds(appProps.fraudVendorLicenseIds)
-                        .fraudVendorProductName(appProps.fraudVendorProductName)
-                        .fraudVendorVersion(appProps.fraudVendorVersion)
+                        .fraudVendorLicenseIds(fraudVendorLicenseIds)
+                        .fraudVendorProductName(fraudVendorProductName)
+                        .fraudVendorVersion(fraudVendorVersion)
                         .build());
         this.hmrcStack.addDependency(devStack);
 

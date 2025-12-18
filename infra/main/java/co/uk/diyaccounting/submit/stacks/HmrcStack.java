@@ -100,11 +100,14 @@ public class HmrcStack extends Stack {
 
         String cognitoUserPoolId();
 
-        // Fraud prevention header values
+        // Fraud prevention header values (nullable - will be set from environment or defaults)
+        @javax.annotation.Nullable
         String fraudVendorLicenseIds();
 
+        @javax.annotation.Nullable
         String fraudVendorProductName();
 
+        @javax.annotation.Nullable
         String fraudVendorVersion();
 
         @Override
