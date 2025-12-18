@@ -302,8 +302,8 @@ public class EdgeStack extends Stack {
                 .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                     .contentSecurityPolicy("default-src 'self'; "
                         + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com; "
-                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com; "
-                        + "img-src 'self' data:; "
+                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com; "
+                        + "img-src 'self' data: https://avatars.githubusercontent.com; "
                         + "style-src 'self' 'unsafe-inline';")
                     .override(true)
                     .build())

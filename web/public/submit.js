@@ -1125,11 +1125,35 @@ async function maybeInitRum() {
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
-  const clientUrl = `https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js`;
+  
   try {
-    await loadScript(clientUrl);
-    if (typeof window.cwr === "function") {
-      window.cwr("config", {
+    // Use AWS RUM's proper initialization pattern with self-executing function
+    // This creates the command queue and loads the client script
+    (function (n, i, v, r, s, config, u, x, z) {
+      x = window.AwsRumClient = { q: [], n: n, i: i, v: v, r: r, c: config, u: u };
+      window[n] = function (c, p) {
+        x.q.push({ c: c, p: p });
+      };
+      z = document.createElement("script");
+      z.async = true;
+      z.src = s;
+      z.onload = function () {
+        window.__RUM_INIT_DONE__ = true;
+        rumReady();
+        // Note: setUserId is not a supported RUM command - removed
+      };
+      z.onerror = function (e) {
+        console.warn("Failed to load RUM client:", e);
+      };
+      // Append to head instead of insertBefore to avoid issues with script tag location
+      document.head.appendChild(z);
+    })(
+      "cwr",
+      c.appMonitorId,
+      "0.0.2-4", // Application version from package.json
+      c.region,
+      "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js",
+      {
         sessionSampleRate: c.sessionSampleRate ?? 1,
         guestRoleArn: c.guestRoleArn,
         identityPoolId: c.identityPoolId,
@@ -1137,13 +1161,8 @@ async function maybeInitRum() {
         telemetries: ["performance", "errors", "http"],
         allowCookies: true,
         enableXRay: true,
-        appMonitorId: c.appMonitorId,
-        region: c.region,
-      });
-      window.__RUM_INIT_DONE__ = true;
-      rumReady();
-      setRumUserIdIfAvailable();
-    }
+      }
+    );
   } catch (e) {
     console.warn("Failed to init RUM:", e);
   }
@@ -1157,23 +1176,9 @@ async function sha256Hex(text) {
   return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function setRumUserIdIfAvailable() {
-  try {
-    const userInfo = localStorage.getItem("userInfo");
-    if (!userInfo) return;
-    const user = JSON.parse(userInfo);
-    const rawId = user.sub || user.username || user.email;
-    if (!rawId) return;
-    const hashed = await sha256Hex(String(rawId));
-    if (window.cwr) {
-      window.cwr("setUserId", hashed);
-    } else {
-      document.addEventListener("rum-ready", () => window.cwr && window.cwr("setUserId", hashed), { once: true });
-    }
-  } catch (error) {
-    console.warn("Failed to set RUM user id:", error);
-  }
-}
+// Note: setUserId is not a supported AWS CloudWatch RUM command
+// User identification is handled automatically by RUM via cookies (cwr_u)
+// If needed, user attributes can be added via addSessionAttributes command
 
 function ensurePrivacyLink() {
   const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
@@ -1244,7 +1249,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
           }
         });
       })();
-      setRumUserIdIfAvailable();
+      // Note: User tracking handled automatically by RUM via cookies
     });
   } else {
     ensurePrivacyLink();
@@ -1263,12 +1268,10 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
         }
       });
     })();
-    setRumUserIdIfAvailable();
+    // Note: User tracking handled automatically by RUM via cookies
   }
-  // Update user id on cross-tab login changes
-  window.addEventListener("storage", (e) => {
-    if (e.key === "userInfo") setRumUserIdIfAvailable();
-  });
+  // Note: RUM handles user tracking automatically via cookies (cwr_u)
+  // No need to manually sync user info changes
 }
 
 // Expose functions to window for use by other scripts and testing
