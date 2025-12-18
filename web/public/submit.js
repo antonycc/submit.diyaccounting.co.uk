@@ -991,13 +991,19 @@ function isValidIPv4(token) {
 }
 
 // Helper to build Gov-Client headers for HMRC API calls
+// Note: This function only collects client-side information.
+// Vendor headers (Gov-Vendor-*) are generated server-side in buildFraudHeaders.js
 // eslint-disable-next-line no-unused-vars
 async function getGovClientHeaders() {
-  // Enhanced IP detection with fallbacks
-  const detectedIP = await getClientIP();
-  const govClientPublicIPHeader = detectedIP;
-  const govVendorPublicIPHeader = detectedIP;
+  // Try to detect client IP (may be blocked by CSP or fail, server will handle fallback)
+  let detectedIP = "SERVER_DETECT"; // Signal server to detect IP
+  try {
+    detectedIP = await getClientIP();
+  } catch (error) {
+    console.warn("Client IP detection failed, server will detect:", error.message);
+  }
 
+  const govClientPublicIPHeader = detectedIP;
   const govClientBrowserJSUserAgentHeader = navigator.userAgent;
   const govClientDeviceIDHeader = crypto.randomUUID();
   const govClientMultiFactorHeader = "type=OTHER";
@@ -1011,13 +1017,17 @@ async function getGovClientHeaders() {
   });
   // eslint-disable-next-line new-cap
   const govClientTimezoneHeader = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const govClientUserIDsHeader = "test=1";
   const govClientWindowSizeHeader = JSON.stringify({
     width: window.innerWidth,
     height: window.innerHeight,
   });
-  const govVendorForwardedHeader = "test=1";
 
+  // Get current user ID from localStorage if available
+  const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+  const userId = userInfo.sub || "browser-unknown";
+  const govClientUserIDsHeader = `browser=${encodeURIComponent(userId)}`;
+
+  // Build client headers only (no vendor headers)
   return {
     "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
     "Gov-Client-Device-ID": govClientDeviceIDHeader,
@@ -1029,8 +1039,7 @@ async function getGovClientHeaders() {
     "Gov-Client-Timezone": govClientTimezoneHeader,
     "Gov-Client-User-IDs": govClientUserIDsHeader,
     "Gov-Client-Window-Size": govClientWindowSizeHeader,
-    "Gov-Vendor-Forwarded": govVendorForwardedHeader,
-    "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+    // Note: Gov-Vendor-* headers are NOT included here - they're generated server-side
   };
 }
 
