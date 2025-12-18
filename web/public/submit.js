@@ -1059,20 +1059,9 @@ async function fetchCatalogText(url = "/product-catalogue.toml") {
 // RUM consent + init
 function hasRumConsent() {
   try {
-    const consentValue = localStorage.getItem("consent.rum");
-    
-    // Auto-grant consent on first visit (null means never set)
-    // CloudWatch RUM doesn't collect PII, only performance metrics
-    if (consentValue === null) {
-      localStorage.setItem("consent.rum", "granted");
-      return true;
-    }
-    
-    return consentValue === "granted" || localStorage.getItem("consent.analytics") === "granted";
+    return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
   } catch (error) {
     console.warn("Failed to read RUM consent from localStorage:", error);
-    // If localStorage fails, respect privacy and don't enable RUM
-    // This prevents tracking when localStorage is intentionally disabled
     return false;
   }
 }
@@ -1136,11 +1125,34 @@ async function maybeInitRum() {
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
-  const clientUrl = `https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js`;
+  
   try {
-    await loadScript(clientUrl);
-    if (typeof window.cwr === "function") {
-      window.cwr("config", {
+    // Use AWS RUM's proper initialization pattern with self-executing function
+    // This creates the command queue and loads the client script
+    (function (n, i, v, r, s, config, u, x, z) {
+      x = window.AwsRumClient = { q: [], n: n, i: i, v: v, r: r, c: config, u: u };
+      window[n] = function (c, p) {
+        x.q.push({ c: c, p: p });
+      };
+      z = document.createElement("script");
+      z.async = true;
+      z.src = s;
+      z.onload = function () {
+        window.__RUM_INIT_DONE__ = true;
+        rumReady();
+        setRumUserIdIfAvailable();
+      };
+      z.onerror = function (e) {
+        console.warn("Failed to load RUM client:", e);
+      };
+      document.head.insertBefore(z, document.getElementsByTagName("script")[0]);
+    })(
+      "cwr",
+      c.appMonitorId,
+      "1.0.0",
+      c.region,
+      "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js",
+      {
         sessionSampleRate: c.sessionSampleRate ?? 1,
         guestRoleArn: c.guestRoleArn,
         identityPoolId: c.identityPoolId,
@@ -1148,13 +1160,8 @@ async function maybeInitRum() {
         telemetries: ["performance", "errors", "http"],
         allowCookies: true,
         enableXRay: true,
-        appMonitorId: c.appMonitorId,
-        region: c.region,
-      });
-      window.__RUM_INIT_DONE__ = true;
-      rumReady();
-      setRumUserIdIfAvailable();
-    }
+      }
+    );
   } catch (e) {
     console.warn("Failed to init RUM:", e);
   }

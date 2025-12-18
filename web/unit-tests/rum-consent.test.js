@@ -182,31 +182,19 @@ describe("RUM Consent", () => {
       expect(hasConsent()).toBe(false);
     });
 
-    it("should return true and auto-grant consent on first visit", () => {
-      // Clear any existing consent
-      storageMock = {};
-      
+    it("should return false if no consent recorded", () => {
       const hasConsent = () => {
         try {
-          const consentValue = localStorage.getItem("consent.rum");
-          
-          // Auto-grant consent on first visit (null means never set)
-          if (consentValue === null) {
-            localStorage.setItem("consent.rum", "granted");
-            return true;
-          }
-          
-          return consentValue === "granted" || localStorage.getItem("consent.analytics") === "granted";
+          return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
-          return false; // Respect privacy when localStorage is disabled
+          return false;
         }
       };
 
-      expect(hasConsent()).toBe(true);
-      expect(localStorage.getItem("consent.rum")).toBe("granted");
+      expect(hasConsent()).toBe(false);
     });
 
-    it("should return false if localStorage throws error (respect privacy)", () => {
+    it("should return false if localStorage throws error", () => {
       const brokenLocalStorage = {
         getItem() {
           throw new Error("localStorage unavailable");
@@ -217,7 +205,7 @@ describe("RUM Consent", () => {
         try {
           return brokenLocalStorage.getItem("consent.rum") === "granted" || brokenLocalStorage.getItem("consent.analytics") === "granted";
         } catch (error) {
-          return false; // Respect privacy when localStorage is disabled
+          return false;
         }
       };
 
