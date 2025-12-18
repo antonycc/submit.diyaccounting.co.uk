@@ -1179,10 +1179,6 @@ async function sha256Hex(text) {
 // Note: setUserId is not a supported AWS CloudWatch RUM command
 // User identification is handled automatically by RUM via cookies (cwr_u)
 // If needed, user attributes can be added via addSessionAttributes command
-async function setRumUserIdIfAvailable() {
-  // This function is no longer needed as setUserId is not supported
-  // RUM automatically tracks users via the cwr_u cookie when allowCookies is true
-}
 
 function ensurePrivacyLink() {
   const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
