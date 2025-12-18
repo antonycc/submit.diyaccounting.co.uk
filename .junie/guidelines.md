@@ -10,6 +10,8 @@ execution path and the same path when the code is deployed to AWS and detect
 and resolve bugs found through tracing before running tests.
 
 Avoid unnecessary formatting changes when editing code.
+For the lines that you change, be compliant with the formatting rules.
+Do not run formatting tools on the whole repository or whole files unless the whole file is new.
 
 When fixing a bug do not add "fallback" paths that allow a silent failure.
 

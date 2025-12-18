@@ -17,7 +17,7 @@ import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
 const MAX_WAIT_MS = 900_000; // 900 seconds = 15 minutes
-const DEFAULT_WAIT_MS = 0;
+const DEFAULT_WAIT_MS = MAX_WAIT_MS; // TODO: Async Lambdas should wait 20s, (max=sync) 20_000; // 20 seconds
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -110,8 +110,9 @@ export async function handler(event) {
     // TODO: Async, get request id generated if not provided.
     const requestId = request.headers["x-request-id"] || String(Date.now());
     logger.info({ message: "Retrieving bundles for request", requestId });
-    // TODO: Async, check if there is a request in a dynamo db table for this request
+    // TODO: Async, check if there is a request in a dynamo db table for this (requestId, hashedUserSub) tuple
     const persistedRequestExists = false;
+    // TODO: Async, abstract to: init()
     if (!persistedRequestExists) {
       if (waitTimeMs >= MAX_WAIT_MS) {
         formattedBundles = await retrieveUserBundles(userId);
@@ -128,6 +129,7 @@ export async function handler(event) {
     }
     logger.info({ message: "Successfully retrieved bundles", userId, count: formattedBundles.length });
 
+    // TODO: Async, abstract to: wait()
     // Wait for waitTimeMs is we have been asked to do so.
     if (!persistedRequestExists && !formattedBundles && waitTimeMs > 0) {
       logger.info({ message: `Waiting for ${waitTimeMs}ms for bundles to be ready`, userId });
@@ -140,8 +142,9 @@ export async function handler(event) {
       }
     }
 
+    // TODO: Async, abstract to check()
     if (!formattedBundles) {
-      // TODO: Async, read any persisted request from a dynamo db table for this request
+      // TODO: Async, read any persisted request from a dynamo db table for this (requestId, hashedUserSub) tuple
       // if ( persisted request ) {
       //    switch response:
       //      completed success: TODO: Async, formattedBundles = bundles from persistedRequest, break
@@ -150,6 +153,7 @@ export async function handler(event) {
       // } else
     }
 
+    // TODO: Async, abstract to respond()
     if (!formattedBundles) {
       // TODO: Async, HTTP 202 ++ location header with this URL and request id header to use when checking.
     } else {
