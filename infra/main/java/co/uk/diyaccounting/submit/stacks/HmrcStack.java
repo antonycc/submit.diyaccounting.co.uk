@@ -143,20 +143,6 @@ public class HmrcStack extends Stack {
                 "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcApiRequestsTableName);
 
-        // Helper method to add fraud prevention environment variables
-        var addFraudPreventionEnvVars = (PopulatedMap<String, String> envMap) -> {
-            if (StringUtils.isNotBlank(props.fraudVendorLicenseIds())) {
-                envMap.with("FRAUD_VENDOR_LICENSE_IDS", props.fraudVendorLicenseIds());
-            }
-            if (StringUtils.isNotBlank(props.fraudVendorProductName())) {
-                envMap.with("FRAUD_VENDOR_PRODUCT_NAME", props.fraudVendorProductName());
-            }
-            if (StringUtils.isNotBlank(props.fraudVendorVersion())) {
-                envMap.with("FRAUD_VENDOR_VERSION", props.fraudVendorVersion());
-            }
-            return envMap;
-        };
-
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -310,7 +296,7 @@ public class HmrcStack extends Stack {
                 // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName));
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName), props);
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -353,7 +339,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName()));
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName()), props);
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -397,7 +383,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName()));
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName()), props);
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -550,5 +536,25 @@ public class HmrcStack extends Stack {
         infof(
                 "HmrcStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+    }
+
+    /**
+     * Helper method to add fraud prevention environment variables to a PopulatedMap.
+     * @param envMap The environment map to add variables to
+     * @param props The HmrcStackProps containing fraud prevention configuration
+     * @return The same envMap with fraud prevention variables added
+     */
+    private PopulatedMap<String, String> addFraudPreventionEnvVars(
+            PopulatedMap<String, String> envMap, HmrcStackProps props) {
+        if (StringUtils.isNotBlank(props.fraudVendorLicenseIds())) {
+            envMap.with("FRAUD_VENDOR_LICENSE_IDS", props.fraudVendorLicenseIds());
+        }
+        if (StringUtils.isNotBlank(props.fraudVendorProductName())) {
+            envMap.with("FRAUD_VENDOR_PRODUCT_NAME", props.fraudVendorProductName());
+        }
+        if (StringUtils.isNotBlank(props.fraudVendorVersion())) {
+            envMap.with("FRAUD_VENDOR_VERSION", props.fraudVendorVersion());
+        }
+        return envMap;
     }
 }
