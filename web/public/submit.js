@@ -1149,7 +1149,7 @@ async function maybeInitRum() {
     })(
       "cwr",
       c.appMonitorId,
-      "1.0.0",
+      "0.0.2-4", // Application version from package.json
       c.region,
       "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js",
       {
