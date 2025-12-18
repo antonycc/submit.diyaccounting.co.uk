@@ -59,6 +59,10 @@ public class SubmitApplication {
         public String certificateArn;
         public String docRootPath;
         public String httpApiUrl;
+        // Fraud prevention header values
+        public String fraudVendorLicenseIds;
+        public String fraudVendorProductName;
+        public String fraudVendorVersion;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -232,6 +236,9 @@ public class SubmitApplication {
                         .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
                         .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
+                        .fraudVendorLicenseIds(appProps.fraudVendorLicenseIds)
+                        .fraudVendorProductName(appProps.fraudVendorProductName)
+                        .fraudVendorVersion(appProps.fraudVendorVersion)
                         .build());
         this.hmrcStack.addDependency(devStack);
 
