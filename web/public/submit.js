@@ -1006,34 +1006,36 @@ async function getGovClientHeaders() {
   const govClientPublicIPHeader = detectedIP;
   const govClientBrowserJSUserAgentHeader = navigator.userAgent;
   const govClientDeviceIDHeader = crypto.randomUUID();
-  
+
   // Gov-Client-Multi-Factor: Must include timestamp and unique-reference
   const mfaTimestamp = new Date().toISOString();
   const mfaUniqueRef = crypto.randomUUID();
   const govClientMultiFactorHeader = `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
-  
+
   const govClientPublicIPTimestampHeader = new Date().toISOString();
-  
+
   // Gov-Client-Public-Port: Don't send server ports (443, 80)
   const clientPort = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
-  const govClientPublicPortHeader = (clientPort === "443" || clientPort === "80") ? undefined : clientPort;
-  
+  const govClientPublicPortHeader = clientPort === "443" || clientPort === "80" ? undefined : clientPort;
+
   // Gov-Client-Screens: Must be an array of objects with scalingFactor
-  const govClientScreensHeader = JSON.stringify([{
-    width: window.screen.width,
-    height: window.screen.height,
-    "colour-depth": window.screen.colorDepth,
-    "scaling-factor": window.devicePixelRatio || 1,
-  }]);
-  
+  const govClientScreensHeader = JSON.stringify([
+    {
+      "width": window.screen.width,
+      "height": window.screen.height,
+      "colour-depth": window.screen.colorDepth,
+      "scaling-factor": window.devicePixelRatio || 1,
+    },
+  ]);
+
   // Gov-Client-Timezone: Must be in UTC±<hh>:<mm> format
-  // eslint-disable-next-line new-cap
+
   const timezoneOffset = -new Date().getTimezoneOffset(); // minutes, positive = east of UTC
   const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
   const offsetMinutes = Math.abs(timezoneOffset) % 60;
   const offsetSign = timezoneOffset >= 0 ? "+" : "-";
   const govClientTimezoneHeader = `UTC${offsetSign}${String(offsetHours).padStart(2, "0")}:${String(offsetMinutes).padStart(2, "0")}`;
-  
+
   // Gov-Client-Window-Size: Must be an object with width and height
   const govClientWindowSizeHeader = JSON.stringify({
     width: window.innerWidth,
@@ -1058,12 +1060,12 @@ async function getGovClientHeaders() {
     "Gov-Client-Window-Size": govClientWindowSizeHeader,
     // Note: Gov-Vendor-* headers are NOT included here - they're generated server-side
   };
-  
+
   // Only include Gov-Client-Public-Port if it's not a server port
   if (govClientPublicPortHeader) {
     headers["Gov-Client-Public-Port"] = govClientPublicPortHeader;
   }
-  
+
   return headers;
 }
 

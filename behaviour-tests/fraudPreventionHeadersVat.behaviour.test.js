@@ -17,10 +17,7 @@ import {
   saveHmrcTestUserToFiles,
   checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
-import {
-  consentToDataCollection,
-  goToHomePageExpectNotLoggedIn,
-} from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -28,26 +25,9 @@ import {
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import {
-  completeVat,
-  fillInVat,
-  initSubmitVat,
-  submitFormVat,
-  verifyVatSubmission,
-} from "./steps/behaviour-hmrc-vat-steps.js";
-import {
-  fillInHmrcAuth,
-  goToHmrcAuth,
-  grantPermissionHmrcAuth,
-  initHmrcAuth,
-  submitHmrcAuth,
-} from "./steps/behaviour-hmrc-steps.js";
-import {
-  deleteTraceparentTxt,
-  deleteUserSubTxt,
-  deleteHashedUserSubTxt,
-  extractUserSubFromLocalStorage,
-} from "./helpers/fileHelper.js";
+import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import { fillInHmrcAuth, goToHmrcAuth, grantPermissionHmrcAuth, initHmrcAuth, submitHmrcAuth } from "./steps/behaviour-hmrc-steps.js";
+import { deleteTraceparentTxt, deleteUserSubTxt, deleteHashedUserSubTxt, extractUserSubFromLocalStorage } from "./helpers/fileHelper.js";
 import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
