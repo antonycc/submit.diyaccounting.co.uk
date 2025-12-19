@@ -185,7 +185,7 @@ export async function handler(event) {
 export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox") {
-    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders);
+    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub);
   }
 
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;

@@ -647,13 +647,14 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
  *
  * @param {string} hmrcAccessToken - HMRC OAuth access token
  * @param {string} screenshotPath - Path for screenshots
+ * @param {string} auditForUserSub - User sub for auditing to DynamoDB
  */
-export async function fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath = defaultScreenshotPath) {
+export async function fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath = defaultScreenshotPath, auditForUserSub) {
   await test.step("Fetch fraud prevention headers validation feedback from HMRC", async () => {
     const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
 
     console.log("Fetching fraud prevention headers validation feedback...");
-    const result = await getFraudPreventionHeadersFeedback("vat-mtd", hmrcAccessToken);
+    const result = await getFraudPreventionHeadersFeedback("vat-mtd", hmrcAccessToken, auditForUserSub);
 
     if (result.ok) {
       console.log("Fraud prevention headers validation feedback received:");

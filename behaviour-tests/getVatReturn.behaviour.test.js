@@ -181,6 +181,8 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
 
   addOnPageLogging(page);
 
+  const outputDir = testInfo.outputPath("");
+
   page.on("response", (response) => {
     try {
       if (observedTraceparent) return;
@@ -298,21 +300,50 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     expect(slowElapsedMs).toBeLessThan(60_000);
   }
 
-  // For sandbox tests, fetch fraud prevention headers validation feedback
-  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath);
+  /* ****************** */
+  /*  Extract user sub  */
+  /* ****************** */
 
-  // Extract user sub and log out
   userSub = await extractUserSubFromLocalStorage(page, testInfo);
+
+  /* ********* */
+  /*  LOG OUT  */
+  /* ********* */
+
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
-  // Export DynamoDB and assert minimal expectations (if dynalite used)
-  const outputDir = testInfo.outputPath("");
+  /* ********************************** */
+  /*  FRAUD PREVENTION HEADERS FEEDBACK */
+  /* ********************************** */
+
+  // For sandbox tests, fetch fraud prevention headers validation feedback
+  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
+
+  /* **************** */
+  /*  EXPORT DYNAMODB */
+  /* **************** */
+
+  // Export DynamoDB tables if dynalite was used
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
+    console.log("[DynamoDB Export]: Starting export of all tables...");
     try {
-      await exportAllTables(outputDir, dynamoControl.endpoint, { bundleTableName, hmrcApiRequestsTableName, receiptsTableName });
-    } catch {}
+      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
+        bundleTableName,
+        hmrcApiRequestsTableName,
+        receiptsTableName,
+      });
+      console.log("[DynamoDB Export]: Export completed:", exportResults);
+    } catch (error) {
+      console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
   }
-  if (runDynamoDb === "run") {
+
+  /* ********************************** */
+  /*  ASSERT DYNAMODB HMRC API REQUESTS */
+  /* ********************************** */
+
+  // Assert that HMRC API requests were logged correctly
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
     const getRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,

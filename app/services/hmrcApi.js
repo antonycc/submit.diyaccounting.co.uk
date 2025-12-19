@@ -84,7 +84,7 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
  *
  * @param {string} accessToken - HMRC OAuth access token
  * @param {Object} govClientHeaders - Gov-Client-* fraud prevention headers
- * @param {string} [auditForUserSub] - Optional user sub for auditing to DynamoDB
+ * @param {string} auditForUserSub - User sub for auditing to DynamoDB
  * @returns {Promise<Object>} Validation result with {isValid, response}
  */
 export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}, auditForUserSub) {
@@ -169,9 +169,8 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
       headers: responseHeadersObj,
       body: responseBody,
     };
-    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
-      await putHmrcApiRequest(userSubOrUuid, { url: validationUrl, httpRequest, httpResponse, duration });
+      await putHmrcApiRequest(auditForUserSub, { url: validationUrl, httpRequest, httpResponse, duration });
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",
@@ -224,7 +223,7 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
  *
  * @param {string} api - The API name (e.g., 'vat-mtd')
  * @param {string} accessToken - HMRC OAuth access token
- * @param {string} [auditForUserSub] - Optional user sub for auditing to DynamoDB
+ * @param {string} auditForUserSub - User sub for auditing to DynamoDB
  * @returns {Promise<Object>} Validation feedback
  */
 export async function getFraudPreventionHeadersFeedback(api, accessToken, auditForUserSub) {
@@ -314,9 +313,8 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken, auditF
       error: error.message,
       stack: error.stack,
     });
-    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
-      await putHmrcApiRequest(userSubOrUuid, {
+      await putHmrcApiRequest(auditForUserSub, {
         url: feedbackUrl,
         httpRequest,
         httpResponse: { statusCode: 0, headers: {}, body: { error: error.message } },

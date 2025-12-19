@@ -40,6 +40,7 @@ describe("services/hmrcApi", () => {
 
   it("hmrcHttpGet builds URL with cleaned query params and returns structured data", async () => {
     const { hmrcHttpGet } = await import("@app/services/hmrcApi.js");
+    const auditForUserSub = "user-sub-1";
 
     // Mock fetch
     const mockFetch = vi.fn();
@@ -58,7 +59,7 @@ describe("services/hmrcApi", () => {
       "SCENARIO",
       "sandbox",
       { a: "1", b: "", c: null, d: undefined },
-      "user-sub-1",
+      auditForUserSub,
     );
 
     expect(res.ok).toBe(true);
@@ -75,6 +76,7 @@ describe("services/hmrcApi", () => {
 
   it("validateFraudPreventionHeaders calls HMRC validation endpoint with correct headers", async () => {
     const { validateFraudPreventionHeaders } = await import("@app/services/hmrcApi.js");
+    const auditForUserSub = "user-sub-1";
 
     // Mock fetch
     const mockFetch = vi.fn();
@@ -95,7 +97,7 @@ describe("services/hmrcApi", () => {
       "Gov-Client-Connection-Method": "DESKTOP_APP_DIRECT",
     };
 
-    const result = await validateFraudPreventionHeaders("token-123", govClientHeaders);
+    const result = await validateFraudPreventionHeaders("token-123", govClientHeaders, auditForUserSub);
 
     expect(result.isValid).toBe(true);
     expect(result.response.code).toBe("VALID_HEADERS");
@@ -107,8 +109,8 @@ describe("services/hmrcApi", () => {
       expect.objectContaining({
         method: "GET",
         headers: expect.objectContaining({
-          Accept: "application/vnd.hmrc.1.0+json",
-          Authorization: "Bearer token-123",
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "Bearer token-123",
           "Gov-Client-Device-ID": "test-device-id",
           "Gov-Client-Connection-Method": "DESKTOP_APP_DIRECT",
         }),
@@ -118,6 +120,7 @@ describe("services/hmrcApi", () => {
 
   it("validateFraudPreventionHeaders handles invalid headers response", async () => {
     const { validateFraudPreventionHeaders } = await import("@app/services/hmrcApi.js");
+    const auditForUserSub = "user-sub-1";
 
     const mockFetch = vi.fn();
     vi.stubGlobal("fetch", mockFetch);
@@ -139,7 +142,7 @@ describe("services/hmrcApi", () => {
         }),
     });
 
-    const result = await validateFraudPreventionHeaders("token-123", {});
+    const result = await validateFraudPreventionHeaders("token-123", {}, auditForUserSub);
 
     expect(result.isValid).toBe(false);
     expect(result.response.code).toBe("INVALID_HEADERS");
@@ -148,12 +151,13 @@ describe("services/hmrcApi", () => {
 
   it("validateFraudPreventionHeaders handles fetch errors gracefully", async () => {
     const { validateFraudPreventionHeaders } = await import("@app/services/hmrcApi.js");
+    const auditForUserSub = "user-sub-1";
 
     const mockFetch = vi.fn();
     vi.stubGlobal("fetch", mockFetch);
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-    const result = await validateFraudPreventionHeaders("token-123", {});
+    const result = await validateFraudPreventionHeaders("token-123", {}, auditForUserSub);
 
     expect(result.isValid).toBe(false);
     expect(result.error).toBe("Network error");
