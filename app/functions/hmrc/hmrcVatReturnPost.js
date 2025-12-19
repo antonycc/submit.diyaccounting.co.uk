@@ -22,6 +22,7 @@ import {
   hmrcHttpPost,
 } from "../../services/hmrcApi.js";
 import { maskGovClientHeaders } from "../../lib/maskSensitiveData.js";
+import { isValidVRN, isValidPeriodKey } from "../../lib/validationHelpers.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -56,11 +57,11 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (vatDue !== undefined && vatDue !== null && Number.isNaN(numVatDue)) {
     errorMessages.push("Invalid vatDue - must be a number");
   }
-  if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
+  if (vatNumber && !isValidVRN(vatNumber)) {
     errorMessages.push("Invalid vatNumber format - must be 9 digits");
   }
-  // Refined period key validation: HMRC uses formats like "24A1" (YYA#) or "#001" (quarterly)
-  if (periodKey && !/^(#\d{3}|\d{2}[A-Z]\d)$/i.test(String(periodKey))) {
+  // Refined period key validation using centralized validation
+  if (periodKey && !isValidPeriodKey(periodKey)) {
     errorMessages.push("Invalid periodKey format - must be like '24A1' or '#001'");
   }
 

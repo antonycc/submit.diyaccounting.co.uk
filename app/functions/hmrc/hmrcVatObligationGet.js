@@ -24,6 +24,7 @@ import {
   http403ForbiddenFromBundleEnforcement,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
+import { isValidVRN, validateISODate, validateDateRange } from "../../lib/validationHelpers.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
@@ -46,9 +47,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
 
   if (!vrn) errorMessages.push("Missing vrn parameter");
-  if (vrn && !/^\d{9}$/.test(String(vrn))) errorMessages.push("Invalid vrn format - must be 9 digits");
-  if (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
-  if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
+  if (vrn && !isValidVRN(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
   if (status && !["O", "F"].includes(status)) errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");
 
   // If from or to are not set, set them to the beginning of the current calendar year to today
@@ -59,20 +58,25 @@ export function extractAndValidateParameters(event, errorMessages) {
   const finalFrom = from || defaultFromDate;
   const finalTo = to || defaultToDate;
 
-  // Additional validation: check dates are valid (not just format)
-  const fromDate = new Date(finalFrom);
-  const toDate = new Date(finalTo);
-
-  if (from && (isNaN(fromDate.getTime()) || fromDate.toISOString().split("T")[0] !== finalFrom)) {
-    errorMessages.push("Invalid from date - date does not exist (e.g., 2024-02-30)");
-  }
-  if (to && (isNaN(toDate.getTime()) || toDate.toISOString().split("T")[0] !== finalTo)) {
-    errorMessages.push("Invalid to date - date does not exist (e.g., 2024-02-30)");
+  // Validate dates using centralized helper
+  if (from) {
+    const fromValidation = validateISODate(finalFrom);
+    if (!fromValidation.isValid) {
+      errorMessages.push(`Invalid from date - ${fromValidation.error}`);
+    }
   }
 
-  // Additional validation: from date should not be after to date
-  if (!isNaN(fromDate.getTime()) && !isNaN(toDate.getTime()) && fromDate > toDate) {
-    errorMessages.push("Invalid date range - from date cannot be after to date");
+  if (to) {
+    const toValidation = validateISODate(finalTo);
+    if (!toValidation.isValid) {
+      errorMessages.push(`Invalid to date - ${toValidation.error}`);
+    }
+  }
+
+  // Validate date range using centralized helper
+  const rangeValidation = validateDateRange(finalFrom, finalTo);
+  if (!rangeValidation.isValid) {
+    errorMessages.push(rangeValidation.error);
   }
 
   // Extract HMRC account (sandbox/live) from header hmrcAccount
