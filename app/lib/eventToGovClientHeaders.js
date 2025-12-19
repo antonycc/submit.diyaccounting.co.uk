@@ -39,7 +39,7 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   // Gov-Client-Multi-Factor: Must include timestamp and unique-reference
   const mfaHeader = sanitize(h("Gov-Client-Multi-Factor"));
   const mfaTimestamp = new Date().toISOString();
-  const mfaUniqueRef = `server-${Date.now()}`;
+  const mfaUniqueRef = `server-${crypto.randomUUID()}`;
   const govClientMultiFactorHeader =
     mfaHeader || `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
 

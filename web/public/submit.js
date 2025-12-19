@@ -1016,7 +1016,8 @@ async function getGovClientHeaders() {
 
   // Gov-Client-Public-Port: Don't send server ports (443, 80)
   const clientPort = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
-  const govClientPublicPortHeader = clientPort === "443" || clientPort === "80" ? undefined : clientPort;
+  const portNum = parseInt(clientPort, 10);
+  const govClientPublicPortHeader = portNum === 443 || portNum === 80 ? undefined : clientPort;
 
   // Gov-Client-Screens: Must be an array of objects with scalingFactor
   const govClientScreensHeader = JSON.stringify([
@@ -1030,7 +1031,7 @@ async function getGovClientHeaders() {
 
   // Gov-Client-Timezone: Must be in UTC±<hh>:<mm> format
 
-  const timezoneOffset = -new Date().getTimezoneOffset(); // minutes, positive = east of UTC
+  const timezoneOffset = -new Date().getTimezoneOffset(); // minutes, negative getTimezoneOffset means positive = east of UTC
   const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
   const offsetMinutes = Math.abs(timezoneOffset) % 60;
   const offsetSign = timezoneOffset >= 0 ? "+" : "-";
