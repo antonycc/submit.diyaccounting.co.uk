@@ -390,18 +390,18 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   userSub = await extractUserSubFromLocalStorage(page, testInfo);
 
-  /* ********* */
-  /*  LOG OUT  */
-  /* ********* */
-
-  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
-
   /* ********************************** */
   /*  FRAUD PREVENTION HEADERS FEEDBACK */
   /* ********************************** */
 
   // For sandbox tests, fetch fraud prevention headers validation feedback
   await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
+
+  /* ********* */
+  /*  LOG OUT  */
+  /* ********* */
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
   /* **************** */
   /*  EXPORT DYNAMODB */

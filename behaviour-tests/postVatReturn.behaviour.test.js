@@ -346,18 +346,18 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
 
   userSub = await extractUserSubFromLocalStorage(page, testInfo);
 
-  /* ********* */
-  /*  LOG OUT  */
-  /* ********* */
-
-  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
-
   /* ********************************** */
   /*  FRAUD PREVENTION HEADERS FEEDBACK */
   /* ********************************** */
 
   // For sandbox tests, fetch fraud prevention headers validation feedback
   await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
+
+  /* ********* */
+  /*  LOG OUT  */
+  /* ********* */
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
   /* **************** */
   /*  EXPORT DYNAMODB */
