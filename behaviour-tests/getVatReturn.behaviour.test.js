@@ -39,6 +39,7 @@ import {
   initViewVatReturn,
   submitViewVatReturnForm,
   verifyViewVatReturnResults,
+  fetchFraudPreventionHeadersFeedback,
 } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
@@ -63,6 +64,7 @@ import {
   deleteUserSubTxt,
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
+  extractHmrcAccessTokenFromSessionStorage,
 } from "./helpers/fileHelper.js";
 import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 
@@ -295,6 +297,16 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
       `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
     ).toBeGreaterThanOrEqual(5_000);
     expect(slowElapsedMs).toBeLessThan(60_000);
+  }
+
+  // For sandbox tests, fetch fraud prevention headers validation feedback
+  if (isSandboxMode()) {
+    const hmrcAccessToken = await extractHmrcAccessTokenFromSessionStorage(page, testInfo);
+    if (hmrcAccessToken) {
+      await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath);
+    } else {
+      console.warn("Could not retrieve HMRC access token from session storage for feedback check");
+    }
   }
 
   // Extract user sub and log out

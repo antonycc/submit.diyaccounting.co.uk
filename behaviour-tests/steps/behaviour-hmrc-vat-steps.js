@@ -640,3 +640,34 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
     });
   }
 }
+
+/**
+ * Fetch and log HMRC fraud prevention header validation feedback for sandbox tests.
+ * This calls the HMRC test API to get feedback on all requests made to the vat-mtd API.
+ *
+ * @param {string} hmrcAccessToken - HMRC OAuth access token
+ * @param {string} screenshotPath - Path for screenshots
+ */
+export async function fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath = defaultScreenshotPath) {
+  await test.step("Fetch fraud prevention headers validation feedback from HMRC", async () => {
+    const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
+
+    console.log("Fetching fraud prevention headers validation feedback...");
+    const result = await getFraudPreventionHeadersFeedback("vat-mtd", hmrcAccessToken);
+
+    if (result.ok) {
+      console.log("Fraud prevention headers validation feedback received:");
+      console.log(JSON.stringify(result.feedback, null, 2));
+
+      // Log any errors or warnings
+      if (result.feedback.errors && result.feedback.errors.length > 0) {
+        console.warn("Validation errors:", result.feedback.errors);
+      }
+      if (result.feedback.warnings && result.feedback.warnings.length > 0) {
+        console.warn("Validation warnings:", result.feedback.warnings);
+      }
+    } else {
+      console.warn("Failed to fetch fraud prevention headers validation feedback:", result.error || result.status);
+    }
+  });
+}

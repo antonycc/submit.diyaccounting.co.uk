@@ -97,3 +97,18 @@ export async function extractUserSubFromLocalStorage(page, testInfo) {
   }
   return null;
 }
+
+export async function extractHmrcAccessTokenFromSessionStorage(page, testInfo) {
+  try {
+    const token = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
+    if (token) {
+      console.log(`[test body] Found hmrcAccessToken in sessionStorage for test "${testInfo.title}"`);
+      return token;
+    } else {
+      console.log(`[test body] No hmrcAccessToken found in sessionStorage for test "${testInfo.title}"`);
+    }
+  } catch (e) {
+    console.log(`[test body] Error accessing sessionStorage: ${e.message}`);
+  }
+  return null;
+}
