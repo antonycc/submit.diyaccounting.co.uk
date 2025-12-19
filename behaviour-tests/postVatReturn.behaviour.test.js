@@ -254,7 +254,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* ************************************* */
   if (isSandboxMode()) {
     /**
-     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-md-vat-api-1.0.yaml)
+     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
      *
      * POST /organisations/vat/{vrn}/returns
      *  - INVALID_VRN: Submission has not passed validation. Invalid parameter VRN.
