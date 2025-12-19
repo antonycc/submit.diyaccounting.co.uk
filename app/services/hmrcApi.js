@@ -79,6 +79,9 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
  * Validate fraud prevention headers for sandbox HMRC accounts.
  * Calls the HMRC Test Fraud Prevention Headers API to validate headers before making actual API calls.
  *
+ * This is a fire-and-forget validation that logs results but does not block the main API request.
+ * The validation helps identify header issues during development and testing.
+ *
  * @param {string} accessToken - HMRC OAuth access token
  * @param {Object} govClientHeaders - Gov-Client-* fraud prevention headers
  * @returns {Promise<Object>} Validation result with {isValid, response}

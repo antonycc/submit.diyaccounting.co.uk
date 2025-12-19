@@ -15,6 +15,7 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
+  checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -29,14 +30,7 @@ import {
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import {
-  completeVat,
-  fillInVat,
-  initSubmitVat,
-  submitFormVat,
-  verifyVatSubmission,
-  fetchFraudPreventionHeadersFeedback,
-} from "./steps/behaviour-hmrc-vat-steps.js";
+import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -60,7 +54,6 @@ import {
   deleteUserSubTxt,
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
-  extractHmrcAccessTokenFromSessionStorage,
 } from "./helpers/fileHelper.js";
 import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 
@@ -346,14 +339,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   }
 
   // For sandbox tests, fetch fraud prevention headers validation feedback
-  if (isSandboxMode()) {
-    const hmrcAccessToken = await extractHmrcAccessTokenFromSessionStorage(page, testInfo);
-    if (hmrcAccessToken) {
-      await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath);
-    } else {
-      console.warn("Could not retrieve HMRC access token from session storage for feedback check");
-    }
-  }
+  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath);
 
   // Extract user sub and log out
   userSub = await extractUserSubFromLocalStorage(page, testInfo);
