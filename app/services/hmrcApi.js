@@ -275,17 +275,17 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
 export function generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
   // Attach parsed body for downstream error helpers
   hmrcResponse.data = hmrcResponseBody;
-  
+
   // Get user-friendly error message from HMRC response
   const errorInfo = getErrorMessageFromHmrcResponse(hmrcResponse);
-  
+
   logger.warn({
     message: `HMRC API error: ${errorInfo.message}`,
     errorCode: errorInfo.code,
     httpStatus: hmrcResponse.status,
     userGuidance: errorInfo.userGuidance,
   });
-  
+
   if (hmrcResponse.status === 403) {
     return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders, errorInfo);
   } else if (hmrcResponse.status === 404) {
@@ -300,11 +300,11 @@ export function generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, 
       headers: { ...responseHeaders },
       message: errorInfo.message,
       userGuidance: errorInfo.userGuidance,
-      error: { 
+      error: {
         code: errorInfo.code,
-        hmrcResponseCode: hmrcResponse.status, 
-        responseBody: hmrcResponse.data, 
-        retryAfter 
+        hmrcResponseCode: hmrcResponse.status,
+        responseBody: hmrcResponse.data,
+        retryAfter,
       },
     });
   } else {
@@ -368,10 +368,10 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
       govClientHeaderKeys: Object.keys(govClientHeaders || {}),
     },
   };
-  
+
   const message = errorInfo?.message || "Forbidden - Access token may be invalid, expired, or lack required permissions";
   const userGuidance = errorInfo?.userGuidance;
-  
+
   logger.warn({
     message,
     hmrcAccessTokenData,
@@ -395,7 +395,7 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
 export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorInfo = null) {
   const message = errorInfo?.message || "Not found for the specified query";
   const userGuidance = errorInfo?.userGuidance;
-  
+
   logger.warn({
     message,
     request,
@@ -419,7 +419,7 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
 export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorInfo = null) {
   const message = errorInfo?.message || "HMRC request failed";
   const userGuidance = errorInfo?.userGuidance;
-  
+
   logger.error({
     message,
     request,

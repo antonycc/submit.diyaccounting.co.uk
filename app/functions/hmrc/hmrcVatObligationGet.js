@@ -59,8 +59,19 @@ export function extractAndValidateParameters(event, errorMessages) {
   const finalFrom = from || defaultFromDate;
   const finalTo = to || defaultToDate;
 
+  // Additional validation: check dates are valid (not just format)
+  const fromDate = new Date(finalFrom);
+  const toDate = new Date(finalTo);
+
+  if (from && (isNaN(fromDate.getTime()) || fromDate.toISOString().split("T")[0] !== finalFrom)) {
+    errorMessages.push("Invalid from date - date does not exist (e.g., 2024-02-30)");
+  }
+  if (to && (isNaN(toDate.getTime()) || toDate.toISOString().split("T")[0] !== finalTo)) {
+    errorMessages.push("Invalid to date - date does not exist (e.g., 2024-02-30)");
+  }
+
   // Additional validation: from date should not be after to date
-  if (new Date(finalFrom) > new Date(finalTo)) {
+  if (!isNaN(fromDate.getTime()) && !isNaN(toDate.getTime()) && fromDate > toDate) {
     errorMessages.push("Invalid date range - from date cannot be after to date");
   }
 

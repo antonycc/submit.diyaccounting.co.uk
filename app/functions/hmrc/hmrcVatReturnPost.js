@@ -59,8 +59,9 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
     errorMessages.push("Invalid vatNumber format - must be 9 digits");
   }
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
-    errorMessages.push("Invalid periodKey format");
+  // Refined period key validation: HMRC uses formats like "24A1" (YYA#) or "#001" (quarterly)
+  if (periodKey && !/^(#\d{3}|\d{2}[A-Z]\d)$/i.test(String(periodKey))) {
+    errorMessages.push("Invalid periodKey format - must be like '24A1' or '#001'");
   }
 
   // Extract HMRC account (sandbox/live) from header hmrcAccount

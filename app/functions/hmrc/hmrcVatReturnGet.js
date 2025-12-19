@@ -51,8 +51,10 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!vrn) errorMessages.push("Missing vrn parameter");
   if (!periodKey) errorMessages.push("Missing periodKey parameter");
   if (vrn && !/^\d{9}$/.test(String(vrn))) errorMessages.push("Invalid vrn format - must be 9 digits");
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) errorMessages.push("Invalid periodKey format");
-
+  // Refined period key validation: HMRC uses formats like "24A1" (YYA#) or "#001" (quarterly)
+  if (periodKey && !/^(#\d{3}|\d{2}[A-Z]\d)$/i.test(String(periodKey))) {
+    errorMessages.push("Invalid periodKey format - must be like '24A1' or '#001'");
+  }
   // Normalize periodKey to uppercase if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
 
