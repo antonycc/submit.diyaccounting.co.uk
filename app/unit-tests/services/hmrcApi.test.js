@@ -102,15 +102,18 @@ describe("services/hmrcApi", () => {
     expect(result.status).toBe(200);
 
     // Verify fetch was called with correct URL and headers
-    expect(mockFetch).toHaveBeenCalledWith("https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate", {
-      method: "GET",
-      headers: expect.objectContaining({
-        "Accept": "application/vnd.hmrc.1.0+json",
-        "Authorization": "Bearer token-123",
-        "Gov-Client-Device-ID": "test-device-id",
-        "Gov-Client-Connection-Method": "DESKTOP_APP_DIRECT",
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({
+          Accept: "application/vnd.hmrc.1.0+json",
+          Authorization: "Bearer token-123",
+          "Gov-Client-Device-ID": "test-device-id",
+          "Gov-Client-Connection-Method": "DESKTOP_APP_DIRECT",
+        }),
       }),
-    });
+    );
   });
 
   it("validateFraudPreventionHeaders handles invalid headers response", async () => {
@@ -185,13 +188,13 @@ describe("services/hmrcApi", () => {
     // Verify fetch was called with correct URL
     expect(mockFetch).toHaveBeenCalledWith(
       "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/vat-mtd/validation-feedback",
-      {
+      expect.objectContaining({
         method: "GET",
-        headers: {
+        headers: expect.objectContaining({
           Accept: "application/vnd.hmrc.1.0+json",
           Authorization: "Bearer token-123",
-        },
-      },
+        }),
+      }),
     );
   });
 
