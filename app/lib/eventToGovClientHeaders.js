@@ -4,6 +4,7 @@
 
 import { createLogger } from "./logger.js";
 import { buildFraudHeaders } from "./buildFraudHeaders.js";
+import { maskIPAddress } from "./maskSensitiveData.js";
 
 const logger = createLogger({ source: "app/lib/eventToGovClientHeaders.js" });
 
@@ -48,8 +49,8 @@ export default function eventToGovClientHeaders(event, detectedIP) {
     govClientPublicIPHeader = fraudHeaders["Gov-Client-Public-IP"] || detectedIP;
     logger.info({
       message: "Server detected client IP from request headers",
-      govClientPublicIPHeader,
-      detectedIP,
+      govClientPublicIPHeader: maskIPAddress(govClientPublicIPHeader),
+      detectedIP: maskIPAddress(detectedIP),
     });
   }
 

@@ -21,6 +21,7 @@ import {
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
 } from "../../services/hmrcApi.js";
+import { maskGovClientHeaders } from "../../lib/maskSensitiveData.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -259,10 +260,10 @@ function logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHead
   logger.info({
     message: `Request to POST ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
-    headers: {
+    headers: maskGovClientHeaders({
       ...hmrcRequestHeaders,
       ...govClientHeaders,
-    },
+    }),
     body: hmrcRequestBody,
     environment: {
       // nodeEnv: process.env.NODE_ENV,
