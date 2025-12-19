@@ -33,6 +33,9 @@
     "selfDestructDelayHours": "1",
     "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b",
     "docRootPath": "../web/public",
-    "httpApiUrl": "https://placeholder.example.com/"
+    "httpApiUrl": "https://placeholder.example.com/",
+    "fraudVendorLicenseIds": "",
+    "fraudVendorProductName": "DIY Accounting Submit",
+    "fraudVendorVersion": ""
   }
 }

@@ -1233,6 +1233,9 @@ jobs:
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          # Fraud prevention headers - set version to git SHA, license IDs from secrets
+          FRAUD_VENDOR_LICENSE_IDS: ${{ secrets.FRAUD_VENDOR_LICENSE_IDS }}
+          FRAUD_VENDOR_VERSION: ${{ github.sha }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-hmrc.json | jq '.'
 

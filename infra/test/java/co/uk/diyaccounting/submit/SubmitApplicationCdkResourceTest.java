@@ -38,6 +38,9 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "web/public"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
+    @SetEnvironmentVariable(key = "FRAUD_VENDOR_LICENSE_IDS", value = "test-software=TEST12345"),
+    @SetEnvironmentVariable(key = "FRAUD_VENDOR_PRODUCT_NAME", value = "DIY Accounting Submit"),
+    @SetEnvironmentVariable(key = "FRAUD_VENDOR_VERSION", value = "0.0.2-test"),
 })
 class SubmitApplicationCdkResourceTest {
 
