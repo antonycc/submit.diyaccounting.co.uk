@@ -15,6 +15,7 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
+  checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -545,6 +546,13 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     ).toBeGreaterThanOrEqual(5_000);
     expect(slowElapsedMs).toBeLessThan(60_000);
   }
+
+  /* ********************************** */
+  /*  FRAUD PREVENTION HEADERS FEEDBACK */
+  /* ********************************** */
+
+  // For sandbox tests, fetch fraud prevention headers validation feedback
+  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath);
 
   /* ****************** */
   /*  Extract user sub  */

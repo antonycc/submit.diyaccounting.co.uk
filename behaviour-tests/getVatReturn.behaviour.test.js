@@ -15,6 +15,7 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
+  checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -296,6 +297,9 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     ).toBeGreaterThanOrEqual(5_000);
     expect(slowElapsedMs).toBeLessThan(60_000);
   }
+
+  // For sandbox tests, fetch fraud prevention headers validation feedback
+  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath);
 
   // Extract user sub and log out
   userSub = await extractUserSubFromLocalStorage(page, testInfo);

@@ -717,3 +717,27 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
     });
   }
 }
+
+/**
+ * Fetch and log HMRC fraud prevention header validation feedback for sandbox tests.
+ * This is a shared helper used by multiple behavior tests.
+ *
+ * @param {Object} page - Playwright page object
+ * @param {Object} testInfo - Playwright test info object
+ * @param {string} screenshotPath - Path for screenshots
+ */
+export async function checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath) {
+  if (!isSandboxMode()) {
+    return;
+  }
+
+  const { extractHmrcAccessTokenFromSessionStorage } = await import("./fileHelper.js");
+  const { fetchFraudPreventionHeadersFeedback } = await import("../steps/behaviour-hmrc-vat-steps.js");
+
+  const hmrcAccessToken = await extractHmrcAccessTokenFromSessionStorage(page, testInfo);
+  if (hmrcAccessToken) {
+    await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath);
+  } else {
+    console.warn("Could not retrieve HMRC access token from session storage for feedback check");
+  }
+}

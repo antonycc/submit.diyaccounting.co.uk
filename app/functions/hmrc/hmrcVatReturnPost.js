@@ -20,6 +20,7 @@ import {
   http403ForbiddenFromBundleEnforcement,
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
+  validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
 import { maskGovClientHeaders } from "../../lib/maskSensitiveData.js";
 import { isValidVRN, isValidPeriodKey } from "../../lib/validationHelpers.js";
@@ -200,6 +201,11 @@ export async function submitVat(
   auditForUserSub,
   govTestScenarioHeader,
 ) {
+  // Validate fraud prevention headers for sandbox accounts
+  if (hmrcAccount === "sandbox") {
+    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders);
+  }
+
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
