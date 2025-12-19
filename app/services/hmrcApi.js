@@ -87,8 +87,8 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
   const validationUrl = "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate";
 
   const headers = {
-    "Accept": "application/vnd.hmrc.1.0+json",
-    "Authorization": `Bearer ${accessToken}`,
+    Accept: "application/vnd.hmrc.1.0+json",
+    Authorization: `Bearer ${accessToken}`,
     ...govClientHeaders,
   };
 
@@ -110,7 +110,7 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
       message: `Fraud prevention header validation response`,
       status: response.status,
       code: responseBody.code,
-      message: responseBody.message,
+      validationMessage: responseBody.message,
     });
 
     // Log any errors or warnings from the validation
@@ -158,8 +158,8 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken) {
   const feedbackUrl = `https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/${api}/validation-feedback`;
 
   const headers = {
-    "Accept": "application/vnd.hmrc.1.0+json",
-    "Authorization": `Bearer ${accessToken}`,
+    Accept: "application/vnd.hmrc.1.0+json",
+    Authorization: `Bearer ${accessToken}`,
   };
 
   logger.info({
