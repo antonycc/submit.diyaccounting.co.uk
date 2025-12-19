@@ -725,9 +725,11 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
  * @param {Object} page - Playwright page object
  * @param {Object} testInfo - Playwright test info object
  * @param {string} screenshotPath - Path for screenshots
+ * @param {string} auditForUserSub - User sub for auditing to DynamoDB
  */
-export async function checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath) {
+export async function checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, auditForUserSub) {
   if (!isSandboxMode()) {
+    logger.info("[HMRC Fraud Prevention] Skipping fraud prevention header validation feedback check in non-sandbox mode");
     return;
   }
 
@@ -736,7 +738,7 @@ export async function checkFraudPreventionHeadersFeedback(page, testInfo, screen
 
   const hmrcAccessToken = await extractHmrcAccessTokenFromSessionStorage(page, testInfo);
   if (hmrcAccessToken) {
-    await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath);
+    await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath, auditForUserSub);
   } else {
     console.warn("Could not retrieve HMRC access token from session storage for feedback check");
   }

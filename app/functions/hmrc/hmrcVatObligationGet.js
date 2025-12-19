@@ -208,7 +208,7 @@ export async function getVatObligations(
 ) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox") {
-    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders);
+    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub);
   }
 
   const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;

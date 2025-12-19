@@ -15,6 +15,7 @@ import {
   runLocalDynamoDb,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
+  checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -389,6 +390,13 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   userSub = await extractUserSubFromLocalStorage(page, testInfo);
 
+  /* ********************************** */
+  /*  FRAUD PREVENTION HEADERS FEEDBACK */
+  /* ********************************** */
+
+  // For sandbox tests, fetch fraud prevention headers validation feedback
+  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
+
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
@@ -419,7 +427,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* ********************************** */
 
   // Assert that HMRC API requests were logged correctly
-  if (runDynamoDb === "run") {
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
 
     // Assert OAuth token exchange request exists

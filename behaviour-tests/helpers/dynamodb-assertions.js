@@ -133,15 +133,12 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
   const hashedSubs = [...new Set(records.map((r) => r.hashedSub).filter((h) => h))];
   const oauthRequests = records.filter((r) => r.url && r.url.includes("/oauth/token"));
   const authenticatedRequests = records.filter((r) => r.url && !r.url.includes("/oauth/token"));
-  // Also capture /test/fraud-prevention-headers/validate and /test/fraud-prevention-headers/{api}/validation-feedback requests
-  const fraudPreventionRequests = records.filter((r) => r.url && r.url.includes("/test/fraud-prevention-headers"));
   const oauthHashedSubs = [...new Set(oauthRequests.map((r) => r.hashedSub))];
   const authenticatedHashedSubs = [...new Set(authenticatedRequests.map((r) => r.hashedSub))];
-  const fraudPreventionHashedSubs = [...new Set(fraudPreventionRequests.map((r) => r.hashedSub))];
   const desc = description ? ` (${description})` : "";
 
   // If allowing OAuth difference, validate that we have at most 2 hashedSubs: one for OAuth, one for authenticated
-  if (allowOAuthDifference && hashedSubs.length - fraudPreventionHashedSubs.length === 2) {
+  if (allowOAuthDifference && hashedSubs.length) {
     // Verify OAuth requests use one hashedSub and authenticated requests use another
     expect(oauthHashedSubs.length, `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`).toBe(
       1,
@@ -158,13 +155,11 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
     );
   } else {
     expect(
-      hashedSubs.length - fraudPreventionHashedSubs.length,
-      `Expected all HMRC API requests to have the same hashedSub${desc}, but found ${hashedSubs.length - fraudPreventionHashedSubs.length} different values: ${hashedSubs.join(", ")}`,
+      hashedSubs.length,
+      `Expected all HMRC API requests to have the same hashedSub${desc}, but found ${hashedSubs.length} different values: ${hashedSubs.join(", ")}`,
     ).toBeLessThanOrEqual(maxHashedSubs);
 
-    logger.info(
-      `Found ${records.length} HMRC API requests with ${hashedSubs.length - fraudPreventionHashedSubs.length} unique hashedSub value(s)`,
-    );
+    logger.info(`Found ${records.length} HMRC API requests with ${hashedSubs.length} unique hashedSub value(s)`);
   }
 
   return hashedSubs;
