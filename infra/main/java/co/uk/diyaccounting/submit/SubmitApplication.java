@@ -156,9 +156,16 @@ public class SubmitApplication {
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
         
         // Fraud prevention header configuration - allow environment variable override
-        var fraudVendorLicenseIds = envOr("FRAUD_VENDOR_LICENSE_IDS", appProps.fraudVendorLicenseIds, null);
-        var fraudVendorProductName = envOr("FRAUD_VENDOR_PRODUCT_NAME", appProps.fraudVendorProductName, "DIY Accounting Submit");
-        var fraudVendorVersion = envOr("FRAUD_VENDOR_VERSION", appProps.fraudVendorVersion, null);
+        // Treat empty strings from cdk.json as null
+        var fraudVendorLicenseIds = envOr("FRAUD_VENDOR_LICENSE_IDS", 
+            (appProps.fraudVendorLicenseIds != null && !appProps.fraudVendorLicenseIds.isBlank()) 
+                ? appProps.fraudVendorLicenseIds : null, null);
+        var fraudVendorProductName = envOr("FRAUD_VENDOR_PRODUCT_NAME", 
+            (appProps.fraudVendorProductName != null && !appProps.fraudVendorProductName.isBlank()) 
+                ? appProps.fraudVendorProductName : "DIY Accounting Submit", "DIY Accounting Submit");
+        var fraudVendorVersion = envOr("FRAUD_VENDOR_VERSION", 
+            (appProps.fraudVendorVersion != null && !appProps.fraudVendorVersion.isBlank()) 
+                ? appProps.fraudVendorVersion : null, null);
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
