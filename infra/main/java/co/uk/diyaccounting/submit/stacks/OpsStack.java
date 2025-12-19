@@ -1,6 +1,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -14,11 +18,6 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class OpsStack extends Stack {
 

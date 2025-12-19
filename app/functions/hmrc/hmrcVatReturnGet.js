@@ -22,6 +22,7 @@ import {
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
+  validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 
@@ -182,6 +183,11 @@ export async function handler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub) {
+  // Validate fraud prevention headers for sandbox accounts
+  if (hmrcAccount === "sandbox") {
+    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders);
+  }
+
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
   let hmrcResponse = {};
   /* v8 ignore start */

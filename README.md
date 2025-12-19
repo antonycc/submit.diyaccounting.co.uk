@@ -122,6 +122,9 @@ House style and tooling
 - Formatting checks: npm run formatting (Prettier + Spotless) / npm run formatting-fix
 - Linting: npm run linting / npm run linting-fix
 - Java formatting is enforced by Spotless (Palantir Java Format, 100 columns)
+-  Avoid unnecessary formatting changes when editing code and do not reformat the lines if code that you are not changing.
+-  Do not re-order imports (I consider this unnecessary formatting formatting).
+-  Only run linting and formatting fix commands `npm run linting-fix && npm run formatting-fix` if specifically asked to fix formatting and linting errors:.
 
 Documentation
 - This README: high-level architecture and quickstart
