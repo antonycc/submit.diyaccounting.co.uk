@@ -75,6 +75,131 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
   }
 }
 
+/**
+ * Validate fraud prevention headers for sandbox HMRC accounts.
+ * Calls the HMRC Test Fraud Prevention Headers API to validate headers before making actual API calls.
+ *
+ * @param {string} accessToken - HMRC OAuth access token
+ * @param {Object} govClientHeaders - Gov-Client-* fraud prevention headers
+ * @returns {Promise<Object>} Validation result with {isValid, response}
+ */
+export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}) {
+  const validationUrl = "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate";
+
+  const headers = {
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${accessToken}`,
+    ...govClientHeaders,
+  };
+
+  logger.info({
+    message: `Validating fraud prevention headers`,
+    url: validationUrl,
+    headers: Object.keys(govClientHeaders),
+  });
+
+  try {
+    const response = await fetch(validationUrl, {
+      method: "GET",
+      headers,
+    });
+
+    const responseBody = await response.json().catch(() => ({}));
+
+    logger.info({
+      message: `Fraud prevention header validation response`,
+      status: response.status,
+      code: responseBody.code,
+      message: responseBody.message,
+    });
+
+    // Log any errors or warnings from the validation
+    if (responseBody.errors && responseBody.errors.length > 0) {
+      logger.warn({
+        message: "Fraud prevention header validation errors",
+        errors: responseBody.errors,
+      });
+    }
+    if (responseBody.warnings && responseBody.warnings.length > 0) {
+      logger.warn({
+        message: "Fraud prevention header validation warnings",
+        warnings: responseBody.warnings,
+      });
+    }
+
+    return {
+      isValid: response.ok && responseBody.code === "VALID_HEADERS",
+      response: responseBody,
+      status: response.status,
+    };
+  } catch (error) {
+    logger.error({
+      message: "Error validating fraud prevention headers",
+      error: error.message,
+      stack: error.stack,
+    });
+    // Don't fail the main request if validation fails
+    return {
+      isValid: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Get validation feedback for fraud prevention headers from HMRC test API.
+ * This retrieves feedback on all requests made to a specific API.
+ *
+ * @param {string} api - The API name (e.g., 'vat-mtd')
+ * @param {string} accessToken - HMRC OAuth access token
+ * @returns {Promise<Object>} Validation feedback
+ */
+export async function getFraudPreventionHeadersFeedback(api, accessToken) {
+  const feedbackUrl = `https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/${api}/validation-feedback`;
+
+  const headers = {
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${accessToken}`,
+  };
+
+  logger.info({
+    message: `Getting fraud prevention headers validation feedback`,
+    url: feedbackUrl,
+    api,
+  });
+
+  try {
+    const response = await fetch(feedbackUrl, {
+      method: "GET",
+      headers,
+    });
+
+    const responseBody = await response.json().catch(() => ({}));
+
+    logger.info({
+      message: `Fraud prevention header validation feedback response`,
+      status: response.status,
+      feedback: responseBody,
+    });
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      feedback: responseBody,
+    };
+  } catch (error) {
+    logger.error({
+      message: "Error getting fraud prevention headers validation feedback",
+      error: error.message,
+      stack: error.stack,
+    });
+    return {
+      ok: false,
+      error: error.message,
+    };
+  }
+}
+
 export async function hmrcHttpGet(
   endpoint,
   accessToken,
