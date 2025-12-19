@@ -84,16 +84,25 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
  *
  * @param {string} accessToken - HMRC OAuth access token
  * @param {Object} govClientHeaders - Gov-Client-* fraud prevention headers
+ * @param {string} [auditForUserSub] - Optional user sub for auditing to DynamoDB
  * @returns {Promise<Object>} Validation result with {isValid, response}
  */
-export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}) {
+export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}, auditForUserSub) {
   const validationUrl = "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate";
 
   const headers = {
     Accept: "application/vnd.hmrc.1.0+json",
     Authorization: `Bearer ${accessToken}`,
     ...govClientHeaders,
+    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
   };
+  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
+  if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
+    const cid = context.get("correlationId") || context.get("requestId");
+    if (cid) headers["x-correlationid"] = cid;
+  }
 
   logger.info({
     message: `Validating fraud prevention headers`,
@@ -101,13 +110,37 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
     headers: Object.keys(govClientHeaders),
   });
 
+  // Prepare request object and capture duration
+  const httpRequest = { method: "GET", headers };
+  let duration = 0;
+  const controller = new AbortController();
+  const timeoutMs = 20000;
+  const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
+
   try {
-    const response = await fetch(validationUrl, {
-      method: "GET",
-      headers,
-    });
+    const startTime = Date.now();
+    const response = await fetch(validationUrl, { method: "GET", headers, signal: controller.signal });
+    duration = Date.now() - startTime;
 
     const responseBody = await response.json().catch(() => ({}));
+
+    // Normalise response headers to a plain object (Headers is not marshallable)
+    let responseHeadersObj = {};
+    try {
+      if (response && typeof response.headers?.forEach === "function") {
+        response.headers.forEach((value, key) => {
+          responseHeadersObj[key] = value;
+        });
+      } else if (response?.headers && typeof response.headers === "object") {
+        responseHeadersObj = { ...response.headers };
+      }
+    } catch (error) {
+      logger.error({
+        message: "Error normalizing HMRC response headers",
+        error: error.message,
+        stack: error.stack,
+      });
+    }
 
     logger.info({
       message: `Fraud prevention header validation response`,
@@ -130,22 +163,58 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
       });
     }
 
+    // Audit request/response to DynamoDB
+    const httpResponse = {
+      statusCode: response.status,
+      headers: responseHeadersObj,
+      body: responseBody,
+    };
+    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+    try {
+      await putHmrcApiRequest(userSubOrUuid, { url: validationUrl, httpRequest, httpResponse, duration });
+    } catch (auditError) {
+      logger.error({
+        message: "Error auditing HMRC API request/response to DynamoDB",
+        error: auditError.message,
+        stack: auditError.stack,
+      });
+    }
+
     return {
       isValid: response.ok && responseBody.code === "VALID_HEADERS",
       response: responseBody,
       status: response.status,
     };
   } catch (error) {
+    clearTimeout(timeout);
     logger.error({
       message: "Error validating fraud prevention headers",
       error: error.message,
       stack: error.stack,
     });
+    // Optionally audit failed attempt even if fetch throws before response
+    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+    try {
+      await putHmrcApiRequest(userSubOrUuid, {
+        url: validationUrl,
+        httpRequest,
+        httpResponse: { statusCode: 0, headers: {}, body: { error: error.message } },
+        duration,
+      });
+    } catch (auditError) {
+      logger.error({
+        message: "Error auditing HMRC API request/response to DynamoDB",
+        error: auditError.message,
+        stack: auditError.stack,
+      });
+    }
     // Don't fail the main request if validation fails
     return {
       isValid: false,
       error: error.message,
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -155,15 +224,24 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
  *
  * @param {string} api - The API name (e.g., 'vat-mtd')
  * @param {string} accessToken - HMRC OAuth access token
+ * @param {string} [auditForUserSub] - Optional user sub for auditing to DynamoDB
  * @returns {Promise<Object>} Validation feedback
  */
-export async function getFraudPreventionHeadersFeedback(api, accessToken) {
+export async function getFraudPreventionHeadersFeedback(api, accessToken, auditForUserSub) {
   const feedbackUrl = `https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/${api}/validation-feedback`;
 
   const headers = {
     Accept: "application/vnd.hmrc.1.0+json",
     Authorization: `Bearer ${accessToken}`,
+    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
   };
+  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
+  if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
+    const cid = context.get("correlationId") || context.get("requestId");
+    if (cid) headers["x-correlationid"] = cid;
+  }
 
   logger.info({
     message: `Getting fraud prevention headers validation feedback`,
@@ -171,13 +249,36 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken) {
     api,
   });
 
+  const httpRequest = { method: "GET", headers };
+  let duration = 0;
+  const controller = new AbortController();
+  const timeoutMs = 20000;
+  const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
+
   try {
-    const response = await fetch(feedbackUrl, {
-      method: "GET",
-      headers,
-    });
+    const startTime = Date.now();
+    const response = await fetch(feedbackUrl, { method: "GET", headers, signal: controller.signal });
+    duration = Date.now() - startTime;
 
     const responseBody = await response.json().catch(() => ({}));
+
+    // Normalise response headers to a plain object (Headers is not marshallable)
+    let responseHeadersObj = {};
+    try {
+      if (response && typeof response.headers?.forEach === "function") {
+        response.headers.forEach((value, key) => {
+          responseHeadersObj[key] = value;
+        });
+      } else if (response?.headers && typeof response.headers === "object") {
+        responseHeadersObj = { ...response.headers };
+      }
+    } catch (error) {
+      logger.error({
+        message: "Error normalizing HMRC response headers",
+        error: error.message,
+        stack: error.stack,
+      });
+    }
 
     logger.info({
       message: `Fraud prevention header validation feedback response`,
@@ -185,21 +286,55 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken) {
       feedback: responseBody,
     });
 
+    const httpResponse = {
+      statusCode: response.status,
+      headers: responseHeadersObj,
+      body: responseBody,
+    };
+    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+    try {
+      await putHmrcApiRequest(userSubOrUuid, { url: feedbackUrl, httpRequest, httpResponse, duration });
+    } catch (auditError) {
+      logger.error({
+        message: "Error auditing HMRC API request/response to DynamoDB",
+        error: auditError.message,
+        stack: auditError.stack,
+      });
+    }
+
     return {
       ok: response.ok,
       status: response.status,
       feedback: responseBody,
     };
   } catch (error) {
+    clearTimeout(timeout);
     logger.error({
       message: "Error getting fraud prevention headers validation feedback",
       error: error.message,
       stack: error.stack,
     });
+    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
+    try {
+      await putHmrcApiRequest(userSubOrUuid, {
+        url: feedbackUrl,
+        httpRequest,
+        httpResponse: { statusCode: 0, headers: {}, body: { error: error.message } },
+        duration,
+      });
+    } catch (auditError) {
+      logger.error({
+        message: "Error auditing HMRC API request/response to DynamoDB",
+        error: auditError.message,
+        stack: auditError.stack,
+      });
+    }
     return {
       ok: false,
       error: error.message,
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
