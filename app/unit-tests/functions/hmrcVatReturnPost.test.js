@@ -114,6 +114,55 @@ describe("hmrcVatReturnPost handler", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  test("returns 400 when vatNumber has invalid format", async () => {
+    const event = buildHmrcEvent({
+      body: { vatNumber: "12345678", periodKey: "24A1", vatDue: 100, accessToken: "token" }, // 8 digits instead of 9
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("vatNumber");
+    expect(body.message).toContain("9 digits");
+  });
+
+  test("returns 400 when periodKey has invalid format", async () => {
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodKey: "INVALID", vatDue: 100, accessToken: "token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("periodKey");
+  });
+
+  test("accepts valid period key formats - YYXN", async () => {
+    mockHmrcSuccess(mockFetch, {
+      formBundleNumber: "123456789012",
+      chargeRefNumber: "XM002610011594",
+      processingDate: "2023-01-01T12:00:00.000Z",
+    });
+
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodKey: "24A1", vatDue: 100, accessToken: "token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(200);
+  });
+
+  test("accepts valid period key formats - #NNN", async () => {
+    mockHmrcSuccess(mockFetch, {
+      formBundleNumber: "123456789012",
+      chargeRefNumber: "XM002610011594",
+      processingDate: "2023-01-01T12:00:00.000Z",
+    });
+
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodKey: "#001", vatDue: 100, accessToken: "token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(200);
+  });
+
   test("returns 200 with receipt on successful submission", async () => {
     const receipt = {
       formBundleNumber: "123456789012",
@@ -149,5 +198,26 @@ describe("hmrcVatReturnPost handler", () => {
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(500);
+  });
+
+  test("returns user-friendly error message for HMRC error codes", async () => {
+    mockHmrcError(mockFetch, 400, { code: "DUPLICATE_SUBMISSION", message: "Duplicate submission" });
+
+    const event = buildHmrcEvent({
+      body: {
+        vatNumber: "111222333",
+        periodKey: "24A1",
+        vatDue: 100,
+        accessToken: "test-token",
+      },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(500);
+    const body = parseResponseBody(response);
+    // The error details are in the response body
+    expect(body).toHaveProperty("userMessage");
+    expect(body).toHaveProperty("actionAdvice");
+    expect(body.userMessage).toContain("already been submitted");
+    expect(body.actionAdvice).toContain("contact HMRC");
   });
 });
