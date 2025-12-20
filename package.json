@@ -60,6 +60,8 @@
     "test:postVatReturnFPHBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:postVatReturnFPHBehaviour",
     "test:postVatReturnFPHBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:postVatReturnFPHBehaviour-proxy ; npm run test-report -- --testName fraud-prevention-headers-vat-sandbox --testFile behaviour-tests/postVatReturnFPH.behaviour.test.js --envFile .env.proxy",
     "test:postVatReturnFPHBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npm run test:postVatReturnFPHBehaviour-proxy",
+    "test:postVatReturnFPHBehaviour-ci": "npx dotenv -e .env.ci   -- npm run test:postVatReturnFPHBehaviour",
+    "test:postVatReturnFPHBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:postVatReturnFPHBehaviour",
     "test:obligationBehaviour": "playwright test --project=obligation-behaviour-tests",
     "test:obligationBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:obligationBehaviour",
     "test:obligationBehaviour-proxy-report": "HMRC_ACCOUNT=sandbox npm run test:obligationBehaviour-proxy ; npm run test-report -- --testName obligation --testFile behaviour-tests/getVatObligations.behaviour.test.js --envFile .env.proxy",
