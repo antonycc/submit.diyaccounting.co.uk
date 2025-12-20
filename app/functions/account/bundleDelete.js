@@ -183,15 +183,15 @@ function http404NotFound(request, message, responseHeaders) {
   logger.warn({ message, request });
   // Return a proper 404 response (was incorrectly returning 400)
   // We keep using the generic bad request builder style but with correct status
-  const reqId = context.getStore().get("requestId") || String(Date.now());
+  const reqId = context.get("requestId") || String(Date.now());
   return {
     statusCode: 404,
     headers: {
       ...(responseHeaders || {}),
       "x-request-id": reqId,
       "x-correlationid": reqId,
-      ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
-      ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
+      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     },
     body: JSON.stringify({ message }),
   };

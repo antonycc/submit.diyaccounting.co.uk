@@ -97,13 +97,13 @@ export const logger = pino(
 // export const context = new Map();
 export const storage = new AsyncLocalStorage();
 export const context = {
-  // get: (key) => storage.getStore()?.get(key),
-  // set: (key, value) => {
-  //   const store = storage.getStore();
-  //   if (store) {
-  //     store.set(key, value);
-  //   }
-  // },
+  get: (key) => storage.getStore()?.get(key),
+  set: (key, value) => {
+    const store = storage.getStore();
+    if (store) {
+      store.set(key, value);
+    }
+  },
   run: (store, callback) => storage.run(store, callback),
   getStore: () => storage.getStore(),
   enterWith: (store) => storage.enterWith(store),

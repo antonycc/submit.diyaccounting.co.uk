@@ -66,9 +66,9 @@ export async function handler(event) {
   const inboundHeaders = event.headers || {};
   const requestIdHeader = inboundHeaders["x-request-id"] || inboundHeaders["X-Request-Id"] || null;
   const correlationIdHeader = inboundHeaders["x-correlationid"] || inboundHeaders["X-CorrelationId"] || null;
-  if (requestIdHeader) context.getStore().set("requestId", requestIdHeader);
-  if (correlationIdHeader || requestIdHeader) context.getStore().set("correlationId", correlationIdHeader || requestIdHeader);
-  const requestId = context.getStore().get("requestId");
+  if (requestIdHeader) context.set("requestId", requestIdHeader);
+  if (correlationIdHeader || requestIdHeader) context.set("correlationId", correlationIdHeader || requestIdHeader);
+  const requestId = context.get("requestId");
 
   const method = event.requestContext?.http?.method;
   const protocol = event.requestContext?.http?.protocol;
@@ -158,7 +158,7 @@ export async function handler(event) {
   const headers = { ...event.headers, host: targetBase.host };
   // Ensure x-correlationid is forwarded upstream
   if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
-    const cid = context.getStore().get("correlationId") || context.getStore().get("requestId");
+    const cid = context.get("correlationId") || context.get("requestId");
     if (cid) headers["x-correlationid"] = cid;
   }
   const options = { method, headers };
@@ -197,7 +197,7 @@ export async function handler(event) {
   // Ensure proxy reply includes x-correlationid back to caller
   const replyHeaders = { ...(resp.headers || {}) };
   if (!replyHeaders["x-correlationid"] && !replyHeaders["X-CorrelationId"]) {
-    const cid = headers["x-correlationid"] || context.getStore().get("correlationId") || requestId;
+    const cid = headers["x-correlationid"] || context.get("correlationId") || requestId;
     if (cid) replyHeaders["x-correlationid"] = cid;
   }
   return {

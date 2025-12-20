@@ -38,6 +38,7 @@ import {
   assertConsistentHashedSub,
   readDynamoDbExport,
   countHmrcApiRequestValues,
+  assertFraudPreventionHeaders,
 } from "./helpers/dynamodb-assertions.js";
 import {
   completeVat,
@@ -580,6 +581,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       // });
       // TODO: Response code counts based on getVatObligations.behaviour.test.js
     });
+
+    // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
+    // TODO: Apply to every behaviour test that does HMRC API calls
+    // TODO: Enforce valid headers when APIs are stable with valid headers
+    // assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, true);
+    assertFraudPreventionHeaders(hmrcApiRequestsFile);
 
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");

@@ -8,10 +8,10 @@ const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
 
 export function http200OkResponse({ request, headers, data }) {
   const merged = { ...(headers || {}) };
-  if (context.getStore().get("requestId")) merged["x-request-id"] = context.getStore().get("requestId");
-  if (context.getStore().get("amznTraceId")) merged["x-amzn-trace-id"] = context.getStore().get("amznTraceId");
-  if (context.getStore().get("traceparent")) merged["traceparent"] = context.getStore().get("traceparent");
-  if (context.getStore().get("correlationId")) merged["x-correlationid"] = context.getStore().get("correlationId");
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 200,
     request,
@@ -23,10 +23,10 @@ export function http200OkResponse({ request, headers, data }) {
 
 export function http400BadRequestResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (context.getStore().get("requestId")) merged["x-request-id"] = context.getStore().get("requestId");
-  if (context.getStore().get("amznTraceId")) merged["x-amzn-trace-id"] = context.getStore().get("amznTraceId");
-  if (context.getStore().get("traceparent")) merged["traceparent"] = context.getStore().get("traceparent");
-  if (context.getStore().get("correlationId")) merged["x-correlationid"] = context.getStore().get("correlationId");
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 400,
     request,
@@ -38,10 +38,10 @@ export function http400BadRequestResponse({ request, headers, message, error }) 
 
 export function http500ServerErrorResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (context.getStore().get("requestId")) merged["x-request-id"] = context.getStore().get("requestId");
-  if (context.getStore().get("amznTraceId")) merged["x-amzn-trace-id"] = context.getStore().get("amznTraceId");
-  if (context.getStore().get("traceparent")) merged["traceparent"] = context.getStore().get("traceparent");
-  if (context.getStore().get("correlationId")) merged["x-correlationid"] = context.getStore().get("correlationId");
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 500,
     request,
@@ -53,10 +53,10 @@ export function http500ServerErrorResponse({ request, headers, message, error })
 
 export function http403ForbiddenResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (context.getStore().get("requestId")) merged["x-request-id"] = context.getStore().get("requestId");
-  if (context.getStore().get("amznTraceId")) merged["x-amzn-trace-id"] = context.getStore().get("amznTraceId");
-  if (context.getStore().get("traceparent")) merged["traceparent"] = context.getStore().get("traceparent");
-  if (context.getStore().get("correlationId")) merged["x-correlationid"] = context.getStore().get("correlationId");
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 403,
     request,
@@ -68,10 +68,10 @@ export function http403ForbiddenResponse({ request, headers, message, error }) {
 
 export function http401UnauthorizedResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
-  if (context.getStore().get("requestId")) merged["x-request-id"] = context.getStore().get("requestId");
-  if (context.getStore().get("amznTraceId")) merged["x-amzn-trace-id"] = context.getStore().get("amznTraceId");
-  if (context.getStore().get("traceparent")) merged["traceparent"] = context.getStore().get("traceparent");
-  if (context.getStore().get("correlationId")) merged["x-correlationid"] = context.getStore().get("correlationId");
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 401,
     request,
@@ -84,12 +84,12 @@ export function http401UnauthorizedResponse({ request, headers, message, error }
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   const merged = { ...(headers || {}) };
   // Always provide an x-request-id for client correlation; generate if not supplied
-  merged["x-request-id"] = context.getStore().get("requestId") || String(Date.now());
-  if (context.getStore().get("amznTraceId")) merged["x-amzn-trace-id"] = context.getStore().get("amznTraceId");
-  if (context.getStore().get("traceparent")) merged["traceparent"] = context.getStore().get("traceparent");
+  merged["x-request-id"] = context.get("requestId") || String(Date.now());
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
   // Ensure x-correlationid is present; if missing, mirror x-request-id
   if (!merged["x-correlationid"]) {
-    merged["x-correlationid"] = context.getStore().get("correlationId") || merged["x-request-id"];
+    merged["x-correlationid"] = context.get("correlationId") || merged["x-request-id"];
   }
   const response = {
     statusCode: statusCode,
@@ -119,10 +119,10 @@ export function extractRequest(event) {
   const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
   const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
   const correlationId = event?.headers?.["x-correlationid"] || event?.headers?.["X-CorrelationId"] || null;
-  context.getStore().set("requestId", requestId || null);
-  context.getStore().set("amznTraceId", amznTraceId || null);
-  context.getStore().set("traceparent", traceparent || null);
-  context.getStore().set("correlationId", correlationId || requestId || null);
+  context.set("requestId", requestId || null);
+  context.set("amznTraceId", amznTraceId || null);
+  context.set("traceparent", traceparent || null);
+  context.set("correlationId", correlationId || requestId || null);
   if (event.headers) {
     try {
       let baseRequestUrl;
@@ -149,7 +149,7 @@ export function extractRequest(event) {
     logger.warn({ message: "Event has missing URL path or host header", event });
     request = "https://unknown";
   }
-  return { request, requestId, amznTraceId, traceparent, correlationId: context.getStore().get("correlationId") };
+  return { request, requestId, amznTraceId, traceparent, correlationId: context.get("correlationId") };
 }
 
 // Helper function to extract client IP from request headers
@@ -264,10 +264,10 @@ export function buildValidationError(request, errorMessages, govClientHeaders = 
 export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   const requestHeaders = {
     "Content-Type": "application/x-www-form-urlencoded",
-    ...(context.getStore().get("requestId") ? { "x-request-id": context.getStore().get("requestId") } : {}),
-    ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
-    ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
-    ...(context.getStore().get("correlationId") || context.getStore().get("requestId")
+    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    ...(context.get("correlationId") || context.get("requestId")
       ? { "x-correlationid": context.get("correlationId") || context.get("requestId") }
       : {}),
   };

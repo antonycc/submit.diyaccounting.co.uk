@@ -97,12 +97,12 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
     "Authorization": `Bearer ${accessToken}`,
     ...govClientHeaders,
     "x-request-id": requestId,
-    ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
-    ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
+    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
   if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
-    const cid = context.getStore().get("correlationId") || context.getStore().get("requestId");
+    const cid = context.get("correlationId") || context.get("requestId");
     if (cid) headers["x-correlationid"] = cid;
   }
 
@@ -238,13 +238,13 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken, auditF
   const headers = {
     Accept: "application/vnd.hmrc.1.0+json",
     Authorization: `Bearer ${accessToken}`,
-    ...(context.getStore().get("requestId") ? { "x-request-id": context.getStore().get("requestId") } : {}),
-    ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
-    ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
+    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
   if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
-    const cid = context.getStore().get("correlationId") || context.getStore().get("requestId");
+    const cid = context.get("correlationId") || context.get("requestId");
     if (cid) headers["x-correlationid"] = cid;
   }
 
@@ -366,14 +366,14 @@ export async function hmrcHttpGet(
     headers: {
       ...hmrcRequestHeaders,
       ...govClientHeaders,
-      ...(context.getStore().get("requestId") ? { "x-request-id": context.getStore().get("requestId") } : {}),
-      ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
-      ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
+      ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     },
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
   if (!httpRequest.headers["x-correlationid"] && !httpRequest.headers["X-CorrelationId"]) {
-    const cid = context.getStore().get("correlationId") || context.getStore().get("requestId");
+    const cid = context.get("correlationId") || context.get("requestId");
     if (cid) httpRequest.headers["x-correlationid"] = cid;
   }
 
@@ -461,9 +461,9 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     headers: {
       ...hmrcRequestHeaders,
       ...govClientHeaders,
-      ...(context.getStore().get("requestId") ? { "x-request-id": context.getStore().get("requestId") } : {}),
-      ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
-      ...(context.getStore().get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+      ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
+      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     },
     body: JSON.stringify(hmrcRequestBody),
   };

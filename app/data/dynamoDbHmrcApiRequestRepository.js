@@ -55,10 +55,10 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
     method,
   });
 
-  const requestId = context.getStore().get("requestId") || `req-${uuidv4()}`;
-  const amznTraceId = context.getStore().get("amznTraceId");
-  const traceparent = context.getStore().get("traceparent");
-  const correlationId = context.getStore().get("requestId") || `req-${uuidv4()}`;
+  const requestId = context.get("requestId") || `req-${uuidv4()}`;
+  const amznTraceId = context.get("amznTraceId");
+  const traceparent = context.get("traceparent");
+  const correlationId = context.get("requestId") || `req-${uuidv4()}`;
   const id = `hmrcreq-${uuidv4()}`; // Unique ID for this specific call
 
   try {

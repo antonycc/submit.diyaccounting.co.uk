@@ -52,6 +52,7 @@ import {
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
+  assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
   readDynamoDbExport,
@@ -432,6 +433,12 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
       assertHmrcApiRequestValues(vatGetRequest, { "httpRequest.method": "GET" });
       // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
     });
+
+    // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
+    // TODO: Apply to every behaviour test that does HMRC API calls
+    // TODO: Enforce valid headers when APIs are stable with valid headers
+    // assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, true);
+    assertFraudPreventionHeaders(hmrcApiRequestsFile);
 
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "View VAT GET test");
     expect(hashedSubs.length).toBeGreaterThan(0);
