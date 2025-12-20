@@ -62,7 +62,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   const finalTo = to || defaultToDate;
 
   // Additional validation: from date should not be after to date
-  if (from && to && !isValidDateRange(finalFrom, finalTo)) {
+  // Only validate range if both dates are present (either provided or defaulted)
+  if (finalFrom && finalTo && !isValidDateRange(finalFrom, finalTo)) {
     errorMessages.push("Invalid date range - from date cannot be after to date");
   }
 

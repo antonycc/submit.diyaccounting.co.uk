@@ -29,7 +29,7 @@ export function isValidPeriodKey(periodKey) {
 }
 
 /**
- * Validates ISO date format (YYYY-MM-DD).
+ * Validates ISO date format (YYYY-MM-DD) and ensures it's a real date.
  * @param {string} date - The date to validate
  * @returns {boolean} True if valid
  */
@@ -37,27 +37,52 @@ export function isValidIsoDate(date) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return false;
   }
+  
+  // Parse the date components
+  const [year, month, day] = date.split('-').map(Number);
+  
+  // Check month is valid
+  if (month < 1 || month > 12) {
+    return false;
+  }
+  
+  // Check day is valid for the given month
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (day < 1 || day > daysInMonth) {
+    return false;
+  }
+  
   // Additional check: ensure it's a valid date
-  const parsed = new Date(date);
-  return !isNaN(parsed.getTime());
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && 
+         parsed.getMonth() === month - 1 && 
+         parsed.getDate() === day;
 }
 
 /**
  * Validates that fromDate is not after toDate.
+ * Both dates must be valid ISO dates.
  * @param {string} fromDate - ISO date string
  * @param {string} toDate - ISO date string
- * @returns {boolean} True if fromDate <= toDate
+ * @returns {boolean} True if both are valid dates and fromDate <= toDate
  */
 export function isValidDateRange(fromDate, toDate) {
+  // Validate both dates first
+  if (!isValidIsoDate(fromDate) || !isValidIsoDate(toDate)) {
+    return false;
+  }
+  
+  // Compare dates
   return new Date(fromDate) <= new Date(toDate);
 }
 
 /**
  * Masks an IP address for GDPR compliance.
- * Replaces the last octet with 'xxx'.
+ * Replaces the last octet/segment with 'xxx'.
  * Examples:
  * - 192.168.1.100 -> 192.168.1.xxx
  * - 2001:db8::1 -> 2001:db8::xxx
+ * - ::1 -> ::xxx
  *
  * @param {string} ip - The IP address to mask
  * @returns {string} Masked IP address
@@ -68,15 +93,25 @@ export function maskIpAddress(ip) {
   }
 
   // IPv4
-  if (ip.includes(".")) {
+  if (ip.includes(".") && !ip.includes(":")) {
     const parts = ip.split(".");
     if (parts.length === 4) {
       return `${parts[0]}.${parts[1]}.${parts[2]}.xxx`;
     }
   }
 
-  // IPv6
+  // IPv6 - Handle both expanded and compressed formats
   if (ip.includes(":")) {
+    // Handle compressed IPv6 (e.g., ::1, ::ffff:192.0.2.1)
+    if (ip.startsWith("::")) {
+      return "::xxx";
+    }
+    if (ip.endsWith("::")) {
+      const parts = ip.split(":");
+      return `${parts.slice(0, -2).join(":")}::xxx`;
+    }
+    
+    // For regular IPv6, mask the last segment
     const parts = ip.split(":");
     if (parts.length >= 2) {
       return `${parts.slice(0, -1).join(":")}:xxx`;
