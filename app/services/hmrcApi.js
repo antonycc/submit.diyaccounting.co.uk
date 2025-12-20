@@ -174,7 +174,7 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
     const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
       await putHmrcApiRequest(userSubOrUuid, { url: validationUrl, httpRequest, httpResponse, duration });
-      await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
+      // await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",
@@ -204,7 +204,7 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
         httpResponse: { statusCode: 0, headers: {}, body: { error: error.message } },
         duration,
       });
-      await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
+      // await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",
@@ -298,7 +298,7 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken, auditF
     };
     const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
-      await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
+      // await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
       await putHmrcApiRequest(userSubOrUuid, { url: feedbackUrl, httpRequest, httpResponse, duration });
     } catch (auditError) {
       logger.error({
