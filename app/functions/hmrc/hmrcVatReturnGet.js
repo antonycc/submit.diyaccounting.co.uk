@@ -25,6 +25,7 @@ import {
   validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
+import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnGet.js" });
 
@@ -51,8 +52,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   // Collect validation errors for required fields and formats
   if (!vrn) errorMessages.push("Missing vrn parameter");
   if (!periodKey) errorMessages.push("Missing periodKey parameter");
-  if (vrn && !/^\d{9}$/.test(String(vrn))) errorMessages.push("Invalid vrn format - must be 9 digits");
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) errorMessages.push("Invalid periodKey format");
+  if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
+  if (periodKey && !isValidPeriodKey(periodKey)) errorMessages.push("Invalid periodKey format - must be YYXN (e.g., 24A1) or #NNN (e.g., #001)");
 
   // Normalize periodKey to uppercase if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;

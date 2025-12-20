@@ -5,6 +5,7 @@ import { createLogger, context } from "../lib/logger.js";
 import { BundleEntitlementError } from "./bundleManagement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
+import { getHmrcErrorMessage, extractHmrcErrorCode, maskSensitiveHeaders } from "../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
@@ -539,10 +540,15 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
 export function generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
   // Attach parsed body for downstream error helpers
   hmrcResponse.data = hmrcResponseBody;
+  
+  // Extract HMRC error code and get user-friendly message
+  const errorCode = extractHmrcErrorCode(hmrcResponseBody);
+  const errorDetails = errorCode ? getHmrcErrorMessage(errorCode) : null;
+  
   if (hmrcResponse.status === 403) {
-    return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders);
+    return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders, errorDetails);
   } else if (hmrcResponse.status === 404) {
-    return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders);
+    return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders, errorDetails);
   } else if (hmrcResponse.status === 429) {
     const retryAfter =
       (hmrcResponse.headers &&
@@ -555,7 +561,7 @@ export function generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, 
       error: { hmrcResponseCode: hmrcResponse.status, responseBody: hmrcResponse.data, retryAfter },
     });
   } else {
-    return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders);
+    return http500ServerErrorFromHmrcResponse(request, hmrcResponse, responseHeaders, errorDetails);
   }
 }
 
@@ -602,7 +608,7 @@ export function http403ForbiddenFromBundleEnforcement(error, request) {
   });
 }
 
-export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders) {
+export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, govClientHeaders, errorDetails = null) {
   const hmrcAccessTokenData = {
     tokenInfo: {
       hasAccessToken: !!hmrcAccessToken,
@@ -621,49 +627,76 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
+  
+  const message = errorDetails ? errorDetails.userMessage : "Forbidden - Access token may be invalid, expired, or lack required permissions";
+  const errorResponse = {
+    hmrcResponseCode: hmrcResponse.status,
+    responseBody: hmrcResponse.data,
+  };
+  
+  if (errorDetails) {
+    errorResponse.userMessage = errorDetails.userMessage;
+    errorResponse.actionAdvice = errorDetails.actionAdvice;
+  }
+  
   return http400BadRequestResponse({
     hmrcAccessTokenData,
     headers: { ...govClientHeaders },
-    message: "Forbidden - Access token may be invalid, expired, or lack required permissions",
-    error: {
-      hmrcResponseCode: hmrcResponse.status,
-      responseBody: hmrcResponse.data,
-    },
+    message,
+    error: errorResponse,
   });
 }
 
-export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders) {
+export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.warn({
     message: "Not found for request",
     request,
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
+  
+  const message = errorDetails ? errorDetails.userMessage : "Not found for the specified query";
+  const errorResponse = {
+    hmrcResponseCode: hmrcResponse.status,
+    responseBody: hmrcResponse.data,
+  };
+  
+  if (errorDetails) {
+    errorResponse.userMessage = errorDetails.userMessage;
+    errorResponse.actionAdvice = errorDetails.actionAdvice;
+  }
+  
   return http400BadRequestResponse({
     request,
     headers: { ...govClientHeaders },
-    message: "Not found for the specified query",
-    error: {
-      hmrcResponseCode: hmrcResponse.status,
-      responseBody: hmrcResponse.data,
-    },
+    message,
+    error: errorResponse,
   });
 }
 
-export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders) {
+export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.error({
     message: "HMRC request failed for request",
     request,
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
+  
+  const message = errorDetails ? errorDetails.userMessage : "HMRC request failed";
+  const errorResponse = {
+    hmrcResponseCode: hmrcResponse.status,
+    responseBody: hmrcResponse.data,
+  };
+  
+  if (errorDetails) {
+    errorResponse.userMessage = errorDetails.userMessage;
+    errorResponse.actionAdvice = errorDetails.actionAdvice;
+  }
+  
   return http500ServerErrorResponse({
     request,
     headers: { ...govClientHeaders },
-    message: "HMRC request failed",
-    error: {
-      hmrcResponseCode: hmrcResponse.status,
-      responseBody: hmrcResponse.data,
-    },
+    message,
+    error: errorResponse,
   });
 }

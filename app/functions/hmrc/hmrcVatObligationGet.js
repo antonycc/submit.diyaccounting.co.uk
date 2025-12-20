@@ -25,6 +25,7 @@ import {
   validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
+import { isValidVrn, isValidIsoDate, isValidDateRange } from "../../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
@@ -47,9 +48,9 @@ export function extractAndValidateParameters(event, errorMessages) {
   const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
 
   if (!vrn) errorMessages.push("Missing vrn parameter");
-  if (vrn && !/^\d{9}$/.test(String(vrn))) errorMessages.push("Invalid vrn format - must be 9 digits");
-  if (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
-  if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
+  if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
+  if (from && !isValidIsoDate(from)) errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
+  if (to && !isValidIsoDate(to)) errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
   if (status && !["O", "F"].includes(status)) errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");
 
   // If from or to are not set, set them to the beginning of the current calendar year to today
@@ -61,7 +62,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   const finalTo = to || defaultToDate;
 
   // Additional validation: from date should not be after to date
-  if (new Date(finalFrom) > new Date(finalTo)) {
+  if (from && to && !isValidDateRange(finalFrom, finalTo)) {
     errorMessages.push("Invalid date range - from date cannot be after to date");
   }
 
