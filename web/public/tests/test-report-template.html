@@ -279,6 +279,14 @@
         margin-top: 0.5rem;
         line-height: 1.4;
       }
+
+      .api-request details > summary {
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.25rem;
+        color: #333;
+        font-weight: 600;
+      }
     </style>
   </head>
   <body>
@@ -471,8 +479,9 @@
                 ${statusCode ? `<span class="${statusCode < 400 ? "status-success" : "status-error"}" style="margin-left: 1rem;">Status: ${statusCode}</span>` : ""}
               </h4>
 
-              <h5>Request:</h5>
-              <pre><strong>Method:</strong> ${method}
+              <details>
+                <summary>Request:</summary>
+                <pre><strong>Method:</strong> ${method}
 <strong>URL:</strong> ${url}${
             Object.keys(requestHeaders).length > 0
               ? `
@@ -486,12 +495,14 @@ ${escapeHtml(JSON.stringify(requestHeaders, null, 2))}`
 ${escapeHtml(typeof requestBody === "string" ? requestBody : JSON.stringify(requestBody, null, 2))}`
               : ""
           }</pre>
+              </details>
 
               ${
                 httpResponse
                   ? `
-              <h5>Response:</h5>
-              <pre>${
+              <details>
+                <summary>Response:</summary>
+                <pre>${
                 statusCode
                   ? `<strong>Status:</strong> ${statusCode}
 `
@@ -508,6 +519,7 @@ ${escapeHtml(JSON.stringify(responseHeaders, null, 2))}
 ${escapeHtml(typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody, null, 2))}`
                   : ""
               }</pre>
+              </details>
               `
                   : ""
               }

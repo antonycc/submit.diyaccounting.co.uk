@@ -44,8 +44,13 @@ describe("buildFraudHeaders", () => {
 
     const headers = buildFraudHeaders(event);
 
-    expect(headers["Gov-Vendor-Forwarded"]).toMatch(/by=198\.51\.100\.1;for=198\.51\.100\.1/);
-    expect(headers["Gov-Vendor-Forwarded"]).toMatch(/by=198\.51\.100\.1;for=203\.0\.113\.5/);
+    // Gov-Vendor-Forwarded should now be a JSON array of objects
+    const forwarded = JSON.parse(headers["Gov-Vendor-Forwarded"]);
+    expect(Array.isArray(forwarded)).toBe(true);
+    expect(forwarded).toEqual([
+      { by: "198.51.100.1", for: "198.51.100.1" },
+      { by: "198.51.100.1", for: "203.0.113.5" },
+    ]);
   });
 
   it("should extract public client IP from x-forwarded-for", () => {
@@ -95,8 +100,10 @@ describe("buildFraudHeaders", () => {
 
     const headers = buildFraudHeaders(event);
 
-    expect(headers["Gov-Vendor-Product-Name"]).toBe("DIY Accounting Submit");
-    expect(headers["Gov-Vendor-Version"]).toBe("1.0.0");
+    // Gov-Vendor-Product-Name should be URL encoded
+    expect(headers["Gov-Vendor-Product-Name"]).toBe("DIY%20Accounting%20Submit");
+    // Gov-Vendor-Version should be a JSON object
+    expect(headers["Gov-Vendor-Version"]).toBe(JSON.stringify({ server: "1.0.0" }));
   });
 
   it("should set connection method to WEB_APP_VIA_SERVER", () => {
@@ -196,6 +203,9 @@ describe("buildFraudHeaders", () => {
     const headers = buildFraudHeaders(event);
 
     expect(headers["Gov-Vendor-Public-IP"]).toBe("203.0.113.100");
-    expect(headers["Gov-Vendor-Forwarded"]).toMatch(/by=203\.0\.113\.100;for=198\.51\.100\.1/);
+    // Gov-Vendor-Forwarded should now be a JSON array of objects
+    const forwarded = JSON.parse(headers["Gov-Vendor-Forwarded"]);
+    expect(Array.isArray(forwarded)).toBe(true);
+    expect(forwarded).toEqual([{ by: "203.0.113.100", for: "198.51.100.1" }]);
   });
 });

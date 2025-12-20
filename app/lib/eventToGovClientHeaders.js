@@ -35,7 +35,13 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   // Attempt to populate from incoming values, then fall back to safe defaults if absent
   const govClientBrowserJSUserAgentHeader = sanitize(h("Gov-Client-Browser-JS-User-Agent")) || sanitize(h("user-agent"));
   const govClientDeviceIDHeader = sanitize(h("Gov-Client-Device-ID"));
-  const govClientMultiFactorHeader = sanitize(h("Gov-Client-Multi-Factor")) || "type=OTHER";
+
+  // Gov-Client-Multi-Factor: Must include timestamp and unique-reference
+  const mfaHeader = sanitize(h("Gov-Client-Multi-Factor"));
+  const mfaTimestamp = new Date().toISOString();
+  const mfaUniqueRef = `server-${crypto.randomUUID()}`;
+  const govClientMultiFactorHeader =
+    mfaHeader || `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
 
   // Handle IP detection - if browser sent "SERVER_DETECT", extract IP from request headers
   let govClientPublicIPHeader = sanitize(h("Gov-Client-Public-IP"));
@@ -54,11 +60,21 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   }
 
   const govClientPublicIPTimestampHeader = sanitize(h("Gov-Client-Public-IP-Timestamp")) || new Date().toISOString();
-  const govClientPublicPortHeader = sanitize(h("Gov-Client-Public-Port")) || "443";
+
+  // Gov-Client-Public-Port: Don't use server ports (443, 80) as fallback - omit instead
+  const portHeader = sanitize(h("Gov-Client-Public-Port"));
+  const govClientPublicPortHeader = portHeader && portHeader !== "443" && portHeader !== "80" ? portHeader : undefined;
+
+  // Gov-Client-Screens: Must be an array of objects with scalingFactor
   const govClientScreensHeader =
-    sanitize(h("Gov-Client-Screens")) || JSON.stringify({ width: 1280, height: 720, colorDepth: 24, pixelDepth: 24 });
-  const govClientTimezoneHeader = sanitize(h("Gov-Client-Timezone")) || "UTC";
+    sanitize(h("Gov-Client-Screens")) || JSON.stringify([{ "width": 1280, "height": 720, "colour-depth": 24, "scaling-factor": 1 }]);
+
+  // Gov-Client-Timezone: Must be in UTC±<hh>:<mm> format
+  const govClientTimezoneHeader = sanitize(h("Gov-Client-Timezone")) || "UTC+00:00";
+
   const govClientUserIDsHeader = sanitize(h("Gov-Client-User-IDs")) || fraudHeaders["Gov-Client-User-IDs"] || "server=anonymous";
+
+  // Gov-Client-Window-Size: Must be an object with width and height
   const govClientWindowSizeHeader = sanitize(h("Gov-Client-Window-Size")) || JSON.stringify({ width: 1280, height: 720 });
   const govTestScenarioHeader = sanitize(h("Gov-Test-Scenario"));
 

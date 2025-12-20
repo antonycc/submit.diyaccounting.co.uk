@@ -69,10 +69,10 @@ export function buildFraudHeaders(event) {
   }
 
   // 6. Vendor forwarded chain – build from X-Forwarded-For
-  // Format: by=<server_ip>;for=<client_ip>[,by=<server_ip>;for=<next_client_ip>]
+  // Format: Array of objects with 'by' and 'for' keys
   if (serverPublicIp && clientIps.length > 0) {
-    const forwardedChain = clientIps.map((ip) => `by=${serverPublicIp};for=${ip}`).join(",");
-    headers["Gov-Vendor-Forwarded"] = forwardedChain;
+    const forwardedChain = clientIps.map((ip) => ({ by: serverPublicIp, for: ip }));
+    headers["Gov-Vendor-Forwarded"] = JSON.stringify(forwardedChain);
   }
 
   // 7. Vendor licence IDs – from environment variable
@@ -83,18 +83,19 @@ export function buildFraudHeaders(event) {
     logger.warn({ message: "FRAUD_VENDOR_LICENSE_IDS environment variable not set" });
   }
 
-  // 8. Vendor product name – from environment variable
+  // 8. Vendor product name – from environment variable (must be percent-encoded)
   const vendorProductName = process.env.FRAUD_VENDOR_PRODUCT_NAME;
   if (vendorProductName) {
-    headers["Gov-Vendor-Product-Name"] = vendorProductName;
+    headers["Gov-Vendor-Product-Name"] = encodeURIComponent(vendorProductName);
   } else {
     logger.warn({ message: "FRAUD_VENDOR_PRODUCT_NAME environment variable not set" });
   }
 
-  // 9. Vendor version – from environment variable
+  // 9. Vendor version – from environment variable (must be key-value structure)
   const vendorVersion = process.env.FRAUD_VENDOR_VERSION;
   if (vendorVersion) {
-    headers["Gov-Vendor-Version"] = vendorVersion;
+    // Format as key-value structure with server version
+    headers["Gov-Vendor-Version"] = JSON.stringify({ server: vendorVersion });
   } else {
     logger.warn({ message: "FRAUD_VENDOR_VERSION environment variable not set" });
   }

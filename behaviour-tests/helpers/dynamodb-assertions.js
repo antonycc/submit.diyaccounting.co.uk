@@ -93,6 +93,27 @@ export function assertHmrcApiRequestValues(record, expectedValues) {
 }
 
 /**
+ * Count specific values in an HMRC API request record
+ * @param {Object} record - The HMRC API request record
+ * @param {Object} expectedValues - Object with expected field values
+ */
+export function countHmrcApiRequestValues(record, expectedValues) {
+  const entries = Object.entries(expectedValues);
+
+  for (const [key, expectedValue] of entries) {
+    const actualValue = getNestedValue(record, key);
+
+    if (actualValue !== expectedValue) {
+      return 0;
+    }
+  }
+
+  console.log(`Matched all expected values in ${record.url}:`, expectedValues);
+
+  return 1;
+}
+
+/**
  * Get a nested value from an object using dot notation
  * @param {Object} obj - The object to search
  * @param {string} path - Dot-notation path (e.g., "httpRequest.method")
@@ -163,4 +184,80 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
   }
 
   return hashedSubs;
+}
+
+export function assertFraudPreventionHeaders(hmrcApiRequestsFile, allValidHeaders = false, noErrors = false, noWarnings = false) {
+  const fraudPreventionHeadersValidationFeedbackGetRequests = assertHmrcApiRequestExists(
+    hmrcApiRequestsFile,
+    "GET",
+    `/test/fraud-prevention-headers/vat-mtd/validation-feedback`,
+    "Fraud prevention headers validation feedback",
+  );
+  console.log(
+    `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationFeedbackGetRequests.length} Fraud prevention headers validation feedback GET request(s)`,
+  );
+  fraudPreventionHeadersValidationFeedbackGetRequests.forEach((fraudPreventionHeadersValidationFeedbackGetRequest, index) => {
+    // Assert that the request body contains the submitted data
+    assertHmrcApiRequestValues(fraudPreventionHeadersValidationFeedbackGetRequest, {
+      "httpRequest.method": "GET",
+      "httpResponse.statusCode": 200,
+    });
+    console.log(
+      `[DynamoDB Assertions]: Fraud prevention headers validation feedback GET request #${index + 1} validated successfully with details:`,
+    );
+    const requests = fraudPreventionHeadersValidationFeedbackGetRequest.httpResponse.body.requests;
+    if (allValidHeaders) {
+      requests.forEach((request) => {
+        expect(request.code).toBe("VALID_HEADERS");
+      });
+    } else {
+      requests.forEach((request) => {
+        console.log(`[DynamoDB Assertions]: Request URL: ${request.url}, Code: ${request.code}`);
+      });
+    }
+  });
+
+  // Assert Fraud prevention headers validation GET request exists and validate key fields
+  const fraudPreventionHeadersValidationGetRequests = assertHmrcApiRequestExists(
+    hmrcApiRequestsFile,
+    "GET",
+    `/test/fraud-prevention-headers/validate`,
+    "Fraud prevention headers validation",
+  );
+  console.log(
+    `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationGetRequests.length} Fraud prevention headers validation GET request(s)`,
+  );
+  fraudPreventionHeadersValidationGetRequests.forEach((fraudPreventionHeadersValidationGetRequest, index) => {
+    // Assert that the request body contains the submitted data
+    assertHmrcApiRequestValues(fraudPreventionHeadersValidationGetRequest, {
+      "httpRequest.method": "GET",
+      "httpResponse.statusCode": 200,
+    });
+    console.log(
+      `[DynamoDB Assertions]: Fraud prevention headers validation GET request #${index + 1} validated successfully with details:`,
+    );
+    // Request code, errors and warnings
+    const responseBody = fraudPreventionHeadersValidationGetRequest.httpResponse.body;
+    console.log(`[DynamoDB Assertions]: Request code: ${responseBody.code}`);
+    console.log(`[DynamoDB Assertions]: Errors: ${responseBody.errors.length}`);
+    console.log(`[DynamoDB Assertions]: Warnings: ${responseBody.warnings.length}`);
+
+    // Check that request body contains the period key and VAT due amount
+    if (allValidHeaders) {
+      expect(responseBody.code).toBe("VALID_HEADERS");
+    } else {
+      console.log(`[DynamoDB Assertions]: Request code: ${responseBody.code}`);
+    }
+    if (noErrors) {
+      expect(responseBody.errors.length).toBe(0);
+    } else {
+      console.log(`[DynamoDB Assertions]: Errors: ${responseBody.errors.length}`);
+    }
+    if (noWarnings) {
+      expect(responseBody.warnings.length).toBe(0);
+    } else {
+      console.log(`[DynamoDB Assertions]: Warnings: ${responseBody.warnings.length}`);
+    }
+    console.log("[DynamoDB Assertions]: Fraud prevention headers validation GET body validated successfully");
+  });
 }

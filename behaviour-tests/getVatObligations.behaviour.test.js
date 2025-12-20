@@ -50,6 +50,8 @@ import {
   assertHmrcApiRequestValues,
   assertConsistentHashedSub,
   readDynamoDbExport,
+  countHmrcApiRequestValues,
+  assertFraudPreventionHeaders,
 } from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
@@ -566,6 +568,87 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
+
+  // Build and write testContext.json
+  const testContext = {
+    name: testInfo.title,
+    title: "View VAT Obligations (HMRC: VAT Obligations GET)",
+    description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",
+    hmrcApis: [
+      {
+        url: "/api/v1/hmrc/vat/obligation",
+        method: "GET",
+      },
+      { url: "/test/fraud-prevention-headers/validate", method: "GET" },
+      { url: "/test/fraud-prevention-headers/vat-mtd/validation-feedback", method: "GET" },
+    ],
+    env: {
+      envName,
+      baseUrl,
+      serverPort: httpServerPort,
+      runTestServer,
+      runProxy,
+      runMockOAuth2,
+      testAuthProvider,
+      testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
+    },
+    testData: {
+      hmrcTestVatNumber: testVatNumber,
+      hmrcTestUsername: testUsername,
+      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      userSub,
+      observedTraceparent,
+      testUrl,
+      isSandboxMode: isSandboxMode(),
+    },
+    artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
+  };
+  try {
+    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
+  } catch (_e) {}
+
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "00.*focus.*submitting.*vat.*obligations.*form",
+    "03.*obligations.*submit",
+    "04.*obligations.*results.*pagedown",
+    "00.*focus.*a.*developer.*test.*scenario",
+  ];
+
+  const screenshotDescriptions = {
+    "00.*focus.*submitting.*vat.*obligations.*form": "Filling in VAT obligations form",
+    "03.*obligations.*submit": "Submitting VAT obligations form",
+    "04.*obligations.*results.*pagedown": "Viewing VAT obligations results",
+    "00.*focus.*a.*developer.*test.*scenario": "Submitting VAT obligations form with a test scenario",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
   /* **************** */
   /*  EXPORT DYNAMODB */
   /* **************** */
@@ -606,20 +689,72 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     );
     console.log(`[DynamoDB Assertions]: Found ${obligationsRequests.length} VAT obligations GET request(s)`);
 
-    if (obligationsRequests.length > 0) {
-      const obligationsRequest = obligationsRequests[0];
-      // Assert that the response is successful
-      assertHmrcApiRequestValues(obligationsRequest, {
+    expect(obligationsRequests.length).toBeGreaterThan(0);
+    let http200OkResults = 0;
+    let http400BadRequestResults = 0;
+    let http403ForbiddenResults = 0;
+    let http404NotFoundResults = 0;
+    let http500ServerErrorResults = 0;
+    let http503ServiceUnavailableResults = 0;
+    obligationsRequests.forEach((obligationsRequest, index) => {
+      console.log(`[DynamoDB Assertions]: Validating VAT obligations GET request ${index + 1} of ${obligationsRequests.length}`);
+      const thisRequestHttp200OkResults = countHmrcApiRequestValues(obligationsRequest, {
         "httpRequest.method": "GET",
         "httpResponse.statusCode": 200,
       });
+      if (thisRequestHttp200OkResults === 1) {
+        //;console.log(
+        //  `[DynamoDB Assertions]: Validating VAT obligations response body for HTTP 200: ${JSON.stringify(obligationsRequest.httpResponse)}`,
+        //);
+        // Check that response body contains obligations data
+        const responseBody = obligationsRequest.httpResponse.body;
+        expect(responseBody).toBeDefined();
+        expect(responseBody.obligations).toBeDefined();
+        console.log("[DynamoDB Assertions]: VAT obligations response validated successfully");
+      }
+      http200OkResults += thisRequestHttp200OkResults;
+      http400BadRequestResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 400,
+      });
+      http403ForbiddenResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 403,
+      });
+      http404NotFoundResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 404,
+      });
+      http500ServerErrorResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 500,
+      });
+      http503ServiceUnavailableResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 503,
+      });
+    });
 
-      // Check that response body contains obligations data
-      const responseBody = obligationsRequest.httpResponse.body;
-      expect(responseBody).toBeDefined();
-      expect(responseBody.obligations).toBeDefined();
-      console.log("[DynamoDB Assertions]: VAT obligations response validated successfully");
-    }
+    // Assert result counts
+    console.log("[DynamoDB Assertions]: VAT Obligations GET request results summary:");
+    console.log(`  HTTP 200 OK: ${http200OkResults}`);
+    console.log(`  HTTP 400 Bad Request: ${http400BadRequestResults}`);
+    console.log(`  HTTP 403 Forbidden: ${http403ForbiddenResults}`);
+    console.log(`  HTTP 404 Not Found: ${http404NotFoundResults}`);
+    console.log(`  HTTP 500 Server Error: ${http500ServerErrorResults}`);
+    console.log(`  HTTP 503 Service Unavailable: ${http503ServiceUnavailableResults}`);
+    expect(http200OkResults).toBe(19);
+    expect(http400BadRequestResults).toBe(0);
+    expect(http403ForbiddenResults).toBe(1);
+    expect(http404NotFoundResults).toBe(1);
+    // TODO: capture exception failures in dynamo: expect(http500ServerErrorResults).toBe(1);
+    // TODO: capture exception failures in dynamo: expect(http503ServiceUnavailableResults).toBe(1);
+
+    // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
+    // TODO: Apply to every behaviour test that does HMRC API calls
+    // TODO: Enforce valid headers when APIs are stable with valid headers
+    // assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, true);
+    assertFraudPreventionHeaders(hmrcApiRequestsFile);
 
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
@@ -637,83 +772,4 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       }
     }
   }
-
-  /* ****************** */
-  /*  FIGURES (SCREENSHOTS) */
-  /* ****************** */
-
-  // Select and copy key screenshots, then generate figures.json
-  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
-
-  const keyScreenshotPatterns = [
-    "00.*focus.*submitting.*vat.*obligations.*form",
-    "03.*obligations.*submit",
-    "04.*obligations.*results.*pagedown",
-    "00.*focus.*a.*developer.*test.*scenario",
-  ];
-
-  const screenshotDescriptions = {
-    "00.*focus.*submitting.*vat.*obligations.*form": "Filling in VAT obligations form",
-    "03.*obligations.*submit": "Submitting VAT obligations form",
-    "04.*obligations.*results.*pagedown": "Viewing VAT obligations results",
-    "00.*focus.*a.*developer.*test.*scenario": "Submitting VAT obligations form with a test scenario",
-  };
-
-  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
-  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
-
-  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
-  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
-
-  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
-  writeFiguresJson(outputDir, figures);
-
-  /* ****************** */
-  /*  TEST CONTEXT JSON */
-  /* ****************** */
-
-  // Build and write testContext.json
-  const testContext = {
-    name: testInfo.title,
-    title: "View VAT Obligations (HMRC: VAT Obligations GET)",
-    description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",
-    hmrcApis: [
-      {
-        url: "/api/v1/hmrc/vat/obligation",
-        method: "GET",
-      },
-    ],
-    env: {
-      envName,
-      baseUrl,
-      serverPort: httpServerPort,
-      runTestServer,
-      runProxy,
-      runMockOAuth2,
-      testAuthProvider,
-      testAuthUsername,
-      bundleTableName,
-      hmrcApiRequestsTableName,
-      receiptsTableName,
-      runDynamoDb,
-    },
-    testData: {
-      hmrcTestVatNumber: testVatNumber,
-      hmrcTestUsername: testUsername,
-      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
-      userSub,
-      observedTraceparent,
-      testUrl,
-      isSandboxMode: isSandboxMode(),
-    },
-    artefactsDir: outputDir,
-    screenshotPath,
-    testStartTime: new Date().toISOString(),
-  };
-  try {
-    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
-  } catch (_e) {}
 });

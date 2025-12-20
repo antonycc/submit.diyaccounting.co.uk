@@ -19,7 +19,7 @@ import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmr
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as hmrcHttpProxyEndpoint } from "../functions/infra/hmrcHttpProxy.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
-import { createLogger } from "../lib/logger.js";
+import { context, createLogger } from "../lib/logger.js";
 
 const logger = createLogger({ source: "app/bin/server.js" });
 
@@ -34,6 +34,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // HTTP access logging middleware
+app.use((req, res, next) => {
+  context.run(new Map(), () => {
+    next();
+  });
+});
 app.use((req, res, next) => {
   logger.info(`HTTP ${req.method} ${req.url}`);
   next();

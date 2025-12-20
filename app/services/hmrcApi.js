@@ -88,13 +88,15 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
  * @returns {Promise<Object>} Validation result with {isValid, response}
  */
 export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}, auditForUserSub) {
-  const validationUrl = "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate";
+  const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+  const validationUrl = `${hmrcBase}/test/fraud-prevention-headers/validate`;
 
+  const requestId = `req-${uuidv4()}`;
   const headers = {
-    Accept: "application/vnd.hmrc.1.0+json",
-    Authorization: `Bearer ${accessToken}`,
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${accessToken}`,
     ...govClientHeaders,
-    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
+    "x-request-id": requestId,
     ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
     ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
   };
@@ -169,8 +171,10 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
       headers: responseHeadersObj,
       body: responseBody,
     };
+    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
-      await putHmrcApiRequest(auditForUserSub, { url: validationUrl, httpRequest, httpResponse, duration });
+      await putHmrcApiRequest(userSubOrUuid, { url: validationUrl, httpRequest, httpResponse, duration });
+      // await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",
@@ -200,6 +204,7 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
         httpResponse: { statusCode: 0, headers: {}, body: { error: error.message } },
         duration,
       });
+      // await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",
@@ -227,7 +232,8 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
  * @returns {Promise<Object>} Validation feedback
  */
 export async function getFraudPreventionHeadersFeedback(api, accessToken, auditForUserSub) {
-  const feedbackUrl = `https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/${api}/validation-feedback`;
+  const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+  const feedbackUrl = `${hmrcBase}/test/fraud-prevention-headers/${api}/validation-feedback`;
 
   const headers = {
     Accept: "application/vnd.hmrc.1.0+json",
@@ -292,6 +298,7 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken, auditF
     };
     const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
+      // await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
       await putHmrcApiRequest(userSubOrUuid, { url: feedbackUrl, httpRequest, httpResponse, duration });
     } catch (auditError) {
       logger.error({
