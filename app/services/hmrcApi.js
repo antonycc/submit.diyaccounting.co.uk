@@ -171,6 +171,7 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
     };
     try {
       await putHmrcApiRequest(auditForUserSub, { url: validationUrl, httpRequest, httpResponse, duration });
+      await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",
@@ -200,6 +201,7 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
         httpResponse: { statusCode: 0, headers: {}, body: { error: error.message } },
         duration,
       });
+      await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
     } catch (auditError) {
       logger.error({
         message: "Error auditing HMRC API request/response to DynamoDB",

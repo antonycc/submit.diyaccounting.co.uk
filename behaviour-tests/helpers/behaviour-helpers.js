@@ -729,8 +729,10 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
  */
 export async function checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, auditForUserSub) {
   if (!isSandboxMode()) {
-    logger.info("[HMRC Fraud Prevention] Skipping fraud prevention header validation feedback check in non-sandbox mode");
+    console.log("[HMRC Fraud Prevention] Skipping fraud prevention header validation feedback check in non-sandbox mode");
     return;
+  } else {
+    console.log(`[HMRC Fraud Prevention] Checking fraud prevention header validation feedback for user sub: ${auditForUserSub}`);
   }
 
   const { extractHmrcAccessTokenFromSessionStorage } = await import("./fileHelper.js");

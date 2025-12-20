@@ -345,15 +345,18 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   // Assert that HMRC API requests were logged correctly
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
-    const getRequests = assertHmrcApiRequestExists(
+    const vatGetRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,
       "GET",
       `/organisations/vat/${testVatNumber}/returns/${hmrcVatPeriodKey}`,
       "VAT return retrieval",
     );
-    expect(getRequests.length).toBeGreaterThan(0);
-    const getRequest = getRequests[0];
-    assertHmrcApiRequestValues(getRequest, { "httpRequest.method": "GET" });
+    expect(vatGetRequests.length).toBeGreaterThan(0);
+    vatGetRequests.forEach((vatGetRequest) => {
+      assertHmrcApiRequestValues(vatGetRequest, { "httpRequest.method": "GET" });
+      // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
+    });
+
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "View VAT GET test");
     expect(hashedSubs.length).toBeGreaterThan(0);
 

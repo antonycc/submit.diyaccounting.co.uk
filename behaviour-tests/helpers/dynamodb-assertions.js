@@ -93,6 +93,27 @@ export function assertHmrcApiRequestValues(record, expectedValues) {
 }
 
 /**
+ * Count specific values in an HMRC API request record
+ * @param {Object} record - The HMRC API request record
+ * @param {Object} expectedValues - Object with expected field values
+ */
+export function countHmrcApiRequestValues(record, expectedValues) {
+  const entries = Object.entries(expectedValues);
+
+  for (const [key, expectedValue] of entries) {
+    const actualValue = getNestedValue(record, key);
+
+    if (actualValue !== expectedValue) {
+      return 0;
+    }
+  }
+
+  console.log(`Matched all expected values in ${record.url}:`, expectedValues);
+
+  return 1;
+}
+
+/**
  * Get a nested value from an object using dot notation
  * @param {Object} obj - The object to search
  * @param {string} path - Dot-notation path (e.g., "httpRequest.method")

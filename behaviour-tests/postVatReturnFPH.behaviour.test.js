@@ -1,4 +1,4 @@
-// behaviour-tests/fraudPreventionHeadersVat.behaviour.test.js
+// behaviour-tests/postVatReturnFPH.behaviour.test.js
 // Simplified test to verify HMRC fraud prevention headers compliance
 
 import { test } from "./helpers/playwrightTestWithout.js";
@@ -17,7 +17,7 @@ import {
   saveHmrcTestUserToFiles,
   checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
-import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -29,6 +29,14 @@ import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmissi
 import { fillInHmrcAuth, goToHmrcAuth, grantPermissionHmrcAuth, initHmrcAuth, submitHmrcAuth } from "./steps/behaviour-hmrc-steps.js";
 import { deleteTraceparentTxt, deleteUserSubTxt, deleteHashedUserSubTxt, extractUserSubFromLocalStorage } from "./helpers/fileHelper.js";
 import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
+import { exportAllTables } from "./helpers/dynamodb-export.js";
+import {
+  assertConsistentHashedSub,
+  assertHmrcApiRequestExists,
+  assertHmrcApiRequestValues,
+  readDynamoDbExport,
+} from "./helpers/dynamodb-assertions.js";
+import { expect } from "@playwright/test";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
@@ -235,6 +243,9 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   if (isSandboxMode()) {
     await ensureBundlePresent(page, "Test", screenshotPath);
   }
+  await goToHomePage(page, screenshotPath);
+  await goToBundlesPage(page, screenshotPath);
+  await goToHomePage(page, screenshotPath);
 
   /* *********** */
   /* `SUBMIT VAT */
@@ -272,13 +283,106 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* ********************************** */
 
   // For sandbox tests, fetch fraud prevention headers validation feedback
+  // TODO: Find out why this isn't in the dynamodb export
   await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
+  await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
 
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+
+  /* **************** */
+  /*  EXPORT DYNAMODB */
+  /* **************** */
+
+  // Export DynamoDB tables if dynalite was used
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
+    console.log("[DynamoDB Export]: Starting export of all tables...");
+    try {
+      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
+        bundleTableName,
+        hmrcApiRequestsTableName,
+        receiptsTableName,
+      });
+      console.log("[DynamoDB Export]: Export completed:", exportResults);
+    } catch (error) {
+      console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
+  }
+
+  /* ********************************** */
+  /*  ASSERT DYNAMODB HMRC API REQUESTS */
+  /* ********************************** */
+
+  // Assert that HMRC API requests were logged correctly
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
+    const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
+
+    // Assert OAuth token exchange request exists
+    const oauthRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "POST", "/oauth/token", "OAuth token exchange");
+    console.log(`[DynamoDB Assertions]: Found ${oauthRequests.length} OAuth token exchange request(s)`);
+
+    // Assert VAT return POST request exists and validate key fields
+    const vatPostRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "POST",
+      `/organisations/vat/${testVatNumber}/returns`,
+      "VAT return submission",
+    );
+    console.log(`[DynamoDB Assertions]: Found ${vatPostRequests.length} VAT return POST request(s)`);
+    expect(vatPostRequests.length).toBeGreaterThan(0);
+    vatPostRequests.forEach((vatPostRequest) => {
+      // Assert that the request body contains the submitted data
+      assertHmrcApiRequestValues(vatPostRequest, {
+        "httpRequest.method": "POST",
+        "httpResponse.statusCode": 201,
+      });
+
+      // Check that request body contains the period key and VAT due amount
+      const requestBody = JSON.parse(vatPostRequest.httpRequest.body);
+      expect(requestBody.periodKey).toBe(hmrcVatPeriodKey.toUpperCase());
+      expect(requestBody.vatDueSales).toBe(parseFloat(hmrcVatDueAmount));
+      console.log("[DynamoDB Assertions]: VAT POST request body validated successfully");
+    });
+
+    // Assert Fraud prevention headers validation GET request exists and validate key fields
+    const fraudPreventionHeadersValidationGetRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "GET",
+      `/test/fraud-prevention-headers/validate`,
+      "Fraud prevention headers validation",
+    );
+    console.log(
+      `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationGetRequests.length} Fraud prevention headers validation GET request(s)`,
+    );
+    fraudPreventionHeadersValidationGetRequests.forEach((fraudPreventionHeadersValidationGetRequest, index) => {
+      // Assert that the request body contains the submitted data
+      assertHmrcApiRequestValues(fraudPreventionHeadersValidationGetRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 200,
+      });
+      console.log(
+        `[DynamoDB Assertions]: Fraud prevention headers validation GET request #${index + 1} validated successfully with details:`,
+      );
+      // Request code, errors and warnings
+      console.log(`[DynamoDB Assertions]: Request code: ${fraudPreventionHeadersValidationGetRequest.httpResponse.body.code}`);
+      console.log(`[DynamoDB Assertions]: Errors: ${fraudPreventionHeadersValidationGetRequest.httpResponse.body.errors.length}`);
+      console.log(`[DynamoDB Assertions]: Warnings: ${fraudPreventionHeadersValidationGetRequest.httpResponse.body.warnings.length}`);
+
+      // Check that request body contains the period key and VAT due amount
+      const requestBody = JSON.parse(fraudPreventionHeadersValidationGetRequest.httpRequest.body);
+      expect(requestBody.code).toBe("VALID_HEADERS");
+      expect(requestBody.errors.length).toBe(0);
+      expect(requestBody.warnings.length).toBe(0);
+      console.log("[DynamoDB Assertions]: VAT POST request body validated successfully");
+    });
+
+    // Assert consistent hashedSub across authenticated requests
+    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
+    console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
+  }
 
   /* ****************** */
   /*  TEST CONTEXT JSON */

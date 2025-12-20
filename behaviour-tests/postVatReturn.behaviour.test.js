@@ -392,8 +392,11 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       "VAT return submission",
     );
     expect(postRequests.length).toBeGreaterThan(0);
-    const postRequest = postRequests[0];
-    assertHmrcApiRequestValues(postRequest, { "httpRequest.method": "POST" });
+    postRequests.forEach((postRequest) => {
+      assertHmrcApiRequestValues(postRequest, { "httpRequest.method": "POST" });
+      // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
+    });
+
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT POST test");
     expect(hashedSubs.length).toBeGreaterThan(0);
 

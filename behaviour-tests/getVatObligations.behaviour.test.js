@@ -50,6 +50,7 @@ import {
   assertHmrcApiRequestValues,
   assertConsistentHashedSub,
   readDynamoDbExport,
+  countHmrcApiRequestValues,
 } from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
@@ -606,20 +607,66 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     );
     console.log(`[DynamoDB Assertions]: Found ${obligationsRequests.length} VAT obligations GET request(s)`);
 
-    if (obligationsRequests.length > 0) {
-      const obligationsRequest = obligationsRequests[0];
-      // Assert that the response is successful
-      assertHmrcApiRequestValues(obligationsRequest, {
+    expect(obligationsRequests.length).toBeGreaterThan(0);
+    let http200OkResults = 0;
+    let http400BadRequestResults = 0;
+    let http403ForbiddenResults = 0;
+    let http404NotFoundResults = 0;
+    let http500ServerErrorResults = 0;
+    let http503ServiceUnavailableResults = 0;
+    obligationsRequests.forEach((obligationsRequest, index) => {
+      console.log(`[DynamoDB Assertions]: Validating VAT obligations GET request ${index + 1} of ${obligationsRequests.length}`);
+      const thisRequestHttp200OkResults = countHmrcApiRequestValues(obligationsRequest, {
         "httpRequest.method": "GET",
         "httpResponse.statusCode": 200,
       });
+      if (thisRequestHttp200OkResults === 1) {
+        //;console.log(
+        //  `[DynamoDB Assertions]: Validating VAT obligations response body for HTTP 200: ${JSON.stringify(obligationsRequest.httpResponse)}`,
+        //);
+        // Check that response body contains obligations data
+        const responseBody = obligationsRequest.httpResponse.body;
+        expect(responseBody).toBeDefined();
+        expect(responseBody.obligations).toBeDefined();
+        console.log("[DynamoDB Assertions]: VAT obligations response validated successfully");
+      }
+      http200OkResults += thisRequestHttp200OkResults;
+      http400BadRequestResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 400,
+      });
+      http403ForbiddenResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 403,
+      });
+      http404NotFoundResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 404,
+      });
+      http500ServerErrorResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 500,
+      });
+      http503ServiceUnavailableResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 503,
+      });
+    });
 
-      // Check that response body contains obligations data
-      const responseBody = obligationsRequest.httpResponse.body;
-      expect(responseBody).toBeDefined();
-      expect(responseBody.obligations).toBeDefined();
-      console.log("[DynamoDB Assertions]: VAT obligations response validated successfully");
-    }
+    // Assert result counts
+    console.log("[DynamoDB Assertions]: VAT Obligations GET request results summary:");
+    console.log(`  HTTP 200 OK: ${http200OkResults}`);
+    console.log(`  HTTP 400 Bad Request: ${http400BadRequestResults}`);
+    console.log(`  HTTP 403 Forbidden: ${http403ForbiddenResults}`);
+    console.log(`  HTTP 404 Not Found: ${http404NotFoundResults}`);
+    console.log(`  HTTP 500 Server Error: ${http500ServerErrorResults}`);
+    console.log(`  HTTP 503 Service Unavailable: ${http503ServiceUnavailableResults}`);
+    expect(http200OkResults).toBe(19);
+    expect(http400BadRequestResults).toBe(0);
+    expect(http403ForbiddenResults).toBe(1);
+    expect(http404NotFoundResults).toBe(1);
+    // TODO: capture exception failures in dynamo: expect(http500ServerErrorResults).toBe(1);
+    // TODO: capture exception failures in dynamo: expect(http503ServiceUnavailableResults).toBe(1);
 
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
