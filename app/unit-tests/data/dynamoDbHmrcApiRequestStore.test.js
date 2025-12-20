@@ -63,9 +63,9 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     const { hashSub } = await import("@app/services/subHasher.js");
 
     // add request correlation data
-    context.set("requestId", "req-123");
-    context.set("amznTraceId", "Root=1-abc");
-    context.set("traceparent", "00-8f3c...-01");
+    context.getStore().set("requestId", "req-123");
+    context.getStore().set("amznTraceId", "Root=1-abc");
+    context.getStore().set("traceparent", "00-8f3c...-01");
 
     const input = {
       url: "https://hmrc.example/api",

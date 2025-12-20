@@ -91,17 +91,18 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
   const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const validationUrl = `${hmrcBase}/test/fraud-prevention-headers/validate`;
 
+  const requestId = `req-${uuidv4()}`;
   const headers = {
-    Accept: "application/vnd.hmrc.1.0+json",
-    Authorization: `Bearer ${accessToken}`,
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${accessToken}`,
     ...govClientHeaders,
-    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    "x-request-id": requestId,
+    ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
+    ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
   if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
-    const cid = context.get("correlationId") || context.get("requestId");
+    const cid = context.getStore().get("correlationId") || context.getStore().get("requestId");
     if (cid) headers["x-correlationid"] = cid;
   }
 
@@ -237,13 +238,13 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken, auditF
   const headers = {
     Accept: "application/vnd.hmrc.1.0+json",
     Authorization: `Bearer ${accessToken}`,
-    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    ...(context.getStore().get("requestId") ? { "x-request-id": context.getStore().get("requestId") } : {}),
+    ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
+    ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
   if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
-    const cid = context.get("correlationId") || context.get("requestId");
+    const cid = context.getStore().get("correlationId") || context.getStore().get("requestId");
     if (cid) headers["x-correlationid"] = cid;
   }
 
@@ -297,6 +298,7 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken, auditF
     };
     const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
+      await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
       await putHmrcApiRequest(userSubOrUuid, { url: feedbackUrl, httpRequest, httpResponse, duration });
     } catch (auditError) {
       logger.error({
@@ -364,14 +366,14 @@ export async function hmrcHttpGet(
     headers: {
       ...hmrcRequestHeaders,
       ...govClientHeaders,
-      ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+      ...(context.getStore().get("requestId") ? { "x-request-id": context.getStore().get("requestId") } : {}),
+      ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
+      ...(context.getStore().get("traceparent") ? { traceparent: context.getStore().get("traceparent") } : {}),
     },
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
   if (!httpRequest.headers["x-correlationid"] && !httpRequest.headers["X-CorrelationId"]) {
-    const cid = context.get("correlationId") || context.get("requestId");
+    const cid = context.getStore().get("correlationId") || context.getStore().get("requestId");
     if (cid) httpRequest.headers["x-correlationid"] = cid;
   }
 
@@ -459,9 +461,9 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     headers: {
       ...hmrcRequestHeaders,
       ...govClientHeaders,
-      ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+      ...(context.getStore().get("requestId") ? { "x-request-id": context.getStore().get("requestId") } : {}),
+      ...(context.getStore().get("amznTraceId") ? { "x-amzn-trace-id": context.getStore().get("amznTraceId") } : {}),
+      ...(context.getStore().get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     },
     body: JSON.stringify(hmrcRequestBody),
   };

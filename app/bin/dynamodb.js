@@ -120,11 +120,11 @@ export async function ensureHmrcApiRequestsTableExists(tableName, endpoint) {
           TableName: tableName,
           KeySchema: [
             { AttributeName: "hashedSub", KeyType: "HASH" },
-            { AttributeName: "requestId", KeyType: "RANGE" },
+            { AttributeName: "id", KeyType: "RANGE" },
           ],
           AttributeDefinitions: [
             { AttributeName: "hashedSub", AttributeType: "S" },
-            { AttributeName: "requestId", AttributeType: "S" },
+            { AttributeName: "id", AttributeType: "S" },
           ],
           BillingMode: "PAY_PER_REQUEST",
         }),

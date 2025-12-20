@@ -46,22 +46,30 @@ Example data:
   };
  */
 export async function putHmrcApiRequest(userSub, { url, httpRequest, httpResponse, duration }) {
-  logger.info({ message: `DynamoDB enabled, proceeding with putHmrcApiRequest [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
-
+  const hashedSub = hashSub(userSub);
   const method = httpRequest && httpRequest.method ? httpRequest.method : "UNKNOWN";
-  const requestId = context.get("requestId") || `req-${uuidv4()}`;
-  const amznTraceId = context.get("amznTraceId");
-  const traceparent = context.get("traceparent");
+  logger.info({
+    message: `DynamoDB enabled, proceeding with putHmrcApiRequest [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}`,
+    hashedSub,
+    url,
+    method,
+  });
+
+  const requestId = context.getStore().get("requestId") || `req-${uuidv4()}`;
+  const amznTraceId = context.getStore().get("amznTraceId");
+  const traceparent = context.getStore().get("traceparent");
+  const correlationId = context.getStore().get("requestId") || `req-${uuidv4()}`;
+  const id = `hmrcreq-${uuidv4()}`; // Unique ID for this specific call
 
   try {
-    const hashedSub = hashSub(userSub);
     const docClient = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
     const item = {
       hashedSub,
-      requestId,
+      id,
+      requestId: correlationId,
       amznTraceId,
       traceparent,
       url,
@@ -95,6 +103,7 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
     logger.error({
       message: "Error storing HmrcApiRequest in DynamoDB",
       error: error.message,
+      hashedSub,
       url,
       method,
     });

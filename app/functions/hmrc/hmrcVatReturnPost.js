@@ -207,9 +207,9 @@ export async function submitVat(
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${hmrcAccessToken}`,
-    "x-request-id": context.get("requestId"),
-    ...(context.get("correlationId") || context.get("requestId")
-      ? { "x-correlationid": context.get("correlationId") || context.get("requestId") }
+    "x-request-id": context.getStore().get("requestId"),
+    ...(context.getStore().get("correlationId") || context.getStore().get("requestId")
+      ? { "x-correlationid": context.getStore().get("correlationId") || context.getStore().get("requestId") }
       : {}),
   };
   const hmrcRequestBody = {
