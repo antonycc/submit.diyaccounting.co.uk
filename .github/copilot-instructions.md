@@ -31,11 +31,13 @@ As a code review agent, prioritize **static analysis and code comprehension** ov
 4. **Check references** against documented scripts and configuration
 5. **Suggest tests** when appropriate, but let developers/CI run them
 
-**Note**: The `.junie/guidelines.md` file describes behavior for the Junie custom agent, which emphasizes continuous testing and iteration. As a code review agent, your role is complementary - you provide thoughtful analysis while Junie handles execution and testing.
+**Note**: The `.junie/guidelines.md` file describes behavior for the Junie custom agent, which emphasizes continuous
+testing and iteration. As a code review agent, your role is complementary - you provide thoughtful analysis while Junie
+handles execution and testing.
 
 ### Analysis Workflow
 
-When reviewing code changes:
+When reviewing code changes be as low friction as possible, maintaining current standards for the incoming code.
 
 1. **Understand the context**
    - What problem is being solved?
@@ -62,6 +64,9 @@ When reviewing code changes:
    - Focus on surgical, targeted improvements
    - Preserve working code unless fixing security issues
    - Match local style over enforcing global style rules
+   - Do not raise issues where new possibly problematic code has been introduced but this pattern is already established
+   - Do not raise issues about unused imports or variables or formatting
+   - Do do raise concerns about performance where the suggested optimisation is unlikely to be a measurable signal above the noise.
 
 ## Repository Patterns and Conventions
 
