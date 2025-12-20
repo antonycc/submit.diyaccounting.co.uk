@@ -567,6 +567,87 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
+
+  // Build and write testContext.json
+  const testContext = {
+    name: testInfo.title,
+    title: "View VAT Obligations (HMRC: VAT Obligations GET)",
+    description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",
+    hmrcApis: [
+      {
+        url: "/api/v1/hmrc/vat/obligation",
+        method: "GET",
+      },
+      { url: "/test/fraud-prevention-headers/validate", method: "GET" },
+      { url: "/test/fraud-prevention-headers/vat-mtd/validation-feedback", method: "GET" },
+    ],
+    env: {
+      envName,
+      baseUrl,
+      serverPort: httpServerPort,
+      runTestServer,
+      runProxy,
+      runMockOAuth2,
+      testAuthProvider,
+      testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
+    },
+    testData: {
+      hmrcTestVatNumber: testVatNumber,
+      hmrcTestUsername: testUsername,
+      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      userSub,
+      observedTraceparent,
+      testUrl,
+      isSandboxMode: isSandboxMode(),
+    },
+    artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
+  };
+  try {
+    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
+  } catch (_e) {}
+
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "00.*focus.*submitting.*vat.*obligations.*form",
+    "03.*obligations.*submit",
+    "04.*obligations.*results.*pagedown",
+    "00.*focus.*a.*developer.*test.*scenario",
+  ];
+
+  const screenshotDescriptions = {
+    "00.*focus.*submitting.*vat.*obligations.*form": "Filling in VAT obligations form",
+    "03.*obligations.*submit": "Submitting VAT obligations form",
+    "04.*obligations.*results.*pagedown": "Viewing VAT obligations results",
+    "00.*focus.*a.*developer.*test.*scenario": "Submitting VAT obligations form with a test scenario",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
   /* **************** */
   /*  EXPORT DYNAMODB */
   /* **************** */
@@ -684,83 +765,4 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       }
     }
   }
-
-  /* ****************** */
-  /*  FIGURES (SCREENSHOTS) */
-  /* ****************** */
-
-  // Select and copy key screenshots, then generate figures.json
-  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
-
-  const keyScreenshotPatterns = [
-    "00.*focus.*submitting.*vat.*obligations.*form",
-    "03.*obligations.*submit",
-    "04.*obligations.*results.*pagedown",
-    "00.*focus.*a.*developer.*test.*scenario",
-  ];
-
-  const screenshotDescriptions = {
-    "00.*focus.*submitting.*vat.*obligations.*form": "Filling in VAT obligations form",
-    "03.*obligations.*submit": "Submitting VAT obligations form",
-    "04.*obligations.*results.*pagedown": "Viewing VAT obligations results",
-    "00.*focus.*a.*developer.*test.*scenario": "Submitting VAT obligations form with a test scenario",
-  };
-
-  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
-  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
-
-  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
-  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
-
-  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
-  writeFiguresJson(outputDir, figures);
-
-  /* ****************** */
-  /*  TEST CONTEXT JSON */
-  /* ****************** */
-
-  // Build and write testContext.json
-  const testContext = {
-    name: testInfo.title,
-    title: "View VAT Obligations (HMRC: VAT Obligations GET)",
-    description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",
-    hmrcApis: [
-      {
-        url: "/api/v1/hmrc/vat/obligation",
-        method: "GET",
-      },
-    ],
-    env: {
-      envName,
-      baseUrl,
-      serverPort: httpServerPort,
-      runTestServer,
-      runProxy,
-      runMockOAuth2,
-      testAuthProvider,
-      testAuthUsername,
-      bundleTableName,
-      hmrcApiRequestsTableName,
-      receiptsTableName,
-      runDynamoDb,
-    },
-    testData: {
-      hmrcTestVatNumber: testVatNumber,
-      hmrcTestUsername: testUsername,
-      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
-      userSub,
-      observedTraceparent,
-      testUrl,
-      isSandboxMode: isSandboxMode(),
-    },
-    artefactsDir: outputDir,
-    screenshotPath,
-    testStartTime: new Date().toISOString(),
-  };
-  try {
-    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
-  } catch (_e) {}
 });

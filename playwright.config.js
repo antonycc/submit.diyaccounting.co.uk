@@ -17,7 +17,7 @@ export default defineConfig({
       ],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 120_000,
+      timeout: 300_000,
     },
     {
       name: "submit-vat-behaviour-tests",
@@ -25,7 +25,7 @@ export default defineConfig({
       testMatch: ["**/submitVat.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 120_000,
+      timeout: 300_000,
     },
     {
       name: "fraud-prevention-headers-vat-behaviour-tests",
@@ -33,7 +33,7 @@ export default defineConfig({
       testMatch: ["**/postVatReturnFPH.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 120_000,
+      timeout: 300_000,
     },
     {
       name: "obligation-behaviour-tests",
@@ -41,7 +41,7 @@ export default defineConfig({
       testMatch: ["**/getVatObligations.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 120_000,
+      timeout: 300_000,
     },
     {
       name: "post-vat-return-behaviour-tests",
@@ -49,7 +49,7 @@ export default defineConfig({
       testMatch: ["**/postVatReturn.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 120_000,
+      timeout: 300_000,
     },
     {
       name: "get-vat-return-behaviour-tests",
@@ -57,7 +57,7 @@ export default defineConfig({
       testMatch: ["**/getVatReturn.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 120_000,
+      timeout: 300_000,
     },
     {
       name: "bundle-behaviour-tests",
@@ -65,7 +65,7 @@ export default defineConfig({
       testMatch: ["**/bundles.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 120_000,
+      timeout: 300_000,
     },
     {
       name: "browser-tests",

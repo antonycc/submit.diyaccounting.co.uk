@@ -2,6 +2,7 @@
 
 import { createLogger, context } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
+import { v4 as uuidv4 } from "uuid";
 
 const logger = createLogger({ source: "app/data/dynamoDbHmrcApiRequestRepository.js" });
 
@@ -48,7 +49,7 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
   logger.info({ message: `DynamoDB enabled, proceeding with putHmrcApiRequest [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   const method = httpRequest && httpRequest.method ? httpRequest.method : "UNKNOWN";
-  const requestId = context.get("requestId");
+  const requestId = context.get("requestId") || `req-${uuidv4()}`;
   const amznTraceId = context.get("amznTraceId");
   const traceparent = context.get("traceparent");
 

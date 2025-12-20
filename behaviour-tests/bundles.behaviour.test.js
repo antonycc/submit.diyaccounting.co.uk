@@ -212,57 +212,6 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
-  /* **************** */
-  /*  EXPORT DYNAMODB */
-  /* **************** */
-
-  // Export DynamoDB tables if dynalite was used
-  if (runDynamoDb === "run" && dynamoControl?.endpoint) {
-    console.log("[DynamoDB Export]: Starting export of all tables...");
-    try {
-      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
-        bundleTableName,
-        hmrcApiRequestsTableName,
-        receiptsTableName,
-      });
-      console.log("[DynamoDB Export]: Export completed:", exportResults);
-    } catch (error) {
-      console.error("[DynamoDB Export]: Failed to export tables:", error);
-    }
-  }
-
-  /* ****************** */
-  /*  FIGURES (SCREENSHOTS) */
-  /* ****************** */
-
-  // Select and copy key screenshots, then generate figures.json
-  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
-
-  const keyScreenshotPatterns = [
-    "04.*home.*page",
-    "02.*removing.*all.*bundles.*clicked",
-    "01.*request.*bundle",
-    "05.*ensure.*bundle.*adding",
-    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu",
-  ];
-
-  const screenshotDescriptions = {
-    "04.*home.*page": "The home page with no bundles",
-    "02.*removing.*all.*bundles.*clicked": "Removing all bundles",
-    "01.*request.*bundle": "The request the Test bundle",
-    "05.*ensure.*bundle.*adding": "Added the Test bundle",
-    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu": "The home page with activities from bundles",
-  };
-
-  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
-  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
-
-  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
-  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
-
-  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
-  writeFiguresJson(outputDir, figures);
-
   /* ****************** */
   /*  TEST CONTEXT JSON */
   /* ****************** */
@@ -300,4 +249,55 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   try {
     fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
   } catch (_e) {}
+
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = [
+    "04.*home.*page",
+    "02.*removing.*all.*bundles.*clicked",
+    "01.*request.*bundle",
+    "05.*ensure.*bundle.*adding",
+    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu",
+  ];
+
+  const screenshotDescriptions = {
+    "04.*home.*page": "The home page with no bundles",
+    "02.*removing.*all.*bundles.*clicked": "Removing all bundles",
+    "01.*request.*bundle": "The request the Test bundle",
+    "05.*ensure.*bundle.*adding": "Added the Test bundle",
+    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu": "The home page with activities from bundles",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
+
+  /* **************** */
+  /*  EXPORT DYNAMODB */
+  /* **************** */
+
+  // Export DynamoDB tables if dynalite was used
+  if (runDynamoDb === "run" && dynamoControl?.endpoint) {
+    console.log("[DynamoDB Export]: Starting export of all tables...");
+    try {
+      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
+        bundleTableName,
+        hmrcApiRequestsTableName,
+        receiptsTableName,
+      });
+      console.log("[DynamoDB Export]: Export completed:", exportResults);
+    } catch (error) {
+      console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
+  }
 });

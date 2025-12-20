@@ -88,7 +88,8 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
  * @returns {Promise<Object>} Validation result with {isValid, response}
  */
 export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}, auditForUserSub) {
-  const validationUrl = "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate";
+  const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+  const validationUrl = `${hmrcBase}/test/fraud-prevention-headers/validate`;
 
   const headers = {
     Accept: "application/vnd.hmrc.1.0+json",
@@ -169,8 +170,9 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
       headers: responseHeadersObj,
       body: responseBody,
     };
+    const userSubOrUuid = auditForUserSub || `unknown-user-${uuidv4()}`;
     try {
-      await putHmrcApiRequest(auditForUserSub, { url: validationUrl, httpRequest, httpResponse, duration });
+      await putHmrcApiRequest(userSubOrUuid, { url: validationUrl, httpRequest, httpResponse, duration });
       await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
     } catch (auditError) {
       logger.error({
@@ -229,7 +231,8 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
  * @returns {Promise<Object>} Validation feedback
  */
 export async function getFraudPreventionHeadersFeedback(api, accessToken, auditForUserSub) {
-  const feedbackUrl = `https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/${api}/validation-feedback`;
+  const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+  const feedbackUrl = `${hmrcBase}/test/fraud-prevention-headers/${api}/validation-feedback`;
 
   const headers = {
     Accept: "application/vnd.hmrc.1.0+json",

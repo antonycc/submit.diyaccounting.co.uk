@@ -293,6 +293,53 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
+
+  // Build test context metadata and write testContext.json next to the video
+  const testContext = {
+    name: testInfo.title,
+    title: "Fraud Prevention Headers Validation (HMRC: VAT Return POST)",
+    description: "Submits a VAT return to HMRC MTD VAT API and validates fraud prevention headers compliance.",
+    hmrcApis: [
+      { url: "/api/v1/hmrc/vat/return", method: "POST" },
+      { url: "/test/fraud-prevention-headers/validate", method: "GET" },
+      { url: "/test/fraud-prevention-headers/vat-mtd/validation-feedback", method: "GET" },
+    ],
+    env: {
+      envName,
+      baseUrl,
+      serverPort: httpServerPort,
+      runTestServer,
+      runProxy,
+      runMockOAuth2,
+      testAuthProvider,
+      testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
+    },
+    testData: {
+      hmrcTestUsername: testUsername,
+      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
+      hmrcTestVatNumber: testVatNumber,
+      hmrcVatPeriodKey,
+      hmrcVatDueAmount,
+      testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
+      userSub,
+      testUrl,
+      isSandboxMode: isSandboxMode(),
+    },
+    artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
+  };
+  try {
+    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
+  } catch (_e) {}
+
   /* **************** */
   /*  EXPORT DYNAMODB */
   /* **************** */
@@ -347,11 +394,36 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       console.log("[DynamoDB Assertions]: VAT POST request body validated successfully");
     });
 
+    // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
+    const fraudPreventionHeadersValidationFeedbackGetRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "GET",
+      `/test/fraud-prevention-headers/vat-mtd/validation-feedback`,
+      "Fraud prevention headers validation feedback",
+    );
+    console.log(
+      `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationFeedbackGetRequests.length} Fraud prevention headers validation feedback GET request(s)`,
+    );
+    fraudPreventionHeadersValidationFeedbackGetRequests.forEach((fraudPreventionHeadersValidationFeedbackGetRequest, index) => {
+      // Assert that the request body contains the submitted data
+      assertHmrcApiRequestValues(fraudPreventionHeadersValidationFeedbackGetRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 200,
+      });
+      console.log(
+        `[DynamoDB Assertions]: Fraud prevention headers validation feedback GET request #${index + 1} validated successfully with details:`,
+      );
+      const requests = fraudPreventionHeadersValidationFeedbackGetRequest.httpResponse.body.requests;
+      requests.forEach((request) => {
+        expect(request.code).toBe("VALID_HEADERS");
+      });
+    });
+
     // Assert Fraud prevention headers validation GET request exists and validate key fields
     const fraudPreventionHeadersValidationGetRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,
       "GET",
-      `/test/fraud-prevention-headers/validate`,
+      `/test/fraud-prevention-headers/vat-mtd/validate`,
       "Fraud prevention headers validation",
     );
     console.log(
@@ -383,50 +455,4 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
   }
-
-  /* ****************** */
-  /*  TEST CONTEXT JSON */
-  /* ****************** */
-
-  // Build test context metadata and write testContext.json next to the video
-  const testContext = {
-    name: testInfo.title,
-    title: "Fraud Prevention Headers Validation (HMRC: VAT Return POST)",
-    description: "Submits a VAT return to HMRC MTD VAT API and validates fraud prevention headers compliance.",
-    hmrcApis: [
-      { url: "/api/v1/hmrc/vat/return", method: "POST" },
-      { url: "/test/fraud-prevention-headers/vat-mtd/validation-feedback", method: "GET" },
-    ],
-    env: {
-      envName,
-      baseUrl,
-      serverPort: httpServerPort,
-      runTestServer,
-      runProxy,
-      runMockOAuth2,
-      testAuthProvider,
-      testAuthUsername,
-      bundleTableName,
-      hmrcApiRequestsTableName,
-      receiptsTableName,
-      runDynamoDb,
-    },
-    testData: {
-      hmrcTestUsername: testUsername,
-      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
-      hmrcTestVatNumber: testVatNumber,
-      hmrcVatPeriodKey,
-      hmrcVatDueAmount,
-      testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
-      userSub,
-      testUrl,
-      isSandboxMode: isSandboxMode(),
-    },
-    artefactsDir: outputDir,
-    screenshotPath,
-    testStartTime: new Date().toISOString(),
-  };
-  try {
-    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
-  } catch (_e) {}
 });
