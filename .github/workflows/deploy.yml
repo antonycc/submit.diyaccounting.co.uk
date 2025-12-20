@@ -2428,7 +2428,7 @@ jobs:
       - name: Run behaviour tests - postVatReturnFPHBehaviour
         if: ${{ !cancelled() }}
         run: |
-          npm run 'test:postVatReturnFPHBehaviour-proxy-sandbox' || exit_code=$? \
+          npm run 'test:postVatReturnFPHBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
