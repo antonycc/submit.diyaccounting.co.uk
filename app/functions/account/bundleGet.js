@@ -71,7 +71,7 @@ async function checkPersistedRequest(userId, requestId) {
 }
 
 // Helper function to initiate async processing
-async function initiateAsyncProcessing(userId, requestId) {
+async function initiateAsyncProcessing(processor, userId, requestId, waitTimeMs) {
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (asyncTableName) {
     try {
@@ -79,6 +79,14 @@ async function initiateAsyncProcessing(userId, requestId) {
     } catch (error) {
       logger.error({ message: "Error storing processing request", error: error.message, requestId });
     }
+  }
+
+  // Default behavior (no header or 0): synchronous
+  // Explicit long wait (>= MAX_WAIT_MS): synchronous
+  // Otherwise: asynchronous
+  if (waitTimeMs >= MAX_WAIT_MS || !asyncTableName) {
+    // Synchronous processing: wait for the result
+    return await retrieveUserBundles(userId, requestId);
   }
 
   // Start async processing
@@ -89,9 +97,11 @@ async function initiateAsyncProcessing(userId, requestId) {
       // TODO: Async, put the request on the queue
     } else {
       // Intentionally don't await so things run async
-      retrieveUserBundles(userId, requestId).catch((error) => {
+      try {
+        processor();
+      } catch (error) {
         logger.error({ message: "Unhandled error in async bundle retrieval", error: error.message, userId, requestId });
-      });
+      }
     }
   } catch (error) {
     logger.error({ message: "Error in async bundle retrieval initiation", error: error.message, userId, requestId });
@@ -102,6 +112,8 @@ async function initiateAsyncProcessing(userId, requestId) {
       });
     }
   }
+
+  return null;
 }
 
 // Helper function to wait and poll for async completion
@@ -212,16 +224,9 @@ export async function handler(event) {
 
     // TODO: Async, abstract to: init()
     if (!persistedRequestExists) {
-      // Default behavior (no header or 0): synchronous
-      // Explicit long wait (>= MAX_WAIT_MS): synchronous
-      // Otherwise: asynchronous
-      if (waitTimeMs >= MAX_WAIT_MS || !asyncTableName) {
-        // Synchronous processing: wait for the result
-        formattedBundles = await retrieveUserBundles(userId, requestId);
-      } else {
-        // Asynchronous processing: start the process but don't wait
-        await initiateAsyncProcessing(userId, requestId);
-      }
+      // Asynchronous processing: start the process but don't wait
+      const processor = () => retrieveUserBundles(userId, requestId);
+      formattedBundles = await initiateAsyncProcessing(processor, userId, requestId, waitTimeMs);
     }
 
     // If we have bundles (synchronous path), return them
