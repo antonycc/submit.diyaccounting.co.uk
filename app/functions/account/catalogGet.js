@@ -9,6 +9,7 @@ const logger = createLogger({ source: "app/functions/account/catalogGet.js" });
 
 let cached = null; // { json, etag, lastModified, object, validated }
 
+// TODO: Replace with static file served from /static-api/v1/catalog
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
