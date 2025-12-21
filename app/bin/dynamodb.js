@@ -177,6 +177,47 @@ export async function ensureReceiptsTableExists(tableName, endpoint) {
   }
 }
 
+// Create async requests table if it doesn't exist
+export async function ensureAsyncRequestsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring async requests table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "hashedSub", KeyType: "HASH" },
+            { AttributeName: "requestId", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "hashedSub", AttributeType: "S" },
+            { AttributeName: "requestId", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Create proxy state table (for rate limiter + circuit breaker) if it doesn't exist
 export async function ensureProxyStateTableExists(tableName, endpoint) {
   logger.info(`[dynamodb]: Ensuring proxy state table: '${tableName}' exists on endpoint '${endpoint}'`);
