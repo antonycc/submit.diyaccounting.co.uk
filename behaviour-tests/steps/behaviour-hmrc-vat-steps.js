@@ -615,8 +615,13 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       await page.waitForTimeout(500);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-results-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
-      await expect(statusContainer).toBeVisible();
-      const statusText = (await statusContainer.innerText()).toLowerCase();
+      let statusText;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await expect(statusContainer).toBeVisible();
+        statusText = (await statusContainer.innerText()).toLowerCase();
+        if (/failed|error|not found/.test(statusText)) break;
+        if (attempt < 3) await page.waitForTimeout(500);
+      }
       expect(statusText).toMatch(/failed|error|not found/);
       console.log("View VAT return expected error for sandbox scenario successfully");
     });
