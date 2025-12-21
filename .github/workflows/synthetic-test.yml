@@ -1,10 +1,8 @@
-name: deploy
-run-name: "deploy from ${{ github.ref_name }}"
+name: synthetic test
+run-name: "synthetic test of ${{ github.ref_name }}"
 concurrency:
-  group: deploy-${{ github.ref_name }}
-  cancel-in-progress: false
-
-# Bump18
+  group: synthetic-test-${{ github.ref_name }}
+  cancel-in-progress: true
 
 on:
   workflow_dispatch:
@@ -125,6 +123,8 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      # TODO: Write the result to a metric available to CloudWatch Alarms
 
       - name: Export DynamoDB data for test users
         if: ${{ !cancelled() }}
