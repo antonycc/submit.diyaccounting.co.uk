@@ -16,7 +16,7 @@ import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
-const MAX_WAIT_MS = 900_000; // 900 seconds = 15 minutes
+const MAX_WAIT_MS = 25_000; // 25 seconds (significantly below API Gateway timeout of 30s)
 const DEFAULT_WAIT_MS = MAX_WAIT_MS; // TODO: Async Lambdas should wait 20s, (max=sync) 20_000; // 20 seconds
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
