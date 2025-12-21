@@ -282,14 +282,14 @@ public class HmrcStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
+                        .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                        .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                        // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
+                        .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                        // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
+                        .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                        .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -326,13 +326,13 @@ public class HmrcStack extends Stack {
 
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                        .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                        .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                        // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
+                        .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                        // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
+                        .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -370,13 +370,13 @@ public class HmrcStack extends Stack {
 
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
-                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                        .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                        .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                        // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
+                        .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                        // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
+                        .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()

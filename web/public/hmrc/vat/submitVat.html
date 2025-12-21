@@ -13,7 +13,7 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
     <!--script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script-->
-    <script async src="../../prefetch/prefetch-hmrc-vat-return-head.js"></script>
+    <!--script async src="../../prefetch/prefetch-hmrc-vat-return-head.js"></script-->
     <!--script async src="../../prefetch/prefetch-hmrc-receipt-head.js"></script-->
   </head>
   <body>
@@ -82,7 +82,7 @@
             <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
             <select id="testScenario" name="testScenario">
               <option value="">Default</option>
-              <!-- Values aligned with _developers/reference/hmrc-md-vat-api-1.0.yaml (POST /organisations/vat/{vrn}/returns) -->
+              <!-- Values aligned with _developers/reference/hmrc-mtd-vat-api-1.0.yaml (POST /organisations/vat/{vrn}/returns) -->
               <option value="INVALID_VRN">Invalid VRN</option>
               <option value="INVALID_PERIODKEY">Invalid Period Key</option>
               <option value="INVALID_PAYLOAD">Invalid Payload</option>
@@ -279,55 +279,24 @@
       }
 
       async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, accessToken) {
-        // Populate headers with required values using what is available in the browser environment
-        const govClientBrowserJSUserAgentHeader = navigator.userAgent;
-        const govClientDeviceIDHeader = crypto.randomUUID();
-        const govClientMultiFactorHeader = "type=OTHER";
         const testScenario = (
           document.getElementById("testScenario")?.value ||
           JSON.parse(localStorage.getItem("submission_data") || "null")?.testScenario ||
           ""
         ).trim();
 
-        // Enhanced IP detection with fallbacks
-        const detectedIP = await getClientIP();
-        const govClientPublicIPHeader = detectedIP;
-        const govVendorPublicIPHeader = detectedIP; // Fix: Define the previously undefined variable
+        // Get Gov-Client headers
+        const govClientHeaders = await getGovClientHeaders();
 
-        const govClientPublicIPTimestampHeader = new Date().toISOString();
-        const govClientPublicPortHeader = "" + (window.location.port || (window.location.protocol === "https:" ? "443" : "80"));
-        const govClientScreensHeader = JSON.stringify({
-          width: window.screen.width,
-          height: window.screen.height,
-          colorDepth: window.screen.colorDepth,
-          pixelDepth: window.screen.pixelDepth,
-        });
-        const govClientTimezoneHeader = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const govClientUserIDsHeader = "test=1";
-        const govClientWindowSizeHeader = JSON.stringify({
-          width: window.innerWidth,
-          height: window.innerHeight,
-        });
-        const govVendorForwardedHeader = "test=1";
-
-        const headers = {
-          "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
-          "Gov-Client-Device-ID": govClientDeviceIDHeader,
-          "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
-          "Gov-Client-Public-IP": govClientPublicIPHeader,
-          "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
-          "Gov-Client-Public-Port": govClientPublicPortHeader,
-          "Gov-Client-Screens": govClientScreensHeader,
-          "Gov-Client-Timezone": govClientTimezoneHeader,
-          "Gov-Client-User-IDs": govClientUserIDsHeader,
-          "Gov-Client-Window-Size": govClientWindowSizeHeader,
-          "Gov-Vendor-Forwarded": govVendorForwardedHeader,
-          "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+        const requestHeaders = {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...govClientHeaders,
         };
         if (testScenario) {
-          headers["Gov-Test-Scenario"] = testScenario;
+          requestHeaders["Gov-Test-Scenario"] = testScenario;
         }
-        return await submitVat(vatNumber, periodKey, vatDue, accessToken, headers);
+        return await submitVat(vatNumber, periodKey, vatDue, accessToken, requestHeaders);
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {

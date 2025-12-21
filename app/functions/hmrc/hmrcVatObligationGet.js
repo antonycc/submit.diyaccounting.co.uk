@@ -22,6 +22,7 @@ import {
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
+  validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 
@@ -205,6 +206,11 @@ export async function getVatObligations(
   hmrcQueryParams = {},
   auditForUserSub,
 ) {
+  // Validate fraud prevention headers for sandbox accounts
+  if (hmrcAccount === "sandbox") {
+    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub);
+  }
+
   const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;
   let hmrcResponse = {};
   /* v8 ignore start */

@@ -62,7 +62,7 @@
           "Gov-Client-Public-IP": "88.97.27.180",
           "Gov-Client-Public-IP-Timestamp": "2025-12-05T23:38:43.644Z",
           "Gov-Client-Public-Port": "443",
-          "Gov-Client-Screens": "{\"width\":1280,\"height\":720,\"colorDepth\":24,\"pixelDepth\":24}",
+          "Gov-Client-Screens": "width=1920&height=1080&scaling-factor=1&colour-depth=16,width=3000&height=2000&scaling-factor=1.25&colour-depth=16",
           "Gov-Client-Timezone": "Europe/London",
           "Gov-Client-User-IDs": "test=1",
           "Gov-Client-Window-Size": "{\"width\":1280,\"height\":720}",

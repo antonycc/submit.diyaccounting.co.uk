@@ -107,7 +107,7 @@ public class DataStack extends Stack {
                         .type(AttributeType.STRING)
                         .build())
                 .sortKey(Attribute.builder()
-                        .name("requestId")
+                        .name("id")
                         .type(AttributeType.STRING)
                         .build())
                 .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest

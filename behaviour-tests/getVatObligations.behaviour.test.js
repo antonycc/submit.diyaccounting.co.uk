@@ -15,6 +15,7 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
+  checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -49,6 +50,9 @@ import {
   assertHmrcApiRequestValues,
   assertConsistentHashedSub,
   readDynamoDbExport,
+  countHmrcApiRequestValues,
+  assertFraudPreventionHeaders,
+  intentionallyNotSuppliedHeaders,
 } from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
@@ -341,7 +345,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /* ************************************* */
   if (isSandboxMode()) {
     /**
-     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-md-vat-api-1.0.yaml)
+     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
      *
      * GET /organisations/vat/{vrn}/obligations
      *  - Default (No header value): Quarterly obligations and one is fulfilled
@@ -558,77 +562,56 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
-  /* **************** */
-  /*  EXPORT DYNAMODB */
-  /* **************** */
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
 
-  // Export DynamoDB tables if dynalite was used
-  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
-    console.log("[DynamoDB Export]: Starting export of all tables...");
-    try {
-      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
-        bundleTableName,
-        hmrcApiRequestsTableName,
-        receiptsTableName,
-      });
-      console.log("[DynamoDB Export]: Export completed:", exportResults);
-    } catch (error) {
-      console.error("[DynamoDB Export]: Failed to export tables:", error);
-    }
-  }
-
-  /* ********************************** */
-  /*  ASSERT DYNAMODB HMRC API REQUESTS */
-  /* ********************************** */
-
-  // Assert that HMRC API requests were logged correctly
-  if (runDynamoDb === "run") {
-    const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
-
-    // Assert OAuth token exchange request exists
-    const oauthRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "POST", "/oauth/token", "OAuth token exchange");
-    console.log(`[DynamoDB Assertions]: Found ${oauthRequests.length} OAuth token exchange request(s)`);
-
-    // Assert VAT obligations GET request exists and validate key fields
-    const obligationsRequests = assertHmrcApiRequestExists(
-      hmrcApiRequestsFile,
-      "GET",
-      `/organisations/vat/${testVatNumber}/obligations`,
-      "VAT obligations retrieval",
-    );
-    console.log(`[DynamoDB Assertions]: Found ${obligationsRequests.length} VAT obligations GET request(s)`);
-
-    if (obligationsRequests.length > 0) {
-      const obligationsRequest = obligationsRequests[0];
-      // Assert that the response is successful
-      assertHmrcApiRequestValues(obligationsRequest, {
-        "httpRequest.method": "GET",
-        "httpResponse.statusCode": 200,
-      });
-
-      // Check that response body contains obligations data
-      const responseBody = obligationsRequest.httpResponse.body;
-      expect(responseBody).toBeDefined();
-      expect(responseBody.obligations).toBeDefined();
-      console.log("[DynamoDB Assertions]: VAT obligations response validated successfully");
-    }
-
-    // Assert consistent hashedSub across authenticated requests
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
-    console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
-
-    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
-    if (wiremockMode && wiremockMode !== "off") {
-      const records = readDynamoDbExport(hmrcApiRequestsFile);
-      expect(records.length).toBeGreaterThan(0);
-      for (const r of records) {
-        expect(
-          r.url?.startsWith(`http://localhost:${wiremockPort}`),
-          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
-        ).toBe(true);
-      }
-    }
-  }
+  // Build and write testContext.json
+  const testContext = {
+    name: testInfo.title,
+    title: "View VAT Obligations (HMRC: VAT Obligations GET)",
+    description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",
+    hmrcApis: [
+      {
+        url: "/api/v1/hmrc/vat/obligation",
+        method: "GET",
+      },
+      { url: "/test/fraud-prevention-headers/validate", method: "GET" },
+    ],
+    env: {
+      envName,
+      baseUrl,
+      serverPort: httpServerPort,
+      runTestServer,
+      runProxy,
+      runMockOAuth2,
+      testAuthProvider,
+      testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
+    },
+    testData: {
+      hmrcTestVatNumber: testVatNumber,
+      hmrcTestUsername: testUsername,
+      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
+      hmrcVatPeriodFromDate,
+      hmrcVatPeriodToDate,
+      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      userSub,
+      observedTraceparent,
+      testUrl,
+      isSandboxMode: isSandboxMode(),
+      intentionallyNotSuppliedHeaders,
+    },
+    artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
+  };
+  try {
+    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
+  } catch (_e) {}
 
   /* ****************** */
   /*  FIGURES (SCREENSHOTS) */
@@ -660,52 +643,124 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
   writeFiguresJson(outputDir, figures);
 
-  /* ****************** */
-  /*  TEST CONTEXT JSON */
-  /* ****************** */
+  /* **************** */
+  /*  EXPORT DYNAMODB */
+  /* **************** */
 
-  // Build and write testContext.json
-  const testContext = {
-    name: testInfo.title,
-    title: "View VAT Obligations (HMRC: VAT Obligations GET)",
-    description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",
-    hmrcApis: [
-      {
-        url: "/api/v1/hmrc/vat/obligation",
-        method: "GET",
-      },
-    ],
-    env: {
-      envName,
-      baseUrl,
-      serverPort: httpServerPort,
-      runTestServer,
-      runProxy,
-      runMockOAuth2,
-      testAuthProvider,
-      testAuthUsername,
-      bundleTableName,
-      hmrcApiRequestsTableName,
-      receiptsTableName,
-      runDynamoDb,
-    },
-    testData: {
-      hmrcTestVatNumber: testVatNumber,
-      hmrcTestUsername: testUsername,
-      hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
-      userSub,
-      observedTraceparent,
-      testUrl,
-      isSandboxMode: isSandboxMode(),
-    },
-    artefactsDir: outputDir,
-    screenshotPath,
-    testStartTime: new Date().toISOString(),
-  };
-  try {
-    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
-  } catch (_e) {}
+  // Export DynamoDB tables if dynalite was used
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
+    console.log("[DynamoDB Export]: Starting export of all tables...");
+    try {
+      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
+        bundleTableName,
+        hmrcApiRequestsTableName,
+        receiptsTableName,
+      });
+      console.log("[DynamoDB Export]: Export completed:", exportResults);
+    } catch (error) {
+      console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
+  }
+
+  /* ********************************** */
+  /*  ASSERT DYNAMODB HMRC API REQUESTS */
+  /* ********************************** */
+
+  // Assert that HMRC API requests were logged correctly
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
+    const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
+
+    // Assert OAuth token exchange request exists
+    const oauthRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "POST", "/oauth/token", "OAuth token exchange");
+    console.log(`[DynamoDB Assertions]: Found ${oauthRequests.length} OAuth token exchange request(s)`);
+
+    // Assert VAT obligations GET request exists and validate key fields
+    const obligationsRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "GET",
+      `/organisations/vat/${testVatNumber}/obligations`,
+      "VAT obligations retrieval",
+    );
+    console.log(`[DynamoDB Assertions]: Found ${obligationsRequests.length} VAT obligations GET request(s)`);
+
+    expect(obligationsRequests.length).toBeGreaterThan(0);
+    let http200OkResults = 0;
+    let http400BadRequestResults = 0;
+    let http403ForbiddenResults = 0;
+    let http404NotFoundResults = 0;
+    let http500ServerErrorResults = 0;
+    let http503ServiceUnavailableResults = 0;
+    obligationsRequests.forEach((obligationsRequest, index) => {
+      console.log(`[DynamoDB Assertions]: Validating VAT obligations GET request ${index + 1} of ${obligationsRequests.length}`);
+      const thisRequestHttp200OkResults = countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 200,
+      });
+      if (thisRequestHttp200OkResults === 1) {
+        //;console.log(
+        //  `[DynamoDB Assertions]: Validating VAT obligations response body for HTTP 200: ${JSON.stringify(obligationsRequest.httpResponse)}`,
+        //);
+        // Check that response body contains obligations data
+        const responseBody = obligationsRequest.httpResponse.body;
+        expect(responseBody).toBeDefined();
+        expect(responseBody.obligations).toBeDefined();
+        console.log("[DynamoDB Assertions]: VAT obligations response validated successfully");
+      }
+      http200OkResults += thisRequestHttp200OkResults;
+      http400BadRequestResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 400,
+      });
+      http403ForbiddenResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 403,
+      });
+      http404NotFoundResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 404,
+      });
+      http500ServerErrorResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 500,
+      });
+      http503ServiceUnavailableResults += countHmrcApiRequestValues(obligationsRequest, {
+        "httpRequest.method": "GET",
+        "httpResponse.statusCode": 503,
+      });
+    });
+
+    // Assert result counts
+    console.log("[DynamoDB Assertions]: VAT Obligations GET request results summary:");
+    console.log(`  HTTP 200 OK: ${http200OkResults}`);
+    console.log(`  HTTP 400 Bad Request: ${http400BadRequestResults}`);
+    console.log(`  HTTP 403 Forbidden: ${http403ForbiddenResults}`);
+    console.log(`  HTTP 404 Not Found: ${http404NotFoundResults}`);
+    console.log(`  HTTP 500 Server Error: ${http500ServerErrorResults}`);
+    console.log(`  HTTP 503 Service Unavailable: ${http503ServiceUnavailableResults}`);
+    expect(http200OkResults).toBe(19);
+    expect(http400BadRequestResults).toBe(0);
+    expect(http403ForbiddenResults).toBe(1);
+    expect(http404NotFoundResults).toBe(1);
+    // TODO: capture exception failures in dynamo: expect(http500ServerErrorResults).toBe(1);
+    // TODO: capture exception failures in dynamo: expect(http503ServiceUnavailableResults).toBe(1);
+
+    // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
+    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
+
+    // Assert consistent hashedSub across authenticated requests
+    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
+    console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
+
+    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
+    if (wiremockMode && wiremockMode !== "off") {
+      const records = readDynamoDbExport(hmrcApiRequestsFile);
+      expect(records.length).toBeGreaterThan(0);
+      for (const r of records) {
+        expect(
+          r.url?.startsWith(`http://localhost:${wiremockPort}`),
+          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
+        ).toBe(true);
+      }
+    }
+  }
 });

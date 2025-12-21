@@ -367,9 +367,13 @@ function fetchWithId(url, opts = {}) {
     console.warn("Failed to generate X-Client-Request-Id:", error);
   }
 
-  // Add hmrcAccount header if present in URL
+  // Add hmrcAccount header if present in URL or localStorage
   const urlParams = new URLSearchParams(window.location.search);
-  const hmrcAccount = urlParams.get("hmrcAccount");
+  const hmrcAccountFromUrl = urlParams.get("hmrcAccount");
+  if (hmrcAccountFromUrl) {
+    localStorage.setItem("hmrcAccount", hmrcAccountFromUrl);
+  }
+  const hmrcAccount = hmrcAccountFromUrl || localStorage.getItem("hmrcAccount");
   if (hmrcAccount) {
     headers.set("hmrcAccount", hmrcAccount);
   }
@@ -991,47 +995,85 @@ function isValidIPv4(token) {
 }
 
 // Helper to build Gov-Client headers for HMRC API calls
+// Note: This function only collects client-side information.
+// Vendor headers (Gov-Vendor-*) are generated server-side in buildFraudHeaders.js
 // eslint-disable-next-line no-unused-vars
 async function getGovClientHeaders() {
-  // Enhanced IP detection with fallbacks
-  const detectedIP = await getClientIP();
-  const govClientPublicIPHeader = detectedIP;
-  const govVendorPublicIPHeader = detectedIP;
+  // Try to detect client IP (may be blocked by CSP or fail, server will handle fallback)
+  let detectedIP = "SERVER_DETECT"; // Signal server to detect IP
+  try {
+    detectedIP = await getClientIP();
+  } catch (error) {
+    console.warn("Client IP detection failed, server will detect:", error.message);
+  }
 
+  const govClientPublicIPHeader = detectedIP;
   const govClientBrowserJSUserAgentHeader = navigator.userAgent;
   const govClientDeviceIDHeader = crypto.randomUUID();
-  const govClientMultiFactorHeader = "type=OTHER";
-  const govClientPublicIPTimestampHeader = new Date().toISOString();
-  const govClientPublicPortHeader = "" + (window.location.port || (window.location.protocol === "https:" ? "443" : "80"));
-  const govClientScreensHeader = JSON.stringify({
-    width: window.screen.width,
-    height: window.screen.height,
-    colorDepth: window.screen.colorDepth,
-    pixelDepth: window.screen.pixelDepth,
-  });
-  // eslint-disable-next-line new-cap
-  const govClientTimezoneHeader = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const govClientUserIDsHeader = "test=1";
-  const govClientWindowSizeHeader = JSON.stringify({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-  const govVendorForwardedHeader = "test=1";
 
-  return {
+  // Gov-Client-Multi-Factor: Must include timestamp and unique-reference
+  // TODO: Implement Gov-Client-Multi-Factor for cognito and omit when no MFA present
+  let govClientMultiFactorHeader;
+  // const mfaTimestamp = new Date().toISOString();
+  // const mfaUniqueRef = crypto.randomUUID();
+  // govClientMultiFactorHeader = `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
+
+  const govClientPublicIPTimestampHeader = new Date().toISOString();
+
+  // Gov-Client-Screens: Must be an array of objects with scalingFactor encoded as key values, e.g. width=1920&height=1080&scaling-factor=1&colour-depth=1
+  const govClientScreensHeader = [
+    { width: window.screen.width },
+    { height: window.screen.height },
+    { "colour-depth": window.screen.colorDepth },
+    { "scaling-factor": window.devicePixelRatio },
+  ]
+    .map((obj) => Object.entries(obj).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`))
+    .join("&");
+
+  // Gov-Client-Timezone: Must be in UTC±<hh>:<mm> format
+
+  const timezoneOffset = -new Date().getTimezoneOffset(); // minutes, negative getTimezoneOffset means positive = east of UTC
+  const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
+  const offsetMinutes = Math.abs(timezoneOffset) % 60;
+  const offsetSign = timezoneOffset >= 0 ? "+" : "-";
+  const govClientTimezoneHeader = `UTC${offsetSign}${String(offsetHours).padStart(2, "0")}:${String(offsetMinutes).padStart(2, "0")}`;
+
+  // Gov-Client-Window-Size: Must be an object with width and height
+  const govClientWindowSizeHeader = [{ width: window.innerWidth }, { height: window.innerHeight }]
+    .map((obj) => Object.entries(obj).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`))
+    .join("&");
+
+  // Get current user ID from localStorage if available
+  const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+  const userId = userInfo.sub || "browser-unknown";
+  const govClientUserIDsHeader = `browser=${encodeURIComponent(userId)}`;
+
+  // Build client headers only (no vendor headers)
+  const headers = {
     "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
     "Gov-Client-Device-ID": govClientDeviceIDHeader,
-    "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
     "Gov-Client-Public-IP": govClientPublicIPHeader,
     "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
-    "Gov-Client-Public-Port": govClientPublicPortHeader,
     "Gov-Client-Screens": govClientScreensHeader,
     "Gov-Client-Timezone": govClientTimezoneHeader,
     "Gov-Client-User-IDs": govClientUserIDsHeader,
     "Gov-Client-Window-Size": govClientWindowSizeHeader,
-    "Gov-Vendor-Forwarded": govVendorForwardedHeader,
-    "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
+    // Note: Gov-Vendor-* headers are NOT included here - they're generated server-side
   };
+  if (govClientMultiFactorHeader) {
+    headers["Gov-Client-Multi-Factor"] = govClientMultiFactorHeader;
+  }
+
+  // TODO: Declare no Gov-Client-Public-Port to HMRC
+  // The Submit service is a browser-based web application delivered over HTTPS via
+  // CloudFront and AWS load balancers. The client TCP source port is not exposed to
+  // application code in the browser and is not forwarded through the CDN/load
+  // balancer layer.
+  // In accordance with HMRC Fraud Prevention guidance, this header is omitted
+  // because the data cannot be collected.
+  // headers["Gov-Client-Public-Port"] = null;
+
+  return headers;
 }
 
 // Catalog helpers (browser-safe; no TOML parsing here to avoid bundling dependencies)
@@ -1101,6 +1143,7 @@ function showConsentBannerIfNeeded() {
   };
 }
 
+// eslint-disable-next-line no-unused-vars
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -1125,11 +1168,36 @@ async function maybeInitRum() {
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
-  const clientUrl = `https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js`;
+
   try {
-    await loadScript(clientUrl);
-    if (typeof window.cwr === "function") {
-      window.cwr("config", {
+    // Use AWS RUM's proper initialization pattern with self-executing function
+    // This creates the command queue and loads the client script
+    /* eslint-disable sonarjs/no-parameter-reassignment */
+    (function (n, i, v, r, s, config, u, x, z) {
+      x = window.AwsRumClient = { q: [], n: n, i: i, v: v, r: r, c: config, u: u };
+      window[n] = function (c, p) {
+        x.q.push({ c: c, p: p });
+      };
+      z = document.createElement("script");
+      z.async = true;
+      z.src = s;
+      z.onload = function () {
+        window.__RUM_INIT_DONE__ = true;
+        rumReady();
+        // Note: setUserId is not a supported RUM command - removed
+      };
+      z.onerror = function (e) {
+        console.warn("Failed to load RUM client:", e);
+      };
+      // Append to head instead of insertBefore to avoid issues with script tag location
+      document.head.appendChild(z);
+    })(
+      "cwr",
+      c.appMonitorId,
+      "0.0.2-4", // Application version from package.json
+      c.region,
+      "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js",
+      {
         sessionSampleRate: c.sessionSampleRate ?? 1,
         guestRoleArn: c.guestRoleArn,
         identityPoolId: c.identityPoolId,
@@ -1137,18 +1205,15 @@ async function maybeInitRum() {
         telemetries: ["performance", "errors", "http"],
         allowCookies: true,
         enableXRay: true,
-        appMonitorId: c.appMonitorId,
-        region: c.region,
-      });
-      window.__RUM_INIT_DONE__ = true;
-      rumReady();
-      setRumUserIdIfAvailable();
-    }
+      },
+    );
+    /* eslint-enable sonarjs/no-parameter-reassignment */
   } catch (e) {
     console.warn("Failed to init RUM:", e);
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 async function sha256Hex(text) {
   const enc = new TextEncoder();
   const data = enc.encode(text);
@@ -1157,23 +1222,9 @@ async function sha256Hex(text) {
   return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function setRumUserIdIfAvailable() {
-  try {
-    const userInfo = localStorage.getItem("userInfo");
-    if (!userInfo) return;
-    const user = JSON.parse(userInfo);
-    const rawId = user.sub || user.username || user.email;
-    if (!rawId) return;
-    const hashed = await sha256Hex(String(rawId));
-    if (window.cwr) {
-      window.cwr("setUserId", hashed);
-    } else {
-      document.addEventListener("rum-ready", () => window.cwr && window.cwr("setUserId", hashed), { once: true });
-    }
-  } catch (error) {
-    console.warn("Failed to set RUM user id:", error);
-  }
-}
+// Note: setUserId is not a supported AWS CloudWatch RUM command
+// User identification is handled automatically by RUM via cookies (cwr_u)
+// If needed, user attributes can be added via addSessionAttributes command
 
 function ensurePrivacyLink() {
   const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
@@ -1244,7 +1295,7 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
           }
         });
       })();
-      setRumUserIdIfAvailable();
+      // Note: User tracking handled automatically by RUM via cookies
     });
   } else {
     ensurePrivacyLink();
@@ -1263,12 +1314,10 @@ if (typeof window !== "undefined" && typeof document !== "undefined") {
         }
       });
     })();
-    setRumUserIdIfAvailable();
+    // Note: User tracking handled automatically by RUM via cookies
   }
-  // Update user id on cross-tab login changes
-  window.addEventListener("storage", (e) => {
-    if (e.key === "userInfo") setRumUserIdIfAvailable();
-  });
+  // Note: RUM handles user tracking automatically via cookies (cwr_u)
+  // No need to manually sync user info changes
 }
 
 // Expose functions to window for use by other scripts and testing

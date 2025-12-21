@@ -1,6 +1,7 @@
 // app/unit-tests/dynamoDbHmrcApiRequestStore.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { context } from "@app/lib/logger.js";
 
 // Mocks for AWS SDK clients used via dynamic import in the implementation
 const mockSend = vi.fn();
@@ -32,6 +33,7 @@ describe("dynamoDbHmrcApiRequestStore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env = { ...originalEnv };
+    context.enterWith(new Map());
   });
 
   afterEach(() => {
@@ -59,7 +61,6 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = "unit-test-hmrc-requests";
     process.env.AWS_REGION = process.env.AWS_REGION || "eu-west-2";
     const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
-    const { context } = await import("@app/lib/logger.js");
     const { hashSub } = await import("@app/services/subHasher.js");
 
     // add request correlation data

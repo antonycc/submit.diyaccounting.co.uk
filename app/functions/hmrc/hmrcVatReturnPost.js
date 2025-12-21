@@ -20,6 +20,7 @@ import {
   http403ForbiddenFromBundleEnforcement,
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
+  validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
@@ -197,6 +198,11 @@ export async function submitVat(
   auditForUserSub,
   govTestScenarioHeader,
 ) {
+  // Validate fraud prevention headers for sandbox accounts
+  if (hmrcAccount === "sandbox") {
+    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub);
+  }
+
   const hmrcRequestHeaders = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",

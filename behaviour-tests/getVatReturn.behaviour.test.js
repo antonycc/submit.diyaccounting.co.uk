@@ -15,6 +15,7 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
+  checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -51,8 +52,10 @@ import {
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
+  assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
+  intentionallyNotSuppliedHeaders,
   readDynamoDbExport,
 } from "./helpers/dynamodb-assertions.js";
 import {
@@ -180,6 +183,8 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
 
   addOnPageLogging(page);
 
+  const outputDir = testInfo.outputPath("");
+
   page.on("response", (response) => {
     try {
       if (observedTraceparent) return;
@@ -256,7 +261,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
 
   if (isSandboxMode()) {
     /**
-     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-md-vat-api-1.0.yaml)
+     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
      *
      * GET /organisations/vat/{vrn}/returns/{periodKey}
      *  - DATE_RANGE_TOO_LARGE: The date of the requested return cannot be further than four years from the current date.
@@ -297,43 +302,61 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     expect(slowElapsedMs).toBeLessThan(60_000);
   }
 
-  // Extract user sub and log out
+  /* ****************** */
+  /*  Extract user sub  */
+  /* ****************** */
+
   userSub = await extractUserSubFromLocalStorage(page, testInfo);
+
+  /* ********* */
+  /*  LOG OUT  */
+  /* ********* */
+
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 
-  // Export DynamoDB and assert minimal expectations (if dynalite used)
-  const outputDir = testInfo.outputPath("");
-  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
-    try {
-      await exportAllTables(outputDir, dynamoControl.endpoint, { bundleTableName, hmrcApiRequestsTableName, receiptsTableName });
-    } catch {}
-  }
-  if (runDynamoDb === "run") {
-    const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
-    const getRequests = assertHmrcApiRequestExists(
-      hmrcApiRequestsFile,
-      "GET",
-      `/organisations/vat/${testVatNumber}/returns/${hmrcVatPeriodKey}`,
-      "VAT return retrieval",
-    );
-    expect(getRequests.length).toBeGreaterThan(0);
-    const getRequest = getRequests[0];
-    assertHmrcApiRequestValues(getRequest, { "httpRequest.method": "GET" });
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "View VAT GET test");
-    expect(hashedSubs.length).toBeGreaterThan(0);
-
-    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
-    if (wiremockMode && wiremockMode !== "off") {
-      const records = readDynamoDbExport(hmrcApiRequestsFile);
-      expect(records.length).toBeGreaterThan(0);
-      for (const r of records) {
-        expect(
-          r.url?.startsWith(`http://localhost:${wiremockPort}`),
-          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
-        ).toBe(true);
-      }
-    }
-  }
+  // Build testContext.json
+  const testContext = {
+    testId: "get-vat-return-sandbox",
+    name: testInfo.title,
+    title: "View VAT Return (Single API Focus: GET)",
+    description: "Retrieves VAT return data from HMRC with default and sandbox Gov-Test-Scenario variations.",
+    hmrcApis: [
+      { url: "/api/v1/hmrc/vat/return", method: "POST" },
+      { url: "/api/v1/hmrc/vat/return/:periodKey", method: "GET" },
+      { url: "/test/fraud-prevention-headers/validate", method: "GET" },
+    ],
+    env: {
+      envName,
+      baseUrl,
+      serverPort: httpServerPort,
+      runTestServer,
+      runProxy,
+      runMockOAuth2,
+      testAuthProvider,
+      testAuthUsername,
+      bundleTableName,
+      hmrcApiRequestsTableName,
+      receiptsTableName,
+      runDynamoDb,
+    },
+    testData: {
+      hmrcTestVatNumber: testVatNumber,
+      hmrcVatPeriodKey,
+      hmrcVatDueAmount,
+      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      userSub,
+      observedTraceparent,
+      testUrl,
+      isSandboxMode: isSandboxMode(),
+      intentionallyNotSuppliedHeaders,
+    },
+    artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
+  };
+  try {
+    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
+  } catch {}
 
   /* ****************** */
   /*  FIGURES (SCREENSHOTS) */
@@ -367,42 +390,60 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
   writeFiguresJson(outputDir, figures);
 
-  // Build testContext.json
-  const testContext = {
-    testId: "get-vat-return-sandbox",
-    name: testInfo.title,
-    title: "View VAT Return (Single API Focus: GET)",
-    description: "Retrieves VAT return data from HMRC with default and sandbox Gov-Test-Scenario variations.",
-    hmrcApis: [{ url: "/api/v1/hmrc/vat/return/:periodKey", method: "GET" }],
-    env: {
-      envName,
-      baseUrl,
-      serverPort: httpServerPort,
-      runTestServer,
-      runProxy,
-      runMockOAuth2,
-      testAuthProvider,
-      testAuthUsername,
-      bundleTableName,
-      hmrcApiRequestsTableName,
-      receiptsTableName,
-      runDynamoDb,
-    },
-    testData: {
-      hmrcTestVatNumber: testVatNumber,
-      hmrcVatPeriodKey,
-      hmrcVatDueAmount,
-      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
-      userSub,
-      observedTraceparent,
-      testUrl,
-      isSandboxMode: isSandboxMode(),
-    },
-    artefactsDir: outputDir,
-    screenshotPath,
-    testStartTime: new Date().toISOString(),
-  };
-  try {
-    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
-  } catch {}
+  /* **************** */
+  /*  EXPORT DYNAMODB */
+  /* **************** */
+
+  // Export DynamoDB tables if dynalite was used
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
+    console.log("[DynamoDB Export]: Starting export of all tables...");
+    try {
+      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
+        bundleTableName,
+        hmrcApiRequestsTableName,
+        receiptsTableName,
+      });
+      console.log("[DynamoDB Export]: Export completed:", exportResults);
+    } catch (error) {
+      console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
+  }
+
+  /* ********************************** */
+  /*  ASSERT DYNAMODB HMRC API REQUESTS */
+  /* ********************************** */
+
+  // Assert that HMRC API requests were logged correctly
+  if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
+    const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
+    const vatGetRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "GET",
+      `/organisations/vat/${testVatNumber}/returns/${hmrcVatPeriodKey}`,
+      "VAT return retrieval",
+    );
+    expect(vatGetRequests.length).toBeGreaterThan(0);
+    vatGetRequests.forEach((vatGetRequest) => {
+      assertHmrcApiRequestValues(vatGetRequest, { "httpRequest.method": "GET" });
+      // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
+    });
+
+    // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
+    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
+
+    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "View VAT GET test");
+    expect(hashedSubs.length).toBeGreaterThan(0);
+
+    // When WireMock is enabled, ensure all outbound HMRC calls used WireMock base URL
+    if (wiremockMode && wiremockMode !== "off") {
+      const records = readDynamoDbExport(hmrcApiRequestsFile);
+      expect(records.length).toBeGreaterThan(0);
+      for (const r of records) {
+        expect(
+          r.url?.startsWith(`http://localhost:${wiremockPort}`),
+          `Expected HMRC request to use WireMock at http://localhost:${wiremockPort}, but got: ${r.url}`,
+        ).toBe(true);
+      }
+    }
+  }
 });

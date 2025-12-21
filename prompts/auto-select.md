@@ -10,6 +10,11 @@ Analyze the current repository and all available prompts in the `./prompts` dire
    - `create-new-prompt.md` - Identify gaps and design a new strategic prompt for the repository
    - `sumarise-repository.md` - Produce an information-dense, hierarchical repository summary for agent context
    - `what-next-for-mtd-vat-submission.md` - Plan the path to HMRC approval and real customer VAT submissions
+   - `hmrc-api-expert.md` - Deep expertise in HMRC MTD VAT API, fraud prevention headers, and OAuth flows
+   - `aws-cdk-java-specialist.md` - Guide infrastructure development using AWS CDK v2 in Java
+   - `behavior-test-master.md` - Master end-to-end behavioral testing with Playwright
+   - `clean-code-guardian.md` - Enforce high standards for code quality, tracing, and refactoring
+   - `entitlement-subscription-specialist.md` - Manage complex bundle, entitlement, and subscription logic
 
 2. **Repository Analysis**: Evaluate the current state of the repository across all areas:
    - Code quality and consistency patterns
@@ -83,5 +88,5 @@ Begin your response with:
 - Before running tests, trace the relevant code paths (local Express and Lambda adaptor) and fix obvious defects found by inspection
 - Behaviour tests can be very verbose — pipe output to a file when running (e.g. `npm run test:behaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`)
 
-> Formatting and style: Use the repository’s tooling — ESLint (flat config) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Run `npm run formatting` / `npm run formatting-fix`. See README → Code style, formatting, and IDE setup.
+> Formatting and style: Use the repository’s tooling — ESLint (flat config) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Run `npm run formatting. See README → Code style, formatting, and IDE setup.
 > Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

@@ -1466,6 +1466,7 @@ Hierarchical overview of the repository organized by function.
 | `cdk-application/` | Directory | CDK configuration for application stacks |
 | `cdk-environment/` | Directory | CDK configuration for environment stacks |
 | `infra/` | Directory | Java/CDK infrastructure code |
+| `prompts/` | Directory | Strategic prompts for GitHub Copilot Agent |
 | `scripts/` | Directory | Utility scripts for development and deployment |
 | `web/` | Directory | Frontend HTML/CSS/JavaScript and tests |
 | `wiremock-recordings/` | Directory | WireMock HTTP interaction recordings |
@@ -1498,6 +1499,7 @@ Hierarchical overview of the repository organized by function.
 
 | Path | Purpose |
 |------|---------|
+| `agents/` | Directory | Custom GitHub Copilot Chat agents |
 | `workflows/deploy.yml` | Main deployment workflow (application stacks) |
 | `workflows/deploy-environment.yml` | Environment infrastructure deployment |
 | `workflows/test.yml` | Test suite workflow (reusable) |
@@ -1732,6 +1734,46 @@ behaviour-tests/
 ├── ENHANCEMENTS.md                      # Enhancement ideas
 └── WIREMOCK.md                          # WireMock usage guide
 ```
+
+### `.github/agents/` - GitHub Copilot Custom Agents
+
+These are specialized chat agents that can be invoked within GitHub Copilot Chat (using `@` or selection) to provide expert assistance on specific project domains.
+
+| Agent | Purpose |
+|-------|---------|
+| `hmrc-api-expert` | Specialized guidance for HMRC MTD VAT API integration, fraud prevention headers, and OAuth flows. |
+| `aws-cdk-java-specialist` | Expert guidance for Java-based AWS CDK infrastructure and serverless patterns. |
+| `behavior-test-master` | Specialized in Playwright end-to-end testing and user journey verification. |
+| `clean-code-guardian` | Enforces high standards for code quality, tracing, and refactoring integrity. |
+| `entitlement-subscription-specialist` | Manages complex bundle, entitlement, and subscription logic for user access. |
+| `todo-inator` | Executes a themed batch of TODO/FIXME items end-to-end with tests and verification. |
+| `security-hardener` | Strengthens security posture and ensures compliance readiness for production. |
+| `mtd-vat-roadmap` | Strategic plan to reach HMRC approval and production readiness for VAT submission. |
+| `summarize-repository` | Produces an information-dense overview of the repository structure and context. |
+
+### `prompts/` - Strategic Prompts
+
+These files define specific strategic personas and processes for GitHub Copilot Agent to follow when enhancing the repository.
+
+| Prompt | Purpose |
+|--------|---------|
+| `auto-select.md` | Automatically selects the best prompt based on current repository needs |
+| `todo-inator.md` | Executes a themed batch of TODOs to completion with tests |
+| `hmrc-api-expert.md` | Specialized guidance for HMRC MTD VAT API integration |
+| `aws-cdk-java-specialist.md` | Expert guidance for Java-based AWS CDK infrastructure |
+| `behavior-test-master.md` | Specialized in Playwright E2E and behavioral testing |
+| `clean-code-guardian.md` | Enforces project-specific quality and refactoring standards |
+| `entitlement-subscription-specialist.md` | Manages bundle, entitlement, and subscription logic |
+| `security-compliance-hardening.md` | Strengthens security posture and compliance readiness |
+| `sumarise-repository.md` | Generates a hierarchical repository summary for context |
+| `create-new-prompt.md` | Identifies gaps and designs new strategic prompts |
+| `what-next-for-mtd-vat-submission.md` | Roadmap for HMRC approval and VAT submission readiness |
+| `increase-consistency.md` | Identifies opportunities to standardize patterns and naming |
+| `abstract-libraries.md` | Identifies opportunities to delegate to established libraries |
+| `expand-capabilities.md` | Suggests ways to expand repository features and integrations |
+| `refresh-documentation.md` | Guides the standardization and update of documentation |
+| `up-date-readme.md` | Specifically focused on improving the main README.md |
+| `prune-focus.md` | Helps narrow down the project focus and remove redundant code |
 
 ### `scripts/` - Utility Scripts
 

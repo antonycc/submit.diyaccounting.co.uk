@@ -110,6 +110,10 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
 
 export function extractRequest(event) {
   let request;
+  // Initialise the store if it doesn't exist
+  if (!context.getStore()) {
+    context.enterWith(new Map());
+  }
   // Extract correlation headers and set context explicitly to avoid leakage across invocations
   const requestId = event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || null;
   const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;

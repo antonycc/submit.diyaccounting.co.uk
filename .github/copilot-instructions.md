@@ -31,11 +31,13 @@ As a code review agent, prioritize **static analysis and code comprehension** ov
 4. **Check references** against documented scripts and configuration
 5. **Suggest tests** when appropriate, but let developers/CI run them
 
-**Note**: The `.junie/guidelines.md` file describes behavior for the Junie custom agent, which emphasizes continuous testing and iteration. As a code review agent, your role is complementary - you provide thoughtful analysis while Junie handles execution and testing.
+**Note**: The `.junie/guidelines.md` file describes behavior for the Junie custom agent, which emphasizes continuous
+testing and iteration. As a code review agent, your role is complementary - you provide thoughtful analysis while Junie
+handles execution and testing.
 
 ### Analysis Workflow
 
-When reviewing code changes:
+When reviewing code changes be as low friction as possible, maintaining current standards for the incoming code.
 
 1. **Understand the context**
    - What problem is being solved?
@@ -62,6 +64,9 @@ When reviewing code changes:
    - Focus on surgical, targeted improvements
    - Preserve working code unless fixing security issues
    - Match local style over enforcing global style rules
+   - Do not raise issues where new possibly problematic code has been introduced but this pattern is already established
+   - Do not raise issues about unused imports or variables or formatting
+   - Do do raise concerns about performance where the suggested optimisation is unlikely to be a measurable signal above the noise.
 
 ## Repository Patterns and Conventions
 
@@ -70,12 +75,12 @@ When reviewing code changes:
 **JavaScript/TypeScript** (ES Modules):
 - **Linter**: ESLint with flat config (`eslint.config.js`)
 - **Formatter**: Prettier (`.prettierrc`)
-- **Scripts**: `npm run linting`, `npm run linting-fix`, `npm run formatting`, `npm run formatting-fix`
-- **Convention**: Always check/fix before committing: `npm run linting-fix && npm run formatting-fix`
+- **Scripts**: Only run if specifically asked to fix formatting and linting errors: `npm run linting`, `npm run linting-fix`, `npm run formatting`, `npm run formatting-fix`
+- **Convention**: Only run if specifically asked to fix formatting and linting errors: `npm run linting-fix && npm run formatting-fix`
 
 **Java** (AWS CDK Infrastructure):
 - **Formatter**: Spotless with Palantir Java Format (100-column width)
-- **Scripts**: `./mvnw spotless:check`, `./mvnw spotless:apply`
+- **Scripts**: Only run if specifically asked to fix formatting and linting errors: `./mvnw spotless:check`, `./mvnw spotless:apply`
 - **Convention**: Runs during Maven `install` phase, fails build if not formatted
 
 **General Style Rule**: Match existing local style rather than forcing global rules when it would be disruptive. Only change style in code you're already modifying.
@@ -174,9 +179,9 @@ See REPOSITORY_DOCUMENTATION.md Section "Package.json Operations" for the comple
 
 **Code Quality**:
 - `npm run formatting` - Check JS/Java formatting
-- `npm run formatting-fix` - Auto-fix JS/Java formatting
+- `npm run formatting-fix` - Auto-fix JS/Java formatting - Only run if specifically asked to fix formatting and linting errors:
 - `npm run linting` - Check ESLint rules
-- `npm run linting-fix` - Auto-fix ESLint issues
+- `npm run linting-fix` - Auto-fix ESLint issues - Only run if specifically asked to fix formatting and linting errors:
 
 **Local Development**:
 - `npm run proxy` - Start ngrok proxy

@@ -3,6 +3,7 @@
 import fs from "fs";
 import path from "path";
 import pino from "pino";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { dotenvConfigIfNotBlank } from "./env.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
@@ -67,14 +68,14 @@ export const logger = pino(
     // Add an ISO time field as a normal JSON property
     mixin() {
       // Pull correlation fields from shared context; ensure we never leak old values
-      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
-      const requestId = context.get("requestId") || null;
-      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
-      const amznTraceId = context.get("amznTraceId") || null;
-      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
-      const traceparent = context.get("traceparent") || null;
-      // eslint-disable-next-line sonarjs/no-empty-collection -- context is populated at runtime before logging
-      const correlationId = context.get("correlationId") || null;
+      const store = context.getStore();
+      const requestId = store?.get("requestId") || null;
+
+      const amznTraceId = store?.get("amznTraceId") || null;
+
+      const traceparent = store?.get("traceparent") || null;
+
+      const correlationId = store?.get("correlationId") || null;
       return {
         time: new Date().toISOString(),
         ...(requestId ? { requestId } : {}),
@@ -93,6 +94,18 @@ export const logger = pino(
 );
 
 // Store for contextual information such as a request ID
-export const context = new Map();
-
+// export const context = new Map();
+export const storage = new AsyncLocalStorage();
+export const context = {
+  get: (key) => storage.getStore()?.get(key),
+  set: (key, value) => {
+    const store = storage.getStore();
+    if (store) {
+      store.set(key, value);
+    }
+  },
+  run: (store, callback) => storage.run(store, callback),
+  getStore: () => storage.getStore(),
+  enterWith: (store) => storage.enterWith(store),
+};
 export default logger;

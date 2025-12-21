@@ -1,9 +1,19 @@
 // app/lib/eventToGovClientHeaders.js
+// DEPRECATED: This function is maintained for backward compatibility.
+// New code should use buildFraudHeaders.js instead.
 
 import { createLogger } from "./logger.js";
+import { buildFraudHeaders } from "./buildFraudHeaders.js";
 
 const logger = createLogger({ source: "app/lib/eventToGovClientHeaders.js" });
 
+/**
+ * Build fraud prevention headers from Lambda event.
+ * @deprecated Use buildFraudHeaders from buildFraudHeaders.js instead
+ * @param {object} event - Lambda proxy event
+ * @param {string} detectedIP - Detected client IP (optional, will be derived from x-forwarded-for if not provided)
+ * @returns {object} Object with govClientHeaders and govClientErrorMessages
+ */
 export default function eventToGovClientHeaders(event, detectedIP) {
   const headers = event.headers || {};
   // Case-insensitive header getter
@@ -19,35 +29,55 @@ export default function eventToGovClientHeaders(event, detectedIP) {
     return str;
   };
 
+  // Use new buildFraudHeaders for vendor headers
+  const fraudHeaders = buildFraudHeaders(event);
+
   // Attempt to populate from incoming values, then fall back to safe defaults if absent
   const govClientBrowserJSUserAgentHeader = sanitize(h("Gov-Client-Browser-JS-User-Agent")) || sanitize(h("user-agent"));
   const govClientDeviceIDHeader = sanitize(h("Gov-Client-Device-ID"));
-  const govClientMultiFactorHeader = sanitize(h("Gov-Client-Multi-Factor")) || "type=OTHER";
+
+  // Gov-Client-Multi-Factor: Must include timestamp and unique-reference
+  const mfaHeader = sanitize(h("Gov-Client-Multi-Factor"));
+  const mfaTimestamp = new Date().toISOString();
+  const mfaUniqueRef = `server-${crypto.randomUUID()}`;
+  const govClientMultiFactorHeader =
+    mfaHeader || `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
 
   // Handle IP detection - if browser sent "SERVER_DETECT", extract IP from request headers
   let govClientPublicIPHeader = sanitize(h("Gov-Client-Public-IP"));
-  const govVendorPublicIPHeader =
-    sanitize(h("Gov-Vendor-Public-IP")) || sanitize(h("x-forwarded-for"))?.split(",")[0]?.trim() || detectedIP;
+
+  // Use fraudHeaders for vendor IP, or fall back to detected IP
+  const govVendorPublicIPHeader = fraudHeaders["Gov-Vendor-Public-IP"] || detectedIP;
 
   if (govClientPublicIPHeader === "SERVER_DETECT" || !govClientPublicIPHeader) {
+    // Use the IP detected by buildFraudHeaders, or fall back to detectedIP parameter
+    govClientPublicIPHeader = fraudHeaders["Gov-Client-Public-IP"] || detectedIP;
     logger.info({
-      message: "Server detected client IP from request headers but overwrote them with a detected address",
+      message: "Server detected client IP from request headers",
       govClientPublicIPHeader,
       detectedIP,
     });
-    govClientPublicIPHeader = detectedIP;
   }
 
   const govClientPublicIPTimestampHeader = sanitize(h("Gov-Client-Public-IP-Timestamp")) || new Date().toISOString();
-  const govClientPublicPortHeader = sanitize(h("Gov-Client-Public-Port")) || "443";
-  const govClientScreensHeader =
-    sanitize(h("Gov-Client-Screens")) || JSON.stringify({ width: 1280, height: 720, colorDepth: 24, pixelDepth: 24 });
-  const govClientTimezoneHeader = sanitize(h("Gov-Client-Timezone")) || "UTC";
-  const govClientUserIDsHeader = sanitize(h("Gov-Client-User-IDs")) || "server=1";
-  const govClientWindowSizeHeader = sanitize(h("Gov-Client-Window-Size")) || JSON.stringify({ width: 1280, height: 720 });
+
+  // Gov-Client-Public-Port: Don't use server ports (443, 80) as fallback - omit instead
+  const portHeader = sanitize(h("Gov-Client-Public-Port"));
+  const govClientPublicPortHeader = portHeader && portHeader !== "443" && portHeader !== "80" ? portHeader : undefined;
+
+  // Gov-Client-Screens: Must be an array of objects with scalingFactor
+  const govClientScreensHeader = sanitize(h("Gov-Client-Screens"));
+
+  // Gov-Client-Timezone: Must be in UTC±<hh>:<mm> format
+  const govClientTimezoneHeader = sanitize(h("Gov-Client-Timezone")) || "UTC+00:00";
+
+  const govClientUserIDsHeader = sanitize(h("Gov-Client-User-IDs")) || fraudHeaders["Gov-Client-User-IDs"] || "server=anonymous";
+
+  // Gov-Client-Window-Size: Must be an object with width and height
+  const govClientWindowSizeHeader = sanitize(h("Gov-Client-Window-Size"));
   const govTestScenarioHeader = sanitize(h("Gov-Test-Scenario"));
 
-  // Build full header set, then remove any that are blank/undefined to satisfy HMRC fraud-prevention rules.
+  // Build full header set, merging client and vendor headers from buildFraudHeaders
   const fullGovClientHeaders = {
     "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
     "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
@@ -60,11 +90,12 @@ export default function eventToGovClientHeaders(event, detectedIP) {
     "Gov-Client-Timezone": govClientTimezoneHeader,
     "Gov-Client-User-IDs": govClientUserIDsHeader,
     "Gov-Client-Window-Size": govClientWindowSizeHeader,
-    "Gov-Vendor-Forwarded": "by=203.0.113.6&for=198.51.100.0",
-    "Gov-Vendor-License-IDs": "my-licensed-software=8D7963490527D33716835EE7C195516D5E562E03B224E9B359836466EE40CDE1",
-    "Gov-Vendor-Product-Name": "DIY Accounting Submit",
+    // Use dynamic vendor headers from buildFraudHeaders
+    "Gov-Vendor-Forwarded": fraudHeaders["Gov-Vendor-Forwarded"],
+    "Gov-Vendor-License-IDs": fraudHeaders["Gov-Vendor-License-IDs"],
+    "Gov-Vendor-Product-Name": fraudHeaders["Gov-Vendor-Product-Name"],
     "Gov-Vendor-Public-IP": govVendorPublicIPHeader,
-    "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk-0.0.2-4",
+    "Gov-Vendor-Version": fraudHeaders["Gov-Vendor-Version"],
   };
 
   // Remove any undefined/blank header values – HMRC prefers omission over sending invalid or placeholder strings
