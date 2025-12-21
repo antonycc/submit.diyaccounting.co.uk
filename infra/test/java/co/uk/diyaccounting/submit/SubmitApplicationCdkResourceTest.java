@@ -39,7 +39,6 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "web/public"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
-    @SetEnvironmentVariable(key = "FRAUD_VENDOR_LICENSE_IDS", value = "test-software=TEST12345"),
 })
 class SubmitApplicationCdkResourceTest {
 
