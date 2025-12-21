@@ -115,7 +115,7 @@ public class AuthStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaCustomAuthorizer)
                         .environment(authUrlCognitoLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.cognitoAuthUrlGetLambdaProps = authUrlCognitoLambdaUrlOrigin.apiProps;
         this.cognitoAuthUrlGetLambda = authUrlCognitoLambdaUrlOrigin.lambda;
@@ -151,7 +151,7 @@ public class AuthStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().cognitoTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeCognitoTokenLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.cognitoTokenPostLambdaProps = exchangeCognitoTokenLambdaUrlOrigin.apiProps;
         this.cognitoTokenPostLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;

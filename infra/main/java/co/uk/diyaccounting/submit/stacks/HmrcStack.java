@@ -163,7 +163,7 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().hmrcAuthUrlGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcAuthUrlGetLambdaCustomAuthorizer)
                         .environment(authUrlHmrcLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.hmrcAuthUrlGetLambdaProps = authUrlHmrcLambdaUrlOrigin.apiProps;
         this.hmrcAuthUrlGetLambda = authUrlHmrcLambdaUrlOrigin.lambda;
@@ -217,7 +217,7 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeHmrcTokenLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
         this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
@@ -305,7 +305,7 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaCustomAuthorizer)
                         .environment(submitVatLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("60000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.hmrcVatReturnPostLambdaProps = submitVatLambdaUrlOrigin.apiProps;
         this.hmrcVatReturnPostLambda = submitVatLambdaUrlOrigin.lambda;
@@ -348,7 +348,7 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaCustomAuthorizer)
                         .environment(vatObligationLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.hmrcVatObligationGetLambdaProps = hmrcVatObligationGetLambdaUrlOrigin.apiProps;
         this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.lambda;
@@ -392,7 +392,7 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaCustomAuthorizer)
                         .environment(vatReturnGetLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.hmrcVatReturnGetLambdaProps = hmrcVatReturnGetLambdaUrlOrigin.apiProps;
         this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.lambda;
@@ -442,7 +442,7 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().receiptPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().receiptPostLambdaCustomAuthorizer)
                         .environment(logReceiptLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.receiptPostLambdaProps = logReceiptLambdaUrlOrigin.apiProps;
         this.receiptPostLambda = logReceiptLambdaUrlOrigin.lambda;
@@ -478,7 +478,7 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
                         .environment(myReceiptsLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.receiptGetLambdaProps = myReceiptsLambdaUrlOrigin.apiProps;
         this.receiptGetLambda = myReceiptsLambdaUrlOrigin.lambda;
@@ -497,7 +497,7 @@ public class HmrcStack extends Stack {
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
                 .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
                 .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
-                .timeout(Duration.millis(Long.parseLong("30000")))
+                .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                 .build());
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",

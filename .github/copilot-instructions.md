@@ -85,6 +85,10 @@ When reviewing code changes be as low friction as possible, maintaining current 
 
 **General Style Rule**: Match existing local style rather than forcing global rules when it would be disruptive. Only change style in code you're already modifying.
 
+Avoid unnecessary formatting changes when editing code.
+For the lines that you change, be compliant with the formatting rules.
+Do not run formatting tools on the whole repository or whole files unless the whole file is new.
+
 ### Testing Strategy
 
 This repository uses a **four-tier testing pyramid**:
