@@ -16,15 +16,17 @@ import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
-const MAX_WAIT_MS = 25_000; // 25 seconds (significantly below API Gateway timeout of 30s)
+const MAX_WAIT_MS = 25_000; // 25 seconds (significantly below API Gateway timeout of 30s and Submit Lambda default 29s)
 const DEFAULT_WAIT_MS = MAX_WAIT_MS; // TODO: Async Lambdas should wait 20s, (max=sync) 20_000; // 20 seconds
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
   app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
-    // set 'x-wait-time-ms' to MAX_WAIT_MS in the inbound request for processing as a synchronous call
-    httpRequest.headers["x-wait-time-ms"] = MAX_WAIT_MS;
+    // set 'x-wait-time-ms' to MAX_WAIT_MS in the inbound request for processing as a synchronous call if not set in the inbound request.
+    // if (!httpRequest.headers["x-wait-time-ms"]) {
+    //  httpRequest.headers["x-wait-time-ms"] = DEFAULT_WAIT_MS;
+    // }
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
@@ -105,6 +107,7 @@ export async function handler(event) {
 
   // Processing
   try {
+    // TODO: Do this case insensitive comparison more thoroughly
     const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
     let formattedBundles;
     // TODO: Async, get request id generated if not provided.

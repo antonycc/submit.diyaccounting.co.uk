@@ -119,7 +119,7 @@ public class AccountStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().catalogGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().catalogGetLambdaCustomAuthorizer)
                         .environment(catalogLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.catalogLambdaProps = catalogLambdaUrlOrigin.apiProps;
         this.catalogLambda = catalogLambdaUrlOrigin.lambda;
@@ -153,7 +153,7 @@ public class AccountStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().bundleGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().bundleGetLambdaCustomAuthorizer)
                         .environment(getBundlesLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.bundleGetLambdaProps = getBundlesLambdaUrlOrigin.apiProps;
         this.bundleGetLambda = getBundlesLambdaUrlOrigin.lambda;
@@ -202,7 +202,7 @@ public class AccountStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().bundlePostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().bundlePostLambdaCustomAuthorizer)
                         .environment(requestBundlesLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.bundlePostLambdaProps = requestBundlesLambdaUrlOrigin.apiProps;
         this.bundlePostLambda = requestBundlesLambdaUrlOrigin.lambda;
@@ -256,7 +256,7 @@ public class AccountStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
                         .environment(bundleDeleteLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("30000")))
+                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.bundleDeleteLambdaProps = bundleDeleteLambdaUrlOrigin.apiProps;
         this.bundleDeleteLambda = bundleDeleteLambdaUrlOrigin.lambda;
@@ -276,7 +276,7 @@ public class AccountStack extends Stack {
                 .urlPath("/api/v1/bundle/{id}")
                 .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
                 .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
-                .timeout(Duration.millis(Long.parseLong("30000")))
+                .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                 .build());
         infof(
                 "Created Lambda %s for delete bundles with handler %s",
