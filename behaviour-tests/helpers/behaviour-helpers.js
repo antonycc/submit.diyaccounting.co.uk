@@ -745,3 +745,10 @@ export async function checkFraudPreventionHeadersFeedback(page, testInfo, screen
     console.warn("Could not retrieve HMRC access token from session storage for feedback check");
   }
 }
+
+export function generatePeriodKey() {
+  const year = String(24 + Math.floor(Math.random() * 2)).padStart(2, "0"); // 24 or 25
+  const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  const number = Math.floor(Math.random() * 9) + 1; // 1-9
+  return `${year}${letter}${number}`;
+}

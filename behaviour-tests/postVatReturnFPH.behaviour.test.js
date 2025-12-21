@@ -16,6 +16,7 @@ import {
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
   checkFraudPreventionHeadersFeedback,
+  generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import {
@@ -69,7 +70,7 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
 // eslint-disable-next-line sonarjs/pseudo-random
-const hmrcVatPeriodKey = Math.random().toString(36).substring(2, 6);
+const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
 
 let mockOAuth2Process;
