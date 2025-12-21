@@ -1012,26 +1012,23 @@ async function getGovClientHeaders() {
   const govClientDeviceIDHeader = crypto.randomUUID();
 
   // Gov-Client-Multi-Factor: Must include timestamp and unique-reference
-  const mfaTimestamp = new Date().toISOString();
-  const mfaUniqueRef = crypto.randomUUID();
-  const govClientMultiFactorHeader = `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
+  // TODO: Implement Gov-Client-Multi-Factor for cognito and omit when no MFA present
+  let govClientMultiFactorHeader;
+  // const mfaTimestamp = new Date().toISOString();
+  // const mfaUniqueRef = crypto.randomUUID();
+  // govClientMultiFactorHeader = `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
 
   const govClientPublicIPTimestampHeader = new Date().toISOString();
 
-  // Gov-Client-Public-Port: Don't send server ports (443, 80)
-  const clientPort = window.location.port || (window.location.protocol === "https:" ? "443" : "80");
-  const portNum = parseInt(clientPort, 10);
-  const govClientPublicPortHeader = portNum === 443 || portNum === 80 ? undefined : clientPort;
-
-  // Gov-Client-Screens: Must be an array of objects with scalingFactor
-  const govClientScreensHeader = JSON.stringify([
-    {
-      "width": window.screen.width,
-      "height": window.screen.height,
-      "colour-depth": window.screen.colorDepth,
-      "scaling-factor": window.devicePixelRatio || 1,
-    },
-  ]);
+  // Gov-Client-Screens: Must be an array of objects with scalingFactor encoded as key values, e.g. width=1920&height=1080&scaling-factor=1&colour-depth=1
+  const govClientScreensHeader = [
+    { width: window.screen.width },
+    { height: window.screen.height },
+    { "colour-depth": window.screen.colorDepth },
+    { "scaling-factor": window.devicePixelRatio },
+  ]
+    .map((obj) => Object.entries(obj).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`))
+    .join("&");
 
   // Gov-Client-Timezone: Must be in UTC±<hh>:<mm> format
 
@@ -1042,10 +1039,9 @@ async function getGovClientHeaders() {
   const govClientTimezoneHeader = `UTC${offsetSign}${String(offsetHours).padStart(2, "0")}:${String(offsetMinutes).padStart(2, "0")}`;
 
   // Gov-Client-Window-Size: Must be an object with width and height
-  const govClientWindowSizeHeader = JSON.stringify({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
+  const govClientWindowSizeHeader = [{ width: window.innerWidth }, { height: window.innerHeight }]
+    .map((obj) => Object.entries(obj).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`))
+    .join("&");
 
   // Get current user ID from localStorage if available
   const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
@@ -1056,7 +1052,6 @@ async function getGovClientHeaders() {
   const headers = {
     "Gov-Client-Browser-JS-User-Agent": govClientBrowserJSUserAgentHeader,
     "Gov-Client-Device-ID": govClientDeviceIDHeader,
-    "Gov-Client-Multi-Factor": govClientMultiFactorHeader,
     "Gov-Client-Public-IP": govClientPublicIPHeader,
     "Gov-Client-Public-IP-Timestamp": govClientPublicIPTimestampHeader,
     "Gov-Client-Screens": govClientScreensHeader,
@@ -1065,11 +1060,18 @@ async function getGovClientHeaders() {
     "Gov-Client-Window-Size": govClientWindowSizeHeader,
     // Note: Gov-Vendor-* headers are NOT included here - they're generated server-side
   };
-
-  // Only include Gov-Client-Public-Port if it's not a server port
-  if (govClientPublicPortHeader) {
-    headers["Gov-Client-Public-Port"] = govClientPublicPortHeader;
+  if (govClientMultiFactorHeader) {
+    headers["Gov-Client-Multi-Factor"] = govClientMultiFactorHeader;
   }
+
+  // TODO: Declare no Gov-Client-Public-Port to HMRC
+  // The Submit service is a browser-based web application delivered over HTTPS via
+  // CloudFront and AWS load balancers. The client TCP source port is not exposed to
+  // application code in the browser and is not forwarded through the CDN/load
+  // balancer layer.
+  // In accordance with HMRC Fraud Prevention guidance, this header is omitted
+  // because the data cannot be collected.
+  // headers["Gov-Client-Public-Port"] = null;
 
   return headers;
 }

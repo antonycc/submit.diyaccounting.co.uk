@@ -35,6 +35,7 @@ import {
   assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
+  intentionallyNotSuppliedHeaders,
   readDynamoDbExport,
 } from "./helpers/dynamodb-assertions.js";
 import { expect } from "@playwright/test";
@@ -332,6 +333,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       userSub,
       testUrl,
       isSandboxMode: isSandboxMode(),
+      intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,
     screenshotPath,
@@ -340,6 +342,29 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   try {
     fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
   } catch (_e) {}
+
+  /* ****************** */
+  /*  FIGURES (SCREENSHOTS) */
+  /* ****************** */
+
+  // Select and copy key screenshots, then generate figures.json
+  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
+
+  const keyScreenshotPatterns = ["10.*fill.*in.*submission.*pagedown", "02.*complete.*vat.*receipt"];
+
+  const screenshotDescriptions = {
+    "10.*fill.*in.*submission.*pagedown": "VAT return form filled out with test data including VAT number, period key, and amount due",
+    "02.*complete.*vat.*receipt": "Successful VAT return submission confirmation showing receipt details from HMRC",
+  };
+
+  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
+  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
+
+  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
+  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
+
+  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
+  writeFiguresJson(outputDir, figures);
 
   /* **************** */
   /*  EXPORT DYNAMODB */
@@ -396,10 +421,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     });
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
-    // TODO: Apply to every behaviour test that does HMRC API calls
-    // TODO: Enforce valid headers when APIs are stable with valid headers
-    // assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, true);
-    assertFraudPreventionHeaders(hmrcApiRequestsFile);
+    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
 
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");

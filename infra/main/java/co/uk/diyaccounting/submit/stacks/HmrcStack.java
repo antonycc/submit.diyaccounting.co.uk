@@ -1,13 +1,9 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -21,6 +17,11 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -98,16 +99,6 @@ public class HmrcStack extends Stack {
         String hmrcSandboxClientSecretArn();
 
         String cognitoUserPoolId();
-
-        // Fraud prevention header values (nullable - will be set from environment or defaults)
-        @javax.annotation.Nullable
-        String fraudVendorLicenseIds();
-
-        @javax.annotation.Nullable
-        String fraudVendorProductName();
-
-        @javax.annotation.Nullable
-        String fraudVendorVersion();
 
         @Override
         SubmitSharedNames sharedNames();
@@ -290,8 +281,7 @@ public class HmrcStack extends Stack {
                 this.hmrcTokenPostLambda.getFunctionName(), bundlesTable.getTableName());
 
         // submitVat
-        var submitVatLambdaEnv = addFraudPreventionEnvVars(
-                new PopulatedMap<String, String>()
+        var submitVatLambdaEnv = new PopulatedMap<String, String>()
                         .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                         .with("HMRC_BASE_URI", props.hmrcBaseUri())
                         // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
@@ -299,8 +289,7 @@ public class HmrcStack extends Stack {
                         // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                         .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                         .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                        .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName),
-                props);
+                        .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -336,16 +325,14 @@ public class HmrcStack extends Stack {
         hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnPostLambda);
 
         // VAT obligations GET
-        var vatObligationLambdaEnv = addFraudPreventionEnvVars(
-                new PopulatedMap<String, String>()
+        var vatObligationLambdaEnv = new PopulatedMap<String, String>()
                         .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                         .with("HMRC_BASE_URI", props.hmrcBaseUri())
                         // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
                         .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                         // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                         .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName()),
-                props);
+                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -382,16 +369,14 @@ public class HmrcStack extends Stack {
         hmrcApiRequestsTable.grantWriteData(this.hmrcVatObligationGetLambda);
 
         // VAT return GET
-        var vatReturnGetLambdaEnv = addFraudPreventionEnvVars(
-                new PopulatedMap<String, String>()
+        var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                         .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                         .with("HMRC_BASE_URI", props.hmrcBaseUri())
                         // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
                         .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                         // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                         .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName()),
-                props);
+                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -544,25 +529,5 @@ public class HmrcStack extends Stack {
         infof(
                 "HmrcStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
-    }
-
-    /**
-     * Helper method to add fraud prevention environment variables to a PopulatedMap.
-     * @param envMap The environment map to add variables to
-     * @param props The HmrcStackProps containing fraud prevention configuration
-     * @return The same envMap with fraud prevention variables added
-     */
-    private PopulatedMap<String, String> addFraudPreventionEnvVars(
-            PopulatedMap<String, String> envMap, HmrcStackProps props) {
-        if (StringUtils.isNotBlank(props.fraudVendorLicenseIds())) {
-            envMap.with("FRAUD_VENDOR_LICENSE_IDS", props.fraudVendorLicenseIds());
-        }
-        if (StringUtils.isNotBlank(props.fraudVendorProductName())) {
-            envMap.with("FRAUD_VENDOR_PRODUCT_NAME", props.fraudVendorProductName());
-        }
-        if (StringUtils.isNotBlank(props.fraudVendorVersion())) {
-            envMap.with("FRAUD_VENDOR_VERSION", props.fraudVendorVersion());
-        }
-        return envMap;
     }
 }

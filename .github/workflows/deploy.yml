@@ -275,6 +275,7 @@ jobs:
             target/behaviour-test-results/**/*.jsonl
 
   behaviour-test-submit-vat:
+    if: ${{ !cancelled() }}
     name: 'behaviour test - submit vat (proxy)'
     needs:
       - names
@@ -339,7 +340,7 @@ jobs:
 
   behaviour-test-fraud-prevention-headers-vat:
     name: 'behaviour test - fraud prevention headers vat (proxy)'
-    if: ${{ inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-submit-vat
@@ -403,7 +404,7 @@ jobs:
 
   behaviour-test-obligation:
     name: 'behaviour test - obligation (proxy)'
-    if: ${{ inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-fraud-prevention-headers-vat
@@ -467,7 +468,7 @@ jobs:
 
   behaviour-test-post-vat-return:
     name: 'behaviour test - post vat return (proxy)'
-    if: ${{ inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-obligation
@@ -531,7 +532,7 @@ jobs:
 
   behaviour-test-get-vat-return:
     name: 'behaviour test - get vat return (proxy)'
-    if: ${{ inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-post-vat-return
@@ -1297,9 +1298,6 @@ jobs:
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
-          # Fraud prevention headers - set version to git SHA, license IDs from secrets
-          FRAUD_VENDOR_LICENSE_IDS: ${{ secrets.FRAUD_VENDOR_LICENSE_IDS }}
-          FRAUD_VENDOR_VERSION: ${{ github.sha }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-hmrc.json | jq '.'
 

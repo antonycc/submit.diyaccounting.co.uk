@@ -67,8 +67,7 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   const govClientPublicPortHeader = portHeader && portHeader !== "443" && portHeader !== "80" ? portHeader : undefined;
 
   // Gov-Client-Screens: Must be an array of objects with scalingFactor
-  const govClientScreensHeader =
-    sanitize(h("Gov-Client-Screens")) || JSON.stringify([{ "width": 1280, "height": 720, "colour-depth": 24, "scaling-factor": 1 }]);
+  const govClientScreensHeader = sanitize(h("Gov-Client-Screens"));
 
   // Gov-Client-Timezone: Must be in UTC±<hh>:<mm> format
   const govClientTimezoneHeader = sanitize(h("Gov-Client-Timezone")) || "UTC+00:00";
@@ -76,7 +75,7 @@ export default function eventToGovClientHeaders(event, detectedIP) {
   const govClientUserIDsHeader = sanitize(h("Gov-Client-User-IDs")) || fraudHeaders["Gov-Client-User-IDs"] || "server=anonymous";
 
   // Gov-Client-Window-Size: Must be an object with width and height
-  const govClientWindowSizeHeader = sanitize(h("Gov-Client-Window-Size")) || JSON.stringify({ width: 1280, height: 720 });
+  const govClientWindowSizeHeader = sanitize(h("Gov-Client-Window-Size"));
   const govTestScenarioHeader = sanitize(h("Gov-Test-Scenario"));
 
   // Build full header set, merging client and vendor headers from buildFraudHeaders
@@ -93,7 +92,6 @@ export default function eventToGovClientHeaders(event, detectedIP) {
     "Gov-Client-User-IDs": govClientUserIDsHeader,
     "Gov-Client-Window-Size": govClientWindowSizeHeader,
     // Use dynamic vendor headers from buildFraudHeaders
-    "Gov-Vendor-Connection-Method": fraudHeaders["Gov-Vendor-Connection-Method"],
     "Gov-Vendor-Forwarded": fraudHeaders["Gov-Vendor-Forwarded"],
     "Gov-Vendor-License-IDs": fraudHeaders["Gov-Vendor-License-IDs"],
     "Gov-Vendor-Product-Name": fraudHeaders["Gov-Vendor-Product-Name"],
