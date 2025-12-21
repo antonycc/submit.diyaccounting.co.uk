@@ -71,7 +71,7 @@ async function checkPersistedRequest(userId, requestId) {
 }
 
 // Helper function to initiate async processing
-async function initiateAsyncProcessing(processor, userId, requestId, waitTimeMs) {
+async function initiateProcessing(processor, userId, requestId, waitTimeMs) {
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (asyncTableName) {
     try {
@@ -226,7 +226,7 @@ export async function handler(event) {
     if (!persistedRequestExists) {
       // Asynchronous processing: start the process but don't wait
       const processor = () => retrieveUserBundles(userId, requestId);
-      formattedBundles = await initiateAsyncProcessing(processor, userId, requestId, waitTimeMs);
+      formattedBundles = await initiateProcessing(processor, userId, requestId, waitTimeMs);
     }
 
     // If we have bundles (synchronous path), return them
