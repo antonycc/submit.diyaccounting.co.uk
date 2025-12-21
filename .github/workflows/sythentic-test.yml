@@ -25,7 +25,6 @@ on:
         default: ''
 
 permissions:
-  id-token: read
   contents: read
 
 env:
