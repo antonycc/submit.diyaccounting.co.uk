@@ -770,8 +770,19 @@ async function fetchWithIdToken(input, init = {}) {
         currentHeaders.set("x-request-id", requestId);
       }
 
+      let pollCount = 0;
+      const startTime = Date.now();
       while (res.status === 202) {
-        await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms interval
+        const elapsed = Date.now() - startTime;
+        if (elapsed > 60000) {
+          console.error("Async request timed out after 1 minute");
+          break;
+        }
+
+        pollCount++;
+        const delay = pollCount <= 10 ? 10 : 1000;
+
+        await new Promise((resolve) => setTimeout(resolve, delay));
         console.log("re-trying async request..."); // Just before each poll attempt
         res = await fetch(input, { ...init, headers: currentHeaders });
       }

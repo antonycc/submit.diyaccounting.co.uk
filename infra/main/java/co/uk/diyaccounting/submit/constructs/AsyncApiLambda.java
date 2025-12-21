@@ -68,6 +68,7 @@ public class AsyncApiLambda extends ApiLambda {
                 .code(DockerImageCode.fromEcr(repository, imageCodeProps))
                 .environment(props.environment())
                 .functionName(props.functionName() + "-consumer")
+                .reservedConcurrentExecutions(props.consumerConcurrency())
                 .timeout(props.timeout())
                 .tracing(Tracing.ACTIVE)
                 .build();

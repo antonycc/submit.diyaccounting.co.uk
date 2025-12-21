@@ -70,6 +70,8 @@ public class SubmitSharedNames {
     public String receiptsTableName;
     public String bundlesTableName;
     public String asyncRequestsTableName;
+    public String bundlePostAsyncRequestsTableName;
+    public String bundleDeleteAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String proxyStateTableName;
     public String holdingBucketName;
@@ -207,6 +209,7 @@ public class SubmitSharedNames {
     public boolean bundleGetLambdaCustomAuthorizer;
 
     public String bundlePostLambdaHandler;
+    public String bundlePostLambdaConsumerHandler;
     public String bundlePostLambdaFunctionName;
     public String bundlePostLambdaArn;
     public HttpMethod bundlePostLambdaHttpMethod;
@@ -215,6 +218,7 @@ public class SubmitSharedNames {
     public boolean bundlePostLambdaCustomAuthorizer;
 
     public String bundleDeleteLambdaHandler;
+    public String bundleDeleteLambdaConsumerHandler;
     public String bundleDeleteLambdaFunctionName;
     public String bundleDeleteLambdaArn;
     public HttpMethod bundleDeleteLambdaHttpMethod;
@@ -298,6 +302,8 @@ public class SubmitSharedNames {
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         this.asyncRequestsTableName = "%s-async-requests".formatted(this.envDashedDomainName);
+        this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envDashedDomainName);
+        this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
         this.proxyStateTableName = "%s-proxy-state".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
@@ -609,11 +615,14 @@ public class SubmitSharedNames {
         this.bundlePostLambdaJwtAuthorizer = true;
         this.bundlePostLambdaCustomAuthorizer = false;
         var bundlePostLambdaHandlerName = "bundlePost.handler";
+        var bundlePostLambdaConsumerHandlerName = "bundlePost.consumer";
         var bundlePostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
         this.bundlePostLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, bundlePostLambdaHandlerDashed);
         this.bundlePostLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaHandlerName);
+        this.bundlePostLambdaConsumerHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaConsumerHandlerName);
         this.bundlePostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundlePostLambdaHttpMethod,
@@ -627,12 +636,15 @@ public class SubmitSharedNames {
         this.bundleDeleteLambdaJwtAuthorizer = true;
         this.bundleDeleteLambdaCustomAuthorizer = false;
         var bundleDeleteLambdaHandlerName = "bundleDelete.handler";
+        var bundleDeleteLambdaConsumerHandlerName = "bundleDelete.consumer";
         var bundleDeleteLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundleDeleteLambdaHandlerName);
         this.bundleDeleteLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, bundleDeleteLambdaHandlerDashed);
         this.bundleDeleteLambdaHandler =
                 "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaHandlerName);
+        this.bundleDeleteLambdaConsumerHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaConsumerHandlerName);
         this.bundleDeleteLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleDeleteLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundleDeleteLambdaHttpMethod,

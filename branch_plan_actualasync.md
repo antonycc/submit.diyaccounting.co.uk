@@ -7,6 +7,11 @@ This plan details the incremental rollout of the asynchronous polling pattern ac
 - **Consumer Concurrency Capping**: To be a good citizen and avoid throttling from upstream systems (HMRC, Cognito), SQS consumers will have a default `reservedConcurrentExecutions` set to `1`. This aligns with HMRC's recommended practice of limiting outbound requests to avoid hitting application-wide rate limits (typically 150 requests per minute) and Cognito's category-based limits.
 - **Generic Service Adoption**: All implementations will use the `asyncApiServices.js` abstraction.
 - **CloudWatch Visibility**: Extensive logging at handler, consumer, and service entry/exit points for full traceability.
+- **Web Polling Strategy**: The web client (`submit.js`) uses a tiered polling strategy:
+    - First 10 polls: 10ms interval.
+    - Subsequent polls: 1s interval.
+    - Maximum duration: 1 minute.
+    - If no terminal response (non-202) is received within 1 minute, the request is considered failed.
 
 ---
 
@@ -39,6 +44,8 @@ This plan details the incremental rollout of the asynchronous polling pattern ac
 - **Unit Tests**: New tests for handlers and consumers in `app/unit-tests/functions/`.
 - **System Tests**: Update `accountBundles.system.test.js` to verify polling behavior.
 - **Behaviour Tests**: Run `npm run test:bundleBehaviour-proxy`.
+- **OpenAPI**: Update `OpenApiGenerator.java` to document 202 Accepted responses for all `/bundle` methods.
+- **Polling**: Web client updated to use tiered polling (10ms x 10, then 1s) with 1m timeout.
 
 #### Deployment
 - Merge to `main` and trigger `deploy.yml`.

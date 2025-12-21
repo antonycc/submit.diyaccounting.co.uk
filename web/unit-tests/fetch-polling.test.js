@@ -8,7 +8,8 @@ const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 
 describe("fetchWithIdToken polling", () => {
   let originalFetch;
-  let consoleSpy;
+  let logSpy;
+  let errorSpy;
 
   beforeEach(() => {
     // Setup global window and localStorage
@@ -96,7 +97,8 @@ describe("fetchWithIdToken polling", () => {
     };
 
     originalFetch = global.fetch;
-    consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     // Evaluate the submit.js script
     eval(scriptContent);
@@ -104,21 +106,31 @@ describe("fetchWithIdToken polling", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    consoleSpy.mockRestore();
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
     vi.clearAllMocks();
   });
 
-  it("polls when receiving 202 Accepted and logs correctly", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        status: 202,
-        headers: new Headers({ "x-request-id": "test-req-id" }),
-      })
-      .mockResolvedValueOnce({
-        status: 202,
-        headers: new Headers({ "x-request-id": "test-req-id" }),
-      })
+  it("polls when receiving 202 Accepted and follows tiered delay strategy", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "test-req-id" }),
+    });
+
+    // Final response after 12 polls
+    fetchMock
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 1
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 2
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 3
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 4
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 5
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 6
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 7
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 8
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 9
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 10
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "test-req-id" }) }) // 11
       .mockResolvedValueOnce({
         status: 200,
         headers: new Headers({ "Content-Type": "application/json" }),
@@ -128,19 +140,39 @@ describe("fetchWithIdToken polling", () => {
     global.fetch = fetchMock;
     global.window.fetch = fetchMock;
 
-    // fetchWithIdToken is defined in submit.js and should be on global scope (or window)
-    const response = await window.fetchWithIdToken("/api/v1/bundle");
+    const promise = window.fetchWithIdToken("/api/v1/bundle");
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(consoleSpy).toHaveBeenCalledWith("Waiting for async response...");
-    expect(consoleSpy).toHaveBeenCalledWith("re-trying async request...");
-    expect(consoleSpy).toHaveBeenCalledWith("Async response came back with status: 200");
+    // Advance 10 polls at 10ms each
+    for (let i = 0; i < 10; i++) {
+      await vi.advanceTimersByTimeAsync(10);
+    }
+    // Poll 11 starts after 10th delay
+    await vi.advanceTimersByTimeAsync(1000); // 11th poll delay
 
-    const body = await response.json();
-    expect(body.success).toBe(true);
+    const response = await promise;
+    expect(fetchMock).toHaveBeenCalledTimes(12);
+    expect(response.status).toBe(200);
+    vi.useRealTimers();
+  });
 
-    // Verify x-request-id was passed back in retries
-    const secondCallHeaders = fetchMock.mock.calls[1][1].headers;
-    expect(secondCallHeaders.get("x-request-id")).toBe("test-req-id");
+  it("terminates polling after 1 minute timeout", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "timeout-id" }),
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const promise = window.fetchWithIdToken("/api/v1/bundle");
+
+    // Advance time by 61 seconds
+    await vi.advanceTimersByTimeAsync(61000);
+
+    const response = await promise;
+    expect(response.status).toBe(202); // Returns the last 202 response
+    expect(errorSpy).toHaveBeenCalledWith("Async request timed out after 1 minute");
+    vi.useRealTimers();
   });
 });

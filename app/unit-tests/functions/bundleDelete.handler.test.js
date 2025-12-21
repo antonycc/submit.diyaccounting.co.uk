@@ -30,11 +30,17 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class GetCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     PutCommand,
     QueryCommand,
     DeleteCommand,
+    GetCommand,
   };
 });
 
@@ -47,15 +53,41 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
   return { DynamoDBClient };
 });
 
+const mockSqsSend = vi.fn();
+vi.mock("@aws-sdk/client-sqs", () => {
+  class SQSClient {
+    constructor(_config) {}
+    send(cmd) {
+      return mockSqsSend(cmd);
+    }
+  }
+  class SendMessageCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  return { SQSClient, SendMessageCommand };
+});
+
 // Defer importing the handlers until after mocks are defined
-import { handler as bundleDeleteHandler } from "@app/functions/account/bundleDelete.js";
+import { handler as bundleDeleteHandler, consumer as bundleDeleteConsumer } from "@app/functions/account/bundleDelete.js";
 import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("bundleDelete handler", () => {
+  let asyncRequests = new Map();
+
   beforeEach(() => {
-    Object.assign(process.env, setupTestEnv());
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        ASYNC_REQUESTS_DYNAMODB_TABLE_NAME: "test-async-table",
+        SQS_QUEUE_URL: "https://sqs.eu-west-2.amazonaws.com/123456789012/test-queue",
+      }),
+    );
+    asyncRequests = new Map();
+
     // Reset and provide default mock DynamoDB behaviour
     vi.clearAllMocks();
     mockSend.mockImplementation(async (cmd) => {
@@ -64,7 +96,16 @@ describe("bundleDelete handler", () => {
         return { Items: [], Count: 0 };
       }
       if (cmd instanceof lib.PutCommand) {
+        const item = cmd.input.Item;
+        if (item.requestId) {
+          asyncRequests.set(item.requestId, item);
+        }
         return {};
+      }
+      if (cmd instanceof lib.GetCommand) {
+        const { requestId } = cmd.input.Key;
+        const item = asyncRequests.get(requestId);
+        return { Item: item };
       }
       if (cmd instanceof lib.DeleteCommand) {
         return {};
@@ -125,6 +166,7 @@ describe("bundleDelete handler", () => {
   test("returns 400 when bundleId is missing and removeAll is false", async () => {
     const token = makeIdToken("user-no-bundle-id");
     const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundleDeleteHandler(event);
 
@@ -140,6 +182,7 @@ describe("bundleDelete handler", () => {
   test("returns 404 when bundle not found for user", async () => {
     const token = makeIdToken("user-no-bundles");
     const event = buildEventWithToken(token, { bundleId: "nonexistent" });
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundleDeleteHandler(event);
 
@@ -153,38 +196,43 @@ describe("bundleDelete handler", () => {
   // ============================================================================
 
   test("successfully deletes a bundle", async () => {
-    // NOTE: Due to bug in bundlePost where bundles are stored as objects but
-    // compared as strings, the duplicate detection doesn't work and bundleDelete
-    // won't find bundles properly. This test documents expected behavior but
-    // tests actual behavior until bug is fixed.
     const token = makeIdToken("user-delete-success");
 
-    // First grant a bundle
-    const grantEvent = buildEventWithToken(token, { bundleId: "test" });
-    await bundlePostHandler(grantEvent);
+    // Mock bundle existence
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "test" }], Count: 1 };
+      }
+      return {};
+    });
 
     // Then delete it
     const deleteEvent = buildEventWithToken(token, { bundleId: "test" });
+    deleteEvent.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(deleteEvent);
 
-    // Should be 200, but returns 404 due to storage mismatch bug
-    expect(response.statusCode).toBe(404);
-    // When bug is fixed:
-    // expect(response.statusCode).toBe(200);
-    // const body = parseResponseBody(response);
-    // expect(body.status).toBe("removed");
-    // expect(body.bundle).toBe("test");
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.status).toBe("removed");
+    expect(body.bundle).toBe("test");
   });
 
   test("successfully removes all bundles with removeAll flag", async () => {
     const token = makeIdToken("user-remove-all");
 
-    // Grant multiple bundles
-    await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
-    await bundlePostHandler(buildEventWithToken(token, { bundleId: "default" }));
+    // Mock multiple bundles
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "test" }, { bundleId: "default" }], Count: 2 };
+      }
+      return {};
+    });
 
     // Remove all
     const deleteEvent = buildEventWithToken(token, { removeAll: true });
+    deleteEvent.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(deleteEvent);
 
     expect(response.statusCode).toBe(200);
@@ -194,39 +242,53 @@ describe("bundleDelete handler", () => {
   });
 
   test("accepts bundleId via path parameter", async () => {
-    // Same storage bug affects this test
     const token = makeIdToken("user-path-param");
 
-    // Grant a bundle first
-    await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
+    // Mock bundle existence
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "test" }], Count: 1 };
+      }
+      return {};
+    });
 
     // Delete via path parameter
     const event = {
       ...buildEventWithToken(token, {}),
       pathParameters: { id: "test" },
     };
+    event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
 
-    // Should be 200, returns 404 due to bug
-    expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.status).toBe("removed");
   });
 
   test("accepts bundleId via query parameter", async () => {
-    // Same storage bug affects this test
     const token = makeIdToken("user-query-param");
 
-    // Grant a bundle first
-    await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
+    // Mock bundle existence
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "test" }], Count: 1 };
+      }
+      return {};
+    });
 
     // Delete via query parameter
     const event = {
       ...buildEventWithToken(token, {}),
       queryStringParameters: { bundleId: "test" },
     };
+    event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
 
-    // Should be 200, returns 404 due to bug
-    expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.status).toBe("removed");
   });
 
   // ============================================================================
@@ -239,7 +301,66 @@ describe("bundleDelete handler", () => {
 
     const token = makeIdToken("user-error");
     const event = buildEventWithToken(token, { bundleId: "test" });
+    event.headers["x-wait-time-ms"] = "30000";
 
     await expect(bundleDeleteHandler(event)).rejects.toThrow();
+  });
+
+  // ============================================================================
+  // Async & Consumer Tests
+  // ============================================================================
+
+  test("returns 202 Accepted for async deletion initiation", async () => {
+    const token = makeIdToken("user-async-delete");
+    const event = buildEventWithToken(token, { bundleId: "test" });
+    // Default waitTimeMs is 0
+
+    const response = await bundleDeleteHandler(event);
+    expect(response.statusCode).toBe(202);
+    expect(response.headers).toHaveProperty("x-request-id");
+    expect(mockSqsSend).toHaveBeenCalled();
+  });
+
+  test("SQS record processing updates DynamoDB status to completed for deletion", async () => {
+    const userId = "user-sqs-delete-success";
+    const requestId = "req-sqs-delete-success";
+    const payload = {
+      userId,
+      bundleToRemove: "test",
+      removeAll: false,
+      requestId,
+    };
+
+    // Mock bundle existence for consumer
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "test" }], Count: 1 };
+      }
+      if (cmd instanceof lib.PutCommand) {
+        const item = cmd.input.Item;
+        if (item.requestId) {
+          asyncRequests.set(item.requestId, item);
+        }
+        return {};
+      }
+      return {};
+    });
+
+    const event = {
+      Records: [
+        {
+          body: JSON.stringify({ userId, requestId, payload }),
+          messageId: "msg-delete-123",
+        },
+      ],
+    };
+
+    await bundleDeleteConsumer(event);
+
+    const stored = asyncRequests.get(requestId);
+    expect(stored).toBeDefined();
+    expect(stored.status).toBe("completed");
+    expect(stored.data.status).toBe("removed");
   });
 });

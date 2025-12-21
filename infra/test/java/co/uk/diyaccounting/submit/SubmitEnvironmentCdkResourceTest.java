@@ -78,7 +78,7 @@ class SubmitEnvironmentCdkResourceTest {
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
 
         // 6) Data stack should create a receipts DynamoDB table (3 tables total: receipts, bundles, hmrcApiRequests)
-        Template.fromStack(env.dataStack).resourceCountIs("AWS::DynamoDB::Table", 4);
+        Template.fromStack(env.dataStack).resourceCountIs("AWS::DynamoDB::Table", 6);
 
         // 7) Proxy stack should create a state DynamoDB table
         Template.fromStack(env.proxyStack).resourceCountIs("AWS::DynamoDB::Table", 1);

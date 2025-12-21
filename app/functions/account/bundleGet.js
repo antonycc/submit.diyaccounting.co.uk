@@ -115,10 +115,10 @@ export async function handler(event) {
     });
   }
 
+  let result;
   // Processing
   try {
     const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
-    let result;
 
     logger.info({ message: "Retrieving bundles for request", requestId, waitTimeMs });
 
@@ -154,23 +154,27 @@ export async function handler(event) {
     if (!result) {
       result = await asyncApiServices.check({ userId, requestId, tableName: asyncTableName });
     }
-
-    return asyncApiServices.respond({
-      request,
-      requestId,
-      responseHeaders,
-      data: result,
-      dataKey: "bundles",
-    });
   } catch (error) {
-    logger.error({ message: "Error retrieving bundles", error: error.message, stack: error.stack });
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Internal server error",
-      error: error.message,
-    });
+    if (error instanceof asyncApiServices.RequestFailedError) {
+      result = error.data;
+    } else {
+      logger.error({ message: "Error retrieving bundles", error: error.message, stack: error.stack });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Internal server error",
+        error: error.message,
+      });
+    }
   }
+
+  return asyncApiServices.respond({
+    request,
+    requestId,
+    responseHeaders,
+    data: result,
+    dataKey: "bundles",
+  });
 }
 
 // SQS consumer Lambda handler function

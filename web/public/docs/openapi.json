@@ -144,6 +144,9 @@
         "responses" : {
           "200" : {
             "description" : "Bundle deleted successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
           }
         }
       }
@@ -217,6 +220,9 @@
         "responses" : {
           "200" : {
             "description" : "Bundle created successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
           }
         }
       },
@@ -250,6 +256,9 @@
         "responses" : {
           "200" : {
             "description" : "Bundle deleted successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
           }
         }
       }

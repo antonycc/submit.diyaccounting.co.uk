@@ -6,6 +6,14 @@ import { http200OkResponse, http202AcceptedResponse } from "../lib/httpResponseH
 
 const logger = createLogger({ source: "app/services/asyncApiServices.js" });
 
+export class RequestFailedError extends Error {
+  constructor(data) {
+    super(data?.error || "Request processing failed");
+    this.name = "RequestFailedError";
+    this.data = data;
+  }
+}
+
 /**
  * Initiates processing for a request, either synchronously or asynchronously.
  *
@@ -114,11 +122,11 @@ export async function wait({ userId, requestId, waitTimeMs, tableName = process.
       if (persistedRequest?.status === "completed") {
         return persistedRequest.data;
       } else if (persistedRequest?.status === "failed") {
-        throw new Error(persistedRequest.data?.error || "Request processing failed");
+        throw new RequestFailedError(persistedRequest.data);
       }
     } catch (error) {
-      // Re-throw if it's a known processing failure
-      if (error.message && error.message.includes("failed")) {
+      // Re-throw if it's a terminal processing failure
+      if (error instanceof RequestFailedError) {
         throw error;
       }
       logger.warn({ message: "Error checking request status during wait", error: error.message, requestId });
@@ -148,11 +156,11 @@ export async function check({ userId, requestId, tableName = process.env.ASYNC_R
     if (persistedRequest?.status === "completed") {
       return persistedRequest.data;
     } else if (persistedRequest?.status === "failed") {
-      throw new Error(persistedRequest.data?.error || "Request processing failed");
+      throw new RequestFailedError(persistedRequest.data);
     }
   } catch (error) {
-    // Re-throw if it's a known processing failure
-    if (error.message && error.message.includes("failed")) {
+    // Re-throw if it's a terminal processing failure
+    if (error instanceof RequestFailedError) {
       throw error;
     }
     logger.warn({ message: "Error checking persisted request status", error: error.message, requestId });
@@ -174,6 +182,16 @@ export async function check({ userId, requestId, tableName = process.env.ASYNC_R
  */
 export function respond({ request, requestId, responseHeaders, data, dataKey }) {
   if (data) {
+    if (data.statusCode && data.statusCode !== 200) {
+      logger.info({ message: `Returning error result with status ${data.statusCode}`, requestId });
+      const { statusCode, ...rest } = data;
+      return {
+        statusCode,
+        headers: { ...responseHeaders, "x-request-id": requestId, "x-correlationid": requestId },
+        body: JSON.stringify(rest),
+      };
+    }
+
     logger.info({ message: "Returning HTTP 200 OK with result", requestId });
 
     // Ensure data is wrapped in the requested key if specified

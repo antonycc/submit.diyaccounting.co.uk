@@ -105,6 +105,18 @@ public class AccountStack extends Stack {
                 "ImportedAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().asyncRequestsTableName);
 
+        // Lookup existing DynamoDB Bundle POST Async Requests Table
+        ITable bundlePostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedBundlePostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().bundlePostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB Bundle DELETE Async Requests Table
+        ITable bundleDeleteAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedBundleDeleteAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().bundleDeleteAsyncRequestsTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -206,17 +218,19 @@ public class AccountStack extends Stack {
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundlePostAsyncRequestsTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
-        var requestBundlesLambdaUrlOrigin = new ApiLambda(
+        var requestBundlesAsyncLambda = new AsyncApiLambda(
                 this,
-                ApiLambdaProps.builder()
+                AsyncApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().bundlePostLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundlePostLambdaFunctionName)
                         .handler(props.sharedNames().bundlePostLambdaHandler)
+                        .consumerHandler(props.sharedNames().bundlePostLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().bundlePostLambdaArn)
                         .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
@@ -225,52 +239,56 @@ public class AccountStack extends Stack {
                         .environment(requestBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
-        this.bundlePostLambdaProps = requestBundlesLambdaUrlOrigin.apiProps;
-        this.bundlePostLambda = requestBundlesLambdaUrlOrigin.lambda;
-        this.bundlePostLambdaLogGroup = requestBundlesLambdaUrlOrigin.logGroup;
+
+        // Update API environment with SQS queue URL
+        requestBundlesLambdaEnv.put("SQS_QUEUE_URL", requestBundlesAsyncLambda.queue.getQueueUrl());
+
+        this.bundlePostLambdaProps = requestBundlesAsyncLambda.apiProps;
+        this.bundlePostLambda = requestBundlesAsyncLambda.lambda;
+        this.bundlePostLambdaLogGroup = requestBundlesAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundlePostLambdaProps);
         infof(
-                "Created Lambda %s for request bundles with handler %s",
-                this.bundlePostLambda.getNode().getId(), props.sharedNames().bundlePostLambdaHandler);
+                "Created Async API Lambda %s for request bundles with handler %s and consumer %s",
+                this.bundlePostLambda.getNode().getId(),
+                props.sharedNames().bundlePostLambdaHandler,
+                props.sharedNames().bundlePostLambdaConsumerHandler);
 
-        // Grant the RequestBundlesLambda permission to access Cognito User Pool
-        var requestBundlesLambdaGrantPrincipal = this.bundlePostLambda.getGrantPrincipal();
-        userPool.grant(
-                requestBundlesLambdaGrantPrincipal,
-                "cognito-idp:AdminGetUser",
-                "cognito-idp:AdminUpdateUserAttributes",
-                "cognito-idp:ListUsers");
-        this.bundlePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of(
-                        "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers"))
-                .resources(List.of(cognitoUserPoolArn))
-                .build());
+        // Grant permissions to both API and Consumer Lambdas
+        List.of(this.bundlePostLambda, requestBundlesAsyncLambda.consumerLambda).forEach(fn -> {
+            // Grant Cognito permissions
+            userPool.grant(fn, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
+            fn.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of(
+                            "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers"))
+                    .resources(List.of(cognitoUserPoolArn))
+                    .build());
+
+            // Grant DynamoDB permissions
+            bundlesTable.grantReadWriteData(fn);
+            bundlePostAsyncRequestsTable.grantReadWriteData(fn);
+        });
 
         infof(
-                "Granted Cognito permissions to %s for User Pool %s",
-                this.bundlePostLambda.getFunctionName(), userPool.getUserPoolId());
-
-        // Grant the RequestBundlesLambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadWriteData(this.bundlePostLambda);
-        infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.bundlePostLambda.getFunctionName(), bundlesTable.getTableName());
+                "Granted Cognito and DynamoDB permissions to %s and its consumer",
+                this.bundlePostLambda.getFunctionName());
 
         // Delete Bundles Lambda
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundleDeleteAsyncRequestsTable.getTableName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
-        var bundleDeleteLambdaUrlOrigin = new ApiLambda(
+        var bundleDeleteAsyncLambda = new AsyncApiLambda(
                 this,
-                ApiLambdaProps.builder()
+                AsyncApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
                         .handler(props.sharedNames().bundleDeleteLambdaHandler)
+                        .consumerHandler(props.sharedNames().bundleDeleteLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                         .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
@@ -279,9 +297,13 @@ public class AccountStack extends Stack {
                         .environment(bundleDeleteLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
-        this.bundleDeleteLambdaProps = bundleDeleteLambdaUrlOrigin.apiProps;
-        this.bundleDeleteLambda = bundleDeleteLambdaUrlOrigin.lambda;
-        this.bundleDeleteLambdaLogGroup = bundleDeleteLambdaUrlOrigin.logGroup;
+
+        // Update API environment with SQS queue URL
+        bundleDeleteLambdaEnv.put("SQS_QUEUE_URL", bundleDeleteAsyncLambda.queue.getQueueUrl());
+
+        this.bundleDeleteLambdaProps = bundleDeleteAsyncLambda.apiProps;
+        this.bundleDeleteLambda = bundleDeleteAsyncLambda.lambda;
+        this.bundleDeleteLambdaLogGroup = bundleDeleteAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundleDeleteLambdaProps);
 
         // Also expose a second route for deleting a bundle by path parameter {id}
@@ -300,32 +322,30 @@ public class AccountStack extends Stack {
                 .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                 .build());
         infof(
-                "Created Lambda %s for delete bundles with handler %s",
-                this.bundleDeleteLambda.getNode().getId(), props.sharedNames().bundleDeleteLambdaHandler);
+                "Created Async API Lambda %s for delete bundles with handler %s and consumer %s",
+                this.bundleDeleteLambda.getNode().getId(),
+                props.sharedNames().bundleDeleteLambdaHandler,
+                props.sharedNames().bundleDeleteLambdaConsumerHandler);
 
-        // Grant the RequestBundlesLambda permission to access Cognito User Pool
-        var bundleDeleteLambdaGrantPrincipal = this.bundleDeleteLambda.getGrantPrincipal();
-        userPool.grant(
-                bundleDeleteLambdaGrantPrincipal,
-                "cognito-idp:AdminGetUser",
-                "cognito-idp:AdminUpdateUserAttributes",
-                "cognito-idp:ListUsers");
-        this.bundleDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of(
-                        "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers"))
-                .resources(List.of(cognitoUserPoolArn))
-                .build());
+        // Grant permissions to both API and Consumer Lambdas
+        List.of(this.bundleDeleteLambda, bundleDeleteAsyncLambda.consumerLambda).forEach(fn -> {
+            // Grant Cognito permissions
+            userPool.grant(fn, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
+            fn.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of(
+                            "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers"))
+                    .resources(List.of(cognitoUserPoolArn))
+                    .build());
+
+            // Grant DynamoDB permissions
+            bundlesTable.grantReadWriteData(fn);
+            bundleDeleteAsyncRequestsTable.grantReadWriteData(fn);
+        });
 
         infof(
-                "Granted Cognito permissions to %s for User Pool %s",
-                this.bundleDeleteLambda.getFunctionName(), userPool.getUserPoolId());
-
-        // Grant the DeleteBundlesLambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadWriteData(this.bundleDeleteLambda);
-        infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.bundleDeleteLambda.getFunctionName(), bundlesTable.getTableName());
+                "Granted Cognito and DynamoDB permissions to %s and its consumer",
+                this.bundleDeleteLambda.getFunctionName());
 
         cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());

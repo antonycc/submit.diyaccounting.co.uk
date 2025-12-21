@@ -15,6 +15,11 @@ public interface AsyncApiLambdaProps extends ApiLambdaProps {
     }
 
     @Value.Default
+    default int consumerConcurrency() {
+        return 1;
+    }
+
+    @Value.Default
     default Duration visibilityTimeout() {
         return Duration.seconds(30);
     }
