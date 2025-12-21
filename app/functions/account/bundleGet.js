@@ -255,7 +255,6 @@ export async function handler(event) {
       logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
     }
 
-    // TODO: Async, abstract to: init()
     if (!persistedRequestExists) {
       // Asynchronous processing: start the process but don't wait
       const processor = () => retrieveUserBundles(userId, requestId);
@@ -274,7 +273,7 @@ export async function handler(event) {
       formattedBundles = await waitForAsyncCompletion(userId, requestId, waitTimeMs);
     }
 
-    // TODO: Async, abstract to check()
+    // TODO: Async, abstract to: check()
     // Check persisted request one more time after waiting
     if (!formattedBundles && persistedRequest) {
       logger.info({ message: "Checking persisted request after wait", requestId });
@@ -285,7 +284,7 @@ export async function handler(event) {
       }
     }
 
-    // TODO: Async, abstract to respond()
+    // TODO: Async, abstract to: respond()
     if (!formattedBundles) {
       // Return HTTP 202 Accepted with location header for async processing
       const locationUrl = `${request.origin}${request.pathname}`;
