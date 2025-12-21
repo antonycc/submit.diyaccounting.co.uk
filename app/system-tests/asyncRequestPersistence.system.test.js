@@ -2,7 +2,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { buildLambdaEvent, makeIdToken } from "@app/test-helpers/eventBuilders.js";
+import { buildLambdaEvent, makeIdToken, buildAuthorizerContext } from "@app/test-helpers/eventBuilders.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -49,12 +49,14 @@ describe("System: async request persistence with dynalite", () => {
     const { handler } = await import("@app/functions/account/bundleGet.js");
     const token = makeIdToken("test-async-user");
     const requestId = "async-test-request-1";
-    
+
     const event = buildLambdaEvent({
       method: "GET",
       path: "/api/v1/bundle",
+      requestId: requestId,
+      authorizer: buildAuthorizerContext("test-async-user"),
       headers: {
-        Authorization: `Bearer ${token}`,
+        "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
         "x-wait-time-ms": "50", // Very short wait to trigger async processing
       },
@@ -64,7 +66,7 @@ describe("System: async request persistence with dynalite", () => {
 
     // Should return 202 for async processing, or 200 if it completed very quickly
     expect([200, 202]).toContain(res.statusCode);
-    
+
     if (res.statusCode === 202) {
       const body = JSON.parse(res.body);
       expect(body.message).toBe("Request accepted for processing");
@@ -88,8 +90,10 @@ describe("System: async request persistence with dynalite", () => {
     const event = buildLambdaEvent({
       method: "GET",
       path: "/api/v1/bundle",
+      requestId: requestId,
+      authorizer: buildAuthorizerContext("test-async-user"),
       headers: {
-        Authorization: `Bearer ${token}`,
+        "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
         "x-wait-time-ms": "2000", // Wait 2 seconds to allow async completion
       },
@@ -99,7 +103,7 @@ describe("System: async request persistence with dynalite", () => {
 
     // Should either return 200 with bundles or 202 if still processing
     expect([200, 202]).toContain(res.statusCode);
-    
+
     if (res.statusCode === 200) {
       const body = JSON.parse(res.body);
       expect(Array.isArray(body.bundles)).toBe(true);
@@ -120,7 +124,7 @@ describe("System: async request persistence with dynalite", () => {
       method: "GET",
       path: "/api/v1/bundle",
       headers: {
-        Authorization: `Bearer ${token}`,
+        "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
       },
     });
