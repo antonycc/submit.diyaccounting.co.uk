@@ -9,16 +9,8 @@ describe("buildFraudHeaders", () => {
   beforeEach(() => {
     // Save original environment
     originalEnv = {
-      FRAUD_VENDOR_LICENSE_IDS: process.env.FRAUD_VENDOR_LICENSE_IDS,
-      FRAUD_VENDOR_PRODUCT_NAME: process.env.FRAUD_VENDOR_PRODUCT_NAME,
-      FRAUD_VENDOR_VERSION: process.env.FRAUD_VENDOR_VERSION,
       SERVER_PUBLIC_IP: process.env.SERVER_PUBLIC_IP,
     };
-
-    // Set test environment variables
-    process.env.FRAUD_VENDOR_LICENSE_IDS = "my-licensed-software=ABC12345";
-    process.env.FRAUD_VENDOR_PRODUCT_NAME = "DIY Accounting Submit";
-    process.env.FRAUD_VENDOR_VERSION = "1.0.0";
   });
 
   afterEach(() => {
@@ -45,12 +37,8 @@ describe("buildFraudHeaders", () => {
     const headers = buildFraudHeaders(event);
 
     // Gov-Vendor-Forwarded should now be a JSON array of objects
-    const forwarded = JSON.parse(headers["Gov-Vendor-Forwarded"]);
-    expect(Array.isArray(forwarded)).toBe(true);
-    expect(forwarded).toEqual([
-      { by: "198.51.100.1", for: "198.51.100.1" },
-      { by: "198.51.100.1", for: "203.0.113.5" },
-    ]);
+    const forwarded = headers["Gov-Vendor-Forwarded"];
+    expect(forwarded).toEqual("by=198.51.100.1&for=198.51.100.1,by=198.51.100.1&for=203.0.113.5");
   });
 
   it("should extract public client IP from x-forwarded-for", () => {
@@ -81,17 +69,6 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-Public-IP"]).toBeUndefined();
   });
 
-  it("should include vendor license IDs from environment", () => {
-    const event = {
-      headers: { "x-forwarded-for": "198.51.100.1" },
-      requestContext: {},
-    };
-
-    const headers = buildFraudHeaders(event);
-
-    expect(headers["Gov-Vendor-License-IDs"]).toBe("my-licensed-software=ABC12345");
-  });
-
   it("should include vendor product name and version from environment", () => {
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
@@ -100,10 +77,8 @@ describe("buildFraudHeaders", () => {
 
     const headers = buildFraudHeaders(event);
 
-    // Gov-Vendor-Product-Name should be URL encoded
-    expect(headers["Gov-Vendor-Product-Name"]).toBe("DIY%20Accounting%20Submit");
-    // Gov-Vendor-Version should be a JSON object
-    expect(headers["Gov-Vendor-Version"]).toBe(JSON.stringify({ server: "1.0.0" }));
+    expect(headers["Gov-Vendor-Product-Name"]).toBe("web-submit-diyaccounting-co-uk");
+    expect(headers["Gov-Vendor-Version"]).toBe("web-submit-diyaccounting-co-uk=0.0.2-4");
   });
 
   it("should set connection method to WEB_APP_VIA_SERVER", () => {
@@ -115,7 +90,6 @@ describe("buildFraudHeaders", () => {
     const headers = buildFraudHeaders(event);
 
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
-    expect(headers["Gov-Vendor-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
   });
 
   it("should extract user ID from Cognito authorizer claims", () => {
@@ -171,7 +145,6 @@ describe("buildFraudHeaders", () => {
     const headers = buildFraudHeaders(event);
 
     // Should still include vendor headers and connection method
-    expect(headers["Gov-Vendor-License-IDs"]).toBe("my-licensed-software=ABC12345");
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
     expect(headers["Gov-Client-User-IDs"]).toBe("server=anonymous");
   });
@@ -203,9 +176,7 @@ describe("buildFraudHeaders", () => {
     const headers = buildFraudHeaders(event);
 
     expect(headers["Gov-Vendor-Public-IP"]).toBe("203.0.113.100");
-    // Gov-Vendor-Forwarded should now be a JSON array of objects
-    const forwarded = JSON.parse(headers["Gov-Vendor-Forwarded"]);
-    expect(Array.isArray(forwarded)).toBe(true);
-    expect(forwarded).toEqual([{ by: "203.0.113.100", for: "198.51.100.1" }]);
+    const forwarded = headers["Gov-Vendor-Forwarded"];
+    expect(forwarded).toEqual("by=203.0.113.100&for=198.51.100.1");
   });
 });

@@ -60,7 +60,6 @@ export function buildFraudHeaders(event) {
 
   // 4. Connection method – WEB_APP_VIA_SERVER for both client and vendor
   headers["Gov-Client-Connection-Method"] = "WEB_APP_VIA_SERVER";
-  headers["Gov-Vendor-Connection-Method"] = "WEB_APP_VIA_SERVER";
 
   // 5. Vendor public IP – use detected client IP or SERVER_PUBLIC_IP from environment
   const serverPublicIp = process.env.SERVER_PUBLIC_IP || publicClientIp;
@@ -71,34 +70,24 @@ export function buildFraudHeaders(event) {
   // 6. Vendor forwarded chain – build from X-Forwarded-For
   // Format: Array of objects with 'by' and 'for' keys
   if (serverPublicIp && clientIps.length > 0) {
-    const forwardedChain = clientIps.map((ip) => ({ by: serverPublicIp, for: ip }));
-    headers["Gov-Vendor-Forwarded"] = JSON.stringify(forwardedChain);
+    headers["Gov-Vendor-Forwarded"] = clientIps
+      .map((ip) => `by=${encodeURIComponent(serverPublicIp)}&for=${encodeURIComponent(ip)}`)
+      .join(",");
   }
 
   // 7. Vendor licence IDs – from environment variable
-  const vendorLicenseIds = process.env.FRAUD_VENDOR_LICENSE_IDS;
-  if (vendorLicenseIds) {
-    headers["Gov-Vendor-License-IDs"] = vendorLicenseIds;
-  } else {
-    logger.warn({ message: "FRAUD_VENDOR_LICENSE_IDS environment variable not set" });
-  }
+  // TODO: Declare no Gov-Vendor-License-IDs header supplied
+  // * The software is open-source
+  // * There is no per-device or per-user license key
+  // * The application runs in a browser with no installable licensed component
+  // headers["Gov-Vendor-License-IDs"] = null;
 
   // 8. Vendor product name – from environment variable (must be percent-encoded)
-  const vendorProductName = process.env.FRAUD_VENDOR_PRODUCT_NAME;
-  if (vendorProductName) {
-    headers["Gov-Vendor-Product-Name"] = encodeURIComponent(vendorProductName);
-  } else {
-    logger.warn({ message: "FRAUD_VENDOR_PRODUCT_NAME environment variable not set" });
-  }
+  headers["Gov-Vendor-Product-Name"] = encodeURIComponent(process.env.npm_package_name);
 
   // 9. Vendor version – from environment variable (must be key-value structure)
-  const vendorVersion = process.env.FRAUD_VENDOR_VERSION;
-  if (vendorVersion) {
-    // Format as key-value structure with server version
-    headers["Gov-Vendor-Version"] = JSON.stringify({ server: vendorVersion });
-  } else {
-    logger.warn({ message: "FRAUD_VENDOR_VERSION environment variable not set" });
-  }
+  headers["Gov-Vendor-Version"] =
+    `${encodeURIComponent(process.env.npm_package_name)}=${encodeURIComponent(process.env.npm_package_version)}`;
 
   // 10. Pass through any client-side headers from the browser
   const clientHeaderNames = [

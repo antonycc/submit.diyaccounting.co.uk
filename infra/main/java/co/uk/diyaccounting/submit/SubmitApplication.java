@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
@@ -15,14 +11,19 @@ import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitApplication {
 
@@ -59,10 +60,6 @@ public class SubmitApplication {
         public String certificateArn;
         public String docRootPath;
         public String httpApiUrl;
-        // Fraud prevention header values
-        public String fraudVendorLicenseIds;
-        public String fraudVendorProductName;
-        public String fraudVendorVersion;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -155,27 +152,6 @@ public class SubmitApplication {
         var buildNumber = envOr("BUILD_NUMBER", "local");
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
-        // Fraud prevention header configuration - allow environment variable override
-        // Treat empty strings from cdk.json as null
-        var fraudVendorLicenseIds = envOr(
-                "FRAUD_VENDOR_LICENSE_IDS",
-                (appProps.fraudVendorLicenseIds != null && !appProps.fraudVendorLicenseIds.isBlank())
-                        ? appProps.fraudVendorLicenseIds
-                        : null,
-                null);
-        var fraudVendorProductName = envOr(
-                "FRAUD_VENDOR_PRODUCT_NAME",
-                (appProps.fraudVendorProductName != null && !appProps.fraudVendorProductName.isBlank())
-                        ? appProps.fraudVendorProductName
-                        : "DIY Accounting Submit",
-                "DIY Accounting Submit");
-        var fraudVendorVersion = envOr(
-                "FRAUD_VENDOR_VERSION",
-                (appProps.fraudVendorVersion != null && !appProps.fraudVendorVersion.isBlank())
-                        ? appProps.fraudVendorVersion
-                        : null,
-                null);
-
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s for region %s",
@@ -257,9 +233,6 @@ public class SubmitApplication {
                         .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
                         .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
-                        .fraudVendorLicenseIds(fraudVendorLicenseIds)
-                        .fraudVendorProductName(fraudVendorProductName)
-                        .fraudVendorVersion(fraudVendorVersion)
                         .build());
         this.hmrcStack.addDependency(devStack);
 
