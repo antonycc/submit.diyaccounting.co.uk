@@ -22,6 +22,7 @@ import {
   hmrcHttpPost,
   validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
+import { isValidVrn, isValidPeriodKey, maskSensitiveHeaders } from "../../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -56,11 +57,11 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (vatDue !== undefined && vatDue !== null && Number.isNaN(numVatDue)) {
     errorMessages.push("Invalid vatDue - must be a number");
   }
-  if (vatNumber && !/^\d{9}$/.test(String(vatNumber))) {
+  if (vatNumber && !isValidVrn(vatNumber)) {
     errorMessages.push("Invalid vatNumber format - must be 9 digits");
   }
-  if (periodKey && !/^[A-Z0-9#]{3,5}$/i.test(String(periodKey))) {
-    errorMessages.push("Invalid periodKey format");
+  if (periodKey && !isValidPeriodKey(periodKey)) {
+    errorMessages.push("Invalid periodKey format - must be YYXN (e.g., 24A1) or #NNN (e.g., #001)");
   }
 
   // Extract HMRC account (sandbox/live) from header hmrcAccount

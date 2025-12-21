@@ -2,7 +2,7 @@
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
-import { setupTestEnv, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
 
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
@@ -119,5 +119,39 @@ describe("hmrcVatObligationGet handler", () => {
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect([400, 500]).toContain(response.statusCode);
+  });
+
+  test("returns 400 for invalid VRN format", async () => {
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "12345678" }, // 8 digits instead of 9
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcVatObligationGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("vrn");
+    expect(body.message).toContain("9 digits");
+  });
+
+  test("returns 400 for invalid date format", async () => {
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333", from: "2024/01/01" }, // wrong format
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcVatObligationGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("date format");
+  });
+
+  test("returns 400 for invalid date range (from > to)", async () => {
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333", from: "2024-12-31", to: "2024-01-01" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcVatObligationGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("date range");
   });
 });
