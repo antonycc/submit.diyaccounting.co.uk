@@ -54,7 +54,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
-  const { request } = extractRequest(event);
+  const { request, requestId: extractedRequestId } = extractRequest(event);
   const errorMessages = [];
 
   // Bundle enforcement
@@ -105,10 +105,10 @@ export async function handler(event) {
 
   // Processing
   try {
-    const waitTimeMs = parseInt(request.headers["x-wait-time-ms"] || DEFAULT_WAIT_MS, 10);
+    const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
     let formattedBundles;
     // TODO: Async, get request id generated if not provided.
-    const requestId = request.headers["x-request-id"] || String(Date.now());
+    const requestId = extractedRequestId || String(Date.now());
     logger.info({ message: "Retrieving bundles for request", requestId });
     // TODO: Async, check if there is a request in a dynamo db table for this (requestId, hashedUserSub) tuple
     const persistedRequestExists = false;
@@ -127,7 +127,10 @@ export async function handler(event) {
         }
       }
     }
-    logger.info({ message: "Successfully retrieved bundles", userId, count: formattedBundles.length });
+
+    if (formattedBundles) {
+      logger.info({ message: "Successfully retrieved bundles", userId, count: formattedBundles.length });
+    }
 
     // TODO: Async, abstract to: wait()
     // Wait for waitTimeMs is we have been asked to do so.
@@ -179,7 +182,7 @@ export async function consumer(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
   const { request } = extractRequest(event);
   // TODO Async, How is the request authenticated at this point when reading from the queue? Need to check where the token is.
-  const userId = request.userId; // TODO Async, this is made up
+  const userId = event.userId || (request instanceof URL ? request.searchParams?.get("userId") : null); // TODO Async, this is made up
   await retrieveUserBundles(userId);
 }
 
