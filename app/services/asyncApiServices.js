@@ -1,0 +1,198 @@
+// app/services/asyncApiServices.js
+
+import { createLogger } from "../lib/logger.js";
+import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
+import { http200OkResponse, http202AcceptedResponse } from "../lib/httpResponseHelper.js";
+
+const logger = createLogger({ source: "app/services/asyncApiServices.js" });
+
+/**
+ * Initiates processing for a request, either synchronously or asynchronously.
+ *
+ * @param {Object} params - The parameters for initiation.
+ * @param {Function} params.processor - The function to perform the actual work.
+ * @param {string} params.userId - The user ID.
+ * @param {string} params.requestId - The request ID.
+ * @param {number} params.waitTimeMs - How long the client is willing to wait synchronously.
+ * @param {Object} params.payload - Generic payload to pass to the processor.
+ * @param {string} params.tableName - The DynamoDB table name for request tracking.
+ * @param {string} params.queueUrl - The SQS queue URL for async processing.
+ * @param {number} params.maxWaitMs - The threshold for forced synchronous processing.
+ * @returns {Promise<Object|null>} The result if processed synchronously, or null if initiated asynchronously.
+ */
+export async function initiateProcessing({
+  processor,
+  userId,
+  requestId,
+  waitTimeMs,
+  payload,
+  tableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME,
+  queueUrl = process.env.SQS_QUEUE_URL,
+  maxWaitMs = 25000,
+}) {
+  if (tableName) {
+    try {
+      logger.info({ message: "Marking request as processing in DynamoDB", userId, requestId, tableName });
+      await putAsyncRequest(userId, requestId, "processing", null, tableName);
+    } catch (error) {
+      logger.error({ message: "Error storing processing request", error: error.message, requestId, tableName });
+    }
+  }
+
+  // Synchronous path: wait time header is large or no async tracking table is configured
+  if (waitTimeMs >= maxWaitMs || !tableName) {
+    logger.info({ message: "Executing synchronous processing", userId, requestId, waitTimeMs });
+    return await processor(payload);
+  }
+
+  // Asynchronous path: start the process and return null immediately (to be followed by poll/wait)
+  try {
+    if (queueUrl) {
+      logger.info({ message: "Enqueuing async request to SQS", userId, requestId, queueUrl });
+      const { SQSClient, SendMessageCommand } = await import("@aws-sdk/client-sqs");
+      const endpoint = process.env.AWS_ENDPOINT_URL_SQS || process.env.AWS_ENDPOINT_URL;
+      const sqs = new SQSClient({
+        region: process.env.AWS_REGION || "eu-west-2",
+        ...(endpoint ? { endpoint } : {}),
+      });
+      await sqs.send(
+        new SendMessageCommand({
+          QueueUrl: queueUrl,
+          MessageBody: JSON.stringify({ userId, requestId, payload }),
+          MessageAttributes: {
+            requestId: { DataType: "String", StringValue: requestId },
+            userId: { DataType: "String", StringValue: userId },
+          },
+        }),
+      );
+      logger.info({ message: "Successfully enqueued async request", requestId });
+    } else {
+      logger.info({ message: "Starting async processing locally (no SQS queue URL)", userId, requestId });
+      // Fire and forget for local development fallback
+      processor(payload).catch((error) => {
+        logger.error({ message: "Unhandled error in local async processing", error: error.message, userId, requestId });
+      });
+    }
+  } catch (error) {
+    logger.error({ message: "Error in async processing initiation", error: error.message, userId, requestId });
+    if (tableName) {
+      try {
+        await putAsyncRequest(userId, requestId, "failed", { error: error.message }, tableName);
+      } catch (dbError) {
+        logger.error({ message: "Error storing failed request state", error: dbError.message, requestId });
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Polls for the completion of an asynchronous request.
+ *
+ * @param {Object} params - The parameters for waiting.
+ * @param {string} params.userId - The user ID.
+ * @param {string} params.requestId - The request ID.
+ * @param {number} params.waitTimeMs - Maximum time to poll in milliseconds.
+ * @param {string} params.tableName - The DynamoDB table name for request tracking.
+ * @returns {Promise<Object|null>} The result data if completed, or null if timeout.
+ */
+export async function wait({ userId, requestId, waitTimeMs, tableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME }) {
+  if (!tableName || waitTimeMs <= 0) {
+    return null;
+  }
+
+  logger.info({ message: `Waiting for ${waitTimeMs}ms for result to be ready`, userId, requestId });
+  const start = Date.now();
+
+  while (Date.now() - start < waitTimeMs) {
+    // Sleep for a short duration to avoid busy-waiting (100ms interval)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    try {
+      const persistedRequest = await getAsyncRequest(userId, requestId, tableName);
+      if (persistedRequest?.status === "completed") {
+        return persistedRequest.data;
+      } else if (persistedRequest?.status === "failed") {
+        throw new Error(persistedRequest.data?.error || "Request processing failed");
+      }
+    } catch (error) {
+      // Re-throw if it's a known processing failure
+      if (error.message && error.message.includes("failed")) {
+        throw error;
+      }
+      logger.warn({ message: "Error checking request status during wait", error: error.message, requestId });
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Checks for the existence and status of a persisted request.
+ *
+ * @param {Object} params - The parameters for checking.
+ * @param {string} params.userId - The user ID.
+ * @param {string} params.requestId - The request ID.
+ * @param {string} params.tableName - The DynamoDB table name for request tracking.
+ * @returns {Promise<Object|null>} The result data if completed, null otherwise.
+ */
+export async function check({ userId, requestId, tableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME }) {
+  if (!tableName) {
+    return null;
+  }
+
+  logger.info({ message: "Checking persisted request status", requestId, tableName });
+  try {
+    const persistedRequest = await getAsyncRequest(userId, requestId, tableName);
+    if (persistedRequest?.status === "completed") {
+      return persistedRequest.data;
+    } else if (persistedRequest?.status === "failed") {
+      throw new Error(persistedRequest.data?.error || "Request processing failed");
+    }
+  } catch (error) {
+    // Re-throw if it's a known processing failure
+    if (error.message && error.message.includes("failed")) {
+      throw error;
+    }
+    logger.warn({ message: "Error checking persisted request status", error: error.message, requestId });
+  }
+
+  return null;
+}
+
+/**
+ * Formats the final HTTP response based on whether data is available.
+ *
+ * @param {Object} params - The parameters for responding.
+ * @param {Object} params.request - The normalized request object.
+ * @param {string} params.requestId - The request ID.
+ * @param {Object} params.responseHeaders - Base headers for the response.
+ * @param {Object} params.data - The result data (if available).
+ * @param {string} params.dataKey - Optional key to wrap the data in the response body.
+ * @returns {Object} A Lambda-compatible response object (200 OK or 202 Accepted).
+ */
+export function respond({ request, requestId, responseHeaders, data, dataKey }) {
+  if (data) {
+    logger.info({ message: "Returning HTTP 200 OK with result", requestId });
+
+    // Ensure data is wrapped in the requested key if specified
+    const responseData = dataKey && !Object.prototype.hasOwnProperty.call(data, dataKey) ? { [dataKey]: data } : data;
+
+    return http200OkResponse({
+      request,
+      headers: { ...responseHeaders, "x-request-id": requestId },
+      data: responseData,
+    });
+  }
+
+  // No data yet: Return HTTP 202 Accepted with location header for client polling
+  const locationUrl = `${request.origin}${request.pathname}`;
+  logger.info({ message: "Yielding with HTTP 202 Accepted", requestId, location: locationUrl });
+  return http202AcceptedResponse({
+    request,
+    headers: { ...responseHeaders, "x-request-id": requestId, "Retry-After": "5" },
+    message: "Request accepted for processing",
+    location: locationUrl,
+  });
+}

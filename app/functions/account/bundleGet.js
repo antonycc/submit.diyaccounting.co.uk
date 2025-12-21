@@ -16,21 +16,9 @@ import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { v4 as uuidv4 } from "uuid";
+import * as asyncApiServices from "../../services/asyncApiServices.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
-
-let __sqsClient;
-async function getSqsClient() {
-  if (!__sqsClient) {
-    const { SQSClient } = await import("@aws-sdk/client-sqs");
-    const endpoint = process.env.AWS_ENDPOINT_URL_SQS || process.env.AWS_ENDPOINT_URL;
-    __sqsClient = new SQSClient({
-      region: process.env.AWS_REGION || "eu-west-2",
-      ...(endpoint ? { endpoint } : {}),
-    });
-  }
-  return __sqsClient;
-}
 
 const MAX_WAIT_MS = 25_000; // 25 seconds (significantly below API Gateway timeout of 30s and Submit Lambda default 29s)
 const DEFAULT_WAIT_MS = 0;
@@ -66,118 +54,6 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   const userId = decodedToken.sub;
   return { userId };
-}
-
-// Helper function to check if an async request exists
-async function checkPersistedRequest(userId, requestId) {
-  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
-  if (!asyncTableName) {
-    return null;
-  }
-
-  try {
-    return await getAsyncRequest(userId, requestId);
-  } catch (error) {
-    logger.warn({ message: "Error checking for persisted request", error: error.message, requestId });
-    return null;
-  }
-}
-
-// Helper function to initiate async processing
-// TODO Make payload somehow generic
-async function initiateProcessing(processor, userId, requestId, waitTimeMs) {
-  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
-  if (asyncTableName) {
-    try {
-      logger.info({ message: "Marking request as processing in DynamoDB", userId, requestId });
-      await putAsyncRequest(userId, requestId, "processing");
-    } catch (error) {
-      logger.error({ message: "Error storing processing request", error: error.message, requestId });
-    }
-  }
-
-  // Default behavior (no header or 0): synchronous
-  // Explicit long wait (>= MAX_WAIT_MS): synchronous
-  // Otherwise: asynchronous
-  if (waitTimeMs >= MAX_WAIT_MS || !asyncTableName) {
-    // Synchronous processing: wait for the result
-    logger.info({ message: "Executing synchronous processing", userId, requestId, waitTimeMs });
-    return await retrieveUserBundles(userId, requestId);
-  }
-
-  // Start async processing
-  try {
-    const queueUrl = process.env.SQS_QUEUE_URL;
-    if (queueUrl) {
-      logger.info({ message: "Enqueuing async request to SQS", userId, requestId, queueUrl });
-      const sqs = await getSqsClient();
-      const { SendMessageCommand } = await import("@aws-sdk/client-sqs");
-      await sqs.send(
-        new SendMessageCommand({
-          QueueUrl: queueUrl,
-          MessageBody: JSON.stringify({ userId, requestId }),
-          MessageAttributes: {
-            requestId: { DataType: "String", StringValue: requestId },
-            userId: { DataType: "String", StringValue: userId },
-          },
-        }),
-      );
-      logger.info({ message: "Successfully enqueued async request", requestId });
-    } else {
-      // Intentionally don't await so things run async (local dev fallback)
-      logger.info({ message: "Starting async processing locally (no SQS queue URL)", userId, requestId });
-      try {
-        processor();
-      } catch (error) {
-        logger.error({ message: "Unhandled error in local async processing", error: error.message, userId, requestId });
-      }
-    }
-  } catch (error) {
-    logger.error({ message: "Error in async processing initiation", error: error.message, userId, requestId });
-    // Try to mark as failed in DynamoDB
-    if (asyncTableName) {
-      putAsyncRequest(userId, requestId, "failed", { error: error.message }).catch((err) => {
-        logger.error({ message: "Error storing failed request state", error: err.message, requestId });
-      });
-    }
-  }
-
-  return null;
-}
-
-// Helper function to wait and poll for async completion
-async function waitForAsyncCompletion(userId, requestId, waitTimeMs) {
-  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
-  if (!asyncTableName || waitTimeMs <= 0) {
-    return null;
-  }
-
-  logger.info({ message: `Waiting for ${waitTimeMs}ms for bundles to be ready`, userId });
-  const start = Date.now();
-  let persistedRequest = null;
-
-  while (Date.now() - start < waitTimeMs) {
-    // Sleep for a short duration to avoid busy-waiting
-    const delay = 100;
-    await new Promise((resolve) => setTimeout(resolve, delay));
-
-    // Check if request has completed
-    try {
-      persistedRequest = await getAsyncRequest(userId, requestId);
-      if (persistedRequest?.status === "completed" && persistedRequest?.data?.bundles) {
-        return persistedRequest.data.bundles;
-      } else if (persistedRequest?.status === "failed") {
-        throw new Error(persistedRequest.data?.error || "Request processing failed");
-      }
-    } catch (error) {
-      if (error.message && error.message.includes("failed")) {
-        throw error;
-      }
-      logger.warn({ message: "Error checking request status", error: error.message, requestId });
-    }
-  }
-
-  return null;
 }
 
 // HTTP request/response, aware Lambda handler function
@@ -241,67 +117,50 @@ export async function handler(event) {
 
   // Processing
   try {
-    // TODO: Do this case insensitive comparison more thoroughly
     const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
-    let formattedBundles;
-    // Generate request id if not provided
+    let result;
+
     logger.info({ message: "Retrieving bundles for request", requestId, waitTimeMs });
 
-    // Check if there is a request in a dynamo db table for this request
-    const persistedRequest = await checkPersistedRequest(userId, requestId);
-    const persistedRequestExists = !!persistedRequest;
+    // Check if there is already a persisted request for this ID
+    const persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
 
-    if (persistedRequestExists) {
+    if (persistedRequest) {
       logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
-    }
+    } else {
+      // Not found: Initiate processing
+      const processor = async ({ userId, requestId }) => {
+        const bundles = await retrieveUserBundles(userId, requestId);
+        return { bundles };
+      };
 
-    if (!persistedRequestExists) {
-      // Asynchronous processing: start the process but don't wait
-      const processor = () => retrieveUserBundles(userId, requestId);
-      formattedBundles = await initiateProcessing(processor, userId, requestId, waitTimeMs);
-    }
-
-    // If we have bundles (synchronous path), return them
-    if (formattedBundles) {
-      logger.info({ message: "Successfully retrieved bundles (sync path)", userId, count: formattedBundles.length });
-    }
-
-    // TODO: Async, abstract to: wait()
-    // Wait for waitTimeMs if we have been asked to do so
-    if (!formattedBundles && waitTimeMs > 0) {
-      logger.info({ message: "Starting wait for async completion", waitTimeMs, requestId });
-      formattedBundles = await waitForAsyncCompletion(userId, requestId, waitTimeMs);
-    }
-
-    // TODO: Async, abstract to: check()
-    // Check persisted request one more time after waiting
-    if (!formattedBundles && persistedRequest) {
-      logger.info({ message: "Checking persisted request after wait", requestId });
-      if (persistedRequest.status === "completed" && persistedRequest.data?.bundles) {
-        formattedBundles = persistedRequest.data.bundles;
-      } else if (persistedRequest.status === "failed") {
-        throw new Error(persistedRequest.data?.error || "Request processing failed");
-      }
-    }
-
-    // TODO: Async, abstract to: respond()
-    if (!formattedBundles) {
-      // Return HTTP 202 Accepted with location header for async processing
-      const locationUrl = `${request.origin}${request.pathname}`;
-      logger.info({ message: "Yielding with HTTP 202 Accepted", requestId, location: locationUrl });
-      return http202AcceptedResponse({
-        request,
-        headers: { ...responseHeaders, "x-request-id": requestId, "Retry-After": "5" },
-        message: "Request accepted for processing",
-        location: locationUrl,
+      result = await asyncApiServices.initiateProcessing({
+        processor,
+        userId,
+        requestId,
+        waitTimeMs,
+        payload: { userId, requestId },
+        tableName: asyncTableName,
+        maxWaitMs: MAX_WAIT_MS,
       });
     }
 
-    logger.info({ message: "Returning HTTP 200 OK with bundles", requestId });
-    return http200OkResponse({
+    // If still no result (async path) and we have a wait time, poll for completion
+    if (!result && waitTimeMs > 0) {
+      result = await asyncApiServices.wait({ userId, requestId, waitTimeMs, tableName: asyncTableName });
+    }
+
+    // One last check before deciding whether to yield or return the final result
+    if (!result) {
+      result = await asyncApiServices.check({ userId, requestId, tableName: asyncTableName });
+    }
+
+    return asyncApiServices.respond({
       request,
-      headers: { ...responseHeaders, "x-request-id": requestId },
-      data: { bundles: formattedBundles },
+      requestId,
+      responseHeaders,
+      data: result,
+      dataKey: "bundles",
     });
   } catch (error) {
     logger.error({ message: "Error retrieving bundles", error: error.message, stack: error.stack });
