@@ -1,21 +1,22 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
@@ -38,9 +39,6 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "web/public"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
-    @SetEnvironmentVariable(key = "FRAUD_VENDOR_LICENSE_IDS", value = "test-software=TEST12345"),
-    @SetEnvironmentVariable(key = "FRAUD_VENDOR_PRODUCT_NAME", value = "DIY Accounting Submit"),
-    @SetEnvironmentVariable(key = "FRAUD_VENDOR_VERSION", value = "0.0.2-test"),
 })
 class SubmitApplicationCdkResourceTest {
 

@@ -90,12 +90,15 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
 export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}, auditForUserSub) {
   const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const validationUrl = `${hmrcBase}/test/fraud-prevention-headers/validate`;
-
+  const nonValidatedHeaders = ["gov-test-scenario"];
+  const govClientHeadersWithoutNonValidated = Object.fromEntries(
+    Object.entries(govClientHeaders).filter(([key]) => !nonValidatedHeaders.includes(key.toLowerCase())),
+  );
   const requestId = `req-${uuidv4()}`;
   const headers = {
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${accessToken}`,
-    ...govClientHeaders,
+    ...govClientHeadersWithoutNonValidated,
     "x-request-id": requestId,
     ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
     ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),

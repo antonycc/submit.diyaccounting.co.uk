@@ -39,6 +39,7 @@ import {
   readDynamoDbExport,
   countHmrcApiRequestValues,
   assertFraudPreventionHeaders,
+  intentionallyNotSuppliedHeaders,
 } from "./helpers/dynamodb-assertions.js";
 import {
   completeVat,
@@ -392,13 +393,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   userSub = await extractUserSubFromLocalStorage(page, testInfo);
 
-  /* ********************************** */
-  /*  FRAUD PREVENTION HEADERS FEEDBACK */
-  /* ********************************** */
-
-  // For sandbox tests, fetch fraud prevention headers validation feedback
-  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
-
   /* ********* */
   /*  LOG OUT  */
   /* ********* */
@@ -422,7 +416,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
         method: "GET",
       },
       { url: "/test/fraud-prevention-headers/validate", method: "GET" },
-      { url: "/test/fraud-prevention-headers/vat-mtd/validation-feedback", method: "GET" },
     ],
     env: {
       envName,
@@ -450,6 +443,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       observedTraceparent,
       testUrl,
       isSandboxMode: isSandboxMode(),
+      intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,
     screenshotPath,
@@ -583,10 +577,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     });
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
-    // TODO: Apply to every behaviour test that does HMRC API calls
-    // TODO: Enforce valid headers when APIs are stable with valid headers
-    // assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, true);
-    assertFraudPreventionHeaders(hmrcApiRequestsFile);
+    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
 
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
