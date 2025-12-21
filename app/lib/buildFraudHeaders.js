@@ -1,6 +1,9 @@
 // app/lib/buildFraudHeaders.js
 
 import { createLogger } from "./logger.js";
+import { readFileSync } from "fs";
+
+const { name: packageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url)));
 
 const logger = createLogger({ source: "app/lib/buildFraudHeaders.js" });
 
@@ -83,11 +86,10 @@ export function buildFraudHeaders(event) {
   // headers["Gov-Vendor-License-IDs"] = null;
 
   // 8. Vendor product name – from environment variable (must be percent-encoded)
-  headers["Gov-Vendor-Product-Name"] = encodeURIComponent(process.env.npm_package_name);
+  headers["Gov-Vendor-Product-Name"] = encodeURIComponent(packageName);
 
   // 9. Vendor version – from environment variable (must be key-value structure)
-  headers["Gov-Vendor-Version"] =
-    `${encodeURIComponent(process.env.npm_package_name)}=${encodeURIComponent(process.env.npm_package_version)}`;
+  headers["Gov-Vendor-Version"] = `${encodeURIComponent(packageName)}=${encodeURIComponent(packageVersion)}`;
 
   // 10. Pass through any client-side headers from the browser
   const clientHeaderNames = [

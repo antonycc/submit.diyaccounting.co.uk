@@ -16,6 +16,7 @@ import {
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
   checkFraudPreventionHeadersFeedback,
+  generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -86,7 +87,7 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
 // eslint-disable-next-line sonarjs/pseudo-random
-const hmrcVatPeriodKey = Math.random().toString(36).substring(2, 6).toUpperCase();
+const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
 
 let mockOAuth2Process;
@@ -271,19 +272,19 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
      */
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_VRN",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PERIODKEY",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PAYLOAD",
     });
@@ -295,13 +296,13 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "TAX_PERIOD_NOT_ENDED",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INSOLVENT_TRADER",
     });
@@ -309,19 +310,19 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     // Custom forced error scenarios
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_API_HTTP_500",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_HMRC_API_HTTP_500",
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_HMRC_API_HTTP_503",
     });
@@ -330,7 +331,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     const slowStartMs = Date.now();
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: Math.random().toString(36).substring(2, 6).toUpperCase(),
+      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
     });
