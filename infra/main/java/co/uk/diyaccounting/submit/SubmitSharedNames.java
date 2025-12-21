@@ -69,6 +69,7 @@ public class SubmitSharedNames {
 
     public String receiptsTableName;
     public String bundlesTableName;
+    public String asyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String proxyStateTableName;
     public String holdingBucketName;
@@ -196,6 +197,8 @@ public class SubmitSharedNames {
     public boolean catalogGetLambdaCustomAuthorizer;
 
     public String bundleGetLambdaHandler;
+    public String bundleGetLambdaConsumerHandler;
+    public String bundleGetLambdaQueueName;
     public String bundleGetLambdaFunctionName;
     public String bundleGetLambdaArn;
     public HttpMethod bundleGetLambdaHttpMethod;
@@ -294,6 +297,7 @@ public class SubmitSharedNames {
 
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
+        this.asyncRequestsTableName = "%s-async-requests".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
         this.proxyStateTableName = "%s-proxy-state".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
@@ -582,10 +586,14 @@ public class SubmitSharedNames {
         this.bundleGetLambdaJwtAuthorizer = true;
         this.bundleGetLambdaCustomAuthorizer = false;
         var bundleGetLambdaHandlerName = "bundleGet.handler";
+        var bundleGetLambdaConsumerHandlerName = "bundleGet.consumer";
         var bundleGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundleGetLambdaHandlerName);
         this.bundleGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
         this.bundleGetLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaHandlerName);
+        this.bundleGetLambdaConsumerHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaConsumerHandlerName);
+        this.bundleGetLambdaQueueName = "%s-queue".formatted(this.bundleGetLambdaFunctionName);
         this.bundleGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleGetLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundleGetLambdaHttpMethod,

@@ -6,6 +6,8 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
+import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
+import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
 import org.immutables.value.Value;
@@ -97,6 +99,12 @@ public class AccountStack extends Stack {
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundlesTableName);
 
+        // Lookup existing DynamoDB Async Requests Table
+        ITable asyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().asyncRequestsTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -136,17 +144,19 @@ public class AccountStack extends Stack {
                 String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
 
         // Get Bundles Lambda
-        var getBundlesLambdaEnv =
-                new PopulatedMap<String, String>().with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
-        var getBundlesLambdaUrlOrigin = new ApiLambda(
+        var getBundlesLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
+        var getBundlesAsyncLambda = new AsyncApiLambda(
                 this,
-                ApiLambdaProps.builder()
+                AsyncApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleGetLambdaFunctionName)
                         .handler(props.sharedNames().bundleGetLambdaHandler)
+                        .consumerHandler(props.sharedNames().bundleGetLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().bundleGetLambdaArn)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
@@ -155,13 +165,19 @@ public class AccountStack extends Stack {
                         .environment(getBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
-        this.bundleGetLambdaProps = getBundlesLambdaUrlOrigin.apiProps;
-        this.bundleGetLambda = getBundlesLambdaUrlOrigin.lambda;
-        this.bundleGetLambdaLogGroup = getBundlesLambdaUrlOrigin.logGroup;
+
+        // Update API environment with SQS queue URL (for async processing)
+        getBundlesLambdaEnv.put("SQS_QUEUE_URL", getBundlesAsyncLambda.queue.getQueueUrl());
+
+        this.bundleGetLambdaProps = getBundlesAsyncLambda.apiProps;
+        this.bundleGetLambda = getBundlesAsyncLambda.lambda;
+        this.bundleGetLambdaLogGroup = getBundlesAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
         infof(
-                "Created Lambda %s for get bundles with handler %s",
-                this.bundleGetLambda.getNode().getId(), props.sharedNames().bundleGetLambdaHandler);
+                "Created Async API Lambda %s for get bundles with handler %s and consumer %s",
+                this.bundleGetLambda.getNode().getId(),
+                props.sharedNames().bundleGetLambdaHandler,
+                props.sharedNames().bundleGetLambdaConsumerHandler);
 
         // Grant the GetBundlesLambda permission to access Cognito User Pool
         var getBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
@@ -176,11 +192,16 @@ public class AccountStack extends Stack {
                 "Granted Cognito permissions to %s for User Pool %s",
                 this.bundleGetLambda.getFunctionName(), userPool.getUserPoolId());
 
-        // Grant the GetBundlesLambda permission to access DynamoDB Bundles Table
+        // Grant DynamoDB permissions to both API and Consumer Lambdas
         bundlesTable.grantReadData(this.bundleGetLambda);
+        asyncRequestsTable.grantReadWriteData(this.bundleGetLambda);
+
+        bundlesTable.grantReadData(getBundlesAsyncLambda.consumerLambda);
+        asyncRequestsTable.grantReadWriteData(getBundlesAsyncLambda.consumerLambda);
+
         infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.bundleGetLambda.getFunctionName(), bundlesTable.getTableName());
+                "Granted DynamoDB permissions to %s and its consumer for Bundles and Async Requests Tables",
+                this.bundleGetLambda.getFunctionName());
 
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()

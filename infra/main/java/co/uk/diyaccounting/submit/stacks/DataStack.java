@@ -20,6 +20,7 @@ public class DataStack extends Stack {
 
     public ITable receiptsTable;
     public ITable bundlesTable;
+    public ITable asyncRequestsTable;
     public ITable hmrcApiRequestsTable;
 
     @Value.Immutable
@@ -99,6 +100,25 @@ public class DataStack extends Stack {
                 "Created bundles DynamoDB table with name %s and id %s",
                 this.bundlesTable.getTableName(), this.bundlesTable.getNode().getId());
 
+        // Create DynamoDB table for async request storage
+        this.asyncRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-AsyncRequestsTable")
+                .tableName(props.sharedNames().asyncRequestsTableName)
+                .partitionKey(Attribute.builder()
+                        .name("hashedSub")
+                        .type(AttributeType.STRING)
+                        .build())
+                .sortKey(Attribute.builder()
+                        .name("requestId")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .timeToLiveAttribute("ttl")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        infof(
+                "Created async requests DynamoDB table with name %s and id %s",
+                this.asyncRequestsTable.getTableName(), this.asyncRequestsTable.getNode().getId());
+
         // Create DynamoDB table for HMRC API requests storage
         this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
                 .tableName(props.sharedNames().hmrcApiRequestsTableName)
@@ -123,6 +143,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
+        cfnOutput(this, "AsyncRequestsTableName", this.asyncRequestsTable.getTableName());
+        cfnOutput(this, "AsyncRequestsTableArn", this.asyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
 

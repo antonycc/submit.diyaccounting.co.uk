@@ -53,8 +53,24 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
   return { DynamoDBClient };
 });
 
+const mockSqsSend = vi.fn();
+vi.mock("@aws-sdk/client-sqs", () => {
+  class SQSClient {
+    constructor(_config) {}
+    send(cmd) {
+      return mockSqsSend(cmd);
+    }
+  }
+  class SendMessageCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  return { SQSClient, SendMessageCommand };
+});
+
 // Defer importing the handlers until after mocks are defined
-import { handler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
+import { handler as bundleGetHandler, consumer as bundleGetConsumer } from "@app/functions/account/bundleGet.js";
 import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -273,6 +289,22 @@ describe("bundleGet handler", () => {
     expect(response.headers).toHaveProperty("x-request-id");
   });
 
+  test("enqueues request to SQS when SQS_QUEUE_URL is provided", async () => {
+    process.env.SQS_QUEUE_URL = "http://test-queue-url";
+    const token = makeIdToken("user-sqs");
+    const event = buildEventWithToken(token, {});
+    delete event.headers["x-wait-time-ms"];
+
+    mockSqsSend.mockResolvedValue({});
+
+    const response = await bundleGetHandler(event);
+    expect(response.statusCode).toBe(202);
+    expect(mockSqsSend).toHaveBeenCalled();
+    const call = mockSqsSend.mock.calls[0][0];
+    expect(call.input.QueueUrl).toBe("http://test-queue-url");
+    expect(JSON.parse(call.input.MessageBody)).toHaveProperty("userId", "user-sqs");
+  });
+
   test("generates requestId if not provided", async () => {
     const token = makeIdToken("user-gen-id");
     const event = buildEventWithToken(token, {});
@@ -301,5 +333,29 @@ describe("bundleGet handler", () => {
     const event = buildEventWithToken(token, {});
 
     await expect(bundleGetHandler(event)).rejects.toThrow();
+  });
+
+  describe("consumer", () => {
+    test("processes SQS records and updates DynamoDB", async () => {
+      process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundle-table";
+      process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
+
+      const event = {
+        Records: [
+          {
+            messageId: "msg-1",
+            body: JSON.stringify({ userId: "user-consumer", requestId: "req-consumer" }),
+          },
+        ],
+      };
+
+      await bundleGetConsumer(event);
+
+      // Verify DynamoDB was called to update status to completed
+      const putCalls = mockSend.mock.calls.filter((c) => {
+        return c[0]?.constructor?.name === "PutCommand";
+      });
+      expect(putCalls.some((c) => c[0].input.Item.status === "completed")).toBe(true);
+    });
   });
 });
