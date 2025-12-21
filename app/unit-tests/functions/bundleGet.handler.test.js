@@ -248,6 +248,31 @@ describe("bundleGet handler", () => {
     expect(body.bundles[0].bundleId).toBe("async-bundle");
   });
 
+  test("returns 202 Accepted by default when wait time header is missing", async () => {
+    const token = makeIdToken("user-default-async");
+    const event = buildEventWithToken(token, {});
+    // Ensure no wait-time header
+    delete event.headers["x-wait-time-ms"];
+    delete event.headers["X-Wait-Time-Ms"];
+
+    // Mock GetCommand to return processing status
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.GetCommand) {
+        return { Item: { status: "processing" } };
+      }
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      return {};
+    });
+
+    const response = await bundleGetHandler(event);
+    expect(response.statusCode).toBe(202);
+    expect(response.headers).toHaveProperty("Location");
+    expect(response.headers).toHaveProperty("x-request-id");
+  });
+
   test("generates requestId if not provided", async () => {
     const token = makeIdToken("user-gen-id");
     const event = buildEventWithToken(token, {});

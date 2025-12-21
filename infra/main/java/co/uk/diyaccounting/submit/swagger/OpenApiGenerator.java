@@ -412,6 +412,13 @@ public class OpenApiGenerator {
             ObjectNode response200 = mapper.createObjectNode();
             response200.put("description", getAccountResponseDescription(path, method));
             responses.set(SubmitSharedNames.Responses.OK, response200);
+
+            if (path.equals("/bundle") && "get".equals(method)) {
+                ObjectNode response202 = mapper.createObjectNode();
+                response202.put("description", "Request accepted for processing (async)");
+                responses.set(SubmitSharedNames.Responses.ACCEPTED, response202);
+            }
+
             operation.set("responses", responses);
         });
     }

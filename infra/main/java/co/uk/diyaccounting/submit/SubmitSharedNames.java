@@ -246,6 +246,7 @@ public class SubmitSharedNames {
     // Common HTTP response codes to be referenced across infra generators and stacks
     public static class Responses {
         public static final String OK = "200";
+        public static final String ACCEPTED = "202";
         public static final String UNAUTHORIZED = "401";
         public static final String FORBIDDEN = "403";
         public static final String NOT_FOUND = "404";
@@ -591,7 +592,9 @@ public class SubmitSharedNames {
                 this.bundleGetLambdaUrlPath,
                 "Get user bundles",
                 "Retrieves all bundles for the authenticated user",
-                "getBundles"));
+                "getBundles",
+                List.of(new ApiParameter(
+                        "x-wait-time-ms", "header", false, "Max time to wait for synchronous response (ms)"))));
 
         this.bundlePostLambdaHttpMethod = HttpMethod.POST;
         this.bundlePostLambdaUrlPath = "/api/v1/bundle";

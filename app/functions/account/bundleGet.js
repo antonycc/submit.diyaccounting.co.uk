@@ -20,7 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
 const MAX_WAIT_MS = 25_000; // 25 seconds (significantly below API Gateway timeout of 30s and Submit Lambda default 29s)
-const DEFAULT_WAIT_MS = 20_000;
+const DEFAULT_WAIT_MS = 0;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -71,6 +71,7 @@ async function checkPersistedRequest(userId, requestId) {
 }
 
 // Helper function to initiate async processing
+// TODO Make payload somehow generic
 async function initiateProcessing(processor, userId, requestId, waitTimeMs) {
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (asyncTableName) {
