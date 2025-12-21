@@ -20,6 +20,11 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class GetCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   class QueryCommand {
     constructor(input) {
       this.input = input;
@@ -33,6 +38,7 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     PutCommand,
+    GetCommand,
     QueryCommand,
     DeleteCommand,
   };
@@ -54,8 +60,17 @@ import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("bundleGet handler", () => {
+  let asyncRequests = new Map();
+
   beforeEach(() => {
-    Object.assign(process.env, setupTestEnv());
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        ASYNC_REQUESTS_DYNAMODB_TABLE_NAME: "test-async-table",
+      }),
+    );
+    asyncRequests = new Map();
+
     // Reset and provide default mock DynamoDB behaviour
     vi.clearAllMocks();
     mockSend.mockImplementation(async (cmd) => {
@@ -64,7 +79,16 @@ describe("bundleGet handler", () => {
         return { Items: [], Count: 0 };
       }
       if (cmd instanceof lib.PutCommand) {
+        const item = cmd.input.Item;
+        if (item.requestId) {
+          asyncRequests.set(item.requestId, item);
+        }
         return {};
+      }
+      if (cmd instanceof lib.GetCommand) {
+        const { requestId } = cmd.input.Key;
+        const item = asyncRequests.get(requestId);
+        return { Item: item };
       }
       if (cmd instanceof lib.DeleteCommand) {
         return {};
@@ -122,6 +146,7 @@ describe("bundleGet handler", () => {
   test("returns 200 with empty bundles array for new user", async () => {
     const token = makeIdToken("user-no-bundles");
     const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "2000";
 
     const response = await bundleGetHandler(event);
 
@@ -133,12 +158,15 @@ describe("bundleGet handler", () => {
 
   test("returns 200 with user bundles after granting", async () => {
     const token = makeIdToken("user-with-bundles");
+    const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "500";
 
     // Grant a bundle first
     await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
 
     // Get bundles
     const getEvent = buildEventWithToken(token, {});
+    getEvent.headers["x-wait-time-ms"] = "500";
     const response = await bundleGetHandler(getEvent);
 
     expect(response.statusCode).toBe(200);
@@ -149,12 +177,91 @@ describe("bundleGet handler", () => {
   test("returns correct content-type header", async () => {
     const token = makeIdToken("user-headers");
     const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "500";
 
     const response = await bundleGetHandler(event);
 
     expect(response.statusCode).toBe(200);
     expect(response.headers).toHaveProperty("Content-Type", "application/json");
     expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
+  });
+
+  // ============================================================================
+  // Async Polling Tests (202 / 200)
+  // ============================================================================
+
+  test("returns 202 Accepted when wait time is short and result not ready", async () => {
+    process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
+    const token = makeIdToken("user-async");
+    const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "50"; // Very short wait
+
+    // Mock GetCommand to return nothing (still processing)
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.GetCommand) {
+        return { Item: { status: "processing" } };
+      }
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      return {};
+    });
+
+    const response = await bundleGetHandler(event);
+    expect(response.statusCode).toBe(202);
+    expect(response.headers).toHaveProperty("Location");
+    expect(response.headers).toHaveProperty("Retry-After", "5");
+    expect(response.headers).toHaveProperty("x-request-id");
+  });
+
+  test("returns 200 when polling completes successfully", async () => {
+    process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
+    const token = makeIdToken("user-async-success");
+    const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "500";
+
+    let callCount = 0;
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.GetCommand) {
+        callCount++;
+        if (callCount >= 2) {
+          return {
+            Item: {
+              status: "completed",
+              data: { bundles: [{ bundleId: "async-bundle", expiry: "2025-12-31" }] },
+            },
+          };
+        }
+        return { Item: { status: "processing" } };
+      }
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      return {};
+    });
+
+    const response = await bundleGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.bundles[0].bundleId).toBe("async-bundle");
+  });
+
+  test("generates requestId if not provided", async () => {
+    const token = makeIdToken("user-gen-id");
+    const event = buildEventWithToken(token, {});
+    // Set a short wait time to avoid timeout
+    event.headers["x-wait-time-ms"] = "200";
+    // ensure no requestId in headers or context
+    delete event.headers["x-request-id"];
+    delete event.headers["X-Request-Id"];
+    if (event.requestContext) delete event.requestContext.requestId;
+
+    const response = await bundleGetHandler(event);
+    expect(response.headers).toHaveProperty("x-request-id");
+    // Should be a UUID v4
+    expect(response.headers["x-request-id"]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   });
 
   // ============================================================================

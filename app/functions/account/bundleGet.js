@@ -1,7 +1,7 @@
 // app/functions/account/bundleGet.js
 
 import { validateEnv } from "../../lib/env.js";
-import { createLogger } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -15,11 +15,12 @@ import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { v4 as uuidv4 } from "uuid";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
 const MAX_WAIT_MS = 25_000; // 25 seconds (significantly below API Gateway timeout of 30s and Submit Lambda default 29s)
-const DEFAULT_WAIT_MS = MAX_WAIT_MS; // TODO: Async Lambdas should wait 0s
+const DEFAULT_WAIT_MS = 20_000;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -74,9 +75,9 @@ async function initiateAsyncProcessing(userId, requestId) {
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   if (asyncTableName) {
     try {
-      await putAsyncRequest(userId, requestId, "pending");
+      await putAsyncRequest(userId, requestId, "processing");
     } catch (error) {
-      logger.error({ message: "Error storing pending request", error: error.message, requestId });
+      logger.error({ message: "Error storing processing request", error: error.message, requestId });
     }
   }
 
@@ -88,10 +89,12 @@ async function initiateAsyncProcessing(userId, requestId) {
       // TODO: Async, put the request on the queue
     } else {
       // Intentionally don't await so things run async
-      retrieveUserBundles(userId, requestId);
+      retrieveUserBundles(userId, requestId).catch((error) => {
+        logger.error({ message: "Unhandled error in async bundle retrieval", error: error.message, userId, requestId });
+      });
     }
   } catch (error) {
-    logger.error({ message: "Error in async bundle retrieval", error: error.message, userId, requestId });
+    logger.error({ message: "Error in async bundle retrieval initiation", error: error.message, userId, requestId });
     // Try to mark as failed in DynamoDB
     if (asyncTableName) {
       putAsyncRequest(userId, requestId, "failed", { error: error.message }).catch((err) => {
@@ -140,9 +143,14 @@ async function waitForAsyncCompletion(userId, requestId, waitTimeMs) {
 export async function handler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
-  const { request, requestId } = extractRequest(event);
-  //     const requestId = event.headers?.["x-request-id"] || String(Date.now());
+  const { request, requestId: extractedRequestId } = extractRequest(event);
+  const requestId = extractedRequestId || uuidv4();
+  if (!extractedRequestId) {
+    context.set("requestId", requestId);
+  }
   const errorMessages = [];
+
+  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
 
   // Bundle enforcement
   try {
@@ -207,7 +215,7 @@ export async function handler(event) {
       // Default behavior (no header or 0): synchronous
       // Explicit long wait (>= MAX_WAIT_MS): synchronous
       // Otherwise: asynchronous
-      if (waitTimeMs >= MAX_WAIT_MS) {
+      if (waitTimeMs >= MAX_WAIT_MS || !asyncTableName) {
         // Synchronous processing: wait for the result
         formattedBundles = await retrieveUserBundles(userId, requestId);
       } else {
@@ -243,7 +251,7 @@ export async function handler(event) {
       const locationUrl = `${request.origin}${request.pathname}`;
       return http202AcceptedResponse({
         request,
-        headers: { ...responseHeaders, "x-request-id": requestId },
+        headers: { ...responseHeaders, "x-request-id": requestId, "Retry-After": "5" },
         message: "Request accepted for processing",
         location: locationUrl,
       });
@@ -251,7 +259,7 @@ export async function handler(event) {
 
     return http200OkResponse({
       request,
-      headers: { ...responseHeaders },
+      headers: { ...responseHeaders, "x-request-id": requestId },
       data: { bundles: formattedBundles },
     });
   } catch (error) {
@@ -277,17 +285,29 @@ export async function consumer(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function retrieveUserBundles(userId, requestId = null) {
-  // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
-  const allBundles = await getUserBundles(userId);
+  try {
+    // Use DynamoDB as primary storage (via getUserBundles which abstracts the storage)
+    const allBundles = await getUserBundles(userId);
 
-  // Store the result in a dynamo db table for async retrieval
-  if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-    try {
-      await putAsyncRequest(userId, requestId, "completed", { bundles: allBundles });
-    } catch (error) {
-      logger.error({ message: "Error storing completed request", error: error.message, requestId });
+    // Store the result in a dynamo db table for async retrieval
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      try {
+        await putAsyncRequest(userId, requestId, "completed", { bundles: allBundles });
+      } catch (error) {
+        logger.error({ message: "Error storing completed request", error: error.message, requestId });
+      }
     }
-  }
 
-  return allBundles;
+    return allBundles;
+  } catch (error) {
+    logger.error({ message: "Error retrieving user bundles", error: error.message, userId, requestId });
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      try {
+        await putAsyncRequest(userId, requestId, "failed", { error: error.message });
+      } catch (dbError) {
+        logger.error({ message: "Error storing failed request state", error: dbError.message, requestId });
+      }
+    }
+    throw error;
+  }
 }
