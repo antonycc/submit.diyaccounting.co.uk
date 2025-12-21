@@ -5,7 +5,6 @@ import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
-  http202AcceptedResponse,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
