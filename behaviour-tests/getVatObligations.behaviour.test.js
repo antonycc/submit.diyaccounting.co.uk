@@ -107,6 +107,10 @@ let observedTraceparent = null;
 
 test.setTimeout(900_000);
 
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.annotations.push({ type: "test-id", description: "obligation-sandbox" });
+});
+
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
 
@@ -568,6 +572,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
 
   // Build and write testContext.json
   const testContext = {
+    testId: "obligation-sandbox",
     name: testInfo.title,
     title: "View VAT Obligations (HMRC: VAT Obligations GET)",
     description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",

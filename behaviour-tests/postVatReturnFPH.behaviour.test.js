@@ -28,7 +28,15 @@ import {
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import { fillInHmrcAuth, goToHmrcAuth, grantPermissionHmrcAuth, initHmrcAuth, submitHmrcAuth } from "./steps/behaviour-hmrc-steps.js";
-import { deleteTraceparentTxt, deleteUserSubTxt, deleteHashedUserSubTxt, extractUserSubFromLocalStorage } from "./helpers/fileHelper.js";
+import {
+  deleteTraceparentTxt,
+  deleteUserSubTxt,
+  deleteHashedUserSubTxt,
+  extractUserSubFromLocalStorage,
+  appendUserSubTxt,
+  appendHashedUserSubTxt,
+  appendTraceparentTxt,
+} from "./helpers/fileHelper.js";
 import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
@@ -78,8 +86,13 @@ let serverProcess;
 let ngrokProcess;
 let dynamoControl;
 let userSub = null;
+let observedTraceparent = null;
 
 test.setTimeout(300_000);
+
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.annotations.push({ type: "test-id", description: "fraud-prevention-headers-vat-sandbox" });
+});
 
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
@@ -146,6 +159,14 @@ test.afterAll(async () => {
   }
 });
 
+test.afterEach(async ({ page }, testInfo) => {
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+  appendUserSubTxt(outputDir, testInfo, userSub);
+  appendHashedUserSubTxt(outputDir, testInfo, userSub);
+  appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
+});
+
 test("Verify fraud prevention headers for VAT return submission", async ({ page }, testInfo) => {
   // Only run in sandbox mode
   if (!isSandboxMode()) {
@@ -162,6 +183,16 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
 
   // Add console logging to capture browser messages
   addOnPageLogging(page);
+
+  page.on("response", (response) => {
+    try {
+      if (observedTraceparent) return;
+      const headers = response.headers?.() ?? {};
+      const h = typeof headers === "function" ? headers() : headers;
+      const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
+      if (tp) observedTraceparent = tp;
+    } catch {}
+  });
 
   // ---------- Test artefacts (video-adjacent) ----------
   const outputDir = testInfo.outputPath("");
@@ -302,6 +333,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
 
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
+    testId: "fraud-prevention-headers-vat-sandbox",
     name: testInfo.title,
     title: "Fraud Prevention Headers Validation (HMRC: VAT Return POST)",
     description: "Submits a VAT return to HMRC MTD VAT API and validates fraud prevention headers compliance.",
@@ -332,6 +364,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       hmrcVatDueAmount,
       testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
       userSub,
+      observedTraceparent,
       testUrl,
       isSandboxMode: isSandboxMode(),
       intentionallyNotSuppliedHeaders,

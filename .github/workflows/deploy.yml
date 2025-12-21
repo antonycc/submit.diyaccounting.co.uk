@@ -2475,7 +2475,7 @@ jobs:
           echo "Generating test report JSON files from behaviour test results..."
           node scripts/generate-test-reports.js \
             --testName fraud-prevention-headers-vat-sandbox \
-            --testFile 'behaviour-tests/fraudPreventionHeadersVat.behaviour.test.js' \
+            --testFile 'behaviour-tests/postVatReturnFPH.behaviour.test.js' \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
         shell: bash
@@ -2705,7 +2705,7 @@ jobs:
           echo "Generating test report JSON files from behaviour test results..."
           node scripts/generate-test-reports.js \
             --testName obligation-sandbox \
-            --testFile 'behaviour-tests/vatObligations.behaviour.test.js' \
+            --testFile 'behaviour-tests/getVatObligations.behaviour.test.js' \
             --envFile '.env.${{ needs.names.outputs.environment-name }}' \
           ;
         shell: bash
