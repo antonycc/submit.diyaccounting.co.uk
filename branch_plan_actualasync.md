@@ -15,14 +15,14 @@ This plan details the incremental rollout of the asynchronous polling pattern ac
 
 ---
 
-### Phase 1: Account Bundle Management (POST & DELETE)
-**Goal**: Apply async pattern to bundle creation and deletion.
+### Phase 1: Account Bundle Management (POST, GET & DELETE)
+**Goal**: Apply async pattern to bundle creation and deletion. Note that GET and DELETE remain synchronous by default (`DEFAULT_WAIT_MS = MAX_WAIT_MS`) to avoid unnecessary overhead for these lightweight operations, while still supporting asynchronous polling if requested by the client via `x-wait-time-ms`.
 
 #### Infrastructure (Java/CDK)
 - **SubmitSharedNames.java**:
     - Add `bundlePostAsyncRequestsTableName` and `bundleDeleteAsyncRequestsTableName`.
 - **DataStack.java**:
-    - Instantiate 2 new DynamoDB tables for these APIs.
+    - Instantiate 2 new DynamoDB tables for these APIs (GET shares the table structure if needed, or remains sync-only).
 - **AccountStack.java**:
     - Refactor `bundlePost` and `bundleDelete` to use `AsyncApiLambda`.
     - Set `consumerConcurrency(1)` for both.
@@ -30,19 +30,22 @@ This plan details the incremental rollout of the asynchronous polling pattern ac
     - Grant Cognito `AdminGetUser` and `AdminUpdateUserAttributes` permissions.
 
 #### Application (Node.js)
+- **bundleGet.js**: Refactor to support sync-by-default polling.
 - **bundlePost.js**:
     - Refactor `handler` to use `asyncApiServices.initiateProcessing`, `wait`, `check`, and `respond`.
     - Implement `consumer` handler.
     - Extract core granting logic into a service function.
 - **bundleDelete.js**:
-    - Refactor `handler` to use the same async pattern.
+    - Refactor `handler` to use the same async pattern, but set `DEFAULT_WAIT_MS = MAX_WAIT_MS` for sync default.
     - Implement `consumer` handler.
-    - Handle both query param and path parameter `{id}` deletions asynchronously.
+    - Handle both query param and path parameter `{id}` deletions.
 
 #### Web & Testing
-- **Web**: No changes needed; `fetchWithIdToken` in `submit.js` already handles 202 polling.
+- **Web**:
+    - Updated `bundles.html` and `index.html` to correctly handle bundle objects returned by the API.
+    - `fetchWithIdToken` in `submit.js` handles 202 polling with tiered intervals.
 - **Unit Tests**: New tests for handlers and consumers in `app/unit-tests/functions/`.
-- **System Tests**: Update `accountBundles.system.test.js` to verify polling behavior.
+- **System Tests**: Update `accountBundles.system.test.js` to verify both sync and async paths.
 - **Behaviour Tests**: Run `npm run test:bundleBehaviour-proxy`.
 - **OpenAPI**: Update `OpenApiGenerator.java` to document 202 Accepted responses for all `/bundle` methods.
 - **Polling**: Web client updated to use tiered polling (10ms x 10, then 1s) with 1m timeout.
@@ -53,42 +56,18 @@ This plan details the incremental rollout of the asynchronous polling pattern ac
 ---
 
 ### Phase 2: Cognito Token Exchange
-**Goal**: Decouple Cognito token exchange from the synchronous request thread.
-
-#### Infrastructure
-- **SubmitSharedNames.java**: Add `cognitoTokenPostAsyncRequestsTableName`.
-- **DataStack.java**: Create the DynamoDB table.
-- **AuthStack.java**: Convert `cognitoTokenPost` to `AsyncApiLambda`.
-
-#### Application
-- **cognitoTokenPost.js**:
-    - Implement the async pattern using `asyncApiServices`.
-    - The consumer will perform the token exchange with Cognito and store tokens in the result.
-
-#### Testing & Docs
-- **Unit/System Tests**: Verify code exchange flow through the polling mechanism.
-- **OpenAPI**: Update `OpenApiGenerator.java` to document the 202 Accepted response.
+**Goal**: n/a Leave as is with a synchronous processing.
 
 ---
 
 ### Phase 3: HMRC Token Exchange
-**Goal**: Handle potential HMRC OAuth latency and throttling.
-
-#### Infrastructure
-- **SubmitSharedNames.java**: Add `hmrcTokenPostAsyncRequestsTableName`.
-- **HmrcStack.java**: Convert `hmrcTokenPost` to `AsyncApiLambda`.
-
-#### Application
-- **hmrcTokenPost.js**: Refactor to async pattern.
-- **hmrcApi.js**: Ensure logging captures the hand-off to the consumer.
-
-#### Rate Limits Alignment
-- **Concurrency**: Maintain cap of `1` to avoid hitting HMRC OAuth rate limits during spikes.
+**Goal**: n/a Leave as is with a synchronous processing.
 
 ---
 
 ### Phase 4: HMRC Receipt Management (GET & POST)
 **Goal**: Asynchronous retrieval and storage of submission receipts.
+Leave the GET with the default wait time set to MAX so it is synchronous.
 
 #### Infrastructure
 - **DataStack.java**: 2 new tables for `hmrcReceiptGet` and `hmrcReceiptPost`.
