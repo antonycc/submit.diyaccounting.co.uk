@@ -764,7 +764,17 @@ async function fetchWithIdToken(input, init = {}) {
     let res = await fetch(input, { ...init, headers: currentHeaders });
 
     if (res.status === 202) {
-      console.log("Waiting for async response..."); // Before the wait starts
+      const method = (init.method || (typeof input === "object" && input.method) || "GET").toUpperCase();
+      let urlPath = typeof input === "string" ? input : input.url || input.toString();
+      try {
+        const parsedUrl = new URL(urlPath, window.location.origin);
+        urlPath = parsedUrl.pathname + parsedUrl.search;
+      } catch (e) {
+        // Fallback to original urlPath if URL parsing fails
+      }
+      const requestDesc = `[${method} ${urlPath}]`;
+
+      console.log(`waiting async request ${requestDesc} (timeout: 60000ms)...`);
       const requestId = res.headers.get("x-request-id");
       if (requestId) {
         currentHeaders.set("x-request-id", requestId);
@@ -773,15 +783,15 @@ async function fetchWithIdToken(input, init = {}) {
       let pollCount = 0;
       const startTime = Date.now();
       while (res.status === 202) {
+        const elapsed = Date.now() - startTime;
         if (init.signal?.aborted) {
-          console.log("Async request aborted");
+          console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms)`);
           return res;
         }
 
-        const elapsed = Date.now() - startTime;
         if (elapsed > 60000) {
-          console.error("Async request timed out after 1 minute");
-          break;
+          console.error(`timed out async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms, timeout: 60000ms)`);
+          return res;
         }
 
         pollCount++;
@@ -790,30 +800,28 @@ async function fetchWithIdToken(input, init = {}) {
         await new Promise((resolve, reject) => {
           const timeout = setTimeout(resolve, delay);
           if (init.signal) {
-            init.signal.addEventListener("abort", () => {
-              clearTimeout(timeout);
-              console.log("Async request aborted");
-              reject(new DOMException("Aborted", "AbortError"));
-            });
+            init.signal.addEventListener(
+              "abort",
+              () => {
+                clearTimeout(timeout);
+                const abortElapsed = Date.now() - startTime;
+                console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${abortElapsed}ms)`);
+                reject(new DOMException("Aborted", "AbortError"));
+              },
+              { once: true },
+            );
           }
         });
 
         const currentElapsed = Date.now() - startTime;
-        const method = init.method || (typeof input === "object" && input.method) || "GET";
-        let urlPath = typeof input === "string" ? input : input.url || input.toString();
-        try {
-          const parsedUrl = new URL(urlPath, window.location.origin);
-          urlPath = parsedUrl.pathname + parsedUrl.search;
-        } catch (e) {
-          // Fallback to original urlPath if URL parsing fails
-        }
-
         console.log(
-          `re-trying async request [${method.toUpperCase()} ${urlPath}] (poll #${pollCount}, elapsed: ${currentElapsed}ms, timeout: 60000ms, last status: ${res.status})...`,
+          `re-trying async request ${requestDesc} (poll #${pollCount}, elapsed: ${currentElapsed}ms, timeout: 60000ms, last status: ${res.status})...`,
         ); // Just before each poll attempt
         res = await fetch(input, { ...init, headers: currentHeaders });
       }
-      console.log("Async response came back with status: " + res.status); // When response comes back
+      console.log(
+        `finished async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, status: ${res.status})`,
+      ); // When response comes back
     }
     return res;
   };

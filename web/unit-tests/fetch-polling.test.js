@@ -154,7 +154,7 @@ describe("fetchWithIdToken polling", () => {
     expect(response.status).toBe(200);
 
     // Verify polling logs
-    expect(logSpy).toHaveBeenCalledWith("Waiting for async response...");
+    expect(logSpy).toHaveBeenCalledWith("waiting async request [GET /api/v1/bundle] (timeout: 60000ms)...");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(
         /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
@@ -165,7 +165,9 @@ describe("fetchWithIdToken polling", () => {
         /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
       ),
     );
-    expect(logSpy).toHaveBeenCalledWith("Async response came back with status: 200");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/finished async request \[GET \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, status: 200\)/),
+    );
 
     vi.useRealTimers();
   });
@@ -187,7 +189,9 @@ describe("fetchWithIdToken polling", () => {
 
     const response = await promise;
     expect(response.status).toBe(202); // Returns the last 202 response
-    expect(errorSpy).toHaveBeenCalledWith("Async request timed out after 1 minute");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/timed out async request \[GET \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms, timeout: 60000ms\)/),
+    );
     vi.useRealTimers();
   });
 });
@@ -314,7 +318,9 @@ describe("fetchWithIdToken AbortController", () => {
 
     // The promise should reject with AbortError
     await expect(promise).rejects.toThrow("Aborted");
-    expect(logSpy).toHaveBeenCalledWith("Async request aborted");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/aborted async request \[GET \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms\)/),
+    );
 
     vi.useRealTimers();
   });
