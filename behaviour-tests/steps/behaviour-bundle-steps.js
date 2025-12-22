@@ -55,7 +55,7 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
     // If the "Added ✓" button is not visible, wait 1000ms and try again.
     if (!(await addedLocator.isVisible())) {
-      const tries = 2;
+      const tries = 5;
       for (let i = 0; i < tries; i++) {
         console.log(`"Added ✓ ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-ensure-bundle-waiting.png` });
@@ -63,7 +63,10 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
         addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-ensure-bundle-waited.png` });
         if (await addedLocator.isVisible()) {
+          console.log(`[polling]: ${bundleName} bundle present.`);
           break;
+        } else {
+          console.log(`[polling]: ${bundleName} bundle still not present.`);
         }
       }
     }
@@ -79,6 +82,8 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
       console.log(`${bundleName} bundle already present, skipping request.`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
       return;
+    } else {
+      console.log(`${bundleName} bundle not present.`);
     }
     // Otherwise request the bundle once.
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
@@ -94,7 +99,7 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
     // await expect(page.getByText("Request test")).toBeVisible();
     // If the "Request test" button is not visible, wait 1000ms and try again.
     if (!(await requestTestLocator.isVisible())) {
-      const tries = 2;
+      const tries = 5;
       for (let i = 0; i < tries; i++) {
         console.log(`"Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-request-bundle-waiting.png` });
@@ -102,7 +107,10 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-request-bundle-waited.png` });
         requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
         if (await requestTestLocator.isVisible()) {
+          console.log(`[polling]: ${bundleName} bundle request button visible.`);
           break;
+        } else {
+          console.log(`[polling]: ${bundleName} bundle request button still not visible.`);
         }
       }
     }
@@ -114,6 +122,8 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
         console.log(`${bundleName} bundle already present, skipping request.`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-request-bundle-skipping.png` });
         return;
+      } else {
+        console.log(`${bundleName} bundle request button still not visible, assuming it's a different error.`);
       }
     }
     await loggedClick(page, `button:has-text('Request ${bundleName}')`, `Request ${bundleName}`, { screenshotPath });

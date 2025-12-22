@@ -2079,7 +2079,6 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2194,7 +2193,6 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2307,7 +2305,6 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2422,7 +2419,6 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2534,7 +2530,6 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2649,7 +2644,6 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
