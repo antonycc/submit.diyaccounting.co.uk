@@ -8,24 +8,18 @@ The system automatically scales Lambda function provisioned concurrency between 
 
 ## Components
 
-### 1. Configuration File: `lambda-concurrency-config.json`
+### 1. Configuration File: `lambda-concurrency-config.yaml`
 
-This JSON file defines the Lambda functions to manage and their concurrency levels:
+This YAML file defines the Lambda functions to manage and their concurrency levels:
 
-```json
-{
-  "lambdas": [
-    {
-      "handler": "cognitoAuthUrlGet",
-      "description": "Cognito authentication URL handler",
-      "concurrency": {
-        "zero": 0,
-        "peak": 1
-      }
-    },
-    ...
-  ]
-}
+```yaml
+lambdas:
+  - handler: cognitoAuthUrlGet
+    description: Cognito authentication URL handler
+    concurrency:
+      zero: 0
+      peak: 1
+  # ... additional functions
 ```
 
 **Fields:**
@@ -55,7 +49,7 @@ A reusable GitHub Actions composite action that:
 **Inputs:**
 - `deployment-name`: The deployment identifier (e.g., `prod-ea373de`)
 - `concurrency-level`: Target level (`zero` or `peak`)
-- `config-file`: Path to configuration JSON (default: `lambda-concurrency-config.json`)
+- `config-file`: Path to configuration YAML file (default: `lambda-concurrency-config.yaml`)
 - `aws-region`: AWS region (default: `eu-west-2`)
 
 **Behavior:**
@@ -141,17 +135,14 @@ You can manually trigger scaling via GitHub Actions UI:
 
 To add a new Lambda function to the scaling system:
 
-1. Edit `lambda-concurrency-config.json`
-2. Add a new entry to the `lambdas` array:
-   ```json
-   {
-     "handler": "newFunctionHandler",
-     "description": "Description of the new function",
-     "concurrency": {
-       "zero": 0,
-       "peak": 2
-     }
-   }
+1. Edit `lambda-concurrency-config.yaml`
+2. Add a new entry to the `lambdas` list:
+   ```yaml
+   - handler: newFunctionHandler
+     description: Description of the new function
+     concurrency:
+       zero: 0
+       peak: 2
    ```
 3. Commit and push the change
 4. The next deployment or scheduled run will include the new function
@@ -160,7 +151,7 @@ To add a new Lambda function to the scaling system:
 
 To change peak concurrency for existing functions:
 
-1. Edit `lambda-concurrency-config.json`
+1. Edit `lambda-concurrency-config.yaml`
 2. Update the `concurrency.peak` value for the desired function
 3. Commit and push the change
 4. Manually run the workflow or wait for the next automatic run

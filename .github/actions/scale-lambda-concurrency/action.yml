@@ -9,9 +9,9 @@ inputs:
     required: true
     default: "zero"
   config-file:
-    description: "Path to lambda concurrency configuration JSON file"
+    description: "Path to lambda concurrency configuration YAML file"
     required: false
-    default: "lambda-concurrency-config.json"
+    default: "lambda-concurrency-config.yaml"
   aws-region:
     description: "AWS region where Lambda functions are deployed"
     required: false
@@ -55,18 +55,25 @@ runs:
           exit 1
         fi
         
-        # Parse JSON and iterate over Lambda functions
-        LAMBDAS=$(jq -r '.lambdas[] | @json' "${CONFIG_FILE}")
+        # Install yq if not available
+        if ! command -v yq &> /dev/null; then
+          echo "Installing yq..."
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+        fi
+        
+        # Get number of lambdas to iterate
+        LAMBDA_COUNT=$(yq eval '.lambdas | length' "${CONFIG_FILE}")
         
         TOTAL_COUNT=0
         SUCCESS_COUNT=0
         FAILED_COUNT=0
         SKIPPED_COUNT=0
         
-        while IFS= read -r lambda_json; do
-          HANDLER=$(echo "$lambda_json" | jq -r '.handler')
-          DESCRIPTION=$(echo "$lambda_json" | jq -r '.description')
-          TARGET_CONCURRENCY=$(echo "$lambda_json" | jq -r ".concurrency.${CONCURRENCY_LEVEL}")
+        for ((i=0; i<LAMBDA_COUNT; i++)); do
+          HANDLER=$(yq eval ".lambdas[$i].handler" "${CONFIG_FILE}")
+          DESCRIPTION=$(yq eval ".lambdas[$i].description" "${CONFIG_FILE}")
+          TARGET_CONCURRENCY=$(yq eval ".lambdas[$i].concurrency.${CONCURRENCY_LEVEL}" "${CONFIG_FILE}")
           
           # Construct function name using deployment name and handler
           # Format: {deployment-name}-submit-{handler}
@@ -137,7 +144,7 @@ runs:
             fi
           fi
           
-        done <<< "$LAMBDAS"
+        done
         
         echo ""
         echo "========================================"
@@ -177,8 +184,8 @@ runs:
           exit 0
         fi
         
-        # Parse JSON and iterate over Lambda functions
-        LAMBDAS=$(jq -r '.lambdas[] | @json' "${CONFIG_FILE}")
+        # Get number of lambdas to iterate
+        LAMBDA_COUNT=$(yq eval '.lambdas | length' "${CONFIG_FILE}")
         
         MAX_WAIT_SECONDS=300  # 5 minutes
         POLL_INTERVAL=10      # 10 seconds
@@ -188,9 +195,9 @@ runs:
           ALL_READY=true
           PENDING_COUNT=0
           
-          while IFS= read -r lambda_json; do
-            HANDLER=$(echo "$lambda_json" | jq -r '.handler')
-            TARGET_CONCURRENCY=$(echo "$lambda_json" | jq -r ".concurrency.${CONCURRENCY_LEVEL}")
+          for ((i=0; i<LAMBDA_COUNT; i++)); do
+            HANDLER=$(yq eval ".lambdas[$i].handler" "${CONFIG_FILE}")
+            TARGET_CONCURRENCY=$(yq eval ".lambdas[$i].concurrency.${CONCURRENCY_LEVEL}" "${CONFIG_FILE}")
             
             # Skip if target is zero
             if [ "${TARGET_CONCURRENCY}" = "0" ]; then
@@ -216,7 +223,7 @@ runs:
               ALL_READY=false
               PENDING_COUNT=$((PENDING_COUNT + 1))
             fi
-          done <<< "$LAMBDAS"
+          done
           
           if [ "$ALL_READY" = true ]; then
             echo "✓ All Lambda functions are ready"

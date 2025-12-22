@@ -83,7 +83,7 @@ on:
       - 'package.json'
       - 'pom.xml'
       - 'product-catalogue.toml'
-      - 'lambda-concurrency-config.json'
+      - 'lambda-concurrency-config.yaml'
       - '.github/actions/get-names'
       - '.github/actions/set-origins'
       - '.github/actions/scale-lambda-concurrency'

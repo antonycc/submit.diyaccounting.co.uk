@@ -138,5 +138,5 @@ jobs:
         with:
           deployment-name: ${{ needs.names.outputs.deployment-name }}
           concurrency-level: ${{ steps.determine-level.outputs.concurrency-level }}
-          config-file: 'lambda-concurrency-config.json'
+          config-file: 'lambda-concurrency-config.yaml'
           aws-region: ${{ env.AWS_REGION }}
