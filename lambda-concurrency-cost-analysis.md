@@ -14,25 +14,25 @@ Based on `lambda-concurrency-config.yaml`:
 ## Function Breakdown
 
 ### API Handlers (13)
-1. cognito-auth-url-get.handler (peak=1)
-2. cognito-token-post.handler (peak=1)
-3. hmrc-auth-url-get.handler (peak=1)
-4. hmrc-token-post.handler (peak=1)
-5. hmrc-vat-return-post.handler (peak=1)
-6. hmrc-vat-obligation-get.handler (peak=1)
-7. hmrc-vat-return-get.handler (peak=1)
-8. receipt-post.handler (peak=1)
-9. receipt-get.handler (peak=1)
-10. catalog-get.handler (peak=1)
-11. **bundle-get.handler (peak=2)**
-12. bundle-post.handler (peak=1)
-13. bundle-delete.handler (peak=1)
+1. app-cognito-auth-url-get (peak=1)
+2. app-cognito-token-post (peak=1)
+3. app-hmrc-auth-url-get (peak=1)
+4. app-hmrc-token-post (peak=1)
+5. app-hmrc-vat-return-post (peak=1)
+6. app-hmrc-vat-obligation-get (peak=1)
+7. app-hmrc-vat-return-get (peak=1)
+8. app-receipt-post (peak=1)
+9. app-receipt-get (peak=1)
+10. app-catalog-get (peak=1)
+11. **app-bundle-get (peak=2)**
+12. app-bundle-post (peak=1)
+13. app-bundle-delete (peak=1)
 
 ### SQS Consumers (3)
 Consumers are configured at 2x their API handler concurrency for better throughput:
-1. **bundle-get.handler-consumer (peak=4)** - 2x of bundle-get API (peak=2)
-2. **bundle-post.handler-consumer (peak=2)** - 2x of bundle-post API (peak=1)
-3. **bundle-delete.handler-consumer (peak=2)** - 2x of bundle-delete API (peak=1)
+1. **app-bundle-get-consumer (peak=4)** - 2x of bundle-get API (peak=2)
+2. **app-bundle-post-consumer (peak=2)** - 2x of bundle-post API (peak=1)
+3. **app-bundle-delete-consumer (peak=2)** - 2x of bundle-delete API (peak=1)
 
 ## Cost Calculation for 2 Hours at Peak Concurrency
 
