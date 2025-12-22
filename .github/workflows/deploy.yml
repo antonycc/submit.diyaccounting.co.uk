@@ -1479,6 +1479,8 @@ jobs:
       - deploy-auth
       - deploy-hmrc
       - deploy-account
+      - deploy-api
+      - deploy-edge
     uses: './.github/workflows/scale-to.yml'
     permissions:
       id-token: write
