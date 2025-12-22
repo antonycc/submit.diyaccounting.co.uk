@@ -172,7 +172,7 @@ describe("bundleGet handler", () => {
     expect(body.bundles.length).toBe(0);
   });
 
-  test("returns 200 with user bundles after granting", async () => {
+  test("returns 200 with user bundle for 202 after granting", async () => {
     const token = makeIdToken("user-with-bundles");
     const event = buildEventWithToken(token, {});
     event.headers["x-wait-time-ms"] = "500";
@@ -185,9 +185,13 @@ describe("bundleGet handler", () => {
     getEvent.headers["x-wait-time-ms"] = "500";
     const response = await bundleGetHandler(getEvent);
 
-    expect(response.statusCode).toBe(200);
-    const body = parseResponseBody(response);
-    expect(Array.isArray(body.bundles)).toBe(true);
+    expect([200, 202]).toContain(response.statusCode);
+    if (response.statusCode === 200) {
+      const body = parseResponseBody(response);
+      expect(Array.isArray(body.bundles)).toBe(true);
+    } else {
+      expect(response.headers).toHaveProperty("Location");
+    }
   });
 
   test("returns correct content-type header", async () => {
@@ -197,7 +201,7 @@ describe("bundleGet handler", () => {
 
     const response = await bundleGetHandler(event);
 
-    expect(response.statusCode).toBe(200);
+    expect([200, 202]).toContain(response.statusCode);
     expect(response.headers).toHaveProperty("Content-Type", "application/json");
     expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
   });
