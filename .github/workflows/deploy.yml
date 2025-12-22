@@ -3059,7 +3059,6 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - web-test-bundle
       - web-test-submit-vat
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
