@@ -39,7 +39,7 @@ runs:
         AWS_REGION: ${{ inputs.aws-region }}
       run: |
         set -euo pipefail
-        
+
         echo "========================================"
         echo "Lambda Provisioned Concurrency Scaling"
         echo "========================================"
@@ -48,51 +48,50 @@ runs:
         echo "Config File: ${CONFIG_FILE}"
         echo "AWS Region: ${AWS_REGION}"
         echo "========================================"
-        
+
         # Check if config file exists
         if [ ! -f "${CONFIG_FILE}" ]; then
           echo "Error: Configuration file not found: ${CONFIG_FILE}" >&2
           exit 1
         fi
-        
+
         # Install yq if not available
         if ! command -v yq &> /dev/null; then
           echo "Installing yq..."
           wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           chmod +x /usr/local/bin/yq
         fi
-        
+
         # Get number of lambdas to iterate
         LAMBDA_COUNT=$(yq eval '.lambdas | length' "${CONFIG_FILE}")
-        
+
         TOTAL_COUNT=0
         SUCCESS_COUNT=0
         FAILED_COUNT=0
         SKIPPED_COUNT=0
-        
+
         for ((i=0; i<LAMBDA_COUNT; i++)); do
+          NAME=$(yq eval ".lambdas[$i].name" "${CONFIG_FILE}")
           HANDLER=$(yq eval ".lambdas[$i].handler" "${CONFIG_FILE}")
-          DESCRIPTION=$(yq eval ".lambdas[$i].description" "${CONFIG_FILE}")
           TARGET_CONCURRENCY=$(yq eval ".lambdas[$i].concurrency.${CONCURRENCY_LEVEL}" "${CONFIG_FILE}")
-          
-          # Construct function name using deployment name and handler
-          # Format: {deployment-name}-submit-{handler}
-          FUNCTION_NAME="${DEPLOYMENT_NAME}-submit-${HANDLER}"
-          
+
+          # Construct function name using deployment name and name from config
+          # Pattern: {deployment-name}-{name}
+          FUNCTION_NAME="${DEPLOYMENT_NAME}-${NAME}"
+
           TOTAL_COUNT=$((TOTAL_COUNT + 1))
-          
+
           echo ""
           echo "[$TOTAL_COUNT] Processing: ${FUNCTION_NAME}"
-          echo "    Description: ${DESCRIPTION}"
           echo "    Target Concurrency: ${TARGET_CONCURRENCY}"
-          
+
           # Check if the Lambda function exists
           if ! aws lambda get-function --function-name "${FUNCTION_NAME}" --region "${AWS_REGION}" >/dev/null 2>&1; then
             echo "    ⚠️  Function not found, skipping"
             SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
             continue
           fi
-          
+
           # Get current provisioned concurrency configuration
           CURRENT_CONCURRENCY=$(aws lambda get-provisioned-concurrency-config \
             --function-name "${FUNCTION_NAME}" \
@@ -100,20 +99,20 @@ runs:
             --region "${AWS_REGION}" \
             --query 'AllocatedProvisionedConcurrentExecutions' \
             --output text 2>/dev/null || echo "None")
-          
+
           if [ "${CURRENT_CONCURRENCY}" = "None" ]; then
             CURRENT_CONCURRENCY="0 (not configured)"
           fi
-          
+
           echo "    Current Concurrency: ${CURRENT_CONCURRENCY}"
-          
+
           # Skip if already at target concurrency
           if [ "${CURRENT_CONCURRENCY}" = "${TARGET_CONCURRENCY}" ]; then
             echo "    ✓ Already at target concurrency, skipping"
             SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
             continue
           fi
-          
+
           # Set provisioned concurrency
           if [ "${TARGET_CONCURRENCY}" = "0" ]; then
             # Delete provisioned concurrency configuration
@@ -143,9 +142,9 @@ runs:
               FAILED_COUNT=$((FAILED_COUNT + 1))
             fi
           fi
-          
+
         done
-        
+
         echo ""
         echo "========================================"
         echo "Summary"
@@ -155,12 +154,12 @@ runs:
         echo "Skipped: ${SKIPPED_COUNT}"
         echo "Failed: ${FAILED_COUNT}"
         echo "========================================"
-        
+
         if [ "${FAILED_COUNT}" -gt 0 ]; then
           echo "⚠️  Some Lambda functions failed to update" >&2
           exit 1
         fi
-        
+
         echo "✓ Lambda concurrency scaling completed successfully"
 
     - name: Poll for provisioned concurrency status
@@ -172,45 +171,47 @@ runs:
         AWS_REGION: ${{ inputs.aws-region }}
       run: |
         set -euo pipefail
-        
+
         echo ""
         echo "========================================"
         echo "Polling Provisioned Concurrency Status"
         echo "========================================"
-        
+
         # Only poll if we're setting to peak (non-zero)
         if [ "${CONCURRENCY_LEVEL}" = "zero" ]; then
           echo "Concurrency level is zero, skipping polling"
           exit 0
         fi
-        
+
         # Get number of lambdas to iterate
         LAMBDA_COUNT=$(yq eval '.lambdas | length' "${CONFIG_FILE}")
-        
+
         MAX_WAIT_SECONDS=300  # 5 minutes
         POLL_INTERVAL=10      # 10 seconds
         ELAPSED=0
-        
+
         while [ $ELAPSED -lt $MAX_WAIT_SECONDS ]; do
           ALL_READY=true
           PENDING_COUNT=0
-          
+
           for ((i=0; i<LAMBDA_COUNT; i++)); do
-            HANDLER=$(yq eval ".lambdas[$i].handler" "${CONFIG_FILE}")
+            NAME=$(yq eval ".lambdas[$i].name" "${CONFIG_FILE}")
             TARGET_CONCURRENCY=$(yq eval ".lambdas[$i].concurrency.${CONCURRENCY_LEVEL}" "${CONFIG_FILE}")
-            
+
             # Skip if target is zero
             if [ "${TARGET_CONCURRENCY}" = "0" ]; then
               continue
             fi
-            
-            FUNCTION_NAME="${DEPLOYMENT_NAME}-submit-${HANDLER}"
-            
+
+            # Construct function name using deployment name and name from config
+            # Pattern: {deployment-name}-{name}
+            FUNCTION_NAME="${DEPLOYMENT_NAME}-${NAME}"
+
             # Check if the Lambda function exists
             if ! aws lambda get-function --function-name "${FUNCTION_NAME}" --region "${AWS_REGION}" >/dev/null 2>&1; then
               continue
             fi
-            
+
             # Get provisioned concurrency status
             STATUS=$(aws lambda get-provisioned-concurrency-config \
               --function-name "${FUNCTION_NAME}" \
@@ -218,23 +219,23 @@ runs:
               --region "${AWS_REGION}" \
               --query 'Status' \
               --output text 2>/dev/null || echo "NOT_CONFIGURED")
-            
+
             if [ "${STATUS}" != "READY" ]; then
               ALL_READY=false
               PENDING_COUNT=$((PENDING_COUNT + 1))
             fi
           done
-          
+
           if [ "$ALL_READY" = true ]; then
             echo "✓ All Lambda functions are ready"
             exit 0
           fi
-          
+
           echo "Waiting for ${PENDING_COUNT} Lambda function(s) to be ready... (${ELAPSED}s elapsed)"
           sleep $POLL_INTERVAL
           ELAPSED=$((ELAPSED + POLL_INTERVAL))
         done
-        
+
         echo "⚠️  Timeout waiting for Lambda functions to be ready after ${MAX_WAIT_SECONDS} seconds"
         echo "Some functions may still be provisioning. Check AWS Console for status."
         exit 1

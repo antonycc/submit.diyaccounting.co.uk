@@ -14,25 +14,25 @@ Based on `lambda-concurrency-config.yaml`:
 ## Function Breakdown
 
 ### API Handlers (13)
-1. cognito-auth-url-get.handler (peak=1)
-2. cognito-token-post.handler (peak=1)
-3. hmrc-auth-url-get.handler (peak=1)
-4. hmrc-token-post.handler (peak=1)
-5. hmrc-vat-return-post.handler (peak=1)
-6. hmrc-vat-obligation-get.handler (peak=1)
-7. hmrc-vat-return-get.handler (peak=1)
-8. receipt-post.handler (peak=1)
-9. receipt-get.handler (peak=1)
-10. catalog-get.handler (peak=1)
-11. **bundle-get.handler (peak=2)**
-12. bundle-post.handler (peak=1)
-13. bundle-delete.handler (peak=1)
+1. submit-app-cognito-auth-url-get (app/functions/auth/cognitoAuthUrlGet.handler) (peak=1)
+2. submit-app-cognito-token-post (app/functions/auth/cognitoTokenPost.handler) (peak=1)
+3. submit-app-hmrc-auth-url-get (app/functions/hmrc/hmrcAuthUrlGet.handler) (peak=1)
+4. submit-app-hmrc-token-post (app/functions/hmrc/hmrcTokenPost.handler) (peak=1)
+5. submit-app-hmrc-vat-return-post (app/functions/hmrc/hmrcVatReturnPost.handler) (peak=1)
+6. submit-app-hmrc-vat-obligation-get (app/functions/hmrc/hmrcVatObligationGet.handler) (peak=1)
+7. submit-app-hmrc-vat-return-get (app/functions/hmrc/hmrcVatReturnGet.handler) (peak=1)
+8. submit-app-hmrc-receipt-post (app/functions/hmrc/hmrcReceiptPost.handler) (peak=1)
+9. submit-app-hmrc-receipt-get (app/functions/hmrc/hmrcReceiptGet.handler) (peak=1)
+10. submit-app-catalog-get (app/functions/account/catalogGet.handler) (peak=1)
+11. **submit-app-bundle-get (app/functions/account/bundleGet.handler) (peak=2)**
+12. submit-app-bundle-post (app/functions/account/bundlePost.handler) (peak=1)
+13. submit-app-bundle-delete (app/functions/account/bundleDelete.handler) (peak=1)
 
 ### SQS Consumers (3)
 Consumers are configured at 2x their API handler concurrency for better throughput:
-1. **bundle-get.handler-consumer (peak=4)** - 2x of bundle-get API (peak=2)
-2. **bundle-post.handler-consumer (peak=2)** - 2x of bundle-post API (peak=1)
-3. **bundle-delete.handler-consumer (peak=2)** - 2x of bundle-delete API (peak=1)
+1. **submit-app-bundle-get-consumer (app/functions/account/bundleGet.consumer) (peak=4)** - 2x of bundle-get API (peak=2)
+2. **submit-app-bundle-post-consumer (app/functions/account/bundlePost.consumer) (peak=2)** - 2x of bundle-post API (peak=1)
+3. **submit-app-bundle-delete-consumer (app/functions/account/bundleDelete.consumer) (peak=2)** - 2x of bundle-delete API (peak=1)
 
 ## Cost Calculation for 2 Hours at Peak Concurrency
 

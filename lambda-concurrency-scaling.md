@@ -14,7 +14,8 @@ This YAML file defines the Lambda functions to manage and their concurrency leve
 
 ```yaml
 lambdas:
-  - handler: cognitoAuthUrlGet
+  - name: submit-app-cognito-auth-url-get
+    handler: app/functions/auth/cognitoAuthUrlGet.handler
     description: Cognito authentication URL handler
     concurrency:
       zero: 0
@@ -23,22 +24,25 @@ lambdas:
 ```
 
 **Fields:**
-- `handler`: The Lambda function handler name (used to construct the full function name)
+- `name`: The Lambda function name suffix (e.g., `submit-app-bundle-post`)
+- `handler`: The full Lambda function handler path (e.g., `app/functions/account/bundlePost.handler`)
 - `description`: Human-readable description of the Lambda's purpose
 - `concurrency.zero`: Provisioned concurrency for idle/cost-saving mode (typically 0)
 - `concurrency.peak`: Provisioned concurrency for active/performance mode (>= 1)
 
 **Function Naming Convention:**
-Lambda function names are constructed as: `{deployment-name}-submit-{handler}`
-- API Handler Example: `prod-ea373de-submit-bundle-get.handler`
-- SQS Consumer Example: `prod-ea373de-submit-bundle-get.handler-consumer`
+Lambda function names are resolved as: `{deployment-name}-{name}`.
+
+**Examples:**
+- API Handler: `prod-ea373de-submit-app-bundle-get`
+- SQS Consumer: `prod-ea373de-submit-app-bundle-get-consumer`
 
 **Included Functions:**
 - 13 API Lambda handlers (HTTP endpoints)
 - 3 SQS consumer Lambda functions (asynchronous processing)
-  - bundle-get.handler-consumer
-  - bundle-post.handler-consumer
-  - bundle-delete.handler-consumer
+  - app/functions/account/bundleGet.consumer
+  - app/functions/account/bundlePost.consumer
+  - app/functions/account/bundleDelete.consumer
 
 **Excluded Functions:**
 - Mock Lambda functions (not needed in production)
@@ -228,7 +232,7 @@ View CloudWatch Logs:
 
 **Cause**: Function doesn't exist in the target environment
 
-**Solution**: 
+**Solution**:
 - Verify deployment name is correct
 - Check if function exists in AWS Console
 - Ensure function has been deployed
