@@ -129,6 +129,7 @@ House style and tooling
 Documentation
 - This README: high-level architecture and quickstart
 - _developers/SETUP.md: step-by-step developer setup (local, tests, and AWS)
+- lambda-concurrency-scaling.md: Lambda provisioned concurrency scaling system
 
 License
 GPL-3.0. See LICENSE for details.
