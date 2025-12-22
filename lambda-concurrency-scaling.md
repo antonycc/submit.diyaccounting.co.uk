@@ -30,7 +30,15 @@ lambdas:
 
 **Function Naming Convention:**
 Lambda function names are constructed as: `{deployment-name}-submit-{handler}`
-- Example: `prod-ea373de-submit-cognitoAuthUrlGet`
+- API Handler Example: `prod-ea373de-submit-bundle-get.handler`
+- SQS Consumer Example: `prod-ea373de-submit-bundle-get.handler-consumer`
+
+**Included Functions:**
+- 13 API Lambda handlers (HTTP endpoints)
+- 3 SQS consumer Lambda functions (asynchronous processing)
+  - bundle-get.handler-consumer
+  - bundle-post.handler-consumer
+  - bundle-delete.handler-consumer
 
 **Excluded Functions:**
 - Mock Lambda functions (not needed in production)
