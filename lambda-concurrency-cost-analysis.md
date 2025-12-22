@@ -6,31 +6,33 @@ Based on `lambda-concurrency-config.yaml`:
 - **Total Functions**: 16
   - API Handlers: 13
   - SQS Consumers: 3
-- **Peak=1**: 15 functions
-- **Peak=2**: 1 function (hmrcVatReturnPost)
-- **Total Provisioned Concurrency Units**: 17
+- **Peak=1**: 12 functions
+- **Peak=2**: 3 functions (bundle-get API, bundle-post consumer, bundle-delete consumer)
+- **Peak=4**: 1 function (bundle-get consumer)
+- **Total Provisioned Concurrency Units**: 22
 
 ## Function Breakdown
 
 ### API Handlers (13)
-1. cognito-auth-url-get.handler
-2. cognito-token-post.handler
-3. hmrc-auth-url-get.handler
-4. hmrc-token-post.handler
-5. hmrc-vat-return-post.handler (peak=2)
-6. hmrc-vat-obligation-get.handler
-7. hmrc-vat-return-get.handler
-8. receipt-post.handler
-9. receipt-get.handler
-10. catalog-get.handler
-11. bundle-get.handler
-12. bundle-post.handler
-13. bundle-delete.handler
+1. cognito-auth-url-get.handler (peak=1)
+2. cognito-token-post.handler (peak=1)
+3. hmrc-auth-url-get.handler (peak=1)
+4. hmrc-token-post.handler (peak=1)
+5. hmrc-vat-return-post.handler (peak=1)
+6. hmrc-vat-obligation-get.handler (peak=1)
+7. hmrc-vat-return-get.handler (peak=1)
+8. receipt-post.handler (peak=1)
+9. receipt-get.handler (peak=1)
+10. catalog-get.handler (peak=1)
+11. **bundle-get.handler (peak=2)**
+12. bundle-post.handler (peak=1)
+13. bundle-delete.handler (peak=1)
 
 ### SQS Consumers (3)
-1. bundle-get.handler-consumer
-2. bundle-post.handler-consumer
-3. bundle-delete.handler-consumer
+Consumers are configured at 2x their API handler concurrency for better throughput:
+1. **bundle-get.handler-consumer (peak=4)** - 2x of bundle-get API (peak=2)
+2. **bundle-post.handler-consumer (peak=2)** - 2x of bundle-post API (peak=1)
+3. **bundle-delete.handler-consumer (peak=2)** - 2x of bundle-delete API (peak=1)
 
 ## Cost Calculation for 2 Hours at Peak Concurrency
 
@@ -52,21 +54,22 @@ Cost = Memory (GB) × Price per GB-second × Duration (seconds)
 **Total cost for 2 hours at peak:**
 ```
 Total Cost = Total Units × Cost per Unit
-           = 17 units × $0.00375
-           = $0.0638 (approximately $0.06)
+           = 22 units × $0.00375
+           = $0.0825 (approximately $0.08)
 ```
 
-### Breakdown by Function
-- **15 functions at peak=1**: 15 × $0.00375 = $0.05625
-- **1 function at peak=2**: 2 × $0.00375 = $0.0075
-- **Total**: $0.0638
+### Breakdown by Concurrency Level
+- **12 functions at peak=1**: 12 × $0.00375 = $0.0450
+- **3 functions at peak=2**: 3 × 2 × $0.00375 = $0.0225
+- **1 function at peak=4**: 1 × 4 × $0.00375 = $0.0150
+- **Total**: $0.0825
 
 ## Monthly Cost Scenarios
 
 ### Scenario 1: Always at Peak (No Scaling)
 ```
-Monthly cost = 17 units × 0.125 GB × $0.0000041667 × (730 hours × 3,600 seconds)
-             = $23.27 per month
+Monthly cost = 22 units × 0.125 GB × $0.0000041667 × (730 hours × 3,600 seconds)
+             = $30.11 per month
 ```
 
 ### Scenario 2: Current Implementation (Scale during deployment)
@@ -76,28 +79,28 @@ Assuming typical deployment pattern:
 - Rest of the time at zero
 
 ```
-Daily cost = $0.0638 (2 hours at peak)
-Monthly cost = $0.0638 × 30 days = $1.91 per month
+Daily cost = $0.0825 (2 hours at peak)
+Monthly cost = $0.0825 × 30 days = $2.48 per month
 ```
 
-**Monthly savings**: $23.27 - $1.91 = **$21.36** (92% reduction)
+**Monthly savings**: $30.11 - $2.48 = **$27.64** (92% reduction)
 
 ### Scenario 3: Business Hours Only (8 hours/day)
 If peak concurrency needed for 8 hours per day:
 ```
-Daily cost = $0.0638 × 4 (2-hour blocks) = $0.255
-Monthly cost = $0.255 × 30 days = $7.65 per month
+Daily cost = $0.0825 × 4 (2-hour blocks) = $0.33
+Monthly cost = $0.33 × 30 days = $9.90 per month
 ```
 
-**Monthly savings**: $23.27 - $7.65 = **$15.62** (67% reduction)
+**Monthly savings**: $30.11 - $9.90 = **$20.21** (67% reduction)
 
 ## Cost Impact Summary
 
 | Scenario | Daily Cost | Monthly Cost | Savings vs Always-Peak |
 |----------|-----------|--------------|------------------------|
-| Always at peak | $0.776 | $23.27 | - |
-| Current (2h/day) | $0.064 | $1.91 | $21.36 (92%) |
-| Business hours (8h/day) | $0.255 | $7.65 | $15.62 (67%) |
+| Always at peak | $1.00 | $30.11 | - |
+| Current (2h/day) | $0.08 | $2.48 | $27.64 (92%) |
+| Business hours (8h/day) | $0.33 | $9.90 | $20.21 (67%) |
 
 ## Additional Considerations
 
@@ -121,17 +124,23 @@ During peak periods (deployments):
 ## Recommendation
 
 The current implementation (2 hours at peak per day) provides an excellent balance:
-- ✅ **Cost-effective**: $1.91/month vs $23.27/month (92% savings)
+- ✅ **Cost-effective**: $2.48/month vs $30.11/month (92% savings)
 - ✅ **Performance**: No cold starts during deployments
 - ✅ **Automation**: Scheduled scaling handles routine operations
 - ✅ **Flexibility**: Manual scaling available for special events
-- ✅ **SQS Integration**: Consumers scaled along with API handlers for async processing
+- ✅ **SQS Integration**: Consumers scaled at 2x API handler concurrency for optimal async processing throughput
+
+**Concurrency Strategy:**
+- **API Handlers**: Baseline peak=1 for most endpoints, peak=2 for bundle-get (higher read traffic)
+- **SQS Consumers**: Peak=2x their API handler to ensure queue processing keeps pace with message production
+  - bundle-get consumer at peak=4 handles retrieval workload efficiently
+  - bundle-post/delete consumers at peak=2 handle creation/deletion operations
 
 For production workloads with higher traffic, consider adjusting:
 - Increase peak concurrency values for high-traffic functions
 - Extend peak windows during known busy periods
 - Monitor CloudWatch metrics to optimize based on actual usage
-- Consider higher peak values for SQS consumers during batch processing periods
+- Adjust consumer multiplier (currently 2x) based on queue depth metrics
 
 ## Monitoring Costs
 
