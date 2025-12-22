@@ -1,0 +1,142 @@
+name: scale-to
+run-name: "scale-to ${{ inputs.concurrency-level }} from ${{ github.ref_name }}"
+concurrency:
+  group: scale-lambda-concurrency-${{ github.event.inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      concurrency-level:
+        description: 'Target concurrency level'
+        type: choice
+        options:
+          - 'zero'
+          - 'peak'
+        required: true
+        default: 'zero'
+      environment-name:
+        type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
+        options:
+          - ''
+          - 'ci'
+          - 'prod'
+        default: ''
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: false
+        default: ''
+  workflow_call:
+    inputs:
+      concurrency-level:
+        description: 'Target concurrency level'
+        type: string
+        required: true
+        default: 'zero'
+      environment-name:
+        type: string
+        description: 'Environment name'
+        required: false
+        default: ''
+      deployment-name:
+        type: string
+        description: 'Deployment name'
+        required: false
+        default: ''
+  schedule:
+    # Run every 2 hours to scale prod to zero concurrency
+    # Cron format: minute hour day month day-of-week
+    # This runs at :22 past every even hour (00:22, 02:22, 04:22, etc.)
+    - cron: '22 */2 * * *'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+  AWS_ACCOUNT_ID: '887764105431'
+  GITHUB_ACTOR: ${{ github.actor }}
+  COMMIT_HASH: ${{ github.sha }}
+
+jobs:
+  names:
+    runs-on: ubuntu-24.04
+    environment: ${{ github.event.inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: './.github/actions/get-names'
+        with:
+          environment-name: ${{ github.event.inputs.environment-name || inputs.environment-name || '' }}
+          deployment-name: ${{ github.event.inputs.deployment-name || inputs.deployment-name || '' }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+
+  scale-lambda-concurrency:
+    name: 'scale Lambda concurrency'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Determine concurrency level
+        id: determine-level
+        shell: bash
+        run: |
+          # For scheduled runs (cron), default to 'zero' for prod environment
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            LEVEL="zero"
+            echo "Scheduled run detected, using concurrency level: ${LEVEL}"
+          else
+            # For manual or workflow_call, use the input parameter
+            LEVEL="${{ github.event.inputs.concurrency-level || inputs.concurrency-level || 'zero' }}"
+            echo "Using provided concurrency level: ${LEVEL}"
+          fi
+          echo "concurrency-level=${LEVEL}" >> $GITHUB_OUTPUT
+
+      - name: Scale Lambda provisioned concurrency
+        uses: './.github/actions/scale-lambda-concurrency'
+        with:
+          deployment-name: ${{ needs.names.outputs.deployment-name }}
+          concurrency-level: ${{ steps.determine-level.outputs.concurrency-level }}
+          config-file: 'lambda-concurrency-config.json'
+          aws-region: ${{ env.AWS_REGION }}

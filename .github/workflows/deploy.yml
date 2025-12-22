@@ -1467,6 +1467,24 @@ jobs:
     outputs:
       httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
 
+  scale-lambda-concurrency-to-peak:
+    name: 'scale Lambda concurrency to peak'
+    if: ${{ needs.names.outputs.environment-name == 'prod' }}
+    needs:
+      - names
+      - skip-deploy-check
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-account
+    uses: './.github/workflows/scale-to.yml'
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      concurrency-level: 'peak'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+
   deploy-edge:
     name: 'deploy edge'
     needs:
