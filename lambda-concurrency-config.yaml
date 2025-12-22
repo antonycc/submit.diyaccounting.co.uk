@@ -1,0 +1,100 @@
+# Configuration for Lambda provisioned concurrency scaling
+# Maps Lambda function handler names to their zero and peak concurrency levels
+# Handler names should match the dashed Lambda function name suffix after {deployment}-submit-
+
+lambdas:
+  - handler: cognito-auth-url-get.handler
+    description: Cognito authentication URL API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: cognito-token-post.handler
+    description: Cognito token exchange API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: hmrc-auth-url-get.handler
+    description: HMRC authentication URL API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: hmrc-token-post.handler
+    description: HMRC token exchange API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: hmrc-vat-return-post.handler
+    description: HMRC VAT return submission API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: hmrc-vat-obligation-get.handler
+    description: HMRC VAT obligations retrieval API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: hmrc-vat-return-get.handler
+    description: HMRC VAT return retrieval API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: receipt-post.handler
+    description: Receipt logging API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: receipt-get.handler
+    description: Receipt retrieval API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: catalog-get.handler
+    description: Product catalog retrieval API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: bundle-get.handler
+    description: Bundle retrieval API handler
+    concurrency:
+      zero: 0
+      peak: 2
+
+  - handler: bundle-get.handler-consumer
+    description: Bundle retrieval SQS consumer
+    concurrency:
+      zero: 0
+      peak: 4
+
+  - handler: bundle-post.handler
+    description: Bundle request API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: bundle-post.handler-consumer
+    description: Bundle request SQS consumer
+    concurrency:
+      zero: 0
+      peak: 2
+
+  - handler: bundle-delete.handler
+    description: Bundle deletion API handler
+    concurrency:
+      zero: 0
+      peak: 1
+
+  - handler: bundle-delete.handler-consumer
+    description: Bundle deletion SQS consumer
+    concurrency:
+      zero: 0
+      peak: 2
