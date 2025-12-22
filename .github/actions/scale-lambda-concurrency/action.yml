@@ -95,7 +95,7 @@ runs:
           # Get current provisioned concurrency configuration
           CURRENT_CONCURRENCY=$(aws lambda get-provisioned-concurrency-config \
             --function-name "${FUNCTION_NAME}" \
-            --qualifier '$LATEST' \
+            --qualifier 'live' \
             --region "${AWS_REGION}" \
             --query 'AllocatedProvisionedConcurrentExecutions' \
             --output text 2>/dev/null || echo "None")
@@ -119,7 +119,7 @@ runs:
             echo "    → Deleting provisioned concurrency configuration..."
             if aws lambda delete-provisioned-concurrency-config \
               --function-name "${FUNCTION_NAME}" \
-              --qualifier '$LATEST' \
+              --qualifier 'live' \
               --region "${AWS_REGION}" 2>/dev/null; then
               echo "    ✓ Successfully deleted provisioned concurrency configuration"
               SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
@@ -132,7 +132,7 @@ runs:
             echo "    → Setting provisioned concurrency to ${TARGET_CONCURRENCY}..."
             if aws lambda put-provisioned-concurrency-config \
               --function-name "${FUNCTION_NAME}" \
-              --qualifier '$LATEST' \
+              --qualifier 'live' \
               --provisioned-concurrent-executions "${TARGET_CONCURRENCY}" \
               --region "${AWS_REGION}" >/dev/null; then
               echo "    ✓ Successfully set provisioned concurrency to ${TARGET_CONCURRENCY}"
@@ -215,7 +215,7 @@ runs:
             # Get provisioned concurrency status
             STATUS=$(aws lambda get-provisioned-concurrency-config \
               --function-name "${FUNCTION_NAME}" \
-              --qualifier '$LATEST' \
+              --qualifier 'live' \
               --region "${AWS_REGION}" \
               --query 'Status' \
               --output text 2>/dev/null || echo "NOT_CONFIGURED")

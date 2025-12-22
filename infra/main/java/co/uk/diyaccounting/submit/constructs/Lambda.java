@@ -12,10 +12,12 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
+import software.amazon.awscdk.services.lambda.Alias;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.IVersion;
 import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.logs.FilterPattern;
 import software.amazon.awscdk.services.logs.ILogGroup;
@@ -28,6 +30,8 @@ public class Lambda {
 
     public final DockerImageCode dockerImage;
     public final Function lambda;
+    public final IVersion version;
+    public final Alias alias;
     public final ILogGroup logGroup;
     public final AbstractLambdaProps props;
 
@@ -83,6 +87,14 @@ public class Lambda {
         }
         this.lambda = dockerFunctionBuilder.build();
         infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
+
+        // Create version and live alias for provisioned concurrency
+        this.version = this.lambda.getCurrentVersion();
+        this.alias = Alias.Builder.create(scope, props.idPrefix() + "-live-alias")
+                .aliasName("live")
+                .version(this.version)
+                .build();
+        infof("Created Alias 'live' for Lambda %s pointing to version %s", props.functionName(), this.version.getVersion());
 
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period

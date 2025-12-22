@@ -31,11 +31,11 @@ lambdas:
 - `concurrency.peak`: Provisioned concurrency for active/performance mode (>= 1)
 
 **Function Naming Convention:**
-Lambda function names are resolved as: `{deployment-name}-{name}`.
+Lambda function names are resolved as: `{deployment-name}-{name}`. Provisioned concurrency is applied to the `live` alias of each function.
 
 **Examples:**
-- API Handler: `prod-ea373de-submit-app-bundle-get`
-- SQS Consumer: `prod-ea373de-submit-app-bundle-get-consumer`
+- API Handler: `prod-ea373de-submit-app-bundle-get:live`
+- SQS Consumer: `prod-ea373de-submit-app-bundle-get-consumer:live`
 
 **Included Functions:**
 - 13 API Lambda handlers (HTTP endpoints)

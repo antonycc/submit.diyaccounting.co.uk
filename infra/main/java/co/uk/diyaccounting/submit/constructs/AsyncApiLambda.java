@@ -5,10 +5,12 @@ import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
+import software.amazon.awscdk.services.lambda.Alias;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.IVersion;
 import software.amazon.awscdk.services.lambda.Tracing;
 import software.amazon.awscdk.services.lambda.eventsources.SqsEventSource;
 import software.amazon.awscdk.services.sqs.DeadLetterQueue;
@@ -20,6 +22,8 @@ import java.util.List;
 public class AsyncApiLambda extends ApiLambda {
 
     public final Function consumerLambda;
+    public final IVersion consumerVersion;
+    public final Alias consumerAlias;
     public final Queue queue;
     public final Queue dlq;
 
@@ -73,8 +77,15 @@ public class AsyncApiLambda extends ApiLambda {
                 .tracing(Tracing.ACTIVE)
                 .build();
 
+        // Create version and live alias for consumer provisioned concurrency
+        this.consumerVersion = this.consumerLambda.getCurrentVersion();
+        this.consumerAlias = Alias.Builder.create(scope, props.idPrefix() + "-consumer-live-alias")
+                .aliasName("live")
+                .version(this.consumerVersion)
+                .build();
+
         // 4. Set up SQS trigger
-        this.consumerLambda.addEventSource(SqsEventSource.Builder.create(this.queue)
+        this.consumerAlias.addEventSource(SqsEventSource.Builder.create(this.queue)
                 .batchSize(1)
                 .build());
 
