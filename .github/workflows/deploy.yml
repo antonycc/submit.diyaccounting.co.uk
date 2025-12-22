@@ -2197,6 +2197,7 @@ jobs:
       - names
       - set-origins
       - web-test-bundle
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2309,7 +2310,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2424,7 +2425,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2536,7 +2537,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2651,7 +2652,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2767,12 +2768,12 @@ jobs:
       - names
       - deploy-publish
       - web-test-bundle
-      - web-test-submit-vat-sandbox
-      - web-test-fraud-prevention-headers-vat-sandbox
       - web-test-submit-vat
+      - web-test-submit-vat-sandbox
       - web-test-post-vat-return-sandbox
       - web-test-get-vat-return-sandbox
       - web-test-obligation-sandbox
+      - web-test-fraud-prevention-headers-vat-sandbox
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
