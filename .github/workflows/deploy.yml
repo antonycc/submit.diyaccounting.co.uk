@@ -1470,26 +1470,6 @@ jobs:
     outputs:
       httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
 
-  scale-lambda-concurrency-to-peak:
-    name: 'scale Lambda concurrency to peak'
-    #if: ${{ needs.names.outputs.environment-name == 'prod' }}
-    needs:
-      - names
-      - skip-deploy-check
-      - deploy-auth
-      - deploy-hmrc
-      - deploy-account
-      - deploy-api
-      - deploy-edge
-    uses: './.github/workflows/scale-to.yml'
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      concurrency-level: 'peak'
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-
   deploy-edge:
     name: 'deploy edge'
     needs:
@@ -1608,6 +1588,26 @@ jobs:
         shell: bash
     outputs:
       originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
+
+  scale-lambda-concurrency-to-peak:
+    name: 'scale Lambda concurrency to peak'
+    #if: ${{ needs.names.outputs.environment-name == 'prod' }}
+    needs:
+      - names
+      - skip-deploy-check
+      - deploy-auth
+      - deploy-hmrc
+      - deploy-account
+      - deploy-api
+      - deploy-edge
+    uses: './.github/workflows/scale-to.yml'
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      concurrency-level: 'peak'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
 
   deploy-publish:
     name: 'deploy publish'
@@ -2081,6 +2081,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2195,6 +2196,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2307,6 +2309,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2421,6 +2424,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2532,6 +2536,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2646,6 +2651,7 @@ jobs:
     needs:
       - names
       - set-origins
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
