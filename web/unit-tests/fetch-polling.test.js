@@ -152,6 +152,21 @@ describe("fetchWithIdToken polling", () => {
     const response = await promise;
     expect(fetchMock).toHaveBeenCalledTimes(12);
     expect(response.status).toBe(200);
+
+    // Verify polling logs
+    expect(logSpy).toHaveBeenCalledWith("Waiting for async response...");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
+      ),
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
+      ),
+    );
+    expect(logSpy).toHaveBeenCalledWith("Async response came back with status: 200");
+
     vi.useRealTimers();
   });
 

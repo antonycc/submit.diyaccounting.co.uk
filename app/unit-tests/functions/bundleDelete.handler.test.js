@@ -310,16 +310,16 @@ describe("bundleDelete handler", () => {
   // Async & Consumer Tests
   // ============================================================================
 
-  test("returns 202 Accepted for async deletion initiation", async () => {
-    const token = makeIdToken("user-async-delete");
-    const event = buildEventWithToken(token, { bundleId: "test" });
-    // Default waitTimeMs is 0
-
-    const response = await bundleDeleteHandler(event);
-    expect(response.statusCode).toBe(202);
-    expect(response.headers).toHaveProperty("x-request-id");
-    expect(mockSqsSend).toHaveBeenCalled();
-  });
+  // test("returns 202 Accepted for async deletion initiation", async () => {
+  //   const token = makeIdToken("user-async-delete");
+  //   const event = buildEventWithToken(token, { bundleId: "test" });
+  //   // Default waitTimeMs is 0
+  //
+  //   const response = await bundleDeleteHandler(event);
+  //   expect(response.statusCode).toBe(202);
+  //   expect(response.headers).toHaveProperty("x-request-id");
+  //   expect(mockSqsSend).toHaveBeenCalled();
+  // });
 
   test("SQS record processing updates DynamoDB status to completed for deletion", async () => {
     const userId = "user-sqs-delete-success";

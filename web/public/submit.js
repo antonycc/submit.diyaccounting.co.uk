@@ -798,7 +798,19 @@ async function fetchWithIdToken(input, init = {}) {
           }
         });
 
-        console.log("re-trying async request..."); // Just before each poll attempt
+        const currentElapsed = Date.now() - startTime;
+        const method = init.method || (typeof input === "object" && input.method) || "GET";
+        let urlPath = typeof input === "string" ? input : input.url || input.toString();
+        try {
+          const parsedUrl = new URL(urlPath, window.location.origin);
+          urlPath = parsedUrl.pathname + parsedUrl.search;
+        } catch (e) {
+          // Fallback to original urlPath if URL parsing fails
+        }
+
+        console.log(
+          `re-trying async request [${method.toUpperCase()} ${urlPath}] (poll #${pollCount}, elapsed: ${currentElapsed}ms, timeout: 60000ms, last status: ${res.status})...`,
+        ); // Just before each poll attempt
         res = await fetch(input, { ...init, headers: currentHeaders });
       }
       console.log("Async response came back with status: " + res.status); // When response comes back
