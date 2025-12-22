@@ -89,6 +89,7 @@
     </footer>
 
     <script src="../submit.js"></script>
+    <script src="../lib/request-cache.js"></script>
     <script src="../widgets/hamburger-menu.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
@@ -96,7 +97,6 @@
     <script src="../widgets/loading-spinner.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
-    <script src="../lib/request-cache.js"></script>
 
     <script>
       // --- helpers
@@ -141,6 +141,7 @@
 
       // In-memory bundles state for this page
       let __userBundles = [];
+      let __fetchBundlesController = null;
 
       const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
 
@@ -152,17 +153,32 @@
           return __userBundles;
         }
 
+        // Abort previous fetch if any
+        if (__fetchBundlesController) {
+          __fetchBundlesController.abort();
+        }
+        __fetchBundlesController = new AbortController();
+        const signal = __fetchBundlesController.signal;
+
         try {
           const bundlesData = await getJSON("/api/v1/bundle", {
             ttlMs: 5000,
-            init: { headers: { Authorization: `Bearer ${idToken}` } },
+            init: { headers: { Authorization: `Bearer ${idToken}` }, signal },
           });
           if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
             __userBundles = bundlesData.bundles.map((b) => b.bundleId);
             return __userBundles;
           }
         } catch (err) {
+          if (err.name === "AbortError") {
+            console.log("Fetch user bundles aborted");
+            return __userBundles;
+          }
           console.warn("Failed to fetch bundles:", err);
+        } finally {
+          if (__fetchBundlesController?.signal === signal) {
+            __fetchBundlesController = null;
+          }
         }
         __userBundles = [];
         return __userBundles;

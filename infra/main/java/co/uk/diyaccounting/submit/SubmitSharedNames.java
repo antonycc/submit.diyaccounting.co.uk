@@ -69,6 +69,9 @@ public class SubmitSharedNames {
 
     public String receiptsTableName;
     public String bundlesTableName;
+    public String asyncRequestsTableName;
+    public String bundlePostAsyncRequestsTableName;
+    public String bundleDeleteAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String proxyStateTableName;
     public String holdingBucketName;
@@ -196,6 +199,8 @@ public class SubmitSharedNames {
     public boolean catalogGetLambdaCustomAuthorizer;
 
     public String bundleGetLambdaHandler;
+    public String bundleGetLambdaConsumerHandler;
+    public String bundleGetLambdaQueueName;
     public String bundleGetLambdaFunctionName;
     public String bundleGetLambdaArn;
     public HttpMethod bundleGetLambdaHttpMethod;
@@ -204,6 +209,7 @@ public class SubmitSharedNames {
     public boolean bundleGetLambdaCustomAuthorizer;
 
     public String bundlePostLambdaHandler;
+    public String bundlePostLambdaConsumerHandler;
     public String bundlePostLambdaFunctionName;
     public String bundlePostLambdaArn;
     public HttpMethod bundlePostLambdaHttpMethod;
@@ -212,6 +218,7 @@ public class SubmitSharedNames {
     public boolean bundlePostLambdaCustomAuthorizer;
 
     public String bundleDeleteLambdaHandler;
+    public String bundleDeleteLambdaConsumerHandler;
     public String bundleDeleteLambdaFunctionName;
     public String bundleDeleteLambdaArn;
     public HttpMethod bundleDeleteLambdaHttpMethod;
@@ -246,6 +253,7 @@ public class SubmitSharedNames {
     // Common HTTP response codes to be referenced across infra generators and stacks
     public static class Responses {
         public static final String OK = "200";
+        public static final String ACCEPTED = "202";
         public static final String UNAUTHORIZED = "401";
         public static final String FORBIDDEN = "403";
         public static final String NOT_FOUND = "404";
@@ -293,6 +301,9 @@ public class SubmitSharedNames {
 
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
+        this.asyncRequestsTableName = "%s-async-requests".formatted(this.envDashedDomainName);
+        this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envDashedDomainName);
+        this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
         this.proxyStateTableName = "%s-proxy-state".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
@@ -581,28 +592,37 @@ public class SubmitSharedNames {
         this.bundleGetLambdaJwtAuthorizer = true;
         this.bundleGetLambdaCustomAuthorizer = false;
         var bundleGetLambdaHandlerName = "bundleGet.handler";
+        var bundleGetLambdaConsumerHandlerName = "bundleGet.consumer";
         var bundleGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundleGetLambdaHandlerName);
         this.bundleGetLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
         this.bundleGetLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaHandlerName);
+        this.bundleGetLambdaConsumerHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaConsumerHandlerName);
+        this.bundleGetLambdaQueueName = "%s-queue".formatted(this.bundleGetLambdaFunctionName);
         this.bundleGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleGetLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundleGetLambdaHttpMethod,
                 this.bundleGetLambdaUrlPath,
                 "Get user bundles",
                 "Retrieves all bundles for the authenticated user",
-                "getBundles"));
+                "getBundles",
+                List.of(new ApiParameter(
+                        "x-wait-time-ms", "header", false, "Max time to wait for synchronous response (ms)"))));
 
         this.bundlePostLambdaHttpMethod = HttpMethod.POST;
         this.bundlePostLambdaUrlPath = "/api/v1/bundle";
         this.bundlePostLambdaJwtAuthorizer = true;
         this.bundlePostLambdaCustomAuthorizer = false;
         var bundlePostLambdaHandlerName = "bundlePost.handler";
+        var bundlePostLambdaConsumerHandlerName = "bundlePost.consumer";
         var bundlePostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
         this.bundlePostLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, bundlePostLambdaHandlerDashed);
         this.bundlePostLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaHandlerName);
+        this.bundlePostLambdaConsumerHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaConsumerHandlerName);
         this.bundlePostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundlePostLambdaHttpMethod,
@@ -616,12 +636,15 @@ public class SubmitSharedNames {
         this.bundleDeleteLambdaJwtAuthorizer = true;
         this.bundleDeleteLambdaCustomAuthorizer = false;
         var bundleDeleteLambdaHandlerName = "bundleDelete.handler";
+        var bundleDeleteLambdaConsumerHandlerName = "bundleDelete.consumer";
         var bundleDeleteLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(bundleDeleteLambdaHandlerName);
         this.bundleDeleteLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, bundleDeleteLambdaHandlerDashed);
         this.bundleDeleteLambdaHandler =
                 "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaHandlerName);
+        this.bundleDeleteLambdaConsumerHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaConsumerHandlerName);
         this.bundleDeleteLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleDeleteLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.bundleDeleteLambdaHttpMethod,

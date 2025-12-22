@@ -36,10 +36,16 @@ function getTableName() {
  * @param {string} requestId - The request ID
  * @param {string} status - Request status: 'pending', 'processing', 'completed', 'failed'
  * @param {object} data - Optional data (result for completed, error for failed)
+ * @param {string} tableName - Optional table name (defaults to env var)
  */
-export async function putAsyncRequest(userId, requestId, status, data = null) {
+export async function putAsyncRequest(userId, requestId, status, data = null, tableName = null) {
+  const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  if (!actualTableName) {
+    logger.warn({ message: "putAsyncRequest called but no table name provided or in env", requestId });
+    return;
+  }
   logger.info({
-    message: `putAsyncRequest [table: ${getTableName()}]`,
+    message: `putAsyncRequest [table: ${actualTableName}]`,
     requestId,
     status,
   });
@@ -47,7 +53,6 @@ export async function putAsyncRequest(userId, requestId, status, data = null) {
   try {
     const hashedSub = hashSub(userId);
     const docClient = await getDynamoDbDocClient();
-    const tableName = getTableName();
 
     const now = new Date();
     const item = {
@@ -70,7 +75,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null) {
 
     await docClient.send(
       new __dynamoDbModule.PutCommand({
-        TableName: tableName,
+        TableName: actualTableName,
         Item: item,
       }),
     );
@@ -80,6 +85,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null) {
       hashedSub,
       requestId,
       status,
+      tableName: actualTableName,
     });
   } catch (error) {
     logger.error({
@@ -87,6 +93,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null) {
       error: error.message,
       requestId,
       status,
+      tableName: actualTableName,
     });
     throw error;
   }
@@ -96,22 +103,27 @@ export async function putAsyncRequest(userId, requestId, status, data = null) {
  * Retrieve an async request state from DynamoDB
  * @param {string} userId - The user ID
  * @param {string} requestId - The request ID
+ * @param {string} tableName - Optional table name (defaults to env var)
  * @returns {object|null} The request state or null if not found
  */
-export async function getAsyncRequest(userId, requestId) {
+export async function getAsyncRequest(userId, requestId, tableName = null) {
+  const actualTableName = tableName || process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  if (!actualTableName) {
+    logger.warn({ message: "getAsyncRequest called but no table name provided or in env", requestId });
+    return null;
+  }
   logger.info({
-    message: `getAsyncRequest [table: ${getTableName()}]`,
+    message: `getAsyncRequest [table: ${actualTableName}]`,
     requestId,
   });
 
   try {
     const hashedSub = hashSub(userId);
     const docClient = await getDynamoDbDocClient();
-    const tableName = getTableName();
 
     const result = await docClient.send(
       new __dynamoDbModule.GetCommand({
-        TableName: tableName,
+        TableName: actualTableName,
         Key: {
           hashedSub,
           requestId,
@@ -124,6 +136,7 @@ export async function getAsyncRequest(userId, requestId) {
         message: "AsyncRequest not found in DynamoDB",
         hashedSub,
         requestId,
+        tableName: actualTableName,
       });
       return null;
     }
@@ -133,6 +146,7 @@ export async function getAsyncRequest(userId, requestId) {
       hashedSub,
       requestId,
       status: result.Item.status,
+      tableName: actualTableName,
     });
 
     return result.Item;
@@ -141,6 +155,7 @@ export async function getAsyncRequest(userId, requestId) {
       message: "Error retrieving AsyncRequest from DynamoDB",
       error: error.message,
       requestId,
+      tableName: actualTableName,
     });
     throw error;
   }
