@@ -73,7 +73,7 @@ lambdas:
     description: Bundle retrieval SQS consumer
     concurrency:
       zero: 0
-      peak: 4
+      peak: 0
 
   - handler: bundle-post.handler
     description: Bundle request API handler
@@ -97,4 +97,4 @@ lambdas:
     description: Bundle deletion SQS consumer
     concurrency:
       zero: 0
-      peak: 2
+      peak: 0

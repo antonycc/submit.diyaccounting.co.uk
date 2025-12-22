@@ -6,7 +6,9 @@ import {
   extractRequest,
   parseRequestBody,
   http200OkResponse,
+  http400BadRequestResponse,
   http401UnauthorizedResponse,
+  http404NotFoundResponse,
   http500ServerErrorResponse,
   buildValidationError,
 } from "../../lib/httpResponseHelper.js";
@@ -22,7 +24,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
 const MAX_WAIT_MS = 25_000;
-const DEFAULT_WAIT_MS = 0;
+const DEFAULT_WAIT_MS = MAX_WAIT_MS; // Intentionally high wait time for synchronous processing
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -180,8 +182,8 @@ export async function handler(event) {
     }
   }
 
-  if (result?.status === "not_found") {
-    return http404NotFound(request, "Bundle not found", responseHeaders);
+  if (result?.status === "not_found" || result?.error === "not_found") {
+    return http404NotFoundResponse({ request, headers: responseHeaders, message: "Bundle not found", error: result });
   }
 
   return asyncApiServices.respond({
@@ -279,10 +281,10 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
   if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
     try {
       if (result.status === "not_found") {
-        await putAsyncRequest(userId, requestId, "failed", { error: "Bundle not found", statusCode: 404 });
+        await putAsyncRequest(userId, requestId, "failed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
       } else {
         logger.info({ message: "Updating AsyncRequest status to completed", userId, requestId });
-        await putAsyncRequest(userId, requestId, "completed", result);
+        await putAsyncRequest(userId, requestId, "completed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
       }
     } catch (error) {
       logger.error({ message: "Error storing async request result", error: error.message, requestId });
@@ -290,23 +292,4 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
   }
 
   return result;
-}
-
-function http404NotFound(request, message, responseHeaders) {
-  // Log with clear semantics and avoid misusing headers as a response code
-  logger.warn({ message, request });
-  // Return a proper 404 response (was incorrectly returning 400)
-  // We keep using the generic bad request builder style but with correct status
-  const reqId = context.get("requestId") || String(Date.now());
-  return {
-    statusCode: 404,
-    headers: {
-      ...(responseHeaders || {}),
-      "x-request-id": reqId,
-      "x-correlationid": reqId,
-      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
-    },
-    body: JSON.stringify({ message }),
-  };
 }

@@ -20,7 +20,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
 const MAX_WAIT_MS = 25_000; // 25 seconds (significantly below API Gateway timeout of 30s and Submit Lambda default 29s)
-const DEFAULT_WAIT_MS = 0;
+const DEFAULT_WAIT_MS = MAX_WAIT_MS; // Intentionally high wait time for synchronous processing
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */

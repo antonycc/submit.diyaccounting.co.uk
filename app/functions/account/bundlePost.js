@@ -6,7 +6,10 @@ import { context, createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
+  http400BadRequestResponse,
   http401UnauthorizedResponse,
+  http403ForbiddenResponse,
+  http404NotFoundResponse,
   http500ServerErrorResponse,
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
@@ -125,7 +128,12 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   if (!catalogBundle) {
     logger.error({ message: "[Catalog bundle] Bundle not found in catalog:", requestedBundle });
-    const result = { error: "bundle_not_found", message: `Bundle '${requestedBundle}' not found in catalog`, statusCode: 404 };
+    const result = {
+      status: "bundle_not_found",
+      error: "bundle_not_found",
+      message: `Bundle '${requestedBundle}' not found in catalog`,
+      statusCode: 404,
+    };
     if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
       await putAsyncRequest(userId, requestId, "failed", result);
     }
@@ -135,7 +143,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
   if (check?.unknown) {
     logger.warn({ message: "[Catalog bundle] Unknown qualifier in bundle request:", qualifier: check.unknown });
-    const result = { error: "unknown_qualifier", qualifier: check.unknown, statusCode: 400 };
+    const result = { status: "unknown_qualifier", error: "unknown_qualifier", qualifier: check.unknown, statusCode: 400 };
     if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
       await putAsyncRequest(userId, requestId, "failed", result);
     }
@@ -143,7 +151,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   }
   if (check?.ok === false) {
     logger.warn({ message: "[Catalog bundle] Qualifier mismatch for bundle request:", reason: check.reason });
-    const result = { error: "qualifier_mismatch", statusCode: 400 };
+    const result = { status: "qualifier_mismatch", error: "qualifier_mismatch", statusCode: 400 };
     if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
       await putAsyncRequest(userId, requestId, "failed", result);
     }
@@ -173,7 +181,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
     const currentCount = currentBundles.length;
     if (currentCount >= cap) {
       logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
-      const result = { error: "cap_reached", statusCode: 403 };
+      const result = { status: "cap_reached", error: "cap_reached", statusCode: 403 };
       if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
         await putAsyncRequest(userId, requestId, "failed", result);
       }
@@ -208,8 +216,12 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
     try {
-      logger.info({ message: "Updating AsyncRequest status to completed", userId, requestId });
-      await putAsyncRequest(userId, requestId, "completed", result);
+      if (result.status === "cap_reached") {
+        await putAsyncRequest(userId, requestId, "failed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
+      } else {
+        logger.info({ message: "Updating AsyncRequest status to completed", userId, requestId });
+        await putAsyncRequest(userId, requestId, "completed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
+      }
     } catch (error) {
       logger.error({ message: "Error storing completed request", error: error.message, requestId });
     }
@@ -328,6 +340,22 @@ export async function handler(event) {
         error: error.message,
       });
     }
+  }
+
+  if (result?.status === "cap_reached" || result?.error === "cap_reached") {
+    return http403ForbiddenResponse({ request, headers: responseHeaders, message: "Bundle entitlement cap reached", error: result });
+  }
+
+  if (result?.status === "bundle_not_found" || result?.error === "bundle_not_found") {
+    return http404NotFoundResponse({ request, headers: responseHeaders, message: "Bundle not found in catalog", error: result });
+  }
+
+  if (result?.status === "unknown_qualifier" || result?.error === "unknown_qualifier") {
+    return http400BadRequestResponse({ request, headers: responseHeaders, message: "Unknown qualifier", error: result });
+  }
+
+  if (result?.status === "qualifier_mismatch" || result?.error === "qualifier_mismatch") {
+    return http400BadRequestResponse({ request, headers: responseHeaders, message: "Qualifier mismatch", error: result });
   }
 
   return asyncApiServices.respond({

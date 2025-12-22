@@ -157,10 +157,12 @@
       //  return (bundles || []).some((b) => typeof b === "string" && b === id);
       //}
 
-      // Parse bundle expiry date from bundle string
-      // TODO: Remove and use the returned bundle objects,
+      // Parse bundle expiry date from bundle string or object
       function parseBundleExpiry(bundleEntry) {
-        if (!bundleEntry || typeof bundleEntry !== "string") return null;
+        if (!bundleEntry) return null;
+        if (typeof bundleEntry === "object") return bundleEntry.expiry || null;
+        if (typeof bundleEntry !== "string") return null;
+
         const parts = bundleEntry.split("|");
         if (parts.length < 2) return null;
         const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
@@ -195,7 +197,7 @@
         // Add granted non-expired bundles
         for (const bundleEntry of userBundles) {
           if (!isBundleExpired(bundleEntry)) {
-            const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
+            const bundleId = typeof bundleEntry === "string" ? bundleEntry.split("|")[0] : bundleEntry.bundleId;
             active.add(bundleId);
           }
         }
@@ -208,7 +210,7 @@
         const expired = new Set();
         for (const bundleEntry of userBundles) {
           if (isBundleExpired(bundleEntry)) {
-            const bundleId = bundleEntry.split("|")[0];
+            const bundleId = typeof bundleEntry === "string" ? bundleEntry.split("|")[0] : bundleEntry.bundleId;
             expired.add(bundleId);
           }
         }

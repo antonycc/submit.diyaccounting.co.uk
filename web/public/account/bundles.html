@@ -184,7 +184,10 @@
         return __userBundles;
       };
 
-      const hasBundle = (bundles, id) => (bundles || []).some((b) => typeof b === "string" && b === id);
+      const hasBundle = (bundles, id) => (bundles || []).some((b) => {
+        if (typeof b === "string") return b === id;
+        return b?.bundleId === id;
+      });
 
       const markToRequest = (btn, message = "Request bundle") => {
         btn.textContent = message;
@@ -358,9 +361,10 @@
 
         const bundleCards = bundles
           .map((bundleEntry) => {
-            const bundleId = bundleEntry;
-            const hasExpiry = bundleEntry.includes("EXPIRY=");
-            const expiryInfo = hasExpiry ? bundleEntry.split("EXPIRY=")[1] : "";
+            const bundleId = typeof bundleEntry === "string" ? bundleEntry : bundleEntry.bundleId;
+            const expiryInfo = typeof bundleEntry === "string" ?
+              (bundleEntry.includes("EXPIRY=") ? bundleEntry.split("EXPIRY=")[1] : "") :
+              (bundleEntry.expiry || "");
 
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
