@@ -773,6 +773,11 @@ async function fetchWithIdToken(input, init = {}) {
       let pollCount = 0;
       const startTime = Date.now();
       while (res.status === 202) {
+        if (init.signal?.aborted) {
+          console.log("Async request aborted");
+          return res;
+        }
+
         const elapsed = Date.now() - startTime;
         if (elapsed > 60000) {
           console.error("Async request timed out after 1 minute");
@@ -782,7 +787,17 @@ async function fetchWithIdToken(input, init = {}) {
         pollCount++;
         const delay = pollCount <= 10 ? 10 : 1000;
 
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(resolve, delay);
+          if (init.signal) {
+            init.signal.addEventListener("abort", () => {
+              clearTimeout(timeout);
+              console.log("Async request aborted");
+              reject(new DOMException("Aborted", "AbortError"));
+            });
+          }
+        });
+
         console.log("re-trying async request..."); // Just before each poll attempt
         res = await fetch(input, { ...init, headers: currentHeaders });
       }

@@ -59,14 +59,23 @@
 
     fetchPromises.bundles = (async () => {
       try {
-        const response = await window.fetchWithIdToken("/api/v1/bundle", {});
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.bundles && Array.isArray(data.bundles)) {
-            bundlesCache = data.bundles.map((b) => (typeof b === "string" ? b : b.bundleId));
-            return bundlesCache;
+        const rc = window.requestCache;
+        let data;
+        if (rc && typeof rc.getJSON === "function") {
+          data = await rc.getJSON("/api/v1/bundle", {
+            ttlMs: 5000,
+            init: { headers: { Authorization: `Bearer ${idToken}` } },
+          });
+        } else {
+          const response = await window.fetchWithIdToken("/api/v1/bundle", {});
+          if (response.ok) {
+            data = await response.json();
           }
+        }
+
+        if (data && data.bundles && Array.isArray(data.bundles)) {
+          bundlesCache = data.bundles.map((b) => (typeof b === "string" ? b : b.bundleId));
+          return bundlesCache;
         }
       } catch (err) {
         console.warn("Failed to fetch bundles for entitlement status:", err);

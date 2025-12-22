@@ -176,3 +176,131 @@ describe("fetchWithIdToken polling", () => {
     vi.useRealTimers();
   });
 });
+
+describe("fetchWithIdToken AbortController", () => {
+  let originalFetch;
+  let logSpy;
+
+  beforeEach(() => {
+    // Setup global window and localStorage
+    global.window = {
+      sessionStorage: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      },
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      location: {
+        href: "http://localhost:3000",
+        origin: "http://localhost:3000",
+        search: "",
+      },
+      DOMException: class extends Error {
+        constructor(message, name) {
+          super(message);
+          this.name = name;
+        }
+      },
+    };
+
+    global.localStorage = {
+      getItem: vi.fn((key) => {
+        if (key === "cognitoIdToken") return "mock-id-token";
+        return null;
+      }),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    };
+
+    global.Headers = class {
+      constructor(init = {}) {
+        this.map = new Map();
+        if (init instanceof Map) {
+          init.forEach((v, k) => this.map.set(k.toLowerCase(), v));
+        } else if (init instanceof global.Headers) {
+          init.map.forEach((v, k) => this.map.set(k, v));
+        } else {
+          Object.entries(init).forEach(([k, v]) => this.map.set(k.toLowerCase(), v));
+        }
+      }
+      set(k, v) {
+        this.map.set(k.toLowerCase(), v);
+      }
+      get(k) {
+        return this.map.get(k.toLowerCase());
+      }
+      has(k) {
+        return this.map.has(k.toLowerCase());
+      }
+    };
+
+    global.DOMException = global.window.DOMException;
+
+    // Mock document for DOM-related code
+    const mockElement = {
+      appendChild: vi.fn(),
+      setAttribute: vi.fn(),
+      getAttribute: vi.fn(),
+      style: {},
+      onclick: null,
+      addEventListener: vi.fn(),
+      innerHTML: "",
+    };
+
+    global.document = {
+      readyState: "complete",
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+      getElementById: vi.fn(() => mockElement),
+      createElement: vi.fn(() => ({ ...mockElement })),
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      body: {
+        appendChild: vi.fn(),
+        removeChild: vi.fn(),
+      },
+      head: {
+        appendChild: vi.fn(),
+      },
+    };
+
+    originalFetch = global.fetch;
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    // Evaluate the submit.js script
+    eval(scriptContent);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    logSpy.mockRestore();
+    vi.clearAllMocks();
+  });
+
+  it("terminates polling when AbortSignal is triggered", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "abort-id" }),
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const controller = new AbortController();
+    const promise = window.fetchWithIdToken("/api/v1/bundle", { signal: controller.signal });
+
+    // Let the first request finish and start the wait
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Trigger abort
+    controller.abort();
+
+    // The promise should reject with AbortError
+    await expect(promise).rejects.toThrow("Aborted");
+    expect(logSpy).toHaveBeenCalledWith("Async request aborted");
+
+    vi.useRealTimers();
+  });
+});
