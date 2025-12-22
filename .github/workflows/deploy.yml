@@ -46,7 +46,7 @@ on:
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
-        default: '8'
+        default: '2'
       skipTestScenarios:
         description: 'Skip test scenarios for behaviour tests'
         type: choice
@@ -1472,7 +1472,7 @@ jobs:
 
   scale-lambda-concurrency-to-peak:
     name: 'scale Lambda concurrency to peak'
-    if: ${{ needs.names.outputs.environment-name == 'prod' }}
+    #if: ${{ needs.names.outputs.environment-name == 'prod' }}
     needs:
       - names
       - skip-deploy-check
