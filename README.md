@@ -130,6 +130,7 @@ Documentation
 - This README: high-level architecture and quickstart
 - _developers/SETUP.md: step-by-step developer setup (local, tests, and AWS)
 - lambda-concurrency-scaling.md: Lambda provisioned concurrency scaling system
+- lambda-concurrency-cost-analysis.md: Detailed cost analysis for Lambda scaling
 
 License
 GPL-3.0. See LICENSE for details.
