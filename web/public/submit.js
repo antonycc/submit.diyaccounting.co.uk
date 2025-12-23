@@ -760,42 +760,117 @@ async function fetchWithIdToken(input, init = {}) {
   const idToken = getIdToken();
   if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
 
-  const first = await fetch(input, { ...init, headers });
+  const executeFetch = async (currentHeaders) => {
+    let res = await fetch(input, { ...init, headers: currentHeaders });
+
+    if (res.status === 202) {
+      const method = (init.method || (typeof input === "object" && input.method) || "GET").toUpperCase();
+      let urlPath = typeof input === "string" ? input : input.url || input.toString();
+      try {
+        const parsedUrl = new URL(urlPath, window.location.origin);
+        urlPath = parsedUrl.pathname + parsedUrl.search;
+      } catch (e) {
+        // Fallback to original urlPath if URL parsing fails
+      }
+      const requestDesc = `[${method} ${urlPath}]`;
+
+      console.log(`waiting async request ${requestDesc} (timeout: 60000ms)...`);
+      const requestId = res.headers.get("x-request-id");
+      if (requestId) {
+        currentHeaders.set("x-request-id", requestId);
+      }
+
+      let pollCount = 0;
+      const startTime = Date.now();
+      while (res.status === 202) {
+        const elapsed = Date.now() - startTime;
+        if (init.signal?.aborted) {
+          console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms)`);
+          return res;
+        }
+
+        if (elapsed > 60000) {
+          console.error(`timed out async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms, timeout: 60000ms)`);
+          return res;
+        }
+
+        pollCount++;
+        const delay = pollCount <= 10 ? 10 : 1000;
+
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(resolve, delay);
+          if (init.signal) {
+            init.signal.addEventListener(
+              "abort",
+              () => {
+                clearTimeout(timeout);
+                const abortElapsed = Date.now() - startTime;
+                console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${abortElapsed}ms)`);
+                reject(new DOMException("Aborted", "AbortError"));
+              },
+              { once: true },
+            );
+          }
+        });
+
+        const currentElapsed = Date.now() - startTime;
+        console.log(
+          `re-trying async request ${requestDesc} (poll #${pollCount}, elapsed: ${currentElapsed}ms, timeout: 60000ms, last status: ${res.status})...`,
+        ); // Just before each poll attempt
+        res = await fetch(input, { ...init, headers: currentHeaders });
+      }
+      console.log(
+        `finished async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, status: ${res.status})`,
+      ); // When response comes back
+    }
+    return res;
+  };
+
+  const response = await executeFetch(headers);
 
   // Handle 403 Forbidden - likely missing bundle entitlement
-  if (first.status === 403) {
-    await handle403Error(first);
-    return first; // Return the 403 response for caller to handle
+  if (response.status === 403) {
+    if (typeof handle403Error === "function") {
+      await handle403Error(response);
+    }
+    return response;
   }
 
   // Handle 401 Unauthorized - token expired or invalid
-  if (first.status !== 401) return first;
+  if (response.status !== 401) return response;
 
   // One-time retry after forcing refresh
-  // Note: Token refresh only works if backend supports refresh_token grant type
   console.log("Received 401, attempting token refresh...");
   try {
-    const refreshed = await ensureSession({ force: true });
-    if (!refreshed) {
-      // Refresh failed, guide user to re-authenticate
-      console.warn("Token refresh failed, user needs to re-authenticate");
-      if (typeof window !== "undefined" && window.showStatus) {
-        window.showStatus("Your session has expired. Please log in again.", "warning");
-        setTimeout(() => {
-          window.location.href = "/auth/login.html";
-        }, 2000);
+    if (typeof ensureSession === "function") {
+      const refreshed = await ensureSession({ force: true });
+      if (!refreshed) {
+        console.warn("Token refresh failed, user needs to re-authenticate");
+        if (typeof window !== "undefined" && window.showStatus) {
+          window.showStatus("Your session has expired. Please log in again.", "warning");
+          setTimeout(() => {
+            window.location.href = "/auth/login.html";
+          }, 2000);
+        }
+        return response;
       }
-      return first;
+    } else {
+      return response;
     }
   } catch (e) {
     console.warn("Token refresh error:", e);
-    return first;
+    return response;
   }
 
   const headers2 = new Headers(init.headers || {});
   const idToken2 = getIdToken();
   if (idToken2) headers2.set("Authorization", `Bearer ${idToken2}`);
-  return fetch(input, { ...init, headers: headers2 });
+
+  // Carry over requestId if we had one from a previous 202 poll
+  const lastRequestId = headers.get("x-request-id");
+  if (lastRequestId) headers2.set("x-request-id", lastRequestId);
+
+  return executeFetch(headers2);
 }
 
 // Expose fetchWithIdToken globally for HTML usage

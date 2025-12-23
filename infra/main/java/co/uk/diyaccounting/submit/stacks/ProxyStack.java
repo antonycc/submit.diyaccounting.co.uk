@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
@@ -28,6 +26,8 @@ import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class ProxyStack extends Stack {
 
@@ -134,6 +134,7 @@ public class ProxyStack extends Stack {
         }
 
         // Create Lambda function for outbound proxy
+        // TODO: Replace with outbound circuit breaker and retry logic in the asyncApiLambdas
         this.proxyFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-OutboundProxyFunction")
                 .functionName(props.sharedNames().outboundProxyFunctionName)
                 .runtime(Runtime.NODEJS_22_X)

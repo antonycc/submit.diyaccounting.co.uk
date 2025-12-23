@@ -30,11 +30,17 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class GetCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     PutCommand,
     QueryCommand,
     DeleteCommand,
+    GetCommand,
   };
 });
 
@@ -47,15 +53,41 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
   return { DynamoDBClient };
 });
 
+const mockSqsSend = vi.fn();
+vi.mock("@aws-sdk/client-sqs", () => {
+  class SQSClient {
+    constructor(_config) {}
+    send(cmd) {
+      return mockSqsSend(cmd);
+    }
+  }
+  class SendMessageCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  return { SQSClient, SendMessageCommand };
+});
+
 // Defer importing the handler until after mocks are defined
-import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+import { handler as bundlePostHandler, consumer as bundlePostConsumer } from "@app/functions/account/bundlePost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("bundlePost handler", () => {
+  let asyncRequests = new Map();
+
   beforeEach(() => {
     // Setup test environment
-    Object.assign(process.env, setupTestEnv());
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        ASYNC_REQUESTS_DYNAMODB_TABLE_NAME: "test-async-table",
+        SQS_QUEUE_URL: "https://sqs.eu-west-2.amazonaws.com/123456789012/test-queue",
+      }),
+    );
+    asyncRequests = new Map();
+
     // Reset and provide default mock DynamoDB behaviour
     vi.clearAllMocks();
     mockSend.mockImplementation(async (cmd) => {
@@ -64,7 +96,16 @@ describe("bundlePost handler", () => {
         return { Items: [], Count: 0 };
       }
       if (cmd instanceof lib.PutCommand) {
+        const item = cmd.input.Item;
+        if (item.requestId) {
+          asyncRequests.set(item.requestId, item);
+        }
         return {};
+      }
+      if (cmd instanceof lib.GetCommand) {
+        const { requestId } = cmd.input.Key;
+        const item = asyncRequests.get(requestId);
+        return { Item: item };
       }
       if (cmd instanceof lib.DeleteCommand) {
         return {};
@@ -130,6 +171,7 @@ describe("bundlePost handler", () => {
   test("returns 400 when bundleId is missing", async () => {
     const token = makeIdToken("user-missing-bundle");
     const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -144,6 +186,7 @@ describe("bundlePost handler", () => {
       ...buildEventWithToken(token, {}),
       body: "invalid-json{",
     };
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -158,6 +201,7 @@ describe("bundlePost handler", () => {
       bundleId: "test",
       qualifiers: { unknownField: "value" },
     });
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -174,6 +218,7 @@ describe("bundlePost handler", () => {
       bundleId: "basic",
       qualifiers: { subscriptionTier: "Wrong" },
     });
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -183,7 +228,7 @@ describe("bundlePost handler", () => {
       expect(body.error).toBe("qualifier_mismatch");
     } else {
       // If bundle doesn't require qualifiers, it should succeed or give different error
-      expect([200, 404]).toContain(response.statusCode);
+      expect([200, 404, 202]).toContain(response.statusCode);
     }
   });
 
@@ -196,6 +241,7 @@ describe("bundlePost handler", () => {
     const event = buildEventWithToken(token, {
       bundleId: "nonexistent-bundle-xyz",
     });
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -212,6 +258,7 @@ describe("bundlePost handler", () => {
   test("returns 200 and grants automatic bundle without persistence", async () => {
     const token = makeIdToken("user-auto");
     const event = buildEventWithToken(token, { bundleId: "default" });
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -226,6 +273,7 @@ describe("bundlePost handler", () => {
   test("returns 200 and grants test bundle with timeout producing expiry", async () => {
     const token = makeIdToken("user-test");
     const event = buildEventWithToken(token, { bundleId: "test" });
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -240,31 +288,29 @@ describe("bundlePost handler", () => {
   });
 
   test("returns 200 with already_granted status on duplicate request", async () => {
-    // NOTE: There appears to be a bug in the handler where duplicate detection
-    // doesn't work properly due to comparing objects with ===.
-    // The comparison at line 143 should be: bundle.bundleId === requestedBundle
-    // For now, we test the actual behavior which grants duplicates
     const token = makeIdToken("user-duplicate");
     const event = buildEventWithToken(token, { bundleId: "test" });
+    event.headers["x-wait-time-ms"] = "30000";
 
-    // First request - should grant
-    const response1 = await bundlePostHandler(event);
-    expect(response1.statusCode).toBe(200);
-    const body1 = parseResponseBody(response1);
-    expect(body1.status).toBe("granted");
+    // Mock first call already granted
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "test" }], Count: 1 };
+      }
+      return {};
+    });
 
-    // Second request - currently grants again due to bug
-    // TODO: Fix handler and update this test to expect already_granted
-    const response2 = await bundlePostHandler(event);
-    expect(response2.statusCode).toBe(200);
-    const body2 = parseResponseBody(response2);
-    // Should be "already_granted" but is "granted" due to bug
-    expect(body2.status).toBe("granted");
+    const response = await bundlePostHandler(event);
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.status).toBe("already_granted");
   });
 
   test("grants bundle successfully with all fields in response", async () => {
     const token = makeIdToken("user-success");
     const event = buildEventWithToken(token, { bundleId: "test" });
+    event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
@@ -289,7 +335,50 @@ describe("bundlePost handler", () => {
 
     const token = makeIdToken("user-error");
     const event = buildEventWithToken(token, { bundleId: "test" });
+    event.headers["x-wait-time-ms"] = "30000";
 
     await expect(bundlePostHandler(event)).rejects.toThrow();
+  });
+
+  // ============================================================================
+  // Async & Consumer Tests
+  // ============================================================================
+
+  test("returns 202 Accepted for async initiation", async () => {
+    const token = makeIdToken("user-async");
+    const event = buildEventWithToken(token, { bundleId: "test" });
+    // Default waitTimeMs is 0
+
+    const response = await bundlePostHandler(event);
+    expect(response.statusCode).toBe(202);
+    expect(response.headers).toHaveProperty("x-request-id");
+    expect(mockSqsSend).toHaveBeenCalled();
+  });
+
+  test("SQS record processing updates DynamoDB status to completed", async () => {
+    const userId = "user-sqs-success";
+    const requestId = "req-sqs-success";
+    const payload = {
+      userId,
+      requestBody: { bundleId: "test" },
+      decodedToken: { sub: userId },
+      requestId,
+    };
+
+    const event = {
+      Records: [
+        {
+          body: JSON.stringify({ userId, requestId, payload }),
+          messageId: "msg-123",
+        },
+      ],
+    };
+
+    await bundlePostConsumer(event);
+
+    const stored = asyncRequests.get(requestId);
+    expect(stored).toBeDefined();
+    expect(stored.status).toBe("completed");
+    expect(stored.data.status).toBe("granted");
   });
 });

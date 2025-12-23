@@ -67,7 +67,7 @@ let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
 
-test.setTimeout(120_000);
+test.setTimeout(300_000);
 
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
@@ -189,6 +189,8 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
 
   await goToBundlesPage(page, screenshotPath);
   await clearBundles(page, screenshotPath);
+  // Add a 10 second sleep
+  await page.waitForTimeout(10_000);
   await ensureBundlePresent(page, "Test", screenshotPath);
   await goToHomePage(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);

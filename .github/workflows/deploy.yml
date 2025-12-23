@@ -46,7 +46,7 @@ on:
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
-        default: '8'
+        default: '2'
       skipTestScenarios:
         description: 'Skip test scenarios for behaviour tests'
         type: choice
@@ -83,9 +83,12 @@ on:
       - 'package.json'
       - 'pom.xml'
       - 'product-catalogue.toml'
+      - 'lambda-concurrency-config.yaml'
       - '.github/actions/get-names'
       - '.github/actions/set-origins'
+      - '.github/actions/scale-lambda-concurrency'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/scale-to.yml'
   schedule:
     - cron: '11 4 * * *'
 
@@ -1586,6 +1589,26 @@ jobs:
     outputs:
       originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
 
+#  scale-lambda-concurrency-to-peak:
+#    name: 'scale Lambda concurrency to peak'
+#    #if: ${{ needs.names.outputs.environment-name == 'prod' }}
+#    needs:
+#      - names
+#      - skip-deploy-check
+#      - deploy-auth
+#      - deploy-hmrc
+#      - deploy-account
+#      - deploy-api
+#      - deploy-edge
+#    uses: './.github/workflows/scale-to.yml'
+#    permissions:
+#      id-token: write
+#      contents: read
+#    with:
+#      concurrency-level: 'peak'
+#      environment-name: ${{ needs.names.outputs.environment-name }}
+#      deployment-name: ${{ needs.names.outputs.deployment-name }}
+
   deploy-publish:
     name: 'deploy publish'
     needs:
@@ -2174,6 +2197,7 @@ jobs:
       - names
       - set-origins
       - web-test-bundle
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2286,7 +2310,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2401,7 +2425,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2513,7 +2537,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2628,7 +2652,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-bundle
+      - web-test-submit-vat
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2744,12 +2768,12 @@ jobs:
       - names
       - deploy-publish
       - web-test-bundle
-      - web-test-submit-vat-sandbox
-      - web-test-fraud-prevention-headers-vat-sandbox
       - web-test-submit-vat
+      - web-test-submit-vat-sandbox
       - web-test-post-vat-return-sandbox
       - web-test-get-vat-return-sandbox
       - web-test-obligation-sandbox
+      - web-test-fraud-prevention-headers-vat-sandbox
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -3044,7 +3068,6 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - web-test-bundle
       - web-test-submit-vat
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}

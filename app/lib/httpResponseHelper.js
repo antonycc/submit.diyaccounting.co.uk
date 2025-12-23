@@ -66,6 +66,21 @@ export function http403ForbiddenResponse({ request, headers, message, error }) {
   });
 }
 
+export function http404NotFoundResponse({ request, headers, message, error }) {
+  const merged = { ...(headers || {}) };
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
+  return httpResponse({
+    statusCode: 404,
+    request,
+    headers: merged,
+    data: { message, ...error },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
 export function http401UnauthorizedResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
@@ -100,9 +115,15 @@ export function http202AcceptedResponse({ request, headers, message, location })
 function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   const merged = { ...(headers || {}) };
   // Always provide an x-request-id for client correlation; generate if not supplied
-  merged["x-request-id"] = context.get("requestId") || String(Date.now());
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (!merged["x-request-id"]) {
+    merged["x-request-id"] = context.get("requestId") || String(Date.now());
+  }
+  if (context.get("amznTraceId") && !merged["x-amzn-trace-id"]) {
+    merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  }
+  if (context.get("traceparent") && !merged["traceparent"]) {
+    merged["traceparent"] = context.get("traceparent");
+  }
   // Ensure x-correlationid is present; if missing, mirror x-request-id
   if (!merged["x-correlationid"]) {
     merged["x-correlationid"] = context.get("correlationId") || merged["x-request-id"];

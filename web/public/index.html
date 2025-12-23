@@ -82,6 +82,7 @@
     </footer>
 
     <script src="./submit.js"></script>
+    <script src="lib/request-cache.js"></script>
     <script src="widgets/hamburger-menu.js"></script>
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
@@ -90,29 +91,53 @@
     <script>
       // In-memory user bundles state (list of bundleId strings)
       let __userBundles = [];
+      let __fetchBundlesController = null;
 
       async function initializeBundles() {
         const idToken = localStorage.getItem("cognitoIdToken");
         const userInfo = localStorage.getItem("userInfo");
         if (idToken && userInfo) {
           console.log("User is authenticated");
+
+          // Abort previous fetch if any
+          if (__fetchBundlesController) {
+            __fetchBundlesController.abort();
+          }
+          __fetchBundlesController = new AbortController();
+          const signal = __fetchBundlesController.signal;
+
           // Fetch user bundles from endpoint (single source of truth)
           try {
-            const response = await window.fetchWithIdToken("/api/v1/bundle", {});
-
-            if (response.ok) {
-              const bundlesData = await response.json();
-              if (bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-                __userBundles = bundlesData.bundles.map((b) => b.bundleId);
-              } else {
-                __userBundles = [];
+            const rc = window.requestCache;
+            let bundlesData;
+            if (rc && typeof rc.getJSON === "function") {
+              bundlesData = await rc.getJSON("/api/v1/bundle", {
+                ttlMs: 5000,
+                init: { headers: { Authorization: `Bearer ${idToken}` }, signal },
+              });
+            } else {
+              const response = await window.fetchWithIdToken("/api/v1/bundle", { signal });
+              if (response.ok) {
+                bundlesData = await response.json();
               }
+            }
+
+            if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
+              __userBundles = bundlesData.bundles.map((b) => b.bundleId);
             } else {
               __userBundles = [];
             }
           } catch (err) {
+            if (err.name === "AbortError") {
+              console.log("Fetch user bundles aborted");
+              return;
+            }
             console.warn("Failed to fetch bundles:", err);
             __userBundles = [];
+          } finally {
+            if (__fetchBundlesController?.signal === signal) {
+              __fetchBundlesController = null;
+            }
           }
           renderDynamicActivities();
         } else {
@@ -132,10 +157,12 @@
       //  return (bundles || []).some((b) => typeof b === "string" && b === id);
       //}
 
-      // Parse bundle expiry date from bundle string
-      // TODO: Remove and use the returned bundle objects,
+      // Parse bundle expiry date from bundle string or object
       function parseBundleExpiry(bundleEntry) {
-        if (!bundleEntry || typeof bundleEntry !== "string") return null;
+        if (!bundleEntry) return null;
+        if (typeof bundleEntry === "object") return bundleEntry.expiry || null;
+        if (typeof bundleEntry !== "string") return null;
+
         const parts = bundleEntry.split("|");
         if (parts.length < 2) return null;
         const expiryMatch = parts[1].match(/EXPIRY=(.+)/);
@@ -170,7 +197,7 @@
         // Add granted non-expired bundles
         for (const bundleEntry of userBundles) {
           if (!isBundleExpired(bundleEntry)) {
-            const bundleId = bundleEntry.split("|")[0]; // Remove expiry info if present
+            const bundleId = typeof bundleEntry === "string" ? bundleEntry.split("|")[0] : bundleEntry.bundleId;
             active.add(bundleId);
           }
         }
@@ -183,7 +210,7 @@
         const expired = new Set();
         for (const bundleEntry of userBundles) {
           if (isBundleExpired(bundleEntry)) {
-            const bundleId = bundleEntry.split("|")[0];
+            const bundleId = typeof bundleEntry === "string" ? bundleEntry.split("|")[0] : bundleEntry.bundleId;
             expired.add(bundleId);
           }
         }

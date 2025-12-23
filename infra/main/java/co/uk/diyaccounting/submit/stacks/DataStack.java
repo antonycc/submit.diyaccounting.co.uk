@@ -20,6 +20,9 @@ public class DataStack extends Stack {
 
     public ITable receiptsTable;
     public ITable bundlesTable;
+    public ITable asyncRequestsTable;
+    public ITable bundlePostAsyncRequestsTable;
+    public ITable bundleDeleteAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
 
     @Value.Immutable
@@ -99,6 +102,29 @@ public class DataStack extends Stack {
                 "Created bundles DynamoDB table with name %s and id %s",
                 this.bundlesTable.getTableName(), this.bundlesTable.getNode().getId());
 
+        // Create DynamoDB table for async request storage
+        this.asyncRequestsTable = createAsyncRequestsTable(
+                props.resourceNamePrefix() + "-AsyncRequestsTable", props.sharedNames().asyncRequestsTableName);
+        infof(
+                "Created async requests DynamoDB table with name %s and id %s",
+                this.asyncRequestsTable.getTableName(), this.asyncRequestsTable.getNode().getId());
+
+        // Create DynamoDB table for bundle POST async request storage
+        this.bundlePostAsyncRequestsTable = createAsyncRequestsTable(
+                props.resourceNamePrefix() + "-BundlePostAsyncRequestsTable",
+                props.sharedNames().bundlePostAsyncRequestsTableName);
+        infof(
+                "Created bundle POST async requests DynamoDB table with name %s",
+                this.bundlePostAsyncRequestsTable.getTableName());
+
+        // Create DynamoDB table for bundle DELETE async request storage
+        this.bundleDeleteAsyncRequestsTable = createAsyncRequestsTable(
+                props.resourceNamePrefix() + "-BundleDeleteAsyncRequestsTable",
+                props.sharedNames().bundleDeleteAsyncRequestsTableName);
+        infof(
+                "Created bundle DELETE async requests DynamoDB table with name %s",
+                this.bundleDeleteAsyncRequestsTable.getTableName());
+
         // Create DynamoDB table for HMRC API requests storage
         this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
                 .tableName(props.sharedNames().hmrcApiRequestsTableName)
@@ -123,11 +149,30 @@ public class DataStack extends Stack {
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
+        cfnOutput(this, "AsyncRequestsTableName", this.asyncRequestsTable.getTableName());
+        cfnOutput(this, "AsyncRequestsTableArn", this.asyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
 
         infof(
                 "DataStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+    }
+
+    private ITable createAsyncRequestsTable(String id, String tableName) {
+        return Table.Builder.create(this, id)
+                .tableName(tableName)
+                .partitionKey(Attribute.builder()
+                        .name("hashedSub")
+                        .type(AttributeType.STRING)
+                        .build())
+                .sortKey(Attribute.builder()
+                        .name("requestId")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .timeToLiveAttribute("ttl")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
     }
 }

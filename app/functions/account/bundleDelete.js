@@ -6,7 +6,9 @@ import {
   extractRequest,
   parseRequestBody,
   http200OkResponse,
+  http400BadRequestResponse,
   http401UnauthorizedResponse,
+  http404NotFoundResponse,
   http500ServerErrorResponse,
   buildValidationError,
 } from "../../lib/httpResponseHelper.js";
@@ -15,8 +17,14 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { enforceBundles, updateUserBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { v4 as uuidv4 } from "uuid";
+import * as asyncApiServices from "../../services/asyncApiServices.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
+
+const MAX_WAIT_MS = 25_000;
+const DEFAULT_WAIT_MS = MAX_WAIT_MS; // Intentionally high wait time for synchronous processing
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -75,8 +83,13 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function handler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
-  const { request } = extractRequest(event);
-  const errorMessages = [];
+  const { request, requestId: extractedRequestId } = extractRequest(event);
+  const requestId = extractedRequestId || uuidv4();
+  if (!extractedRequestId) {
+    context.set("requestId", requestId);
+  }
+
+  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
 
   // Bundle enforcement
   try {
@@ -96,6 +109,7 @@ export async function handler(event) {
 
   logger.info({ message: "Deleting user bundle" });
 
+  const errorMessages = [];
   // Extract and validate parameters
   const { userId, bundleToRemove, removeAll } = extractAndValidateParameters(event, errorMessages);
 
@@ -116,83 +130,166 @@ export async function handler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
+  let result;
   // Processing
   try {
-    const result = await deleteUserBundle(userId, bundleToRemove, removeAll);
+    const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
 
-    if (result.status === "not_found") {
-      return http404NotFound(request, "Bundle not found", responseHeaders);
+    logger.info({ message: "Processing bundle delete for user", userId, bundleToRemove, removeAll, requestId, waitTimeMs });
+
+    // Check if there is already a persisted request for this ID
+    const persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+
+    if (persistedRequest) {
+      logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
+    } else {
+      // Not found: Initiate processing
+      const processor = async ({ userId, bundleToRemove, removeAll, requestId }) => {
+        return await deleteUserBundle(userId, bundleToRemove, removeAll, requestId);
+      };
+
+      result = await asyncApiServices.initiateProcessing({
+        processor,
+        userId,
+        requestId,
+        waitTimeMs,
+        payload: { userId, bundleToRemove, removeAll, requestId },
+        tableName: asyncTableName,
+        maxWaitMs: MAX_WAIT_MS,
+      });
     }
 
-    logger.info({ message: "Successfully deleted bundle", userId, status: result.status });
+    // If still no result (async path) and we have a wait time, poll for completion
+    if (!result && waitTimeMs > 0) {
+      result = await asyncApiServices.wait({ userId, requestId, waitTimeMs, tableName: asyncTableName });
+    }
 
-    return http200OkResponse({
-      request,
-      headers: { ...responseHeaders },
-      data: result,
-    });
+    // One last check before deciding whether to yield or return the final result
+    if (!result) {
+      result = await asyncApiServices.check({ userId, requestId, tableName: asyncTableName });
+    }
   } catch (error) {
-    logger.error({ message: "Error deleting bundle", error: error.message, stack: error.stack });
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Internal server error",
-      error: error.message,
-    });
+    if (error instanceof asyncApiServices.RequestFailedError) {
+      result = error.data;
+    } else {
+      logger.error({ message: "Error deleting bundle", error: error.message, stack: error.stack });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Internal server error",
+        error: error.message,
+      });
+    }
+  }
+
+  if (result?.status === "not_found" || result?.error === "not_found") {
+    return http404NotFoundResponse({ request, headers: responseHeaders, message: "Bundle not found", error: result });
+  }
+
+  return asyncApiServices.respond({
+    request,
+    requestId,
+    responseHeaders,
+    data: result,
+  });
+}
+
+// SQS consumer Lambda handler function
+export async function consumer(event) {
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"]);
+
+  logger.info({ message: "SQS Consumer entry", recordCount: event.Records?.length });
+
+  for (const record of event.Records || []) {
+    let userId;
+    let requestId;
+    try {
+      const body = JSON.parse(record.body);
+      userId = body.userId;
+      requestId = body.requestId;
+      const { bundleToRemove, removeAll } = body.payload;
+
+      if (!userId || !requestId) {
+        logger.error({ message: "SQS Message missing userId or requestId", recordId: record.messageId, body });
+        continue;
+      }
+
+      if (!context.getStore()) {
+        context.enterWith(new Map());
+      }
+      context.set("requestId", requestId);
+      context.set("userId", userId);
+
+      logger.info({ message: "Processing SQS message", userId, requestId, messageId: record.messageId });
+
+      await deleteUserBundle(userId, bundleToRemove, removeAll, requestId);
+
+      logger.info({ message: "Successfully processed SQS message", requestId });
+    } catch (error) {
+      logger.error({
+        message: "Error processing SQS message",
+        error: error.message,
+        stack: error.stack,
+        messageId: record.messageId,
+        userId,
+        requestId,
+      });
+      // Re-throw to trigger SQS retry/DLQ
+      throw error;
+    }
   }
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function deleteUserBundle(userId, bundleToRemove, removeAll) {
+export async function deleteUserBundle(userId, bundleToRemove, removeAll, requestId = null) {
+  logger.info({ message: "deleteUserBundle entry", userId, bundleToRemove, removeAll, requestId });
   const currentBundles = await getUserBundles(userId);
 
+  let result;
   if (removeAll) {
     // Use DynamoDB as primary storage via updateUserBundles
     await updateUserBundles(userId, []);
     logger.info({ message: `All bundles removed for user ${userId}` });
-    return {
+    result = {
       status: "removed_all",
       message: "All bundles removed",
       bundles: [],
     };
+  } else {
+    logger.info({ message: `Removing bundle ${bundleToRemove} for user ${userId}` });
+    const bundlesAfterRemoval = currentBundles.filter((bundle) => (bundle?.bundleId || bundle) !== bundleToRemove);
+
+    if (bundlesAfterRemoval.length === currentBundles.length) {
+      logger.error({ message: `Bundle ${bundleToRemove} not found for user ${userId}` });
+      result = {
+        status: "not_found",
+        statusCode: 404,
+      };
+    } else {
+      // Use DynamoDB as primary storage via updateUserBundles
+      await updateUserBundles(userId, bundlesAfterRemoval);
+      logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
+      result = {
+        status: "removed",
+        message: "Bundle removed",
+        bundle: bundleToRemove,
+        bundles: bundlesAfterRemoval,
+      };
+    }
   }
 
-  logger.info({ message: `Removing bundle ${bundleToRemove} for user ${userId}` });
-  const bundlesAfterRemoval = currentBundles.filter((bundle) => bundle !== bundleToRemove);
-
-  if (bundlesAfterRemoval.length === currentBundles.length) {
-    logger.error({ message: `Bundle ${bundleToRemove} not found for user ${userId}` });
-    return {
-      status: "not_found",
-    };
+  if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+    try {
+      if (result.status === "not_found") {
+        await putAsyncRequest(userId, requestId, "failed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
+      } else {
+        logger.info({ message: "Updating AsyncRequest status to completed", userId, requestId });
+        await putAsyncRequest(userId, requestId, "completed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
+      }
+    } catch (error) {
+      logger.error({ message: "Error storing async request result", error: error.message, requestId });
+    }
   }
 
-  // Use DynamoDB as primary storage via updateUserBundles
-  await updateUserBundles(userId, bundlesAfterRemoval);
-  logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
-  return {
-    status: "removed",
-    message: "Bundle removed",
-    bundle: bundleToRemove,
-    bundles: bundlesAfterRemoval,
-  };
-}
-
-function http404NotFound(request, message, responseHeaders) {
-  // Log with clear semantics and avoid misusing headers as a response code
-  logger.warn({ message, request });
-  // Return a proper 404 response (was incorrectly returning 400)
-  // We keep using the generic bad request builder style but with correct status
-  const reqId = context.get("requestId") || String(Date.now());
-  return {
-    statusCode: 404,
-    headers: {
-      ...(responseHeaders || {}),
-      "x-request-id": reqId,
-      "x-correlationid": reqId,
-      ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-      ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
-    },
-    body: JSON.stringify({ message }),
-  };
+  return result;
 }

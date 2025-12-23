@@ -89,24 +89,33 @@
           // TTL expired; try ETag revalidation
           const r = await fetchWithETag(url, entry.init || init, entry.etag);
           if (r.status === 304) {
-            entry.ts = Date.now();
+            if (L1.get(k) === record) {
+              entry.ts = Date.now();
+              entry.promise = null;
+            }
             return entry.data;
           }
-          const fresh = { ts: Date.now(), ttlMs, data: r.data, etag: r.etag, init };
-          L1.set(k, { ...fresh });
+          const fresh = { ts: Date.now(), ttlMs, data: r.data, etag: r.etag, init, promise: null };
+          if (L1.get(k) === record) {
+            L1.set(k, fresh);
+          }
           return r.data;
         } else {
           const fetchFn = chooseFetch(init);
           const res = await fetchFn(url, init);
           const etag = res.headers.get("ETag") || undefined;
           const data = await res.json();
-          const fresh = { ts: Date.now(), ttlMs, data, etag, init };
-          L1.set(k, { ...fresh });
+          const fresh = { ts: Date.now(), ttlMs, data, etag, init, promise: null };
+          if (L1.get(k) === record) {
+            L1.set(k, fresh);
+          }
           return data;
         }
       } catch (e) {
         // Do not cache failures
-        L1.delete(k);
+        if (L1.get(k) === record) {
+          L1.delete(k);
+        }
         throw e;
       }
     })();
