@@ -1,4 +1,4 @@
-name: synthetic test
+name: synthetic-test
 run-name: "synthetic test of ${{ github.ref_name }}"
 concurrency:
   group: synthetic-test-${{ github.ref_name }}
