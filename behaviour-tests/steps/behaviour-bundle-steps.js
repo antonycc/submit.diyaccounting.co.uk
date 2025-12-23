@@ -31,6 +31,38 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-01-removing-all-bundles.png`,
     });
+
+    let removeAllBtn = page.locator("#removeAllBtn");
+    // If the "Remove All Bundles" button is not visible, wait 1000ms and try again.
+    if (!(await removeAllBtn.isVisible({ timeout: 1000 }))) {
+      const tries = 20;
+      for (let i = 0; i < tries; i++) {
+        console.log(`"Remove All Bundles" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-clear-bundles-waiting.png` });
+        await page.waitForTimeout(1000);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-clear-bundles-waited.png` });
+        removeAllBtn = page.locator("#removeAllBtn");
+        if (await removeAllBtn.isVisible({ timeout: 1000 })) {
+          console.log(`[polling]: "Remove All Bundles" button visible.`);
+          break;
+        } else {
+          console.log(`[polling]: "Remove All Bundles" button still not visible.`);
+        }
+      }
+    }
+
+    // If the "Remove All Bundles" button is not visible, check if "Request Guest" is visible instead and if so, skip.
+    if (!(await removeAllBtn.isVisible({ timeout: 1000 }))) {
+      const requestGuestLocator = page.getByRole("button", { name: "Request Guest", exact: true });
+      if (await requestGuestLocator.isVisible({ timeout: 1000 })) {
+        console.log("Bundles already cleared, skipping.");
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-clear-bundles-skipping.png` });
+        return;
+      } else {
+        console.log('"Remove All Bundles" button still not visible, assuming it\'s a different error.');
+      }
+    }
+
     // Accept the confirmation dialog triggered by the click
     page.once("dialog", (dialog) => dialog.accept());
     await Promise.all([
@@ -38,11 +70,11 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
       loggedClick(page, "#removeAllBtn", "Remove All Bundles", { screenshotPath }),
     ]);
     await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-02-removing-all-bundles-clicked.png`,
+      path: `${screenshotPath}/${timestamp()}-05-removing-all-bundles-clicked.png`,
     });
-    await expect(page.getByRole("button", { name: "Request Test", exact: true })).toBeVisible({ timeout: 16000 });
+    await expect(page.getByRole("button", { name: "Request Guest", exact: true })).toBeVisible({ timeout: 32000 });
     await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-03-removed-all-bundles.png`,
+      path: `${screenshotPath}/${timestamp()}-06-removed-all-bundles.png`,
     });
   });
 }

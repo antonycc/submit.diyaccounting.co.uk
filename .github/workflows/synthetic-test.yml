@@ -24,6 +24,8 @@ on:
       - '!gh_pages'
       - '!dependabot/**'
     paths:
+      - 'behaviour-tests/bundles.behaviour.test.js'
+      - 'behaviour-tests/submitVat.behaviour.test.js'
       - '.github/workflows/synthetic-test.yml'
 
 permissions:
