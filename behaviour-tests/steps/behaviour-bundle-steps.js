@@ -49,6 +49,8 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
           console.log(`[polling]: "Remove All Bundles" button still not visible.`);
         }
       }
+    } else {
+      console.log('"Remove All Bundles" button already visible.');
     }
 
     // If the "Remove All Bundles" button is not visible, check if "Request Guest" is visible instead and if so, skip.
@@ -61,6 +63,8 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
       } else {
         console.log('"Remove All Bundles" button still not visible, assuming it\'s a different error.');
       }
+    } else {
+      console.log('"Remove All Bundles" button visible.');
     }
 
     // Accept the confirmation dialog triggered by the click
@@ -72,9 +76,34 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-05-removing-all-bundles-clicked.png`,
     });
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle.png` });
+    const bundleName = isSandboxMode(page) ? "Test" : "Guest";
+    let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
+    // await expect(page.getByText("Request test")).toBeVisible();
+    // If the "Request test" button is not visible, wait 1000ms and try again.
+    if (!(await requestTestLocator.isVisible({ timeout: 1000 }))) {
+      const tries = 20;
+      for (let i = 0; i < tries; i++) {
+        console.log(`"Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-request-bundle-waiting.png` });
+        await page.waitForTimeout(1000);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-request-bundle-waited.png` });
+        requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
+        if (await requestTestLocator.isVisible({ timeout: 1000 })) {
+          console.log(`[polling]: ${bundleName} bundle request button visible.`);
+          break;
+        } else {
+          console.log(`[polling]: ${bundleName} bundle request button still not visible.`);
+        }
+      }
+    } else {
+      console.log(`${bundleName} bundle request button already visible.`);
+    }
+
     await expect(page.getByRole("button", { name: "Request Guest", exact: true })).toBeVisible({ timeout: 32000 });
     await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-06-removed-all-bundles.png`,
+      path: `${screenshotPath}/${timestamp()}-09-removed-all-bundles.png`,
     });
   });
 }
@@ -101,6 +130,8 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
           console.log(`[polling]: ${bundleName} bundle still not present.`);
         }
       }
+    } else {
+      console.log(`${bundleName} bundle already present.`);
     }
     // Fallback: look for the specific test bundle button by data attribute in case role+name fails (e.g., due to special characters)
     //const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
@@ -145,6 +176,8 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
           console.log(`[polling]: ${bundleName} bundle request button still not visible.`);
         }
       }
+    } else {
+      console.log(`${bundleName} bundle request button already visible.`);
     }
 
     // If the "Request test" button is not visible, check if "Added ✓" is visible instead and if so, skip the request.
