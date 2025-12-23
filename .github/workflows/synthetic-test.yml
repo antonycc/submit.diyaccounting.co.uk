@@ -4,6 +4,8 @@ concurrency:
   group: synthetic-test-${{ github.ref_name }}
   cancel-in-progress: true
 
+# bump 00
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,8 +18,16 @@ on:
           - 'ci'
           - 'prod'
         default: ''
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+      - '!dependabot/**'
+    paths:
+      - '.github/workflows/synthetic-test.yml'
 
 permissions:
+  id-token: write
   contents: read
 
 env:
