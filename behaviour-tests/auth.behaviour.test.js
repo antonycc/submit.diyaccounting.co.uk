@@ -32,6 +32,7 @@ import {
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
 import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
+import { clearBundles, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
@@ -188,6 +189,14 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
   /* ********** */
 
   await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+
+  /* ********* */
+  /*  BUNDLES  */
+  /* ********* */
+
+  await goToBundlesPage(page, screenshotPath);
+  await clearBundles(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ****************** */
