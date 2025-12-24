@@ -1971,6 +1971,7 @@ jobs:
       - names
       - set-origins
       - deploy-publish
+      - behaviour-test-get-vat-return
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
