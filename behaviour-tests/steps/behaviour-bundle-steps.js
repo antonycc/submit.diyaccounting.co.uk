@@ -57,7 +57,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
 
     // If the "Remove All Bundles" button is not visible, check if "Request Guest" is visible instead and if so, skip.
     if (!(await removeAllBtn.isVisible({ timeout: 1000 }))) {
-      const requestGuestLocator = page.getByRole("button", { name: "Request Guest", exact: true });
+      const requestGuestLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: true });
       if (await requestGuestLocator.isVisible({ timeout: 1000 })) {
         console.log("Bundles already cleared, skipping.");
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-clear-bundles-skipping.png` });
