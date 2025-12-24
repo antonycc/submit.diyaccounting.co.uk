@@ -1,8 +1,10 @@
-name: synthetic test
+name: synthetic-test
 run-name: "synthetic test of ${{ github.ref_name }}"
 concurrency:
   group: synthetic-test-${{ github.ref_name }}
   cancel-in-progress: true
+
+# bump 00
 
 on:
   workflow_dispatch:
@@ -16,8 +18,18 @@ on:
           - 'ci'
           - 'prod'
         default: ''
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+      - '!dependabot/**'
+    paths:
+      - 'behaviour-tests/bundles.behaviour.test.js'
+      - 'behaviour-tests/submitVat.behaviour.test.js'
+      - '.github/workflows/synthetic-test.yml'
 
 permissions:
+  id-token: write
   contents: read
 
 env:
@@ -46,11 +58,120 @@ jobs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
 
+  web-test-bundle:
+    name: 'web test bundle'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v1.57.0-jammy
+    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour tests - bundleBehaviour
+        run: |
+          npm run 'test:bundleBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Export DynamoDB data for test users
+        if: ${{ !cancelled() }}
+        run: |
+          chmod +x scripts/export-test-dynamodb.sh
+          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESULTS_DIR: target/behaviour-test-results
+
+      - name: Generate test report JSON files
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Generating test report JSON files from behaviour test results..."
+          node scripts/generate-test-reports.js \
+            --testName bundle \
+            --testFile 'behaviour-tests/bundles.behaviour.test.js' \
+            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+          ;
+        shell: bash
+
+      - name: List artefacts
+        if: ${{ !cancelled() }}
+        run: |
+          echo "Behaviour test results files:"
+          find target/behaviour-test-results/ -type f -exec ls -l {} \;
+          echo "Test report files:"
+          find target/test-reports/ -type f -exec ls -l {} \;
+        shell: bash
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: web-test-artifacts-bundle
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: web-test-reports-bundle
+          retention-days: 30
+          path: |
+            target/test-reports/
+
+
   web-test-submit-vat-sandbox:
-    if: ${{ !cancelled() }}
     name: 'web test submit vat sandbox'
     needs:
       - names
+      - web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
