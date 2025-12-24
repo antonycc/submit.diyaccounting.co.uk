@@ -1,0 +1,113 @@
+name: "Behaviour Test Post Steps"
+description: "Common post-test steps for behaviour tests: AWS configuration, DynamoDB export, report generation, and artifact upload"
+
+inputs:
+  environment-name:
+    description: "Environment name (ci or prod)"
+    required: true
+  deployment-name:
+    description: "Deployment name for DynamoDB export"
+    required: true
+  artifact-name:
+    description: "Base name for artifacts (e.g., 'bundle' or 'submit-vat-sandbox')"
+    required: true
+  generate-reports:
+    description: "Whether to generate test reports (true/false)"
+    required: false
+    default: "false"
+  test-name:
+    description: "Test name for report generation"
+    required: false
+    default: ""
+  test-file:
+    description: "Path to test file for report generation"
+    required: false
+    default: ""
+  env-file:
+    description: "Path to environment file for report generation"
+    required: false
+    default: ""
+  aws-region:
+    description: "AWS region"
+    required: true
+  actions-role-arn:
+    description: "ARN for GitHub Actions role"
+    required: true
+  deploy-role-arn:
+    description: "ARN for deployment role"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS role via GitHub OIDC
+      if: ${{ !cancelled() }}
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ inputs.actions-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: false
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Assume AWS deployment role
+      if: ${{ !cancelled() }}
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ inputs.deploy-role-arn }}
+        aws-region: ${{ inputs.aws-region }}
+        role-chaining: true
+        audience: sts.amazonaws.com
+        role-skip-session-tagging: true
+        output-credentials: true
+        retry-max-attempts: 3
+
+    - name: Export DynamoDB data for test users
+      if: ${{ !cancelled() }}
+      shell: bash
+      run: |
+        chmod +x scripts/export-test-dynamodb.sh
+        scripts/export-test-dynamodb.sh ${{ inputs.deployment-name }}
+      env:
+        AWS_REGION: ${{ inputs.aws-region }}
+        RESULTS_DIR: target/behaviour-test-results
+
+    - name: Generate test report JSON files
+      if: ${{ !cancelled() && inputs.generate-reports == 'true' }}
+      shell: bash
+      run: |
+        echo "Generating test report JSON files from behaviour test results..."
+        node scripts/generate-test-reports.js \
+          --testName ${{ inputs.test-name }} \
+          --testFile '${{ inputs.test-file }}' \
+          --envFile '${{ inputs.env-file }}' \
+        ;
+
+    - name: List artefacts
+      if: ${{ !cancelled() && inputs.generate-reports == 'true' }}
+      shell: bash
+      run: |
+        echo "Behaviour test results files:"
+        find target/behaviour-test-results/ -type f -exec ls -l {} \;
+        echo "Test report files:"
+        find target/test-reports/ -type f -exec ls -l {} \;
+
+    - name: Upload artifacts (results)
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: web-test-artifacts-${{ inputs.artifact-name }}
+        retention-days: 30
+        path: |
+          target/behaviour-test-results/
+
+    - name: Upload artifacts (reports)
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: web-test-reports-${{ inputs.artifact-name }}
+        retention-days: 30
+        path: |
+          target/test-reports/

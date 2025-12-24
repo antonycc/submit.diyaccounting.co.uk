@@ -95,76 +95,19 @@ jobs:
           #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
           #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
-      - name: Configure AWS role via GitHub OIDC
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
+      - name: Post-test steps (AWS config, DynamoDB export, reports, artifacts)
+        uses: './.github/actions/behaviour-test-post-steps'
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          deployment-name: ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
+          artifact-name: bundle
+          generate-reports: 'true'
+          test-name: bundle
+          test-file: 'behaviour-tests/bundles.behaviour.test.js'
+          env-file: '.env.${{ needs.names.outputs.environment-name }}'
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() }}
-        run: |
-          chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          RESULTS_DIR: target/behaviour-test-results
-
-      - name: Generate test report JSON files
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Generating test report JSON files from behaviour test results..."
-          node scripts/generate-test-reports.js \
-            --testName bundle \
-            --testFile 'behaviour-tests/bundles.behaviour.test.js' \
-            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
-          ;
-        shell: bash
-
-      - name: List artefacts
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Behaviour test results files:"
-          find target/behaviour-test-results/ -type f -exec ls -l {} \;
-          echo "Test report files:"
-          find target/test-reports/ -type f -exec ls -l {} \;
-        shell: bash
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-artifacts-bundle
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-reports-bundle
-          retention-days: 30
-          path: |
-            target/test-reports/
+          actions-role-arn: ${{ env.ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ env.DEPLOY_ROLE_ARN }}
 
 
   web-test-submit-vat-sandbox:
@@ -206,55 +149,15 @@ jobs:
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-      - name: Configure AWS role via GitHub OIDC
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
       # TODO: Write the result to a metric available to CloudWatch Alarms
 
-      - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() }}
-        run: |
-          chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          RESULTS_DIR: target/behaviour-test-results
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+      - name: Post-test steps (AWS config, DynamoDB export, artifacts)
+        uses: './.github/actions/behaviour-test-post-steps'
         with:
-          name: web-test-artifacts-submit-vat-sandbox
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-reports-submit-vat-sandbox
-          retention-days: 30
-          path: |
-            target/test-reports/
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          deployment-name: ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
+          artifact-name: submit-vat-sandbox
+          generate-reports: 'false'
+          aws-region: ${{ env.AWS_REGION }}
+          actions-role-arn: ${{ env.ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ env.DEPLOY_ROLE_ARN }}
