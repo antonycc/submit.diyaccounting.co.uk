@@ -53,6 +53,8 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
       console.log('"Remove All Bundles" button already visible.');
     }
 
+    const bundleName = "Guest"; // isSandboxMode(page) ? "Test" : "Guest";
+
     // If the "Remove All Bundles" button is not visible, check if "Request Guest" is visible instead and if so, skip.
     if (!(await removeAllBtn.isVisible({ timeout: 1000 }))) {
       const requestGuestLocator = page.getByRole("button", { name: "Request Guest", exact: true });
@@ -78,7 +80,6 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     });
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle.png` });
-    const bundleName = isSandboxMode(page) ? "Test" : "Guest";
     let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
     // await expect(page.getByText("Request test")).toBeVisible();
     // If the "Request test" button is not visible, wait 1000ms and try again.
