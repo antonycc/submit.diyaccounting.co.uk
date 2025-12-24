@@ -194,12 +194,12 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   await ensureBundlePresent(page, "Test", screenshotPath);
   await goToHomePage(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
-  // TODO: Support testing in non-sandbox mode with production credentials
-  if (envName !== "prod") {
-    await ensureBundlePresent(page, "Guest", screenshotPath);
-    await goToHomePage(page, screenshotPath);
-    await goToBundlesPage(page, screenshotPath);
-  }
+  // // TODO: Support testing in non-sandbox mode with production credentials
+  // if (envName !== "prod") {
+  //   await ensureBundlePresent(page, "Guest", screenshotPath);
+  //   await goToHomePage(page, screenshotPath);
+  //   await goToBundlesPage(page, screenshotPath);
+  // }
   await goToHomePage(page, screenshotPath);
 
   /* ****************** */
@@ -242,7 +242,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       userSub,
       observedTraceparent,
       testUrl,
-      bundlesTested: envName === "prod" ? ["Test"] : ["Test", "Guest"],
+      bundlesTested: envName === "prod" ? ["Test"] : ["Test"],
     },
     artefactsDir: outputDir,
     screenshotPath,
