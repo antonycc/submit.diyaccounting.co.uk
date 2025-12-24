@@ -1964,7 +1964,7 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
-  auth-test-bundle:
+  web-test-auth:
     if: ${{ !cancelled() }}
     name: 'auth test bundle'
     needs:
@@ -2082,7 +2082,7 @@ jobs:
       - names
       - set-origins
       - deploy-publish
-      - auth-test-bundle
+      - web-test-auth
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
