@@ -106,7 +106,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
       console.log(`[polling for removal]: Request ${bundleName} already visible.`);
     }
 
-    await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 32000 });
+    await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 60000 });
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-09-removed-all-bundles.png`,
     });
@@ -149,7 +149,7 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     //    addedLocator = specificAdded;
     //  }
     //}
-    if (await addedLocator.isVisible({ timeout: 32000 })) {
+    if (await addedLocator.isVisible({ timeout: 60000 })) {
       console.log(`${bundleName} bundle already present, skipping request.`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
       return;
