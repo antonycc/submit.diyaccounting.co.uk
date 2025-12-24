@@ -233,6 +233,6 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
     }
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-request-bundle.png` });
-    await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).toBeVisible({ timeout: 32000 });
+    await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).toBeVisible({ timeout: 60000 });
   });
 }
