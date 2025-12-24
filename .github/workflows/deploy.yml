@@ -2000,9 +2000,24 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+
+      - name: Run behaviour tests - authBehaviour
+        run: |
+          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+
+      - name: Run behaviour tests - authBehaviour
+        run: |
+          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
