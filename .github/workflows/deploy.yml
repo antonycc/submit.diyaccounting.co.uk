@@ -335,7 +335,7 @@ jobs:
 
   behaviour-test-fraud-prevention-headers-vat:
     name: 'behaviour test - fraud prevention headers vat (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-submit-vat
@@ -399,7 +399,7 @@ jobs:
 
   behaviour-test-obligation:
     name: 'behaviour test - obligation (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-fraud-prevention-headers-vat
@@ -463,7 +463,7 @@ jobs:
 
   behaviour-test-post-vat-return:
     name: 'behaviour test - post vat return (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-obligation
@@ -527,7 +527,7 @@ jobs:
 
   behaviour-test-get-vat-return:
     name: 'behaviour test - get vat return (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-post-vat-return
@@ -2425,7 +2425,7 @@ jobs:
             target/test-reports/
 
   web-test-post-vat-return-sandbox:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test post vat return sandbox'
     needs:
       - names
@@ -2540,7 +2540,7 @@ jobs:
             target/test-reports/
 
   web-test-fraud-prevention-headers-vat-sandbox:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test fraud prevention headers vat sandbox'
     needs:
       - names
@@ -2652,7 +2652,7 @@ jobs:
             target/test-reports/
 
   web-test-get-vat-return-sandbox:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test get vat return sandbox'
     needs:
       - names
@@ -2767,7 +2767,7 @@ jobs:
             target/test-reports/
 
   web-test-obligation-sandbox:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test obligation sandbox'
     needs:
       - names
