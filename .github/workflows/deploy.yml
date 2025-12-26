@@ -54,7 +54,7 @@ on:
           - 'true'
           - 'false'
         required: false
-        default: 'false'
+        default: 'true'
   push:
     branches:
       - '**'
@@ -2540,7 +2540,7 @@ jobs:
             target/test-reports/
 
   web-test-fraud-prevention-headers-vat-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
     name: 'web test fraud prevention headers vat sandbox'
     needs:
       - names
