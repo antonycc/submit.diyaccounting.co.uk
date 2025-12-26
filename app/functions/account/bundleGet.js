@@ -28,7 +28,7 @@ export function apiEndpoint(app) {
   app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
     // set 'x-wait-time-ms' to MAX_WAIT_MS in the inbound request for processing as a synchronous call if not set in the inbound request.
     // if (!httpRequest.headers["x-wait-time-ms"]) {
-    //  httpRequest.headers["x-wait-time-ms"] = DEFAULT_WAIT_MS;
+    //  httpRequest.headers["x-wait-time-ms"] = MAX_WAIT_MS;
     // }
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await handler(lambdaEvent);

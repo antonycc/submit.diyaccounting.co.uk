@@ -66,7 +66,7 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-catalogGetApiEndpoint(app);
+// catalogGetApiEndpoint(app);
 mockAuthUrlGetApiEndpoint(app);
 mockTokenPostApiEndpoint(app);
 bundleGetApiEndpoint(app);

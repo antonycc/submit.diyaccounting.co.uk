@@ -90,6 +90,7 @@
 
     <script src="../submit.js"></script>
     <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/hamburger-menu.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
@@ -111,23 +112,25 @@
 
       // Lightweight wrappers that use page-level cache when available, with safe fallbacks for tests
       const __rc = typeof window !== "undefined" && window.requestCache ? window.requestCache : null;
-      const getJSON = async (url, opts = {}) => {
+      const fetchAndParse = async (url, opts = {}) => {
         try {
-          if (__rc && typeof __rc.getJSON === "function") return __rc.getJSON(url, opts);
+          if (__rc && typeof __rc.getJSON === "function" && !url.endsWith(".toml")) return __rc.getJSON(url, opts);
         } catch {}
         // Fallback: Use fetchWithIdToken if authorization is needed
         const init = opts.init || {};
         const hasAuthHeader = init.headers && (init.headers.Authorization || init.headers.authorization);
+        let res;
         if (hasAuthHeader && window.fetchWithIdToken) {
-          const res = await window.fetchWithIdToken(url, init);
-          try {
-            return await res.json();
-          } catch {
-            return null;
-          }
+          res = await window.fetchWithIdToken(url, init);
+        } else {
+          res = await fetch(url, init);
         }
-        const res = await fetch(url, init);
+
         try {
+          if (url.endsWith(".toml")) {
+            const text = await res.text();
+            return window.TOML ? window.TOML.parse(text) : null;
+          }
           return await res.json();
         } catch {
           return null;
@@ -161,7 +164,7 @@
         const signal = __fetchBundlesController.signal;
 
         try {
-          const bundlesData = await getJSON("/api/v1/bundle", {
+          const bundlesData = await fetchAndParse("/api/v1/bundle", {
             ttlMs: 5000,
             init: { headers: { Authorization: `Bearer ${idToken}` }, signal },
           });
@@ -305,7 +308,7 @@
 
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
-          const catalog = await getJSON("/product-catalogue.toml", {
+          const catalog = await fetchAndParse("/product-catalogue.toml", {
             ttlMs: 300000,
             init: headers ? { headers } : undefined,
           });
