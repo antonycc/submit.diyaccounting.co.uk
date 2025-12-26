@@ -57,12 +57,6 @@ lambdas:
       zero: 0
       peak: 1
 
-  - name: submit-app-catalog-get
-    handler: app/functions/account/catalogGet.handler
-    concurrency:
-      zero: 0
-      peak: 1
-
   - name: submit-app-bundle-get
     handler: app/functions/account/bundleGet.handler
     concurrency:

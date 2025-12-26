@@ -27,10 +27,6 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
-    public ApiLambdaProps catalogLambdaProps;
-    public Function catalogLambda;
-    public ILogGroup catalogLambdaLogGroup;
-
     public ApiLambdaProps bundleGetLambdaProps;
     public Function bundleGetLambda;
     public ILogGroup bundleGetLambdaLogGroup;
@@ -120,34 +116,6 @@ public class AccountStack extends Stack {
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
-
-        // Catalog Lambda
-//        var catalogLambdaEnv =
-//                new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
-//        var catalogLambdaUrlOrigin = new ApiLambda(
-//                this,
-//                ApiLambdaProps.builder()
-//                        .idPrefix(props.sharedNames().catalogGetLambdaFunctionName)
-//                        .baseImageTag(props.baseImageTag())
-//                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-//                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-//                        .functionName(props.sharedNames().catalogGetLambdaFunctionName)
-//                        .handler(props.sharedNames().catalogGetLambdaHandler)
-//                        .lambdaArn(props.sharedNames().catalogGetLambdaArn)
-//                        .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
-//                        .urlPath(props.sharedNames().catalogGetLambdaUrlPath)
-//                        .jwtAuthorizer(props.sharedNames().catalogGetLambdaJwtAuthorizer)
-//                        .customAuthorizer(props.sharedNames().catalogGetLambdaCustomAuthorizer)
-//                        .environment(catalogLambdaEnv)
-//                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-//                        .build());
-//        this.catalogLambdaProps = catalogLambdaUrlOrigin.apiProps;
-//        this.catalogLambda = catalogLambdaUrlOrigin.lambda;
-//        this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
-//        this.lambdaFunctionProps.add(this.catalogLambdaProps);
-//        infof(
-//                "Created Lambda %s for catalog retrieval with handler %s",
-//                this.catalogLambda.getNode().getId(), props.sharedNames().catalogGetLambdaHandler);
 
         // Construct Cognito User Pool ARN for IAM policies
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
@@ -347,7 +315,6 @@ public class AccountStack extends Stack {
                 "Granted Cognito and DynamoDB permissions to %s and its consumer",
                 this.bundleDeleteLambda.getFunctionName());
 
-        //cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());
         cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());

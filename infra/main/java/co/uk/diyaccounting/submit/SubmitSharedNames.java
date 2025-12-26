@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -189,14 +190,6 @@ public class SubmitSharedNames {
     public String receiptGetByNameLambdaUrlPath;
     public boolean receiptGetLambdaJwtAuthorizer;
     public boolean receiptGetLambdaCustomAuthorizer;
-
-    public String catalogGetLambdaHandler;
-    public String catalogGetLambdaFunctionName;
-    public String catalogGetLambdaArn;
-    public HttpMethod catalogGetLambdaHttpMethod;
-    public String catalogGetLambdaUrlPath;
-    public boolean catalogGetLambdaJwtAuthorizer;
-    public boolean catalogGetLambdaCustomAuthorizer;
 
     public String bundleGetLambdaHandler;
     public String bundleGetLambdaConsumerHandler;
@@ -568,24 +561,6 @@ public class SubmitSharedNames {
                 "Retrieves a specific stored receipt for the authenticated user by file name",
                 "getReceiptByName",
                 List.of(new ApiParameter("name", "path", true, "The receipt file name including .json"))));
-
-        this.catalogGetLambdaHttpMethod = HttpMethod.GET;
-        this.catalogGetLambdaUrlPath = "/api/v1/catalog";
-        this.catalogGetLambdaJwtAuthorizer = false;
-        this.catalogGetLambdaCustomAuthorizer = false;
-        var catalogGetLambdaHandlerName = "catalogGet.handler";
-        var catalogGetLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(catalogGetLambdaHandlerName);
-        this.catalogGetLambdaFunctionName =
-                "%s-%s".formatted(this.appResourceNamePrefix, catalogGetLambdaHandlerDashed);
-        this.catalogGetLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, catalogGetLambdaHandlerName);
-        this.catalogGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, catalogGetLambdaHandlerDashed);
-        publishedApiLambdas.add(new PublishedLambda(
-                this.catalogGetLambdaHttpMethod,
-                this.catalogGetLambdaUrlPath,
-                "Get product catalog",
-                "Retrieves the available product catalog",
-                "getCatalog"));
 
         this.bundleGetLambdaHttpMethod = HttpMethod.GET;
         this.bundleGetLambdaUrlPath = "/api/v1/bundle";

@@ -23,10 +23,9 @@ Based on `lambda-concurrency-config.yaml`:
 7. submit-app-hmrc-vat-return-get (app/functions/hmrc/hmrcVatReturnGet.handler) (peak=1)
 8. submit-app-hmrc-receipt-post (app/functions/hmrc/hmrcReceiptPost.handler) (peak=1)
 9. submit-app-hmrc-receipt-get (app/functions/hmrc/hmrcReceiptGet.handler) (peak=1)
-10. submit-app-catalog-get (app/functions/account/catalogGet.handler) (peak=1)
-11. **submit-app-bundle-get (app/functions/account/bundleGet.handler) (peak=2)**
-12. submit-app-bundle-post (app/functions/account/bundlePost.handler) (peak=1)
-13. submit-app-bundle-delete (app/functions/account/bundleDelete.handler) (peak=1)
+10. submit-app-bundle-get (app/functions/account/bundleGet.handler) (peak=2)**
+11. submit-app-bundle-post (app/functions/account/bundlePost.handler) (peak=1)
+12. submit-app-bundle-delete (app/functions/account/bundleDelete.handler) (peak=1)
 
 ### SQS Consumers (3)
 Consumers are configured at 2x their API handler concurrency for better throughput:

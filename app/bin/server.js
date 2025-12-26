@@ -4,7 +4,6 @@
 import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
-import { apiEndpoint as catalogGetApiEndpoint } from "../functions/account/catalogGet.js";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
 import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
@@ -66,7 +65,6 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public")));
 
-// catalogGetApiEndpoint(app);
 mockAuthUrlGetApiEndpoint(app);
 mockTokenPostApiEndpoint(app);
 bundleGetApiEndpoint(app);

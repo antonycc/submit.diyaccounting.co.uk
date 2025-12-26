@@ -446,19 +446,6 @@
         }
       }
     },
-    "/catalog" : {
-      "get" : {
-        "summary" : "Get product catalog",
-        "description" : "Retrieves the available product catalog",
-        "operationId" : "getCatalog",
-        "tags" : [ "Account" ],
-        "responses" : {
-          "200" : {
-            "description" : "Catalog retrieved successfully"
-          }
-        }
-      }
-    },
     "/cognito/authUrl" : {
       "get" : {
         "summary" : "Get Cognito authentication URL",

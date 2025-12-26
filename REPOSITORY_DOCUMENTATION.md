@@ -1009,7 +1009,6 @@ All Lambda functions run Node.js 22 from Docker images stored in ECR.
 
 | Function | Path | Handler | Purpose |
 |----------|------|---------|---------|
-| `catalogGet` | `/account/catalog` | `app/functions/account/catalogGet.js` | Get product catalog (from TOML file) |
 | `bundleGet` | `/account/bundles` | `app/functions/account/bundleGet.js` | Get user's bundles from DynamoDB |
 | `bundlePost` | `/account/bundles` | `app/functions/account/bundlePost.js` | Create/update bundle in DynamoDB |
 | `bundleDelete` | `/account/bundles` | `app/functions/account/bundleDelete.js` | Delete bundle from DynamoDB |
@@ -1214,7 +1213,6 @@ app.get('/hmrc/receipts', adaptLambda(hmrcReceiptGet))
 app.post('/hmrc/receipts', adaptLambda(hmrcReceiptPost))
 
 // Account routes
-app.get('/account/catalog', adaptLambda(catalogGet))
 app.get('/account/bundles', adaptLambda(bundleGet))
 app.post('/account/bundles', adaptLambda(bundlePost))
 app.delete('/account/bundles', adaptLambda(bundleDelete))
@@ -1535,8 +1533,7 @@ app/
 │   ├── account/            # User account management
 │   │   ├── bundleGet.js                  # Get user bundles
 │   │   ├── bundlePost.js                 # Create/update bundle
-│   │   ├── bundleDelete.js               # Delete bundle
-│   │   └── catalogGet.js                 # Get product catalog
+│   │   └── bundleDelete.js               # Delete bundle
 │   ├── infra/              # Infrastructure functions
 │   │   ├── hmrcHttpProxy.js              # HTTP proxy with rate limiting
 │   │   └── selfDestruct.js               # Auto-delete non-prod stacks
