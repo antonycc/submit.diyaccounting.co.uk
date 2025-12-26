@@ -39,7 +39,7 @@ repository-contents.txt:
 .github/actions/get-names/action.yml
 .github/actions/set-origins/action.yml
 ./jsconfig.json
-./product-catalogue.toml
+./web/public/product-catalogue.toml
 ./product-subscribers.subs
 ./infra/test/resources/fake-self-destruct-lambda.jar
 ./infra/test/resources/log4j2.yml
@@ -282,7 +282,6 @@ repository-contents.txt:
 ./scripts/clean.sh
 ./scripts/export-test-dynamodb.sh
 ./scripts/export-dynamodb-for-test-users.js
-./scripts/render-catalogue.mjs
 ./scripts/aws-assume-user-provisioning-role.sh
 ./scripts/deep-clean.sh
 ./scripts/list-domains.sh

@@ -10,7 +10,7 @@ export function parseCatalog(tomlString) {
 }
 
 export function loadCatalogFromRoot() {
-  const filePath = path.join(process.cwd(), "product-catalogue.toml");
+  const filePath = path.join(process.cwd(), "web/public/product-catalogue.toml");
   const raw = fs.readFileSync(filePath, "utf-8");
   return parseCatalog(raw);
 }

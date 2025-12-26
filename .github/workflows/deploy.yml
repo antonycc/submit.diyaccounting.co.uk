@@ -74,7 +74,7 @@ on:
       - 'LICENSE'
       - 'package.json'
       - 'pom.xml'
-      - 'product-catalogue.toml'
+      - 'web/public/product-catalogue.toml'
       - 'lambda-concurrency-config.yaml'
       - '.github/actions/get-names'
       - '.github/actions/set-origins'

@@ -70,7 +70,7 @@ Bundle added successfully!
 ```
 
 The script:
-- Reads bundle timeout from product-catalogue.toml
+- Reads bundle timeout from web/public/product-catalogue.toml
 - Calculates expiry based on ISO 8601 duration (P1D = 1 day, P1M = 1 month)
 - Calculates TTL as 1 month after expiry
 - Generates DynamoDB JSON in the correct format
@@ -78,7 +78,7 @@ The script:
 
 **Requirements:**
 - AWS credentials configured (for accessing DynamoDB)
-- product-catalogue.toml file in repository root
+- web/public/product-catalogue.toml file in repository root
 - DynamoDB table must exist: `{environment}-submit-bundles`
 
 ## File: product-subscribers.subs
@@ -152,7 +152,7 @@ The DynamoDB table doesn't exist. Ensure:
 - AWS credentials have access to the table
 
 ### Invalid timeout format
-Ensure the bundle exists in product-catalogue.toml with a valid timeout:
+Ensure the bundle exists in web/public/product-catalogue.toml with a valid timeout:
 - `P1D` - 1 day
 - `P1M` - 1 month
 - `P1Y` - 1 year

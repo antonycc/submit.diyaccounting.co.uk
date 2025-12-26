@@ -305,7 +305,7 @@
 
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
-          const catalog = await getJSON("/api/v1/catalog", {
+          const catalog = await getJSON("/product-catalogue.toml", {
             ttlMs: 300000,
             init: headers ? { headers } : undefined,
           });

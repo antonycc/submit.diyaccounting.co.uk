@@ -1487,7 +1487,7 @@ Hierarchical overview of the repository organized by function.
 | `package-lock.json` | File | Locked npm dependency versions |
 | `playwright.config.js` | File | Playwright test configuration |
 | `pom.xml` | File | Maven project configuration |
-| `product-catalogue.toml` | File | Product/bundle catalog definitions |
+| `web/public/product-catalogue.toml` | File | Product/bundle catalog definitions |
 | `product-subscribers.subs` | File | List of subscriber IDs for bundle provisioning |
 | `README.md` | File | Repository readme with quickstart |
 | `vitest.config.js` | File | Vitest test configuration |
@@ -1787,7 +1787,6 @@ These files define specific strategic personas and processes for GitHub Copilot 
 | `export-dynamodb-for-test-users.js` | Export specific user data |
 | `generate-test-reports.js` | Generate HTML test reports from Playwright results |
 | `playwright-video-reporter.js` | Custom Playwright video reporter |
-| `render-catalogue.mjs` | Render product catalog from TOML to HTML |
 | `update.sh` | Update npm and Maven dependencies |
 | `update-java.sh` | Update Java dependencies |
 | `docker-build-codex.sh` | Build Codex Docker image |
@@ -1816,7 +1815,7 @@ These files define specific strategic personas and processes for GitHub Copilot 
 
 ### Key Files
 
-**product-catalogue.toml**: Defines available products/bundles in TOML format
+**web/public/product-catalogue.toml**: Defines available products/bundles in TOML format
 ```toml
 [products.test]
 name = "Test"

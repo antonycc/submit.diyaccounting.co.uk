@@ -24,7 +24,7 @@
 
     fetchPromises.catalog = (async () => {
       try {
-        const response = await fetch("/api/v1/catalog");
+        const response = await fetch("/product-catalogue.toml");
         if (response.ok) {
           catalogCache = await response.json();
           return catalogCache;
