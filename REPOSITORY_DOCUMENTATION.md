@@ -312,8 +312,6 @@ Behaviour tests use Playwright to test complete user journeys against running in
 |--------|---------|-------------|
 | `users:provision` | `node app/bin/provision-user.mjs` | **Provision test users**: Creates Cognito users for testing |
 | `test-report` | `node scripts/generate-test-reports.js --testName html-report` | **Generate test reports**: Creates HTML reports from Playwright test results |
-| `convert:video` | `node scripts/convert-video.js` | **Convert test videos**: Converts Playwright .webm videos to .mp4 format |
-| `convert:video:default` | `node scripts/convert-video.js --in target/behaviour-test-results/video.webm --out ...` | **Convert default test video**: Converts specific video file |
 | `set-apex-origins` | `node ./app/actions/set-apex-origins.mjs` | **Update CloudFront origins**: Updates CloudFront distribution to point to new deployment |
 | `cloudfront:set-origins` | `node ./app/actions/set-apex-origins.mjs` | Alias for `set-apex-origins` |
 | `wiremock:server` | `wiremock --port 9090 --root-dir wiremock-recordings --disable-banner` | **Start WireMock (quiet)**: Starts WireMock without banner |
@@ -613,10 +611,9 @@ BASE_IMAGE_TAG: ${{ github.sha }}
 27. **web-test-submit-vat-sandbox**: Run VAT submission tests with sandbox against deployed environment
 28. **web-test-submit-vat**: Run VAT submission tests with test API (non-prod only)
 29. **upload-web-test-results**: Collect and upload all test results to S3
-30. **convert-video**: Convert Playwright videos to MP4 (if requested)
-31. **set-last-known-good-deployment**: Store deployment name in SSM Parameter Store
-32. **destroy-previous**: Destroy previous prod deployment (prod only, excludes holding page)
-33. **invalidate-cloudfront**: Invalidate CloudFront cache for `/tests/*` and `/docs/*`
+30. **set-last-known-good-deployment**: Store deployment name in SSM Parameter Store
+31. **destroy-previous**: Destroy previous prod deployment (prod only, excludes holding page)
+32. **invalidate-cloudfront**: Invalidate CloudFront cache for `/tests/*` and `/docs/*`
 
 **Key Features**:
 - **Parallel Execution**: Many jobs run in parallel to speed up deployment
@@ -1790,7 +1787,6 @@ These files define specific strategic personas and processes for GitHub Copilot 
 | `export-dynamodb-for-test-users.js` | Export specific user data |
 | `generate-test-reports.js` | Generate HTML test reports from Playwright results |
 | `playwright-video-reporter.js` | Custom Playwright video reporter |
-| `convert-video.js` | Convert .webm videos to .mp4 |
 | `render-catalogue.mjs` | Render product catalog from TOML to HTML |
 | `update.sh` | Update npm and Maven dependencies |
 | `update-java.sh` | Update Java dependencies |

@@ -273,7 +273,6 @@ repository-contents.txt:
 ./scripts/update-java.sh
 ./scripts/add-bundle.sh
 ./scripts/generate-test-reports.js
-./scripts/convert-video.js
 ./scripts/docker-build-codex.sh
 ./scripts/aws-assume-submit-deployment-role.sh
 ./scripts/provision-user.sh

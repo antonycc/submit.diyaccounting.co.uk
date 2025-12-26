@@ -55,14 +55,6 @@ on:
           - 'false'
         required: false
         default: 'false'
-      convertTestVideo:
-        description: 'Convert test video to mp4 format'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
-        required: false
-        default: 'false'
   push:
     branches:
       - '**'
@@ -3115,81 +3107,6 @@ jobs:
           echo "Creating an uploading test reports index:"
           cat target/behaviour-test-results/test-reports-index.txt
           aws s3 cp target/behaviour-test-results/test-reports-index.txt s3://${BUCKET_NAME?}/tests/
-
-  convert-video:
-    name: 'convert web test video to mp4'
-    if: ${{ inputs.convertTestVideo == 'true' }}
-    needs:
-      - names
-      - upload-web-test-results
-    runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - name: Install ffmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-
-      - name: Download all test artifacts
-        uses: actions/download-artifact@v7
-        with:
-          path: artifacts/
-        continue-on-error: true
-
-      - name: Convert Playwright video to MP4
-        if: ${{ !cancelled() }}
-        run: |
-          set -euo pipefail
-          root="artifacts/web-test-artifacts"
-
-          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
-          pids=()
-          while IFS= read -r -d '' f; do
-            dir=$(dirname "$f")
-            base="${f##*/}"
-            name="${base%.webm}"
-            out="${dir}/converted${name}.mp4"
-            echo "Transcoding $f -> $out"
-            npm run convert:video -- --in "$f" --out "$out" &
-            pids+=($!)
-          done < <(find "$root" -type f -name '*.webm' -print0)
-
-          # Wait for all transcodes to complete
-          fail=0
-          for pid in "${pids[@]:-}"; do
-            if ! wait "$pid"; then
-              fail=1
-            fi
-          done
-
-          exit $fail
-
-      - name: Upload artifacts (converted videos)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-artifacts-converted
-          retention-days: 30
-          path: |
-            artifacts/web-test-artifacts
 
   # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
   set-last-known-good-deployment:
