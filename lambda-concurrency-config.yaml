@@ -79,13 +79,13 @@ lambdas:
     handler: app/functions/account/bundlePost.handler
     concurrency:
       zero: 0
-      peak: 1
+      peak: 5
 
   - name: submit-app-bundle-post-consumer
     handler: app/functions/account/bundlePost.consumer
     concurrency:
       zero: 0
-      peak: 2
+      peak: 10
 
   - name: submit-app-bundle-delete
     handler: app/functions/account/bundleDelete.handler

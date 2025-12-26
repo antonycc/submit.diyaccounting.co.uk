@@ -24,7 +24,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
-const MAX_WAIT_MS = 25_000;
+const MAX_WAIT_MS = 60_000;
 const DEFAULT_WAIT_MS = 0;
 
 function parseIsoDurationToDate(fromDate, iso) {
