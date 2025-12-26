@@ -2918,7 +2918,7 @@ jobs:
             target/behaviour-test-results/bundle/
 
       - name: Download artifacts - postVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-post-vat-return-sandbox
@@ -2926,7 +2926,7 @@ jobs:
             target/behaviour-test-results/post-vat-return-sandbox/
 
       - name: Download artifacts - getVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-get-vat-return-sandbox
@@ -2934,7 +2934,7 @@ jobs:
             target/behaviour-test-results/get-vat-return-sandbox/
 
       - name: Download artifacts - obligation sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-obligation-sandbox
@@ -2958,7 +2958,7 @@ jobs:
             target/behaviour-test-results/submit-vat-sandbox/
 
       - name: Download artifacts - fraud prevention headers vat sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-fraud-prevention-headers-vat-sandbox
@@ -2981,7 +2981,7 @@ jobs:
             target/test-reports/bundle/
 
       - name: Download reports - postVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-post-vat-return-sandbox
@@ -2989,7 +2989,7 @@ jobs:
             target/test-reports/post-vat-return-sandbox/
 
       - name: Download reports - getVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-get-vat-return-sandbox
@@ -2997,7 +2997,7 @@ jobs:
             target/test-reports/get-vat-return-sandbox/
 
       - name: Download reports - obligation sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-obligation-sandbox
@@ -3021,7 +3021,7 @@ jobs:
             target/test-reports/submit-vat-sandbox/
 
       - name: Download reports - fraud prevention headers vat sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-fraud-prevention-headers-vat-sandbox
