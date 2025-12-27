@@ -263,13 +263,16 @@
         try {
           const r = await window.fetchWithIdToken("/api/v1/bundle", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-wait-time-ms": "0"
+            },
             body: JSON.stringify({ bundleId, qualifiers }),
           });
           const body = await r.json().catch(() => ({}));
 
           if (r.ok) {
-            if (body.status === "granted" || body.status === "already_granted") {
+            if (r.status === 202 || body.status === "granted" || body.status === "already_granted") {
               markGranted(btn, `Added ✓ ${bundleName}`);
               showStatus(`Bundle "${bundleName}" added successfully.`, "success");
             } else {
@@ -440,6 +443,7 @@
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
+              "x-wait-time-ms": "0"
             },
             body: JSON.stringify({ bundleId }),
           });
@@ -485,6 +489,7 @@
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
+              "x-wait-time-ms": "0"
             },
             body: JSON.stringify({ removeAll: true }),
           });

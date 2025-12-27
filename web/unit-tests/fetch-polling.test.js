@@ -202,6 +202,80 @@ describe("fetchWithIdToken polling", () => {
   });
 });
 
+describe("fetchWithIdToken fire-and-forget", () => {
+  let originalFetch;
+  let logSpy;
+
+  beforeEach(() => {
+    // Setup global window and localStorage
+    global.window = {
+      location: {
+        origin: "http://localhost:3000",
+      },
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+
+    global.localStorage = {
+      getItem: vi.fn((key) => {
+        if (key === "cognitoIdToken") return "mock-id-token";
+        return null;
+      }),
+    };
+
+    global.Headers = class {
+      constructor(init = {}) {
+        this.map = new Map();
+        if (init instanceof Map) {
+          init.forEach((v, k) => this.map.set(k.toLowerCase(), v));
+        } else if (init instanceof global.Headers) {
+          init.map.forEach((v, k) => this.map.set(k, v));
+        } else {
+          Object.entries(init).forEach(([k, v]) => this.map.set(k.toLowerCase(), v));
+        }
+      }
+      set(k, v) {
+        this.map.set(k.toLowerCase(), v);
+      }
+      get(k) {
+        return this.map.get(k.toLowerCase());
+      }
+    };
+
+    originalFetch = global.fetch;
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    // Evaluate the submit.js script
+    eval(scriptContent);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    logSpy.mockRestore();
+    vi.clearAllMocks();
+  });
+
+  it("skips polling when x-wait-time-ms header is '0'", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "no-poll-id" }),
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const response = await window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      headers: { "x-wait-time-ms": "0" },
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(202);
+    expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/waiting async request/));
+  });
+});
+
 describe("fetchWithIdToken AbortController", () => {
   let originalFetch;
   let logSpy;

@@ -764,6 +764,9 @@ async function fetchWithIdToken(input, init = {}) {
     let res = await fetch(input, { ...init, headers: currentHeaders });
 
     if (res.status === 202) {
+      const waitTime = currentHeaders.get("x-wait-time-ms");
+      if (waitTime === "0") return res;
+
       const method = (init.method || (typeof input === "object" && input.method) || "GET").toUpperCase();
       let urlPath = typeof input === "string" ? input : input.url || input.toString();
       try {
