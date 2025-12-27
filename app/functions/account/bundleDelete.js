@@ -92,6 +92,7 @@ export async function handler(event) {
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
 
   // Bundle enforcement
+  // TODO: Remove these check when operating on bundles
   try {
     await enforceBundles(event);
   } catch (error) {
@@ -138,7 +139,11 @@ export async function handler(event) {
     logger.info({ message: "Processing bundle delete for user", userId, bundleToRemove, removeAll, requestId, waitTimeMs });
 
     // Check if there is already a persisted request for this ID
-    const persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+    let persistedRequest = null;
+    if (!isInitialRequest) {
+      persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    }
 
     if (persistedRequest) {
       logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });

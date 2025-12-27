@@ -172,6 +172,22 @@ describe("bundleGet handler", () => {
     expect(body.bundles.length).toBe(0);
   });
 
+  test("skips async request lookup when x-initial-request header is true", async () => {
+    const token = makeIdToken("user-initial");
+    const event = buildEventWithToken(token, {});
+    event.headers["x-initial-request"] = "true";
+    event.headers["x-wait-time-ms"] = "30000";
+
+    const response = await bundleGetHandler(event);
+
+    expect(response.statusCode).toBe(200);
+
+    // Verify that GetCommand was NOT called for this requestId
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const getCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.GetCommand);
+    expect(getCalls.length).toBe(0);
+  });
+
   test("returns 200 with user bundle for 202 after granting", async () => {
     const token = makeIdToken("user-with-bundles");
     const event = buildEventWithToken(token, {});

@@ -122,7 +122,11 @@ export async function handler(event) {
     logger.info({ message: "Retrieving bundles for request", requestId, waitTimeMs });
 
     // Check if there is already a persisted request for this ID
-    const persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+    let persistedRequest = null;
+    if (!isInitialRequest) {
+      persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    }
 
     if (persistedRequest) {
       logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });

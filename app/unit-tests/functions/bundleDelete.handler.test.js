@@ -217,6 +217,31 @@ describe("bundleDelete handler", () => {
     expect(body).toBeNull();
   });
 
+  test("skips async request lookup when x-initial-request header is true", async () => {
+    const token = makeIdToken("user-initial");
+    const event = buildEventWithToken(token, { bundleId: "test" });
+    event.headers["x-initial-request"] = "true";
+    event.headers["x-wait-time-ms"] = "30000";
+
+    // Mock bundle existence
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "test" }], Count: 1 };
+      }
+      return {};
+    });
+
+    const response = await bundleDeleteHandler(event);
+
+    expect(response.statusCode).toBe(204);
+
+    // Verify that GetCommand was NOT called for this requestId
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const getCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.GetCommand);
+    expect(getCalls.length).toBe(0);
+  });
+
   test("successfully removes all bundles with removeAll flag", async () => {
     const token = makeIdToken("user-remove-all");
 

@@ -66,6 +66,9 @@ describe("fetchWithIdToken polling", () => {
       has(k) {
         return this.map.has(k.toLowerCase());
       }
+      delete(k) {
+        this.map.delete(k.toLowerCase());
+      }
     };
 
     // Mock document for DOM-related code
@@ -240,6 +243,12 @@ describe("fetchWithIdToken fire-and-forget", () => {
       get(k) {
         return this.map.get(k.toLowerCase());
       }
+      has(k) {
+        return this.map.has(k.toLowerCase());
+      }
+      delete(k) {
+        this.map.delete(k.toLowerCase());
+      }
     };
 
     originalFetch = global.fetch;
@@ -273,6 +282,73 @@ describe("fetchWithIdToken fire-and-forget", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(response.status).toBe(202);
     expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/waiting async request/));
+  });
+
+  it("skips polling when fireAndForget option is true", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "ff-id" }),
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const response = await window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      fireAndForget: true,
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(202);
+    // Verify internal header set
+    const sentHeaders = fetchMock.mock.calls[0][1].headers;
+    expect(sentHeaders.get("x-wait-time-ms")).toBe("0");
+    expect(sentHeaders.get("x-initial-request")).toBe("true");
+  });
+
+  it("sends x-initial-request: true only on the first call and removes it for polls", async () => {
+    vi.useFakeTimers();
+    let firstCallHeaders;
+    const fetchMock = vi.fn().mockImplementation(async (url, init) => {
+      if (!firstCallHeaders) {
+        firstCallHeaders = new Map(init.headers.map);
+      }
+      if (fetchMock.mock.calls.length === 1) {
+        return {
+          status: 202,
+          headers: new Headers({ "x-request-id": "polling-id" }),
+        };
+      }
+      return {
+        status: 200,
+        headers: new Headers({ "Content-Type": "application/json" }),
+        json: () => Promise.resolve({ success: true }),
+      };
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
+
+    await vi.advanceTimersByTimeAsync(10);
+
+    const response = await promise;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // First call should have initial request header (checked via captured map)
+    expect(firstCallHeaders.get("x-initial-request")).toBe("true");
+
+    // Second call (poll) should NOT have initial request header
+    const secondHeaders = fetchMock.mock.calls[1][1].headers;
+    expect(secondHeaders.has("x-initial-request")).toBe(false);
+    expect(secondHeaders.get("x-request-id")).toBe("polling-id");
+
+    vi.useRealTimers();
   });
 });
 
@@ -331,6 +407,9 @@ describe("fetchWithIdToken AbortController", () => {
       }
       has(k) {
         return this.map.has(k.toLowerCase());
+      }
+      delete(k) {
+        this.map.delete(k.toLowerCase());
       }
     };
 

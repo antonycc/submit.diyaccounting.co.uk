@@ -759,6 +759,8 @@ async function fetchWithIdToken(input, init = {}) {
   const headers = new Headers(init.headers || {});
   const idToken = getIdToken();
   if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
+  if (init.fireAndForget) headers.set("x-wait-time-ms", "0");
+  headers.set("x-initial-request", "true");
 
   const executeFetch = async (currentHeaders) => {
     let res = await fetch(input, { ...init, headers: currentHeaders });
@@ -766,6 +768,9 @@ async function fetchWithIdToken(input, init = {}) {
     if (res.status === 202) {
       const waitTime = currentHeaders.get("x-wait-time-ms");
       if (waitTime === "0") return res;
+
+      // Remove the initial request signal for subsequent polls
+      currentHeaders.delete("x-initial-request");
 
       const method = (init.method || (typeof input === "object" && input.method) || "GET").toUpperCase();
       let urlPath = typeof input === "string" ? input : input.url || input.toString();
@@ -868,10 +873,15 @@ async function fetchWithIdToken(input, init = {}) {
   const headers2 = new Headers(init.headers || {});
   const idToken2 = getIdToken();
   if (idToken2) headers2.set("Authorization", `Bearer ${idToken2}`);
+  if (init.fireAndForget) headers2.set("x-wait-time-ms", "0");
+  headers2.set("x-initial-request", "true");
 
   // Carry over requestId if we had one from a previous 202 poll
   const lastRequestId = headers.get("x-request-id");
-  if (lastRequestId) headers2.set("x-request-id", lastRequestId);
+  if (lastRequestId) {
+    headers2.set("x-request-id", lastRequestId);
+    headers2.delete("x-initial-request");
+  }
 
   return executeFetch(headers2);
 }

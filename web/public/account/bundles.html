@@ -223,6 +223,63 @@
         btn.style.backgroundColor = "#28a745";
       };
 
+      // --- request individual bundle
+      async function requestBundle(bundleId, bundleName, qualifiers = {}, fireAndForget = true) {
+        const idToken = getIdToken();
+        if (!idToken) {
+          showStatus("Please log in first to request bundles.", "warning");
+          window.location.href = "../auth/login.html";
+          return false;
+        }
+
+        try {
+          const r = await window.fetchWithIdToken("/api/v1/bundle", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            fireAndForget,
+            body: JSON.stringify({ bundleId, qualifiers }),
+          });
+          const body = await r.json().catch(() => ({}));
+
+          if (r.ok) {
+            if (r.status === 202 || body.status === "granted" || body.status === "already_granted") {
+              showStatus(`Bundle "${bundleName}" added successfully.`, "success");
+              // Update local state and write through to persistent cache
+              if (!hasBundle(__userBundles, bundleId)) {
+                __userBundles.push(bundleId);
+              }
+              const userInfoJson = localStorage.getItem("userInfo");
+              let userId = null;
+              try {
+                const userInfo = JSON.parse(userInfoJson);
+                userId = userInfo && userInfo.sub;
+              } catch {}
+              if (userId) {
+                await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000);
+              }
+              // Refresh in-memory cache and re-render
+              invalidate("/api/v1/bundle");
+              try {
+                renderCurrentBundles();
+              } catch {}
+              try {
+                updateBundleStatus();
+              } catch {}
+              return true;
+            } else {
+              showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
+            }
+          } else {
+            showStatus(`Failed to request bundle: ${body.error || "Unknown error"}`, "error");
+          }
+        } catch (err) {
+          showStatus(`Failed to request bundle. Error: ${err?.message || err}.`, "error");
+        }
+        return false;
+      }
+
       // --- render one catalog card
       const cardHtml = (b) => {
         // Ensure we always work with strings and avoid using String.replaceAll for broader compatibility
@@ -239,13 +296,6 @@
         const btn = e.target.closest("button[data-bundle-id]");
         if (!btn) return;
 
-        const idToken = getIdToken();
-        if (!idToken) {
-          showStatus("Please log in first to request bundles.", "warning");
-          window.location.href = "../auth/login.html";
-          return;
-        }
-
         const bundleId = btn.getAttribute("data-bundle-id");
         const bundleName = btn.getAttribute("data-bundle-name") || bundleId;
         const card = btn.closest(".service-item");
@@ -260,56 +310,12 @@
         btn.textContent = "Requesting...";
         btn.disabled = true;
 
-        try {
-          const r = await window.fetchWithIdToken("/api/v1/bundle", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-wait-time-ms": "0"
-            },
-            body: JSON.stringify({ bundleId, qualifiers }),
-          });
-          const body = await r.json().catch(() => ({}));
-
-          if (r.ok) {
-            if (r.status === 202 || body.status === "granted" || body.status === "already_granted") {
-              markGranted(btn, `Added ✓ ${bundleName}`);
-              showStatus(`Bundle "${bundleName}" added successfully.`, "success");
-            } else {
-              btn.textContent = original;
-              btn.disabled = false;
-              showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
-            }
-            // Update local state and write through to persistent cache
-            if (!hasBundle(__userBundles, bundleId)) {
-              __userBundles.push(bundleId);
-            }
-            const userInfoJson = localStorage.getItem("userInfo");
-            let userId = null;
-            try {
-              const userInfo = JSON.parse(userInfoJson);
-              userId = userInfo && userInfo.sub;
-            } catch {}
-            if (userId) {
-              await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000);
-            }
-            // Refresh in-memory cache and re-render
-            invalidate("/api/v1/bundle");
-            try {
-              renderCurrentBundles();
-            } catch {}
-            try {
-              updateBundleStatus();
-            } catch {}
-          } else {
-            btn.textContent = original;
-            btn.disabled = false;
-            showStatus(`Failed to request bundle: ${body.error || "Unknown error"}`, "error");
-          }
-        } catch (err) {
+        const success = await requestBundle(bundleId, bundleName, qualifiers, true);
+        if (success) {
+          markGranted(btn, `Added ✓ ${bundleName}`);
+        } else {
           btn.textContent = original;
           btn.disabled = false;
-          showStatus(`Failed to request bundle. Error: ${err?.message || err}.`, "error");
         }
       });
 
@@ -430,7 +436,7 @@
       });
 
       // --- remove individual bundle
-      async function removeBundle(bundleId) {
+      async function removeBundle(bundleId, fireAndForget = true) {
         const idToken = getIdToken();
         if (!idToken) {
           showStatus("Please log in first to remove bundles.", "warning");
@@ -443,8 +449,8 @@
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "x-wait-time-ms": "0"
             },
+            fireAndForget,
             body: JSON.stringify({ bundleId }),
           });
 
@@ -476,7 +482,7 @@
       }
 
       // --- remove all bundles
-      async function removeAllBundles() {
+      async function removeAllBundles(fireAndForget = true) {
         const idToken = getIdToken();
         if (!idToken) {
           showStatus("Please log in first to remove bundles.", "warning");
@@ -489,8 +495,8 @@
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "x-wait-time-ms": "0"
             },
+            fireAndForget,
             body: JSON.stringify({ removeAll: true }),
           });
 
