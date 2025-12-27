@@ -1,6 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -25,36 +26,36 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
-    public ApiLambdaProps hmrcAuthUrlGetLambdaProps;
+    public AbstractApiLambdaProps hmrcAuthUrlGetLambdaProps;
     public Function hmrcAuthUrlGetLambda;
     public ILogGroup hmrcAuthUrlGetLambdaLogGroup;
 
-    public ApiLambdaProps hmrcTokenPostLambdaProps;
+    public AbstractApiLambdaProps hmrcTokenPostLambdaProps;
     public Function hmrcTokenPostLambda;
     public ILogGroup hmrcTokenPostLambdaLogGroup;
 
-    public ApiLambdaProps hmrcVatReturnPostLambdaProps;
+    public AbstractApiLambdaProps hmrcVatReturnPostLambdaProps;
     public Function hmrcVatReturnPostLambda;
     public ILogGroup hmrcVatReturnPostLambdaLogGroup;
 
     // New HMRC VAT GET Lambdas
-    public ApiLambdaProps hmrcVatObligationGetLambdaProps;
+    public AbstractApiLambdaProps hmrcVatObligationGetLambdaProps;
     public Function hmrcVatObligationGetLambda;
     public ILogGroup hmrcVatObligationGetLambdaLogGroup;
 
-    public ApiLambdaProps hmrcVatReturnGetLambdaProps;
+    public AbstractApiLambdaProps hmrcVatReturnGetLambdaProps;
     public Function hmrcVatReturnGetLambda;
     public ILogGroup hmrcVatReturnGetLambdaLogGroup;
 
-    public ApiLambdaProps receiptPostLambdaProps;
+    public AbstractApiLambdaProps receiptPostLambdaProps;
     public Function receiptPostLambda;
     public ILogGroup receiptPostLambdaLogGroup;
 
-    public ApiLambdaProps receiptGetLambdaProps;
+    public AbstractApiLambdaProps receiptGetLambdaProps;
     public Function receiptGetLambda;
     public ILogGroup receiptGetLambdaLogGroup;
 
-    public List<ApiLambdaProps> lambdaFunctionProps;
+    public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
     public interface HmrcStackProps extends StackProps, SubmitStackProps {

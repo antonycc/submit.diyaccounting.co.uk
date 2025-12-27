@@ -1,6 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
@@ -27,19 +28,19 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
-    public ApiLambdaProps bundleGetLambdaProps;
+    public AbstractApiLambdaProps bundleGetLambdaProps;
     public Function bundleGetLambda;
     public ILogGroup bundleGetLambdaLogGroup;
 
-    public ApiLambdaProps bundlePostLambdaProps;
+    public AbstractApiLambdaProps bundlePostLambdaProps;
     public Function bundlePostLambda;
     public ILogGroup bundlePostLambdaLogGroup;
 
-    public ApiLambdaProps bundleDeleteLambdaProps;
+    public AbstractApiLambdaProps bundleDeleteLambdaProps;
     public Function bundleDeleteLambda;
     public ILogGroup bundleDeleteLambdaLogGroup;
 
-    public List<ApiLambdaProps> lambdaFunctionProps;
+    public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
     public interface AccountStackProps extends StackProps, SubmitStackProps {

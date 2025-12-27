@@ -4,6 +4,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -24,15 +25,15 @@ import software.constructs.Construct;
 
 public class AuthStack extends Stack {
 
-    public ApiLambdaProps cognitoAuthUrlGetLambdaProps;
+    public AbstractApiLambdaProps cognitoAuthUrlGetLambdaProps;
     public Function cognitoAuthUrlGetLambda;
     public ILogGroup cognitoAuthUrlGetLambdaLogGroup;
-    public ApiLambdaProps cognitoTokenPostLambdaProps;
+    public AbstractApiLambdaProps cognitoTokenPostLambdaProps;
     public Function cognitoTokenPostLambda;
     public ILogGroup cognitoTokenPostLambdaLogGroup;
     public Function customAuthorizerLambda;
     public ILogGroup customAuthorizerLambdaLogGroup;
-    public List<ApiLambdaProps> lambdaFunctionProps;
+    public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
     public interface AuthStackProps extends StackProps, SubmitStackProps {
