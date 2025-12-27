@@ -795,8 +795,7 @@ async function fetchWithIdToken(input, init = {}) {
         }
 
         pollCount++;
-        // const delay = pollCount <= 10 ? 10 : 1000;
-        const delay = 500;
+        const delay = pollCount <= 10 ? 10 : 1000;
 
         await new Promise((resolve, reject) => {
           const timeout = setTimeout(resolve, delay);

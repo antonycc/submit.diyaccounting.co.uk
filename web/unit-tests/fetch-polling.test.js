@@ -140,7 +140,10 @@ describe("fetchWithIdToken polling", () => {
     global.fetch = fetchMock;
     global.window.fetch = fetchMock;
 
-    const promise = window.fetchWithIdToken("/api/v1/bundle");
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
 
     // Advance 10 polls at 10ms each
     for (let i = 0; i < 10; i++) {
@@ -154,19 +157,19 @@ describe("fetchWithIdToken polling", () => {
     expect(response.status).toBe(200);
 
     // Verify polling logs
-    expect(logSpy).toHaveBeenCalledWith("waiting async request [GET /api/v1/bundle] (timeout: 60000ms)...");
+    expect(logSpy).toHaveBeenCalledWith("waiting async request [POST /api/v1/bundle] (timeout: 60000ms)...");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
+        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
       ),
     );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
+        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
       ),
     );
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/finished async request \[GET \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, status: 200\)/),
+      expect.stringMatching(/finished async request \[POST \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, status: 200\)/),
     );
 
     vi.useRealTimers();
@@ -182,7 +185,10 @@ describe("fetchWithIdToken polling", () => {
     global.fetch = fetchMock;
     global.window.fetch = fetchMock;
 
-    const promise = window.fetchWithIdToken("/api/v1/bundle");
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
 
     // Advance time by 61 seconds
     await vi.advanceTimersByTimeAsync(61000);
@@ -190,7 +196,7 @@ describe("fetchWithIdToken polling", () => {
     const response = await promise;
     expect(response.status).toBe(202); // Returns the last 202 response
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/timed out async request \[GET \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms, timeout: 60000ms\)/),
+      expect.stringMatching(/timed out async request \[POST \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms, timeout: 60000ms\)/),
     );
     vi.useRealTimers();
   });
@@ -308,7 +314,11 @@ describe("fetchWithIdToken AbortController", () => {
     global.window.fetch = fetchMock;
 
     const controller = new AbortController();
-    const promise = window.fetchWithIdToken("/api/v1/bundle", { signal: controller.signal });
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+      signal: controller.signal,
+    });
 
     // Let the first request finish and start the wait
     await vi.advanceTimersByTimeAsync(0);
@@ -319,7 +329,7 @@ describe("fetchWithIdToken AbortController", () => {
     // The promise should reject with AbortError
     await expect(promise).rejects.toThrow("Aborted");
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/aborted async request \[GET \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms\)/),
+      expect.stringMatching(/aborted async request \[POST \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms\)/),
     );
 
     vi.useRealTimers();
