@@ -68,24 +68,24 @@ export async function handler(event) {
 
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
 
-  // Bundle enforcement
-  try {
-    await enforceBundles(event);
-    // Handle BundleAuthorizationError and BundleEntitlementError with different response generators
-  } catch (error) {
-    if (error instanceof BundleAuthorizationError) {
-      return http401UnauthorizedResponse({
-        request,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
-        message: "Unauthorized access to bundles",
-        error: {},
-      });
-    }
-
-    if (error instanceof BundleEntitlementError) {
-      return http403ForbiddenFromBundleEnforcement(error, request);
-    }
-  }
+  // // Bundle enforcement
+  // try {
+  //   await enforceBundles(event);
+  //   // Handle BundleAuthorizationError and BundleEntitlementError with different response generators
+  // } catch (error) {
+  //   if (error instanceof BundleAuthorizationError) {
+  //     return http401UnauthorizedResponse({
+  //       request,
+  //       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+  //       message: "Unauthorized access to bundles",
+  //       error: {},
+  //     });
+  //   }
+  //
+  //   if (error instanceof BundleEntitlementError) {
+  //     return http403ForbiddenFromBundleEnforcement(error, request);
+  //   }
+  // }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
   if (event?.requestContext?.http?.method === "HEAD") {

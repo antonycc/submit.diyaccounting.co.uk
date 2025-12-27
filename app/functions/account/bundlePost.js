@@ -244,12 +244,12 @@ export async function handler(event) {
 
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
 
-  // Bundle enforcement
-  try {
-    await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  // // Bundle enforcement
+  // try {
+  //   await enforceBundles(event);
+  // } catch (error) {
+  //   return http403ForbiddenFromBundleEnforcement(error, request);
+  // }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
   if (event?.requestContext?.http?.method === "HEAD") {
