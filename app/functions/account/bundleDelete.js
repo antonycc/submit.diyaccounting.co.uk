@@ -24,7 +24,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
 const MAX_WAIT_MS = 25_000;
-const DEFAULT_WAIT_MS = MAX_WAIT_MS; // Intentionally high wait time for synchronous processing
+const DEFAULT_WAIT_MS = 0; // Fire-and-forget by default for Phase 1 async rollout
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -251,6 +251,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
     await updateUserBundles(userId, []);
     logger.info({ message: `All bundles removed for user ${userId}` });
     result = {
+      statusCode: 204,
       status: "removed_all",
       message: "All bundles removed",
       bundles: [],
@@ -270,6 +271,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
       await updateUserBundles(userId, bundlesAfterRemoval);
       logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
       result = {
+        statusCode: 204,
         status: "removed",
         message: "Bundle removed",
         bundle: bundleToRemove,

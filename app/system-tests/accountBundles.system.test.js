@@ -85,7 +85,7 @@ describe("System: account bundle handlers", () => {
       queryStringParameters: { bundleId: "guest" },
     });
     const res = await handler(event);
-    expect([200, 404]).toContain(res.statusCode);
+    expect([204, 404]).toContain(res.statusCode);
   });
 
   it("HEAD /bundle returns 200", async () => {

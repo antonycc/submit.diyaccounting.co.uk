@@ -255,14 +255,14 @@ describe("bundlePost handler", () => {
   // Happy Path Tests (200)
   // ============================================================================
 
-  test("returns 200 and grants automatic bundle without persistence", async () => {
+  test("returns 201 and grants automatic bundle without persistence", async () => {
     const token = makeIdToken("user-auto");
     const event = buildEventWithToken(token, { bundleId: "default" });
     event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(201);
     const body = parseResponseBody(response);
     expect(body.status).toBe("granted");
     expect(body.granted).toBe(true);
@@ -270,14 +270,14 @@ describe("bundlePost handler", () => {
     expect(body.bundle).toBe("default");
   });
 
-  test("returns 200 and grants test bundle with timeout producing expiry", async () => {
+  test("returns 201 and grants test bundle with timeout producing expiry", async () => {
     const token = makeIdToken("user-test");
     const event = buildEventWithToken(token, { bundleId: "test" });
     event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(201);
     const body = parseResponseBody(response);
     expect(body.status).toBe("granted");
     expect(body.granted).toBe(true);
@@ -287,7 +287,7 @@ describe("bundlePost handler", () => {
     }
   });
 
-  test("returns 200 with already_granted status on duplicate request", async () => {
+  test("returns 201 with already_granted status on duplicate request", async () => {
     const token = makeIdToken("user-duplicate");
     const event = buildEventWithToken(token, { bundleId: "test" });
     event.headers["x-wait-time-ms"] = "30000";
@@ -302,7 +302,7 @@ describe("bundlePost handler", () => {
     });
 
     const response = await bundlePostHandler(event);
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(201);
     const body = parseResponseBody(response);
     expect(body.status).toBe("already_granted");
   });
@@ -314,7 +314,7 @@ describe("bundlePost handler", () => {
 
     const response = await bundlePostHandler(event);
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(201);
     expect(response.headers).toHaveProperty("Content-Type", "application/json");
     expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
 

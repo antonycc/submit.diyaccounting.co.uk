@@ -185,8 +185,8 @@ describe("bundleGet handler", () => {
     getEvent.headers["x-wait-time-ms"] = "500";
     const response = await bundleGetHandler(getEvent);
 
-    expect([200, 202]).toContain(response.statusCode);
-    if (response.statusCode === 200) {
+    expect([200, 201, 202]).toContain(response.statusCode);
+    if (response.statusCode === 200 || response.statusCode === 201) {
       const body = parseResponseBody(response);
       expect(Array.isArray(body.bundles)).toBe(true);
     } else {
@@ -201,7 +201,7 @@ describe("bundleGet handler", () => {
 
     const response = await bundleGetHandler(event);
 
-    expect([200, 202]).toContain(response.statusCode);
+    expect([200, 201, 202]).toContain(response.statusCode);
     expect(response.headers).toHaveProperty("Content-Type", "application/json");
     expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
   });

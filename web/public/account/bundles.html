@@ -90,6 +90,7 @@
 
     <script src="../submit.js"></script>
     <script src="../lib/request-cache.js"></script>
+    <script src="../lib/bundle-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/hamburger-menu.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
@@ -156,6 +157,21 @@
           return __userBundles;
         }
 
+        const userInfoJson = localStorage.getItem("userInfo");
+        let userId = null;
+        try {
+          const userInfo = JSON.parse(userInfoJson);
+          userId = userInfo && userInfo.sub;
+        } catch {}
+
+        if (userId) {
+          const cached = await window.bundleCache.getBundles(userId);
+          if (cached && Array.isArray(cached)) {
+            __userBundles = cached;
+            return __userBundles;
+          }
+        }
+
         // Abort previous fetch if any
         if (__fetchBundlesController) {
           __fetchBundlesController.abort();
@@ -165,11 +181,14 @@
 
         try {
           const bundlesData = await fetchAndParse("/api/v1/bundle", {
-            ttlMs: 5000,
+            ttlMs: 0,
             init: { headers: { Authorization: `Bearer ${idToken}` }, signal },
           });
           if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
             __userBundles = bundlesData.bundles.map((b) => b.bundleId);
+            if (userId) {
+              await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000); // 5 minutes TTL
+            }
             return __userBundles;
           }
         } catch (err) {
@@ -250,7 +269,6 @@
           const body = await r.json().catch(() => ({}));
 
           if (r.ok) {
-            // Do not persist bundles to localStorage; rely on a fresh GET after mutation
             if (body.status === "granted" || body.status === "already_granted") {
               markGranted(btn, `Added ✓ ${bundleName}`);
               showStatus(`Bundle "${bundleName}" added successfully.`, "success");
@@ -259,10 +277,21 @@
               btn.disabled = false;
               showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
             }
-            // Refresh bundles from endpoint
+            // Update local state and write through to persistent cache
+            if (!hasBundle(__userBundles, bundleId)) {
+              __userBundles.push(bundleId);
+            }
+            const userInfoJson = localStorage.getItem("userInfo");
+            let userId = null;
+            try {
+              const userInfo = JSON.parse(userInfoJson);
+              userId = userInfo && userInfo.sub;
+            } catch {}
+            if (userId) {
+              await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000);
+            }
+            // Refresh in-memory cache and re-render
             invalidate("/api/v1/bundle");
-            await fetchUserBundles();
-            // Refresh bundles lists
             try {
               renderCurrentBundles();
             } catch {}
@@ -418,10 +447,18 @@
           const result = await response.json().catch(() => ({}));
 
           if (response.ok) {
-            // Do not persist bundles to localStorage; rely on a fresh GET
-            // Refresh bundles from endpoint
+            // Update local state and write through to persistent cache
+            __userBundles = __userBundles.filter(b => (typeof b === "string" ? b : b.bundleId) !== bundleId);
+            const userInfoJson = localStorage.getItem("userInfo");
+            let userId = null;
+            try {
+              const userInfo = JSON.parse(userInfoJson);
+              userId = userInfo && userInfo.sub;
+            } catch {}
+            if (userId) {
+              await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000);
+            }
             invalidate("/api/v1/bundle");
-            await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
             showStatus(`Bundle "${bundleId}" removed successfully.`, "success");
@@ -455,10 +492,18 @@
           const result = await response.json().catch(() => ({}));
 
           if (response.ok) {
-            localStorage.setItem("userBundles", JSON.stringify([]));
-            // Refresh bundles from endpoint
+            // Update local state and write through to persistent cache
+            __userBundles = [];
+            const userInfoJson = localStorage.getItem("userInfo");
+            let userId = null;
+            try {
+              const userInfo = JSON.parse(userInfoJson);
+              userId = userInfo && userInfo.sub;
+            } catch {}
+            if (userId) {
+              await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000);
+            }
             invalidate("/api/v1/bundle");
-            await fetchUserBundles();
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
             showStatus("All bundles removed successfully.", "success");

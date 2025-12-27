@@ -117,6 +117,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
       message: "Bundle already granted to user",
       bundles: currentBundles,
       granted: false,
+      statusCode: 201,
     };
     if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
       await putAsyncRequest(userId, requestId, "completed", result);
@@ -166,6 +167,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
       expiry: null,
       bundle: requestedBundle,
       bundles: currentBundles,
+      statusCode: 201,
     };
     if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
       await putAsyncRequest(userId, requestId, "completed", result);
@@ -212,6 +214,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
     expiry: expiryStr || null,
     bundle: requestedBundle,
     bundles: currentBundles,
+    statusCode: 201,
   };
 
   if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {

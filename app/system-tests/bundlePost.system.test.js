@@ -81,7 +81,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
       body: { bundleId: "guest" },
     });
     const res = await handler(event);
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
     expect(body.status).toBe("already_granted");
     expect(body.granted).toBe(false);
@@ -112,7 +112,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
       body: { bundleId: "guest" },
     });
     const res = await handler(event);
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
     expect(body.status).toBe("granted");
     expect(body.granted).toBe(true);

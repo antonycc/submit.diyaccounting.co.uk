@@ -183,13 +183,16 @@ export async function check({ userId, requestId, tableName = process.env.ASYNC_R
 export function respond({ request, requestId, responseHeaders, data, dataKey }) {
   if (data) {
     if (data.statusCode && data.statusCode !== 200) {
-      logger.info({ message: `Returning error result with status ${data.statusCode}`, requestId });
+      logger.info({ message: `Returning result with status ${data.statusCode}`, requestId });
       const { statusCode, ...rest } = data;
-      return {
+      const response = {
         statusCode,
         headers: { ...responseHeaders, "x-request-id": requestId, "x-correlationid": requestId },
-        body: JSON.stringify(rest),
       };
+      if (statusCode !== 204) {
+        response.body = JSON.stringify(rest);
+      }
+      return response;
     }
 
     logger.info({ message: "Returning HTTP 200 OK with result", requestId });

@@ -212,10 +212,9 @@ describe("bundleDelete handler", () => {
     deleteEvent.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(deleteEvent);
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);
-    expect(body.status).toBe("removed");
-    expect(body.bundle).toBe("test");
+    expect(body).toBeNull();
   });
 
   test("successfully removes all bundles with removeAll flag", async () => {
@@ -235,10 +234,9 @@ describe("bundleDelete handler", () => {
     deleteEvent.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(deleteEvent);
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);
-    expect(body.status).toBe("removed_all");
-    expect(body.bundles).toEqual([]);
+    expect(body).toBeNull();
   });
 
   test("accepts bundleId via path parameter", async () => {
@@ -261,9 +259,9 @@ describe("bundleDelete handler", () => {
     event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);
-    expect(body.status).toBe("removed");
+    expect(body).toBeNull();
   });
 
   test("accepts bundleId via query parameter", async () => {
@@ -286,9 +284,9 @@ describe("bundleDelete handler", () => {
     event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);
-    expect(body.status).toBe("removed");
+    expect(body).toBeNull();
   });
 
   // ============================================================================
@@ -310,16 +308,16 @@ describe("bundleDelete handler", () => {
   // Async & Consumer Tests
   // ============================================================================
 
-  // test("returns 202 Accepted for async deletion initiation", async () => {
-  //   const token = makeIdToken("user-async-delete");
-  //   const event = buildEventWithToken(token, { bundleId: "test" });
-  //   // Default waitTimeMs is 0
-  //
-  //   const response = await bundleDeleteHandler(event);
-  //   expect(response.statusCode).toBe(202);
-  //   expect(response.headers).toHaveProperty("x-request-id");
-  //   expect(mockSqsSend).toHaveBeenCalled();
-  // });
+  test("returns 202 Accepted for async deletion initiation", async () => {
+    const token = makeIdToken("user-async-delete");
+    const event = buildEventWithToken(token, { bundleId: "test" });
+    // Default waitTimeMs is 0
+
+    const response = await bundleDeleteHandler(event);
+    expect(response.statusCode).toBe(202);
+    expect(response.headers).toHaveProperty("x-request-id");
+    expect(mockSqsSend).toHaveBeenCalled();
+  });
 
   test("SQS record processing updates DynamoDB status to completed for deletion", async () => {
     const userId = "user-sqs-delete-success";
