@@ -128,6 +128,7 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
           hashedSub,
           requestId,
         },
+        ConsistentRead: true,
       }),
     );
 
