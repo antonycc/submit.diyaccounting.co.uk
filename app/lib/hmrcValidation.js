@@ -37,26 +37,24 @@ export function isValidIsoDate(date) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return false;
   }
-  
+
   // Parse the date components
-  const [year, month, day] = date.split('-').map(Number);
-  
+  const [year, month, day] = date.split("-").map(Number);
+
   // Check month is valid
   if (month < 1 || month > 12) {
     return false;
   }
-  
+
   // Check day is valid for the given month
   const daysInMonth = new Date(year, month, 0).getDate();
   if (day < 1 || day > daysInMonth) {
     return false;
   }
-  
+
   // Additional check: ensure it's a valid date
   const parsed = new Date(year, month - 1, day);
-  return parsed.getFullYear() === year && 
-         parsed.getMonth() === month - 1 && 
-         parsed.getDate() === day;
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
 }
 
 /**
@@ -71,7 +69,7 @@ export function isValidDateRange(fromDate, toDate) {
   if (!isValidIsoDate(fromDate) || !isValidIsoDate(toDate)) {
     return false;
   }
-  
+
   // Compare dates
   return new Date(fromDate) <= new Date(toDate);
 }
@@ -110,7 +108,7 @@ export function maskIpAddress(ip) {
       const parts = ip.split(":");
       return `${parts.slice(0, -2).join(":")}::xxx`;
     }
-    
+
     // For regular IPv6, mask the last segment
     const parts = ip.split(":");
     if (parts.length >= 2) {

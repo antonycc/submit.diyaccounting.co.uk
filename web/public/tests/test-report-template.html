@@ -503,22 +503,22 @@ ${escapeHtml(typeof requestBody === "string" ? requestBody : JSON.stringify(requ
               <details>
                 <summary>Response:</summary>
                 <pre>${
-                statusCode
-                  ? `<strong>Status:</strong> ${statusCode}
+                  statusCode
+                    ? `<strong>Status:</strong> ${statusCode}
 `
-                  : ""
-              }${
-                Object.keys(responseHeaders).length > 0
-                  ? `<strong>Headers:</strong>
+                    : ""
+                }${
+                  Object.keys(responseHeaders).length > 0
+                    ? `<strong>Headers:</strong>
 ${escapeHtml(JSON.stringify(responseHeaders, null, 2))}
 `
-                  : ""
-              }${
-                responseBody
-                  ? `<strong>Body:</strong>
+                    : ""
+                }${
+                  responseBody
+                    ? `<strong>Body:</strong>
 ${escapeHtml(typeof responseBody === "string" ? responseBody : JSON.stringify(responseBody, null, 2))}`
-                  : ""
-              }</pre>
+                    : ""
+                }</pre>
               </details>
               `
                   : ""

@@ -543,11 +543,11 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
 export function generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders) {
   // Attach parsed body for downstream error helpers
   hmrcResponse.data = hmrcResponseBody;
-  
+
   // Extract HMRC error code and get user-friendly message
   const errorCode = extractHmrcErrorCode(hmrcResponseBody);
   const errorDetails = errorCode ? getHmrcErrorMessage(errorCode) : null;
-  
+
   if (hmrcResponse.status === 403) {
     return http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, responseHeaders, errorDetails);
   } else if (hmrcResponse.status === 404) {
@@ -630,18 +630,20 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
-  
-  const message = errorDetails ? errorDetails.userMessage : "Forbidden - Access token may be invalid, expired, or lack required permissions";
+
+  const message = errorDetails
+    ? errorDetails.userMessage
+    : "Forbidden - Access token may be invalid, expired, or lack required permissions";
   const errorResponse = {
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   };
-  
+
   if (errorDetails) {
     errorResponse.userMessage = errorDetails.userMessage;
     errorResponse.actionAdvice = errorDetails.actionAdvice;
   }
-  
+
   return http400BadRequestResponse({
     hmrcAccessTokenData,
     headers: { ...govClientHeaders },
@@ -657,18 +659,18 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
-  
+
   const message = errorDetails ? errorDetails.userMessage : "Not found for the specified query";
   const errorResponse = {
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   };
-  
+
   if (errorDetails) {
     errorResponse.userMessage = errorDetails.userMessage;
     errorResponse.actionAdvice = errorDetails.actionAdvice;
   }
-  
+
   return http400BadRequestResponse({
     request,
     headers: { ...govClientHeaders },
@@ -684,18 +686,18 @@ export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govCli
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });
-  
+
   const message = errorDetails ? errorDetails.userMessage : "HMRC request failed";
   const errorResponse = {
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   };
-  
+
   if (errorDetails) {
     errorResponse.userMessage = errorDetails.userMessage;
     errorResponse.actionAdvice = errorDetails.actionAdvice;
   }
-  
+
   return http500ServerErrorResponse({
     request,
     headers: { ...govClientHeaders },

@@ -53,7 +53,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!vrn) errorMessages.push("Missing vrn parameter");
   if (!periodKey) errorMessages.push("Missing periodKey parameter");
   if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
-  if (periodKey && !isValidPeriodKey(periodKey)) errorMessages.push("Invalid periodKey format - must be YYXN (e.g., 24A1) or #NNN (e.g., #001)");
+  if (periodKey && !isValidPeriodKey(periodKey))
+    errorMessages.push("Invalid periodKey format - must be YYXN (e.g., 24A1) or #NNN (e.g., #001)");
 
   // Normalize periodKey to uppercase if provided as string
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;

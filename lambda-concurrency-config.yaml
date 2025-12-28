@@ -3,7 +3,6 @@
 # Function names are resolved as: {deployment-name}-{name}
 
 lambdas:
-
   - name: submit-app-bundle-get
     handler: app/functions/account/bundleGet.handler
     concurrency:

@@ -1,14 +1,13 @@
 package co.uk.diyaccounting.submit;
 
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
+
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import java.util.ArrayList;
+import java.util.List;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -114,13 +113,13 @@ public class SubmitSharedNames {
     public String ue1EcrLogGroupName;
     public String ue1EcrPublishRoleName;
 
-//    public String cognitoAuthUrlGetLambdaHandler;
-//    public String cognitoAuthUrlGetLambdaFunctionName;
-//    public String cognitoAuthUrlGetLambdaArn;
-//    public HttpMethod cognitoAuthUrlGetLambdaHttpMethod;
-//    public String cognitoAuthUrlGetLambdaUrlPath;
-//    public boolean cognitoAuthUrlGetLambdaJwtAuthorizer;
-//    public boolean cognitoAuthUrlGetLambdaCustomAuthorizer;
+    //    public String cognitoAuthUrlGetLambdaHandler;
+    //    public String cognitoAuthUrlGetLambdaFunctionName;
+    //    public String cognitoAuthUrlGetLambdaArn;
+    //    public HttpMethod cognitoAuthUrlGetLambdaHttpMethod;
+    //    public String cognitoAuthUrlGetLambdaUrlPath;
+    //    public boolean cognitoAuthUrlGetLambdaJwtAuthorizer;
+    //    public boolean cognitoAuthUrlGetLambdaCustomAuthorizer;
 
     public String cognitoTokenPostLambdaHandler;
     public String cognitoTokenPostLambdaFunctionName;
@@ -134,13 +133,13 @@ public class SubmitSharedNames {
     public String customAuthorizerLambdaFunctionName;
     public String customAuthorizerLambdaArn;
 
-//    public String hmrcAuthUrlGetLambdaHandler;
-//    public String hmrcAuthUrlGetLambdaFunctionName;
-//    public String hmrcAuthUrlGetLambdaArn;
-//    public HttpMethod hmrcAuthUrlGetLambdaHttpMethod;
-//    public String hmrcAuthUrlGetLambdaUrlPath;
-//    public boolean hmrcAuthUrlGetLambdaJwtAuthorizer;
-//    public boolean hmrcAuthUrlGetLambdaCustomAuthorizer;
+    //    public String hmrcAuthUrlGetLambdaHandler;
+    //    public String hmrcAuthUrlGetLambdaFunctionName;
+    //    public String hmrcAuthUrlGetLambdaArn;
+    //    public HttpMethod hmrcAuthUrlGetLambdaHttpMethod;
+    //    public String hmrcAuthUrlGetLambdaUrlPath;
+    //    public boolean hmrcAuthUrlGetLambdaJwtAuthorizer;
+    //    public boolean hmrcAuthUrlGetLambdaCustomAuthorizer;
 
     public String hmrcTokenPostLambdaHandler;
     public String hmrcTokenPostLambdaFunctionName;
@@ -174,13 +173,13 @@ public class SubmitSharedNames {
     public boolean hmrcVatReturnGetLambdaJwtAuthorizer;
     public boolean hmrcVatReturnGetLambdaCustomAuthorizer;
 
-//    public String receiptPostLambdaHandler;
-//    public String receiptPostLambdaFunctionName;
-//    public String receiptPostLambdaArn;
-//    public HttpMethod receiptPostLambdaHttpMethod;
-//    public String receiptPostLambdaUrlPath;
-//    public boolean receiptPostLambdaJwtAuthorizer;
-//    public boolean receiptPostLambdaCustomAuthorizer;
+    //    public String receiptPostLambdaHandler;
+    //    public String receiptPostLambdaFunctionName;
+    //    public String receiptPostLambdaArn;
+    //    public HttpMethod receiptPostLambdaHttpMethod;
+    //    public String receiptPostLambdaUrlPath;
+    //    public boolean receiptPostLambdaJwtAuthorizer;
+    //    public boolean receiptPostLambdaCustomAuthorizer;
 
     public String receiptGetLambdaHandler;
     public String receiptGetLambdaFunctionName;
@@ -356,25 +355,27 @@ public class SubmitSharedNames {
         var appLambdaArnPrefix = "arn:aws:lambda:%s:%s:function:%s"
                 .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
 
-//        this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
-//        this.cognitoAuthUrlGetLambdaUrlPath = "/api/v1/cognito/authUrl";
-//        this.cognitoAuthUrlGetLambdaJwtAuthorizer = false;
-//        this.cognitoAuthUrlGetLambdaCustomAuthorizer = false;
-//        var cognitoAuthUrlGetLambdaHandlerName = "cognitoAuthUrlGet.handler";
-//        var cognitoAuthUrlGetLambdaHandlerDashed =
-//                ResourceNameUtils.convertCamelCaseToDashSeparated(cognitoAuthUrlGetLambdaHandlerName);
-//        this.cognitoAuthUrlGetLambdaFunctionName =
-//                "%s-%s".formatted(this.appResourceNamePrefix, cognitoAuthUrlGetLambdaHandlerDashed);
-//        this.cognitoAuthUrlGetLambdaHandler =
-//                "%s/auth/%s".formatted(appLambdaHandlerPrefix, cognitoAuthUrlGetLambdaHandlerName);
-//        this.cognitoAuthUrlGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, cognitoAuthUrlGetLambdaHandlerDashed);
-//        publishedApiLambdas.add(new PublishedLambda(
-//                this.cognitoAuthUrlGetLambdaHttpMethod,
-//                this.cognitoAuthUrlGetLambdaUrlPath,
-//                "Get Cognito authentication URL",
-//                "Returns the Cognito OAuth2 authorization URL for user login",
-//                "getCognitoAuthUrl",
-//                List.of(new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF attacks"))));
+        //        this.cognitoAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
+        //        this.cognitoAuthUrlGetLambdaUrlPath = "/api/v1/cognito/authUrl";
+        //        this.cognitoAuthUrlGetLambdaJwtAuthorizer = false;
+        //        this.cognitoAuthUrlGetLambdaCustomAuthorizer = false;
+        //        var cognitoAuthUrlGetLambdaHandlerName = "cognitoAuthUrlGet.handler";
+        //        var cognitoAuthUrlGetLambdaHandlerDashed =
+        //                ResourceNameUtils.convertCamelCaseToDashSeparated(cognitoAuthUrlGetLambdaHandlerName);
+        //        this.cognitoAuthUrlGetLambdaFunctionName =
+        //                "%s-%s".formatted(this.appResourceNamePrefix, cognitoAuthUrlGetLambdaHandlerDashed);
+        //        this.cognitoAuthUrlGetLambdaHandler =
+        //                "%s/auth/%s".formatted(appLambdaHandlerPrefix, cognitoAuthUrlGetLambdaHandlerName);
+        //        this.cognitoAuthUrlGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix,
+        // cognitoAuthUrlGetLambdaHandlerDashed);
+        //        publishedApiLambdas.add(new PublishedLambda(
+        //                this.cognitoAuthUrlGetLambdaHttpMethod,
+        //                this.cognitoAuthUrlGetLambdaUrlPath,
+        //                "Get Cognito authentication URL",
+        //                "Returns the Cognito OAuth2 authorization URL for user login",
+        //                "getCognitoAuthUrl",
+        //                List.of(new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF
+        // attacks"))));
 
         this.cognitoTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
@@ -405,27 +406,30 @@ public class SubmitSharedNames {
                 "%s/auth/%s".formatted(appLambdaHandlerPrefix, customAuthorizerHandlerName);
         this.customAuthorizerLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, customAuthorizerHandlerDashed);
 
-//        this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
-//        this.hmrcAuthUrlGetLambdaUrlPath = "/api/v1/hmrc/authUrl";
-//        this.hmrcAuthUrlGetLambdaJwtAuthorizer = false;
-//        this.hmrcAuthUrlGetLambdaCustomAuthorizer = false;
-//        var hmrcAuthUrlGetLambdaHandlerName = "hmrcAuthUrlGet.handler";
-//        var hmrcAuthUrlGetLambdaHandlerDashed =
-//                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcAuthUrlGetLambdaHandlerName);
-//        this.hmrcAuthUrlGetLambdaFunctionName =
-//                "%s-%s".formatted(this.appResourceNamePrefix, hmrcAuthUrlGetLambdaHandlerDashed);
-//        this.hmrcAuthUrlGetLambdaHandler =
-//                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcAuthUrlGetLambdaHandlerName);
-//        this.hmrcAuthUrlGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcAuthUrlGetLambdaHandlerDashed);
-//        publishedApiLambdas.add(new PublishedLambda(
-//                this.hmrcAuthUrlGetLambdaHttpMethod,
-//                this.hmrcAuthUrlGetLambdaUrlPath,
-//                "Get HMRC authentication URL",
-//                "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
-//                "getHmrcAuthUrl",
-//                List.of(
-//                        new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF attacks"),
-//                        new ApiParameter("scope", "query", false, "OAuth scopes: write:vat, read:vat or both"))));
+        //        this.hmrcAuthUrlGetLambdaHttpMethod = HttpMethod.GET;
+        //        this.hmrcAuthUrlGetLambdaUrlPath = "/api/v1/hmrc/authUrl";
+        //        this.hmrcAuthUrlGetLambdaJwtAuthorizer = false;
+        //        this.hmrcAuthUrlGetLambdaCustomAuthorizer = false;
+        //        var hmrcAuthUrlGetLambdaHandlerName = "hmrcAuthUrlGet.handler";
+        //        var hmrcAuthUrlGetLambdaHandlerDashed =
+        //                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcAuthUrlGetLambdaHandlerName);
+        //        this.hmrcAuthUrlGetLambdaFunctionName =
+        //                "%s-%s".formatted(this.appResourceNamePrefix, hmrcAuthUrlGetLambdaHandlerDashed);
+        //        this.hmrcAuthUrlGetLambdaHandler =
+        //                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcAuthUrlGetLambdaHandlerName);
+        //        this.hmrcAuthUrlGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix,
+        // hmrcAuthUrlGetLambdaHandlerDashed);
+        //        publishedApiLambdas.add(new PublishedLambda(
+        //                this.hmrcAuthUrlGetLambdaHttpMethod,
+        //                this.hmrcAuthUrlGetLambdaUrlPath,
+        //                "Get HMRC authentication URL",
+        //                "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
+        //                "getHmrcAuthUrl",
+        //                List.of(
+        //                        new ApiParameter("state", "query", true, "Opaque state value to mitigate CSRF
+        // attacks"),
+        //                        new ApiParameter("scope", "query", false, "OAuth scopes: write:vat, read:vat or
+        // both"))));
 
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
@@ -515,23 +519,24 @@ public class SubmitSharedNames {
                         new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
 
-//        this.receiptPostLambdaHttpMethod = HttpMethod.POST;
-//        this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";
-//        this.receiptPostLambdaJwtAuthorizer = true;
-//        this.receiptPostLambdaCustomAuthorizer = false;
-//        var receiptPostLambdaHandlerName = "hmrcReceiptPost.handler";
-//        var receiptPostLambdaHandlerDashed =
-//                ResourceNameUtils.convertCamelCaseToDashSeparated(receiptPostLambdaHandlerName);
-//        this.receiptPostLambdaFunctionName =
-//                "%s-%s".formatted(this.appResourceNamePrefix, receiptPostLambdaHandlerDashed);
-//        this.receiptPostLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, receiptPostLambdaHandlerName);
-//        this.receiptPostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, receiptPostLambdaHandlerDashed);
-//        publishedApiLambdas.add(new PublishedLambda(
-//                this.receiptPostLambdaHttpMethod,
-//                this.receiptPostLambdaUrlPath,
-//                "Log receipt to storage",
-//                "Logs a transaction receipt to secure storage",
-//                "logReceipt"));
+        //        this.receiptPostLambdaHttpMethod = HttpMethod.POST;
+        //        this.receiptPostLambdaUrlPath = "/api/v1/hmrc/receipt";
+        //        this.receiptPostLambdaJwtAuthorizer = true;
+        //        this.receiptPostLambdaCustomAuthorizer = false;
+        //        var receiptPostLambdaHandlerName = "hmrcReceiptPost.handler";
+        //        var receiptPostLambdaHandlerDashed =
+        //                ResourceNameUtils.convertCamelCaseToDashSeparated(receiptPostLambdaHandlerName);
+        //        this.receiptPostLambdaFunctionName =
+        //                "%s-%s".formatted(this.appResourceNamePrefix, receiptPostLambdaHandlerDashed);
+        //        this.receiptPostLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix,
+        // receiptPostLambdaHandlerName);
+        //        this.receiptPostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, receiptPostLambdaHandlerDashed);
+        //        publishedApiLambdas.add(new PublishedLambda(
+        //                this.receiptPostLambdaHttpMethod,
+        //                this.receiptPostLambdaUrlPath,
+        //                "Log receipt to storage",
+        //                "Logs a transaction receipt to secure storage",
+        //                "logReceipt"));
 
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
         this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";

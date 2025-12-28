@@ -81,13 +81,13 @@ describe("hmrcValidation", () => {
       expect(isValidIsoDate("")).toBe(false); // empty
       expect(isValidIsoDate("not-a-date")).toBe(false);
     });
-    
+
     test("rejects invalid dates that match format", () => {
       expect(isValidIsoDate("2024-02-30")).toBe(false); // Feb 30th doesn't exist
       expect(isValidIsoDate("2023-02-29")).toBe(false); // Not a leap year
       expect(isValidIsoDate("2024-04-31")).toBe(false); // April only has 30 days
     });
-    
+
     test("accepts leap year dates", () => {
       expect(isValidIsoDate("2024-02-29")).toBe(true); // 2024 is a leap year
       expect(isValidIsoDate("2000-02-29")).toBe(true); // 2000 is a leap year
@@ -119,7 +119,7 @@ describe("hmrcValidation", () => {
       expect(maskIpAddress("fe80::1")).toBe("fe80::xxx");
       expect(maskIpAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334")).toBe("2001:0db8:85a3:0000:0000:8a2e:0370:xxx");
     });
-    
+
     test("masks compressed IPv6 addresses", () => {
       expect(maskIpAddress("::1")).toBe("::xxx");
       expect(maskIpAddress("::ffff:192.0.2.1")).toBe("::xxx");
