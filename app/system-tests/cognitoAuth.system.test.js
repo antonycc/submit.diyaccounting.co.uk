@@ -1,7 +1,6 @@
 // app/system-tests/cognitoAuth.system.test.js
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { handler as cognitoAuthUrlGetHandler } from "../functions/auth/cognitoAuthUrlGet.js";
 import { handler as cognitoTokenPostHandler } from "../functions/auth/cognitoTokenPost.js";
 import { buildLambdaEvent, buildHeadEvent } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess } from "../test-helpers/mockHelpers.js";
@@ -15,46 +14,6 @@ describe("System: Cognito Auth Flow (authUrl + token)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     Object.assign(process.env, setupTestEnv());
-  });
-
-  it("should generate Cognito auth URL when given a valid state", async () => {
-    const event = buildLambdaEvent({
-      method: "GET",
-      path: "/api/v1/cognito/authUrl",
-      queryStringParameters: { state: "state-123" },
-    });
-
-    const res = await cognitoAuthUrlGetHandler(event);
-
-    expect(res.statusCode).toBe(200);
-
-    const body = parseResponseBody(res);
-    expect(body).toHaveProperty("authUrl");
-    expect(body.authUrl).toContain("/oauth2/authorize");
-    expect(body.authUrl).toContain(`client_id=${encodeURIComponent(process.env.COGNITO_CLIENT_ID)}`);
-    expect(body.authUrl).toContain("state=state-123");
-    expect(body.authUrl).toContain(encodeURIComponent("/auth/loginWithCognitoCallback.html"));
-  });
-
-  it("should return 400 when state is missing", async () => {
-    const event = buildLambdaEvent({
-      method: "GET",
-      path: "/api/v1/cognito/authUrl",
-      queryStringParameters: {},
-    });
-
-    const res = await cognitoAuthUrlGetHandler(event);
-
-    expect(res.statusCode).toBe(400);
-
-    const body = parseResponseBody(res);
-    expect(body.message).toMatch(/Missing state/i);
-  });
-
-  it("should return 200 for HEAD on authUrl", async () => {
-    const event = buildHeadEvent({ path: "/api/v1/cognito/authUrl" });
-    const res = await cognitoAuthUrlGetHandler(event);
-    expect(res.statusCode).toBe(200);
   });
 
   it("should return 400 when grant_type is missing on token exchange", async () => {

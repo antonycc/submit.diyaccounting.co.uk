@@ -1010,7 +1010,6 @@ All Lambda functions run Node.js 22 from Docker images stored in ECR.
 
 | Function | Path | Handler | Purpose | Pattern |
 |----------|------|---------|---------|---------|
-| `cognitoAuthUrlGet` | `/api/v1/cognito/authUrl` | `app/functions/auth/cognitoAuthUrlGet.js` | Legacy/Fallback Cognito URL generation | Cache-Aside Read |
 | `cognitoTokenPost` | `/api/v1/cognito/token` | `app/functions/auth/cognitoTokenPost.js` | Exchange auth code for Cognito tokens | Cache-Aside Read |
 | `mockAuthUrlGet` | `/api/v1/mock/authUrl` | `app/functions/non-lambda-mocks/mockAuthUrlGet.js` | Mock OAuth auth URL (testing) | Cache-Aside Read |
 | `mockTokenPost` | `/api/v1/mock/token` | `app/functions/non-lambda-mocks/mockTokenPost.js` | Mock OAuth token (testing) | Cache-Aside Read |
@@ -1020,13 +1019,11 @@ All Lambda functions run Node.js 22 from Docker images stored in ECR.
 
 | Function | Path | Handler | Purpose | Pattern |
 |----------|------|---------|---------|---------|
-| `hmrcAuthUrlGet` | `/api/v1/hmrc/authUrl` | `app/functions/hmrc/hmrcAuthUrlGet.js` | Legacy/Fallback HMRC OAuth URL | Cache-Aside Read |
 | `hmrcTokenPost` | `/api/v1/hmrc/token` | `app/functions/hmrc/hmrcTokenPost.js` | Exchange code for HMRC access token | Cache-Aside Read |
 | `hmrcVatObligationGet` | `/api/v1/hmrc/vat/obligation` | `app/functions/hmrc/hmrcVatObligationGet.js` | Retrieve VAT obligations from HMRC | Async Polling |
 | `hmrcVatReturnGet` | `/api/v1/hmrc/vat/return/{periodKey}` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data | Async Polling |
 | `hmrcVatReturnPost` | `/api/v1/hmrc/vat/return` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC and save receipt server-side | Async Polling |
 | `hmrcReceiptGet` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB | Cache-Aside Read |
-| `hmrcReceiptPost` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt (Legacy - now handled by hmrcVatReturnPost) | Cache-Aside Read |
 | `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker | Internal |
 
 #### Account Functions
@@ -1177,7 +1174,6 @@ For local development, the application runs as an Express.js server with support
 │  │                          ▼                                  │ │
 │  │  ┌───────────────────────────────────────────────────────┐ │ │
 │  │  │  Lambda Function Handlers (imported directly)          │ │ │
-│  │  │  - auth/cognitoAuthUrlGet.js                          │ │ │
 │  │  │  - hmrc/hmrcVatReturnPost.js                          │ │ │
 │  │  │  - account/bundleGet.js                               │ │ │
 │  │  │  - etc.                                               │ │ │
@@ -1543,17 +1539,14 @@ app/
 │   └── dynamoDbBreakerRepository.js       # Circuit breaker state storage
 ├── functions/              # Lambda function handlers
 │   ├── auth/               # Authentication functions
-│   │   ├── cognitoAuthUrlGet.js          # Generate Cognito OAuth URL
 │   │   ├── cognitoTokenPost.js           # Exchange auth code for tokens
 │   │   └── customAuthorizer.js           # API Gateway JWT authorizer
 │   ├── hmrc/               # HMRC API integration
-│   │   ├── hmrcAuthUrlGet.js             # Generate HMRC OAuth URL
 │   │   ├── hmrcTokenPost.js              # Exchange code for HMRC token
 │   │   ├── hmrcVatObligationGet.js       # Retrieve VAT obligations
 │   │   ├── hmrcVatReturnGet.js           # Retrieve VAT return
 │   │   ├── hmrcVatReturnPost.js          # Submit VAT return
-│   │   ├── hmrcReceiptGet.js             # Retrieve receipt from storage
-│   │   └── hmrcReceiptPost.js            # Store HMRC receipt
+│   │   └── hmrcReceiptGet.js             # Retrieve receipt from storage
 │   ├── account/            # User account management
 │   │   ├── bundleGet.js                  # Get user bundles
 │   │   ├── bundlePost.js                 # Create/update bundle

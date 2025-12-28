@@ -138,3 +138,48 @@ Each API defines which modes are valid; unsupported modes are ignored or coerced
 Eliminate runtime dependency on the Cognito Auth URL and HMRC Auth URL Lambdas by calculating
 OAuth2 authorization URLs entirely in the browser, using environment values injected at
 deploy-time into a single static file.
+
+---
+
+
+### Phase 3: Cognito & HMRC Token Exchange
+**Goal**: n/a Leave as is with synchronous processing.
+
+---
+
+### Phase 4: HMRC Receipt Management (GET)
+**Goal**: Remove bundle POST Leave GET as is with synchronous processing.
+
+---
+
+### Phase 5: HMRC VAT Return Submission (POST)
+**Goal**: Critical path async implementation for VAT submissions.
+
+#### Infrastructure
+- **DataStack.java**: Add `hmrcVatReturnPostAsyncRequestsTableName`.
+- **HmrcStack.java**: Convert `hmrcVatReturnPost` to `AsyncApiLambda`.
+
+#### Application
+- **hmrcVatReturnPost.js**:
+    - Extensive refactor to ensure fraud prevention headers and VAT data are correctly passed to the consumer payload.
+    - Consumer handles the actual `fetch` to HMRC and stores the response (including 400/403/500 errors) in the request state.
+
+#### Testing
+- **Behaviour Tests**: Full verification using `test:submitVatBehaviour-proxy`.
+
+---
+
+### Phase 6: HMRC VAT Obligations and Returns (GET)
+**Goal**: Finalize rollout with read-only HMRC integrations.
+
+#### Infrastructure
+- **DataStack.java**: Tables for `hmrcVatObligationGet` and `hmrcVatReturnGet`.
+- **HmrcStack.java**: Convert both to `AsyncApiLambda`.
+
+#### Application
+- **hmrcVatObligationGet.js**: Refactor to async.
+- **hmrcVatReturnGet.js**: Refactor to async.
+
+#### Final Review
+- Ensure all endpoints are documented in OpenAPI with 202 responses.
+- Verify `deploy.yml` produces a stable environment with all async resources.

@@ -161,15 +161,12 @@ repository-contents.txt:
 ./app/functions/infra/hmrcHttpProxy.js
 ./app/functions/infra/selfDestruct.js
 ./app/functions/infra/PROXY.md
-./app/functions/auth/cognitoAuthUrlGet.js
 ./app/functions/auth/customAuthorizer.js
 ./app/functions/auth/cognitoTokenPost.js
 ./app/functions/hmrc/next-lambdas.md
-./app/functions/hmrc/hmrcAuthUrlGet.js
 ./app/functions/hmrc/hmrcVatObligationGet.js
 ./app/functions/hmrc/hmrcReceiptGet.js
 ./app/functions/hmrc/hmrcVatReturnGet.js
-./app/functions/hmrc/hmrcReceiptPost.js
 ./app/functions/hmrc/hmrcTokenPost.js
 ./app/functions/hmrc/hmrcVatReturnPost.js
 ./app/functions/account/bundleGet.js
