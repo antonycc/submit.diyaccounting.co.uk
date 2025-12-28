@@ -234,36 +234,15 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     const formBundleNumber = submitBody.receipt.formBundleNumber;
 
-    const receiptPostEvent = buildLambdaEvent({
-      method: "POST",
-      path: "/api/v1/hmrc/receipt",
-      body: {
-        receipt: submitBody.receipt,
-      },
-      headers: { Authorization: `Bearer ${testToken}` },
-      authorizer: {
-        authorizer: {
-          lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "vatuser",
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const receiptPostBody = {
+    const postBody = {
       receipt: submitBody.receipt,
       key: formBundleNumber,
     };
 
     const receiptGetEvent = buildLambdaEvent({
       method: "GET",
-      path: `/api/v1/hmrc/receipt/${receiptPostBody.key.split("/").pop()}`,
-      pathParameters: { name: receiptPostBody.key.split("/").pop() },
+      path: `/api/v1/hmrc/receipt/${postBody.key.split("/").pop()}`,
+      pathParameters: { name: postBody.key.split("/").pop() },
       headers: { Authorization: `Bearer ${testToken}` },
       authorizer: {
         authorizer: {
