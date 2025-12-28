@@ -109,13 +109,6 @@ export async function handler(event) {
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   const asyncQueueUrl = process.env.SQS_QUEUE_URL;
 
-  // // Bundle enforcement
-  // try {
-  //   await enforceBundles(event);
-  // } catch (error) {
-  //   return http403ForbiddenFromBundleEnforcement(error, request);
-  // }
-
   // If HEAD request, return 200 OK immediately after bundle enforcement
   if (event?.requestContext?.http?.method === "HEAD") {
     return http200OkResponse({

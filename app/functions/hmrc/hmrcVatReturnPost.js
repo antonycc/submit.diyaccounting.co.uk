@@ -23,7 +23,7 @@ import {
   hmrcHttpPost,
   validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
-import { isValidVrn, isValidPeriodKey, maskSensitiveHeaders } from "../../lib/hmrcValidation.js";
+import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -181,9 +181,10 @@ export async function handler(event) {
 
   // After obtaining `receipt` and userSub but before returning the response
   const formBundleNumber = receipt?.formBundleNumber ?? receipt?.formBundle;
+  let receiptId;
   if (userSub && formBundleNumber) {
     const timestamp = new Date().toISOString();
-    const receiptId = `${timestamp}-${formBundleNumber}`;
+    receiptId = `${timestamp}-${formBundleNumber}`;
     await putReceipt(userSub, receiptId, receipt);
   }
 
@@ -193,6 +194,7 @@ export async function handler(event) {
     headers: { ...responseHeaders },
     data: {
       receipt,
+      receiptId,
     },
   });
 }
@@ -241,7 +243,6 @@ export async function submitVat(
   const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   /* v8 ignore start */
-  // TODO: Move the error simulation into the proxy
   if (govTestScenarioHeader === "SUBMIT_HMRC_API_HTTP_500") {
     logger.error({ message: `Simulated server error for testing scenario: ${govTestScenarioHeader}` });
     hmrcResponse.ok = false;

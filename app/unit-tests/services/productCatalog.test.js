@@ -7,7 +7,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("productCatalogHelper", () => {
-  const tomlPath = path.join(process.cwd(), "web/public/product-catalogue.toml");
+  const tomlPath = path.join(process.cwd(), "web/public/submit.catalogue.toml");
   const tomlText = fs.readFileSync(tomlPath, "utf-8");
 
   it("parseCatalog should parse TOML into object", () => {

@@ -5,7 +5,6 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
-import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.CfnOutput;

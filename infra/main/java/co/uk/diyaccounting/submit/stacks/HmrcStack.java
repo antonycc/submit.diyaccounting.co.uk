@@ -1,10 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -19,16 +23,7 @@ import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 public class HmrcStack extends Stack {
-
-//    public AbstractApiLambdaProps hmrcAuthUrlGetLambdaProps;
-//    public Function hmrcAuthUrlGetLambda;
-//    public ILogGroup hmrcAuthUrlGetLambdaLogGroup;
 
     public AbstractApiLambdaProps hmrcTokenPostLambdaProps;
     public Function hmrcTokenPostLambda;
@@ -46,10 +41,6 @@ public class HmrcStack extends Stack {
     public AbstractApiLambdaProps hmrcVatReturnGetLambdaProps;
     public Function hmrcVatReturnGetLambda;
     public ILogGroup hmrcVatReturnGetLambdaLogGroup;
-
-//    public AbstractApiLambdaProps receiptPostLambdaProps;
-//    public Function receiptPostLambda;
-//    public ILogGroup receiptPostLambdaLogGroup;
 
     public AbstractApiLambdaProps receiptGetLambdaProps;
     public Function receiptGetLambda;
@@ -85,13 +76,9 @@ public class HmrcStack extends Stack {
 
         String hmrcBaseUri();
 
-        String hmrcProxyBaseUri();
-
         String hmrcClientId();
 
         String hmrcClientSecretArn();
-
-        String hmrcSandboxProxyBaseUri();
 
         String hmrcSandboxBaseUri();
 
@@ -103,15 +90,6 @@ public class HmrcStack extends Stack {
 
         @Override
         SubmitSharedNames sharedNames();
-
-        // TODO: Delete these and ensure the tests set environment which the server.js reads
-        // Optional<String> optionalTestAccessToken(); // {
-
-        // Optional<String> optionalTestS3Endpoint(); // {
-
-        // Optional<String> optionalTestS3AccessKey(); // {
-
-        // Optional<String> optionalTestS3SecretKey(); // {
 
         static ImmutableHmrcStackProps.Builder builder() {
             return ImmutableHmrcStackProps.builder();
@@ -141,53 +119,12 @@ public class HmrcStack extends Stack {
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
-//        // authUrl - HMRC
-//        var authUrlHmrcLambdaEnv = new PopulatedMap<String, String>()
-//                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-//                .with("HMRC_BASE_URI", props.hmrcBaseUri())
-//                .with("HMRC_CLIENT_ID", props.hmrcClientId())
-//                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-//                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
-//                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName);
-//        var authUrlHmrcLambdaUrlOrigin = new ApiLambda(
-//                this,
-//                ApiLambdaProps.builder()
-//                        .idPrefix(props.sharedNames().hmrcAuthUrlGetLambdaFunctionName)
-//                        .baseImageTag(props.baseImageTag())
-//                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-//                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-//                        .functionName(props.sharedNames().hmrcAuthUrlGetLambdaFunctionName)
-//                        .handler(props.sharedNames().hmrcAuthUrlGetLambdaHandler)
-//                        .lambdaArn(props.sharedNames().hmrcAuthUrlGetLambdaArn)
-//                        .httpMethod(props.sharedNames().hmrcAuthUrlGetLambdaHttpMethod)
-//                        .urlPath(props.sharedNames().hmrcAuthUrlGetLambdaUrlPath)
-//                        .jwtAuthorizer(props.sharedNames().hmrcAuthUrlGetLambdaJwtAuthorizer)
-//                        .customAuthorizer(props.sharedNames().hmrcAuthUrlGetLambdaCustomAuthorizer)
-//                        .environment(authUrlHmrcLambdaEnv)
-//                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-//                        .build());
-//        this.hmrcAuthUrlGetLambdaProps = authUrlHmrcLambdaUrlOrigin.apiProps;
-//        this.hmrcAuthUrlGetLambda = authUrlHmrcLambdaUrlOrigin.lambda;
-//        this.hmrcAuthUrlGetLambdaLogGroup = authUrlHmrcLambdaUrlOrigin.logGroup;
-//        this.lambdaFunctionProps.add(this.hmrcAuthUrlGetLambdaProps);
-//        infof(
-//                "Created Lambda %s for HMRC auth URL with handler %s",
-//                this.hmrcAuthUrlGetLambda.getNode().getId(), props.sharedNames().hmrcAuthUrlGetLambdaHandler);
-//
-//        // Grant the Lambda permission to access DynamoDB Bundles Table
-//        bundlesTable.grantReadData(this.hmrcAuthUrlGetLambda);
-//        infof(
-//                "Granted DynamoDB permissions to %s for Bundles Table %s",
-//                this.hmrcAuthUrlGetLambda.getFunctionName(), bundlesTable.getTableName());
-
         // exchangeToken - HMRC
         var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
                 .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
@@ -197,11 +134,6 @@ public class HmrcStack extends Stack {
         if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
             exchangeHmrcTokenLambdaEnv.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
         }
-        //        if (props.optionalTestAccessToken().isPresent()
-        //                && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
-        //            exchangeHmrcTokenLambdaEnv.with(
-        //                    "TEST_ACCESS_TOKEN", props.optionalTestAccessToken().get());
-        //        }
 
         var exchangeHmrcTokenLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -283,14 +215,12 @@ public class HmrcStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
-                        .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                        .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                        // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
-                        .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                        // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
-                        .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                        .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
         var submitVatLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -327,13 +257,11 @@ public class HmrcStack extends Stack {
 
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
-                        .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                        .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                        // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
-                        .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                        // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
-                        .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -371,13 +299,11 @@ public class HmrcStack extends Stack {
 
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
-                        .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-                        .with("HMRC_BASE_URI", props.hmrcBaseUri())
-                        // .with("HMRC_BASE_URI", props.hmrcProxyBaseUri())
-                        .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
-                        // .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxProxyBaseUri())
-                        .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                        .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -411,53 +337,6 @@ public class HmrcStack extends Stack {
 
         // Allow the VAT return retrieval Lambda to write HMRC API request audit records to DynamoDB
         hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnGetLambda);
-
-//        var logReceiptLambdaEnv = new PopulatedMap<String, String>()
-//                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-//                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-//                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
-//        //        if (props.optionalTestS3Endpoint().isPresent()
-//        //                && StringUtils.isNotBlank(props.optionalTestS3Endpoint().get())
-//        //                && props.optionalTestS3AccessKey().isPresent()
-//        //                && StringUtils.isNotBlank(props.optionalTestS3AccessKey().get())
-//        //                && props.optionalTestS3SecretKey().isPresent()
-//        //                && StringUtils.isNotBlank(props.optionalTestS3SecretKey().get())) {
-//        //            // For production like integrations without AWS we can use test S3 credentials
-//        //            logReceiptLambdaEnv
-//        //                    .with("TEST_S3_ENDPOINT", props.optionalTestS3Endpoint().get())
-//        //                    .with("TEST_S3_ACCESS_KEY", props.optionalTestS3AccessKey().get())
-//        //                    .with("TEST_S3_SECRET_KEY", props.optionalTestS3SecretKey().get());
-//        //        }
-//        var logReceiptLambdaUrlOrigin = new ApiLambda(
-//                this,
-//                ApiLambdaProps.builder()
-//                        .idPrefix(props.sharedNames().receiptPostLambdaFunctionName)
-//                        .baseImageTag(props.baseImageTag())
-//                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-//                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-//                        .functionName(props.sharedNames().receiptPostLambdaFunctionName)
-//                        .handler(props.sharedNames().receiptPostLambdaHandler)
-//                        .lambdaArn(props.sharedNames().receiptPostLambdaArn)
-//                        .httpMethod(props.sharedNames().receiptPostLambdaHttpMethod)
-//                        .urlPath(props.sharedNames().receiptPostLambdaUrlPath)
-//                        .jwtAuthorizer(props.sharedNames().receiptPostLambdaJwtAuthorizer)
-//                        .customAuthorizer(props.sharedNames().receiptPostLambdaCustomAuthorizer)
-//                        .environment(logReceiptLambdaEnv)
-//                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-//                        .build());
-//        this.receiptPostLambdaProps = logReceiptLambdaUrlOrigin.apiProps;
-//        this.receiptPostLambda = logReceiptLambdaUrlOrigin.lambda;
-//        this.receiptPostLambdaLogGroup = logReceiptLambdaUrlOrigin.logGroup;
-//        this.lambdaFunctionProps.add(this.receiptPostLambdaProps);
-//        infof(
-//                "Created Lambda %s for logging receipts with handler %s",
-//                this.receiptPostLambda.getNode().getId(), props.sharedNames().receiptPostLambdaHandler);
-//
-//        // Grant the LogReceiptLambda permission to access DynamoDB Bundles Table
-//        bundlesTable.grantReadData(this.receiptPostLambda);
-//        infof(
-//                "Granted DynamoDB permissions to %s for Bundles Table %s",
-//                this.receiptPostLambda.getFunctionName(), bundlesTable.getTableName());
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
@@ -518,14 +397,11 @@ public class HmrcStack extends Stack {
 
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts DynamoDB
         // table
-        //receiptsTable.grantWriteData(this.receiptPostLambda);
         receiptsTable.grantWriteData(this.hmrcVatReturnPostLambda);
         receiptsTable.grantReadData(this.receiptGetLambda);
 
-        //cfnOutput(this, "AuthUrlHmrcLambdaArn", this.hmrcAuthUrlGetLambda.getFunctionArn());
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());
         cfnOutput(this, "SubmitVatLambdaArn", this.hmrcVatReturnPostLambda.getFunctionArn());
-        //cfnOutput(this, "LogReceiptLambdaArn", this.receiptPostLambda.getFunctionArn());
         cfnOutput(this, "MyReceiptsLambdaArn", this.receiptGetLambda.getFunctionArn());
 
         infof(

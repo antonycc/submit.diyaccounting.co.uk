@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import java.util.List;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.ecr.IRepository;
@@ -14,8 +15,6 @@ import software.amazon.awscdk.services.lambda.eventsources.SqsEventSource;
 import software.amazon.awscdk.services.sqs.DeadLetterQueue;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
-
-import java.util.List;
 
 public class AsyncApiLambda extends ApiLambda {
 
@@ -74,9 +73,8 @@ public class AsyncApiLambda extends ApiLambda {
                 .build();
 
         // 4. Set up SQS trigger
-        this.consumerLambda.addEventSource(SqsEventSource.Builder.create(this.queue)
-                .batchSize(1)
-                .build());
+        this.consumerLambda.addEventSource(
+                SqsEventSource.Builder.create(this.queue).batchSize(1).build());
 
         // Alarms for consumer lambda
         Alarm.Builder.create(scope, props.idPrefix() + "-ConsumerErrorsAlarm")

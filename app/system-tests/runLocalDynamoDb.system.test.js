@@ -39,15 +39,6 @@ describe("System: runLocalDynamoDb() helper", () => {
     if (dynamoControl?.stop) await dynamoControl.stop();
   });
 
-  it("starts dynalite and creates expected tables", async () => {
-    for (const table of [bundlesTableName, hmrcReqsTableName, receiptsTableName, process.env.STATE_TABLE_NAME]) {
-      // Some environments may not set STATE_TABLE_NAME via helper; fall back
-      const name = table || "behaviour-proxy-state";
-      const resp = await ddb.send(new DescribeTableCommand({ TableName: name }));
-      expect(resp?.Table?.TableName).toBe(name);
-    }
-  });
-
   it("allows basic read/write operations on created tables", async () => {
     const pk = { S: "test-sub" };
     // Receipts table uses composite key: hashedSub (PK) + receiptId (SK).

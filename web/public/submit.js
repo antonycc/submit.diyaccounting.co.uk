@@ -777,8 +777,9 @@ async function fetchWithIdToken(input, init = {}) {
       try {
         const parsedUrl = new URL(urlPath, window.location.origin);
         urlPath = parsedUrl.pathname + parsedUrl.search;
-      } catch (e) {
+      } catch (error) {
         // Fallback to original urlPath if URL parsing fails
+        console.error(`Failed to parse URL for async request: ${urlPath}. Using original URL. Error: ${JSON.stringify(error)}`);
       }
       const requestDesc = `[${method} ${urlPath}]`;
 
@@ -1180,7 +1181,7 @@ function isActivityAvailable(catalog, activityId, bundleId) {
 }
 
 // Fetch raw TOML from the server; parsing to be done by the caller/test if needed
-async function fetchCatalogText(url = "/product-catalogue.toml") {
+async function fetchCatalogText(url = "/submit.catalogue.toml") {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch catalog: ${res.status} ${res.statusText}`);
   return res.text();

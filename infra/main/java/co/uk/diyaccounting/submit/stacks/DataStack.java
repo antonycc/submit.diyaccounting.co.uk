@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
@@ -12,9 +15,6 @@ import software.amazon.awscdk.services.dynamodb.BillingMode;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.constructs.Construct;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class DataStack extends Stack {
 
@@ -107,7 +107,8 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-AsyncRequestsTable", props.sharedNames().asyncRequestsTableName);
         infof(
                 "Created async requests DynamoDB table with name %s and id %s",
-                this.asyncRequestsTable.getTableName(), this.asyncRequestsTable.getNode().getId());
+                this.asyncRequestsTable.getTableName(),
+                this.asyncRequestsTable.getNode().getId());
 
         // Create DynamoDB table for bundle POST async request storage
         this.bundlePostAsyncRequestsTable = createAsyncRequestsTable(

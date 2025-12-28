@@ -4,7 +4,7 @@ Purpose: Manage the complex logic of user bundles, entitlements, and subscriptio
 
 ## Scope and Inputs
 
-- Key files: `web/public/product-catalogue.toml`, `product-subscribers.subs`.
+- Key files: `web/public/submit.catalogue.toml`, `product-subscribers.subs`.
 - Domain knowledge:
   - Bundle types (Default, Test, Guest, Business).
   - Allocation methods (automatic, on-request, subscription).
@@ -14,7 +14,7 @@ Purpose: Manage the complex logic of user bundles, entitlements, and subscriptio
 ## Core Responsibilities
 
 1. **Catalogue Management**
-   - Maintain the `web/public/product-catalogue.toml` file, ensuring activities are correctly mapped to bundles.
+   - Maintain the `web/public/submit.catalogue.toml` file, ensuring activities are correctly mapped to bundles.
    - Define new bundles or activities as the project expands.
    - Ensure environment-specific visibility of bundles (e.g., `listedInEnvironments`).
 
@@ -29,7 +29,7 @@ Purpose: Manage the complex logic of user bundles, entitlements, and subscriptio
 
 ## Process
 
-1. **Review Catalogue**: Check the current state of `web/public/product-catalogue.toml`.
+1. **Review Catalogue**: Check the current state of `web/public/submit.catalogue.toml`.
 2. **Analyze Requirement**: Determine what new entitlement or activity is needed.
 3. **Trace Access Path**: Trace how a user's entitlements are checked when they access a specific URL path.
 4. **Implement Changes**: Update the TOML file or the underlying JavaScript logic that processes it.
@@ -38,7 +38,7 @@ Purpose: Manage the complex logic of user bundles, entitlements, and subscriptio
 ## Constraints
 
 - **No Silent Denials**: If a user is denied access, ensure the reason is clear in the logs (though the user might see a generic message).
-- **TOML Integrity**: Ensure the `web/public/product-catalogue.toml` remains valid and follows the established schema.
+- **TOML Integrity**: Ensure the `web/public/submit.catalogue.toml` remains valid and follows the established schema.
 - **Consistency**: Keep the naming of bundles and activities consistent across the app.
 
 ## Success Criteria

@@ -16,8 +16,6 @@ import software.constructs.Construct;
 public class ObservabilityUE1Stack extends Stack {
 
     public final LogGroup selfDestructLogGroup;
-    // public final LogGroup webDeploymentLogGroup;
-    // public final IBucket distributionLogsBucket;
     public final LogGroup distributionAccessLogGroup;
 
     @Value.Immutable

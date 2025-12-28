@@ -118,10 +118,6 @@ function generateAllowPolicy(routeArn, jwtPayload) {
     // Wildcard stage, method, and resource to avoid brittle exact matching on HTTP API
     policyResource = `arn:aws:execute-api:${region}:${accountId}:${apiId}/*/*/*`;
   }
-  // } catch (error) {
-  //  // Fallback to original routeArn if parsing fails
-  //  logger.warn({ message: "Failed to parse routeArn for policy resource, using original", routeArn, error: error.message });
-  // }
 
   // Flatten all JWT claims into simple string values for context
   const flatContext = {};

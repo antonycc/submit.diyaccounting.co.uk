@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
@@ -7,6 +10,7 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -21,11 +25,6 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
@@ -126,9 +125,9 @@ public class AccountStack extends Stack {
                 String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
 
         // Get Bundles Lambda
-        var getBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
-                //.with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
+        var getBundlesLambdaEnv =
+                new PopulatedMap<String, String>().with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
+        // .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
         var getBundlesAsyncLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -219,11 +218,14 @@ public class AccountStack extends Stack {
         // Grant permissions to both API and Consumer Lambdas
         List.of(this.bundlePostLambda, requestBundlesAsyncLambda.consumerLambda).forEach(fn -> {
             // Grant Cognito permissions
-            userPool.grant(fn, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
+            userPool.grant(
+                    fn, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
             fn.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of(
-                            "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers"))
+                            "cognito-idp:AdminGetUser",
+                            "cognito-idp:AdminUpdateUserAttributes",
+                            "cognito-idp:ListUsers"))
                     .resources(List.of(cognitoUserPoolArn))
                     .build());
 
@@ -293,11 +295,14 @@ public class AccountStack extends Stack {
         // Grant permissions to both API and Consumer Lambdas
         List.of(this.bundleDeleteLambda, bundleDeleteAsyncLambda.consumerLambda).forEach(fn -> {
             // Grant Cognito permissions
-            userPool.grant(fn, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
+            userPool.grant(
+                    fn, "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers");
             fn.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of(
-                            "cognito-idp:AdminGetUser", "cognito-idp:AdminUpdateUserAttributes", "cognito-idp:ListUsers"))
+                            "cognito-idp:AdminGetUser",
+                            "cognito-idp:AdminUpdateUserAttributes",
+                            "cognito-idp:ListUsers"))
                     .resources(List.of(cognitoUserPoolArn))
                     .build());
 

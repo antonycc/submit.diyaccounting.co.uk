@@ -31,7 +31,6 @@ This document maps HMRC MTD VAT production approval requirements to the current 
 ### OAuth / Token Flow
 | Route | File | Notes |
 |-------|------|-------|
-| `GET /api/v1/hmrc/authurl` | `hmrcAuthUrlGet.js` | Constructs HMRC OAuth URL using env + state. |
 | `POST /api/v1/hmrc/token` | `hmrcTokenPost.js` | Exchanges OAuth code for token via HMRC live/sandbox. |
 
 Key implementation:

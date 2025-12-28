@@ -2,7 +2,6 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
-import { handler as hmrcAuthUrlGetHandler } from "../functions/hmrc/hmrcAuthUrlGet.js";
 import { handler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
 import { handler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
@@ -142,23 +141,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
   });
 
   it("should complete obligation-based journey: Auth → Token → Obligations → Submit → Get VAT", async () => {
-    // Step 1: Get HMRC authorization URL
-    const authUrlEvent = buildLambdaEvent({
-      method: "GET",
-      path: "/api/v1/hmrc/authUrl",
-      queryStringParameters: {
-        state: "obligation-journey-state",
-        scope: "write:vat read:vat",
-      },
-    });
-
-    const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
-    expect(authUrlResponse.statusCode).toBe(200);
-
-    const authUrlBody = parseResponseBody(authUrlResponse);
-    expect(authUrlBody).toHaveProperty("authUrl");
-    expect(authUrlBody.authUrl).toContain("oauth/authorize");
-
+    // Step 1: Get HMRC authorization URL - performed client side
     // Step 2: Exchange authorization code for access token
     const tokenEvent = buildLambdaEvent({
       method: "POST",

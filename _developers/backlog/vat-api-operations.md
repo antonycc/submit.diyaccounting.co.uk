@@ -29,7 +29,6 @@ Only `submitVat.js` exists for submitting returns.  There are no endpoints or pa
 2. **viewVatReturn.html** – Accept query parameters `vrn` and `periodKey`.  Fetch `/api/v1/hmrc/vat/return/{periodKey}` and render fields like `vatDueSales`, `totalVatDue`.  Provide a back link to obligations.
 3. **vatLiability.html**, **vatPayment.html**, **vatPenalties.html** – Each page should accept relevant parameters, call the corresponding API and display results.  Include notes when no data is returned.
 4. **Entitlements integration** – Only show VAT pages when the user has the correct bundle.  Use `isActivityAllowed` at page load and redirect unauthorized users to the bundles page.
-5. **Dynamic scopes** – Extend `hmrcAuthUrlGet.js` so that the HMRC OAuth URL can accept custom scopes (`write:vat`, `read:vat`), enabling read‑only operations for obligations and return viewing.
 
 ### Libraries and tooling
 
@@ -61,11 +60,7 @@ HMRC’s VAT API allows developers to retrieve obligations, submit and view retu
    - Both pages redirect to HMRC OAuth with `read:vat` scope if no token exists
    - Both pages restore form state and continue operations after OAuth callback
 
-2. **Dynamic Scope Support in hmrcAuthUrlGet.js**
-   - Added `scope` query parameter support
-   - Validates scope against allowed values: `write:vat`, `read:vat`, `write:vat read:vat`, `read:vat write:vat`
-   - Returns 400 error for invalid scope values
-   - Defaults to `write:vat read:vat` for backward compatibility
+2. deleted
 
 3. **Gov-Client Headers Helper**
    - Added `getGovClientHeaders()` function to submit.js
@@ -129,8 +124,7 @@ HMRC’s VAT API allows developers to retrieve obligations, submit and view retu
 
 - `web/public/submit.js` - Added `getGovClientHeaders()` helper
 - `web/public/activities/vatObligations.html` - Complete OAuth integration
-- `web/public/activities/viewVatReturn.html` - Complete OAuth integration  
-- `app/functions/hmrc/hmrcAuthUrlGet.js` - Dynamic scope support
+- `web/public/activities/viewVatReturn.html` - Complete OAuth integration
 - `app/unit-tests/authUrlHandler.test.js` - Added 5 new tests
 
 ### Test Results

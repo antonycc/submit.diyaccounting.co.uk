@@ -9,14 +9,11 @@ import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
-// import { apiEndpoint as hmrcAuthUrlGetApiEndpoint } from "../functions/hmrc/hmrcAuthUrlGet.js";
 import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcTokenPost.js";
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
-// import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmrcReceiptPost.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
-import { apiEndpoint as hmrcHttpProxyEndpoint } from "../functions/infra/hmrcHttpProxy.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 
@@ -88,14 +85,11 @@ mockTokenPostApiEndpoint(app);
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
-// hmrcAuthUrlGetApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
-// hmrcReceiptPostApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
-hmrcHttpProxyEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {
@@ -119,11 +113,7 @@ if (__runDirect) {
         "COGNITO_CLIENT_ID",
         "COGNITO_BASE_URI",
         "HMRC_BASE_URI",
-        "HMRC_API_PROXY_MAPPED_URL",
-        "HMRC_API_PROXY_EGRESS_URL",
         "HMRC_SANDBOX_BASE_URI",
-        "HMRC_SANDBOX_API_PROXY_MAPPED_URL",
-        "HMRC_SANDBOX_API_PROXY_EGRESS_URL",
         "HMRC_CLIENT_ID",
         "HMRC_CLIENT_SECRET_ARN",
         "HMRC_SANDBOX_CLIENT_ID",

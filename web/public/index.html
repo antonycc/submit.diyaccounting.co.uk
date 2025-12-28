@@ -266,7 +266,7 @@
 
         try {
           // Fetch catalog
-          const response = await fetch("/product-catalogue.toml");
+          const response = await fetch("/submit.catalogue.toml");
           if (!response.ok) {
             dynamicContainer.innerHTML = '<p style="color: #b00020;">Unable to load activities. Please try again later.</p>';
             return;

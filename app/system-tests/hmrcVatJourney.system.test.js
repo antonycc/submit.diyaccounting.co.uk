@@ -4,13 +4,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { hashSub } from "../services/subHasher.js";
-import { mockClient } from "aws-sdk-client-mock";
-import { Readable } from "stream";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
-import { handler as hmrcAuthUrlGetHandler } from "../functions/hmrc/hmrcAuthUrlGet.js";
 import { handler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
 import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
-import { handler as hmrcReceiptPostHandler } from "../functions/hmrc/hmrcReceiptPost.js";
 import { handler as hmrcReceiptGetHandler } from "../functions/hmrc/hmrcReceiptGet.js";
 import { buildLambdaEvent, buildGovClientHeaders, makeIdToken } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
@@ -187,24 +183,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   });
 
   it("should complete full VAT submission journey: Auth → Token → Submit → PostReceipt → GetReceipt", async () => {
-    // Step 1: Get HMRC authorization URL
-    const authUrlEvent = buildLambdaEvent({
-      method: "GET",
-      path: "/api/v1/hmrc/authUrl",
-      queryStringParameters: {
-        state: "vat-journey-state",
-        scope: "write:vat read:vat",
-      },
-    });
-
-    const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
-    expect(authUrlResponse.statusCode).toBe(200);
-
-    const authUrlBody = parseResponseBody(authUrlResponse);
-    expect(authUrlBody).toHaveProperty("authUrl");
-    expect(authUrlBody.authUrl).toContain("oauth/authorize");
-    expect(authUrlBody.authUrl).toContain("state=vat-journey-state");
-
+    // Step 1: Get HMRC authorization URL - performed client side
     // Step 2: Exchange authorization code for access token
     const tokenEvent = buildLambdaEvent({
       method: "POST",
@@ -252,42 +231,15 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     expect(submitBody).toHaveProperty("receipt");
     expect(submitBody.receipt).toHaveProperty("formBundleNumber");
     expect(submitBody.receipt).toHaveProperty("processingDate");
+    expect(submitBody).toHaveProperty("receiptId");
 
     const formBundleNumber = submitBody.receipt.formBundleNumber;
-
-    const receiptPostEvent = buildLambdaEvent({
-      method: "POST",
-      path: "/api/v1/hmrc/receipt",
-      body: {
-        receipt: submitBody.receipt,
-      },
-      headers: { Authorization: `Bearer ${testToken}` },
-      authorizer: {
-        authorizer: {
-          lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "vatuser",
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const receiptPostResponse = await hmrcReceiptPostHandler(receiptPostEvent);
-    expect(receiptPostResponse.statusCode).toBe(200);
-
-    const receiptPostBody = parseResponseBody(receiptPostResponse);
-    expect(receiptPostBody).toHaveProperty("receipt");
-    expect(receiptPostBody).toHaveProperty("key");
-    expect(receiptPostBody.key).toContain(formBundleNumber);
+    const receiptId = submitBody.receiptId;
 
     const receiptGetEvent = buildLambdaEvent({
       method: "GET",
-      path: `/api/v1/hmrc/receipt/${receiptPostBody.key.split("/").pop()}`,
-      pathParameters: { name: receiptPostBody.key.split("/").pop() },
+      path: `/api/v1/hmrc/receipt/${receiptId}.json`,
+      pathParameters: { name: `${receiptId}.json` },
       headers: { Authorization: `Bearer ${testToken}` },
       authorizer: {
         authorizer: {
@@ -347,20 +299,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   }, 15000);
 
   it("should handle sandbox environment in complete journey", async () => {
-    // Step 1: Get sandbox authorization URL
-    const authUrlEvent = buildLambdaEvent({
-      method: "GET",
-      path: "/api/v1/hmrc/authUrl",
-      queryStringParameters: {
-        state: "sandbox-journey",
-        scope: "write:vat",
-      },
-      headers: { hmrcaccount: "sandbox" },
-    });
-
-    const authUrlResponse = await hmrcAuthUrlGetHandler(authUrlEvent);
-    expect(authUrlResponse.statusCode).toBe(200);
-
+    // Step 1: Get sandbox authorization URL - performed client side
     // Step 2: Exchange code in sandbox
     const tokenEvent = buildLambdaEvent({
       method: "POST",

@@ -1,89 +1,113 @@
 # Configuration for Lambda provisioned concurrency scaling
 # Maps Lambda function names (suffixes) and handlers to their zero and peak concurrency levels
 # Function names are resolved as: {deployment-name}-{name}
+# TODO: Run the submit VAR scenarios on a cold environment to determine the number of cold starts in zero/ready&hot.
+# TODO: Add performance tests which measure the flow through the APIs in a single scenario of zero/ready&hot.
+# TODO: Add performance tests which measure the flow through the APIs during ramp up and steady at peak in from zero.
 
 lambdas:
+  # e.g. ci-refresh-submit-app-custom-authorizer
+  - name: submit-app-custom-authorizer
+    handler: app/functions/account/customAuthorizer.handler
+    concurrency:
+      zero: 0
+      ready: 2
+      hot: 4
 
   - name: submit-app-bundle-get
     handler: app/functions/account/bundleGet.handler
     concurrency:
       zero: 0
-      peak: 1
+      ready: 1
+      hot: 2
 
   - name: submit-app-bundle-post
     handler: app/functions/account/bundlePost.handler
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 1
 
   - name: submit-app-bundle-post-consumer
     handler: app/functions/account/bundlePost.consumer
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 0
 
   - name: submit-app-bundle-delete
     handler: app/functions/account/bundleDelete.handler
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 0
 
   - name: submit-app-bundle-delete-consumer
     handler: app/functions/account/bundleDelete.consumer
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 0
 
   - name: submit-app-cognito-token-post
     handler: app/functions/auth/cognitoTokenPost.handler
     concurrency:
       zero: 0
-      peak: 1
+      ready: 1
+      hot: 1
 
   - name: submit-app-hmrc-token-post
     handler: app/functions/hmrc/hmrcTokenPost.handler
     concurrency:
       zero: 0
-      peak: 1
+      ready: 1
+      hot: 1
 
   - name: submit-app-hmrc-vat-return-post
     handler: app/functions/hmrc/hmrcVatReturnPost.handler
     concurrency:
       zero: 0
-      peak: 1
+      ready: 1
+      hot: 1
 
   - name: submit-app-hmrc-vat-return-post-consumer
     handler: app/functions/hmrc/hmrcVatReturnPost.consumer
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 1
 
   - name: submit-app-hmrc-vat-obligation-get
     handler: app/functions/hmrc/hmrcVatObligationGet.handler
     concurrency:
       zero: 0
-      peak: 1
+      ready: 1
+      hot: 1
 
   - name: submit-app-hmrc-vat-obligation-get-consumer
     handler: app/functions/hmrc/hmrcVatObligationGet.consumer
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 1
 
   - name: submit-app-hmrc-vat-return-get
     handler: app/functions/hmrc/hmrcVatReturnGet.handler
     concurrency:
       zero: 0
-      peak: 1
+      ready: 1
+      hot: 1
 
   - name: submit-app-hmrc-vat-return-get-consumer
     handler: app/functions/hmrc/hmrcVatReturnGet.consumer
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 1
 
   - name: submit-app-hmrc-receipt-get
     handler: app/functions/hmrc/hmrcReceiptGet.handler
     concurrency:
       zero: 0
-      peak: 0
+      ready: 0
+      hot: 1

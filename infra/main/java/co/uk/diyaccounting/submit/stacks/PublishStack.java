@@ -1,6 +1,14 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
@@ -20,15 +28,6 @@ import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment;
 import software.amazon.awscdk.services.s3.deployment.Source;
 import software.constructs.Construct;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class PublishStack extends Stack {
 
@@ -169,7 +168,8 @@ public class PublishStack extends Stack {
             try {
                 Path envFilepath = Paths.get(props.docRootPath(), "submit.deployment-name.txt");
                 Files.writeString(envFilepath, props.deploymentName().trim());
-                infof("Created submit.deployment-name.txt file with deployment name: %s".formatted(props.deploymentName()));
+                infof("Created submit.deployment-name.txt file with deployment name: %s"
+                        .formatted(props.deploymentName()));
             } catch (Exception e) {
                 warnf("Failed to create submit.deployment-name.txt file: %s".formatted(e.getMessage()));
             }
@@ -229,7 +229,7 @@ public class PublishStack extends Stack {
                         "/favicon.ico",
                         "/index.html",
                         "/privacy.html",
-                        "/product-catalogue.toml",
+                        "/submit.catalogue.toml",
                         "/submit.build-number.txt",
                         "/submit.commit-hash.txt",
                         "/submit.css",

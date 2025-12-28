@@ -1,7 +1,10 @@
 package co.uk.diyaccounting.submit;
 
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
-import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
@@ -12,19 +15,14 @@ import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
-
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
 
 public class SubmitApplication {
 
@@ -226,11 +224,9 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .hmrcBaseUri(appProps.hmrcBaseUri)
-                        .hmrcProxyBaseUri(sharedNames.hmrcApiProxyMappedUrl)
                         .hmrcClientId(appProps.hmrcClientId)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
                         .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
-                        .hmrcSandboxProxyBaseUri(sharedNames.hmrcSandboxApiProxyMappedUrl)
                         .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
                         .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
@@ -289,7 +285,8 @@ public class SubmitApplication {
         this.apiStack.addDependency(authStack);
 
         // ExtractLambda ARNs from lambdaFunctions
-        var lambdaArns = lambdaFunctions.stream().map(AbstractApiLambdaProps::lambdaArn).toList();
+        var lambdaArns =
+                lambdaFunctions.stream().map(AbstractApiLambdaProps::lambdaArn).toList();
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,
