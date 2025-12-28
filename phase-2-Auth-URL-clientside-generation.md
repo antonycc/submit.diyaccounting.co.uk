@@ -1,10 +1,10 @@
 Understood. Below is a **refined, consolidated version** of the plan, adjusted exactly as requested:
 
-* **Single file only:** `web/public/.env`
-* **Checked in placeholder:** `web/public/.env`
+* **Single file only:** `web/public/submit.env`
+* **Checked in placeholder:** `web/public/submit.env`
 * **Always overwritten during deploy**
 * **`env-loader.js` only ever loads `/​.env`**
-* **Environment identity remains in `web/public/submit.env`**
+* **Environment identity remains in `web/public/submit.environment-name.txt`**
 * **No multi-env branching or test-specific env files for this area**
 
 This is written to be used **directly as a prompt for an AI agent (Dec 2025-era Copilot / GPT-class model)** operating on branch `optitwo`.
@@ -13,14 +13,14 @@ This is written to be used **directly as a prompt for an AI agent (Dec 2025-era 
 
 # Replace Auth URL Lambdas with Client-Side Calculation
 
-## (Single web/public/.env model, overwritten at deploy)
+## (Single web/public/submit.env model, overwritten at deploy)
 
 ### Objective
 
 Eliminate runtime dependency on the **Cognito Auth URL** and **HMRC Auth URL** Lambdas by calculating OAuth2 authorization URLs **entirely in the browser**, using environment values injected at deploy time into a **single static file**:
 
 ```
-web/public/.env
+web/public/submit.env
 ```
 
 This file is:
@@ -38,10 +38,10 @@ Secrets remain server-side; only **public OAuth parameters** are exposed.
 
 Commit the following file to the repository:
 
-### `web/public/.env` (placeholder)
+### `web/public/submit.env` (placeholder)
 
 ```env
-# web/public/.env
+# web/public/submit.env
 # Placeholder values for local dev and tests.
 # This file is ALWAYS overwritten during deploy.
 
@@ -66,19 +66,19 @@ Rules:
 
 ---
 
-## 2. Deployment: overwrite `web/public/.env` inline in `deploy.yml`
+## 2. Deployment: overwrite `web/public/submit.env` inline in `deploy.yml`
 
 Instead of a separate script, add an **inline Bash step** in a suitable job (typically `deploy-edge` or `deploy-publish`) **after** environment variables are loaded via `npx dotenv` and **before** S3 sync.
 
 ### New run step (inline Bash)
 
 ```yaml
-- name: Generate web/public/.env for client auth config
+- name: Generate web/public/submit.env for client auth config
   run: |
     set -euo pipefail
 
     # Overwrite the checked-in placeholder with real values
-    cat > web/public/.env <<EOF
+    cat > web/public/submit.env <<EOF
     COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
     COGNITO_BASE_URI=${COGNITO_BASE_URI}
 
@@ -117,9 +117,9 @@ No conditional logic.
   'use strict';
 
   async function loadEnv() {
-    const response = await fetch('/.env', { cache: 'no-store' });
+    const response = await fetch('/submit.env', { cache: 'no-store' });
     if (!response.ok) {
-      throw new Error('Failed to load /.env');
+      throw new Error('Failed to load /submit.env');
     }
 
     const text = await response.text();
@@ -239,7 +239,7 @@ The Lambdas remain deployed for now but are no longer on the critical path.
 Continue to use:
 
 ```
-web/public/submit.env
+web/public/submit.environment-name.txt
 ```
 
 for:
@@ -257,7 +257,7 @@ for:
 * Zero Lambda latency for auth URL generation
 * No secrets exposed
 * No environment branching logic in the client
-* One invariant file: `web/public/.env`
+* One invariant file: `web/public/submit.env`
 * Deterministic behaviour locally, in CI, and in prod
 * Clean future path to deleting the Lambdas later
 

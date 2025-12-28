@@ -355,10 +355,10 @@
             return;
           }
 
-          // Read current environment from submit.env in docroot (next to index.html)
+          // Read current environment from submit.environment-name.txt in docroot (next to index.html)
           async function readEnvironment() {
             try {
-              const envRes = await fetch("../submit.env", { cache: "no-store" });
+              const envRes = await fetch("../submit.environment-name.txt", { cache: "no-store" });
               if (envRes.ok) {
                 const text = (await envRes.text()).trim();
                 return text || null;

@@ -3,9 +3,9 @@
   "use strict";
 
   async function loadEnv() {
-    const response = await fetch("/.env", { cache: "no-store" });
+    const response = await fetch("/submit.env", { cache: "no-store" });
     if (!response.ok) {
-      throw new Error("Failed to load /.env");
+      throw new Error("Failed to load /submit.env");
     }
 
     const text = await response.text();

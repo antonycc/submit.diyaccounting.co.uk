@@ -2,14 +2,14 @@
   // Load and display view source link
   async function loadViewSourceLink() {
     try {
-      const deploymentUrl = new URL("../submit.deployment", import.meta.url);
+      const deploymentUrl = new URL("../submit.deployment-name.txt", import.meta.url);
       const deploymentResponse = await fetch(deploymentUrl);
       let deploymentName = "";
       if (deploymentResponse.ok) {
         const deploymentText = await deploymentResponse.text();
         deploymentName = deploymentText.trim();
       }
-      const versionUrl = new URL("../submit.version", import.meta.url);
+      const versionUrl = new URL("../submit.version.txt", import.meta.url);
       const versionResponse = await fetch(versionUrl);
       if (versionResponse.ok) {
         const versionText = await versionResponse.text();
@@ -35,7 +35,7 @@
         }
       }
     } catch (error) {
-      console.log("Could not load submit.version:", error);
+      console.log("Could not load submit.version.txt:", error);
     }
   }
 

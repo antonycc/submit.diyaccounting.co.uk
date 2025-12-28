@@ -214,7 +214,7 @@ The `package.json` file defines all npm scripts for building, testing, and deplo
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `build` | `./mvnw clean verify && git restore web/public/submit.deployment web/public/submit.env \|\| true` | **Full build**: Runs Maven clean and verify (compiles Java, runs tests, builds CDK JARs), generates OpenAPI docs, then restores deployment marker files |
+| `build` | `./mvnw clean verify && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt \|\| true` | **Full build**: Runs Maven clean and verify (compiles Java, runs tests, builds CDK JARs), generates OpenAPI docs, then restores deployment marker files |
 | `start` | `./scripts/start.sh` | **Start all local services**: Orchestrates starting mock OAuth2, ngrok proxy, local DynamoDB, and Express server |
 | `clean` | `./scripts/clean.sh` | **Clean build artifacts**: Removes `target/`, `node_modules/.cache/`, and other generated files |
 
@@ -1706,10 +1706,10 @@ web/
 │   │   ├── 404-error-origin.html           # S3 404
 │   │   └── 404-error-distribution.html     # CloudFront 404
 │   ├── favicon.ico
-│   ├── submit.version      # Build version (generated)
-│   ├── submit.deployment   # Deployment name (generated)
-│   ├── submit.hash         # Content hash (generated)
-│   └── submit.build        # Build number (generated)
+│   ├── submit.version.txt      # Build version (generated)
+│   ├── submit.deployment-name.txt   # Deployment name (generated)
+│   ├── submit.commit-hash.txt         # Content hash (generated)
+│   └── submit.build-number.txt        # Build number (generated)
 ├── unit-tests/             # Frontend unit tests (Vitest)
 │   ├── userJourneys.frontend.test.js
 │   ├── vatFlow.frontend.test.js

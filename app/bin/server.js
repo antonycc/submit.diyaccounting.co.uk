@@ -63,9 +63,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve a virtual .env file for the client, using the server's own environment variables.
+// Serve a virtual submit.env file for the client, using the server's own environment variables.
 // This ensures that behaviour tests (using ngrok) get the correct BASE_URL.
-app.get("/.env", (req, res) => {
+app.get("/submit.env", (req, res) => {
   const publicVars = [
     "COGNITO_CLIENT_ID",
     "COGNITO_BASE_URI",

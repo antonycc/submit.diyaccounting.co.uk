@@ -207,12 +207,12 @@ repository-contents.txt:
 ./web/public/tests/test-report-template.html
 ./web/public/tests/behaviour-test-results/example/video.webm
 ./web/public/tests/test-report-example.json
-./web/public/submit.version
-./web/public/submit.deployment
+./web/public/submit.version.txt
+./web/public/submit.deployment-name.txt
 ./web/public/docs/index.html
 ./web/public/docs/openapi.yaml
 ./web/public/docs/openapi.json
-./web/public/submit.hash
+./web/public/submit.commit-hash.txt
 ./web/public/prefetch/prefetch-catalog-head.js
 ./web/public/prefetch/prefetch-cognito-token-head.js
 ./web/public/prefetch/prefetch-hmrc-vat-return-get-head.js
@@ -226,7 +226,7 @@ repository-contents.txt:
 ./web/public/prefetch/prefetch-hmrc-authurl-head.js
 ./web/public/prefetch/prefetch-hmrc-receipt-head.js
 ./web/public/prefetch/prefetch-hmrc-token-head.js
-./web/public/submit.build
+./web/public/submit.build-number.txt
 ./web/public/lib/request-cache.js
 ./web/public/activities/submitVatCallback.html
 ./web/public/hmrc/vat/viewVatReturn.html

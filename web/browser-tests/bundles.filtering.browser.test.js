@@ -84,8 +84,8 @@ allocation = "automatic"
       await route.fulfill({ status: 200, contentType: "text/x-toml", body: tomlBody });
     });
 
-    // Mock submit.env to indicate we are in the 'test' environment
-    await page.route("**/submit.env", async (route) => {
+    // Mock submit.environment-name.txt to indicate we are in the 'test' environment
+    await page.route("**/submit.environment-name.txt", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "test\n" });
     });
 

@@ -125,69 +125,69 @@ public class PublishStack extends Stack {
         IBucket originBucket = Bucket.fromBucketName(
                 this, props.resourceNamePrefix() + "-WebBucket", props.sharedNames().originBucketName);
 
-        // Generate submit.version file with commit hash if provided
+        // Generate submit.version.txt file with commit hash if provided
         if (props.commitHash() != null && !props.commitHash().isBlank()) {
             try {
-                Path versionFilepath = Paths.get(props.docRootPath(), "submit.version");
+                Path versionFilepath = Paths.get(props.docRootPath(), "submit.version.txt");
                 Files.writeString(versionFilepath, props.commitHash().trim());
-                infof("Created submit.version file with commit hash: %s".formatted(props.commitHash()));
+                infof("Created submit.version.txt file with commit hash: %s".formatted(props.commitHash()));
             } catch (Exception e) {
-                warnf("Failed to create submit.version file: %s".formatted(e.getMessage()));
+                warnf("Failed to create submit.version.txt file: %s".formatted(e.getMessage()));
             }
         } else {
-            infof("No commit hash provided, skipping submit.version generation");
+            infof("No commit hash provided, skipping submit.version.txt generation");
         }
 
         // Generate a file containing a hash of the website files for deployment optimization
         if (props.websiteHash() != null && !props.websiteHash().isBlank()) {
             try {
-                Path hashFilepath = Paths.get(props.docRootPath(), "submit.hash");
+                Path hashFilepath = Paths.get(props.docRootPath(), "submit.commit-hash.txt");
                 Files.writeString(hashFilepath, props.websiteHash().trim());
-                infof("Created submit.hash file with website hash: %s".formatted(props.websiteHash()));
+                infof("Created submit.commit-hash.txt file with website hash: %s".formatted(props.websiteHash()));
             } catch (Exception e) {
-                warnf("Failed to create submit.hash file: %s".formatted(e.getMessage()));
+                warnf("Failed to create submit.commit-hash.txt file: %s".formatted(e.getMessage()));
             }
         } else {
-            infof("No website hash provided, skipping submit.hash generation");
+            infof("No website hash provided, skipping submit.commit-hash.txt generation");
         }
 
         // Generate a file containing the environment name for runtime use
         if (props.envName() != null && !props.envName().isBlank()) {
             try {
-                Path envFilepath = Paths.get(props.docRootPath(), "submit.env");
+                Path envFilepath = Paths.get(props.docRootPath(), "submit.environment-name.txt");
                 Files.writeString(envFilepath, props.envName().trim());
-                infof("Created submit.env file with environment name: %s".formatted(props.envName()));
+                infof("Created submit.environment-name.txt file with environment name: %s".formatted(props.envName()));
             } catch (Exception e) {
-                warnf("Failed to create submit.env file: %s".formatted(e.getMessage()));
+                warnf("Failed to create submit.environment-name.txt file: %s".formatted(e.getMessage()));
             }
         } else {
-            infof("No environment name provided, skipping submit.env generation");
+            infof("No environment name provided, skipping submit.environment-name.txt generation");
         }
 
         // Generate a file containing the deployment name for runtime use
         if (props.envName() != null && !props.envName().isBlank()) {
             try {
-                Path envFilepath = Paths.get(props.docRootPath(), "submit.deployment");
+                Path envFilepath = Paths.get(props.docRootPath(), "submit.deployment-name.txt");
                 Files.writeString(envFilepath, props.deploymentName().trim());
-                infof("Created submit.deployment file with deployment name: %s".formatted(props.deploymentName()));
+                infof("Created submit.deployment-name.txt file with deployment name: %s".formatted(props.deploymentName()));
             } catch (Exception e) {
-                warnf("Failed to create submit.deployment file: %s".formatted(e.getMessage()));
+                warnf("Failed to create submit.deployment-name.txt file: %s".formatted(e.getMessage()));
             }
         } else {
-            infof("No environment name provided, skipping submit.deployment generation");
+            infof("No environment name provided, skipping submit.deployment-name.txt generation");
         }
 
         // Generate a file containing the build number for runtime use
         if (props.buildNumber() != null && !props.buildNumber().isBlank()) {
             try {
-                Path buildNumberFilepath = Paths.get(props.docRootPath(), "submit.build");
+                Path buildNumberFilepath = Paths.get(props.docRootPath(), "submit.build-number.txt");
                 Files.writeString(buildNumberFilepath, props.buildNumber().trim());
-                infof("Created submit.build file with build number: %s".formatted(props.buildNumber()));
+                infof("Created submit.build-number.txt file with build number: %s".formatted(props.buildNumber()));
             } catch (Exception e) {
-                warnf("Failed to create submit.build file: %s".formatted(e.getMessage()));
+                warnf("Failed to create submit.build-number.txt file: %s".formatted(e.getMessage()));
             }
         } else {
-            infof("No build number provided, skipping submit.build generation");
+            infof("No build number provided, skipping submit.build-number.txt generation");
         }
 
         // Lookup Log Group for web deployment
@@ -225,19 +225,19 @@ public class PublishStack extends Stack {
                         "/prefetch/*",
                         "/tests/*",
                         "/widgets/*",
-                        "/.env",
                         "/about.html",
                         "/favicon.ico",
                         "/index.html",
                         "/privacy.html",
                         "/product-catalogue.toml",
-                        "/submit.build",
+                        "/submit.build-number.txt",
+                        "/submit.commit-hash.txt",
                         "/submit.css",
-                        "/submit.deployment",
+                        "/submit.deployment-name.txt",
                         "/submit.env",
-                        "/submit.hash",
+                        "/submit.environment-name.txt",
                         "/submit.js",
-                        "/submit.version"))
+                        "/submit.version.txt"))
                 .retainOnDelete(true)
                 // .logGroup(webDeploymentLogGroup)
                 .logRetention(RetentionDays.ONE_DAY)

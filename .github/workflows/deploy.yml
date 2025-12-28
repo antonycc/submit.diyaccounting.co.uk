@@ -1722,12 +1722,12 @@ jobs:
 
           echo 'RUM placeholder injection complete'
 
-      - name: Generate web/public/.env for client auth config
+      - name: Generate web/public/submit.env for client auth config
         shell: bash
         run: |
           set -euo pipefail
-          # Load variables from the environment-specific .env file and write to web/public/.env
-          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- bash -c 'cat > web/public/.env <<EOF
+          # Load variables from the environment-specific .env file and write to web/public/submit.env
+          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- bash -c 'cat > web/public/submit.env <<EOF
           COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-${{ vars.COGNITO_CLIENT_ID }}}
           COGNITO_BASE_URI=https://${{ needs.names.outputs.environment-name }}-auth.submit.diyaccounting.co.uk
 
@@ -1748,11 +1748,11 @@ jobs:
           echo "WEBSITE_HASH=$WEBSITE_HASH"
           echo "WEBSITE_HASH=$WEBSITE_HASH" >> $GITHUB_OUTPUT
 
-      - name: Compare current submit.hash with computed hash
+      - name: Compare current submit.commit-hash.txt with computed hash
         id: publish-compare
         shell: bash
         run: |
-          EDGE_HASH_URL="${{ needs.names.outputs.base-url }}/submit.hash"
+          EDGE_HASH_URL="${{ needs.names.outputs.base-url }}/submit.commit-hash.txt"
           echo "Fetching existing hash from $EDGE_HASH_URL"
           EXISTING_HASH=$(curl --fail --silent --show-error --location "$EDGE_HASH_URL" || echo "")
           echo "EXISTING_HASH=$EXISTING_HASH"
@@ -1976,7 +1976,7 @@ jobs:
 
   web-test-auth:
     if: ${{ !cancelled() }}
-    name: 'auth test bundle'
+    name: 'web test auth bundle'
     needs:
       - names
       - set-origins

@@ -7,4 +7,4 @@ rm -rvf dependency-reduced-pom.xml ;
 rm -rvf hmrc-test-user.json ;
 ./mvnw clean compile -DskipTests ;
 npm install ;
-git restore web/public/submit.deployment web/public/submit.env || true ;
+git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true ;
