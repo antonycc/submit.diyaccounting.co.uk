@@ -243,10 +243,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (receiptsTableName) {
       await ensureReceiptsTableExists(receiptsTableName, endpoint);
     }
-    const asyncRequestsTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
-    if (asyncRequestsTableName) {
-      await ensureAsyncRequestsTableExists(asyncRequestsTableName, endpoint);
-    }
     const bundlePostAsyncRequestsTableName = process.env.BUNDLE_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (bundlePostAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(bundlePostAsyncRequestsTableName, endpoint);

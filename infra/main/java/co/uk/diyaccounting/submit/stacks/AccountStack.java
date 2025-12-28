@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
@@ -10,7 +7,6 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -25,6 +21,11 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
@@ -96,12 +97,6 @@ public class AccountStack extends Stack {
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundlesTableName);
 
-        // Lookup existing DynamoDB Async Requests Table
-        ITable asyncRequestsTable = Table.fromTableName(
-                this,
-                "ImportedAsyncRequestsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().asyncRequestsTableName);
-
         // Lookup existing DynamoDB Bundle POST Async Requests Table
         ITable bundlePostAsyncRequestsTable = Table.fromTableName(
                 this,
@@ -171,7 +166,6 @@ public class AccountStack extends Stack {
 
         // Grant DynamoDB permissions to both API and Consumer Lambdas
         bundlesTable.grantReadData(this.bundleGetLambda);
-        asyncRequestsTable.grantReadWriteData(this.bundleGetLambda);
 
         infof(
                 "Granted DynamoDB permissions to %s and its consumer for Bundles and Async Requests Tables",

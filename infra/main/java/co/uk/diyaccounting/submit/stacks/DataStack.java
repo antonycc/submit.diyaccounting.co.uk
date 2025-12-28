@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
@@ -16,11 +13,13 @@ import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.constructs.Construct;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class DataStack extends Stack {
 
     public ITable receiptsTable;
     public ITable bundlesTable;
-    public ITable asyncRequestsTable;
     public ITable bundlePostAsyncRequestsTable;
     public ITable bundleDeleteAsyncRequestsTable;
     public ITable hmrcVatReturnPostAsyncRequestsTable;
@@ -103,14 +102,6 @@ public class DataStack extends Stack {
                 "Created bundles DynamoDB table with name %s and id %s",
                 this.bundlesTable.getTableName(), this.bundlesTable.getNode().getId());
 
-        // Create DynamoDB table for async request storage
-        this.asyncRequestsTable = createAsyncRequestsTable(
-                props.resourceNamePrefix() + "-AsyncRequestsTable", props.sharedNames().asyncRequestsTableName);
-        infof(
-                "Created async requests DynamoDB table with name %s and id %s",
-                this.asyncRequestsTable.getTableName(),
-                this.asyncRequestsTable.getNode().getId());
-
         // Create DynamoDB table for bundle POST async request storage
         this.bundlePostAsyncRequestsTable = createAsyncRequestsTable(
                 props.resourceNamePrefix() + "-BundlePostAsyncRequestsTable",
@@ -158,8 +149,10 @@ public class DataStack extends Stack {
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
-        cfnOutput(this, "AsyncRequestsTableName", this.asyncRequestsTable.getTableName());
-        cfnOutput(this, "AsyncRequestsTableArn", this.asyncRequestsTable.getTableArn());
+        cfnOutput(this, "BundlePostAsyncRequestsTableName", this.bundlePostAsyncRequestsTable.getTableName());
+        cfnOutput(this, "BundlePostAsyncRequestsTableArn", this.bundlePostAsyncRequestsTable.getTableArn());
+        cfnOutput(this, "BundleDeleteAsyncRequestsTableName", this.bundleDeleteAsyncRequestsTable.getTableName());
+        cfnOutput(this, "BundleDeleteAsyncRequestsTableArn", this.bundleDeleteAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableName", this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
         cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableArn", this.hmrcVatReturnPostAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());

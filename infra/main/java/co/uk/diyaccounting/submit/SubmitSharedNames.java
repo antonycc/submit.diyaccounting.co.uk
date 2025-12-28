@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -69,7 +70,6 @@ public class SubmitSharedNames {
 
     public String receiptsTableName;
     public String bundlesTableName;
-    public String asyncRequestsTableName;
     public String bundlePostAsyncRequestsTableName;
     public String bundleDeleteAsyncRequestsTableName;
     public String hmrcVatReturnPostAsyncRequestsTableName;
@@ -262,7 +262,6 @@ public class SubmitSharedNames {
 
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
-        this.asyncRequestsTableName = "%s-async-requests".formatted(this.envDashedDomainName);
         this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envDashedDomainName);
         this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envDashedDomainName);
         this.hmrcVatReturnPostAsyncRequestsTableName = "%s-hmrc-vat-return-post-async-requests".formatted(this.envDashedDomainName);
