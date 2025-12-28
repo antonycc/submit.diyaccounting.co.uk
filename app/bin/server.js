@@ -63,7 +63,25 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, "../../web/public")));
+// Serve a virtual .env file for the client, using the server's own environment variables.
+// This ensures that behaviour tests (using ngrok) get the correct BASE_URL.
+app.get("/.env", (req, res) => {
+  const publicVars = [
+    "COGNITO_CLIENT_ID",
+    "COGNITO_BASE_URI",
+    "HMRC_CLIENT_ID",
+    "HMRC_BASE_URI",
+    "HMRC_SANDBOX_CLIENT_ID",
+    "HMRC_SANDBOX_BASE_URI",
+    "DIY_SUBMIT_BASE_URL",
+  ];
+  const lines = publicVars.map((v) => `${v}=${process.env[v] || ""}`);
+
+  res.setHeader("Content-Type", "text/plain");
+  res.send(lines.join("\n") + "\n");
+});
+
+app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 
 mockAuthUrlGetApiEndpoint(app);
 mockTokenPostApiEndpoint(app);
