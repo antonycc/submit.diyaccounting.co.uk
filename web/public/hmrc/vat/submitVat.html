@@ -148,13 +148,24 @@
       </div>
     </footer>
 
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../submit.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
     <script src="../../widgets/hamburger-menu.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script>
+      (async function() {
+        try {
+          await window.loadEnv();
+        } catch (err) {
+          console.warn("Failed to load environment:", err);
+        }
+      })();
+
       // Form submission handler
       async function handleFormSubmission(event) {
         event.preventDefault();
@@ -206,8 +217,16 @@
           console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
           // Get OAuth URL
-          const authResponse = await getAuthUrl(state, "hmrc");
-          const authResponseUrl = authResponse.authUrl;
+          let authResponseUrl;
+          if (window.__env && window.authUrlBuilder) {
+            authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, "write:vat read:vat", hmrcAccount || "live");
+            console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
+          } else {
+            // Get OAuth URL from API (fallback)
+            const authResponse = await getAuthUrl(state, "hmrc");
+            authResponseUrl = authResponse.authUrl;
+            console.log("Using server-side HMRC Auth URL:", authResponseUrl);
+          }
 
           localStorage.setItem("currentActivity", location.pathname);
           console.log("Current activity set to:", location.pathname);
@@ -253,11 +272,6 @@
             submissionData.vatDue,
             accessToken,
           );
-
-          showStatus("Logging submission receipt...", "info");
-
-          // Log the receipt
-          await logReceipt(submitResponse.processingDate, submitResponse.formBundleNumber, submitResponse.chargeRefNumber);
 
           // Display success
           displayReceipt(submitResponse);

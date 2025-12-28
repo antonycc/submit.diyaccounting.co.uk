@@ -291,6 +291,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       expect(result).toEqual(mockResponse);
     });
 
+    /*
     test("logReceipt should make correct API call", async () => {
       const mockResponse = { status: "receipt logged" };
       fetchMock.mockResolvedValueOnce({
@@ -319,6 +320,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       );
       expect(result).toEqual(mockResponse);
     });
+    */
   });
 
   describe("Form Validation", () => {

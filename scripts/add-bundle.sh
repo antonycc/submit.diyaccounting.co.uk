@@ -16,9 +16,9 @@ ENVIRONMENT="${3:-ci}"  # Default to ci if not specified
 AWS_REGION="${AWS_REGION:-eu-west-2}"
 
 # Load product catalog to get bundle timeout
-CATALOG_FILE="product-catalogue.toml"
+CATALOG_FILE="web/public/product-catalogue.toml"
 if [ ! -f "$CATALOG_FILE" ]; then
-    echo "Error: product-catalogue.toml not found"
+    echo "Error: web/public/product-catalogue.toml not found"
     exit 1
 fi
 
@@ -41,12 +41,12 @@ echo "Adding bundle: $BUNDLE_ID with timeout $TIMEOUT for hashed sub: $HASHED_SU
 calculate_expiry() {
     local duration="$1"
     local now_timestamp=$(date -u +%s)
-    
+
     # Extract components using regex
     years=$(echo "$duration" | grep -oP 'P(\d+)Y' | grep -oP '\d+' || echo "0")
     months=$(echo "$duration" | grep -oP '(\d+)M' | grep -oP '\d+' || echo "0")
     days=$(echo "$duration" | grep -oP '(\d+)D' | grep -oP '\d+' || echo "0")
-    
+
     # Calculate future timestamp using date command
     local expiry_date=$(date -u -d "now + ${years} years + ${months} months + ${days} days" +%Y-%m-%dT%H:%M:%S.%3NZ)
     echo "$expiry_date"

@@ -34,17 +34,22 @@ export async function initiateProcessing({
   requestId,
   waitTimeMs,
   payload,
-  tableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME,
-  queueUrl = process.env.SQS_QUEUE_URL,
+  tableName, // = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME,
+  queueUrl, // = process.env.SQS_QUEUE_URL,
   maxWaitMs = 25000,
 }) {
   if (tableName) {
-    try {
-      logger.info({ message: "Marking request as processing in DynamoDB", userId, requestId, tableName });
-      await putAsyncRequest(userId, requestId, "processing", null, tableName);
-    } catch (error) {
+    // try {
+    logger.info({ message: "Marking request as processing in DynamoDB", userId, requestId, tableName });
+    // await putAsyncRequest(userId, requestId, "processing", null, tableName);
+    // Non-awaited async method so we don't wait on the DynamoDB put
+    // Even if this fails, we await the SQS send
+    putAsyncRequest(userId, requestId, "processing", null, tableName).catch((error) => {
       logger.error({ message: "Error storing processing request", error: error.message, requestId, tableName });
-    }
+    });
+    // } catch (error) {
+    //  logger.error({ message: "Error storing processing request", error: error.message, requestId, tableName });
+    // }
   }
 
   // Synchronous path: wait time header is large or no async tracking table is configured
@@ -84,11 +89,14 @@ export async function initiateProcessing({
   } catch (error) {
     logger.error({ message: "Error in async processing initiation", error: error.message, userId, requestId });
     if (tableName) {
-      try {
-        await putAsyncRequest(userId, requestId, "failed", { error: error.message }, tableName);
-      } catch (dbError) {
-        logger.error({ message: "Error storing failed request state", error: dbError.message, requestId });
-      }
+      // try {
+      //   await putAsyncRequest(userId, requestId, "failed", { error: error.message }, tableName);
+      // } catch (dbError) {
+      //   logger.error({ message: "Error storing failed request state", error: dbError.message, requestId });
+      // }
+      putAsyncRequest(userId, requestId, "failed", { error: error.message }, tableName).catch((error) => {
+        logger.error({ message: "Error storing failed request state", error: error.message, requestId, tableName });
+      });
     }
   }
 
@@ -105,7 +113,8 @@ export async function initiateProcessing({
  * @param {string} params.tableName - The DynamoDB table name for request tracking.
  * @returns {Promise<Object|null>} The result data if completed, or null if timeout.
  */
-export async function wait({ userId, requestId, waitTimeMs, tableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME }) {
+export async function wait({ userId, requestId, waitTimeMs, tableName }) {
+  // = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME
   if (!tableName || waitTimeMs <= 0) {
     return null;
   }
@@ -145,7 +154,8 @@ export async function wait({ userId, requestId, waitTimeMs, tableName = process.
  * @param {string} params.tableName - The DynamoDB table name for request tracking.
  * @returns {Promise<Object|null>} The result data if completed, null otherwise.
  */
-export async function check({ userId, requestId, tableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME }) {
+export async function check({ userId, requestId, tableName }) {
+  // = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME
   if (!tableName) {
     return null;
   }
@@ -183,13 +193,16 @@ export async function check({ userId, requestId, tableName = process.env.ASYNC_R
 export function respond({ request, requestId, responseHeaders, data, dataKey }) {
   if (data) {
     if (data.statusCode && data.statusCode !== 200) {
-      logger.info({ message: `Returning error result with status ${data.statusCode}`, requestId });
+      logger.info({ message: `Returning result with status ${data.statusCode}`, requestId });
       const { statusCode, ...rest } = data;
-      return {
+      const response = {
         statusCode,
         headers: { ...responseHeaders, "x-request-id": requestId, "x-correlationid": requestId },
-        body: JSON.stringify(rest),
       };
+      if (statusCode !== 204) {
+        response.body = JSON.stringify(rest);
+      }
+      return response;
     }
 
     logger.info({ message: "Returning HTTP 200 OK with result", requestId });

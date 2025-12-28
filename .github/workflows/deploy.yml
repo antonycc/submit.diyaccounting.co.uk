@@ -54,15 +54,7 @@ on:
           - 'true'
           - 'false'
         required: false
-        default: 'false'
-      convertTestVideo:
-        description: 'Convert test video to mp4 format'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
-        required: false
-        default: 'false'
+        default: 'true'
   push:
     branches:
       - '**'
@@ -82,7 +74,7 @@ on:
       - 'LICENSE'
       - 'package.json'
       - 'pom.xml'
-      - 'product-catalogue.toml'
+      - 'web/public/product-catalogue.toml'
       - 'lambda-concurrency-config.yaml'
       - '.github/actions/get-names'
       - '.github/actions/set-origins'
@@ -343,7 +335,7 @@ jobs:
 
   behaviour-test-fraud-prevention-headers-vat:
     name: 'behaviour test - fraud prevention headers vat (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-submit-vat
@@ -407,7 +399,7 @@ jobs:
 
   behaviour-test-obligation:
     name: 'behaviour test - obligation (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-fraud-prevention-headers-vat
@@ -471,7 +463,7 @@ jobs:
 
   behaviour-test-post-vat-return:
     name: 'behaviour test - post vat return (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-obligation
@@ -535,7 +527,7 @@ jobs:
 
   behaviour-test-get-vat-return:
     name: 'behaviour test - get vat return (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     needs:
       - names
       - behaviour-test-post-vat-return
@@ -1624,6 +1616,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Node
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
       - name: Configure AWS role via GitHub OIDC (for RUM outputs)
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -1712,6 +1722,24 @@ jobs:
 
           echo 'RUM placeholder injection complete'
 
+      - name: Generate web/public/submit.env for client auth config
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Load variables from the environment-specific .env file and write to web/public/submit.env
+          npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- bash -c 'cat > web/public/submit.env <<EOF
+          COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-${{ vars.COGNITO_CLIENT_ID }}}
+          COGNITO_BASE_URI=https://${{ needs.names.outputs.environment-name }}-auth.submit.diyaccounting.co.uk
+
+          HMRC_CLIENT_ID=${HMRC_CLIENT_ID}
+          HMRC_BASE_URI=${HMRC_BASE_URI}
+
+          HMRC_SANDBOX_CLIENT_ID=${HMRC_SANDBOX_CLIENT_ID}
+          HMRC_SANDBOX_BASE_URI=${HMRC_SANDBOX_BASE_URI}
+
+          DIY_SUBMIT_BASE_URL=${DIY_SUBMIT_BASE_URL}
+          EOF'
+
       - name: Compute hash of static website content
         id: publish-hash
         shell: bash
@@ -1720,11 +1748,11 @@ jobs:
           echo "WEBSITE_HASH=$WEBSITE_HASH"
           echo "WEBSITE_HASH=$WEBSITE_HASH" >> $GITHUB_OUTPUT
 
-      - name: Compare current submit.hash with computed hash
+      - name: Compare current submit.commit-hash.txt with computed hash
         id: publish-compare
         shell: bash
         run: |
-          EDGE_HASH_URL="${{ needs.names.outputs.base-url }}/submit.hash"
+          EDGE_HASH_URL="${{ needs.names.outputs.base-url }}/submit.commit-hash.txt"
           echo "Fetching existing hash from $EDGE_HASH_URL"
           EXISTING_HASH=$(curl --fail --silent --show-error --location "$EDGE_HASH_URL" || echo "")
           echo "EXISTING_HASH=$EXISTING_HASH"
@@ -1734,24 +1762,6 @@ jobs:
           else
             echo "skipPublishStackDeployment=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
@@ -1966,7 +1976,7 @@ jobs:
 
   web-test-auth:
     if: ${{ !cancelled() }}
-    name: 'auth test bundle'
+    name: 'web test auth bundle'
     needs:
       - names
       - set-origins
@@ -2433,7 +2443,7 @@ jobs:
             target/test-reports/
 
   web-test-post-vat-return-sandbox:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test post vat return sandbox'
     needs:
       - names
@@ -2548,7 +2558,7 @@ jobs:
             target/test-reports/
 
   web-test-fraud-prevention-headers-vat-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test fraud prevention headers vat sandbox'
     needs:
       - names
@@ -2660,7 +2670,7 @@ jobs:
             target/test-reports/
 
   web-test-get-vat-return-sandbox:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test get vat return sandbox'
     needs:
       - names
@@ -2775,7 +2785,7 @@ jobs:
             target/test-reports/
 
   web-test-obligation-sandbox:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test obligation sandbox'
     needs:
       - names
@@ -2926,7 +2936,7 @@ jobs:
             target/behaviour-test-results/bundle/
 
       - name: Download artifacts - postVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-post-vat-return-sandbox
@@ -2934,7 +2944,7 @@ jobs:
             target/behaviour-test-results/post-vat-return-sandbox/
 
       - name: Download artifacts - getVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-get-vat-return-sandbox
@@ -2942,7 +2952,7 @@ jobs:
             target/behaviour-test-results/get-vat-return-sandbox/
 
       - name: Download artifacts - obligation sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-obligation-sandbox
@@ -2966,7 +2976,7 @@ jobs:
             target/behaviour-test-results/submit-vat-sandbox/
 
       - name: Download artifacts - fraud prevention headers vat sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-fraud-prevention-headers-vat-sandbox
@@ -2989,7 +2999,7 @@ jobs:
             target/test-reports/bundle/
 
       - name: Download reports - postVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-post-vat-return-sandbox
@@ -2997,7 +3007,7 @@ jobs:
             target/test-reports/post-vat-return-sandbox/
 
       - name: Download reports - getVatReturn sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-get-vat-return-sandbox
@@ -3005,7 +3015,7 @@ jobs:
             target/test-reports/get-vat-return-sandbox/
 
       - name: Download reports - obligation sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-obligation-sandbox
@@ -3029,7 +3039,7 @@ jobs:
             target/test-reports/submit-vat-sandbox/
 
       - name: Download reports - fraud prevention headers vat sandbox
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-fraud-prevention-headers-vat-sandbox
@@ -3115,81 +3125,6 @@ jobs:
           echo "Creating an uploading test reports index:"
           cat target/behaviour-test-results/test-reports-index.txt
           aws s3 cp target/behaviour-test-results/test-reports-index.txt s3://${BUCKET_NAME?}/tests/
-
-  convert-video:
-    name: 'convert web test video to mp4'
-    if: ${{ inputs.convertTestVideo == 'true' }}
-    needs:
-      - names
-      - upload-web-test-results
-    runs-on: ubuntu-24.04
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: npm ci
-
-      - name: Install ffmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-
-      - name: Download all test artifacts
-        uses: actions/download-artifact@v7
-        with:
-          path: artifacts/
-        continue-on-error: true
-
-      - name: Convert Playwright video to MP4
-        if: ${{ !cancelled() }}
-        run: |
-          set -euo pipefail
-          root="artifacts/web-test-artifacts"
-
-          # Recursively transcode all .webm files, placing output next to source with 'converted' prefix
-          pids=()
-          while IFS= read -r -d '' f; do
-            dir=$(dirname "$f")
-            base="${f##*/}"
-            name="${base%.webm}"
-            out="${dir}/converted${name}.mp4"
-            echo "Transcoding $f -> $out"
-            npm run convert:video -- --in "$f" --out "$out" &
-            pids+=($!)
-          done < <(find "$root" -type f -name '*.webm' -print0)
-
-          # Wait for all transcodes to complete
-          fail=0
-          for pid in "${pids[@]:-}"; do
-            if ! wait "$pid"; then
-              fail=1
-            fi
-          done
-
-          exit $fail
-
-      - name: Upload artifacts (converted videos)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-artifacts-converted
-          retention-days: 30
-          path: |
-            artifacts/web-test-artifacts
 
   # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
   set-last-known-good-deployment:

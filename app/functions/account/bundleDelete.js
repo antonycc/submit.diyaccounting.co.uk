@@ -24,7 +24,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
 const MAX_WAIT_MS = 25_000;
-const DEFAULT_WAIT_MS = MAX_WAIT_MS; // Intentionally high wait time for synchronous processing
+const DEFAULT_WAIT_MS = 0; // Fire-and-forget by default for Phase 1 async rollout
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -90,13 +90,15 @@ export async function handler(event) {
   }
 
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  const asyncQueueUrl = process.env.SQS_QUEUE_URL;
 
-  // Bundle enforcement
-  try {
-    await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  // // Bundle enforcement
+  // // TODO: Remove these check when operating on bundles
+  // try {
+  //   await enforceBundles(event);
+  // } catch (error) {
+  //   return http403ForbiddenFromBundleEnforcement(error, request);
+  // }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
   if (event?.requestContext?.http?.method === "HEAD") {
@@ -138,7 +140,11 @@ export async function handler(event) {
     logger.info({ message: "Processing bundle delete for user", userId, bundleToRemove, removeAll, requestId, waitTimeMs });
 
     // Check if there is already a persisted request for this ID
-    const persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+    let persistedRequest = null;
+    if (!isInitialRequest) {
+      persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    }
 
     if (persistedRequest) {
       logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
@@ -155,6 +161,7 @@ export async function handler(event) {
         waitTimeMs,
         payload: { userId, bundleToRemove, removeAll, requestId },
         tableName: asyncTableName,
+        queueUrl: asyncQueueUrl,
         maxWaitMs: MAX_WAIT_MS,
       });
     }
@@ -251,6 +258,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
     await updateUserBundles(userId, []);
     logger.info({ message: `All bundles removed for user ${userId}` });
     result = {
+      statusCode: 204,
       status: "removed_all",
       message: "All bundles removed",
       bundles: [],
@@ -270,6 +278,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
       await updateUserBundles(userId, bundlesAfterRemoval);
       logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
       result = {
+        statusCode: 204,
         status: "removed",
         message: "Bundle removed",
         bundle: bundleToRemove,

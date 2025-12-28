@@ -4,6 +4,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import java.util.List;
 import org.immutables.value.Value;
@@ -70,7 +71,7 @@ public class ApiStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        List<ApiLambdaProps> lambdaFunctions();
+        List<AbstractApiLambdaProps> lambdaFunctions();
 
         static ImmutableApiStackProps.Builder builder() {
             return ImmutableApiStackProps.builder();
@@ -212,7 +213,7 @@ public class ApiStack extends Stack {
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
         java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
-            ApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
+            AbstractApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
             String routeKeyStr = apiLambdaProps.httpMethod().toString() + " " + apiLambdaProps.urlPath();
             if (createdRouteKeys.contains(routeKeyStr)) {
                 String firstCreator = firstCreatorByRoute.getOrDefault(routeKeyStr, "<unknown>");
@@ -329,7 +330,7 @@ public class ApiStack extends Stack {
     }
 
     private void createRouteForLambda(
-            ApiLambdaProps apiLambdaProps,
+            AbstractApiLambdaProps apiLambdaProps,
             HttpJwtAuthorizer jwtAuthorizer,
             HttpLambdaAuthorizer customAuthorizer,
             LambdaIntegrations lambdaIntegrations,

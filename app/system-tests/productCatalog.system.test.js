@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { loadCatalogFromRoot, bundlesForActivity, activitiesForBundle } from "../services/productCatalog.js";
 
-describe("System: product-catalogue.toml", () => {
+describe("System: web/public/product-catalogue.toml", () => {
   const catalog = loadCatalogFromRoot();
 
   it("should load version and key sections", () => {

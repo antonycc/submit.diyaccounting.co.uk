@@ -66,6 +66,9 @@ describe("fetchWithIdToken polling", () => {
       has(k) {
         return this.map.has(k.toLowerCase());
       }
+      delete(k) {
+        this.map.delete(k.toLowerCase());
+      }
     };
 
     // Mock document for DOM-related code
@@ -140,7 +143,10 @@ describe("fetchWithIdToken polling", () => {
     global.fetch = fetchMock;
     global.window.fetch = fetchMock;
 
-    const promise = window.fetchWithIdToken("/api/v1/bundle");
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
 
     // Advance 10 polls at 10ms each
     for (let i = 0; i < 10; i++) {
@@ -154,19 +160,19 @@ describe("fetchWithIdToken polling", () => {
     expect(response.status).toBe(200);
 
     // Verify polling logs
-    expect(logSpy).toHaveBeenCalledWith("waiting async request [GET /api/v1/bundle] (timeout: 60000ms)...");
+    expect(logSpy).toHaveBeenCalledWith("waiting async request [POST /api/v1/bundle] (timeout: 60000ms)...");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
+        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
       ),
     );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /re-trying async request \[GET \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
+        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
       ),
     );
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/finished async request \[GET \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, status: 200\)/),
+      expect.stringMatching(/finished async request \[POST \/api\/v1\/bundle\] \(poll #11, elapsed: \d+ms, status: 200\)/),
     );
 
     vi.useRealTimers();
@@ -182,7 +188,10 @@ describe("fetchWithIdToken polling", () => {
     global.fetch = fetchMock;
     global.window.fetch = fetchMock;
 
-    const promise = window.fetchWithIdToken("/api/v1/bundle");
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
 
     // Advance time by 61 seconds
     await vi.advanceTimersByTimeAsync(61000);
@@ -190,8 +199,155 @@ describe("fetchWithIdToken polling", () => {
     const response = await promise;
     expect(response.status).toBe(202); // Returns the last 202 response
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/timed out async request \[GET \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms, timeout: 60000ms\)/),
+      expect.stringMatching(/timed out async request \[POST \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms, timeout: 60000ms\)/),
     );
+    vi.useRealTimers();
+  });
+});
+
+describe("fetchWithIdToken fire-and-forget", () => {
+  let originalFetch;
+  let logSpy;
+
+  beforeEach(() => {
+    // Setup global window and localStorage
+    global.window = {
+      location: {
+        origin: "http://localhost:3000",
+      },
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    };
+
+    global.localStorage = {
+      getItem: vi.fn((key) => {
+        if (key === "cognitoIdToken") return "mock-id-token";
+        return null;
+      }),
+    };
+
+    global.Headers = class {
+      constructor(init = {}) {
+        this.map = new Map();
+        if (init instanceof Map) {
+          init.forEach((v, k) => this.map.set(k.toLowerCase(), v));
+        } else if (init instanceof global.Headers) {
+          init.map.forEach((v, k) => this.map.set(k, v));
+        } else {
+          Object.entries(init).forEach(([k, v]) => this.map.set(k.toLowerCase(), v));
+        }
+      }
+      set(k, v) {
+        this.map.set(k.toLowerCase(), v);
+      }
+      get(k) {
+        return this.map.get(k.toLowerCase());
+      }
+      has(k) {
+        return this.map.has(k.toLowerCase());
+      }
+      delete(k) {
+        this.map.delete(k.toLowerCase());
+      }
+    };
+
+    originalFetch = global.fetch;
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    // Evaluate the submit.js script
+    eval(scriptContent);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    logSpy.mockRestore();
+    vi.clearAllMocks();
+  });
+
+  it("skips polling when x-wait-time-ms header is '0'", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "no-poll-id" }),
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const response = await window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      headers: { "x-wait-time-ms": "0" },
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(202);
+    expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/waiting async request/));
+  });
+
+  it("skips polling when fireAndForget option is true", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "ff-id" }),
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const response = await window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      fireAndForget: true,
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(202);
+    // Verify internal header set
+    const sentHeaders = fetchMock.mock.calls[0][1].headers;
+    expect(sentHeaders.get("x-wait-time-ms")).toBe("0");
+    expect(sentHeaders.get("x-initial-request")).toBe("true");
+  });
+
+  it("sends x-initial-request: true only on the first call and removes it for polls", async () => {
+    vi.useFakeTimers();
+    let firstCallHeaders;
+    const fetchMock = vi.fn().mockImplementation(async (url, init) => {
+      if (!firstCallHeaders) {
+        firstCallHeaders = new Map(init.headers.map);
+      }
+      if (fetchMock.mock.calls.length === 1) {
+        return {
+          status: 202,
+          headers: new Headers({ "x-request-id": "polling-id" }),
+        };
+      }
+      return {
+        status: 200,
+        headers: new Headers({ "Content-Type": "application/json" }),
+        json: () => Promise.resolve({ success: true }),
+      };
+    });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+    });
+
+    await vi.advanceTimersByTimeAsync(10);
+
+    const response = await promise;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // First call should have initial request header (checked via captured map)
+    expect(firstCallHeaders.get("x-initial-request")).toBe("true");
+
+    // Second call (poll) should NOT have initial request header
+    const secondHeaders = fetchMock.mock.calls[1][1].headers;
+    expect(secondHeaders.has("x-initial-request")).toBe(false);
+    expect(secondHeaders.get("x-request-id")).toBe("polling-id");
+
     vi.useRealTimers();
   });
 });
@@ -252,6 +408,9 @@ describe("fetchWithIdToken AbortController", () => {
       has(k) {
         return this.map.has(k.toLowerCase());
       }
+      delete(k) {
+        this.map.delete(k.toLowerCase());
+      }
     };
 
     global.DOMException = global.window.DOMException;
@@ -308,7 +467,11 @@ describe("fetchWithIdToken AbortController", () => {
     global.window.fetch = fetchMock;
 
     const controller = new AbortController();
-    const promise = window.fetchWithIdToken("/api/v1/bundle", { signal: controller.signal });
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
+      method: "POST",
+      body: JSON.stringify({ bundleId: "test-bundle" }),
+      signal: controller.signal,
+    });
 
     // Let the first request finish and start the wait
     await vi.advanceTimersByTimeAsync(0);
@@ -319,7 +482,7 @@ describe("fetchWithIdToken AbortController", () => {
     // The promise should reject with AbortError
     await expect(promise).rejects.toThrow("Aborted");
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/aborted async request \[GET \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms\)/),
+      expect.stringMatching(/aborted async request \[POST \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms\)/),
     );
 
     vi.useRealTimers();

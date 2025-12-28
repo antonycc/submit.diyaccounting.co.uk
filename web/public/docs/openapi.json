@@ -14,46 +14,6 @@
   } ],
   "paths" : {
     "/hmrc/receipt" : {
-      "post" : {
-        "summary" : "Log receipt to storage",
-        "description" : "Logs a transaction receipt to secure storage",
-        "operationId" : "logReceipt",
-        "requestBody" : {
-          "required" : true,
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "receipt" : {
-                    "type" : "object",
-                    "properties" : {
-                      "formBundleNumber" : {
-                        "type" : "string",
-                        "example" : "123456789012"
-                      }
-                    }
-                  }
-                }
-              },
-              "example" : {
-                "receipt" : {
-                  "formBundleNumber" : "123456789012"
-                }
-              }
-            }
-          }
-        },
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Receipt logged successfully"
-          }
-        }
-      },
       "get" : {
         "summary" : "Retrieve stored receipts",
         "description" : "Retrieves previously stored receipts for the authenticated user",
@@ -446,42 +406,6 @@
         }
       }
     },
-    "/catalog" : {
-      "get" : {
-        "summary" : "Get product catalog",
-        "description" : "Retrieves the available product catalog",
-        "operationId" : "getCatalog",
-        "tags" : [ "Account" ],
-        "responses" : {
-          "200" : {
-            "description" : "Catalog retrieved successfully"
-          }
-        }
-      }
-    },
-    "/cognito/authUrl" : {
-      "get" : {
-        "summary" : "Get Cognito authentication URL",
-        "description" : "Returns the Cognito OAuth2 authorization URL for user login",
-        "operationId" : "getCognitoAuthUrl",
-        "parameters" : [ {
-          "name" : "state",
-          "in" : "query",
-          "required" : true,
-          "description" : "Opaque state value to mitigate CSRF attacks",
-          "schema" : {
-            "type" : "string",
-            "example" : "csrf-1234"
-          }
-        } ],
-        "tags" : [ "Authentication" ],
-        "responses" : {
-          "200" : {
-            "description" : "Authentication URL returned successfully"
-          }
-        }
-      }
-    },
     "/hmrc/vat/return/{periodKey}" : {
       "get" : {
         "summary" : "Get submitted VAT returns from HMRC",
@@ -523,41 +447,6 @@
         "responses" : {
           "200" : {
             "description" : "Request completed successfully"
-          }
-        }
-      }
-    },
-    "/hmrc/authUrl" : {
-      "get" : {
-        "summary" : "Get HMRC authentication URL",
-        "description" : "Returns the HMRC OAuth2 authorization URL for accessing HMRC APIs",
-        "operationId" : "getHmrcAuthUrl",
-        "parameters" : [ {
-          "name" : "state",
-          "in" : "query",
-          "required" : true,
-          "description" : "Opaque state value to mitigate CSRF attacks",
-          "schema" : {
-            "type" : "string",
-            "example" : "csrf-1234"
-          }
-        }, {
-          "name" : "scope",
-          "in" : "query",
-          "required" : false,
-          "description" : "OAuth scopes: write:vat, read:vat or both",
-          "schema" : {
-            "type" : "string",
-            "example" : "write:vat read:vat"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "HMRC authentication URL returned successfully"
           }
         }
       }

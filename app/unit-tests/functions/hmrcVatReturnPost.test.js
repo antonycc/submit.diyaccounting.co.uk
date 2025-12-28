@@ -163,7 +163,7 @@ describe("hmrcVatReturnPost handler", () => {
     expect(response.statusCode).toBe(200);
   });
 
-  test("returns 200 with receipt on successful submission", async () => {
+  test("returns 200 with receipt on successful submission and persists it", async () => {
     const receipt = {
       formBundleNumber: "123456789012",
       chargeRefNumber: "XM002610011594",
@@ -183,6 +183,16 @@ describe("hmrcVatReturnPost handler", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body).toHaveProperty("receipt");
+
+    // Verify receipt was persisted to DynamoDB
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const putCalls = mockSend.mock.calls.filter((call) => {
+      return call[0] instanceof lib.PutCommand && call[0].input.TableName === process.env.RECEIPTS_DYNAMODB_TABLE_NAME;
+    });
+    expect(putCalls.length).toBeGreaterThan(0);
+    const receiptItem = putCalls[0][0].input.Item;
+    expect(receiptItem.receipt).toEqual(receipt);
+    expect(receiptItem.receiptId).toContain(receipt.formBundleNumber);
   });
 
   test("returns 500 on HMRC API error", async () => {

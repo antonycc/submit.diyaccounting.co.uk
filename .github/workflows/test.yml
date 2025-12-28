@@ -46,7 +46,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'pom.xml'
-      - 'product-catalogue.toml'
+      - 'web/public/product-catalogue.toml'
       - '.github/actions/get-names'
       - '.github/workflows/test.yml'
       - '.prettierignore'

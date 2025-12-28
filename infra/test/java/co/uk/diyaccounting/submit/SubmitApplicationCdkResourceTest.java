@@ -58,13 +58,13 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.devStack).resourceCountIs("AWS::ECR::Repository", 1);
 
         infof("Created stack:", submitApplication.authStack.getStackName());
-        Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 3);
+        Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 2);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
-        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 7);
+        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 5);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 7);
+        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 5);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -101,7 +101,7 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 27);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 20);
         apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         infof("Created stack:", submitApplication.opsStack.getStackName());

@@ -4,18 +4,17 @@
 import path from "path";
 import express from "express";
 import { fileURLToPath } from "url";
-import { apiEndpoint as catalogGetApiEndpoint } from "../functions/account/catalogGet.js";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
 import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
-import { apiEndpoint as hmrcAuthUrlGetApiEndpoint } from "../functions/hmrc/hmrcAuthUrlGet.js";
+// import { apiEndpoint as hmrcAuthUrlGetApiEndpoint } from "../functions/hmrc/hmrcAuthUrlGet.js";
 import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcTokenPost.js";
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
-import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmrcReceiptPost.js";
+// import { apiEndpoint as hmrcReceiptPostApiEndpoint } from "../functions/hmrc/hmrcReceiptPost.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as hmrcHttpProxyEndpoint } from "../functions/infra/hmrcHttpProxy.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
@@ -64,20 +63,37 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, "../../web/public")));
+// Serve a virtual submit.env file for the client, using the server's own environment variables.
+// This ensures that behaviour tests (using ngrok) get the correct BASE_URL.
+app.get("/submit.env", (req, res) => {
+  const publicVars = [
+    "COGNITO_CLIENT_ID",
+    "COGNITO_BASE_URI",
+    "HMRC_CLIENT_ID",
+    "HMRC_BASE_URI",
+    "HMRC_SANDBOX_CLIENT_ID",
+    "HMRC_SANDBOX_BASE_URI",
+    "DIY_SUBMIT_BASE_URL",
+  ];
+  const lines = publicVars.map((v) => `${v}=${process.env[v] || ""}`);
 
-catalogGetApiEndpoint(app);
+  res.setHeader("Content-Type", "text/plain");
+  res.send(lines.join("\n") + "\n");
+});
+
+app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
+
 mockAuthUrlGetApiEndpoint(app);
 mockTokenPostApiEndpoint(app);
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
-hmrcAuthUrlGetApiEndpoint(app);
+// hmrcAuthUrlGetApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
-hmrcReceiptPostApiEndpoint(app);
+// hmrcReceiptPostApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 hmrcHttpProxyEndpoint(app);
 

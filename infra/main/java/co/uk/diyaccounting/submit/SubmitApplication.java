@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
@@ -262,7 +263,7 @@ public class SubmitApplication {
                 sharedNames.apiStackId, deploymentName, envName);
 
         // Create a map of Lambda function references from other stacks
-        List<ApiLambdaProps> lambdaFunctions = new java.util.ArrayList<>();
+        List<AbstractApiLambdaProps> lambdaFunctions = new java.util.ArrayList<>();
         lambdaFunctions.addAll(this.authStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.hmrcStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
@@ -288,7 +289,7 @@ public class SubmitApplication {
         this.apiStack.addDependency(authStack);
 
         // ExtractLambda ARNs from lambdaFunctions
-        var lambdaArns = lambdaFunctions.stream().map(ApiLambdaProps::lambdaArn).toList();
+        var lambdaArns = lambdaFunctions.stream().map(AbstractApiLambdaProps::lambdaArn).toList();
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,

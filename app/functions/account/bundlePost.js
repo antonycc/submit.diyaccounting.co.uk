@@ -15,9 +15,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles } from "../../services/bundleManagement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
@@ -99,137 +97,6 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
-// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function grantBundle(userId, requestBody, decodedToken, requestId = null) {
-  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId });
-
-  const requestedBundle = requestBody.bundleId;
-  const qualifiers = requestBody.qualifiers || {};
-
-  const currentBundles = await getUserBundles(userId);
-
-  // currentBundles are objects like { bundleId, expiry }. Ensure we compare by bundleId
-  const hasBundle = currentBundles.some((bundle) => bundle?.bundleId === requestedBundle);
-  if (hasBundle) {
-    logger.info({ message: "User already has requested bundle:", requestedBundle });
-    const result = {
-      status: "already_granted",
-      message: "Bundle already granted to user",
-      bundles: currentBundles,
-      granted: false,
-    };
-    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-      await putAsyncRequest(userId, requestId, "completed", result);
-    }
-    return result;
-  }
-
-  const catalogBundle = getCatalogBundle(requestedBundle);
-
-  if (!catalogBundle) {
-    logger.error({ message: "[Catalog bundle] Bundle not found in catalog:", requestedBundle });
-    const result = {
-      status: "bundle_not_found",
-      error: "bundle_not_found",
-      message: `Bundle '${requestedBundle}' not found in catalog`,
-      statusCode: 404,
-    };
-    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-      await putAsyncRequest(userId, requestId, "failed", result);
-    }
-    return result;
-  }
-
-  const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
-  if (check?.unknown) {
-    logger.warn({ message: "[Catalog bundle] Unknown qualifier in bundle request:", qualifier: check.unknown });
-    const result = { status: "unknown_qualifier", error: "unknown_qualifier", qualifier: check.unknown, statusCode: 400 };
-    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-      await putAsyncRequest(userId, requestId, "failed", result);
-    }
-    return result;
-  }
-  if (check?.ok === false) {
-    logger.warn({ message: "[Catalog bundle] Qualifier mismatch for bundle request:", reason: check.reason });
-    const result = { status: "qualifier_mismatch", error: "qualifier_mismatch", statusCode: 400 };
-    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-      await putAsyncRequest(userId, requestId, "failed", result);
-    }
-    return result;
-  }
-
-  if (catalogBundle.allocation === "automatic") {
-    logger.info({ message: "[Catalog bundle] Bundle is automatic allocation, no action needed:", requestedBundle });
-    const result = {
-      status: "granted",
-      granted: true,
-      expiry: null,
-      bundle: requestedBundle,
-      bundles: currentBundles,
-    };
-    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-      await putAsyncRequest(userId, requestId, "completed", result);
-    }
-    return result;
-  } else {
-    logger.info({ message: "[Catalog bundle] Bundle requires manual allocation, proceeding:", requestedBundle });
-  }
-
-  // on-request: enforce cap and expiry
-  const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
-  if (typeof cap === "number") {
-    const currentCount = currentBundles.length;
-    if (currentCount >= cap) {
-      logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
-      const result = { status: "cap_reached", error: "cap_reached", statusCode: 403 };
-      if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-        await putAsyncRequest(userId, requestId, "failed", result);
-      }
-      return result;
-    } else {
-      logger.info({ message: "[Catalog bundle] Bundle cap not yet reached:", requestedBundle, currentCount, cap });
-    }
-  } else {
-    logger.info({ message: "[Catalog bundle] No cap defined for bundle:", requestedBundle });
-  }
-
-  logger.info({ message: "Granting bundle to user:", userId, requestedBundle });
-  const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
-  const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
-  const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
-  logger.info({ message: "New bundle details:", newBundle });
-  currentBundles.push(newBundle);
-  logger.info({ message: "Updated user bundles:", userId, currentBundles });
-
-  // Persist the updated bundles to the primary store (DynamoDB)
-  const { updateUserBundles } = await import("../../services/bundleManagement.js");
-  await updateUserBundles(userId, currentBundles);
-
-  logger.info({ message: "Bundle granted to user:", userId, newBundle });
-  const result = {
-    status: "granted",
-    granted: true,
-    expiry: expiryStr || null,
-    bundle: requestedBundle,
-    bundles: currentBundles,
-  };
-
-  if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-    try {
-      if (result.status === "cap_reached") {
-        await putAsyncRequest(userId, requestId, "failed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
-      } else {
-        logger.info({ message: "Updating AsyncRequest status to completed", userId, requestId });
-        await putAsyncRequest(userId, requestId, "completed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
-      }
-    } catch (error) {
-      logger.error({ message: "Error storing completed request", error: error.message, requestId });
-    }
-  }
-
-  return result;
-}
-
 export async function handler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
@@ -240,13 +107,14 @@ export async function handler(event) {
   }
 
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  const asyncQueueUrl = process.env.SQS_QUEUE_URL;
 
-  // Bundle enforcement
-  try {
-    await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
+  // // Bundle enforcement
+  // try {
+  //   await enforceBundles(event);
+  // } catch (error) {
+  //   return http403ForbiddenFromBundleEnforcement(error, request);
+  // }
 
   // If HEAD request, return 200 OK immediately after bundle enforcement
   if (event?.requestContext?.http?.method === "HEAD") {
@@ -298,7 +166,11 @@ export async function handler(event) {
     logger.info({ message: "Processing bundle request for user", userId, bundleId: requestBody.bundleId, requestId, waitTimeMs });
 
     // Check if there is already a persisted request for this ID
-    const persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+    let persistedRequest = null;
+    if (!isInitialRequest) {
+      persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    }
 
     if (persistedRequest) {
       logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
@@ -315,6 +187,7 @@ export async function handler(event) {
         waitTimeMs,
         payload: { userId, requestBody, decodedToken, requestId },
         tableName: asyncTableName,
+        queueUrl: asyncQueueUrl,
         maxWaitMs: MAX_WAIT_MS,
       });
     }
@@ -410,4 +283,138 @@ export async function consumer(event) {
       throw error;
     }
   }
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export async function grantBundle(userId, requestBody, decodedToken, requestId = null) {
+  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId });
+
+  const requestedBundle = requestBody.bundleId;
+  const qualifiers = requestBody.qualifiers || {};
+
+  const currentBundles = await getUserBundles(userId);
+
+  // currentBundles are objects like { bundleId, expiry }. Ensure we compare by bundleId
+  const hasBundle = currentBundles.some((bundle) => bundle?.bundleId === requestedBundle);
+  if (hasBundle) {
+    logger.info({ message: "User already has requested bundle:", requestedBundle });
+    const result = {
+      status: "already_granted",
+      message: "Bundle already granted to user",
+      bundles: currentBundles,
+      granted: false,
+      statusCode: 201,
+    };
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      await putAsyncRequest(userId, requestId, "completed", result);
+    }
+    return result;
+  }
+
+  const catalogBundle = getCatalogBundle(requestedBundle);
+
+  if (!catalogBundle) {
+    logger.error({ message: "[Catalog bundle] Bundle not found in catalog:", requestedBundle });
+    const result = {
+      status: "bundle_not_found",
+      error: "bundle_not_found",
+      message: `Bundle '${requestedBundle}' not found in catalog`,
+      statusCode: 404,
+    };
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      await putAsyncRequest(userId, requestId, "failed", result);
+    }
+    return result;
+  }
+
+  const check = qualifiersSatisfied(catalogBundle, decodedToken, qualifiers);
+  if (check?.unknown) {
+    logger.warn({ message: "[Catalog bundle] Unknown qualifier in bundle request:", qualifier: check.unknown });
+    const result = { status: "unknown_qualifier", error: "unknown_qualifier", qualifier: check.unknown, statusCode: 400 };
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      await putAsyncRequest(userId, requestId, "failed", result);
+    }
+    return result;
+  }
+  if (check?.ok === false) {
+    logger.warn({ message: "[Catalog bundle] Qualifier mismatch for bundle request:", reason: check.reason });
+    const result = { status: "qualifier_mismatch", error: "qualifier_mismatch", statusCode: 400 };
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      await putAsyncRequest(userId, requestId, "failed", result);
+    }
+    return result;
+  }
+
+  if (catalogBundle.allocation === "automatic") {
+    logger.info({ message: "[Catalog bundle] Bundle is automatic allocation, no action needed:", requestedBundle });
+    const result = {
+      status: "granted",
+      granted: true,
+      expiry: null,
+      bundle: requestedBundle,
+      bundles: currentBundles,
+      statusCode: 201,
+    };
+    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+      await putAsyncRequest(userId, requestId, "completed", result);
+    }
+    return result;
+  } else {
+    logger.info({ message: "[Catalog bundle] Bundle requires manual allocation, proceeding:", requestedBundle });
+  }
+
+  // on-request: enforce cap and expiry
+  const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
+  if (typeof cap === "number") {
+    const currentCount = currentBundles.length;
+    if (currentCount >= cap) {
+      logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
+      const result = { status: "cap_reached", error: "cap_reached", statusCode: 403 };
+      if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+        await putAsyncRequest(userId, requestId, "failed", result);
+      }
+      return result;
+    } else {
+      logger.info({ message: "[Catalog bundle] Bundle cap not yet reached:", requestedBundle, currentCount, cap });
+    }
+  } else {
+    logger.info({ message: "[Catalog bundle] No cap defined for bundle:", requestedBundle });
+  }
+
+  logger.info({ message: "Granting bundle to user:", userId, requestedBundle });
+  const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
+  const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
+  const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
+  logger.info({ message: "New bundle details:", newBundle });
+  currentBundles.push(newBundle);
+  logger.info({ message: "Updated user bundles:", userId, currentBundles });
+
+  // Persist the updated bundles to the primary store (DynamoDB)
+  const { updateUserBundles } = await import("../../services/bundleManagement.js");
+  await updateUserBundles(userId, currentBundles);
+
+  logger.info({ message: "Bundle granted to user:", userId, newBundle });
+  const result = {
+    status: "granted",
+    granted: true,
+    expiry: expiryStr || null,
+    bundle: requestedBundle,
+    bundles: currentBundles,
+    statusCode: 201,
+  };
+
+  if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+    try {
+      if (result.status === "cap_reached") {
+        await putAsyncRequest(userId, requestId, "failed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
+      } else {
+        logger.info({ message: "Updating AsyncRequest status to completed", userId, requestId });
+        await putAsyncRequest(userId, requestId, "completed", result, process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME);
+      }
+    } catch (error) {
+      logger.error({ message: "Error storing completed request", error: error.message, requestId });
+    }
+  }
+
+  return result;
 }

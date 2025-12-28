@@ -55,29 +55,19 @@ This plan details the incremental rollout of the asynchronous polling pattern ac
 
 ---
 
-### Phase 2: Cognito Token Exchange
-**Goal**: n/a Leave as is with a synchronous processing.
+## Phase 2: Cognito & HMRC Auth URL clientside generation
+
+Eliminate runtime dependency on the Cognito Auth URL and HMRC Auth URL Lambdas by calculating
+OAuth2 authorization URLs entirely in the browser, using environment values injected at
+deploy-time into a single static file.
+
+### Phase 3: Cognito & HMRC Token Exchange
+**Goal**: n/a Leave as is with synchronous processing.
 
 ---
 
-### Phase 3: HMRC Token Exchange
-**Goal**: n/a Leave as is with a synchronous processing.
-
----
-
-### Phase 4: HMRC Receipt Management (GET & POST)
-**Goal**: Asynchronous retrieval and storage of submission receipts.
-Leave the GET with the default wait time set to MAX so it is synchronous.
-
-#### Infrastructure
-- **DataStack.java**: 2 new tables for `hmrcReceiptGet` and `hmrcReceiptPost`.
-- **HmrcStack.java**: Convert both to `AsyncApiLambda`.
-
-#### Application
-- **hmrcReceiptGet.js**: Implement async retrieval from DynamoDB/S3.
-- **hmrcReceiptPost.js**: Implement async logging of receipts.
-
----
+### Phase 4: HMRC Receipt Management (GET)
+**Goal**: Remove bundle POST Leave as is with synchronous processing but adapt to async pattern of get bundles.
 
 ### Phase 5: HMRC VAT Return Submission (POST)
 **Goal**: Critical path async implementation for VAT submissions.

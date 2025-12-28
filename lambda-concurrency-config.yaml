@@ -3,20 +3,39 @@
 # Function names are resolved as: {deployment-name}-{name}
 
 lambdas:
-  - name: submit-app-cognito-auth-url-get
-    handler: app/functions/auth/cognitoAuthUrlGet.handler
+
+  - name: submit-app-bundle-get
+    handler: app/functions/account/bundleGet.handler
     concurrency:
       zero: 0
       peak: 1
+
+  - name: submit-app-bundle-post
+    handler: app/functions/account/bundlePost.handler
+    concurrency:
+      zero: 0
+      peak: 0
+
+  - name: submit-app-bundle-post-consumer
+    handler: app/functions/account/bundlePost.consumer
+    concurrency:
+      zero: 0
+      peak: 0
+
+  - name: submit-app-bundle-delete
+    handler: app/functions/account/bundleDelete.handler
+    concurrency:
+      zero: 0
+      peak: 0
+
+  - name: submit-app-bundle-delete-consumer
+    handler: app/functions/account/bundleDelete.consumer
+    concurrency:
+      zero: 0
+      peak: 0
 
   - name: submit-app-cognito-token-post
     handler: app/functions/auth/cognitoTokenPost.handler
-    concurrency:
-      zero: 0
-      peak: 1
-
-  - name: submit-app-hmrc-auth-url-get
-    handler: app/functions/hmrc/hmrcAuthUrlGet.handler
     concurrency:
       zero: 0
       peak: 1
@@ -33,11 +52,23 @@ lambdas:
       zero: 0
       peak: 1
 
+  - name: submit-app-hmrc-vat-return-post-consumer
+    handler: app/functions/hmrc/hmrcVatReturnPost.consumer
+    concurrency:
+      zero: 0
+      peak: 0
+
   - name: submit-app-hmrc-vat-obligation-get
     handler: app/functions/hmrc/hmrcVatObligationGet.handler
     concurrency:
       zero: 0
       peak: 1
+
+  - name: submit-app-hmrc-vat-obligation-get-consumer
+    handler: app/functions/hmrc/hmrcVatObligationGet.consumer
+    concurrency:
+      zero: 0
+      peak: 0
 
   - name: submit-app-hmrc-vat-return-get
     handler: app/functions/hmrc/hmrcVatReturnGet.handler
@@ -45,56 +76,14 @@ lambdas:
       zero: 0
       peak: 1
 
-  - name: submit-app-hmrc-receipt-post
-    handler: app/functions/hmrc/hmrcReceiptPost.handler
+  - name: submit-app-hmrc-vat-return-get-consumer
+    handler: app/functions/hmrc/hmrcVatReturnGet.consumer
     concurrency:
       zero: 0
-      peak: 1
+      peak: 0
 
   - name: submit-app-hmrc-receipt-get
     handler: app/functions/hmrc/hmrcReceiptGet.handler
     concurrency:
       zero: 0
-      peak: 1
-
-  - name: submit-app-catalog-get
-    handler: app/functions/account/catalogGet.handler
-    concurrency:
-      zero: 0
-      peak: 1
-
-  - name: submit-app-bundle-get
-    handler: app/functions/account/bundleGet.handler
-    concurrency:
-      zero: 0
-      peak: 2
-
-  - name: submit-app-bundle-get-consumer
-    handler: app/functions/account/bundleGet.consumer
-    concurrency:
-      zero: 0
-      peak: 4
-
-  - name: submit-app-bundle-post
-    handler: app/functions/account/bundlePost.handler
-    concurrency:
-      zero: 0
-      peak: 1
-
-  - name: submit-app-bundle-post-consumer
-    handler: app/functions/account/bundlePost.consumer
-    concurrency:
-      zero: 0
-      peak: 2
-
-  - name: submit-app-bundle-delete
-    handler: app/functions/account/bundleDelete.handler
-    concurrency:
-      zero: 0
-      peak: 1
-
-  - name: submit-app-bundle-delete-consumer
-    handler: app/functions/account/bundleDelete.consumer
-    concurrency:
-      zero: 0
-      peak: 2
+      peak: 0

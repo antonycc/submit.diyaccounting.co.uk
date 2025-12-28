@@ -49,7 +49,7 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
   const hashedSub = hashSub(userSub);
   const method = httpRequest && httpRequest.method ? httpRequest.method : "UNKNOWN";
   logger.info({
-    message: `DynamoDB enabled, proceeding with putHmrcApiRequest [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}`,
+    message: `DynamoDB enabled, proceeding with putHmrcApiRequest [table: ${process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME}]`,
     hashedSub,
     url,
     method,

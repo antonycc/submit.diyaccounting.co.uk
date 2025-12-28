@@ -24,9 +24,24 @@
 
     fetchPromises.catalog = (async () => {
       try {
-        const response = await fetch("/api/v1/catalog");
+        const response = await fetch("/product-catalogue.toml");
         if (response.ok) {
-          catalogCache = await response.json();
+          const text = await response.text();
+          try {
+            if (window.TOML) {
+              catalogCache = window.TOML.parse(text);
+            } else {
+              try {
+                catalogCache = JSON.parse(text);
+              } catch (jsonErr) {
+                console.warn("Failed to parse catalog as JSON, and TOML parser is not available.");
+                throw jsonErr;
+              }
+            }
+          } catch (e) {
+            console.warn("Failed to parse catalog:", e);
+            catalogCache = null;
+          }
           return catalogCache;
         }
       } catch (err) {

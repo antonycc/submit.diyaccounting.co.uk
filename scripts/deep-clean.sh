@@ -25,4 +25,4 @@ rm -rf cdk.log
 rm -rf ~/.m2/repository
 rm -rf .aws-sam
 npm run build
-git restore web/public/submit.deployment web/public/submit.env || true
+git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true

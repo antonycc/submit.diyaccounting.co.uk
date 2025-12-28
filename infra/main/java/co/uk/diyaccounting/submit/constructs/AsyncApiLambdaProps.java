@@ -2,10 +2,9 @@ package co.uk.diyaccounting.submit.constructs;
 
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 @Value.Immutable
-public interface AsyncApiLambdaProps extends ApiLambdaProps {
+public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
 
     String consumerHandler();
 

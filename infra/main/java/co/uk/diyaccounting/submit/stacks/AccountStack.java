@@ -1,15 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -25,25 +22,26 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 public class AccountStack extends Stack {
 
-    public ApiLambdaProps catalogLambdaProps;
-    public Function catalogLambda;
-    public ILogGroup catalogLambdaLogGroup;
-
-    public ApiLambdaProps bundleGetLambdaProps;
+    public AbstractApiLambdaProps bundleGetLambdaProps;
     public Function bundleGetLambda;
     public ILogGroup bundleGetLambdaLogGroup;
 
-    public ApiLambdaProps bundlePostLambdaProps;
+    public AbstractApiLambdaProps bundlePostLambdaProps;
     public Function bundlePostLambda;
     public ILogGroup bundlePostLambdaLogGroup;
 
-    public ApiLambdaProps bundleDeleteLambdaProps;
+    public AbstractApiLambdaProps bundleDeleteLambdaProps;
     public Function bundleDeleteLambda;
     public ILogGroup bundleDeleteLambdaLogGroup;
 
-    public List<ApiLambdaProps> lambdaFunctionProps;
+    public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
     public interface AccountStackProps extends StackProps, SubmitStackProps {
@@ -121,34 +119,6 @@ public class AccountStack extends Stack {
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
-        // Catalog Lambda
-        var catalogLambdaEnv =
-                new PopulatedMap<String, String>().with("DIY_SUBMIT_BASE_URL", props.sharedNames().baseUrl);
-        var catalogLambdaUrlOrigin = new ApiLambda(
-                this,
-                ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().catalogGetLambdaFunctionName)
-                        .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().catalogGetLambdaFunctionName)
-                        .handler(props.sharedNames().catalogGetLambdaHandler)
-                        .lambdaArn(props.sharedNames().catalogGetLambdaArn)
-                        .httpMethod(props.sharedNames().catalogGetLambdaHttpMethod)
-                        .urlPath(props.sharedNames().catalogGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().catalogGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().catalogGetLambdaCustomAuthorizer)
-                        .environment(catalogLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-                        .build());
-        this.catalogLambdaProps = catalogLambdaUrlOrigin.apiProps;
-        this.catalogLambda = catalogLambdaUrlOrigin.lambda;
-        this.catalogLambdaLogGroup = catalogLambdaUrlOrigin.logGroup;
-        this.lambdaFunctionProps.add(this.catalogLambdaProps);
-        infof(
-                "Created Lambda %s for catalog retrieval with handler %s",
-                this.catalogLambda.getNode().getId(), props.sharedNames().catalogGetLambdaHandler);
-
         // Construct Cognito User Pool ARN for IAM policies
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
         var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
@@ -157,18 +127,17 @@ public class AccountStack extends Stack {
 
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
-        var getBundlesAsyncLambda = new AsyncApiLambda(
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
+                //.with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
+        var getBundlesAsyncLambda = new ApiLambda(
                 this,
-                AsyncApiLambdaProps.builder()
+                ApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleGetLambdaFunctionName)
                         .handler(props.sharedNames().bundleGetLambdaHandler)
-                        .consumerHandler(props.sharedNames().bundleGetLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().bundleGetLambdaArn)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
@@ -177,9 +146,6 @@ public class AccountStack extends Stack {
                         .environment(getBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
-
-        // Update API environment with SQS queue URL (for async processing)
-        getBundlesLambdaEnv.put("SQS_QUEUE_URL", getBundlesAsyncLambda.queue.getQueueUrl());
 
         this.bundleGetLambdaProps = getBundlesAsyncLambda.apiProps;
         this.bundleGetLambda = getBundlesAsyncLambda.lambda;
@@ -207,9 +173,6 @@ public class AccountStack extends Stack {
         // Grant DynamoDB permissions to both API and Consumer Lambdas
         bundlesTable.grantReadData(this.bundleGetLambda);
         asyncRequestsTable.grantReadWriteData(this.bundleGetLambda);
-
-        bundlesTable.grantReadData(getBundlesAsyncLambda.consumerLambda);
-        asyncRequestsTable.grantReadWriteData(getBundlesAsyncLambda.consumerLambda);
 
         infof(
                 "Granted DynamoDB permissions to %s and its consumer for Bundles and Async Requests Tables",
@@ -347,7 +310,6 @@ public class AccountStack extends Stack {
                 "Granted Cognito and DynamoDB permissions to %s and its consumer",
                 this.bundleDeleteLambda.getFunctionName());
 
-        cfnOutput(this, "CatalogLambdaArn", this.catalogLambda.getFunctionArn());
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());
         cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());

@@ -214,7 +214,7 @@ The `package.json` file defines all npm scripts for building, testing, and deplo
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `build` | `./mvnw clean verify && git restore web/public/submit.deployment web/public/submit.env \|\| true` | **Full build**: Runs Maven clean and verify (compiles Java, runs tests, builds CDK JARs), generates OpenAPI docs, then restores deployment marker files |
+| `build` | `./mvnw clean verify && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt \|\| true` | **Full build**: Runs Maven clean and verify (compiles Java, runs tests, builds CDK JARs), generates OpenAPI docs, then restores deployment marker files |
 | `start` | `./scripts/start.sh` | **Start all local services**: Orchestrates starting mock OAuth2, ngrok proxy, local DynamoDB, and Express server |
 | `clean` | `./scripts/clean.sh` | **Clean build artifacts**: Removes `target/`, `node_modules/.cache/`, and other generated files |
 
@@ -312,8 +312,6 @@ Behaviour tests use Playwright to test complete user journeys against running in
 |--------|---------|-------------|
 | `users:provision` | `node app/bin/provision-user.mjs` | **Provision test users**: Creates Cognito users for testing |
 | `test-report` | `node scripts/generate-test-reports.js --testName html-report` | **Generate test reports**: Creates HTML reports from Playwright test results |
-| `convert:video` | `node scripts/convert-video.js` | **Convert test videos**: Converts Playwright .webm videos to .mp4 format |
-| `convert:video:default` | `node scripts/convert-video.js --in target/behaviour-test-results/video.webm --out ...` | **Convert default test video**: Converts specific video file |
 | `set-apex-origins` | `node ./app/actions/set-apex-origins.mjs` | **Update CloudFront origins**: Updates CloudFront distribution to point to new deployment |
 | `cloudfront:set-origins` | `node ./app/actions/set-apex-origins.mjs` | Alias for `set-apex-origins` |
 | `wiremock:server` | `wiremock --port 9090 --root-dir wiremock-recordings --disable-banner` | **Start WireMock (quiet)**: Starts WireMock without banner |
@@ -613,10 +611,9 @@ BASE_IMAGE_TAG: ${{ github.sha }}
 27. **web-test-submit-vat-sandbox**: Run VAT submission tests with sandbox against deployed environment
 28. **web-test-submit-vat**: Run VAT submission tests with test API (non-prod only)
 29. **upload-web-test-results**: Collect and upload all test results to S3
-30. **convert-video**: Convert Playwright videos to MP4 (if requested)
-31. **set-last-known-good-deployment**: Store deployment name in SSM Parameter Store
-32. **destroy-previous**: Destroy previous prod deployment (prod only, excludes holding page)
-33. **invalidate-cloudfront**: Invalidate CloudFront cache for `/tests/*` and `/docs/*`
+30. **set-last-known-good-deployment**: Store deployment name in SSM Parameter Store
+31. **destroy-previous**: Destroy previous prod deployment (prod only, excludes holding page)
+32. **invalidate-cloudfront**: Invalidate CloudFront cache for `/tests/*` and `/docs/*`
 
 **Key Features**:
 - **Parallel Execution**: Many jobs run in parallel to speed up deployment
@@ -981,41 +978,64 @@ Deployed by `SubmitApplication.java` using `cdk-application/cdk.json`:
    └── Destroy Previous Deployment (if prod and successful)
    ```
 
+### API Execution Patterns
+
+The application follows a multi-pattern API strategy to achieve near-zero idle cost and predictable client behaviour.
+
+#### 1. Static Content
+Pre-computed responses or configuration files published as static assets.
+- **Characteristics**: No Lambda invocation, No DynamoDB, Browser + CloudFront caching.
+- **Example**: `.env` configuration file for client-side auth URL generation.
+
+#### 2. Cache-Aside Read
+Runtime-generated responses that complete within a single request and are safe to cache client-side.
+- **Characteristics**: Lambda executes inline, no SQS, persistent client-side cache (IndexedDB).
+- **Example**: `GET /api/v1/bundle` (Account Bundles).
+
+#### 3. Async Polling
+Client initiates work and polls until a terminal result is available.
+- **Characteristics**: Initial HTTP 202, SQS consumer performs work, result persisted to DynamoDB request-state table.
+- **Example**: HMRC VAT Return POST, VAT Obligations GET.
+
+#### 4. Fire-and-Forget Write
+Client initiates a mutation and does **not** wait for server completion.
+- **Characteristics**: Returns HTTP 202, SQS consumer performs work, optimistic client-side update.
+- **Example**: `POST /api/v1/bundle`, `DELETE /api/v1/bundle`.
+
 ### Lambda Function Details
 
 All Lambda functions run Node.js 22 from Docker images stored in ECR.
 
 #### Auth Functions
 
-| Function | Path | Handler | Purpose |
-|----------|------|---------|---------|
-| `cognitoAuthUrlGet` | `/auth/cognito/authurl` | `app/functions/auth/cognitoAuthUrlGet.js` | Generate Cognito OAuth authorization URL |
-| `cognitoTokenPost` | `/auth/cognito/token` | `app/functions/auth/cognitoTokenPost.js` | Exchange auth code for Cognito tokens |
-| `mockAuthUrlGet` | `/auth/mock/authurl` | `app/functions/non-lambda-mocks/mockAuthUrlGet.js` | Mock OAuth auth URL (testing) |
-| `mockTokenPost` | `/auth/mock/token` | `app/functions/non-lambda-mocks/mockTokenPost.js` | Mock OAuth token (testing) |
-| `customAuthorizer` | (API Gateway authorizer) | `app/functions/auth/customAuthorizer.js` | JWT validation for protected routes |
+| Function | Path | Handler | Purpose | Pattern |
+|----------|------|---------|---------|---------|
+| `cognitoAuthUrlGet` | `/api/v1/cognito/authUrl` | `app/functions/auth/cognitoAuthUrlGet.js` | Legacy/Fallback Cognito URL generation | Cache-Aside Read |
+| `cognitoTokenPost` | `/api/v1/cognito/token` | `app/functions/auth/cognitoTokenPost.js` | Exchange auth code for Cognito tokens | Cache-Aside Read |
+| `mockAuthUrlGet` | `/api/v1/mock/authUrl` | `app/functions/non-lambda-mocks/mockAuthUrlGet.js` | Mock OAuth auth URL (testing) | Cache-Aside Read |
+| `mockTokenPost` | `/api/v1/mock/token` | `app/functions/non-lambda-mocks/mockTokenPost.js` | Mock OAuth token (testing) | Cache-Aside Read |
+| `customAuthorizer` | (API Gateway authorizer) | `app/functions/auth/customAuthorizer.js` | JWT validation for protected routes | Internal |
 
 #### HMRC Functions
 
-| Function | Path | Handler | Purpose |
-|----------|------|---------|---------|
-| `hmrcAuthUrlGet` | `/hmrc/authurl` | `app/functions/hmrc/hmrcAuthUrlGet.js` | Generate HMRC OAuth URL |
-| `hmrcTokenPost` | `/hmrc/token` | `app/functions/hmrc/hmrcTokenPost.js` | Exchange code for HMRC access token |
-| `hmrcVatObligationGet` | `/hmrc/vat/obligations` | `app/functions/hmrc/hmrcVatObligationGet.js` | Retrieve VAT obligations from HMRC |
-| `hmrcVatReturnGet` | `/hmrc/vat/returns` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data |
-| `hmrcVatReturnPost` | `/hmrc/vat/returns` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC |
-| `hmrcReceiptGet` | `/hmrc/receipts` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB |
-| `hmrcReceiptPost` | `/hmrc/receipts` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt in DynamoDB |
-| `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker |
+| Function | Path | Handler | Purpose | Pattern |
+|----------|------|---------|---------|---------|
+| `hmrcAuthUrlGet` | `/api/v1/hmrc/authUrl` | `app/functions/hmrc/hmrcAuthUrlGet.js` | Legacy/Fallback HMRC OAuth URL | Cache-Aside Read |
+| `hmrcTokenPost` | `/api/v1/hmrc/token` | `app/functions/hmrc/hmrcTokenPost.js` | Exchange code for HMRC access token | Cache-Aside Read |
+| `hmrcVatObligationGet` | `/api/v1/hmrc/vat/obligation` | `app/functions/hmrc/hmrcVatObligationGet.js` | Retrieve VAT obligations from HMRC | Async Polling |
+| `hmrcVatReturnGet` | `/api/v1/hmrc/vat/return/{periodKey}` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data | Async Polling |
+| `hmrcVatReturnPost` | `/api/v1/hmrc/vat/return` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC and save receipt server-side | Async Polling |
+| `hmrcReceiptGet` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB | Cache-Aside Read |
+| `hmrcReceiptPost` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt (Legacy - now handled by hmrcVatReturnPost) | Cache-Aside Read |
+| `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker | Internal |
 
 #### Account Functions
 
-| Function | Path | Handler | Purpose |
-|----------|------|---------|---------|
-| `catalogGet` | `/account/catalog` | `app/functions/account/catalogGet.js` | Get product catalog (from TOML file) |
-| `bundleGet` | `/account/bundles` | `app/functions/account/bundleGet.js` | Get user's bundles from DynamoDB |
-| `bundlePost` | `/account/bundles` | `app/functions/account/bundlePost.js` | Create/update bundle in DynamoDB |
-| `bundleDelete` | `/account/bundles` | `app/functions/account/bundleDelete.js` | Delete bundle from DynamoDB |
+| Function | Path | Handler | Purpose | Pattern |
+|----------|------|---------|---------|---------|
+| `bundleGet` | `/api/v1/bundle` | `app/functions/account/bundleGet.js` | Get user's bundles | Cache-Aside Read |
+| `bundlePost` | `/api/v1/bundle` | `app/functions/account/bundlePost.js` | Grant bundle to user | Fire-and-Forget |
+| `bundleDelete` | `/api/v1/bundle` | `app/functions/account/bundleDelete.js` | Delete bundle | Fire-and-Forget |
 
 #### Infrastructure Functions
 
@@ -1217,7 +1237,6 @@ app.get('/hmrc/receipts', adaptLambda(hmrcReceiptGet))
 app.post('/hmrc/receipts', adaptLambda(hmrcReceiptPost))
 
 // Account routes
-app.get('/account/catalog', adaptLambda(catalogGet))
 app.get('/account/bundles', adaptLambda(bundleGet))
 app.post('/account/bundles', adaptLambda(bundlePost))
 app.delete('/account/bundles', adaptLambda(bundleDelete))
@@ -1490,7 +1509,7 @@ Hierarchical overview of the repository organized by function.
 | `package-lock.json` | File | Locked npm dependency versions |
 | `playwright.config.js` | File | Playwright test configuration |
 | `pom.xml` | File | Maven project configuration |
-| `product-catalogue.toml` | File | Product/bundle catalog definitions |
+| `web/public/product-catalogue.toml` | File | Product/bundle catalog definitions |
 | `product-subscribers.subs` | File | List of subscriber IDs for bundle provisioning |
 | `README.md` | File | Repository readme with quickstart |
 | `vitest.config.js` | File | Vitest test configuration |
@@ -1538,8 +1557,7 @@ app/
 │   ├── account/            # User account management
 │   │   ├── bundleGet.js                  # Get user bundles
 │   │   ├── bundlePost.js                 # Create/update bundle
-│   │   ├── bundleDelete.js               # Delete bundle
-│   │   └── catalogGet.js                 # Get product catalog
+│   │   └── bundleDelete.js               # Delete bundle
 │   ├── infra/              # Infrastructure functions
 │   │   ├── hmrcHttpProxy.js              # HTTP proxy with rate limiting
 │   │   └── selfDestruct.js               # Auto-delete non-prod stacks
@@ -1688,10 +1706,10 @@ web/
 │   │   ├── 404-error-origin.html           # S3 404
 │   │   └── 404-error-distribution.html     # CloudFront 404
 │   ├── favicon.ico
-│   ├── submit.version      # Build version (generated)
-│   ├── submit.deployment   # Deployment name (generated)
-│   ├── submit.hash         # Content hash (generated)
-│   └── submit.build        # Build number (generated)
+│   ├── submit.version.txt      # Build version (generated)
+│   ├── submit.deployment-name.txt   # Deployment name (generated)
+│   ├── submit.commit-hash.txt         # Content hash (generated)
+│   └── submit.build-number.txt        # Build number (generated)
 ├── unit-tests/             # Frontend unit tests (Vitest)
 │   ├── userJourneys.frontend.test.js
 │   ├── vatFlow.frontend.test.js
@@ -1790,8 +1808,6 @@ These files define specific strategic personas and processes for GitHub Copilot 
 | `export-dynamodb-for-test-users.js` | Export specific user data |
 | `generate-test-reports.js` | Generate HTML test reports from Playwright results |
 | `playwright-video-reporter.js` | Custom Playwright video reporter |
-| `convert-video.js` | Convert .webm videos to .mp4 |
-| `render-catalogue.mjs` | Render product catalog from TOML to HTML |
 | `update.sh` | Update npm and Maven dependencies |
 | `update-java.sh` | Update Java dependencies |
 | `docker-build-codex.sh` | Build Codex Docker image |
@@ -1820,7 +1836,7 @@ These files define specific strategic personas and processes for GitHub Copilot 
 
 ### Key Files
 
-**product-catalogue.toml**: Defines available products/bundles in TOML format
+**web/public/product-catalogue.toml**: Defines available products/bundles in TOML format
 ```toml
 [products.test]
 name = "Test"
