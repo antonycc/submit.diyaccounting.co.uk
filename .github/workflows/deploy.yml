@@ -1616,6 +1616,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup Node
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
       - name: Configure AWS role via GitHub OIDC (for RUM outputs)
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -1744,24 +1762,6 @@ jobs:
           else
             echo "skipPublishStackDeployment=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
