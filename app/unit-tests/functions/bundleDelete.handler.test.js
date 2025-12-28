@@ -1,57 +1,28 @@
 // app/unit-tests/functions/bundleDelete.test.js
 // Comprehensive tests for bundleDelete handler
 
-import { describe, test, beforeEach, expect, vi } from "vitest";
+import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent, buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
+import {
+  mockSend,
+  mockLibDynamoDb,
+  mockClientDynamoDb,
+  MockQueryCommand,
+  MockPutCommand,
+  MockGetCommand,
+  MockDeleteCommand,
+} from "@app/test-helpers/dynamoDbMock.js";
+
+// Helper to yield control back to the event loop
+const yieldToEventLoop = () => new Promise((resolve) => setImmediate(resolve));
 
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
-// We keep behaviour simple: Query returns empty items; Put/Delete succeed.
-// This preserves the current handler behaviour expected by tests without
-// persisting between calls (so duplicate requests still appear as new).
 // ---------------------------------------------------------------------------
-const mockSend = vi.fn();
-
-vi.mock("@aws-sdk/lib-dynamodb", () => {
-  class PutCommand {
-    constructor(input) {
-      this.input = input;
-    }
-  }
-  class QueryCommand {
-    constructor(input) {
-      this.input = input;
-    }
-  }
-  class DeleteCommand {
-    constructor(input) {
-      this.input = input;
-    }
-  }
-  class GetCommand {
-    constructor(input) {
-      this.input = input;
-    }
-  }
-  return {
-    DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
-    PutCommand,
-    QueryCommand,
-    DeleteCommand,
-    GetCommand,
-  };
-});
-
-vi.mock("@aws-sdk/client-dynamodb", () => {
-  class DynamoDBClient {
-    constructor(_config) {
-      // no-op in unit tests
-    }
-  }
-  return { DynamoDBClient };
-});
+vi.mock("@aws-sdk/lib-dynamodb", () => mockLibDynamoDb);
+vi.mock("@aws-sdk/client-dynamodb", () => mockClientDynamoDb);
 
 const mockSqsSend = vi.fn();
 vi.mock("@aws-sdk/client-sqs", () => {
@@ -89,29 +60,33 @@ describe("bundleDelete handler", () => {
     asyncRequests = new Map();
 
     // Reset and provide default mock DynamoDB behaviour
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) {
+      if (cmd instanceof MockQueryCommand) {
         return { Items: [], Count: 0 };
       }
-      if (cmd instanceof lib.PutCommand) {
+      if (cmd instanceof MockPutCommand) {
         const item = cmd.input.Item;
         if (item.requestId) {
           asyncRequests.set(item.requestId, item);
         }
         return {};
       }
-      if (cmd instanceof lib.GetCommand) {
+      if (cmd instanceof MockGetCommand) {
         const { requestId } = cmd.input.Key;
         const item = asyncRequests.get(requestId);
         return { Item: item };
       }
-      if (cmd instanceof lib.DeleteCommand) {
+      if (cmd instanceof MockDeleteCommand) {
         return {};
       }
       return {};
     });
+  });
+
+  afterEach(async () => {
+    // Ensure all background tasks from the current test are finished before the next test starts
+    await yieldToEventLoop();
   });
 
   // ============================================================================
@@ -200,8 +175,7 @@ describe("bundleDelete handler", () => {
 
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) {
+      if (cmd instanceof MockQueryCommand) {
         return { Items: [{ bundleId: "test" }], Count: 1 };
       }
       return {};
@@ -211,6 +185,9 @@ describe("bundleDelete handler", () => {
     const deleteEvent = buildEventWithToken(token, { bundleId: "test" });
     deleteEvent.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(deleteEvent);
+
+    // Yield to allow non-blocking writes to complete
+    await yieldToEventLoop();
 
     expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);
@@ -225,8 +202,7 @@ describe("bundleDelete handler", () => {
 
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) {
+      if (cmd instanceof MockQueryCommand) {
         return { Items: [{ bundleId: "test" }], Count: 1 };
       }
       return {};
@@ -237,8 +213,7 @@ describe("bundleDelete handler", () => {
     expect(response.statusCode).toBe(204);
 
     // Verify that GetCommand was NOT called for this requestId
-    const lib = await import("@aws-sdk/lib-dynamodb");
-    const getCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.GetCommand);
+    const getCalls = mockSend.mock.calls.filter((call) => call[0] instanceof MockGetCommand);
     expect(getCalls.length).toBe(0);
   });
 
@@ -247,8 +222,7 @@ describe("bundleDelete handler", () => {
 
     // Mock multiple bundles
     mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) {
+      if (cmd instanceof MockQueryCommand) {
         return { Items: [{ bundleId: "test" }, { bundleId: "default" }], Count: 2 };
       }
       return {};
@@ -269,8 +243,7 @@ describe("bundleDelete handler", () => {
 
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) {
+      if (cmd instanceof MockQueryCommand) {
         return { Items: [{ bundleId: "test" }], Count: 1 };
       }
       return {};
@@ -284,6 +257,8 @@ describe("bundleDelete handler", () => {
     event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
 
+    await yieldToEventLoop();
+
     expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);
     expect(body).toBeNull();
@@ -294,8 +269,7 @@ describe("bundleDelete handler", () => {
 
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) {
+      if (cmd instanceof MockQueryCommand) {
         return { Items: [{ bundleId: "test" }], Count: 1 };
       }
       return {};
@@ -308,6 +282,8 @@ describe("bundleDelete handler", () => {
     };
     event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
+
+    await yieldToEventLoop();
 
     expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);

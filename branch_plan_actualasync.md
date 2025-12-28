@@ -66,19 +66,8 @@ deploy-time into a single static file.
 
 ---
 
-### Phase 4: HMRC Receipt Management (GET & POST)
-**Goal**: Asynchronous retrieval and storage of submission receipts.
-Leave the GET with the default wait time set to MAX so it is synchronous.
-
-#### Infrastructure
-- **DataStack.java**: 2 new tables for `hmrcReceiptGet` and `hmrcReceiptPost`.
-- **HmrcStack.java**: Convert both to `AsyncApiLambda`.
-
-#### Application
-- **hmrcReceiptGet.js**: Implement async retrieval from DynamoDB/S3.
-- **hmrcReceiptPost.js**: Implement async logging of receipts.
-
----
+### Phase 4: HMRC Receipt Management (GET)
+**Goal**: Remove bundle POST Leave as is with synchronous processing but adapt to async pattern of get bundles.
 
 ### Phase 5: HMRC VAT Return Submission (POST)
 **Goal**: Critical path async implementation for VAT submissions.
