@@ -522,6 +522,33 @@ footer {
   display: block;
 }
 
+/* Test data link (sandbox mode only) */
+.test-data-link {
+  display: none;
+  text-align: right;
+  margin-bottom: 1em;
+  font-size: 0.9em;
+}
+
+.test-data-link.visible {
+  display: block;
+}
+
+.test-data-link a {
+  color: #2c5aa0;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0.3em 0.6em;
+  border: 1px solid #2c5aa0;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.test-data-link a:hover {
+  background-color: #2c5aa0;
+  color: white;
+}
+
 /* Status messages */
 .status-message {
   padding: 1em;
