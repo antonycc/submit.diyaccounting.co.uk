@@ -55,13 +55,14 @@ This plan details the incremental rollout of the asynchronous polling pattern ac
 
 ---
 
-### Phase 2: Cognito Token Exchange
-**Goal**: n/a Leave as is with a synchronous processing.
+## Phase 2: Cognito & HMRC Auth URL clientside generation
 
----
+Eliminate runtime dependency on the Cognito Auth URL and HMRC Auth URL Lambdas by calculating
+OAuth2 authorization URLs entirely in the browser, using environment values injected at
+deploy-time into a single static file.
 
-### Phase 3: HMRC Token Exchange
-**Goal**: n/a Leave as is with a synchronous processing.
+### Phase 3: Cognito & HMRC Token Exchange
+**Goal**: n/a Leave as is with synchronous processing.
 
 ---
 

@@ -2,6 +2,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
+import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
@@ -128,16 +129,15 @@ public class AccountStack extends Stack {
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
-        var getBundlesAsyncLambda = new AsyncApiLambda(
+        var getBundlesAsyncLambda = new ApiLambda(
                 this,
-                AsyncApiLambdaProps.builder()
+                ApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleGetLambdaFunctionName)
                         .handler(props.sharedNames().bundleGetLambdaHandler)
-                        .consumerHandler(props.sharedNames().bundleGetLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().bundleGetLambdaArn)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
@@ -146,9 +146,6 @@ public class AccountStack extends Stack {
                         .environment(getBundlesLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
-
-        // Update API environment with SQS queue URL (for async processing)
-        getBundlesLambdaEnv.put("SQS_QUEUE_URL", getBundlesAsyncLambda.queue.getQueueUrl());
 
         this.bundleGetLambdaProps = getBundlesAsyncLambda.apiProps;
         this.bundleGetLambda = getBundlesAsyncLambda.lambda;
@@ -176,9 +173,6 @@ public class AccountStack extends Stack {
         // Grant DynamoDB permissions to both API and Consumer Lambdas
         bundlesTable.grantReadData(this.bundleGetLambda);
         asyncRequestsTable.grantReadWriteData(this.bundleGetLambda);
-
-        bundlesTable.grantReadData(getBundlesAsyncLambda.consumerLambda);
-        asyncRequestsTable.grantReadWriteData(getBundlesAsyncLambda.consumerLambda);
 
         infof(
                 "Granted DynamoDB permissions to %s and its consumer for Bundles and Async Requests Tables",
