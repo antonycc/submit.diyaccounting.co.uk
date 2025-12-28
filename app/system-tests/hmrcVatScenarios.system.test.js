@@ -21,11 +21,15 @@ const receiptsTableName = "test-receipts-table";
 
 describe("System: HMRC VAT Scenarios with Test Parameters", () => {
   beforeAll(async () => {
-    const { ensureBundleTableExists } = await import("../bin/dynamodb.js");
+    const { ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } = await import("../bin/dynamodb.js");
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
     const port = 9003;
+    const bundleTableName = "test-bundle-table";
+    const hmrcApiRequestsTableName = "test-hmrc-requests-table";
+    const receiptsTableName = "test-receipts-table";
+
     const server = dynalite({ createTableMs: 0 });
     await new Promise((resolve, reject) => {
       server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
@@ -42,10 +46,13 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
-    process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundleTableName;
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcApiRequestsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
 
-    await ensureBundleTableExists(bundlesTableName, endpoint);
+    await ensureBundleTableExists(bundleTableName, endpoint);
+    await ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
+    await ensureReceiptsTableExists(receiptsTableName, endpoint);
 
     bm = await import("../services/bundleManagement.js");
   });

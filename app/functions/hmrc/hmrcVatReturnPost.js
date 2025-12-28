@@ -12,6 +12,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
+import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
@@ -176,6 +177,14 @@ export async function handler(event) {
   // Generate error responses based on HMRC response
   if (!hmrcResponse.ok) {
     return generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, hmrcResponseBody, hmrcAccessToken, responseHeaders);
+  }
+
+  // After obtaining `receipt` and userSub but before returning the response
+  const formBundleNumber = receipt?.formBundleNumber ?? receipt?.formBundle;
+  if (userSub && formBundleNumber) {
+    const timestamp = new Date().toISOString();
+    const receiptId = `${timestamp}-${formBundleNumber}`;
+    await putReceipt(userSub, receiptId, receipt);
   }
 
   // Generate a success response

@@ -1024,9 +1024,9 @@ All Lambda functions run Node.js 22 from Docker images stored in ECR.
 | `hmrcTokenPost` | `/api/v1/hmrc/token` | `app/functions/hmrc/hmrcTokenPost.js` | Exchange code for HMRC access token | Cache-Aside Read |
 | `hmrcVatObligationGet` | `/api/v1/hmrc/vat/obligation` | `app/functions/hmrc/hmrcVatObligationGet.js` | Retrieve VAT obligations from HMRC | Async Polling |
 | `hmrcVatReturnGet` | `/api/v1/hmrc/vat/return/{periodKey}` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data | Async Polling |
-| `hmrcVatReturnPost` | `/api/v1/hmrc/vat/return` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC | Async Polling |
+| `hmrcVatReturnPost` | `/api/v1/hmrc/vat/return` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC and save receipt server-side | Async Polling |
 | `hmrcReceiptGet` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB | Cache-Aside Read |
-| `hmrcReceiptPost` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt in DynamoDB | Cache-Aside Read |
+| `hmrcReceiptPost` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt (Legacy - now handled by hmrcVatReturnPost) | Cache-Aside Read |
 | `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker | Internal |
 
 #### Account Functions

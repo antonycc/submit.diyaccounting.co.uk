@@ -273,11 +273,6 @@
             accessToken,
           );
 
-          showStatus("Logging submission receipt...", "info");
-
-          // Log the receipt
-          await logReceipt(submitResponse.processingDate, submitResponse.formBundleNumber, submitResponse.chargeRefNumber);
-
           // Display success
           displayReceipt(submitResponse);
           hideStatus();
