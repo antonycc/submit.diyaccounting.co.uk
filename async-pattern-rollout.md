@@ -133,11 +133,8 @@ Each API defines which modes are valid; unsupported modes are ignored or coerced
 
 ---
 
-## Non-Goals (Phase 1)
+## Phase 2: Auth URL clientside generation
 
-- No WebSockets / SSE
-- No background cache reconciliation
-- No cross-API orchestration
-- No retry semantics beyond SQS defaults
-
-These are intentionally deferred until the patterns stabilise.
+Eliminate runtime dependency on the Cognito Auth URL and HMRC Auth URL Lambdas by calculating
+OAuth2 authorization URLs entirely in the browser, using environment values injected at
+deploy-time into a single static file.

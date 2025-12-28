@@ -45,8 +45,6 @@
           if (!record) return resolve(null);
           // expire stale records
           if (record.expires && record.expires <= Date.now()) {
-            // async deletion; ignore errors
-            store.delete(key);
             return resolve(null);
           }
           resolve(record.value);
