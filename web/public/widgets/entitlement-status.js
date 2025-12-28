@@ -24,7 +24,7 @@
 
     fetchPromises.catalog = (async () => {
       try {
-        const response = await fetch("/product-catalogue.toml");
+        const response = await fetch("/submit.catalogue.toml");
         if (response.ok) {
           const text = await response.text();
           try {

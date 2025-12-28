@@ -59,12 +59,8 @@ All environment files should define these core variables:
 | `LOG_TO_FILE` | Enable file logging | `true`, `false` |
 | `CLOUD_TRAIL_ENABLED` | Enable CloudTrail | `true`, `false` |
 | `HMRC_BASE_URI` | HMRC production API base URL | `https://test-api.service.hmrc.gov.uk` |
-| `HMRC_API_PROXY_MAPPED_URL` | Internal proxy URL for HMRC API | Varies by environment |
-| `HMRC_API_PROXY_EGRESS_URL` | External HMRC API URL | `https://test-api.service.hmrc.gov.uk` |
 | `HMRC_CLIENT_ID` | HMRC OAuth client ID | From HMRC Developer Hub |
 | `HMRC_SANDBOX_BASE_URI` | HMRC sandbox API base URL | `https://test-api.service.hmrc.gov.uk` |
-| `HMRC_SANDBOX_API_PROXY_MAPPED_URL` | Internal proxy URL for sandbox | Varies by environment |
-| `HMRC_SANDBOX_API_PROXY_EGRESS_URL` | External sandbox API URL | `https://test-api.service.hmrc.gov.uk` |
 | `HMRC_SANDBOX_CLIENT_ID` | HMRC sandbox OAuth client ID | From HMRC Developer Hub |
 | `GOOGLE_CLIENT_SECRET_ARN` | AWS Secrets Manager ARN for Google OAuth | `arn:aws:secretsmanager:...` |
 | `HMRC_CLIENT_SECRET_ARN` | AWS Secrets Manager ARN for HMRC prod secret | `arn:aws:secretsmanager:...` |
@@ -164,7 +160,6 @@ All environment files should define these core variables:
 - `TEST_PROXY=run` (start ngrok)
 - `TEST_MOCK_OAUTH2=run` (start mock OAuth2 server)
 - `TEST_DYNAMODB=run` (start local DynamoDB)
-- `HMRC_API_PROXY_MAPPED_URL=http://localhost:3000/proxy/hmrc-api`
 - `BUNDLE_DYNAMODB_TABLE_NAME=test-bundle-table`
 - Requires `NGROK_AUTHTOKEN` environment variable
 
@@ -512,7 +507,7 @@ The Java code defines two main entry points for CDK synthesis:
 
 | Entry Point | Main Class | CDK App Name | Stacks Created |
 |-------------|------------|--------------|----------------|
-| **Environment** | `co.uk.diyaccounting.submit.SubmitEnvironment` | `SubmitEnvironment` | ObservabilityStack, ObservabilityUE1Stack, DataStack, ProxyStack, ApexStack, IdentityStack |
+| **Environment** | `co.uk.diyaccounting.submit.SubmitEnvironment` | `SubmitEnvironment` | ObservabilityStack, ObservabilityUE1Stack, DataStack, ApexStack, IdentityStack |
 | **Application** | `co.uk.diyaccounting.submit.SubmitApplication` | `SubmitApplication` | DevStack, DevUE1Stack, SelfDestructStack, AuthStack, HmrcStack, AccountStack, ApiStack, EdgeStack, PublishStack, OpsStack |
 
 ### OpenAPI Documentation Generation
@@ -626,7 +621,7 @@ BASE_IMAGE_TAG: ${{ github.sha }}
 **Stack Deployment Order**:
 
 Environment Stacks (prerequisite):
-- ObservabilityStack, DataStack, ProxyStack, ApexStack, IdentityStack
+- ObservabilityStack, DataStack, ApexStack, IdentityStack
 
 Application Stacks:
 1. DevStack, DevUE1Stack (S3, CloudFront, ECR)
@@ -663,17 +658,15 @@ Application Stacks:
 3. **deploy-observability**: Deploy ObservabilityStack (CloudWatch RUM, alarms) in eu-west-2
 4. **deploy-observability-us-east-1**: Deploy ObservabilityUE1Stack in us-east-1
 5. **deploy-data**: Deploy DataStack (DynamoDB tables for bundles, receipts, API requests)
-6. **deploy-proxy**: Deploy ProxyStack (VPC endpoints, security groups for proxy)
-7. **provision-bundles**: Add bundles for subscribers listed in `product-subscribers.subs`
-8. **deploy-apex**: Deploy ApexStack (Route53 apex domain records)
-9. **deploy-identity**: Deploy IdentityStack (Cognito user pool, client, hosted UI)
-10. **set-repository-environment-variables**: Store Cognito ARNs/IDs as GitHub environment variables
+6. **provision-bundles**: Add bundles for subscribers listed in `product-subscribers.subs`
+7. **deploy-apex**: Deploy ApexStack (Route53 apex domain records)
+8. **deploy-identity**: Deploy IdentityStack (Cognito user pool, client, hosted UI)
+9. **set-repository-environment-variables**: Store Cognito ARNs/IDs as GitHub environment variables
 
 **Stacks Deployed**:
 - `{env}-env-ObservabilityStack` (eu-west-2)
 - `{env}-env-ObservabilityUE1Stack` (us-east-1)
 - `{env}-env-DataStack` (eu-west-2)
-- `{env}-env-ProxyStack` (eu-west-2)
 - `{env}-env-ApexStack` (eu-west-2)
 - `{env}-env-IdentityStack` (eu-west-2)
 
@@ -914,7 +907,6 @@ Deployed by `SubmitEnvironment.java` using `cdk-environment/cdk.json`:
 | **ObservabilityStack** | CloudWatch Log Groups, RUM App Monitor, Alarms, SNS Topics | Logging and monitoring in eu-west-2 |
 | **ObservabilityUE1Stack** | CloudWatch RUM resources | RUM resources in us-east-1 for global access |
 | **DataStack** | 3 DynamoDB Tables (bundles, receipts, API requests) | Persistent data storage |
-| **ProxyStack** | VPC Endpoints, Security Groups | Network configuration for proxy access |
 | **ApexStack** | Route 53 Hosted Zone, Records | DNS apex domain management |
 | **IdentityStack** | Cognito User Pool, Client, Hosted UI, Google IdP | User authentication |
 
@@ -948,7 +940,6 @@ Deployed by `SubmitApplication.java` using `cdk-application/cdk.json`:
    ├── Deploy ObservabilityStack (eu-west-2)
    ├── Deploy ObservabilityUE1Stack (us-east-1)
    ├── Deploy DataStack (DynamoDB tables)
-   ├── Deploy ProxyStack (VPC configuration)
    ├── Deploy ApexStack (Route53 hosted zone)
    ├── Deploy IdentityStack (Cognito)
    └── Set GitHub environment variables (Cognito ARN/IDs)
@@ -1024,7 +1015,6 @@ All Lambda functions run Node.js 22 from Docker images stored in ECR.
 | `hmrcVatReturnGet` | `/api/v1/hmrc/vat/return/{periodKey}` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data | Async Polling |
 | `hmrcVatReturnPost` | `/api/v1/hmrc/vat/return` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC and save receipt server-side | Async Polling |
 | `hmrcReceiptGet` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB | Cache-Aside Read |
-| `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker | Internal |
 
 #### Account Functions
 
@@ -1142,7 +1132,6 @@ All Lambda functions run Node.js 22 from Docker images stored in ECR.
 **Network Security**:
 - All traffic over HTTPS (ACM certificates)
 - CloudFront enforces HTTPS
-- Lambda functions in private VPC (optional, via ProxyStack)
 - DynamoDB encryption at rest (AWS managed keys)
 - S3 bucket policies restrict access to CloudFront only
 
@@ -1446,7 +1435,7 @@ Express Server (localhost:3000)
     │
     └─► /account/* ─► httpServerToLambdaAdaptor ───► Account Lambda Handlers
                                                           │
-                                                          ├─► product-catalogue.toml (filesystem)
+                                                          ├─► submit.catalogue.toml (filesystem)
                                                           │
                                                           └─► Local DynamoDB (dynalite)
 ```
@@ -1505,7 +1494,7 @@ Hierarchical overview of the repository organized by function.
 | `package-lock.json` | File | Locked npm dependency versions |
 | `playwright.config.js` | File | Playwright test configuration |
 | `pom.xml` | File | Maven project configuration |
-| `web/public/product-catalogue.toml` | File | Product/bundle catalog definitions |
+| `web/public/submit.catalogue.toml` | File | Product/bundle catalog definitions |
 | `product-subscribers.subs` | File | List of subscriber IDs for bundle provisioning |
 | `README.md` | File | Repository readme with quickstart |
 | `vitest.config.js` | File | Vitest test configuration |
@@ -1535,8 +1524,7 @@ app/
 ├── data/                   # DynamoDB repository implementations
 │   ├── dynamoDbBundleRepository.js        # Bundle CRUD operations
 │   ├── dynamoDbReceiptRepository.js       # Receipt CRUD operations
-│   ├── dynamoDbHmrcApiRequestRepository.js # API request logging
-│   └── dynamoDbBreakerRepository.js       # Circuit breaker state storage
+│   └── dynamoDbHmrcApiRequestRepository.js # API request logging
 ├── functions/              # Lambda function handlers
 │   ├── auth/               # Authentication functions
 │   │   ├── cognitoTokenPost.js           # Exchange auth code for tokens
@@ -1552,14 +1540,12 @@ app/
 │   │   ├── bundlePost.js                 # Create/update bundle
 │   │   └── bundleDelete.js               # Delete bundle
 │   ├── infra/              # Infrastructure functions
-│   │   ├── hmrcHttpProxy.js              # HTTP proxy with rate limiting
 │   │   └── selfDestruct.js               # Auto-delete non-prod stacks
 │   └── non-lambda-mocks/   # Mock implementations for local testing
 │       ├── mockAuthUrlGet.js             # Mock OAuth URL
 │       └── mockTokenPost.js              # Mock OAuth token
 ├── lib/                    # Shared libraries
 │   ├── httpServerToLambdaAdaptor.js      # Express ↔ Lambda adapter
-│   ├── httpProxy.js                      # HTTP proxy service
 │   ├── jwtHelper.js                      # JWT utilities
 │   ├── logger.js                         # Pino logger configuration
 │   ├── httpResponseHelper.js             # Lambda response helpers
@@ -1567,7 +1553,6 @@ app/
 ├── services/               # Business logic services
 │   ├── bundleManagement.js               # Bundle management logic
 │   ├── hmrcApi.js                        # HMRC API client
-│   ├── httpProxy.js                      # Proxy service with circuit breaker
 │   ├── productCatalog.js                 # Product catalog parser (TOML)
 │   └── subHasher.js                      # Subscriber ID hashing
 ├── test-helpers/           # Test utilities
@@ -1605,7 +1590,6 @@ infra/
 │   │   │   ├── ObservabilityStack.java   # CloudWatch, RUM
 │   │   │   ├── ObservabilityUE1Stack.java # CloudWatch RUM (us-east-1)
 │   │   │   ├── DataStack.java            # DynamoDB tables
-│   │   │   ├── ProxyStack.java           # VPC, security groups
 │   │   │   ├── ApexStack.java            # Route53 apex domain
 │   │   │   ├── IdentityStack.java        # Cognito user pool
 │   │   │   ├── SelfDestructStack.java    # Auto-delete Lambda + EventBridge
@@ -1829,7 +1813,7 @@ These files define specific strategic personas and processes for GitHub Copilot 
 
 ### Key Files
 
-**web/public/product-catalogue.toml**: Defines available products/bundles in TOML format
+**web/public/submit.catalogue.toml**: Defines available products/bundles in TOML format
 ```toml
 [products.test]
 name = "Test"

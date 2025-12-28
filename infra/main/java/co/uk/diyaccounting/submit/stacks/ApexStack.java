@@ -330,16 +330,6 @@ public class ApexStack extends Stack {
                 : (recordName + "." + zone.getZoneName());
         this.aliasRecordV6DomainName = this.aliasRecordDomainName;
 
-        // Lookup Log Group for web deployment
-        //        ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
-        //                this,
-        //                props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
-        //                "arn:aws:logs:%s:%s:log-group:%s"
-        //                        .formatted(
-        //                                Objects.requireNonNull(props.getEnv()).getRegion(),
-        //                                props.getEnv().getAccount(),
-        //                                props.sharedNames().webDeploymentLogGroupName));
-
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
         var publicDir = Paths.get(props.holdingDocRootPath()).toAbsolutePath().normalize();

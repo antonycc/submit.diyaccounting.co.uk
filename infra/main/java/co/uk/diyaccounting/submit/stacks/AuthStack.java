@@ -95,38 +95,6 @@ public class AuthStack extends Stack {
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
-        // authUrl - Google or Antonycc via Cognito
-        //        var authUrlCognitoLambdaEnv = new PopulatedMap<String, String>()
-        //                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
-        //                .with("COGNITO_CLIENT_ID", props.cognitoClientId())
-        //                .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri);
-        //
-        //        var authUrlCognitoLambdaUrlOrigin = new ApiLambda(
-        //                this,
-        //                ApiLambdaProps.builder()
-        //                        .idPrefix(props.sharedNames().cognitoAuthUrlGetLambdaFunctionName)
-        //                        .baseImageTag(props.baseImageTag())
-        //                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-        //                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-        //                        .functionName(props.sharedNames().cognitoAuthUrlGetLambdaFunctionName)
-        //                        .lambdaArn(props.sharedNames().cognitoAuthUrlGetLambdaArn)
-        //                        .httpMethod(props.sharedNames().cognitoAuthUrlGetLambdaHttpMethod)
-        //                        .urlPath(props.sharedNames().cognitoAuthUrlGetLambdaUrlPath)
-        //                        .handler(props.sharedNames().cognitoAuthUrlGetLambdaHandler)
-        //                        .jwtAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaJwtAuthorizer)
-        //                        .customAuthorizer(props.sharedNames().cognitoAuthUrlGetLambdaCustomAuthorizer)
-        //                        .environment(authUrlCognitoLambdaEnv)
-        //                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-        //                        .build());
-        //        this.cognitoAuthUrlGetLambdaProps = authUrlCognitoLambdaUrlOrigin.apiProps;
-        //        this.cognitoAuthUrlGetLambda = authUrlCognitoLambdaUrlOrigin.lambda;
-        //        this.cognitoAuthUrlGetLambdaLogGroup = authUrlCognitoLambdaUrlOrigin.logGroup;
-        //        this.lambdaFunctionProps.add(this.cognitoAuthUrlGetLambdaProps);
-        //        infof(
-        //                "Created Lambda %s for Cognito auth URL with handler %s",
-        //                this.cognitoAuthUrlGetLambda.getNode().getId(),
-        // props.sharedNames().cognitoAuthUrlGetLambdaHandler);
-
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)

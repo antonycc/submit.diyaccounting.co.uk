@@ -103,20 +103,6 @@ beforeEach(() => {
 });
 
 describe("System: bundleManagement with local dynalite", () => {
-  // it("isMockMode should reflect TEST_BUNDLE_MOCK env", async () => {
-  //   delete process.env.TEST_BUNDLE_MOCK;
-  //   expect(bm.isMockMode()).toBe(false);
-  //
-  //   process.env.TEST_BUNDLE_MOCK = "true";
-  //   expect(bm.isMockMode()).toBe(true);
-  //
-  //   process.env.TEST_BUNDLE_MOCK = "1";
-  //   expect(bm.isMockMode()).toBe(true);
-  //
-  //   process.env.TEST_BUNDLE_MOCK = "FALSE";
-  //   expect(bm.isMockMode()).toBe(false);
-  // });
-
   it("getUserBundles should return [] initially (Dynamo mode)", async () => {
     const userId = "bm-sys-empty";
     const bundles = await bundleRepository.getUserBundles(userId);

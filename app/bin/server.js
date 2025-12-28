@@ -14,7 +14,6 @@ import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/h
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
-import { apiEndpoint as hmrcHttpProxyEndpoint } from "../functions/infra/hmrcHttpProxy.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 
@@ -91,7 +90,6 @@ hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
-hmrcHttpProxyEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {
@@ -115,11 +113,7 @@ if (__runDirect) {
         "COGNITO_CLIENT_ID",
         "COGNITO_BASE_URI",
         "HMRC_BASE_URI",
-        "HMRC_API_PROXY_MAPPED_URL",
-        "HMRC_API_PROXY_EGRESS_URL",
         "HMRC_SANDBOX_BASE_URI",
-        "HMRC_SANDBOX_API_PROXY_MAPPED_URL",
-        "HMRC_SANDBOX_API_PROXY_EGRESS_URL",
         "HMRC_CLIENT_ID",
         "HMRC_CLIENT_SECRET_ARN",
         "HMRC_SANDBOX_CLIENT_ID",

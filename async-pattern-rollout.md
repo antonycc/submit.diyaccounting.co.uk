@@ -42,7 +42,7 @@ The goal is **near-zero idle cost**, predictable client behaviour, and a clear, 
     - Browser + CloudFront caching
     - Versioned filenames for cache busting
 - **Examples**
-    - Product catalogue (`/product-catalogue-vX.toml`)
+    - Product catalogue (`/submit.catalogue.toml`)
 - **Client behaviour**
     - Direct fetch
     - No polling

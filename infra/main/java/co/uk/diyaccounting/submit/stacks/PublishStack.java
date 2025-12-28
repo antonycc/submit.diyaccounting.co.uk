@@ -229,7 +229,7 @@ public class PublishStack extends Stack {
                         "/favicon.ico",
                         "/index.html",
                         "/privacy.html",
-                        "/product-catalogue.toml",
+                        "/submit.catalogue.toml",
                         "/submit.build-number.txt",
                         "/submit.commit-hash.txt",
                         "/submit.css",

@@ -9,7 +9,6 @@ import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
-import co.uk.diyaccounting.submit.stacks.ProxyStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
@@ -24,7 +23,6 @@ public class SubmitEnvironment {
     public final DataStack dataStack;
     public final IdentityStack identityStack;
     public final ApexStack apexStack;
-    public final ProxyStack proxyStack;
 
     public static class SubmitEnvironmentProps {
 
@@ -44,12 +42,6 @@ public class SubmitEnvironment {
         public String googleClientSecretArn;
         public String antonyccClientId;
         public String antonyccBaseUri;
-        public String hmrcApiProxyEgressUrl;
-        public String hmrcSandboxApiProxyEgressUrl;
-        public String proxyRateLimitPerSecond;
-        public String proxyBreakerErrorThreshold;
-        public String proxyBreakerLatencyMs;
-        public String proxyBreakerCooldownSeconds;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -114,15 +106,6 @@ public class SubmitEnvironment {
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
 
-        // Proxy configuration
-        var hmrcApiProxyEgressUrl = envOr("HMRC_API_PROXY_EGRESS_URL", appProps.hmrcApiProxyEgressUrl);
-        var hmrcSandboxApiProxyEgressUrl =
-                envOr("HMRC_SANDBOX_API_PROXY_EGRESS_URL", appProps.hmrcSandboxApiProxyEgressUrl);
-        var proxyRateLimitPerSecond = envOr("PROXY_RATE_LIMIT_PER_SECOND", appProps.proxyRateLimitPerSecond);
-        var proxyBreakerErrorThreshold = envOr("PROXY_BREAKER_ERROR_THRESHOLD", appProps.proxyBreakerErrorThreshold);
-        var proxyBreakerLatencyMs = envOr("PROXY_BREAKER_LATENCY_MS", appProps.proxyBreakerLatencyMs);
-        var proxyBreakerCooldownSeconds = envOr("PROXY_BREAKER_COOLDOWN_SECONDS", appProps.proxyBreakerCooldownSeconds);
-
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -178,32 +161,7 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .build());
 
-        // Create ProxyStack for outbound API proxy with rate limiting and circuit breaker
-        infof(
-                "Synthesizing stack %s for deployment %s to environment %s",
-                sharedNames.proxyStackId, deploymentName, envName);
-        this.proxyStack = new ProxyStack(
-                app,
-                sharedNames.proxyStackId,
-                ProxyStack.ProxyStackProps.builder()
-                        .env(primaryEnv)
-                        .crossRegionReferences(false)
-                        .envName(envName)
-                        .deploymentName(deploymentName)
-                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .sharedNames(sharedNames)
-                        .hmrcApiProxyEgressUrl(hmrcApiProxyEgressUrl)
-                        .hmrcSandboxApiProxyEgressUrl(hmrcSandboxApiProxyEgressUrl)
-                        .hmrcApiProxyMappedUrl(sharedNames.hmrcApiProxyMappedUrl)
-                        .hmrcSandboxApiProxyMappedUrl(sharedNames.hmrcSandboxApiProxyMappedUrl)
-                        .rateLimitPerSecond(proxyRateLimitPerSecond)
-                        .breakerErrorThreshold(proxyBreakerErrorThreshold)
-                        .breakerLatencyMs(proxyBreakerLatencyMs)
-                        .breakerCooldownSeconds(proxyBreakerCooldownSeconds)
-                        .build());
-
-        // Create the identity stack before any user aware services
+        // Create the identity stack before any user-aware services
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.identityStackId, deploymentName, envName);

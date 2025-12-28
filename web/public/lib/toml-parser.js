@@ -1,4 +1,4 @@
-// Minimal TOML parser for product-catalogue.toml
+// Minimal TOML parser for submit.catalogue.toml
 // Supports: key = value, [section], [[array-of-tables]], strings, numbers, arrays of strings
 (function () {
   const TOML = {

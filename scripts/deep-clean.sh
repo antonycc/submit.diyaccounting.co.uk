@@ -3,7 +3,7 @@
 # Usage: ./scripts/deep-clean.sh
 #
 
-./scripts/clean-tests.sh
+./scripts/clean.sh
 
 # Node clean build and test
 rm -rf build

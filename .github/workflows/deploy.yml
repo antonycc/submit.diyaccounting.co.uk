@@ -74,7 +74,7 @@ on:
       - 'LICENSE'
       - 'package.json'
       - 'pom.xml'
-      - 'web/public/product-catalogue.toml'
+      - 'web/public/submit.catalogue.toml'
       - 'lambda-concurrency-config.yaml'
       - '.github/actions/get-names'
       - '.github/actions/set-origins'
@@ -1974,8 +1974,8 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
-  web-test-auth:
-    if: ${{ !cancelled() }}
+  web-test-auth-bundle:
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true'  }}
     name: 'web test auth bundle'
     needs:
       - names
@@ -2087,7 +2087,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
-          name: web-test-artifacts-auth
+          name: web-test-artifacts-auth-bundle
           retention-days: 30
           path: |
             target/behaviour-test-results/
@@ -2096,7 +2096,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
-          name: web-test-reports-auth
+          name: web-test-reports-auth-bundle
           retention-days: 30
           path: |
             target/test-reports/
@@ -2108,7 +2108,7 @@ jobs:
       - names
       - set-origins
       - deploy-publish
-      - web-test-auth
+      - web-test-auth-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags

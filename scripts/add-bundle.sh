@@ -16,9 +16,9 @@ ENVIRONMENT="${3:-ci}"  # Default to ci if not specified
 AWS_REGION="${AWS_REGION:-eu-west-2}"
 
 # Load product catalog to get bundle timeout
-CATALOG_FILE="web/public/product-catalogue.toml"
+CATALOG_FILE="web/public/submit.catalogue.toml"
 if [ ! -f "$CATALOG_FILE" ]; then
-    echo "Error: web/public/product-catalogue.toml not found"
+    echo "Error: web/public/submit.catalogue.toml not found"
     exit 1
 fi
 

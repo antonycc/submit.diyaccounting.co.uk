@@ -57,7 +57,7 @@ test.describe("Bundles page client-side filtering by listedInEnvironments", () =
     });
 
     // Mock the catalog API to return a mixture of bundles in TOML format
-    await page.route("**/product-catalogue.toml", async (route) => {
+    await page.route("**/submit.catalogue.toml", async (route) => {
       const tomlBody = `
 [[bundles]]
 id = "restrictedTest"

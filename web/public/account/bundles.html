@@ -347,7 +347,7 @@
 
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
-          const catalog = await fetchAndParse("/product-catalogue.toml", {
+          const catalog = await fetchAndParse("/submit.catalogue.toml", {
             ttlMs: 300000,
             init: headers ? { headers } : undefined,
           });

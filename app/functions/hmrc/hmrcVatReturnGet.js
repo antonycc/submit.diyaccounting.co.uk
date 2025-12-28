@@ -193,7 +193,6 @@ export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHea
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;
   let hmrcResponse = {};
   /* v8 ignore start */
-  // TODO: Move the error simulation into the proxy (mirrors POST implementation)
   if (testScenario === "SUBMIT_HMRC_API_HTTP_500") {
     logger.error({ message: `Simulated server error for testing scenario: ${testScenario}` });
     hmrcResponse.ok = false;

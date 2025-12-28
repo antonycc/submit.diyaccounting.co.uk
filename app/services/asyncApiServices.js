@@ -39,7 +39,6 @@ export async function initiateProcessing({
   maxWaitMs = 25000,
 }) {
   if (tableName) {
-    // try {
     logger.info({ message: "Marking request as processing in DynamoDB", userId, requestId, tableName });
     // await putAsyncRequest(userId, requestId, "processing", null, tableName);
     // Non-awaited async method so we don't wait on the DynamoDB put
@@ -47,9 +46,6 @@ export async function initiateProcessing({
     putAsyncRequest(userId, requestId, "processing", null, tableName).catch((error) => {
       logger.error({ message: "Error storing processing request", error: error.message, requestId, tableName });
     });
-    // } catch (error) {
-    //  logger.error({ message: "Error storing processing request", error: error.message, requestId, tableName });
-    // }
   }
 
   // Synchronous path: wait time header is large or no async tracking table is configured

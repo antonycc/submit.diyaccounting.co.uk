@@ -215,34 +215,6 @@ public class SelfDestructStack extends Stack {
                         .build());
         this.selfDestructFunction = bundleDeleteLambda.lambda;
 
-        //        this.selfDestructFunction = Function.Builder.create(this, props.resourceNamePrefix() +
-        // "-SelfDestructFunction")
-        //                .functionName(functionName)
-        //                .runtime(Runtime.NODEJS_20_X)
-        //                .handler("app/functions/infra/selfDestruct.handler")
-        //                .code(Code.fromAsset(
-        //                        "./",
-        //                        AssetOptions.builder()
-        //                                .assetHashType(AssetHashType.SOURCE)
-        //                                .ignoreMode(IgnoreMode.GLOB)
-        //                                .exclude(List.of(
-        //                                        ".git/**",
-        //                                        "cdk.out/**",
-        //                                        "cdk-submit-application.out/**",
-        //                                        "cdk-submit-environment.out/**",
-        //                                        "target/**",
-        //                                        ".idea/**"
-        //                                ))
-        //                                .build()
-        //                ))
-        //                .timeout(Duration.minutes(15)) // Allow time for stack deletions
-        //                .memorySize(256) // Reduced memory for Node.js runtime
-        //                .role(this.functionRole)
-        //                .environment(environment)
-        //                .tracing(Tracing.ACTIVE)
-        //                .logGroup(logGroup)
-        //                .build();
-
         // Create EventBridge rule to trigger self-destruct every delayHours starting at a specific instant.
         // Suggested type for selfDestructStartDatetime: java.time.ZonedDateTime (ensure it is defined earlier).
 
