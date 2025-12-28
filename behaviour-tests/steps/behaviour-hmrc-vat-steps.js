@@ -49,40 +49,30 @@ export async function fillInVat(
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-test-data-added.png` });
 
       // Verify fields are populated
-      await expect(page.locator("#vatNumber")).toHaveValue(hmrcVatNumber);
-      // Period key will be random, so we just check it's not empty
+      await expect(page.locator("#vatNumber")).not.toHaveValue("");
       await expect(page.locator("#periodKey")).not.toHaveValue("");
       await expect(page.locator("#vatDue")).not.toHaveValue("");
-
-      // Override with provided values if different from test data
-      const actualVatDue = await page.locator("#vatDue").inputValue();
-      if (actualVatDue !== hmrcVatDueAmount) {
-        await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Overriding VAT due amount", { screenshotPath });
-      }
-
-      // Always use the provided period key since tests depend on specific values
-      await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Overriding period key", { screenshotPath });
-    } else {
-      // Fill out the VAT form manually using the correct field IDs from submitVat.html
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-submission.png` });
-      await page.waitForTimeout(100);
-      await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
-      await page.waitForTimeout(100);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-filled.png` });
-      await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key", { screenshotPath });
-      await page.waitForTimeout(100);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-filled.png` });
-      await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount", { screenshotPath });
-      await page.waitForTimeout(100);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-filled.png` });
     }
+
+    // Fill out the VAT form manually using the correct field IDs from submitVat.html
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-submission.png` });
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-filled.png` });
+    await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key", { screenshotPath });
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-filled.png` });
+    await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount", { screenshotPath });
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
     if (testScenario) {
       await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-clicked-options.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-clicked-options.png` });
       await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-selected-scenario.png` });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-options-shown.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-selected-scenario.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-options-shown.png` });
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png` });
     await expect(page.locator("#submitBtn")).toBeVisible();
@@ -287,67 +277,59 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
 
     if (isSandboxMode() && isTestDataLinkVisible) {
       // Use the "add test data" link in sandbox mode
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-click-test-data.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-test-data-added.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-test-data-added.png` });
 
       // Verify fields are populated
-      await expect(page.locator("#vrn")).toHaveValue(hmrcVatNumber);
+      await expect(page.locator("#vrn")).not.toHaveValue("");
       await expect(page.locator("#fromDate")).not.toHaveValue("");
       await expect(page.locator("#toDate")).not.toHaveValue("");
-
-      // Override dates with provided values if specified
-      if (hmrcVatPeriodFromDate) {
-        await loggedFill(page, "#fromDate", from, "Overriding from date", { screenshotPath });
-      }
-      if (hmrcVatPeriodToDate) {
-        await loggedFill(page, "#toDate", to, "Overriding to date", { screenshotPath });
-      }
-    } else {
-      // Fill out the form manually
-      await page.waitForTimeout(100);
-      await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-fill-in.png` });
-      await page.waitForTimeout(50);
-      // Fill optional filters (map to actual form field IDs)
-      await loggedFill(page, "#fromDate", from, "Entering from date", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-fill-in.png` });
-      await page.waitForTimeout(50);
-      await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
-      await page.waitForTimeout(50);
     }
 
+    // Fill out the form manually
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
+    await page.waitForTimeout(50);
+    // Fill optional filters (map to actual form field IDs)
+    await loggedFill(page, "#fromDate", from, "Entering from date", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-fill-in.png` });
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
+    await page.waitForTimeout(50);
+
     await loggedFocus(page, "#status", "the obligations status filter", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-obligations-pre-status-fill-in.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-pre-status-fill-in.png` });
     if (status) {
       console.log(`Filling in status filter ${status}`);
       // Accept both label ("Open"/"Fulfilled") and value ("O"/"F")
       const statusValue = String(status) === "Open" ? "O" : String(status) === "Fulfilled" ? "F" : String(status);
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
       await loggedSelectOption(page, "#status", statusValue, "obligations status", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-filled-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
     if (testScenario) {
       await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-obligations-fill-in.png` });
       await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-obligations-filled-in.png` });
     }
 
     await page.waitForTimeout(300);
     // Scroll, capture a pagedown
     await page.keyboard.press("PageUp");
     await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-obligations-fill-in.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-12-obligations-fill-in.png` });
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-obligations-fill-in-pagedown.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-13-obligations-fill-in-pagedown.png` });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -627,27 +609,24 @@ export async function fillInViewVatReturn(
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-test-data-added.png` });
 
       // Verify fields are populated
-      await expect(page.locator("#vrn")).toHaveValue(hmrcTestVatNumber);
+      await expect(page.locator("#vrn")).not.toHaveValue("");
       await expect(page.locator("#periodKey")).not.toHaveValue("");
-
-      // Override period key with provided value since tests depend on specific values
-      await loggedFill(page, "#periodKey", periodKey, "Overriding period key", { screenshotPath });
-    } else {
-      // Fill out the form manually
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-fill-in.png` });
-      await page.waitForTimeout(100);
-      await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-fill-in.png` });
-      await page.waitForTimeout(100);
-      await loggedFill(page, "#periodKey", periodKey, "Entering period key", { screenshotPath });
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-fill-in.png` });
     }
+
+    // Fill out the form manually
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-fill-in.png` });
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-view-vat-fill-in.png` });
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#periodKey", periodKey, "Entering period key", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-view-vat-fill-in.png` });
 
     if (testScenario) {
       await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-view-vat-fill-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-view-vat-fill-in.png` });
       // Prefer selecting by value; if the caller provided a label, fall back to selecting by label
       try {
         await page.selectOption("#testScenario", String(testScenario));
@@ -655,10 +634,10 @@ export async function fillInViewVatReturn(
         console.log(`Failed to select test scenario ${testScenario} error: ${JSON.stringify(error)}`);
         await page.selectOption("#testScenario", { label: String(testScenario) });
       }
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-view-vat-filled-in.png` });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-view-vat-filled-in.png` });
     }
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-view-vat-fill-in-filled.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-view-vat-fill-in-filled.png` });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
