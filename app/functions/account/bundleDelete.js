@@ -6,7 +6,6 @@ import {
   extractRequest,
   parseRequestBody,
   http200OkResponse,
-  http400BadRequestResponse,
   http401UnauthorizedResponse,
   http404NotFoundResponse,
   http500ServerErrorResponse,
@@ -14,8 +13,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles, updateUserBundles } from "../../services/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
+import { updateUserBundles } from "../../services/bundleManagement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { v4 as uuidv4 } from "uuid";

@@ -5,7 +5,7 @@ import { createLogger, context } from "../lib/logger.js";
 import { BundleEntitlementError } from "./bundleManagement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
-import { getHmrcErrorMessage, extractHmrcErrorCode, maskSensitiveHeaders } from "../lib/hmrcValidation.js";
+import { getHmrcErrorMessage, extractHmrcErrorCode } from "../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 

@@ -25,11 +25,6 @@ async function getDynamoDbDocClient() {
   return __dynamoDbDocClient;
 }
 
-function getTableName() {
-  const tableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
-  return tableName || "";
-}
-
 /**
  * Store an async request state in DynamoDB
  * @param {string} userId - The user ID

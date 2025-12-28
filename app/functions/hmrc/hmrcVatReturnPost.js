@@ -23,7 +23,7 @@ import {
   hmrcHttpPost,
   validateFraudPreventionHeaders,
 } from "../../services/hmrcApi.js";
-import { isValidVrn, isValidPeriodKey, maskSensitiveHeaders } from "../../lib/hmrcValidation.js";
+import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 

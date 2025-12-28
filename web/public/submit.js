@@ -777,8 +777,9 @@ async function fetchWithIdToken(input, init = {}) {
       try {
         const parsedUrl = new URL(urlPath, window.location.origin);
         urlPath = parsedUrl.pathname + parsedUrl.search;
-      } catch (e) {
+      } catch (error) {
         // Fallback to original urlPath if URL parsing fails
+        console.error(`Failed to parse URL for async request: ${urlPath}. Using original URL. Error: ${JSON.stringify(error)}`);
       }
       const requestDesc = `[${method} ${urlPath}]`;
 
