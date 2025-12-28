@@ -86,12 +86,10 @@ mockTokenPostApiEndpoint(app);
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
-// hmrcAuthUrlGetApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
-// hmrcReceiptPostApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 hmrcHttpProxyEndpoint(app);
 

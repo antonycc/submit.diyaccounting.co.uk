@@ -231,18 +231,15 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     expect(submitBody).toHaveProperty("receipt");
     expect(submitBody.receipt).toHaveProperty("formBundleNumber");
     expect(submitBody.receipt).toHaveProperty("processingDate");
+    expect(submitBody).toHaveProperty("receiptId");
 
     const formBundleNumber = submitBody.receipt.formBundleNumber;
-
-    const postBody = {
-      receipt: submitBody.receipt,
-      key: formBundleNumber,
-    };
+    const receiptId = submitBody.receiptId;
 
     const receiptGetEvent = buildLambdaEvent({
       method: "GET",
-      path: `/api/v1/hmrc/receipt/${postBody.key.split("/").pop()}`,
-      pathParameters: { name: postBody.key.split("/").pop() },
+      path: `/api/v1/hmrc/receipt/${receiptId}.json`,
+      pathParameters: { name: `${receiptId}.json` },
       headers: { Authorization: `Bearer ${testToken}` },
       authorizer: {
         authorizer: {

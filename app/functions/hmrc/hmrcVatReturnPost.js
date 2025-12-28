@@ -181,9 +181,10 @@ export async function handler(event) {
 
   // After obtaining `receipt` and userSub but before returning the response
   const formBundleNumber = receipt?.formBundleNumber ?? receipt?.formBundle;
+  let receiptId;
   if (userSub && formBundleNumber) {
     const timestamp = new Date().toISOString();
-    const receiptId = `${timestamp}-${formBundleNumber}`;
+    receiptId = `${timestamp}-${formBundleNumber}`;
     await putReceipt(userSub, receiptId, receipt);
   }
 
@@ -193,6 +194,7 @@ export async function handler(event) {
     headers: { ...responseHeaders },
     data: {
       receipt,
+      receiptId,
     },
   });
 }

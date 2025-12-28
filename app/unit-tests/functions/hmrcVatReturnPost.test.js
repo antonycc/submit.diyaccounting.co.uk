@@ -183,6 +183,7 @@ describe("hmrcVatReturnPost handler", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body).toHaveProperty("receipt");
+    expect(body).toHaveProperty("receiptId");
 
     // Verify receipt was persisted to DynamoDB
     const lib = await import("@aws-sdk/lib-dynamodb");
