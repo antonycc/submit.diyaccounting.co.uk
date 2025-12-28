@@ -129,11 +129,13 @@ export async function handler(event) {
     //   logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
     // } else {
     // Not found: Initiate processing
+
+    // TODO: Call retrieveUserBundles directly
+    // result = await retrieveUserBundles(userId, requestId);
     const processor = async ({ userId, requestId }) => {
       const bundles = await retrieveUserBundles(userId, requestId);
       return { bundles };
     };
-
     result = await asyncApiServices.initiateProcessing({
       processor,
       userId,
