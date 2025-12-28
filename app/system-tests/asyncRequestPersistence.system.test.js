@@ -46,15 +46,16 @@ describe("System: async request persistence with dynalite", () => {
   });
 
   it("stores pending request state for async processing", async () => {
-    const { handler } = await import("@app/functions/account/bundleGet.js");
+    const { handler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-async-user");
     const requestId = "async-test-request-1";
 
     const event = buildLambdaEvent({
-      method: "GET",
+      method: "POST",
       path: "/api/v1/bundle",
       requestId: requestId,
       authorizer: buildAuthorizerContext("test-async-user"),
+      body: { bundleId: "test" },
       headers: {
         "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
@@ -64,34 +65,35 @@ describe("System: async request persistence with dynalite", () => {
 
     const res = await handler(event);
 
-    // Should return 202 for async processing, or 200 if it completed very quickly
-    expect([200, 202]).toContain(res.statusCode);
+    // Should return 202 for async processing, or 201 if it completed very quickly
+    expect([201, 202]).toContain(res.statusCode);
 
     if (res.statusCode === 202) {
       const body = JSON.parse(res.body);
       expect(body.message).toBe("Request accepted for processing");
     } else {
       const body = JSON.parse(res.body);
-      expect(Array.isArray(body.bundles)).toBe(true);
+      expect(body.status).toBeDefined();
     }
 
     // Verify request was stored in DynamoDB
     const { getAsyncRequest } = await import("@app/data/dynamoDbAsyncRequestRepository.js");
     const storedRequest = await getAsyncRequest("test-async-user", requestId);
     expect(storedRequest).not.toBeNull();
-    expect(["pending", "completed"]).toContain(storedRequest.status);
+    expect(["processing", "pending", "completed"]).toContain(storedRequest.status);
   });
 
   it("retrieves completed request from persistence after waiting", async () => {
-    const { handler } = await import("@app/functions/account/bundleGet.js");
+    const { handler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-async-user");
     const requestId = "async-test-request-2";
 
     const event = buildLambdaEvent({
-      method: "GET",
+      method: "POST",
       path: "/api/v1/bundle",
       requestId: requestId,
       authorizer: buildAuthorizerContext("test-async-user"),
+      body: { bundleId: "test" },
       headers: {
         "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
@@ -101,12 +103,12 @@ describe("System: async request persistence with dynalite", () => {
 
     const res = await handler(event);
 
-    // Should either return 200 with bundles or 202 if still processing
-    expect([200, 202]).toContain(res.statusCode);
+    // Should either return 201 with success or 202 if still processing
+    expect([201, 202]).toContain(res.statusCode);
 
-    if (res.statusCode === 200) {
+    if (res.statusCode === 201) {
       const body = JSON.parse(res.body);
-      expect(Array.isArray(body.bundles)).toBe(true);
+      expect(body.status).toBeDefined();
     }
 
     // Verify request was stored in DynamoDB
@@ -116,14 +118,16 @@ describe("System: async request persistence with dynalite", () => {
   });
 
   it("returns synchronous response when wait time header is large", async () => {
-    const { handler } = await import("@app/functions/account/bundleGet.js");
+    const { handler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-async-user");
     const requestId = "sync-test-request-1";
 
     const event = buildLambdaEvent({
-      method: "GET",
+      method: "POST",
       path: "/api/v1/bundle",
       requestId: requestId,
+      authorizer: buildAuthorizerContext("test-async-user"),
+      body: { bundleId: "test" },
       headers: {
         "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
@@ -133,51 +137,27 @@ describe("System: async request persistence with dynalite", () => {
 
     const res = await handler(event);
 
-    // Should return 200 immediately for synchronous processing
-    expect(res.statusCode).toBe(200);
+    // Should return 201 immediately for synchronous processing
+    expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
-    expect(Array.isArray(body.bundles)).toBe(true);
-    expect(body.bundles.length).toBeGreaterThanOrEqual(0);
+    expect(body.status).toBeDefined();
   });
 
-  // it("returns 202 Accepted by default when no wait header is provided", async () => {
-  //   const { handler } = await import("@app/functions/account/bundleGet.js");
-  //   const token = makeIdToken("test-async-user");
-  //   const requestId = "default-async-test-request";
-  //
-  //   const event = buildLambdaEvent({
-  //     method: "GET",
-  //     path: "/api/v1/bundle",
-  //     requestId: requestId,
-  //     headers: {
-  //       "Authorization": `Bearer ${token}`,
-  //       "x-request-id": requestId,
-  //     },
-  //   });
-  //
-  //   const res = await handler(event);
-  //
-  //   // Should return 202 by default (0ms wait)
-  //   expect(res.statusCode).toBe(200);
-  //   const body = JSON.parse(res.body);
-  //   expect(body.message).toBe("Request accepted for processing");
-  // });
-
-  it("stores completed bundles in async request state", async () => {
-    const { retrieveUserBundles } = await import("@app/functions/account/bundleGet.js");
+  it("stores completed bundle grant in async request state", async () => {
+    const { grantBundle } = await import("@app/functions/account/bundlePost.js");
     const requestId = "retrieve-test-request-1";
 
-    // Call retrieveUserBundles directly with requestId
-    const bundles = await retrieveUserBundles("test-async-user", requestId);
-    expect(Array.isArray(bundles)).toBe(true);
+    // Call grantBundle directly with requestId
+    const decodedToken = { sub: "test-async-user" };
+    const result = await grantBundle("test-async-user", { bundleId: "guest" }, decodedToken, requestId);
+    expect(result.statusCode).toBe(201);
 
     // Verify the result was stored
     const { getAsyncRequest } = await import("@app/data/dynamoDbAsyncRequestRepository.js");
     const storedRequest = await getAsyncRequest("test-async-user", requestId);
     expect(storedRequest).not.toBeNull();
     expect(storedRequest.status).toBe("completed");
-    expect(storedRequest.data).toHaveProperty("bundles");
-    expect(Array.isArray(storedRequest.data.bundles)).toBe(true);
+    expect(storedRequest.data).toHaveProperty("status");
   });
 
   it("handles missing async requests table gracefully", async () => {
@@ -186,12 +166,13 @@ describe("System: async request persistence with dynalite", () => {
     delete process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
 
     try {
-      const { handler } = await import("@app/functions/account/bundleGet.js");
+      const { handler } = await import("@app/functions/account/bundlePost.js");
       const token = makeIdToken("test-async-user");
 
       const event = buildLambdaEvent({
-        method: "GET",
+        method: "POST",
         path: "/api/v1/bundle",
+        body: { bundleId: "test" },
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -200,7 +181,7 @@ describe("System: async request persistence with dynalite", () => {
       const res = await handler(event);
 
       // Should still work without async table (synchronous mode)
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(201);
     } finally {
       // Restore the table name
       process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = originalTableName;

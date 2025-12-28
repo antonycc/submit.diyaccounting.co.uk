@@ -116,6 +116,8 @@
       </div>
     </footer>
 
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../submit.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
@@ -123,8 +125,14 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
-    <script src="../../widgets/loading-spinner.js"></script>
     <script>
+      (async function() {
+        try {
+          await window.loadEnv();
+        } catch (err) {
+          console.warn("Failed to load environment:", err);
+        }
+      })();
       // Global variables
       let returnData = null;
 
@@ -297,8 +305,16 @@
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
             // Get OAuth URL with read-only scope
-            const authResponse = await getAuthUrl(state, "hmrc", "read:vat");
-            const authResponseUrl = authResponse.authUrl;
+            let authResponseUrl;
+            if (window.__env && window.authUrlBuilder) {
+              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, "read:vat", hmrcAccount || "live");
+              console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
+            } else {
+              // Get OAuth URL from API (fallback)
+              const authResponse = await getAuthUrl(state, "hmrc", "read:vat");
+              authResponseUrl = authResponse.authUrl;
+              console.log("Using server-side HMRC Auth URL:", authResponseUrl);
+            }
 
             showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 

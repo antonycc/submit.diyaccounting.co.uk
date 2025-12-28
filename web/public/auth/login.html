@@ -77,6 +77,8 @@
       </div>
     </footer>
 
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
     <script src="../submit.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
@@ -87,6 +89,14 @@
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
     <script>
+      (async function() {
+        try {
+          await window.loadEnv();
+        } catch (err) {
+          console.warn("Failed to load environment:", err);
+        }
+      })();
+
       // Login with Google or Antonycc OIDC via Cognito
       async function loginWithCognito() {
         console.log("Initiating login with Google or Antonycc OIDC via Cognito");
@@ -103,9 +113,16 @@
         const state = Math.random().toString(36).substring(2, 15);
         localStorage.setItem("authState", state);
 
-        // Get OAuth URL
-        const authResponse = await getAuthUrl(state, "cognito");
-        const authResponseUrl = authResponse.authUrl;
+        let authResponseUrl;
+        if (window.__env && window.authUrlBuilder) {
+          authResponseUrl = window.authUrlBuilder.buildCognitoAuthUrl(state);
+          console.log("Using client-side generated Cognito Auth URL:", authResponseUrl);
+        } else {
+          // Get OAuth URL from API (fallback)
+          const authResponse = await getAuthUrl(state, "cognito");
+          authResponseUrl = authResponse.authUrl;
+          console.log("Using server-side Cognito Auth URL:", authResponseUrl);
+        }
 
         console.log("Redirecting to Antonycc via Cognito OAuth URL");
         try {

@@ -127,8 +127,8 @@ public class AccountStack extends Stack {
 
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
+                //.with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
         var getBundlesAsyncLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()

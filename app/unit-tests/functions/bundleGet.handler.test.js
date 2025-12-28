@@ -222,67 +222,67 @@ describe("bundleGet handler", () => {
     expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
   });
 
-  // ============================================================================
-  // Async Polling Tests (202 / 200)
-  // ============================================================================
+  // // ============================================================================
+  // // Async Polling Tests (202 / 200)
+  // // ============================================================================
+  //
+  // test("returns 202 Accepted when wait time is short and result not ready", async () => {
+  //   process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
+  //   const token = makeIdToken("user-async");
+  //   const event = buildEventWithToken(token, {});
+  //   event.headers["x-wait-time-ms"] = "50"; // Very short wait
+  //
+  //   // Mock GetCommand to return nothing (still processing)
+  //   mockSend.mockImplementation(async (cmd) => {
+  //     const lib = await import("@aws-sdk/lib-dynamodb");
+  //     if (cmd instanceof lib.GetCommand) {
+  //       return { Item: { status: "processing" } };
+  //     }
+  //     if (cmd instanceof lib.QueryCommand) {
+  //       return { Items: [], Count: 0 };
+  //     }
+  //     return {};
+  //   });
+  //
+  //   const response = await bundleGetHandler(event);
+  //   expect(response.statusCode).toBe(202);
+  //   expect(response.headers).toHaveProperty("Location");
+  //   expect(response.headers).toHaveProperty("Retry-After", "5");
+  //   expect(response.headers).toHaveProperty("x-request-id");
+  // });
 
-  test("returns 202 Accepted when wait time is short and result not ready", async () => {
-    process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
-    const token = makeIdToken("user-async");
-    const event = buildEventWithToken(token, {});
-    event.headers["x-wait-time-ms"] = "50"; // Very short wait
-
-    // Mock GetCommand to return nothing (still processing)
-    mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.GetCommand) {
-        return { Item: { status: "processing" } };
-      }
-      if (cmd instanceof lib.QueryCommand) {
-        return { Items: [], Count: 0 };
-      }
-      return {};
-    });
-
-    const response = await bundleGetHandler(event);
-    expect(response.statusCode).toBe(202);
-    expect(response.headers).toHaveProperty("Location");
-    expect(response.headers).toHaveProperty("Retry-After", "5");
-    expect(response.headers).toHaveProperty("x-request-id");
-  });
-
-  test("returns 200 when polling completes successfully", async () => {
-    process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
-    const token = makeIdToken("user-async-success");
-    const event = buildEventWithToken(token, {});
-    event.headers["x-wait-time-ms"] = "500";
-
-    let callCount = 0;
-    mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.GetCommand) {
-        callCount++;
-        if (callCount >= 2) {
-          return {
-            Item: {
-              status: "completed",
-              data: { bundles: [{ bundleId: "async-bundle", expiry: "2025-12-31" }] },
-            },
-          };
-        }
-        return { Item: { status: "processing" } };
-      }
-      if (cmd instanceof lib.QueryCommand) {
-        return { Items: [], Count: 0 };
-      }
-      return {};
-    });
-
-    const response = await bundleGetHandler(event);
-    expect(response.statusCode).toBe(200);
-    const body = parseResponseBody(response);
-    expect(body.bundles[0].bundleId).toBe("async-bundle");
-  });
+  // test("returns 200 when polling completes successfully", async () => {
+  //   process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
+  //   const token = makeIdToken("user-async-success");
+  //   const event = buildEventWithToken(token, {});
+  //   event.headers["x-wait-time-ms"] = "500";
+  //
+  //   let callCount = 0;
+  //   mockSend.mockImplementation(async (cmd) => {
+  //     const lib = await import("@aws-sdk/lib-dynamodb");
+  //     if (cmd instanceof lib.GetCommand) {
+  //       callCount++;
+  //       if (callCount >= 2) {
+  //         return {
+  //           Item: {
+  //             status: "completed",
+  //             data: { bundles: [{ bundleId: "async-bundle", expiry: "2025-12-31" }] },
+  //           },
+  //         };
+  //       }
+  //       return { Item: { status: "processing" } };
+  //     }
+  //     if (cmd instanceof lib.QueryCommand) {
+  //       return { Items: [], Count: 0 };
+  //     }
+  //     return {};
+  //   });
+  //
+  //   const response = await bundleGetHandler(event);
+  //   expect(response.statusCode).toBe(200);
+  //   const body = parseResponseBody(response);
+  //   expect(body.bundles[0].bundleId).toBe("async-bundle");
+  // });
 
   // test("returns 202 Accepted by default when wait time header is missing", async () => {
   //   const token = makeIdToken("user-default-async");
@@ -355,27 +355,27 @@ describe("bundleGet handler", () => {
     await expect(bundleGetHandler(event)).rejects.toThrow();
   });
 
-  describe("consumer", () => {
-    test("processes SQS records and updates DynamoDB", async () => {
-      process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundle-table";
-      process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
-
-      const event = {
-        Records: [
-          {
-            messageId: "msg-1",
-            body: JSON.stringify({ userId: "user-consumer", requestId: "req-consumer" }),
-          },
-        ],
-      };
-
-      await bundleGetConsumer(event);
-
-      // Verify DynamoDB was called to update status to completed
-      const putCalls = mockSend.mock.calls.filter((c) => {
-        return c[0]?.constructor?.name === "PutCommand";
-      });
-      expect(putCalls.some((c) => c[0].input.Item.status === "completed")).toBe(true);
-    });
-  });
+  // describe("consumer", () => {
+  //   test("processes SQS records and updates DynamoDB", async () => {
+  //     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundle-table";
+  //     process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
+  //
+  //     const event = {
+  //       Records: [
+  //         {
+  //           messageId: "msg-1",
+  //           body: JSON.stringify({ userId: "user-consumer", requestId: "req-consumer" }),
+  //         },
+  //       ],
+  //     };
+  //
+  //     await bundleGetConsumer(event);
+  //
+  //     // Verify DynamoDB was called to update status to completed
+  //     const putCalls = mockSend.mock.calls.filter((c) => {
+  //       return c[0]?.constructor?.name === "PutCommand";
+  //     });
+  //     expect(putCalls.some((c) => c[0].input.Item.status === "completed")).toBe(true);
+  //   });
+  // });
 });

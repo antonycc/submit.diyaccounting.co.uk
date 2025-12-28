@@ -15,9 +15,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { enforceBundles } from "../../services/bundleManagement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
@@ -98,6 +96,194 @@ export function apiEndpoint(app) {
   });
 }
 /* v8 ignore stop */
+
+export async function handler(event) {
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
+
+  const { request, requestId: extractedRequestId } = extractRequest(event);
+  const requestId = extractedRequestId || uuidv4();
+  if (!extractedRequestId) {
+    context.set("requestId", requestId);
+  }
+
+  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  const asyncQueueUrl = process.env.SQS_QUEUE_URL;
+
+  // // Bundle enforcement
+  // try {
+  //   await enforceBundles(event);
+  // } catch (error) {
+  //   return http403ForbiddenFromBundleEnforcement(error, request);
+  // }
+
+  // If HEAD request, return 200 OK immediately after bundle enforcement
+  if (event?.requestContext?.http?.method === "HEAD") {
+    return http200OkResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      data: {},
+    });
+  }
+
+  logger.info({ message: "Processing bundle request" });
+
+  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+
+  // Decode JWT token to get user ID
+  let decodedToken;
+  try {
+    decodedToken = decodeJwtToken(event.headers);
+  } catch (error) {
+    return http401UnauthorizedResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Authentication required",
+      error: error.message,
+    });
+  }
+  const userId = decodedToken.sub;
+
+  const requestBody = parseRequestBody(event);
+  if (event.body && !requestBody) {
+    return {
+      statusCode: 400,
+      headers: { ...responseHeaders, "x-request-id": requestId, "x-correlationid": requestId },
+      body: JSON.stringify({ error: "Invalid JSON in request body" }),
+    };
+  }
+  if (!requestBody || !requestBody.bundleId) {
+    return {
+      statusCode: 400,
+      headers: { ...responseHeaders, "x-request-id": requestId, "x-correlationid": requestId },
+      body: JSON.stringify({ error: "Missing bundleId in request" }),
+    };
+  }
+
+  let result;
+  try {
+    const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
+
+    logger.info({ message: "Processing bundle request for user", userId, bundleId: requestBody.bundleId, requestId, waitTimeMs });
+
+    // Check if there is already a persisted request for this ID
+    const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+    let persistedRequest = null;
+    if (!isInitialRequest) {
+      persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
+    }
+
+    if (persistedRequest) {
+      logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
+    } else {
+      // Not found: Initiate processing
+      const processor = async ({ userId, requestBody, decodedToken, requestId }) => {
+        return await grantBundle(userId, requestBody, decodedToken, requestId);
+      };
+
+      result = await asyncApiServices.initiateProcessing({
+        processor,
+        userId,
+        requestId,
+        waitTimeMs,
+        payload: { userId, requestBody, decodedToken, requestId },
+        tableName: asyncTableName,
+        queueUrl: asyncQueueUrl,
+        maxWaitMs: MAX_WAIT_MS,
+      });
+    }
+
+    // If still no result (async path) and we have a wait time, poll for completion
+    if (!result && waitTimeMs > 0) {
+      result = await asyncApiServices.wait({ userId, requestId, waitTimeMs, tableName: asyncTableName });
+    }
+
+    // One last check before deciding whether to yield or return the final result
+    if (!result) {
+      result = await asyncApiServices.check({ userId, requestId, tableName: asyncTableName });
+    }
+  } catch (error) {
+    if (error instanceof asyncApiServices.RequestFailedError) {
+      result = error.data;
+    } else {
+      logger.error({ message: "Unexpected error granting bundle", error: error.message, stack: error.stack });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Internal server error",
+        error: error.message,
+      });
+    }
+  }
+
+  if (result?.status === "cap_reached" || result?.error === "cap_reached") {
+    return http403ForbiddenResponse({ request, headers: responseHeaders, message: "Bundle entitlement cap reached", error: result });
+  }
+
+  if (result?.status === "bundle_not_found" || result?.error === "bundle_not_found") {
+    return http404NotFoundResponse({ request, headers: responseHeaders, message: "Bundle not found in catalog", error: result });
+  }
+
+  if (result?.status === "unknown_qualifier" || result?.error === "unknown_qualifier") {
+    return http400BadRequestResponse({ request, headers: responseHeaders, message: "Unknown qualifier", error: result });
+  }
+
+  if (result?.status === "qualifier_mismatch" || result?.error === "qualifier_mismatch") {
+    return http400BadRequestResponse({ request, headers: responseHeaders, message: "Qualifier mismatch", error: result });
+  }
+
+  return asyncApiServices.respond({
+    request,
+    requestId,
+    responseHeaders,
+    data: result,
+  });
+}
+
+// SQS consumer Lambda handler function
+export async function consumer(event) {
+  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"]);
+
+  logger.info({ message: "SQS Consumer entry", recordCount: event.Records?.length });
+
+  for (const record of event.Records || []) {
+    let userId;
+    let requestId;
+    try {
+      const body = JSON.parse(record.body);
+      userId = body.userId;
+      requestId = body.requestId;
+      const { requestBody, decodedToken } = body.payload;
+
+      if (!userId || !requestId) {
+        logger.error({ message: "SQS Message missing userId or requestId", recordId: record.messageId, body });
+        continue;
+      }
+
+      if (!context.getStore()) {
+        context.enterWith(new Map());
+      }
+      context.set("requestId", requestId);
+      context.set("userId", userId);
+
+      logger.info({ message: "Processing SQS message", userId, requestId, messageId: record.messageId });
+
+      await grantBundle(userId, requestBody, decodedToken, requestId);
+
+      logger.info({ message: "Successfully processed SQS message", requestId });
+    } catch (error) {
+      logger.error({
+        message: "Error processing SQS message",
+        error: error.message,
+        stack: error.stack,
+        messageId: record.messageId,
+        userId,
+        requestId,
+      });
+      // Re-throw to trigger SQS retry/DLQ
+      throw error;
+    }
+  }
+}
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function grantBundle(userId, requestBody, decodedToken, requestId = null) {
@@ -231,190 +417,4 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   }
 
   return result;
-}
-
-export async function handler(event) {
-  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
-
-  const { request, requestId: extractedRequestId } = extractRequest(event);
-  const requestId = extractedRequestId || uuidv4();
-  if (!extractedRequestId) {
-    context.set("requestId", requestId);
-  }
-
-  const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
-
-  // // Bundle enforcement
-  // try {
-  //   await enforceBundles(event);
-  // } catch (error) {
-  //   return http403ForbiddenFromBundleEnforcement(error, request);
-  // }
-
-  // If HEAD request, return 200 OK immediately after bundle enforcement
-  if (event?.requestContext?.http?.method === "HEAD") {
-    return http200OkResponse({
-      request,
-      headers: { "Content-Type": "application/json" },
-      data: {},
-    });
-  }
-
-  logger.info({ message: "Processing bundle request" });
-
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
-
-  // Decode JWT token to get user ID
-  let decodedToken;
-  try {
-    decodedToken = decodeJwtToken(event.headers);
-  } catch (error) {
-    return http401UnauthorizedResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Authentication required",
-      error: error.message,
-    });
-  }
-  const userId = decodedToken.sub;
-
-  const requestBody = parseRequestBody(event);
-  if (event.body && !requestBody) {
-    return {
-      statusCode: 400,
-      headers: { ...responseHeaders, "x-request-id": requestId, "x-correlationid": requestId },
-      body: JSON.stringify({ error: "Invalid JSON in request body" }),
-    };
-  }
-  if (!requestBody || !requestBody.bundleId) {
-    return {
-      statusCode: 400,
-      headers: { ...responseHeaders, "x-request-id": requestId, "x-correlationid": requestId },
-      body: JSON.stringify({ error: "Missing bundleId in request" }),
-    };
-  }
-
-  let result;
-  try {
-    const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
-
-    logger.info({ message: "Processing bundle request for user", userId, bundleId: requestBody.bundleId, requestId, waitTimeMs });
-
-    // Check if there is already a persisted request for this ID
-    const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
-    let persistedRequest = null;
-    if (!isInitialRequest) {
-      persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
-    }
-
-    if (persistedRequest) {
-      logger.info({ message: "Persisted request found", status: persistedRequest.status, requestId });
-    } else {
-      // Not found: Initiate processing
-      const processor = async ({ userId, requestBody, decodedToken, requestId }) => {
-        return await grantBundle(userId, requestBody, decodedToken, requestId);
-      };
-
-      result = await asyncApiServices.initiateProcessing({
-        processor,
-        userId,
-        requestId,
-        waitTimeMs,
-        payload: { userId, requestBody, decodedToken, requestId },
-        tableName: asyncTableName,
-        maxWaitMs: MAX_WAIT_MS,
-      });
-    }
-
-    // If still no result (async path) and we have a wait time, poll for completion
-    if (!result && waitTimeMs > 0) {
-      result = await asyncApiServices.wait({ userId, requestId, waitTimeMs, tableName: asyncTableName });
-    }
-
-    // One last check before deciding whether to yield or return the final result
-    if (!result) {
-      result = await asyncApiServices.check({ userId, requestId, tableName: asyncTableName });
-    }
-  } catch (error) {
-    if (error instanceof asyncApiServices.RequestFailedError) {
-      result = error.data;
-    } else {
-      logger.error({ message: "Unexpected error granting bundle", error: error.message, stack: error.stack });
-      return http500ServerErrorResponse({
-        request,
-        headers: { ...responseHeaders },
-        message: "Internal server error",
-        error: error.message,
-      });
-    }
-  }
-
-  if (result?.status === "cap_reached" || result?.error === "cap_reached") {
-    return http403ForbiddenResponse({ request, headers: responseHeaders, message: "Bundle entitlement cap reached", error: result });
-  }
-
-  if (result?.status === "bundle_not_found" || result?.error === "bundle_not_found") {
-    return http404NotFoundResponse({ request, headers: responseHeaders, message: "Bundle not found in catalog", error: result });
-  }
-
-  if (result?.status === "unknown_qualifier" || result?.error === "unknown_qualifier") {
-    return http400BadRequestResponse({ request, headers: responseHeaders, message: "Unknown qualifier", error: result });
-  }
-
-  if (result?.status === "qualifier_mismatch" || result?.error === "qualifier_mismatch") {
-    return http400BadRequestResponse({ request, headers: responseHeaders, message: "Qualifier mismatch", error: result });
-  }
-
-  return asyncApiServices.respond({
-    request,
-    requestId,
-    responseHeaders,
-    data: result,
-  });
-}
-
-// SQS consumer Lambda handler function
-export async function consumer(event) {
-  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"]);
-
-  logger.info({ message: "SQS Consumer entry", recordCount: event.Records?.length });
-
-  for (const record of event.Records || []) {
-    let userId;
-    let requestId;
-    try {
-      const body = JSON.parse(record.body);
-      userId = body.userId;
-      requestId = body.requestId;
-      const { requestBody, decodedToken } = body.payload;
-
-      if (!userId || !requestId) {
-        logger.error({ message: "SQS Message missing userId or requestId", recordId: record.messageId, body });
-        continue;
-      }
-
-      if (!context.getStore()) {
-        context.enterWith(new Map());
-      }
-      context.set("requestId", requestId);
-      context.set("userId", userId);
-
-      logger.info({ message: "Processing SQS message", userId, requestId, messageId: record.messageId });
-
-      await grantBundle(userId, requestBody, decodedToken, requestId);
-
-      logger.info({ message: "Successfully processed SQS message", requestId });
-    } catch (error) {
-      logger.error({
-        message: "Error processing SQS message",
-        error: error.message,
-        stack: error.stack,
-        messageId: record.messageId,
-        userId,
-        requestId,
-      });
-      // Re-throw to trigger SQS retry/DLQ
-      throw error;
-    }
-  }
 }

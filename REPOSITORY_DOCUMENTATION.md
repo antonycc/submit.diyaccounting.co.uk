@@ -978,40 +978,64 @@ Deployed by `SubmitApplication.java` using `cdk-application/cdk.json`:
    └── Destroy Previous Deployment (if prod and successful)
    ```
 
+### API Execution Patterns
+
+The application follows a multi-pattern API strategy to achieve near-zero idle cost and predictable client behaviour.
+
+#### 1. Static Content
+Pre-computed responses or configuration files published as static assets.
+- **Characteristics**: No Lambda invocation, No DynamoDB, Browser + CloudFront caching.
+- **Example**: `.env` configuration file for client-side auth URL generation.
+
+#### 2. Cache-Aside Read
+Runtime-generated responses that complete within a single request and are safe to cache client-side.
+- **Characteristics**: Lambda executes inline, no SQS, persistent client-side cache (IndexedDB).
+- **Example**: `GET /api/v1/bundle` (Account Bundles).
+
+#### 3. Async Polling
+Client initiates work and polls until a terminal result is available.
+- **Characteristics**: Initial HTTP 202, SQS consumer performs work, result persisted to DynamoDB request-state table.
+- **Example**: HMRC VAT Return POST, VAT Obligations GET.
+
+#### 4. Fire-and-Forget Write
+Client initiates a mutation and does **not** wait for server completion.
+- **Characteristics**: Returns HTTP 202, SQS consumer performs work, optimistic client-side update.
+- **Example**: `POST /api/v1/bundle`, `DELETE /api/v1/bundle`.
+
 ### Lambda Function Details
 
 All Lambda functions run Node.js 22 from Docker images stored in ECR.
 
 #### Auth Functions
 
-| Function | Path | Handler | Purpose |
-|----------|------|---------|---------|
-| `cognitoAuthUrlGet` | `/auth/cognito/authurl` | `app/functions/auth/cognitoAuthUrlGet.js` | Generate Cognito OAuth authorization URL |
-| `cognitoTokenPost` | `/auth/cognito/token` | `app/functions/auth/cognitoTokenPost.js` | Exchange auth code for Cognito tokens |
-| `mockAuthUrlGet` | `/auth/mock/authurl` | `app/functions/non-lambda-mocks/mockAuthUrlGet.js` | Mock OAuth auth URL (testing) |
-| `mockTokenPost` | `/auth/mock/token` | `app/functions/non-lambda-mocks/mockTokenPost.js` | Mock OAuth token (testing) |
-| `customAuthorizer` | (API Gateway authorizer) | `app/functions/auth/customAuthorizer.js` | JWT validation for protected routes |
+| Function | Path | Handler | Purpose | Pattern |
+|----------|------|---------|---------|---------|
+| `cognitoAuthUrlGet` | `/api/v1/cognito/authUrl` | `app/functions/auth/cognitoAuthUrlGet.js` | Legacy/Fallback Cognito URL generation | Cache-Aside Read |
+| `cognitoTokenPost` | `/api/v1/cognito/token` | `app/functions/auth/cognitoTokenPost.js` | Exchange auth code for Cognito tokens | Cache-Aside Read |
+| `mockAuthUrlGet` | `/api/v1/mock/authUrl` | `app/functions/non-lambda-mocks/mockAuthUrlGet.js` | Mock OAuth auth URL (testing) | Cache-Aside Read |
+| `mockTokenPost` | `/api/v1/mock/token` | `app/functions/non-lambda-mocks/mockTokenPost.js` | Mock OAuth token (testing) | Cache-Aside Read |
+| `customAuthorizer` | (API Gateway authorizer) | `app/functions/auth/customAuthorizer.js` | JWT validation for protected routes | Internal |
 
 #### HMRC Functions
 
-| Function | Path | Handler | Purpose |
-|----------|------|---------|---------|
-| `hmrcAuthUrlGet` | `/hmrc/authurl` | `app/functions/hmrc/hmrcAuthUrlGet.js` | Generate HMRC OAuth URL |
-| `hmrcTokenPost` | `/hmrc/token` | `app/functions/hmrc/hmrcTokenPost.js` | Exchange code for HMRC access token |
-| `hmrcVatObligationGet` | `/hmrc/vat/obligations` | `app/functions/hmrc/hmrcVatObligationGet.js` | Retrieve VAT obligations from HMRC |
-| `hmrcVatReturnGet` | `/hmrc/vat/returns` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data |
-| `hmrcVatReturnPost` | `/hmrc/vat/returns` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC |
-| `hmrcReceiptGet` | `/hmrc/receipts` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB |
-| `hmrcReceiptPost` | `/hmrc/receipts` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt in DynamoDB |
-| `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker |
+| Function | Path | Handler | Purpose | Pattern |
+|----------|------|---------|---------|---------|
+| `hmrcAuthUrlGet` | `/api/v1/hmrc/authUrl` | `app/functions/hmrc/hmrcAuthUrlGet.js` | Legacy/Fallback HMRC OAuth URL | Cache-Aside Read |
+| `hmrcTokenPost` | `/api/v1/hmrc/token` | `app/functions/hmrc/hmrcTokenPost.js` | Exchange code for HMRC access token | Cache-Aside Read |
+| `hmrcVatObligationGet` | `/api/v1/hmrc/vat/obligation` | `app/functions/hmrc/hmrcVatObligationGet.js` | Retrieve VAT obligations from HMRC | Async Polling |
+| `hmrcVatReturnGet` | `/api/v1/hmrc/vat/return/{periodKey}` | `app/functions/hmrc/hmrcVatReturnGet.js` | Retrieve VAT return data | Async Polling |
+| `hmrcVatReturnPost` | `/api/v1/hmrc/vat/return` | `app/functions/hmrc/hmrcVatReturnPost.js` | Submit VAT return to HMRC | Async Polling |
+| `hmrcReceiptGet` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptGet.js` | Retrieve receipt from DynamoDB | Cache-Aside Read |
+| `hmrcReceiptPost` | `/api/v1/hmrc/receipt` | `app/functions/hmrc/hmrcReceiptPost.js` | Store HMRC receipt in DynamoDB | Cache-Aside Read |
+| `hmrcHttpProxy` | `/proxy/hmrc-api/*` | `app/functions/infra/hmrcHttpProxy.js` | HTTP proxy with rate limiting and circuit breaker | Internal |
 
 #### Account Functions
 
-| Function | Path | Handler | Purpose |
-|----------|------|---------|---------|
-| `bundleGet` | `/account/bundles` | `app/functions/account/bundleGet.js` | Get user's bundles from DynamoDB |
-| `bundlePost` | `/account/bundles` | `app/functions/account/bundlePost.js` | Create/update bundle in DynamoDB |
-| `bundleDelete` | `/account/bundles` | `app/functions/account/bundleDelete.js` | Delete bundle from DynamoDB |
+| Function | Path | Handler | Purpose | Pattern |
+|----------|------|---------|---------|---------|
+| `bundleGet` | `/api/v1/bundle` | `app/functions/account/bundleGet.js` | Get user's bundles | Cache-Aside Read |
+| `bundlePost` | `/api/v1/bundle` | `app/functions/account/bundlePost.js` | Grant bundle to user | Fire-and-Forget |
+| `bundleDelete` | `/api/v1/bundle` | `app/functions/account/bundleDelete.js` | Delete bundle | Fire-and-Forget |
 
 #### Infrastructure Functions
 

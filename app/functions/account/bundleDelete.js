@@ -90,6 +90,7 @@ export async function handler(event) {
   }
 
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+  const asyncQueueUrl = process.env.SQS_QUEUE_URL;
 
   // // Bundle enforcement
   // // TODO: Remove these check when operating on bundles
@@ -160,6 +161,7 @@ export async function handler(event) {
         waitTimeMs,
         payload: { userId, bundleToRemove, removeAll, requestId },
         tableName: asyncTableName,
+        queueUrl: asyncQueueUrl,
         maxWaitMs: MAX_WAIT_MS,
       });
     }
