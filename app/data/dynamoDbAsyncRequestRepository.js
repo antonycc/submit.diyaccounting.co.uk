@@ -19,7 +19,11 @@ async function getDynamoDbDocClient() {
       region: process.env.AWS_REGION || "eu-west-2",
       ...(endpoint ? { endpoint } : {}),
     });
-    __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client);
+    __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client, {
+      marshallOptions: {
+        removeUndefinedValues: true,
+      },
+    });
     __dynamoEndpointUsed = endpoint || "";
   }
   return __dynamoDbDocClient;

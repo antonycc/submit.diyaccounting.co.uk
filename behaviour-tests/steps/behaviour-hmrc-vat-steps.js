@@ -85,14 +85,10 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a submission error message for sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
-      await page.waitForLoadState("networkidle");
-      // Wait a little for status update to render
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
-      await expect(statusContainer).toBeVisible();
-      const statusText = (await statusContainer.innerText()).toLowerCase();
-      expect(statusText).toMatch(/failed|error/);
+      // Increase timeout and wait for terminal status (failed or error)
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 95000 });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
   } else {
@@ -192,14 +188,10 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a submission error message for sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
-      await page.waitForLoadState("networkidle");
-      // Wait a little for status update to render
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
-      await expect(statusContainer).toBeVisible();
-      const statusText = (await statusContainer.innerText()).toLowerCase();
-      expect(statusText).toMatch(/failed|error/);
+      // Increase timeout and wait for terminal status (failed or error)
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 95000 });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
   } else {

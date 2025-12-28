@@ -1,5 +1,11 @@
 // behaviour-tests/helpers/behaviour-helpers.js
-import { startDynamoDB, ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } from "@app/bin/dynamodb.js";
+import {
+  startDynamoDB,
+  ensureBundleTableExists,
+  ensureHmrcApiRequestsTableExists,
+  ensureReceiptsTableExists,
+  ensureAsyncRequestsTableExists,
+} from "@app/bin/dynamodb.js";
 import { startNgrok, extractDomainFromUrl } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
@@ -79,6 +85,18 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     await ensureBundleTableExists(bundlesTable, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTable, endpoint);
     await ensureReceiptsTableExists(receiptsTable, endpoint);
+
+    const asyncTable = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
+    if (asyncTable) await ensureAsyncRequestsTableExists(asyncTable, endpoint);
+
+    const bundlePostAsyncTable = process.env.BUNDLE_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (bundlePostAsyncTable) await ensureAsyncRequestsTableExists(bundlePostAsyncTable, endpoint);
+
+    const bundleDeleteAsyncTable = process.env.BUNDLE_DELETE_ASYNC_REQUESTS_TABLE_NAME;
+    if (bundleDeleteAsyncTable) await ensureAsyncRequestsTableExists(bundleDeleteAsyncTable, endpoint);
+
+    const hmrcVatReturnPostAsyncTable = process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatReturnPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatReturnPostAsyncTable, endpoint);
   } else {
     logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
   }
@@ -98,6 +116,10 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
       },
       stdio: ["pipe", "pipe", "pipe"],
     });
+
+    serverProcess.stdout.on("data", (data) => logger.info(`[http-stdout]: ${data.toString().trim()}`));
+    serverProcess.stderr.on("data", (data) => logger.error(`[http-stderr]: ${data.toString().trim()}`));
+
     await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000, undefined, "http");
   } else {
     logger.info("[http]: Skipping server process as runTestServer is not set to 'run'");

@@ -256,24 +256,29 @@ describe("fetchWithIdToken fire-and-forget", () => {
     vi.clearAllMocks();
   });
 
-  it("skips polling when x-wait-time-ms header is '0'", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 202,
-      headers: new Headers({ "x-request-id": "no-poll-id" }),
-    });
+  it("polls when x-wait-time-ms header is '0' (no longer skips polling)", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockImplementation(async () => ({
+      status: fetchMock.mock.calls.length === 1 ? 202 : 200,
+      headers: new Headers({ "x-request-id": "poll-id" }),
+      json: () => Promise.resolve({}),
+    }));
 
     global.fetch = fetchMock;
     global.window.fetch = fetchMock;
 
-    const response = await window.fetchWithIdToken("/api/v1/bundle", {
+    const promise = window.fetchWithIdToken("/api/v1/bundle", {
       method: "POST",
       headers: { "x-wait-time-ms": "0" },
       body: JSON.stringify({ bundleId: "test-bundle" }),
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(response.status).toBe(202);
-    expect(logSpy).not.toHaveBeenCalledWith(expect.stringMatching(/waiting async request/));
+    await vi.advanceTimersByTimeAsync(1000);
+
+    const response = await promise;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(response.status).toBe(200);
+    vi.useRealTimers();
   });
 
   it("skips polling when fireAndForget option is true", async () => {

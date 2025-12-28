@@ -78,9 +78,23 @@ export async function initiateProcessing({
     } else {
       logger.info({ message: "Starting async processing locally (no SQS queue URL)", userId, requestId });
       // Fire and forget for local development fallback
-      processor(payload).catch((error) => {
-        logger.error({ message: "Unhandled error in local async processing", error: error.message, userId, requestId });
-      });
+      processor(payload)
+        .then((result) => {
+          logger.info({ message: "Local async processing completed successfully", requestId });
+          if (tableName) {
+            complete({ asyncRequestsTableName: tableName, requestId, userSub: userId, result }).catch((error) => {
+              logger.error({ message: "Error updating status after local async success", error: error.message, requestId });
+            });
+          }
+        })
+        .catch((err) => {
+          logger.error({ message: "Unhandled error in local async processing", error: err.message, userId, requestId });
+          if (tableName) {
+            error({ asyncRequestsTableName: tableName, requestId, userSub: userId, error: err }).catch((dbError) => {
+              logger.error({ message: "Error updating status after local async error", error: dbError.message, requestId });
+            });
+          }
+        });
     }
   } catch (error) {
     logger.error({ message: "Error in async processing initiation", error: error.message, userId, requestId });

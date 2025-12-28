@@ -319,10 +319,13 @@ function generateRandomState() {
         // Always send traceparent for backend calls
         headerObject["traceparent"] = getOrCreateTraceparent();
 
-        // Generate a fresh x-request-id, unless a redirect flow ID is present
-        let requestId = nextRedirectRequestId();
-        if (!requestId) requestId = generateRequestId();
-        headerObject["x-request-id"] = requestId;
+        // Generate a fresh x-request-id, unless one is already present or carried
+        const existingRid = headerObject["x-request-id"] || headerObject["X-Request-Id"];
+        if (!existingRid) {
+          let requestId = nextRedirectRequestId();
+          if (!requestId) requestId = generateRequestId();
+          headerObject["x-request-id"] = requestId;
+        }
       }
 
       const response = await originalFetch(input, { ...req, headers: headerObject });
@@ -768,8 +771,7 @@ window.authorizedFetch = authorizedFetch;
 
 // Helper for polling asynchronous requests (HTTP 202 Accepted)
 async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
-  const waitTime = currentHeaders.get("x-wait-time-ms");
-  if (waitTime === "0") return res;
+  if (init.fireAndForget) return res;
 
   // Remove the initial request signal for subsequent polls
   currentHeaders.delete("x-initial-request");

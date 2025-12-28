@@ -13,6 +13,7 @@ import {
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
+import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
@@ -180,89 +181,108 @@ export async function handler(event) {
   const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
   let persistedRequest = null;
   if (!isInitialRequest) {
-    persistedRequest = await asyncApiServices.check({ userId: userSub, requestId, tableName: asyncRequestsTableName });
+    persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
   }
 
   logger.info({ message: "Handler entry", waitTimeMs, requestId, isInitialRequest });
 
   let result = null;
-  if (persistedRequest) {
-    logger.info({ message: "Found persisted request", requestId, status: persistedRequest.status });
-    result = persistedRequest;
-  } else {
-    logger.info({ message: "Initiating new processing", requestId });
-    const processor = async (payload) => {
-      const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
-        payload.periodKey,
-        payload.numVatDue,
-        payload.vatNumber,
-        payload.hmrcAccount,
-        payload.hmrcAccessToken,
-        payload.govClientHeaders,
-        payload.userSub,
-        payload.govTestScenarioHeader,
-      );
+  try {
+    if (persistedRequest) {
+      logger.info({ message: "Found persisted request", requestId, status: persistedRequest.status });
+      if (persistedRequest.status === "completed") {
+        result = persistedRequest.data;
+      } else if (persistedRequest.status === "failed") {
+        throw new asyncApiServices.RequestFailedError(persistedRequest.data);
+      }
+      // If processing, result stays null and we skip initiation
+    } else {
+      logger.info({ message: "Initiating new processing", requestId });
+      const processor = async (payload) => {
+        const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
+          payload.periodKey,
+          payload.numVatDue,
+          payload.vatNumber,
+          payload.hmrcAccount,
+          payload.hmrcAccessToken,
+          payload.govClientHeaders,
+          payload.userSub,
+          payload.govTestScenarioHeader,
+        );
 
-      const serializableHmrcResponse = {
-        ok: hmrcResponse.ok,
-        status: hmrcResponse.status,
-        statusText: hmrcResponse.statusText,
-        headers: {},
-      };
-      if (hmrcResponse.headers) {
-        if (typeof hmrcResponse.headers.forEach === "function") {
-          hmrcResponse.headers.forEach((v, k) => {
-            serializableHmrcResponse.headers[k.toLowerCase()] = v;
-          });
-        } else {
-          Object.keys(hmrcResponse.headers).forEach((k) => {
-            serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
-          });
+        const serializableHmrcResponse = {
+          ok: hmrcResponse.ok,
+          status: hmrcResponse.status,
+          statusText: hmrcResponse.statusText,
+          headers: {},
+        };
+        if (hmrcResponse.headers) {
+          if (typeof hmrcResponse.headers.forEach === "function") {
+            hmrcResponse.headers.forEach((v, k) => {
+              serializableHmrcResponse.headers[k.toLowerCase()] = v;
+            });
+          } else {
+            Object.keys(hmrcResponse.headers).forEach((k) => {
+              serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
+            });
+          }
         }
-      }
 
-      const resultData = {
-        receipt,
-        hmrcResponse: serializableHmrcResponse,
-        hmrcResponseBody,
+        const resultData = {
+          receipt,
+          hmrcResponse: serializableHmrcResponse,
+          hmrcResponseBody,
+        };
+
+        if (!hmrcResponse.ok) {
+          return resultData;
+        }
+
+        const formBundleNumber = receipt?.formBundleNumber ?? receipt?.formBundle;
+        let receiptId;
+        if (payload.userSub && formBundleNumber) {
+          const timestamp = new Date().toISOString();
+          receiptId = `${timestamp}-${formBundleNumber}`;
+          await putReceipt(payload.userSub, receiptId, receipt);
+          resultData.receiptId = receiptId;
+        }
+
+        return resultData;
       };
 
-      if (!hmrcResponse.ok) {
-        return resultData;
-      }
+      result = await asyncApiServices.initiateProcessing({
+        processor,
+        userId: userSub,
+        requestId,
+        waitTimeMs,
+        payload,
+        tableName: asyncRequestsTableName,
+        queueUrl: sqsQueueUrl,
+        maxWaitMs: MAX_WAIT_MS,
+      });
+    }
 
-      const formBundleNumber = receipt?.formBundleNumber ?? receipt?.formBundle;
-      let receiptId;
-      if (payload.userSub && formBundleNumber) {
-        const timestamp = new Date().toISOString();
-        receiptId = `${timestamp}-${formBundleNumber}`;
-        await putReceipt(payload.userSub, receiptId, receipt);
-        resultData.receiptId = receiptId;
-      }
+    // If still no result (async path) and we have a wait time, poll for completion
+    if (!result && waitTimeMs > 0) {
+      result = await asyncApiServices.wait({ userId: userSub, requestId, waitTimeMs, tableName: asyncRequestsTableName });
+    }
 
-      return resultData;
-    };
-
-    result = await asyncApiServices.initiateProcessing({
-      processor,
-      userId: userSub,
-      requestId,
-      waitTimeMs,
-      payload,
-      tableName: asyncRequestsTableName,
-      queueUrl: sqsQueueUrl,
-      maxWaitMs: MAX_WAIT_MS,
-    });
-  }
-
-  // If still no result (async path) and we have a wait time, poll for completion
-  if (!result && waitTimeMs > 0) {
-    result = await asyncApiServices.wait({ userId: userSub, requestId, waitTimeMs, tableName: asyncRequestsTableName });
-  }
-
-  // One last check before deciding whether to yield or return the final result
-  if (!result) {
-    result = await asyncApiServices.check({ userId: userSub, requestId, tableName: asyncRequestsTableName });
+    // One last check before deciding whether to yield or return the final result
+    if (!result) {
+      result = await asyncApiServices.check({ userId: userSub, requestId, tableName: asyncRequestsTableName });
+    }
+  } catch (error) {
+    if (error instanceof asyncApiServices.RequestFailedError) {
+      result = error.data;
+    } else {
+      logger.error({ message: "Unexpected error during VAT submission", error: error.message, stack: error.stack });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Internal server error",
+        error: error.message,
+      });
+    }
   }
 
   if (result && result.hmrcResponse && !result.hmrcResponse.ok) {
@@ -355,6 +375,12 @@ export async function consumer(event) {
       };
 
       if (!hmrcResponse.ok) {
+        // Distinguish retryable errors (e.g. 429, 503, 504)
+        const isRetryable = [429, 503, 504].includes(hmrcResponse.status);
+        if (isRetryable) {
+          throw new Error(`HMRC temporary error ${hmrcResponse.status}: ${JSON.stringify(hmrcResponseBody)}`);
+        }
+
         await asyncApiServices.complete({
           asyncRequestsTableName,
           requestId,
@@ -382,8 +408,15 @@ export async function consumer(event) {
 
       logger.info({ message: "Successfully processed SQS message", requestId });
     } catch (error) {
+      const isRetryable = isRetryableError(error);
+
+      if (isRetryable) {
+        logger.warn({ message: "Transient error in consumer, re-throwing for SQS retry", error: error.message, requestId });
+        throw error;
+      }
+
       logger.error({
-        message: "Error processing SQS message",
+        message: "Terminal error processing SQS message",
         error: error.message,
         stack: error.stack,
         messageId: record.messageId,
@@ -398,10 +431,31 @@ export async function consumer(event) {
           error,
         });
       }
-      // Re-throw to trigger SQS retry for transient errors
-      throw error;
+      // Do not re-throw terminal errors to avoid infinite SQS retry loops
     }
   }
+}
+
+/**
+ * Determine if an error is retryable (transient) or terminal.
+ * @param {Error} error
+ * @returns {boolean}
+ */
+function isRetryableError(error) {
+  // Explicitly marked retryable HMRC errors
+  if (error.message?.includes("HMRC temporary error")) return true;
+
+  // Fetch timeout
+  if (error.name === "AbortError") return true;
+
+  // Standard Node.js network errors
+  const retryableCodes = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "ESOCKETTIMEDOUT", "ECONNREFUSED", "EHOSTUNREACH"];
+  if (error.code && retryableCodes.includes(error.code)) return true;
+
+  // DynamoDB throughput or other transient AWS errors might have retryable: true
+  if (error.retryable) return true;
+
+  return false;
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
