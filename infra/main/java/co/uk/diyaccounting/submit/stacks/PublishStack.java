@@ -225,6 +225,7 @@ public class PublishStack extends Stack {
                         "/prefetch/*",
                         "/tests/*",
                         "/widgets/*",
+                        "/.env",
                         "/about.html",
                         "/favicon.ico",
                         "/index.html",
