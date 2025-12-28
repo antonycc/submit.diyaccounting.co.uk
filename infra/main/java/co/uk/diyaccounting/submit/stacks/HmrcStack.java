@@ -7,6 +7,8 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
+import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
+import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
 import org.immutables.value.Value;
@@ -115,6 +117,18 @@ public class HmrcStack extends Stack {
                 "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcApiRequestsTableName);
 
+        // Lookup existing DynamoDB HMRC VAT Return POST async requests Table
+        ITable hmrcVatReturnPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatReturnPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB Receipts Table
+        ITable receiptsTable = Table.fromTableName(
+                this,
+                "ImportedReceiptsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().receiptsTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -220,16 +234,18 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
-        var submitVatLambdaUrlOrigin = new ApiLambda(
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME", hmrcVatReturnPostAsyncRequestsTable.getTableName());
+        var submitVatLambdaUrlOrigin = new AsyncApiLambda(
                 this,
-                ApiLambdaProps.builder()
+                AsyncApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
                         .handler(props.sharedNames().hmrcVatReturnPostLambdaHandler)
+                        .consumerHandler(props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().hmrcVatReturnPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
@@ -238,22 +254,30 @@ public class HmrcStack extends Stack {
                         .environment(submitVatLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
+
+        // Update API environment with SQS queue URL
+        submitVatLambdaEnv.put("SQS_QUEUE_URL", submitVatLambdaUrlOrigin.queue.getQueueUrl());
+
         this.hmrcVatReturnPostLambdaProps = submitVatLambdaUrlOrigin.apiProps;
         this.hmrcVatReturnPostLambda = submitVatLambdaUrlOrigin.lambda;
         this.hmrcVatReturnPostLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnPostLambdaProps);
         infof(
-                "Created Lambda %s for VAT submission with handler %s",
-                this.hmrcVatReturnPostLambda.getNode().getId(), props.sharedNames().hmrcVatReturnPostLambdaHandler);
+                "Created Async API Lambda %s for VAT submission with handler %s and consumer %s",
+                this.hmrcVatReturnPostLambda.getNode().getId(),
+                props.sharedNames().hmrcVatReturnPostLambdaHandler,
+                props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler);
 
-        // Grant the VAT submission Lambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadData(this.hmrcVatReturnPostLambda);
+        // Grant the VAT submission Lambda and its consumer permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            receiptsTable.grantWriteData(fn);
+            hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
+        });
         infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.hmrcVatReturnPostLambda.getFunctionName(), bundlesTable.getTableName());
-
-        // Allow the VAT submission Lambda to write HMRC API request audit records to DynamoDB
-        hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnPostLambda);
+                "Granted DynamoDB permissions to %s and its consumer",
+                this.hmrcVatReturnPostLambda.getFunctionName());
 
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
@@ -389,15 +413,8 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB permissions to %s for Bundles Table %s",
                 this.receiptGetLambda.getFunctionName(), bundlesTable.getTableName());
 
-        // Lookup existing DynamoDB Receipts Table
-        ITable receiptsTable = Table.fromTableName(
-                this,
-                "ImportedReceiptsTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().receiptsTableName);
-
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts DynamoDB
         // table
-        receiptsTable.grantWriteData(this.hmrcVatReturnPostLambda);
         receiptsTable.grantReadData(this.receiptGetLambda);
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());

@@ -274,8 +274,9 @@
           );
 
           // Display success
+          showStatus("VAT return processed", "success");
           displayReceipt(submitResponse);
-          hideStatus();
+          // hideStatus(); // Don't hide success status immediately
 
           // Reset current activity
           localStorage.removeItem("currentActivity");
@@ -306,6 +307,7 @@
         const requestHeaders = {
           "Authorization": `Bearer ${accessToken}`,
           "Content-Type": "application/json",
+          "x-wait-time-ms": "0",
           ...govClientHeaders,
         };
         if (testScenario) {

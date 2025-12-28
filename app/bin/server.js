@@ -121,6 +121,8 @@ if (__runDirect) {
         "RECEIPTS_DYNAMODB_TABLE_NAME",
         "BUNDLE_DYNAMODB_TABLE_NAME",
         "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+        "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
+        "SQS_QUEUE_URL",
       ]);
     } else {
       // In local/dev and behaviour tests, validate only essential vars

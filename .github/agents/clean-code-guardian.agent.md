@@ -39,6 +39,24 @@ Purpose: Enforce the project's high standards for code quality, maintainability,
 4. **Implement Focused Change**: Apply minimal, effective changes.
 5. **Verify Against Standards**: Check for silent failures and unnecessary formatting changes.
 6. **Execute Tests**: Run relevant tests using the standard repo commands.
+7. **Test**: Run the following test commands in sequence to check that the code works:
+```
+npm test
+./mvnw clean verify
+npm run test:submitVatBehaviour-proxy
+```
+If you need to capture the output of a test do it like this:
+```
+npm test > test.txt 2>&1
+./mvnw clean verify > mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+```
+And query for a subset of things that might be of interest fail|error with:
+```
+grep -i -n -A 20 -E 'fail|error' test.txt
+grep -i -n -A 20 -E 'fail|error' mvnw.txt
+grep -i -n -A 20 -E 'fail|error' behaviour.txt
+```
 
 ## Constraints
 

@@ -337,7 +337,7 @@ describe("bundlePost handler", () => {
   test("returns 202 Accepted for async initiation", async () => {
     const token = makeIdToken("user-async");
     const event = buildEventWithToken(token, { bundleId: "test" });
-    // Default waitTimeMs is 0
+    event.headers["x-wait-time-ms"] = "0";
 
     const response = await bundlePostHandler(event);
     expect(response.statusCode).toBe(202);

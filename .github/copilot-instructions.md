@@ -91,6 +91,25 @@ Do not run formatting tools on the whole repository or whole files unless the wh
 
 ### Testing Strategy
 
+**Test**: Run the following test commands in sequence to check that the code works:
+```
+npm test
+./mvnw clean verify
+npm run test:submitVatBehaviour-proxy
+```
+If you need to capture the output of a test do it like this:
+```
+npm test > test.txt 2>&1
+./mvnw clean verify > mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+```
+And query for a subset of things that might be of interest fail|error with:
+```
+grep -i -n -A 20 -E 'fail|error' test.txt
+grep -i -n -A 20 -E 'fail|error' mvnw.txt
+grep -i -n -A 20 -E 'fail|error' behaviour.txt
+```
+
 This repository uses a **four-tier testing pyramid**:
 
 1. **Unit Tests** (Vitest): Fast, isolated tests of individual functions/modules

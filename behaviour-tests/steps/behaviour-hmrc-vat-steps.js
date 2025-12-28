@@ -174,7 +174,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           }
         }
 
-        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 30000 });
+        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 95000 });
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
         await page.waitForTimeout(500);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
@@ -183,7 +183,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
         await page.waitForTimeout(200);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-complete-vat-pagedown.png` });
       },
-      { timeout: 40000 },
+      { timeout: 100000 },
     );
   }
 }

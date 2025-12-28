@@ -312,7 +312,7 @@ describe("bundleDelete handler", () => {
   test("returns 202 Accepted for async deletion initiation", async () => {
     const token = makeIdToken("user-async-delete");
     const event = buildEventWithToken(token, { bundleId: "test" });
-    // Default waitTimeMs is 0
+    event.headers["x-wait-time-ms"] = "0";
 
     const response = await bundleDeleteHandler(event);
     expect(response.statusCode).toBe(202);

@@ -38,6 +38,24 @@ Purpose: Manage the complex logic of user bundles, entitlements, and subscriptio
 3. **Trace Access Path**: Trace how a user's entitlements are checked when they access a specific URL path.
 4. **Implement Changes**: Update the TOML file or the underlying JavaScript logic that processes it.
 5. **Verify**: Run tests that specifically check bundle filtering and activity access (e.g., `web/browser-tests/bundles.filtering.browser.test.js`).
+6. **Test**: Run the following test commands in sequence to check that the code works:
+```
+npm test
+./mvnw clean verify
+npm run test:submitVatBehaviour-proxy
+```
+If you need to capture the output of a test do it like this:
+```
+npm test > test.txt 2>&1
+./mvnw clean verify > mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+```
+And query for a subset of things that might be of interest fail|error with:
+```
+grep -i -n -A 20 -E 'fail|error' test.txt
+grep -i -n -A 20 -E 'fail|error' mvnw.txt
+grep -i -n -A 20 -E 'fail|error' behaviour.txt
+```
 
 ## Constraints
 

@@ -56,7 +56,7 @@ export async function initiateProcessing({
 
   // Asynchronous path: start the process and return null immediately (to be followed by poll/wait)
   try {
-    if (queueUrl) {
+    if (queueUrl && queueUrl !== "none") {
       logger.info({ message: "Enqueuing async request to SQS", userId, requestId, queueUrl });
       const { SQSClient, SendMessageCommand } = await import("@aws-sdk/client-sqs");
       const endpoint = process.env.AWS_ENDPOINT_URL_SQS || process.env.AWS_ENDPOINT_URL;
@@ -222,4 +222,37 @@ export function respond({ request, requestId, responseHeaders, data, dataKey }) 
     message: "Request accepted for processing",
     location: locationUrl,
   });
+}
+
+/**
+ * Marks an asynchronous request as completed with a result.
+ *
+ * @param {Object} params - The parameters for completion.
+ * @param {string} params.asyncRequestsTableName - The DynamoDB table name.
+ * @param {string} params.requestId - The request ID.
+ * @param {string} params.userSub - The user sub (ID).
+ * @param {Object} params.result - The result data to store.
+ */
+export async function complete({ asyncRequestsTableName, requestId, userSub, result }) {
+  logger.info({ message: "Marking async request as completed", requestId, userSub, asyncRequestsTableName });
+  await putAsyncRequest(userSub, requestId, "completed", result, asyncRequestsTableName);
+}
+
+/**
+ * Marks an asynchronous request as failed with an error.
+ *
+ * @param {Object} params - The parameters for failure.
+ * @param {string} params.asyncRequestsTableName - The DynamoDB table name.
+ * @param {string} params.requestId - The request ID.
+ * @param {string} params.userSub - The user sub (ID).
+ * @param {Object} params.error - The error object or message.
+ */
+export async function error({ asyncRequestsTableName, requestId, userSub, error }) {
+  logger.info({ message: "Marking async request as failed", requestId, userSub, asyncRequestsTableName, error: error.message || error });
+  const errorData = {
+    message: error.message || error,
+    ...(error.statusCode ? { statusCode: error.statusCode } : {}),
+    ...(error.data ? { data: error.data } : {}),
+  };
+  await putAsyncRequest(userSub, requestId, "failed", errorData, asyncRequestsTableName);
 }

@@ -43,6 +43,25 @@ Purpose: Scan the repository for TODO/FIXME items, cluster them by related area 
    - JS/MD formatting: `npm run formatting-fix`.
    - ESLint: `npm run linting-fix`.
 
+6. **Test**: Run the following test commands in sequence to check that the code works:
+```
+npm test
+./mvnw clean verify
+npm run test:submitVatBehaviour-proxy
+```
+If you need to capture the output of a test do it like this:
+```
+npm test > test.txt 2>&1
+./mvnw clean verify > mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+```
+And query for a subset of things that might be of interest fail|error with:
+```
+grep -i -n -A 20 -E 'fail|error' test.txt
+grep -i -n -A 20 -E 'fail|error' mvnw.txt
+grep -i -n -A 20 -E 'fail|error' behaviour.txt
+```
+
 ## Constraints
 
 - Maintain backward compatibility unless explicitly improving a clearly internal, unused path.

@@ -71,6 +71,10 @@ All environment files should define these core variables:
 | `BUNDLE_DYNAMODB_TABLE_NAME` | DynamoDB table for bundles | `{env}-submit-bundles` |
 | `RECEIPTS_DYNAMODB_TABLE_NAME` | DynamoDB table for receipts | `{env}-submit-receipts` |
 | `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME` | DynamoDB table for API request logs | `{env}-submit-hmrc-api-requests` |
+| `ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for general async requests | `{env}-submit-async-requests` |
+| `BUNDLE_POST_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for bundle POST async requests | `{env}-submit-bundle-post-async-requests` |
+| `BUNDLE_DELETE_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for bundle DELETE async requests | `{env}-submit-bundle-delete-async-requests` |
+| `HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for HMRC VAT Return POST async requests | `{env}-submit-hmrc-vat-return-post-async-requests` |
 | `ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS` | CloudWatch log retention | `1` (CI), `28` (prod) |
 | `PROXY_RATE_LIMIT_PER_SECOND` | Rate limiting for proxy | `5` (CI), `10` (prod) |
 | `PROXY_BREAKER_ERROR_THRESHOLD` | Circuit breaker error threshold | `10` (CI), `15` (prod) |

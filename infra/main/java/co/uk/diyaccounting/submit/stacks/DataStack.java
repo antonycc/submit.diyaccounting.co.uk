@@ -23,6 +23,7 @@ public class DataStack extends Stack {
     public ITable asyncRequestsTable;
     public ITable bundlePostAsyncRequestsTable;
     public ITable bundleDeleteAsyncRequestsTable;
+    public ITable hmrcVatReturnPostAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
 
     @Value.Immutable
@@ -125,6 +126,13 @@ public class DataStack extends Stack {
         infof(
                 "Created bundle DELETE async requests DynamoDB table with name %s",
                 this.bundleDeleteAsyncRequestsTable.getTableName());
+        // Create DynamoDB table for HMRC VAT Return POST async request storage
+        this.hmrcVatReturnPostAsyncRequestsTable = createAsyncRequestsTable(
+                props.resourceNamePrefix() + "-HmrcVatReturnPostAsyncRequestsTable",
+                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName);
+        infof(
+                "Created HMRC VAT Return POST async requests DynamoDB table with name %s",
+                this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
 
         // Create DynamoDB table for HMRC API requests storage
         this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
@@ -152,6 +160,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
         cfnOutput(this, "AsyncRequestsTableName", this.asyncRequestsTable.getTableName());
         cfnOutput(this, "AsyncRequestsTableArn", this.asyncRequestsTable.getTableArn());
+        cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableName", this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
+        cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableArn", this.hmrcVatReturnPostAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
 

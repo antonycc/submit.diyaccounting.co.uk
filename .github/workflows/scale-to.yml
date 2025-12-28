@@ -48,9 +48,7 @@ on:
         default: ''
   #schedule:
     # Run every 2 hours to scale prod to zero concurrency
-    # Cron format: minute hour day month day-of-week
-    # This runs at :22 past every even hour (00:22, 02:22, 04:22, etc.)
-    #- cron: '22 */2 * * *'
+    #- cron: '12 */2 * * *'
 
 permissions:
   id-token: write

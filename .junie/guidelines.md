@@ -3,6 +3,25 @@ Instructions for Junie to follow:
 Orientate yourself with the repository using <repository root>/`REPOSITORY_DOCUMENTATION.md`
 
 Use the script section of <repository root>/`package.json` to find the test commands.
+Run the following test commands in sequence to check that the code works:
+```
+npm test
+./mvnw clean verify
+npm run test:submitVatBehaviour-proxy
+```
+If you need to capture the output of a test do it like this:
+```
+npm test > test.txt 2>&1
+./mvnw clean verify > mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+```
+And query for a subset of things that might be of interest fail|error with:
+```
+grep -i -n -A 20 -E 'fail|error' test.txt
+grep -i -n -A 20 -E 'fail|error' mvnw.txt
+grep -i -n -A 20 -E 'fail|error' behaviour.txt
+```
+
 The behaviour tests generate too much output for you to read, pipe it to a file.
 
 When considering running tests, first trace the code yourself in both the test
