@@ -49,12 +49,18 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class UpdateCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     PutCommand,
     QueryCommand,
     DeleteCommand,
     GetCommand,
+    UpdateCommand,
   };
 });
 
@@ -213,10 +219,10 @@ describe("hmrcVatReturnGet consumer", () => {
     await hmrcVatReturnGetConsumer(event);
 
     const lib = await import("@aws-sdk/lib-dynamodb");
-    const putCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.PutCommand);
-    expect(putCalls.length).toBeGreaterThan(0);
-    const completedCall = putCalls.find((call) => call[0].input.Item.status === "completed");
+    const updateCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.UpdateCommand);
+    expect(updateCalls.length).toBeGreaterThan(0);
+    const completedCall = updateCalls.find((call) => call[0].input.ExpressionAttributeValues[":status"] === "completed");
     expect(completedCall).toBeDefined();
-    expect(completedCall[0].input.Item.data.vatReturn).toEqual(vatReturn);
+    expect(completedCall[0].input.ExpressionAttributeValues[":data"].vatReturn).toEqual(vatReturn);
   });
 });

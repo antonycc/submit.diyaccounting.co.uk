@@ -11,6 +11,7 @@ import {
   MockQueryCommand,
   MockPutCommand,
   MockGetCommand,
+  MockUpdateCommand,
 } from "@app/test-helpers/dynamoDbMock.js";
 
 // ---------------------------------------------------------------------------
@@ -52,6 +53,9 @@ describe("hmrcVatReturnPost handler", () => {
         return { Items: [], Count: 0 };
       }
       if (cmd instanceof MockPutCommand) {
+        return {};
+      }
+      if (cmd instanceof MockUpdateCommand) {
         return {};
       }
       if (cmd instanceof MockGetCommand) {

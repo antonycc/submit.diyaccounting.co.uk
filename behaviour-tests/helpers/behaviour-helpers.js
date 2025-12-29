@@ -97,6 +97,12 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     const hmrcVatReturnPostAsyncTable = process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcVatReturnPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatReturnPostAsyncTable, endpoint);
+
+    const hmrcVatReturnGetAsyncTable = process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatReturnGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatReturnGetAsyncTable, endpoint);
+
+    const hmrcVatObligationGetAsyncTable = process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatObligationGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatObligationGetAsyncTable, endpoint);
   } else {
     logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
   }

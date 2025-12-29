@@ -54,28 +54,52 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     const docClient = await getDynamoDbDocClient();
 
     const now = new Date();
-    const item = {
-      hashedSub,
-      requestId,
-      status,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-
-    if (data) {
-      item.data = data;
-    }
+    const isoNow = now.toISOString();
 
     // Calculate TTL as 1 hour from now
     const ttlDate = new Date();
     ttlDate.setHours(now.getHours() + 1);
-    item.ttl = Math.floor(ttlDate.getTime() / 1000);
-    item.ttl_datestamp = ttlDate.toISOString();
+    const ttl = Math.floor(ttlDate.getTime() / 1000);
+    const ttlDatestamp = ttlDate.toISOString();
+
+    const expressionAttributeNames = {
+      "#status": "status",
+      "#updatedAt": "updatedAt",
+      "#ttl": "ttl",
+      "#ttl_datestamp": "ttl_datestamp",
+      "#createdAt": "createdAt",
+    };
+
+    const expressionAttributeValues = {
+      ":status": status,
+      ":updatedAt": isoNow,
+      ":ttl": ttl,
+      ":ttl_datestamp": ttlDatestamp,
+      ":createdAt": isoNow,
+    };
+
+    let updateExpression =
+      "SET #status = :status, #updatedAt = :updatedAt, #ttl = :ttl, #ttl_datestamp = :ttl_datestamp, #createdAt = if_not_exists(#createdAt, :createdAt)";
+
+    if (data) {
+      updateExpression += ", #data = :data";
+      expressionAttributeNames["#data"] = "data";
+      expressionAttributeValues[":data"] = data;
+    } else {
+      updateExpression += " REMOVE #data";
+      expressionAttributeNames["#data"] = "data";
+    }
 
     await docClient.send(
-      new __dynamoDbModule.PutCommand({
+      new __dynamoDbModule.UpdateCommand({
         TableName: actualTableName,
-        Item: item,
+        Key: {
+          hashedSub,
+          requestId,
+        },
+        UpdateExpression: updateExpression,
+        ExpressionAttributeNames: expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
       }),
     );
 

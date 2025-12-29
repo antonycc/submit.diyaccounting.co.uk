@@ -12,6 +12,7 @@ import {
   MockQueryCommand,
   MockPutCommand,
   MockGetCommand,
+  MockUpdateCommand,
 } from "@app/test-helpers/dynamoDbMock.js";
 
 // Helper to yield control back to the event loop
@@ -69,6 +70,21 @@ describe("bundlePost handler", () => {
         if (item.requestId) {
           asyncRequests.set(item.requestId, item);
         }
+        return {};
+      }
+      if (cmd instanceof MockUpdateCommand) {
+        const { requestId } = cmd.input.Key;
+        const existing = asyncRequests.get(requestId) || {};
+        const updated = { ...existing };
+        if (cmd.input.ExpressionAttributeValues[":status"]) {
+          updated.status = cmd.input.ExpressionAttributeValues[":status"];
+        }
+        if (cmd.input.ExpressionAttributeValues[":data"]) {
+          updated.data = cmd.input.ExpressionAttributeValues[":data"];
+        } else if (cmd.input.UpdateExpression.includes("REMOVE #data")) {
+          delete updated.data;
+        }
+        asyncRequests.set(requestId, updated);
         return {};
       }
       if (cmd instanceof MockGetCommand) {

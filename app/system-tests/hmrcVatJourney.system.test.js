@@ -107,16 +107,20 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
-    const asyncTable = "test-hmrc-vat-return-post-async-requests-table";
+    const asyncReturnPostTable = "test-hmrc-vat-return-post-async-requests-table";
+    const asyncReturnGetTable = "test-hmrc-vat-return-get-async-requests-table";
+    const asyncObligationGetTable = "test-hmrc-vat-obligation-get-async-requests-table";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
-    process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncTable;
+    process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncReturnPostTable;
 
     await ensureBundleTableExists(bundlesTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTableName, endpoint);
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
-    await ensureAsyncRequestsTableExists(asyncTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncReturnPostTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncReturnGetTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncObligationGetTable, endpoint);
 
     importedBundleManagement = await import("../services/bundleManagement.js");
 
