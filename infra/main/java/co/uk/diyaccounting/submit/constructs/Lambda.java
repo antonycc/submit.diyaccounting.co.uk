@@ -1,6 +1,7 @@
 package co.uk.diyaccounting.submit.constructs;
 
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
@@ -98,7 +99,13 @@ public class Lambda {
             Version.Builder.create(scope, props.idPrefix() + "-ingest-zero-version")
                 .lambda(this.lambda)
                 .description("Zero provisioned concurrency")
+                .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
+        // Lambda Version resources with: RemovalPolicy.RETAIN
+        //   Versions are immutable and cheap
+        //   Leaving an orphaned version is safe
+        //   Prevents stack delete deadlocks
+        //   AWS themselves recommend this for PC-heavy setups (quietly)
         this.ingestAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-ingest-zero-alias")
             .aliasName("zero")
             .version(this.ingestVersionZero)
@@ -110,6 +117,7 @@ public class Lambda {
             Version.Builder.create(scope, props.idPrefix() + "-ingest-ready-version")
                 .lambda(this.lambda)
                 .description("Ready provisioned concurrency")
+                .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.ingestAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-ingest-ready-alias")
             .aliasName("ready")
@@ -122,6 +130,7 @@ public class Lambda {
             Version.Builder.create(scope, props.idPrefix() + "-ingest-hot-version")
                 .lambda(this.lambda)
                 .description("Hot provisioned concurrency")
+                .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.ingestAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-ingest-hot-alias")
             .aliasName("hot")

@@ -1,5 +1,6 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.ecr.IRepository;
@@ -87,6 +88,7 @@ public class AsyncApiLambda extends ApiLambda {
             Version.Builder.create(scope, props.idPrefix() + "-worker-zero-version")
                 .lambda(this.lambda)
                 .description("Zero provisioned concurrency")
+                .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.workerAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-worker-zero-alias")
             .aliasName("zero")
@@ -99,6 +101,7 @@ public class AsyncApiLambda extends ApiLambda {
             Version.Builder.create(scope, props.idPrefix() + "-worker-version-ready")
                 .lambda(this.lambda)
                 .description("Ready provisioned concurrency")
+                .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.workerAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-worker-ready-alias")
             .aliasName("ready")
@@ -111,6 +114,7 @@ public class AsyncApiLambda extends ApiLambda {
             Version.Builder.create(scope, props.idPrefix() + "-worker-version-hot")
                 .lambda(this.lambda)
                 .description("Hot provisioned concurrency")
+                .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.workerAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-worker-hot-alias")
             .aliasName("hot")
