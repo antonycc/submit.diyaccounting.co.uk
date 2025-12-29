@@ -128,6 +128,10 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   if (!merged["x-correlationid"]) {
     merged["x-correlationid"] = context.get("correlationId") || merged["x-request-id"];
   }
+
+  // Ensure client can read correlation and polling headers
+  merged["Access-Control-Expose-Headers"] = "x-request-id,x-correlationid,Location,Retry-After";
+
   const response = {
     statusCode: statusCode,
     headers: {
@@ -152,7 +156,8 @@ export function extractRequest(event) {
     context.enterWith(new Map());
   }
   // Extract correlation headers and set context explicitly to avoid leakage across invocations
-  const requestId = event?.requestContext?.requestId || event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || null;
+  // PRIORITISE client-supplied headers over the AWS-generated requestId
+  const requestId = event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || event?.requestContext?.requestId || null;
   const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
   const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
   const correlationId = event?.headers?.["x-correlationid"] || event?.headers?.["X-CorrelationId"] || null;

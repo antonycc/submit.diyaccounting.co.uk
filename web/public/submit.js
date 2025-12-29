@@ -755,6 +755,14 @@ async function authorizedFetch(input, init = {}) {
   const at2 = localStorage.getItem("cognitoAccessToken");
   if (at2) headers2.set("X-Authorization", `Bearer ${at2}`);
   headers2.set("x-initial-request", "true");
+
+  // Carry over requestId if we had one from a previous 202 poll
+  const lastRequestId = headers.get("x-request-id");
+  if (lastRequestId) {
+    headers2.set("x-request-id", lastRequestId);
+    headers2.delete("x-initial-request");
+  }
+
   let second = await fetchWithId(input, { ...init, headers: headers2 });
 
   if (second.status === 202) {
