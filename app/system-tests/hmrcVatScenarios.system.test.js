@@ -47,16 +47,22 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
-    const asyncTable = "test-hmrc-vat-return-post-async-requests-table";
+    const asyncReturnPostTable = "test-hmrc-vat-return-post-async-requests-table";
+    const asyncReturnGetTable = "test-hmrc-vat-return-get-async-requests-table";
+    const asyncObligationGetTable = "test-hmrc-vat-obligation-get-async-requests-table";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundleTableName;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcApiRequestsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
-    process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncTable;
+    process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncReturnPostTable;
+    process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME = asyncReturnGetTable;
+    process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME = asyncObligationGetTable;
 
     await ensureBundleTableExists(bundleTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
-    await ensureAsyncRequestsTableExists(asyncTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncReturnPostTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncReturnGetTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncObligationGetTable, endpoint);
 
     bm = await import("../services/bundleManagement.js");
   });
@@ -161,7 +167,9 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: "Bearer test-hmrc-access-token",
+        "authorization": "Bearer test-hmrc-access-token",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -214,7 +222,9 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: "Bearer test-hmrc-access-token",
+        "authorization": "Bearer test-hmrc-access-token",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -263,7 +273,9 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: "Bearer test-hmrc-access-token",
+        "authorization": "Bearer test-hmrc-access-token",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -287,7 +299,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(Array.isArray(obligationBody.obligations)).toBe(true);
-  });
+  }, 32_000);
 
   it("should handle different test scenarios without Gov-Test-Scenario header", async () => {
     // Set up stub data
@@ -308,7 +320,9 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: "Bearer test-hmrc-access-token",
+        "authorization": "Bearer test-hmrc-access-token",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -329,7 +343,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const returnBody = parseResponseBody(returnResponse);
     expect(returnBody).toHaveProperty("periodKey", "24B1");
-  });
+  }, 32_000);
 
   it("should retrieve fulfilled obligations with status filter", async () => {
     // Set up stub data with fulfilled obligations
@@ -358,7 +372,9 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: "Bearer test-hmrc-access-token",
+        "authorization": "Bearer test-hmrc-access-token",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -380,5 +396,5 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(obligationBody.obligations[0]).toHaveProperty("status", "F");
-  });
+  }, 32_000);
 });

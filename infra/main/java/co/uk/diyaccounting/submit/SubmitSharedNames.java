@@ -73,6 +73,8 @@ public class SubmitSharedNames {
     public String bundlePostAsyncRequestsTableName;
     public String bundleDeleteAsyncRequestsTableName;
     public String hmrcVatReturnPostAsyncRequestsTableName;
+    public String hmrcVatReturnGetAsyncRequestsTableName;
+    public String hmrcVatObligationGetAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String holdingBucketName;
     public String originBucketName;
@@ -142,6 +144,7 @@ public class SubmitSharedNames {
     public boolean hmrcVatReturnPostLambdaCustomAuthorizer;
 
     public String hmrcVatObligationGetLambdaHandler;
+    public String hmrcVatObligationGetLambdaConsumerHandler;
     public String hmrcVatObligationGetLambdaFunctionName;
     public String hmrcVatObligationGetLambdaArn;
     public HttpMethod hmrcVatObligationGetLambdaHttpMethod;
@@ -150,6 +153,7 @@ public class SubmitSharedNames {
     public boolean hmrcVatObligationGetLambdaCustomAuthorizer;
 
     public String hmrcVatReturnGetLambdaHandler;
+    public String hmrcVatReturnGetLambdaConsumerHandler;
     public String hmrcVatReturnGetLambdaFunctionName;
     public String hmrcVatReturnGetLambdaArn;
     public HttpMethod hmrcVatReturnGetLambdaHttpMethod;
@@ -265,6 +269,8 @@ public class SubmitSharedNames {
         this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envDashedDomainName);
         this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envDashedDomainName);
         this.hmrcVatReturnPostAsyncRequestsTableName = "%s-hmrc-vat-return-post-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatReturnGetAsyncRequestsTableName = "%s-hmrc-vat-return-get-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatObligationGetAsyncRequestsTableName = "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryHoldingSourceName =
@@ -412,12 +418,15 @@ public class SubmitSharedNames {
         this.hmrcVatObligationGetLambdaJwtAuthorizer = false;
         this.hmrcVatObligationGetLambdaCustomAuthorizer = true;
         var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.handler";
+        var hmrcVatObligationGetLambdaConsumerHandlerName = "hmrcVatObligationGet.consumer";
         var hmrcVatObligationGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatObligationGetLambdaHandlerName);
         this.hmrcVatObligationGetLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatObligationGetLambdaHandlerDashed);
         this.hmrcVatObligationGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaHandlerName);
+        this.hmrcVatObligationGetLambdaConsumerHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaConsumerHandlerName);
         this.hmrcVatObligationGetLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatObligationGetLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
@@ -438,12 +447,15 @@ public class SubmitSharedNames {
         this.hmrcVatReturnGetLambdaJwtAuthorizer = false;
         this.hmrcVatReturnGetLambdaCustomAuthorizer = true;
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
+        var hmrcVatReturnGetLambdaConsumerHandlerName = "hmrcVatReturnGet.consumer";
         var hmrcVatReturnGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);
         this.hmrcVatReturnGetLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
         this.hmrcVatReturnGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
+        this.hmrcVatReturnGetLambdaConsumerHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaConsumerHandlerName);
         this.hmrcVatReturnGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.hmrcVatReturnGetLambdaHttpMethod,

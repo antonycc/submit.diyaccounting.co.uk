@@ -23,6 +23,8 @@ public class DataStack extends Stack {
     public ITable bundlePostAsyncRequestsTable;
     public ITable bundleDeleteAsyncRequestsTable;
     public ITable hmrcVatReturnPostAsyncRequestsTable;
+    public ITable hmrcVatReturnGetAsyncRequestsTable;
+    public ITable hmrcVatObligationGetAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
 
     @Value.Immutable
@@ -125,6 +127,22 @@ public class DataStack extends Stack {
                 "Created HMRC VAT Return POST async requests DynamoDB table with name %s",
                 this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
 
+        // Create DynamoDB table for HMRC VAT Return GET async request storage
+        this.hmrcVatReturnGetAsyncRequestsTable = createAsyncRequestsTable(
+                props.resourceNamePrefix() + "-HmrcVatReturnGetAsyncRequestsTable",
+                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName);
+        infof(
+                "Created HMRC VAT Return GET async requests DynamoDB table with name %s",
+                this.hmrcVatReturnGetAsyncRequestsTable.getTableName());
+
+        // Create DynamoDB table for HMRC VAT Obligation GET async request storage
+        this.hmrcVatObligationGetAsyncRequestsTable = createAsyncRequestsTable(
+                props.resourceNamePrefix() + "-HmrcVatObligationGetAsyncRequestsTable",
+                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
+        infof(
+                "Created HMRC VAT Obligation GET async requests DynamoDB table with name %s",
+                this.hmrcVatObligationGetAsyncRequestsTable.getTableName());
+
         // Create DynamoDB table for HMRC API requests storage
         this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
                 .tableName(props.sharedNames().hmrcApiRequestsTableName)
@@ -155,6 +173,10 @@ public class DataStack extends Stack {
         cfnOutput(this, "BundleDeleteAsyncRequestsTableArn", this.bundleDeleteAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableName", this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
         cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableArn", this.hmrcVatReturnPostAsyncRequestsTable.getTableArn());
+        cfnOutput(this, "HmrcVatReturnGetAsyncRequestsTableName", this.hmrcVatReturnGetAsyncRequestsTable.getTableName());
+        cfnOutput(this, "HmrcVatReturnGetAsyncRequestsTableArn", this.hmrcVatReturnGetAsyncRequestsTable.getTableArn());
+        cfnOutput(this, "HmrcVatObligationGetAsyncRequestsTableName", this.hmrcVatObligationGetAsyncRequestsTable.getTableName());
+        cfnOutput(this, "HmrcVatObligationGetAsyncRequestsTableArn", this.hmrcVatObligationGetAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
 

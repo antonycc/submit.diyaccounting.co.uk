@@ -811,7 +811,7 @@ async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
     const delay = 1000;
 
     if (typeof window !== "undefined" && window.showStatus) {
-      window.showStatus(`Still processing... (poll #${pollCount})`, "info");
+      window.showStatus(init.pollPendingMessage || `Still processing... (poll #${pollCount})`, "info");
     }
 
     await new Promise((resolve, reject) => {
@@ -839,6 +839,13 @@ async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
   }
 
   console.log(`finished async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, status: ${res.status})`);
+  if (typeof window !== "undefined" && window.showStatus) {
+    if (res.ok && init.pollSuccessMessage) {
+      window.showStatus(init.pollSuccessMessage, "success");
+    } else if (!res.ok && init.pollErrorMessage) {
+      window.showStatus(init.pollErrorMessage, "error");
+    }
+  }
   return res;
 }
 

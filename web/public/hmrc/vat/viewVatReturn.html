@@ -233,7 +233,13 @@
 
           const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${pendingRequest.periodKey}?${params}`, {
             method: "GET",
-            headers: requestHeaders,
+            headers: {
+              ...requestHeaders,
+              "x-wait-time-ms": "0",
+            },
+            pollPendingMessage: "Still processing...",
+            pollSuccessMessage: "VAT return retrieved.",
+            pollErrorMessage: "Failed to retrieve VAT return.",
           });
 
           const result = await response.json();
@@ -362,7 +368,13 @@
 
             const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
               method: "GET",
-              headers: requestHeaders,
+              headers: {
+                ...requestHeaders,
+                "x-wait-time-ms": "0",
+              },
+              pollPendingMessage: "Still processing...",
+              pollSuccessMessage: "VAT return retrieved.",
+              pollErrorMessage: "Failed to retrieve VAT return.",
             });
 
             const result = await response.json();

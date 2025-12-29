@@ -301,7 +301,13 @@
 
           const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
             method: "GET",
-            headers: requestHeaders,
+            headers: {
+              ...requestHeaders,
+              "x-wait-time-ms": "0",
+            },
+            pollPendingMessage: "Still processing...",
+            pollSuccessMessage: "VAT obligations retrieved.",
+            pollErrorMessage: "Failed to retrieve VAT obligations.",
           });
 
           const result = await response.json();
@@ -441,7 +447,13 @@
 
             const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
               method: "GET",
-              headers: requestHeaders,
+              headers: {
+                ...requestHeaders,
+                "x-wait-time-ms": "0",
+              },
+              pollPendingMessage: "Still processing...",
+              pollSuccessMessage: "VAT obligations retrieved.",
+              pollErrorMessage: "Failed to retrieve VAT obligations.",
             });
 
             const result = await response.json();

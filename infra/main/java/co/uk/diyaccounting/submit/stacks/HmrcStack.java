@@ -117,11 +117,23 @@ public class HmrcStack extends Stack {
                 "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcApiRequestsTableName);
 
-        // Lookup existing DynamoDB HMRC VAT Return POST async requests Table
+        // Lookup existing DynamoDB HMRC VAT Return POST async request table
         ITable hmrcVatReturnPostAsyncRequestsTable = Table.fromTableName(
                 this,
                 "ImportedHmrcVatReturnPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC VAT Return GET async request table
+        ITable hmrcVatReturnGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatReturnGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC VAT Obligation GET async request table
+        ITable hmrcVatObligationGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatObligationGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
 
         // Lookup existing DynamoDB Receipts Table
         ITable receiptsTable = Table.fromTableName(
@@ -285,16 +297,18 @@ public class HmrcStack extends Stack {
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
-        var hmrcVatObligationGetLambdaUrlOrigin = new ApiLambda(
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcVatObligationGetAsyncRequestsTable.getTableName());
+        var hmrcVatObligationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
-                ApiLambdaProps.builder()
+                AsyncApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
                         .handler(props.sharedNames().hmrcVatObligationGetLambdaHandler)
+                        .consumerHandler(props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().hmrcVatObligationGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
@@ -302,24 +316,31 @@ public class HmrcStack extends Stack {
                         .customAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaCustomAuthorizer)
                         .environment(vatObligationLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
+                        .consumerConcurrency(1) // Avoid HMRC throttling
                         .build());
+
+        // Update API environment with SQS queue URL
+        vatObligationLambdaEnv.put("SQS_QUEUE_URL", hmrcVatObligationGetLambdaUrlOrigin.queue.getQueueUrl());
+
         this.hmrcVatObligationGetLambdaProps = hmrcVatObligationGetLambdaUrlOrigin.apiProps;
         this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.lambda;
         this.hmrcVatObligationGetLambdaLogGroup = hmrcVatObligationGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatObligationGetLambdaProps);
         infof(
-                "Created Lambda %s for VAT obligations with handler %s",
+                "Created Async API Lambda %s for VAT obligations with handler %s and consumer %s",
                 this.hmrcVatObligationGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatObligationGetLambdaHandler);
+                props.sharedNames().hmrcVatObligationGetLambdaHandler,
+                props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler);
 
-        // Grant the VAT obligations Lambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadData(this.hmrcVatObligationGetLambda);
+        // Grant the VAT obligations Lambda and its consumer permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
+        });
         infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.hmrcVatObligationGetLambda.getFunctionName(), bundlesTable.getTableName());
-
-        // Allow the VAT obligations Lambda to write HMRC API request audit records to DynamoDB
-        hmrcApiRequestsTable.grantWriteData(this.hmrcVatObligationGetLambda);
+                "Granted DynamoDB permissions to %s and its consumer",
+                this.hmrcVatObligationGetLambda.getFunctionName());
 
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
@@ -327,16 +348,18 @@ public class HmrcStack extends Stack {
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
-        var hmrcVatReturnGetLambdaUrlOrigin = new ApiLambda(
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcVatReturnGetAsyncRequestsTable.getTableName());
+        var hmrcVatReturnGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
-                ApiLambdaProps.builder()
+                AsyncApiLambdaProps.builder()
                         .idPrefix(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
                         .handler(props.sharedNames().hmrcVatReturnGetLambdaHandler)
+                        .consumerHandler(props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler)
                         .lambdaArn(props.sharedNames().hmrcVatReturnGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
@@ -344,23 +367,31 @@ public class HmrcStack extends Stack {
                         .customAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaCustomAuthorizer)
                         .environment(vatReturnGetLambdaEnv)
                         .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
+                        .consumerConcurrency(1) // Avoid HMRC throttling
                         .build());
+
+        // Update API environment with SQS queue URL
+        vatReturnGetLambdaEnv.put("SQS_QUEUE_URL", hmrcVatReturnGetLambdaUrlOrigin.queue.getQueueUrl());
+
         this.hmrcVatReturnGetLambdaProps = hmrcVatReturnGetLambdaUrlOrigin.apiProps;
         this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.lambda;
         this.hmrcVatReturnGetLambdaLogGroup = hmrcVatReturnGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
         infof(
-                "Created Lambda %s for VAT return retrieval with handler %s",
-                this.hmrcVatReturnGetLambda.getNode().getId(), props.sharedNames().hmrcVatReturnGetLambdaHandler);
+                "Created Async API Lambda %s for VAT return retrieval with handler %s and consumer %s",
+                this.hmrcVatReturnGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatReturnGetLambdaHandler,
+                props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler);
 
-        // Grant the VAT return retrieval Lambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadData(this.hmrcVatReturnGetLambda);
+        // Grant the VAT return retrieval Lambda and its consumer permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
+        });
         infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.hmrcVatReturnGetLambda.getFunctionName(), bundlesTable.getTableName());
-
-        // Allow the VAT return retrieval Lambda to write HMRC API request audit records to DynamoDB
-        hmrcApiRequestsTable.grantWriteData(this.hmrcVatReturnGetLambda);
+                "Granted DynamoDB permissions to %s and its consumer",
+                this.hmrcVatReturnGetLambda.getFunctionName());
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
