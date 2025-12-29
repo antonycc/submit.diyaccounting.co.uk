@@ -75,12 +75,7 @@ on:
       - 'package.json'
       - 'pom.xml'
       - 'web/public/submit.catalogue.toml'
-      - 'lambda-concurrency-config.yaml'
-      - '.github/actions/get-names'
-      - '.github/actions/set-origins'
-      - '.github/actions/scale-lambda-concurrency'
       - '.github/workflows/deploy.yml'
-      - '.github/workflows/scale-to.yml'
   schedule:
     - cron: '11 4 * * *'
 
