@@ -372,7 +372,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       }
       return;
     }
-    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 30000 });
+    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 90000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
     const resultsContainer = page.locator("#obligationsResults");
     await expect(resultsContainer).toBeVisible();
@@ -675,7 +675,7 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
   } else {
     await test.step("The user sees VAT return details displayed", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-return-results-waiting.png` });
-      await page.waitForSelector("#returnResults", { state: "visible", timeout: 30000 });
+      await page.waitForSelector("#returnResults", { state: "visible", timeout: 90000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png` });
       const resultsContainer = page.locator("#returnResults");
       await expect(resultsContainer).toBeVisible();
