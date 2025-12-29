@@ -1,21 +1,22 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Template;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),
@@ -60,7 +61,7 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 2);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
-        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 6);
+        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 8);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 5);
