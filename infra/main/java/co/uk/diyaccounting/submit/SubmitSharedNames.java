@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -69,9 +70,11 @@ public class SubmitSharedNames {
 
     public String receiptsTableName;
     public String bundlesTableName;
-    public String asyncRequestsTableName;
     public String bundlePostAsyncRequestsTableName;
     public String bundleDeleteAsyncRequestsTableName;
+    public String hmrcVatReturnPostAsyncRequestsTableName;
+    public String hmrcVatReturnGetAsyncRequestsTableName;
+    public String hmrcVatObligationGetAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String holdingBucketName;
     public String originBucketName;
@@ -132,6 +135,7 @@ public class SubmitSharedNames {
     public boolean hmrcTokenPostLambdaCustomAuthorizer;
 
     public String hmrcVatReturnPostLambdaHandler;
+    public String hmrcVatReturnPostLambdaConsumerHandler;
     public String hmrcVatReturnPostLambdaFunctionName;
     public String hmrcVatReturnPostLambdaArn;
     public HttpMethod hmrcVatReturnPostLambdaHttpMethod;
@@ -140,6 +144,7 @@ public class SubmitSharedNames {
     public boolean hmrcVatReturnPostLambdaCustomAuthorizer;
 
     public String hmrcVatObligationGetLambdaHandler;
+    public String hmrcVatObligationGetLambdaConsumerHandler;
     public String hmrcVatObligationGetLambdaFunctionName;
     public String hmrcVatObligationGetLambdaArn;
     public HttpMethod hmrcVatObligationGetLambdaHttpMethod;
@@ -148,6 +153,7 @@ public class SubmitSharedNames {
     public boolean hmrcVatObligationGetLambdaCustomAuthorizer;
 
     public String hmrcVatReturnGetLambdaHandler;
+    public String hmrcVatReturnGetLambdaConsumerHandler;
     public String hmrcVatReturnGetLambdaFunctionName;
     public String hmrcVatReturnGetLambdaArn;
     public HttpMethod hmrcVatReturnGetLambdaHttpMethod;
@@ -260,9 +266,11 @@ public class SubmitSharedNames {
 
         this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
-        this.asyncRequestsTableName = "%s-async-requests".formatted(this.envDashedDomainName);
         this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envDashedDomainName);
         this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatReturnPostAsyncRequestsTableName = "%s-hmrc-vat-return-post-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatReturnGetAsyncRequestsTableName = "%s-hmrc-vat-return-get-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatObligationGetAsyncRequestsTableName = "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryHoldingSourceName =
@@ -387,12 +395,15 @@ public class SubmitSharedNames {
         this.hmrcVatReturnPostLambdaJwtAuthorizer = false;
         this.hmrcVatReturnPostLambdaCustomAuthorizer = true;
         var hmrcVatReturnPostLambdaHandlerName = "hmrcVatReturnPost.handler";
+        var hmrcVatReturnPostLambdaConsumerHandlerName = "hmrcVatReturnPost.consumer";
         var hmrcVatReturnPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnPostLambdaHandlerName);
         this.hmrcVatReturnPostLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnPostLambdaHandlerDashed);
         this.hmrcVatReturnPostLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaHandlerName);
+        this.hmrcVatReturnPostLambdaConsumerHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaConsumerHandlerName);
         this.hmrcVatReturnPostLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnPostLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.hmrcVatReturnPostLambdaHttpMethod,
@@ -407,12 +418,15 @@ public class SubmitSharedNames {
         this.hmrcVatObligationGetLambdaJwtAuthorizer = false;
         this.hmrcVatObligationGetLambdaCustomAuthorizer = true;
         var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.handler";
+        var hmrcVatObligationGetLambdaConsumerHandlerName = "hmrcVatObligationGet.consumer";
         var hmrcVatObligationGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatObligationGetLambdaHandlerName);
         this.hmrcVatObligationGetLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatObligationGetLambdaHandlerDashed);
         this.hmrcVatObligationGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaHandlerName);
+        this.hmrcVatObligationGetLambdaConsumerHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaConsumerHandlerName);
         this.hmrcVatObligationGetLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatObligationGetLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
@@ -433,12 +447,15 @@ public class SubmitSharedNames {
         this.hmrcVatReturnGetLambdaJwtAuthorizer = false;
         this.hmrcVatReturnGetLambdaCustomAuthorizer = true;
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
+        var hmrcVatReturnGetLambdaConsumerHandlerName = "hmrcVatReturnGet.consumer";
         var hmrcVatReturnGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);
         this.hmrcVatReturnGetLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
         this.hmrcVatReturnGetLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
+        this.hmrcVatReturnGetLambdaConsumerHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaConsumerHandlerName);
         this.hmrcVatReturnGetLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
         publishedApiLambdas.add(new PublishedLambda(
                 this.hmrcVatReturnGetLambdaHttpMethod,

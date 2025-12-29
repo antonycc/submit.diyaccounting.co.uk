@@ -43,6 +43,24 @@ Purpose: Provide deep expertise in integrating with HMRC's Making Tax Digital (M
 3. **Trace the Data Path**: Trace the data from the user input through to the final API request body, ensuring no loss of precision or incorrect mapping.
 4. **Implement/Fix**: Apply changes to `hmrcApi.js` or related files.
 5. **Verify**: Use `npm run test:unit` for unit-level verification and behavioral tests for end-to-end flow.
+6. **Test**: Run the following test commands in sequence to check that the code works:
+```
+npm test
+./mvnw clean verify
+npm run test:submitVatBehaviour-proxy
+```
+If you need to capture the output of a test do it like this:
+```
+npm test > test.txt 2>&1
+./mvnw clean verify > mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+```
+And query for a subset of things that might be of interest fail|error with:
+```
+grep -i -n -A 20 -E 'fail|error' test.txt
+grep -i -n -A 20 -E 'fail|error' mvnw.txt
+grep -i -n -A 20 -E 'fail|error' behaviour.txt
+```
 
 ## Constraints
 

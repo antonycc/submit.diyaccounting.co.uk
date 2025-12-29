@@ -2,7 +2,7 @@ name: synthetic-test
 run-name: "synthetic test of ${{ github.ref_name }}"
 concurrency:
   group: synthetic-test-${{ github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 # bump 00
 
@@ -27,6 +27,14 @@ on:
       - 'behaviour-tests/bundles.behaviour.test.js'
       - 'behaviour-tests/submitVat.behaviour.test.js'
       - '.github/workflows/synthetic-test.yml'
+  schedule:
+    # Check for cold starts over the hour using CloudWatch Logs Insights query:
+    #   fields @timestamp, @message
+    #   | sort @timestamp desc
+    #   | filter @message like /REPORT/
+    #   | filter @message like /Init Duration/
+    # Runs at 32 to be 5+15 minutes after 12 past to settle after .github/workflows/scale-to.yml
+    - cron: '32,39,46 */2 * * *'
 
 permissions:
   id-token: write

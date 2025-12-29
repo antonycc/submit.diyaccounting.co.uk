@@ -24,6 +24,24 @@ Purpose: Plan the path to HMRC approval and real customer VAT submissions. This 
 2. **Trace Critical Flows**: Trace the end-to-end VAT submission journey across local and AWS environments.
 3. **Identify HMRC Gaps**: Cross-reference current implementation with HMRC's mandatory requirements.
 4. **Develop Roadmap**: Create a prioritized plan with specific, actionable steps.
+5. **Test**: Run the following test commands in sequence to check that the code works:
+```
+npm test
+./mvnw clean verify
+npm run test:submitVatBehaviour-proxy
+```
+If you need to capture the output of a test do it like this:
+```
+npm test > test.txt 2>&1
+./mvnw clean verify > mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+```
+And query for a subset of things that might be of interest fail|error with:
+```
+grep -i -n -A 20 -E 'fail|error' test.txt
+grep -i -n -A 20 -E 'fail|error' mvnw.txt
+grep -i -n -A 20 -E 'fail|error' behaviour.txt
+```
 
 ## Verification Guidance
 

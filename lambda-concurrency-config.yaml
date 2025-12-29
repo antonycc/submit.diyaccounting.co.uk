@@ -14,6 +14,13 @@ lambdas:
       ready: 2
       hot: 4
 
+  - name: submit-app-cognito-token-post
+    handler: app/functions/auth/cognitoTokenPost.handler
+    concurrency:
+      zero: 0
+      ready: 1
+      hot: 1
+
   - name: submit-app-bundle-get
     handler: app/functions/account/bundleGet.handler
     concurrency:
@@ -48,13 +55,6 @@ lambdas:
       zero: 0
       ready: 0
       hot: 0
-
-  - name: submit-app-cognito-token-post
-    handler: app/functions/auth/cognitoTokenPost.handler
-    concurrency:
-      zero: 0
-      ready: 1
-      hot: 1
 
   - name: submit-app-hmrc-token-post
     handler: app/functions/hmrc/hmrcTokenPost.handler

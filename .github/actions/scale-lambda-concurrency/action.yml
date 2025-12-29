@@ -1,11 +1,11 @@
 name: "Scale Lambda Concurrency"
-description: "Set provisioned concurrency for Lambda functions to zero or peak levels"
+description: "Set provisioned concurrency for Lambda functions to zero, ready, or hot provisioning levels"
 inputs:
   deployment-name:
     description: "Deployment name (e.g., prod-ea373de or ci-lambdas6)"
     required: true
   concurrency-level:
-    description: "Target concurrency level: 'zero' or 'peak'"
+    description: "Target concurrency level: 'zero' (default), 'ready', or 'hot'"
     required: true
     default: "zero"
   config-file:
@@ -24,8 +24,8 @@ runs:
       shell: bash
       run: |
         LEVEL="${{ inputs.concurrency-level }}"
-        if [[ "$LEVEL" != "zero" && "$LEVEL" != "peak" ]]; then
-          echo "Error: concurrency-level must be 'zero' or 'peak', got: $LEVEL" >&2
+        if [[ "$LEVEL" != "zero" && "$LEVEL" != "ready" && "$LEVEL" != "hot" ]]; then
+          echo "Error: concurrency-level must be 'zero', 'ready', or 'hot', got: $LEVEL" >&2
           exit 1
         fi
         echo "Scaling Lambda functions to ${LEVEL} concurrency level"
@@ -177,7 +177,7 @@ runs:
         echo "Polling Provisioned Concurrency Status"
         echo "========================================"
 
-        # Only poll if we're setting to peak (non-zero)
+        # Only poll if we're setting to ready or hot (non-zero)
         if [ "${CONCURRENCY_LEVEL}" = "zero" ]; then
           echo "Concurrency level is zero, skipping polling"
           exit 0

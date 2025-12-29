@@ -42,6 +42,10 @@
     <div id="mainContent">
       <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
 
+      <div id="testDataLink" class="test-data-link">
+        <a href="#" onclick="event.preventDefault(); window.testDataGenerator.populateSubmitVatForm();">add test data</a>
+      </div>
+
       <div id="statusMessagesContainer"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -150,6 +154,7 @@
 
     <script src="../../lib/env-loader.js"></script>
     <script src="../../lib/auth-url-builder.js"></script>
+    <script src="../../lib/test-data-generator.js"></script>
     <script src="../../submit.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
@@ -274,8 +279,9 @@
           );
 
           // Display success
+          showStatus("VAT return processed", "success");
           displayReceipt(submitResponse);
-          hideStatus();
+          // hideStatus(); // Don't hide success status immediately
 
           // Reset current activity
           localStorage.removeItem("currentActivity");
@@ -442,6 +448,10 @@
           const sandboxIndicator = document.getElementById("sandboxIndicator");
           if (sandboxIndicator) {
             sandboxIndicator.classList.add("visible");
+          }
+          const testDataLink = document.getElementById("testDataLink");
+          if (testDataLink) {
+            testDataLink.classList.add("visible");
           }
         }
 

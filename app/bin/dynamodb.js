@@ -136,6 +136,47 @@ export async function ensureHmrcApiRequestsTableExists(tableName, endpoint) {
   }
 }
 
+// Create general async requests table if it doesn't exist
+export async function ensureAsyncRequestsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring async requests table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "hashedSub", KeyType: "HASH" },
+            { AttributeName: "requestId", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "hashedSub", AttributeType: "S" },
+            { AttributeName: "requestId", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Create receipts table if it doesn't exist
 export async function ensureReceiptsTableExists(tableName, endpoint) {
   logger.info(`[dynamodb]: Ensuring receipts table: '${tableName}' exists on endpoint '${endpoint}'`);
@@ -177,47 +218,6 @@ export async function ensureReceiptsTableExists(tableName, endpoint) {
   }
 }
 
-// Create async requests table if it doesn't exist
-export async function ensureAsyncRequestsTableExists(tableName, endpoint) {
-  logger.info(`[dynamodb]: Ensuring async requests table: '${tableName}' exists on endpoint '${endpoint}'`);
-
-  const clientConfig = {
-    endpoint,
-    region: "us-east-1",
-    credentials: {
-      accessKeyId: "dummy",
-      secretAccessKey: "dummy",
-    },
-  };
-  const dynamodb = new DynamoDBClient(clientConfig);
-
-  try {
-    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
-    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
-  } catch (err) {
-    if (err.name === "ResourceNotFoundException") {
-      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
-      await dynamodb.send(
-        new CreateTableCommand({
-          TableName: tableName,
-          KeySchema: [
-            { AttributeName: "hashedSub", KeyType: "HASH" },
-            { AttributeName: "requestId", KeyType: "RANGE" },
-          ],
-          AttributeDefinitions: [
-            { AttributeName: "hashedSub", AttributeType: "S" },
-            { AttributeName: "requestId", AttributeType: "S" },
-          ],
-          BillingMode: "PAY_PER_REQUEST",
-        }),
-      );
-      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
-    } else {
-      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
-    }
-  }
-}
-
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const bundleTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
@@ -242,6 +242,26 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     if (receiptsTableName) {
       await ensureReceiptsTableExists(receiptsTableName, endpoint);
+    }
+    const bundlePostAsyncRequestsTableName = process.env.BUNDLE_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (bundlePostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(bundlePostAsyncRequestsTableName, endpoint);
+    }
+    const bundleDeleteAsyncRequestsTableName = process.env.BUNDLE_DELETE_ASYNC_REQUESTS_TABLE_NAME;
+    if (bundleDeleteAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(bundleDeleteAsyncRequestsTableName, endpoint);
+    }
+    const hmrcVatReturnPostAsyncRequestsTableName = process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatReturnPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcVatReturnPostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcVatReturnGetAsyncRequestsTableName = process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatReturnGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcVatReturnGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcVatObligationGetAsyncRequestsTableName = process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatObligationGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcVatObligationGetAsyncRequestsTableName, endpoint);
     }
 
     logger.info("DynamoDB Local server is running. Press CTRL-C to stop.");

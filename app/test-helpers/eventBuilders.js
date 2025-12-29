@@ -77,6 +77,7 @@ export function buildLambdaEvent({
       ...authorizer,
     },
     headers: {
+      "x-wait-time-ms": "30000",
       ...headers,
     },
     body: body ? JSON.stringify(body) : null,
@@ -129,6 +130,7 @@ export function buildHmrcEvent({
   return buildLambdaEvent({
     headers: {
       ...buildGovClientHeaders(),
+      "x-wait-time-ms": "30000",
       ...headers,
     },
     body,

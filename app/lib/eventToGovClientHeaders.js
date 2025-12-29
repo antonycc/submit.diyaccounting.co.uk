@@ -10,6 +10,7 @@ const logger = createLogger({ source: "app/lib/eventToGovClientHeaders.js" });
 
 /**
  * Build fraud prevention headers from Lambda event.
+ * TODO: Remove before approval
  * @deprecated Use buildFraudHeaders from buildFraudHeaders.js instead
  * @param {object} event - Lambda proxy event
  * @param {string} detectedIP - Detected client IP (optional, will be derived from x-forwarded-for if not provided)

@@ -11,6 +11,22 @@ import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockH
 // persisting between calls (so duplicate requests still appear as new).
 // ---------------------------------------------------------------------------
 const mockSend = vi.fn();
+const mockSqsSend = vi.fn();
+
+vi.mock("@aws-sdk/client-sqs", () => {
+  class SQSClient {
+    constructor(_config) {}
+    send(cmd) {
+      return mockSqsSend(cmd);
+    }
+  }
+  class SendMessageCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  return { SQSClient, SendMessageCommand };
+});
 
 vi.mock("@aws-sdk/lib-dynamodb", () => {
   class PutCommand {
@@ -28,11 +44,23 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class GetCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
+  class UpdateCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     PutCommand,
     QueryCommand,
     DeleteCommand,
+    GetCommand,
+    UpdateCommand,
   };
 });
 
@@ -50,13 +78,14 @@ import { handler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrc
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const mockFetch = setupFetchMock();
+let mockFetch;
 
 describe("hmrcVatObligationGet handler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
+    mockFetch = setupFetchMock();
     // Reset and provide default mock DynamoDB behaviour
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
@@ -67,6 +96,9 @@ describe("hmrcVatObligationGet handler", () => {
       }
       if (cmd instanceof lib.DeleteCommand) {
         return {};
+      }
+      if (cmd instanceof lib.GetCommand) {
+        return { Item: null };
       }
       return {};
     });
@@ -144,14 +176,80 @@ describe("hmrcVatObligationGet handler", () => {
     expect(body.message).toContain("date format");
   });
 
-  test("returns 400 for invalid date range (from > to)", async () => {
+  test("returns 202 when x-wait-time-ms=0 (async initiation)", async () => {
     const event = buildHmrcEvent({
-      queryStringParameters: { vrn: "111222333", from: "2024-12-31", to: "2024-01-01" },
-      headers: { authorization: "Bearer test-token" },
+      queryStringParameters: { vrn: "111222333" },
+      headers: {
+        "authorization": "Bearer test-token",
+        "x-wait-time-ms": "0",
+        "x-initial-request": "true",
+      },
     });
     const response = await hmrcVatObligationGetHandler(event);
-    expect(response.statusCode).toBe(400);
-    const body = parseResponseBody(response);
-    expect(body.message).toContain("date range");
+    expect(response.statusCode).toBe(202);
+    expect(response.headers).toHaveProperty("x-request-id");
+    expect(mockSqsSend).toHaveBeenCalled();
+  });
+
+  test("returns 200 when processing completes synchronously (large x-wait-time-ms)", async () => {
+    const obligations = { obligations: [{ periodKey: "24A1", status: "O" }] };
+    mockHmrcSuccess(mockFetch, obligations);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: {
+        "authorization": "Bearer test-token",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatObligationGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(obligations);
+  });
+});
+
+import { consumer as hmrcVatObligationGetConsumer } from "@app/functions/hmrc/hmrcVatObligationGet.js";
+
+describe("hmrcVatObligationGet consumer", () => {
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    vi.clearAllMocks();
+  });
+
+  test("successfully processes SQS message and marks as completed", async () => {
+    const obligations = { obligations: [{ periodKey: "24A1", status: "O" }] };
+    mockHmrcSuccess(mockFetch, obligations);
+
+    const event = {
+      Records: [
+        {
+          body: JSON.stringify({
+            userId: "user-123",
+            requestId: "req-456",
+            payload: {
+              vrn: "111222333",
+              hmrcAccessToken: "token",
+              govClientHeaders: {},
+              hmrcAccount: "live",
+              from: "2024-01-01",
+              to: "2024-03-31",
+              status: "O",
+              userSub: "user-123",
+            },
+          }),
+          messageId: "msg-789",
+        },
+      ],
+    };
+
+    await hmrcVatObligationGetConsumer(event);
+
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const updateCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.UpdateCommand);
+    expect(updateCalls.length).toBeGreaterThan(0);
+    const completedCall = updateCalls.find((call) => call[0].input.ExpressionAttributeValues[":status"] === "completed");
+    expect(completedCall).toBeDefined();
+    expect(completedCall[0].input.ExpressionAttributeValues[":data"].obligations).toEqual(obligations);
   });
 });

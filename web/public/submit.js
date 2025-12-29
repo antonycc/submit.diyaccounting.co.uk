@@ -319,10 +319,13 @@ function generateRandomState() {
         // Always send traceparent for backend calls
         headerObject["traceparent"] = getOrCreateTraceparent();
 
-        // Generate a fresh x-request-id, unless a redirect flow ID is present
-        let requestId = nextRedirectRequestId();
-        if (!requestId) requestId = generateRequestId();
-        headerObject["x-request-id"] = requestId;
+        // Generate a fresh x-request-id, unless one is already present or carried
+        const existingRid = headerObject["x-request-id"] || headerObject["X-Request-Id"];
+        if (!existingRid) {
+          let requestId = nextRedirectRequestId();
+          if (!requestId) requestId = generateRequestId();
+          headerObject["x-request-id"] = requestId;
+        }
       }
 
       const response = await originalFetch(input, { ...req, headers: headerObject });
@@ -702,8 +705,21 @@ async function authorizedFetch(input, init = {}) {
   const accessToken = localStorage.getItem("cognitoAccessToken");
   // TODO: Does this still need X-Authorization instead of Authorization? - Retest when otherwise stable.
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
+  if (init.fireAndForget) headers.set("x-wait-time-ms", "0");
+  headers.set("x-initial-request", "true");
 
-  const first = await fetchWithId(input, { ...init, headers });
+  let first = await fetchWithId(input, { ...init, headers });
+
+  // Handle async polling for 202 Accepted
+  if (first.status === 202) {
+    // Re-extract headers from the first call to ensure we have X-Client-Request-Id etc.
+    // fetchWithId doesn't return the headers, but it sets them on the fetch call.
+    // Wait, fetchWithId creates its own headers. This is a bit messy.
+    // I'll modify fetchWithId to be more useful or just replicate the logic.
+    const rid = first.headers.get("x-request-id");
+    if (rid) headers.set("x-request-id", rid);
+    first = await executeAsyncRequestPolling(first, input, init, headers);
+  }
 
   // Handle 403 Forbidden - likely missing bundle entitlement
   if (first.status === 403) {
@@ -738,11 +754,108 @@ async function authorizedFetch(input, init = {}) {
   const headers2 = new Headers(init.headers || {});
   const at2 = localStorage.getItem("cognitoAccessToken");
   if (at2) headers2.set("X-Authorization", `Bearer ${at2}`);
-  return fetchWithId(input, { ...init, headers: headers2 });
+  headers2.set("x-initial-request", "true");
+
+  // Carry over requestId if we had one from a previous 202 poll
+  const lastRequestId = headers.get("x-request-id");
+  if (lastRequestId) {
+    headers2.set("x-request-id", lastRequestId);
+    headers2.delete("x-initial-request");
+  }
+
+  let second = await fetchWithId(input, { ...init, headers: headers2 });
+
+  if (second.status === 202) {
+    const rid = second.headers.get("x-request-id");
+    if (rid) headers2.set("x-request-id", rid);
+    second = await executeAsyncRequestPolling(second, input, init, headers2);
+  }
+
+  return second;
 }
 
 // Expose authorizedFetch globally for HTML usage
 window.authorizedFetch = authorizedFetch;
+
+// Helper for polling asynchronous requests (HTTP 202 Accepted)
+async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
+  if (init.fireAndForget) return res;
+
+  // Remove the initial request signal for subsequent polls
+  currentHeaders.delete("x-initial-request");
+
+  const method = (init.method || (typeof input === "object" && input.method) || "GET").toUpperCase();
+  let urlPath = typeof input === "string" ? input : input.url || input.toString();
+  try {
+    const parsedUrl = new URL(urlPath, window.location.origin);
+    urlPath = parsedUrl.pathname + parsedUrl.search;
+  } catch (error) {
+    console.error(`Failed to parse URL for async request: ${urlPath}. Using original URL. Error: ${JSON.stringify(error)}`);
+  }
+  const requestDesc = `[${method} ${urlPath}]`;
+
+  console.log(`waiting async request ${requestDesc} (timeout: 90000ms)...`);
+  const requestId = res.headers.get("x-request-id");
+  if (requestId) {
+    currentHeaders.set("x-request-id", requestId);
+  }
+
+  let pollCount = 0;
+  const startTime = Date.now();
+  const timeoutMs = 90000;
+  while (res.status === 202) {
+    const elapsed = Date.now() - startTime;
+    if (init.signal?.aborted) {
+      console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms)`);
+      return res;
+    }
+
+    if (elapsed > timeoutMs) {
+      console.error(`timed out async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms, timeout: ${timeoutMs}ms)`);
+      return res;
+    }
+
+    pollCount++;
+    const delay = 1000;
+
+    if (typeof window !== "undefined" && window.showStatus) {
+      window.showStatus(init.pollPendingMessage || `Still processing... (poll #${pollCount})`, "info");
+    }
+
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(resolve, delay);
+      if (init.signal) {
+        init.signal.addEventListener(
+          "abort",
+          () => {
+            clearTimeout(timeout);
+            const abortElapsed = Date.now() - startTime;
+            console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${abortElapsed}ms)`);
+            reject(new DOMException("Aborted", "AbortError"));
+          },
+          { once: true },
+        );
+      }
+    });
+
+    if (init.signal?.aborted) continue;
+
+    console.log(
+      `re-trying async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, timeout: ${timeoutMs}ms, last status: ${res.status})...`,
+    );
+    res = await fetch(input, { ...init, headers: currentHeaders });
+  }
+
+  console.log(`finished async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, status: ${res.status})`);
+  if (typeof window !== "undefined" && window.showStatus) {
+    if (res.ok && init.pollSuccessMessage) {
+      window.showStatus(init.pollSuccessMessage, "success");
+    } else if (!res.ok && init.pollErrorMessage) {
+      window.showStatus(init.pollErrorMessage, "error");
+    }
+  }
+  return res;
+}
 
 // Fetch with ID token and automatic 401/403 handling
 // This is specifically for endpoints that use the Authorization header with idToken
@@ -766,71 +879,7 @@ async function fetchWithIdToken(input, init = {}) {
     let res = await fetch(input, { ...init, headers: currentHeaders });
 
     if (res.status === 202) {
-      const waitTime = currentHeaders.get("x-wait-time-ms");
-      if (waitTime === "0") return res;
-
-      // Remove the initial request signal for subsequent polls
-      currentHeaders.delete("x-initial-request");
-
-      const method = (init.method || (typeof input === "object" && input.method) || "GET").toUpperCase();
-      let urlPath = typeof input === "string" ? input : input.url || input.toString();
-      try {
-        const parsedUrl = new URL(urlPath, window.location.origin);
-        urlPath = parsedUrl.pathname + parsedUrl.search;
-      } catch (error) {
-        // Fallback to original urlPath if URL parsing fails
-        console.error(`Failed to parse URL for async request: ${urlPath}. Using original URL. Error: ${JSON.stringify(error)}`);
-      }
-      const requestDesc = `[${method} ${urlPath}]`;
-
-      console.log(`waiting async request ${requestDesc} (timeout: 60000ms)...`);
-      const requestId = res.headers.get("x-request-id");
-      if (requestId) {
-        currentHeaders.set("x-request-id", requestId);
-      }
-
-      let pollCount = 0;
-      const startTime = Date.now();
-      while (res.status === 202) {
-        const elapsed = Date.now() - startTime;
-        if (init.signal?.aborted) {
-          console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms)`);
-          return res;
-        }
-
-        if (elapsed > 60000) {
-          console.error(`timed out async request ${requestDesc} (poll #${pollCount}, elapsed: ${elapsed}ms, timeout: 60000ms)`);
-          return res;
-        }
-
-        pollCount++;
-        const delay = pollCount <= 10 ? 10 : 1000;
-
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(resolve, delay);
-          if (init.signal) {
-            init.signal.addEventListener(
-              "abort",
-              () => {
-                clearTimeout(timeout);
-                const abortElapsed = Date.now() - startTime;
-                console.log(`aborted async request ${requestDesc} (poll #${pollCount}, elapsed: ${abortElapsed}ms)`);
-                reject(new DOMException("Aborted", "AbortError"));
-              },
-              { once: true },
-            );
-          }
-        });
-
-        const currentElapsed = Date.now() - startTime;
-        console.log(
-          `re-trying async request ${requestDesc} (poll #${pollCount}, elapsed: ${currentElapsed}ms, timeout: 60000ms, last status: ${res.status})...`,
-        ); // Just before each poll attempt
-        res = await fetch(input, { ...init, headers: currentHeaders });
-      }
-      console.log(
-        `finished async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, status: ${res.status})`,
-      ); // When response comes back
+      res = await executeAsyncRequestPolling(res, input, init, currentHeaders);
     }
     return res;
   };

@@ -40,6 +40,10 @@
     <div id="mainContent">
       <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
 
+      <div id="testDataLink" class="test-data-link">
+        <a href="#" onclick="event.preventDefault(); window.testDataGenerator.populateViewVatReturnForm();">add test data</a>
+      </div>
+
       <div id="statusMessagesContainer"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -118,6 +122,7 @@
 
     <script src="../../lib/env-loader.js"></script>
     <script src="../../lib/auth-url-builder.js"></script>
+    <script src="../../lib/test-data-generator.js"></script>
     <script src="../../submit.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
@@ -155,6 +160,10 @@
           const sandboxIndicator = document.getElementById("sandboxIndicator");
           if (sandboxIndicator) {
             sandboxIndicator.classList.add("visible");
+          }
+          const testDataLink = document.getElementById("testDataLink");
+          if (testDataLink) {
+            testDataLink.classList.add("visible");
           }
         }
 
@@ -224,7 +233,13 @@
 
           const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${pendingRequest.periodKey}?${params}`, {
             method: "GET",
-            headers: requestHeaders,
+            headers: {
+              ...requestHeaders,
+              "x-wait-time-ms": "0",
+            },
+            pollPendingMessage: "Still processing...",
+            pollSuccessMessage: "VAT return retrieved.",
+            pollErrorMessage: "Failed to retrieve VAT return.",
           });
 
           const result = await response.json();
@@ -353,7 +368,13 @@
 
             const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
               method: "GET",
-              headers: requestHeaders,
+              headers: {
+                ...requestHeaders,
+                "x-wait-time-ms": "0",
+              },
+              pollPendingMessage: "Still processing...",
+              pollSuccessMessage: "VAT return retrieved.",
+              pollErrorMessage: "Failed to retrieve VAT return.",
             });
 
             const result = await response.json();

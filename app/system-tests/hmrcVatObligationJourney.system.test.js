@@ -21,7 +21,8 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
   const testUserSub = "test-obligation-journey-user";
 
   beforeAll(async () => {
-    const { ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists } = await import("../bin/dynamodb.js");
+    const { ensureBundleTableExists, ensureHmrcApiRequestsTableExists, ensureReceiptsTableExists, ensureAsyncRequestsTableExists } =
+      await import("../bin/dynamodb.js");
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
@@ -46,13 +47,22 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
+    const asyncReturnPostTable = "test-hmrc-vat-return-post-async-requests-table";
+    const asyncReturnGetTable = "test-hmrc-vat-return-get-async-requests-table";
+    const asyncObligationGetTable = "test-hmrc-vat-obligation-get-async-requests-table";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundleTableName;
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcApiRequestsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
+    process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncReturnPostTable;
+    process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME = asyncReturnGetTable;
+    process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME = asyncObligationGetTable;
 
     await ensureBundleTableExists(bundleTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
     await ensureReceiptsTableExists(receiptsTableName, endpoint);
+    await ensureAsyncRequestsTableExists(asyncReturnPostTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncReturnGetTable, endpoint);
+    await ensureAsyncRequestsTableExists(asyncObligationGetTable, endpoint);
 
     bm = await import("../services/bundleManagement.js");
 
@@ -187,7 +197,9 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: `Bearer ${hmrcAccessToken}`,
+        "authorization": `Bearer ${hmrcAccessToken}`,
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -276,7 +288,9 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: `Bearer ${hmrcAccessToken}`,
+        "authorization": `Bearer ${hmrcAccessToken}`,
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -346,7 +360,9 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: `Bearer ${hmrcAccessToken}`,
+        "authorization": `Bearer ${hmrcAccessToken}`,
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -373,7 +389,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     const fulfilledObligations = obligationBody.obligations.filter((o) => o.status === "F");
     expect(openObligations.length).toBe(1);
     expect(fulfilledObligations.length).toBe(2);
-  });
+  }, 32_000);
 
   it("should filter obligations by status parameter", async () => {
     const hmrcAccessToken = "mock-token-filtered";
@@ -402,7 +418,9 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       },
       headers: {
         ...buildGovClientHeaders(),
-        authorization: `Bearer ${hmrcAccessToken}`,
+        "authorization": `Bearer ${hmrcAccessToken}`,
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
       },
       authorizer: {
         authorizer: {
@@ -428,5 +446,5 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     obligationBody.obligations.forEach((obligation) => {
       expect(obligation.status).toBe("F");
     });
-  });
+  }, 32_000);
 });

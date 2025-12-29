@@ -4,46 +4,36 @@ import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import {
+  mockSend,
+  mockLibDynamoDb,
+  mockClientDynamoDb,
+  MockQueryCommand,
+  MockPutCommand,
+  MockGetCommand,
+  MockUpdateCommand,
+} from "@app/test-helpers/dynamoDbMock.js";
 
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
-// We keep behaviour simple: Query returns empty items; Put/Delete succeed.
-// This preserves the current handler behaviour expected by tests without
-// persisting between calls (so duplicate requests still appear as new).
 // ---------------------------------------------------------------------------
-const mockSend = vi.fn();
+vi.mock("@aws-sdk/lib-dynamodb", () => mockLibDynamoDb);
+vi.mock("@aws-sdk/client-dynamodb", () => mockClientDynamoDb);
 
-vi.mock("@aws-sdk/lib-dynamodb", () => {
-  class PutCommand {
+const mockSqsSend = vi.fn();
+vi.mock("@aws-sdk/client-sqs", () => {
+  class SQSClient {
+    constructor(_config) {}
+    send(cmd) {
+      return mockSqsSend(cmd);
+    }
+  }
+  class SendMessageCommand {
     constructor(input) {
       this.input = input;
     }
   }
-  class QueryCommand {
-    constructor(input) {
-      this.input = input;
-    }
-  }
-  class DeleteCommand {
-    constructor(input) {
-      this.input = input;
-    }
-  }
-  return {
-    DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
-    PutCommand,
-    QueryCommand,
-    DeleteCommand,
-  };
-});
-
-vi.mock("@aws-sdk/client-dynamodb", () => {
-  class DynamoDBClient {
-    constructor(_config) {
-      // no-op in unit tests
-    }
-  }
-  return { DynamoDBClient };
+  return { SQSClient, SendMessageCommand };
 });
 
 // Defer importing the handlers until after mocks are defined
@@ -59,15 +49,17 @@ describe("hmrcVatReturnPost handler", () => {
     // Reset and provide default mock DynamoDB behaviour
     vi.clearAllMocks();
     mockSend.mockImplementation(async (cmd) => {
-      const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) {
+      if (cmd instanceof MockQueryCommand) {
         return { Items: [], Count: 0 };
       }
-      if (cmd instanceof lib.PutCommand) {
+      if (cmd instanceof MockPutCommand) {
         return {};
       }
-      if (cmd instanceof lib.DeleteCommand) {
+      if (cmd instanceof MockUpdateCommand) {
         return {};
+      }
+      if (cmd instanceof MockGetCommand) {
+        return { Item: null };
       }
       return {};
     });

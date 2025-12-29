@@ -71,6 +71,12 @@ All environment files should define these core variables:
 | `BUNDLE_DYNAMODB_TABLE_NAME` | DynamoDB table for bundles | `{env}-submit-bundles` |
 | `RECEIPTS_DYNAMODB_TABLE_NAME` | DynamoDB table for receipts | `{env}-submit-receipts` |
 | `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME` | DynamoDB table for API request logs | `{env}-submit-hmrc-api-requests` |
+| `ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for general async requests | `{env}-submit-async-requests` |
+| `BUNDLE_POST_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for bundle POST async requests | `{env}-submit-bundle-post-async-requests` |
+| `BUNDLE_DELETE_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for bundle DELETE async requests | `{env}-submit-bundle-delete-async-requests` |
+| `HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for HMRC VAT Return POST async requests | `{env}-submit-hmrc-vat-return-post-async-requests` |
+| `HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for HMRC VAT Return GET async requests | `{env}-submit-hmrc-vat-return-get-async-requests` |
+| `HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME` | DynamoDB table for HMRC VAT Obligation GET async requests | `{env}-submit-hmrc-vat-obligation-get-async-requests` |
 | `ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS` | CloudWatch log retention | `1` (CI), `28` (prod) |
 | `PROXY_RATE_LIMIT_PER_SECOND` | Rate limiting for proxy | `5` (CI), `10` (prod) |
 | `PROXY_BREAKER_ERROR_THRESHOLD` | Circuit breaker error threshold | `10` (CI), `15` (prod) |
@@ -1075,6 +1081,25 @@ All Lambda functions run Node.js 22 from Docker images stored in ECR.
 | `durationMs` | Number | Request duration in milliseconds |
 | `sub` | String | User subscriber ID (if authenticated) |
 | `error` | String | Error message (if failed) |
+
+#### Async Request Tables
+
+**Purpose**: Store the state and result of asynchronous API requests. Each mutating or slow API has its own table.
+
+| Table Name | Description |
+|------------|-------------|
+| `submit-bundle-post-async-requests` | State for bundle POST |
+| `submit-bundle-delete-async-requests` | State for bundle DELETE |
+| `submit-hmrc-vat-return-post-async-requests` | State for VAT submission |
+| `submit-hmrc-vat-return-get-async-requests` | State for VAT return retrieval |
+| `submit-hmrc-vat-obligation-get-async-requests` | State for VAT obligations retrieval |
+
+**Schema**:
+- `userId` (PK, String): Hashed subscriber ID.
+- `requestId` (SK, String): UUID identifying the request.
+- `status` (String): `processing`, `completed`, or `failed`.
+- `data` (Map): The final result data (if completed) or error details (if failed).
+- `ttl` (Number): Expiration timestamp (typically 5 minutes).
 
 ### CloudFront Configuration
 

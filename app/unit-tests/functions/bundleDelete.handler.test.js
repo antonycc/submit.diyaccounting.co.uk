@@ -13,6 +13,7 @@ import {
   MockPutCommand,
   MockGetCommand,
   MockDeleteCommand,
+  MockUpdateCommand,
 } from "@app/test-helpers/dynamoDbMock.js";
 
 // Helper to yield control back to the event loop
@@ -70,6 +71,21 @@ describe("bundleDelete handler", () => {
         if (item.requestId) {
           asyncRequests.set(item.requestId, item);
         }
+        return {};
+      }
+      if (cmd instanceof MockUpdateCommand) {
+        const { requestId } = cmd.input.Key;
+        const existing = asyncRequests.get(requestId) || {};
+        const updated = { ...existing };
+        if (cmd.input.ExpressionAttributeValues[":status"]) {
+          updated.status = cmd.input.ExpressionAttributeValues[":status"];
+        }
+        if (cmd.input.ExpressionAttributeValues[":data"]) {
+          updated.data = cmd.input.ExpressionAttributeValues[":data"];
+        } else if (cmd.input.UpdateExpression.includes("REMOVE #data")) {
+          delete updated.data;
+        }
+        asyncRequests.set(requestId, updated);
         return {};
       }
       if (cmd instanceof MockGetCommand) {
@@ -312,7 +328,7 @@ describe("bundleDelete handler", () => {
   test("returns 202 Accepted for async deletion initiation", async () => {
     const token = makeIdToken("user-async-delete");
     const event = buildEventWithToken(token, { bundleId: "test" });
-    // Default waitTimeMs is 0
+    event.headers["x-wait-time-ms"] = "0";
 
     const response = await bundleDeleteHandler(event);
     expect(response.statusCode).toBe(202);
@@ -341,6 +357,21 @@ describe("bundleDelete handler", () => {
         if (item.requestId) {
           asyncRequests.set(item.requestId, item);
         }
+        return {};
+      }
+      if (cmd instanceof lib.UpdateCommand) {
+        const { requestId } = cmd.input.Key;
+        const existing = asyncRequests.get(requestId) || {};
+        const updated = { ...existing };
+        if (cmd.input.ExpressionAttributeValues[":status"]) {
+          updated.status = cmd.input.ExpressionAttributeValues[":status"];
+        }
+        if (cmd.input.ExpressionAttributeValues[":data"]) {
+          updated.data = cmd.input.ExpressionAttributeValues[":data"];
+        } else if (cmd.input.UpdateExpression.includes("REMOVE #data")) {
+          delete updated.data;
+        }
+        asyncRequests.set(requestId, updated);
         return {};
       }
       return {};
