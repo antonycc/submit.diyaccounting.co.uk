@@ -1,17 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
-import java.util.Optional;
 import org.immutables.value.Value;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -22,6 +16,12 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Optional;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AuthStack extends Stack {
 
@@ -114,6 +114,8 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().cognitoTokenPostLambdaFunctionName)
+                        .ingestProvisionedConcurrencyReady(1)
+                        .ingestProvisionedConcurrencyHot(1)
                         .handler(props.sharedNames().cognitoTokenPostLambdaHandler)
                         .lambdaArn(props.sharedNames().cognitoTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
@@ -121,7 +123,6 @@ public class AuthStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().cognitoTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeCognitoTokenLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.cognitoTokenPostLambdaProps = exchangeCognitoTokenLambdaUrlOrigin.apiProps;
         this.cognitoTokenPostLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
@@ -150,6 +151,8 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().customAuthorizerLambdaFunctionName)
+                        .ingestProvisionedConcurrencyReady(1)
+                        .ingestProvisionedConcurrencyHot(2)
                         .handler(props.sharedNames().customAuthorizerLambdaHandler)
                         .lambdaArn(props.sharedNames().customAuthorizerLambdaArn)
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
@@ -157,7 +160,6 @@ public class AuthStack extends Stack {
                         .jwtAuthorizer(false)
                         .customAuthorizer(false)
                         .environment(customAuthorizerLambdaEnv)
-                        .timeout(Duration.millis(5000L))
                         .build());
         this.customAuthorizerLambda = customAuthorizerLambda.lambda;
         this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;

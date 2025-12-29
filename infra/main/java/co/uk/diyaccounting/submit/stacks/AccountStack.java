@@ -8,7 +8,6 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import org.immutables.value.Value;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -132,13 +131,14 @@ public class AccountStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleGetLambdaFunctionName)
                         .handler(props.sharedNames().bundleGetLambdaHandler)
+                        .ingestProvisionedConcurrencyReady(1)
+                        .ingestProvisionedConcurrencyHot(2)
                         .lambdaArn(props.sharedNames().bundleGetLambdaArn)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundleGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().bundleGetLambdaCustomAuthorizer)
                         .environment(getBundlesLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
 
         this.bundleGetLambdaProps = getBundlesAsyncLambda.apiProps;
@@ -186,14 +186,17 @@ public class AccountStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundlePostLambdaFunctionName)
                         .handler(props.sharedNames().bundlePostLambdaHandler)
-                        .consumerHandler(props.sharedNames().bundlePostLambdaConsumerHandler)
+                        .ingestProvisionedConcurrencyReady(0)
+                        .ingestProvisionedConcurrencyHot(1)
+                        .workerHandler(props.sharedNames().bundlePostLambdaConsumerHandler)
+                        .workerProvisionedConcurrencyReady(0)
+                        .workerProvisionedConcurrencyHot(0)
                         .lambdaArn(props.sharedNames().bundlePostLambdaArn)
                         .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundlePostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().bundlePostLambdaCustomAuthorizer)
                         .environment(requestBundlesLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
 
         // Update API environment with SQS queue URL
@@ -247,14 +250,17 @@ public class AccountStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
                         .handler(props.sharedNames().bundleDeleteLambdaHandler)
-                        .consumerHandler(props.sharedNames().bundleDeleteLambdaConsumerHandler)
+                        .ingestProvisionedConcurrencyReady(0)
+                        .ingestProvisionedConcurrencyHot(0)
+                        .workerHandler(props.sharedNames().bundleDeleteLambdaConsumerHandler)
+                        .workerProvisionedConcurrencyReady(0)
+                        .workerProvisionedConcurrencyHot(0)
                         .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                         .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
                         .environment(bundleDeleteLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
 
         // Update API environment with SQS queue URL
@@ -273,12 +279,13 @@ public class AccountStack extends Stack {
                 .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                 .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
                 .handler(props.sharedNames().bundleDeleteLambdaHandler)
+                .ingestProvisionedConcurrencyReady(0)
+                .ingestProvisionedConcurrencyHot(0)
                 .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                 .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                 .urlPath("/api/v1/bundle/{id}")
                 .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
                 .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
-                .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                 .build());
         infof(
                 "Created Async API Lambda %s for delete bundles with handler %s and consumer %s",

@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
-import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -12,11 +9,13 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
+import software.amazon.awscdk.services.lambda.Alias;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Tracing;
+import software.amazon.awscdk.services.lambda.Version;
 import software.amazon.awscdk.services.logs.FilterPattern;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
@@ -24,10 +23,18 @@ import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.MetricFilter;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 public class Lambda {
 
     public final DockerImageCode dockerImage;
     public final Function lambda;
+    public final Version ingestVersion;
+    public final Alias ingestAliasZero;
+    public final Alias ingestAliasReady;
+    public final Alias ingestAliasHot;
     public final ILogGroup logGroup;
     public final AbstractLambdaProps props;
 
@@ -74,6 +81,7 @@ public class Lambda {
                 .code(this.dockerImage)
                 .environment(environment)
                 .functionName(props.functionName())
+                .reservedConcurrentExecutions(props.ingestReservedConcurrency())
                 .timeout(props.timeout())
                 .logGroup(this.logGroup)
                 .tracing(Tracing.ACTIVE);
@@ -83,6 +91,26 @@ public class Lambda {
         }
         this.lambda = dockerFunctionBuilder.build();
         infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
+
+        this.ingestVersion = this.lambda.getCurrentVersion();
+        this.ingestAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-zero-alias")
+            .aliasName("zero")
+            .version(this.ingestVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyZero())
+            .build();
+        infof("Created Lambda alias %s for version %s", this.ingestAliasZero.getAliasName(), this.ingestVersion.getVersion());
+        this.ingestAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-ready-alias")
+            .aliasName("ready")
+            .version(this.ingestVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyReady())
+            .build();
+        infof("Created Lambda alias %s for version %s", this.ingestAliasReady.getAliasName(), this.ingestVersion.getVersion());
+        this.ingestAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-hot-alias")
+            .aliasName("hot")
+            .version(this.ingestVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyHot())
+            .build();
+        infof("Created Lambda alias %s for version %s", this.ingestAliasHot.getAliasName(), this.ingestVersion.getVersion());
 
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period

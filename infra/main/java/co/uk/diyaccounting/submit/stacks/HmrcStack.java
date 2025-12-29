@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
@@ -10,9 +7,7 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
-import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -24,6 +19,11 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -170,13 +170,14 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().hmrcTokenPostLambdaFunctionName)
                         .handler(props.sharedNames().hmrcTokenPostLambdaHandler)
+                        .ingestProvisionedConcurrencyReady(1)
+                        .ingestProvisionedConcurrencyHot(2)
                         .lambdaArn(props.sharedNames().hmrcTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeHmrcTokenLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
         this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
@@ -257,14 +258,17 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
                         .handler(props.sharedNames().hmrcVatReturnPostLambdaHandler)
-                        .consumerHandler(props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler)
+                        .ingestProvisionedConcurrencyReady(1)
+                        .ingestProvisionedConcurrencyHot(1)
+                        .workerHandler(props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler)
+                        .workerProvisionedConcurrencyReady(0)
+                        .workerProvisionedConcurrencyHot(1)
                         .lambdaArn(props.sharedNames().hmrcVatReturnPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaCustomAuthorizer)
                         .environment(submitVatLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
 
         // Update API environment with SQS queue URL
@@ -308,15 +312,18 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
                         .handler(props.sharedNames().hmrcVatObligationGetLambdaHandler)
-                        .consumerHandler(props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler)
+                        .ingestProvisionedConcurrencyReady(1)
+                        .ingestProvisionedConcurrencyHot(1)
+                        .workerHandler(props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler)
+                        .workerProvisionedConcurrencyReady(0)
+                        .workerProvisionedConcurrencyHot(1)
                         .lambdaArn(props.sharedNames().hmrcVatObligationGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaCustomAuthorizer)
                         .environment(vatObligationLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-                        .consumerConcurrency(1) // Avoid HMRC throttling
+                        .workerReservedConcurrency(1) // Avoid HMRC throttling
                         .build());
 
         // Update API environment with SQS queue URL
@@ -359,15 +366,18 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
                         .handler(props.sharedNames().hmrcVatReturnGetLambdaHandler)
-                        .consumerHandler(props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler)
+                        .ingestProvisionedConcurrencyReady(1)
+                        .ingestProvisionedConcurrencyHot(1)
+                        .workerHandler(props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler)
+                        .workerProvisionedConcurrencyReady(0)
+                        .workerProvisionedConcurrencyHot(1)
                         .lambdaArn(props.sharedNames().hmrcVatReturnGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaCustomAuthorizer)
                         .environment(vatReturnGetLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-                        .consumerConcurrency(1) // Avoid HMRC throttling
+                        .workerReservedConcurrency(1) // Avoid HMRC throttling
                         .build());
 
         // Update API environment with SQS queue URL
@@ -406,6 +416,8 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().receiptGetLambdaFunctionName)
+                        .ingestProvisionedConcurrencyReady(0)
+                        .ingestProvisionedConcurrencyHot(0)
                         .lambdaArn(props.sharedNames().receiptGetLambdaArn)
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
@@ -413,7 +425,6 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
                         .environment(myReceiptsLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.receiptGetLambdaProps = myReceiptsLambdaUrlOrigin.apiProps;
         this.receiptGetLambda = myReceiptsLambdaUrlOrigin.lambda;
@@ -426,13 +437,14 @@ public class HmrcStack extends Stack {
                 .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                 .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                 .functionName(props.sharedNames().receiptGetLambdaFunctionName)
+                .ingestProvisionedConcurrencyReady(0)
+                .ingestProvisionedConcurrencyHot(0)
                 .handler(props.sharedNames().receiptGetLambdaHandler)
                 .lambdaArn(props.sharedNames().receiptGetLambdaArn)
                 .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
                 .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
                 .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
-                .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                 .build());
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",

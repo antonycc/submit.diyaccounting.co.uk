@@ -50,6 +50,9 @@ on:
   #schedule:
     # Run every 2 hours to scale prod to zero concurrency
     #- cron: '12 */2 * * *'
+# TODO: Run the submit VAT scenarios on a cold environment to determine the number of cold starts in zero/ready&hot.
+# TODO: Add performance tests which measure the flow through the APIs in a single scenario of zero/ready&hot.
+# TODO: Add performance tests which measure the flow through the APIs during ramp up and steady at peak in from zero.
 
 permissions:
   id-token: write

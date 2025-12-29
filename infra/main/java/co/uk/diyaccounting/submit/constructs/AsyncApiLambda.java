@@ -1,24 +1,33 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.List;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
+import software.amazon.awscdk.services.lambda.Alias;
 import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Tracing;
+import software.amazon.awscdk.services.lambda.Version;
 import software.amazon.awscdk.services.lambda.eventsources.SqsEventSource;
 import software.amazon.awscdk.services.sqs.DeadLetterQueue;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
 
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
 public class AsyncApiLambda extends ApiLambda {
 
     public final Function consumerLambda;
+    public final Version workerVersion;
+    public final Alias workerAliasZero;
+    public final Alias workerAliasReady;
+    public final Alias workerAliasHot;
     public final Queue queue;
     public final Queue dlq;
 
@@ -53,7 +62,7 @@ public class AsyncApiLambda extends ApiLambda {
         // 3. Create Consumer Lambda
         var imageCodeProps = EcrImageCodeProps.builder()
                 .tagOrDigest(props.baseImageTag())
-                .cmd(List.of(props.consumerHandler()))
+                .cmd(List.of(props.workerHandler()))
                 .build();
 
         var repositoryAttributes = RepositoryAttributes.builder()
@@ -67,10 +76,30 @@ public class AsyncApiLambda extends ApiLambda {
                 .code(DockerImageCode.fromEcr(repository, imageCodeProps))
                 .environment(props.environment())
                 .functionName(props.functionName() + "-consumer")
-                .reservedConcurrentExecutions(props.consumerConcurrency())
-                .timeout(props.timeout())
+                .reservedConcurrentExecutions(props.workerReservedConcurrency())
+                .timeout(props.workerTimeout())
                 .tracing(Tracing.ACTIVE)
                 .build();
+
+        this.workerVersion = this.consumerLambda.getCurrentVersion();
+        this.workerAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-zero-consumer-alias")
+            .aliasName("zero")
+            .version(this.workerVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyZero())
+            .build();
+        infof("Created Lambda consumer alias %s for version %s", this.workerAliasZero.getAliasName(), this.workerVersion.getVersion());
+        this.workerAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-ready-consumer-alias")
+            .aliasName("ready")
+            .version(this.workerVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyReady())
+            .build();
+        infof("Created Lambda consumer alias %s for version %s", this.workerAliasReady.getAliasName(), this.workerVersion.getVersion());
+        this.workerAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-hot-consumer-alias")
+            .aliasName("hot")
+            .version(this.workerVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyHot())
+            .build();
+        infof("Created Lambda consumer alias %s for version %s", this.workerAliasHot.getAliasName(), this.workerVersion.getVersion());
 
         // 4. Set up SQS trigger
         this.consumerLambda.addEventSource(
