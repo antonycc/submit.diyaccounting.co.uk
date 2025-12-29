@@ -1581,8 +1581,8 @@ jobs:
     outputs:
       originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
 
-#  scale-lambda-concurrency-to-peak:
-#    name: 'scale Lambda concurrency to peak'
+#  scale-lambda-concurrency:
+#    name: 'scale Lambda concurrency to ready'
 #    #if: ${{ needs.names.outputs.environment-name == 'prod' }}
 #    needs:
 #      - names
@@ -1597,7 +1597,7 @@ jobs:
 #      id-token: write
 #      contents: read
 #    with:
-#      concurrency-level: 'peak'
+#      concurrency-level: 'ready'
 #      environment-name: ${{ needs.names.outputs.environment-name }}
 #      deployment-name: ${{ needs.names.outputs.deployment-name }}
 
