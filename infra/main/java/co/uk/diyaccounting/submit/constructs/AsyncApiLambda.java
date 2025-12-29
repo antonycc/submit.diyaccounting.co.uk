@@ -25,11 +25,11 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 public class AsyncApiLambda extends ApiLambda {
 
     public final Function consumerLambda;
-    public final Version workerVersionZero;
-    public final Version workerVersionReady;
-    public final Version workerVersionHot;
+    public final Version workerVersion;
+    // public final Version workerVersionReady;
+    // public final Version workerVersionHot;
     public final Alias workerAliasZero;
-    public final Alias workerAliasReady;
+    // public final Alias workerAliasReady;
     public final Alias workerAliasHot;
     public final Queue queue;
     public final Queue dlq;
@@ -84,44 +84,44 @@ public class AsyncApiLambda extends ApiLambda {
                 .tracing(Tracing.ACTIVE)
                 .build();
 
-        this.workerVersionZero =
-            Version.Builder.create(scope, props.idPrefix() + "-worker-zero-version")
+        this.workerVersion =
+            Version.Builder.create(scope, props.idPrefix() + "-worker-version")
                 .lambda(this.consumerLambda)
-                .description("Zero provisioned concurrency")
+                .description("No provisioned concurrency")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.workerAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-worker-zero-alias")
             .aliasName("zero")
-            .version(this.workerVersionZero)
-            .provisionedConcurrentExecutions(props.workerProvisionedConcurrencyZero())
+            .version(this.workerVersion)
+            //.provisionedConcurrentExecutions(props.workerProvisionedConcurrencyZero())
             .build();
-        infof("Created worker Lambda alias %s for version %s", this.workerAliasZero.getAliasName(), this.workerVersionZero.getVersion());
+        infof("Created worker Lambda alias %s for version %s", this.workerAliasZero.getAliasName(), this.workerVersion.getVersion());
 
-        this.workerVersionReady =
-            Version.Builder.create(scope, props.idPrefix() + "-worker-version-ready")
-                .lambda(this.consumerLambda)
-                .description("Ready provisioned concurrency")
-                .removalPolicy(RemovalPolicy.RETAIN)
-                .build();
-        this.workerAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-worker-ready-alias")
-            .aliasName("ready")
-            .version(this.workerVersionReady)
-            .provisionedConcurrentExecutions(props.workerProvisionedConcurrencyReady())
-            .build();
-        infof("Created worker Lambda alias %s for version %s", this.workerAliasReady.getAliasName(), this.workerVersionReady.getVersion());
+//        this.workerVersionReady =
+//            Version.Builder.create(scope, props.idPrefix() + "-worker-version-ready")
+//                .lambda(this.consumerLambda)
+//                .description("Ready provisioned concurrency")
+//                .removalPolicy(RemovalPolicy.RETAIN)
+//                .build();
+//        this.workerAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-worker-ready-alias")
+//            .aliasName("ready")
+//            .version(this.workerVersionReady)
+//            .provisionedConcurrentExecutions(props.workerProvisionedConcurrencyReady())
+//            .build();
+//        infof("Created worker Lambda alias %s for version %s", this.workerAliasReady.getAliasName(), this.workerVersionReady.getVersion());
 
-        this.workerVersionHot =
-            Version.Builder.create(scope, props.idPrefix() + "-worker-version-hot")
-                .lambda(this.consumerLambda)
-                .description("Hot provisioned concurrency")
-                .removalPolicy(RemovalPolicy.RETAIN)
-                .build();
+//        this.workerVersionHot =
+//            Version.Builder.create(scope, props.idPrefix() + "-worker-version-hot")
+//                .lambda(this.consumerLambda)
+//                .description("Hot provisioned concurrency")
+//                .removalPolicy(RemovalPolicy.RETAIN)
+//                .build();
         this.workerAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-worker-hot-alias")
             .aliasName("hot")
-            .version(this.workerVersionHot)
+            .version(this.workerVersion)
             .provisionedConcurrentExecutions(props.workerProvisionedConcurrencyHot())
             .build();
-        infof("Created worker Lambda alias %s for version %s", this.workerAliasHot.getAliasName(), this.workerVersionHot.getVersion());
+        infof("Created worker Lambda alias %s for version %s", this.workerAliasHot.getAliasName(), this.workerVersion.getVersion());
 
         // 4. Set up SQS trigger
         //this.consumerLambda.addEventSource(

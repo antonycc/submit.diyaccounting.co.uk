@@ -32,11 +32,11 @@ public class Lambda {
 
     public final DockerImageCode dockerImage;
     public final Function lambda;
-    public final Version ingestVersionZero;
-    public final Version ingestVersionReady;
-    public final Version ingestVersionHot;
+    public final Version ingestVersion;
+    // public final Version ingestVersionReady;
+    // public final Version ingestVersionHot;
     public final Alias ingestAliasZero;
-    public final Alias ingestAliasReady;
+    // public final Alias ingestAliasReady;
     public final Alias ingestAliasHot;
     public final ILogGroup logGroup;
     public final AbstractLambdaProps props;
@@ -95,10 +95,10 @@ public class Lambda {
         this.lambda = dockerFunctionBuilder.build();
         infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
 
-        this.ingestVersionZero =
-            Version.Builder.create(scope, props.idPrefix() + "-ingest-zero-version")
+        this.ingestVersion =
+            Version.Builder.create(scope, props.idPrefix() + "-ingest-version")
                 .lambda(this.lambda)
-                .description("Zero provisioned concurrency")
+                .description("No provisioned concurrency")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         // Lambda Version resources with: RemovalPolicy.RETAIN
@@ -108,36 +108,36 @@ public class Lambda {
         //   AWS themselves recommend this for PC-heavy setups (quietly)
         this.ingestAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-ingest-zero-alias")
             .aliasName("zero")
-            .version(this.ingestVersionZero)
-            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyZero())
+            .version(this.ingestVersion)
+            //.provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyZero())
             .build();
-        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasZero.getAliasName(), this.ingestVersionZero.getVersion());
+        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasZero.getAliasName(), this.ingestVersion.getVersion());
 
-        this.ingestVersionReady =
-            Version.Builder.create(scope, props.idPrefix() + "-ingest-ready-version")
-                .lambda(this.lambda)
-                .description("Ready provisioned concurrency")
-                .removalPolicy(RemovalPolicy.RETAIN)
-                .build();
-        this.ingestAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-ingest-ready-alias")
-            .aliasName("ready")
-            .version(this.ingestVersionReady)
-            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyReady())
-            .build();
-        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasReady.getAliasName(), this.ingestVersionReady.getVersion());
+//        this.ingestVersionReady =
+//            Version.Builder.create(scope, props.idPrefix() + "-ingest-ready-version")
+//                .lambda(this.lambda)
+//                .description("Ready provisioned concurrency")
+//                .removalPolicy(RemovalPolicy.RETAIN)
+//                .build();
+//        this.ingestAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-ingest-ready-alias")
+//            .aliasName("ready")
+//            .version(this.ingestVersionReady)
+//            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyReady())
+//            .build();
+//        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasReady.getAliasName(), this.ingestVersionReady.getVersion());
 
-        this.ingestVersionHot =
-            Version.Builder.create(scope, props.idPrefix() + "-ingest-hot-version")
-                .lambda(this.lambda)
-                .description("Hot provisioned concurrency")
-                .removalPolicy(RemovalPolicy.RETAIN)
-                .build();
+//        this.ingestVersionHot =
+//            Version.Builder.create(scope, props.idPrefix() + "-ingest-hot-version")
+//                .lambda(this.lambda)
+//                .description("Hot provisioned concurrency")
+//                .removalPolicy(RemovalPolicy.RETAIN)
+//                .build();
         this.ingestAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-ingest-hot-alias")
             .aliasName("hot")
-            .version(this.ingestVersionHot)
+            .version(this.ingestVersion)
             .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyHot())
             .build();
-        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasHot.getAliasName(), this.ingestVersionHot.getVersion());
+        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasHot.getAliasName(), this.ingestVersion.getVersion());
 
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period
