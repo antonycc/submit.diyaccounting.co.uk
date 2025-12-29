@@ -2989,7 +2989,7 @@ jobs:
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
 
       - name: Download reports - bundle
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-bundle
@@ -3021,7 +3021,8 @@ jobs:
             target/test-reports/obligation-sandbox/
 
       - name: Download reports - submit vat
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-submit-vat
