@@ -86,7 +86,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         this.workerVersionZero =
             Version.Builder.create(scope, props.idPrefix() + "-worker-zero-version")
-                .lambda(this.lambda)
+                .lambda(this.consumerLambda)
                 .description("Zero provisioned concurrency")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
@@ -99,7 +99,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         this.workerVersionReady =
             Version.Builder.create(scope, props.idPrefix() + "-worker-version-ready")
-                .lambda(this.lambda)
+                .lambda(this.consumerLambda)
                 .description("Ready provisioned concurrency")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
@@ -112,7 +112,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         this.workerVersionHot =
             Version.Builder.create(scope, props.idPrefix() + "-worker-version-hot")
-                .lambda(this.lambda)
+                .lambda(this.consumerLambda)
                 .description("Hot provisioned concurrency")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
