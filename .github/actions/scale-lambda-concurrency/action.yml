@@ -12,7 +12,7 @@ inputs:
     required: true
 
   concurrency-level:
-    description: "Target alias to use: 'zero', 'ready', or 'hot'"
+    description: "Target alias to use: 'zero' or 'hot'"
     required: true
     default: 'zero'
 
@@ -35,8 +35,8 @@ runs:
       run: |
         set -euo pipefail
         LEVEL='${{ inputs.concurrency-level }}'
-        if [[ "$LEVEL" != 'zero' && "$LEVEL" != 'ready' && "$LEVEL" != 'hot' ]]; then
-          echo "Error: concurrency-level must be 'zero', 'ready', or 'hot', got: $LEVEL" >&2
+        if [[ "$LEVEL" != 'zero' && "$LEVEL" != 'hot' ]]; then
+          echo "Error: concurrency-level must be 'zero' or 'hot', got: $LEVEL" >&2
           exit 1
         fi
         echo "Switching deployment '${{ inputs.deployment-name }}' to alias '$LEVEL'"
