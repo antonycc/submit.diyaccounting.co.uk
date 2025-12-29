@@ -97,25 +97,6 @@ public class AsyncApiLambda extends ApiLambda {
             .build();
         infof("Created worker Lambda alias %s for version %s", this.workerAliasZero.getAliasName(), this.workerVersion.getVersion());
 
-//        this.workerVersionReady =
-//            Version.Builder.create(scope, props.idPrefix() + "-worker-version-ready")
-//                .lambda(this.consumerLambda)
-//                .description("Ready provisioned concurrency")
-//                .removalPolicy(RemovalPolicy.RETAIN)
-//                .build();
-//        this.workerAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-worker-ready-alias")
-//            .aliasName("ready")
-//            .version(this.workerVersionReady)
-//            .provisionedConcurrentExecutions(props.workerProvisionedConcurrencyReady())
-//            .build();
-//        infof("Created worker Lambda alias %s for version %s", this.workerAliasReady.getAliasName(), this.workerVersionReady.getVersion());
-
-//        this.workerVersionHot =
-//            Version.Builder.create(scope, props.idPrefix() + "-worker-version-hot")
-//                .lambda(this.consumerLambda)
-//                .description("Hot provisioned concurrency")
-//                .removalPolicy(RemovalPolicy.RETAIN)
-//                .build();
         this.workerAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-worker-hot-alias")
             .aliasName("hot")
             .version(this.workerVersion)

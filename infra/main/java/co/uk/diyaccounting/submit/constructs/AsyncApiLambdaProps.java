@@ -22,11 +22,6 @@ public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
     }
 
     @Value.Default
-    default int workerProvisionedConcurrencyReady() {
-        return 0;
-    }
-
-    @Value.Default
     default int workerProvisionedConcurrencyHot() {
         return 0;
     }

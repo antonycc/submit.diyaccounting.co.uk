@@ -113,19 +113,6 @@ public class Lambda {
             .build();
         infof("Created ingest Lambda alias %s for version %s", this.ingestAliasZero.getAliasName(), this.ingestVersion.getVersion());
 
-//        this.ingestVersionReady =
-//            Version.Builder.create(scope, props.idPrefix() + "-ingest-ready-version")
-//                .lambda(this.lambda)
-//                .description("Ready provisioned concurrency")
-//                .removalPolicy(RemovalPolicy.RETAIN)
-//                .build();
-//        this.ingestAliasReady = Alias.Builder.create(scope, props.idPrefix() + "-ingest-ready-alias")
-//            .aliasName("ready")
-//            .version(this.ingestVersionReady)
-//            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyReady())
-//            .build();
-//        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasReady.getAliasName(), this.ingestVersionReady.getVersion());
-
 //        this.ingestVersionHot =
 //            Version.Builder.create(scope, props.idPrefix() + "-ingest-hot-version")
 //                .lambda(this.lambda)

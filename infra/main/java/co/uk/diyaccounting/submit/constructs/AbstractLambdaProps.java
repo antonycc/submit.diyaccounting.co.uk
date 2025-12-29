@@ -38,11 +38,6 @@ public abstract interface AbstractLambdaProps {
     }
 
     @Value.Default
-    default int ingestProvisionedConcurrencyReady() {
-        return 0;
-    }
-
-    @Value.Default
     default int ingestProvisionedConcurrencyHot() {
         return 0;
     }

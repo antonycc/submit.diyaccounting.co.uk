@@ -115,7 +115,6 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().cognitoTokenPostLambdaFunctionName)
-                        .ingestProvisionedConcurrencyReady(1)
                         .ingestProvisionedConcurrencyHot(1)
                         .handler(props.sharedNames().cognitoTokenPostLambdaHandler)
                         .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().cognitoTokenPostLambdaArn))
@@ -155,8 +154,7 @@ public class AuthStack extends Stack {
                         .functionName(props.sharedNames().customAuthorizerLambdaFunctionName)
                         .handler(props.sharedNames().customAuthorizerLambdaHandler)
                         .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().customAuthorizerLambdaArn))
-                        .ingestProvisionedConcurrencyReady(1)
-                        .ingestProvisionedConcurrencyHot(2)
+                        .ingestProvisionedConcurrencyHot(1)
                         .lambdaArn(props.sharedNames().customAuthorizerLambdaArn)
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
                         .urlPath("/") // Not used for authorizers but required by props
