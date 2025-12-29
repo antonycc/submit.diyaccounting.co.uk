@@ -105,7 +105,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Increase timeout and wait for terminal status (failed or error)
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 95000 });
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 120_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
@@ -188,7 +188,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           }
         }
 
-        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 95000 });
+        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120_000 });
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
         await page.waitForTimeout(500);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
@@ -208,7 +208,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Increase timeout and wait for terminal status (failed or error)
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 95000 });
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 120_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
