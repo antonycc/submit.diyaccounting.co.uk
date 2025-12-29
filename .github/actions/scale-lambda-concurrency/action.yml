@@ -55,7 +55,9 @@ runs:
         aws lambda list-functions \
           --region "${AWS_REGION}" \
           --query "Functions[?starts_with(FunctionName, \`${PREFIX}\`)].FunctionName" \
-          --output text > functions.txt
+          --output text \
+          | tr '\t' '\n' \
+          > functions.txt
 
         if [ ! -s functions.txt ]; then
           echo "No Lambda functions found for prefix ${PREFIX}"
