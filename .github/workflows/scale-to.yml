@@ -12,7 +12,8 @@ on:
         type: choice
         options:
           - 'zero'
-          - 'peak'
+          - 'ready'
+          - 'hot'
         required: true
         default: 'zero'
       environment-name:
