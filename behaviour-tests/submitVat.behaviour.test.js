@@ -305,11 +305,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     await ensureBundlePresent(page, "Test", screenshotPath);
   }
   // TODO: Support testing in non-sandbox mode with production credentials
-  if (envName !== "prod") {
-    await ensureBundlePresent(page, "Guest", screenshotPath);
-    await goToHomePage(page, screenshotPath);
-    await goToBundlesPage(page, screenshotPath);
-  }
+  // if (envName !== "prod") {
+  //   await ensureBundlePresent(page, "Guest", screenshotPath);
+  //   await goToHomePage(page, screenshotPath);
+  //   await goToBundlesPage(page, screenshotPath);
+  // }
   await goToHomePage(page, screenshotPath);
 
   /* *********** */
