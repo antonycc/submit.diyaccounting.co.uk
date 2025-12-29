@@ -1,146 +1,284 @@
-name: "Scale Lambda Concurrency (Alias-based)"
-description: "Activate Lambda capacity tiers (zero | ready | hot) using aliases"
+name: 'Scale Lambda Concurrency (Pattern 2: switch alias in use)'
+description: >
+  Pattern 2: provisioned concurrency is defined in CDK on aliases/versions.
+  This action switches *which alias is in use* by updating:
+  - API Gateway v2 integrations to invoke the selected alias ARN
+  - Lambda SQS event source mappings to invoke the selected alias ARN
+  It does NOT call put/delete-provisioned-concurrency-config.
 
 inputs:
   deployment-name:
-    description: "Deployment name prefix (e.g. prod-abc123 or ci-refresh)"
+    description: 'Deployment name prefix (e.g. ci-asyncpoll or prod-ea373de)'
     required: true
 
   concurrency-level:
-    description: "Capacity tier alias to activate: zero | ready | hot"
+    description: "Target alias to use: 'zero', 'ready', or 'hot'"
     required: true
-    default: "zero"
+    default: 'zero'
 
   aws-region:
-    description: "AWS region"
+    description: 'AWS region'
     required: false
-    default: "eu-west-2"
+    default: 'eu-west-2'
+
+  wait-for-ready:
+    description: "If true, poll provisioned concurrency readiness for non-zero tiers"
+    required: false
+    default: 'true'
 
 runs:
-  using: "composite"
+  using: 'composite'
 
   steps:
     - name: Validate concurrency level
       shell: bash
       run: |
-        LEVEL="${{ inputs.concurrency-level }}"
-        if [[ "$LEVEL" != "zero" && "$LEVEL" != "ready" && "$LEVEL" != "hot" ]]; then
-          echo "Invalid concurrency level: $LEVEL" >&2
+        set -euo pipefail
+        LEVEL='${{ inputs.concurrency-level }}'
+        if [[ "$LEVEL" != 'zero' && "$LEVEL" != 'ready' && "$LEVEL" != 'hot' ]]; then
+          echo "Error: concurrency-level must be 'zero', 'ready', or 'hot', got: $LEVEL" >&2
           exit 1
         fi
-        echo "Scaling Lambdas to '$LEVEL' capacity tier"
+        echo "Switching deployment '${{ inputs.deployment-name }}' to alias '$LEVEL'"
 
-    - name: Discover Lambda functions
+    - name: Discover Lambda functions in deployment
       shell: bash
       env:
-        DEPLOYMENT_NAME: ${{ inputs.deployment-name }}
-        AWS_REGION: ${{ inputs.aws-region }}
+        DEPLOYMENT_NAME: '${{ inputs.deployment-name }}'
+        AWS_REGION: '${{ inputs.aws-region }}'
       run: |
         set -euo pipefail
 
-        echo "Discovering Lambda functions with prefix: ${DEPLOYMENT_NAME}"
+        PREFIX="${DEPLOYMENT_NAME}-"
+        echo "Discovering Lambda functions with prefix: ${PREFIX}"
 
         aws lambda list-functions \
           --region "${AWS_REGION}" \
-          --query "Functions[?starts_with(FunctionName, \`${DEPLOYMENT_NAME}\`)].FunctionName" \
-          --output text \
-          > functions.txt
+          --query "Functions[?starts_with(FunctionName, \`${PREFIX}\`)].FunctionName" \
+          --output text > functions.txt
 
         if [ ! -s functions.txt ]; then
-          echo "No Lambda functions found for deployment ${DEPLOYMENT_NAME}"
+          echo "No Lambda functions found for prefix ${PREFIX}"
           exit 0
         fi
 
-        echo "Found $(wc -w < functions.txt) Lambda functions:"
+        echo "Found $(wc -w < functions.txt) Lambda function(s):"
         cat functions.txt
 
-    - name: Activate alias tier
+    - name: Resolve alias ARNs for target level
       shell: bash
       env:
-        CONCURRENCY_LEVEL: ${{ inputs.concurrency-level }}
-        AWS_REGION: ${{ inputs.aws-region }}
+        CONCURRENCY_LEVEL: '${{ inputs.concurrency-level }}'
+        AWS_REGION: '${{ inputs.aws-region }}'
       run: |
         set -euo pipefail
 
-        SUCCESS=0
-        SKIPPED=0
-        FAILED=0
+        : > alias-arns.tsv
 
         while read -r FUNCTION_NAME; do
-          echo ""
-          echo "Processing ${FUNCTION_NAME}"
-
-          if ! aws lambda get-alias \
+          # Ensure alias exists and capture alias ARN + version
+          ALIAS_JSON="$(aws lambda get-alias \
             --function-name "${FUNCTION_NAME}" \
             --name "${CONCURRENCY_LEVEL}" \
-            --region "${AWS_REGION}" >/dev/null 2>&1; then
-            echo "  ⚠️ Alias '${CONCURRENCY_LEVEL}' not found, skipping"
-            SKIPPED=$((SKIPPED + 1))
-            continue
+            --region "${AWS_REGION}")"
+
+          ALIAS_ARN="$(echo "${ALIAS_JSON}" | jq -r '.AliasArn')"
+          ALIAS_VER="$(echo "${ALIAS_JSON}" | jq -r '.FunctionVersion')"
+
+          if [ -z "${ALIAS_ARN}" ] || [ "${ALIAS_ARN}" = "null" ]; then
+            echo "Alias '${CONCURRENCY_LEVEL}' not found for ${FUNCTION_NAME}" >&2
+            exit 1
           fi
 
-          echo "  ✓ Alias '${CONCURRENCY_LEVEL}' exists"
-          SUCCESS=$((SUCCESS + 1))
+          printf '%s\t%s\t%s\n' "${FUNCTION_NAME}" "${ALIAS_ARN}" "${ALIAS_VER}" >> alias-arns.tsv
+          echo "✓ ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} -> version ${ALIAS_VER}"
         done < functions.txt
 
         echo ""
-        echo "========================================"
-        echo "Alias Activation Summary"
-        echo "========================================"
-        echo "Activated: ${SUCCESS}"
-        echo "Skipped:   ${SKIPPED}"
-        echo "Failed:    ${FAILED}"
-        echo "========================================"
+        echo "Resolved alias ARNs:"
+        cat alias-arns.tsv
 
-        if [ "${FAILED}" -gt 0 ]; then
-          exit 1
-        fi
-
-    - name: Poll provisioned concurrency readiness
+    - name: Update API Gateway v2 integrations to use target alias
       shell: bash
       env:
-        CONCURRENCY_LEVEL: ${{ inputs.concurrency-level }}
-        AWS_REGION: ${{ inputs.aws-region }}
+        DEPLOYMENT_NAME: '${{ inputs.deployment-name }}'
+        CONCURRENCY_LEVEL: '${{ inputs.concurrency-level }}'
+        AWS_REGION: '${{ inputs.aws-region }}'
       run: |
         set -euo pipefail
 
-        if [ "${CONCURRENCY_LEVEL}" = "zero" ]; then
-          echo "Zero tier selected; no readiness polling required"
+        if ! command -v jq >/dev/null 2>&1; then
+          echo "Installing jq..."
+          sudo apt-get update -y >/dev/null
+          sudo apt-get install -y jq >/dev/null
+        fi
+
+        echo ""
+        echo "========================================"
+        echo "API Gateway v2 integration updates"
+        echo "========================================"
+
+        # Heuristic: APIs named like "${DEPLOYMENT_NAME}-..." or exactly "${DEPLOYMENT_NAME}"
+        API_IDS="$(
+          aws apigatewayv2 get-apis \
+            --region "${AWS_REGION}" \
+            --query "Items[?starts_with(Name, \`${DEPLOYMENT_NAME}-\`) || Name==\`${DEPLOYMENT_NAME}\`].ApiId" \
+            --output text
+        )"
+
+        if [ -z "${API_IDS}" ]; then
+          echo "No API Gateway v2 APIs found for deployment name '${DEPLOYMENT_NAME}' (skipping API updates)"
           exit 0
         fi
+
+        echo "Found API(s): ${API_IDS}"
+
+        UPDATED=0
+        SKIPPED=0
+
+        while IFS=$'\t' read -r FUNCTION_NAME ALIAS_ARN ALIAS_VER; do
+          # Extract the lambda function short name (what appears inside IntegrationUri)
+          # Example FUNCTION_NAME: ci-asyncpoll-submit-app-hmrc-vat-return-post
+          SHORT_NAME="${FUNCTION_NAME}"
+
+          for API_ID in ${API_IDS}; do
+            INTEGRATIONS_JSON="$(aws apigatewayv2 get-integrations --api-id "${API_ID}" --region "${AWS_REGION}")"
+
+            # Find integrations whose IntegrationUri mentions this function name (with or without alias)
+            MATCHING_IDS="$(echo "${INTEGRATIONS_JSON}" | jq -r --arg fn "${SHORT_NAME}" '
+              .Items[]
+              | select((.IntegrationUri // "") | contains($fn))
+              | .IntegrationId
+            ')"
+
+            if [ -z "${MATCHING_IDS}" ]; then
+              continue
+            fi
+
+            for INTEGRATION_ID in ${MATCHING_IDS}; do
+              CURRENT_URI="$(echo "${INTEGRATIONS_JSON}" | jq -r --arg id "${INTEGRATION_ID}" '
+                .Items[] | select(.IntegrationId==$id) | .IntegrationUri
+              ')"
+
+              # For Lambda proxy, IntegrationUri format includes the Lambda ARN.
+              # We set it to the alias ARN to force alias invocation.
+              # apigatewayv2 expects the "lambda path" style URI; however it accepts full integration URI.
+              # We update by directly setting IntegrationUri to the alias ARN (AWS will format internally).
+              if echo "${CURRENT_URI}" | grep -q "${ALIAS_ARN}"; then
+                echo "✓ API ${API_ID} integration ${INTEGRATION_ID} already uses ${FUNCTION_NAME}:${CONCURRENCY_LEVEL}"
+                SKIPPED=$((SKIPPED + 1))
+                continue
+              fi
+
+              echo "→ Updating API ${API_ID} integration ${INTEGRATION_ID} to ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER})"
+              aws apigatewayv2 update-integration \
+                --api-id "${API_ID}" \
+                --integration-id "${INTEGRATION_ID}" \
+                --integration-uri "${ALIAS_ARN}" \
+                --region "${AWS_REGION}" >/dev/null
+
+              UPDATED=$((UPDATED + 1))
+            done
+          done
+        done < alias-arns.tsv
+
+        echo "API integration updates: updated=${UPDATED}, skipped=${SKIPPED}"
+
+    - name: Update SQS event source mappings to use target alias
+      shell: bash
+      env:
+        CONCURRENCY_LEVEL: '${{ inputs.concurrency-level }}'
+        AWS_REGION: '${{ inputs.aws-region }}'
+      run: |
+        set -euo pipefail
+
+        echo ""
+        echo "========================================"
+        echo "SQS event source mapping updates"
+        echo "========================================"
+
+        UPDATED=0
+        SKIPPED=0
+
+        while IFS=$'\t' read -r FUNCTION_NAME ALIAS_ARN ALIAS_VER; do
+          # List event source mappings for the base function name
+          # (Mappings may already point at $LATEST or another alias.)
+          MAPPINGS_JSON="$(aws lambda list-event-source-mappings \
+            --function-name "${FUNCTION_NAME}" \
+            --region "${AWS_REGION}" 2>/dev/null || echo '{}')"
+
+          UUIDS="$(echo "${MAPPINGS_JSON}" | jq -r '.EventSourceMappings[]?.UUID')"
+
+          if [ -z "${UUIDS}" ]; then
+            continue
+          fi
+
+          for UUID in ${UUIDS}; do
+            CURRENT_FN_ARN="$(echo "${MAPPINGS_JSON}" | jq -r --arg u "${UUID}" '
+              .EventSourceMappings[] | select(.UUID==$u) | .FunctionArn
+            ')"
+
+            if echo "${CURRENT_FN_ARN}" | grep -q "${ALIAS_ARN}"; then
+              echo "✓ Mapping ${UUID} already uses ${FUNCTION_NAME}:${CONCURRENCY_LEVEL}"
+              SKIPPED=$((SKIPPED + 1))
+              continue
+            fi
+
+            echo "→ Updating mapping ${UUID} to ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER})"
+            aws lambda update-event-source-mapping \
+              --uuid "${UUID}" \
+              --function-name "${ALIAS_ARN}" \
+              --region "${AWS_REGION}" >/dev/null
+
+            UPDATED=$((UPDATED + 1))
+          done
+        done < alias-arns.tsv
+
+        echo "SQS mapping updates: updated=${UPDATED}, skipped=${SKIPPED}"
+
+    - name: Poll provisioned concurrency readiness (non-zero tiers)
+      if: ${{ inputs.wait-for-ready == 'true' && inputs.concurrency-level != 'zero' }}
+      shell: bash
+      env:
+        CONCURRENCY_LEVEL: '${{ inputs.concurrency-level }}'
+        AWS_REGION: '${{ inputs.aws-region }}'
+      run: |
+        set -euo pipefail
 
         MAX_WAIT=300
         INTERVAL=10
         ELAPSED=0
 
         echo ""
-        echo "Polling provisioned concurrency readiness..."
+        echo "========================================"
+        echo "Polling provisioned concurrency readiness"
+        echo "========================================"
 
         while [ $ELAPSED -lt $MAX_WAIT ]; do
           NOT_READY=0
 
-          while read -r FUNCTION_NAME; do
-            STATUS=$(aws lambda get-provisioned-concurrency-config \
+          while IFS=$'\t' read -r FUNCTION_NAME ALIAS_ARN ALIAS_VER; do
+            STATUS="$(aws lambda get-provisioned-concurrency-config \
               --function-name "${FUNCTION_NAME}" \
               --qualifier "${CONCURRENCY_LEVEL}" \
               --region "${AWS_REGION}" \
               --query 'Status' \
-              --output text 2>/dev/null || echo "NOT_CONFIGURED")
+              --output text 2>/dev/null || echo 'NONE')"
 
-            if [ "${STATUS}" != "READY" ]; then
+            if [ "${STATUS}" != 'READY' ]; then
               NOT_READY=$((NOT_READY + 1))
             fi
-          done < functions.txt
+          done < alias-arns.tsv
 
-          if [ "$NOT_READY" -eq 0 ]; then
-            echo "✓ All Lambdas are READY"
+          if [ "${NOT_READY}" -eq 0 ]; then
+            echo "✓ All functions report READY for alias ${CONCURRENCY_LEVEL}"
             exit 0
           fi
 
-          echo "Waiting for ${NOT_READY} Lambda(s) to be ready (${ELAPSED}s elapsed)"
-          sleep $INTERVAL
+          echo "Waiting: ${NOT_READY} function(s) not READY yet (${ELAPSED}s elapsed)"
+          sleep "${INTERVAL}"
           ELAPSED=$((ELAPSED + INTERVAL))
         done
 
-        echo "⚠️ Timed out waiting for provisioned concurrency readiness"
+        echo "⚠️ Timeout waiting for provisioned concurrency readiness"
         exit 1

@@ -20,6 +20,7 @@ public abstract interface AbstractLambdaProps {
     String handler();
 
     String lambdaArn();
+    String ingestDefaultAliasLambdaArn();
 
     @Value.Default
     default int ingestReservedConcurrency() {

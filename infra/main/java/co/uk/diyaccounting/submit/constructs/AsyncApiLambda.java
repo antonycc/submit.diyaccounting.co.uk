@@ -124,7 +124,8 @@ public class AsyncApiLambda extends ApiLambda {
         infof("Created worker Lambda alias %s for version %s", this.workerAliasHot.getAliasName(), this.workerVersionHot.getVersion());
 
         // 4. Set up SQS trigger
-        this.consumerLambda.addEventSource(
+        //this.consumerLambda.addEventSource(
+        this.workerAliasZero.addEventSource(
                 SqsEventSource.Builder.create(this.queue).batchSize(1).build());
 
         // Alarms for consumer lambda

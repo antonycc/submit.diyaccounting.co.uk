@@ -31,6 +31,7 @@ public class AuthStack extends Stack {
     public AbstractApiLambdaProps cognitoTokenPostLambdaProps;
     public Function cognitoTokenPostLambda;
     public ILogGroup cognitoTokenPostLambdaLogGroup;
+    public AbstractApiLambdaProps customAuthorizerLambdaProps;
     public Function customAuthorizerLambda;
     public ILogGroup customAuthorizerLambdaLogGroup;
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
@@ -117,6 +118,7 @@ public class AuthStack extends Stack {
                         .ingestProvisionedConcurrencyReady(1)
                         .ingestProvisionedConcurrencyHot(1)
                         .handler(props.sharedNames().cognitoTokenPostLambdaHandler)
+                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().cognitoTokenPostLambdaArn))
                         .lambdaArn(props.sharedNames().cognitoTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
@@ -151,9 +153,10 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .functionName(props.sharedNames().customAuthorizerLambdaFunctionName)
+                        .handler(props.sharedNames().customAuthorizerLambdaHandler)
+                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().customAuthorizerLambdaArn))
                         .ingestProvisionedConcurrencyReady(1)
                         .ingestProvisionedConcurrencyHot(2)
-                        .handler(props.sharedNames().customAuthorizerLambdaHandler)
                         .lambdaArn(props.sharedNames().customAuthorizerLambdaArn)
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
                         .urlPath("/") // Not used for authorizers but required by props
@@ -161,6 +164,7 @@ public class AuthStack extends Stack {
                         .customAuthorizer(false)
                         .environment(customAuthorizerLambdaEnv)
                         .build());
+        this.customAuthorizerLambdaProps = customAuthorizerLambda.apiProps;
         this.customAuthorizerLambda = customAuthorizerLambda.lambda;
         this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;
         infof(

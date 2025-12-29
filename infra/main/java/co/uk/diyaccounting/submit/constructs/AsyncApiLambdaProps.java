@@ -6,7 +6,10 @@ import software.amazon.awscdk.Duration;
 @Value.Immutable
 public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
 
+    String workerFunctionName();
     String workerHandler();
+    String workerLambdaArn();
+    String workerDefaultAliasLambdaArn();
 
     @Value.Default
     default int workerReservedConcurrency() {
