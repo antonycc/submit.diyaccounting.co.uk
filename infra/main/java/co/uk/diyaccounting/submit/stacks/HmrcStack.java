@@ -172,7 +172,7 @@ public class HmrcStack extends Stack {
                         .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
                         .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcTokenPostIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(1)
+                        .ingestProvisionedConcurrencyHot(0)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)

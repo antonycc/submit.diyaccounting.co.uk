@@ -187,7 +187,7 @@ public class AccountStack extends Stack {
                         .ingestHandler(props.sharedNames().bundlePostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().bundlePostIngestLambdaArn)
                         .ingestDefaultAliasLambdaArn(props.sharedNames().bundlePostIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(1)
+                        .ingestProvisionedConcurrencyHot(0)
                         .workerFunctionName(props.sharedNames().bundlePostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().bundlePostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().bundlePostWorkerLambdaArn)
