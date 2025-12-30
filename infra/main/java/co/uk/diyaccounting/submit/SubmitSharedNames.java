@@ -71,6 +71,7 @@ public class SubmitSharedNames {
 
     public String receiptsTableName;
     public String bundlesTableName;
+    // TODO: Move async table names to LambdaNames
     public String bundlePostAsyncRequestsTableName;
     public String bundleDeleteAsyncRequestsTableName;
     public String hmrcVatReturnPostAsyncRequestsTableName;
@@ -129,6 +130,46 @@ public class SubmitSharedNames {
     public String customAuthorizerIngestLambdaArn;
     public String customAuthorizerIngestDefaultAliasLambdaArn;
 
+    public String bundleGetIngestLambdaHandler;
+    public String bundleGetIngestLambdaFunctionName;
+    public String bundleGetIngestLambdaArn;
+    public String bundleGetIngestDefaultAliasLambdaArn;
+    public HttpMethod bundleGetLambdaHttpMethod;
+    public String bundleGetLambdaUrlPath;
+    public boolean bundleGetLambdaJwtAuthorizer;
+    public boolean bundleGetLambdaCustomAuthorizer;
+
+    // TODO: Replace individual attributes with LambdaNames instances
+    public LambdaNames bundlePost;
+    public String bundlePostIngestLambdaHandler;
+    public String bundlePostIngestLambdaFunctionName;
+    public String bundlePostIngestLambdaArn;
+    public String bundlePostIngestDefaultAliasLambdaArn;
+    public String bundlePostWorkerLambdaHandler;
+    public String bundlePostWorkerLambdaFunctionName;
+    public String bundlePostWorkerLambdaArn;
+    public String bundlePostWorkerDefaultAliasLambdaArn;
+    public String bundlePostLambdaQueueName;
+    public String bundlePostLambdaDeadLetterQueueName;
+    public HttpMethod bundlePostLambdaHttpMethod;
+    public String bundlePostLambdaUrlPath;
+    public boolean bundlePostLambdaJwtAuthorizer;
+    public boolean bundlePostLambdaCustomAuthorizer;
+
+    public String bundleDeleteIngestLambdaHandler;
+    public String bundleDeleteIngestLambdaFunctionName;
+    public String bundleDeleteIngestLambdaArn;
+    public String bundleDeleteIngestDefaultAliasLambdaArn;
+    public String bundleDeleteWorkerLambdaHandler;
+    public String bundleDeleteWorkerLambdaFunctionName;
+    public String bundleDeleteWorkerLambdaArn;
+    public String bundleDeleteWorkerDefaultAliasLambdaArn;
+    public String bundleDeleteLambdaQueueName;
+    public String bundleDeleteLambdaDeadLetterQueueName;
+    public HttpMethod bundleDeleteLambdaHttpMethod;
+    public String bundleDeleteLambdaUrlPath;
+    public boolean bundleDeleteLambdaJwtAuthorizer;
+    public boolean bundleDeleteLambdaCustomAuthorizer;
 
     public String hmrcTokenPostIngestLambdaHandler;
     public String hmrcTokenPostIngestLambdaFunctionName;
@@ -193,45 +234,6 @@ public class SubmitSharedNames {
     public String receiptGetByNameLambdaUrlPath;
     public boolean receiptGetLambdaJwtAuthorizer;
     public boolean receiptGetLambdaCustomAuthorizer;
-
-    public String bundleGetIngestLambdaHandler;
-    public String bundleGetIngestLambdaFunctionName;
-    public String bundleGetIngestLambdaArn;
-    public String bundleGetIngestDefaultAliasLambdaArn;
-    public HttpMethod bundleGetLambdaHttpMethod;
-    public String bundleGetLambdaUrlPath;
-    public boolean bundleGetLambdaJwtAuthorizer;
-    public boolean bundleGetLambdaCustomAuthorizer;
-
-    public String bundlePostIngestLambdaHandler;
-    public String bundlePostIngestLambdaFunctionName;
-    public String bundlePostIngestLambdaArn;
-    public String bundlePostIngestDefaultAliasLambdaArn;
-    public String bundlePostWorkerLambdaHandler;
-    public String bundlePostWorkerLambdaFunctionName;
-    public String bundlePostWorkerLambdaArn;
-    public String bundlePostWorkerDefaultAliasLambdaArn;
-    public String bundlePostLambdaQueueName;
-    public String bundlePostLambdaDeadLetterQueueName;
-    public HttpMethod bundlePostLambdaHttpMethod;
-    public String bundlePostLambdaUrlPath;
-    public boolean bundlePostLambdaJwtAuthorizer;
-    public boolean bundlePostLambdaCustomAuthorizer;
-
-    public String bundleDeleteIngestLambdaHandler;
-    public String bundleDeleteIngestLambdaFunctionName;
-    public String bundleDeleteIngestLambdaArn;
-    public String bundleDeleteIngestDefaultAliasLambdaArn;
-    public String bundleDeleteWorkerLambdaHandler;
-    public String bundleDeleteWorkerLambdaFunctionName;
-    public String bundleDeleteWorkerLambdaArn;
-    public String bundleDeleteWorkerDefaultAliasLambdaArn;
-    public String bundleDeleteLambdaQueueName;
-    public String bundleDeleteLambdaDeadLetterQueueName;
-    public HttpMethod bundleDeleteLambdaHttpMethod;
-    public String bundleDeleteLambdaUrlPath;
-    public boolean bundleDeleteLambdaJwtAuthorizer;
-    public boolean bundleDeleteLambdaCustomAuthorizer;
 
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
@@ -407,25 +409,31 @@ public class SubmitSharedNames {
             List.of(new ApiParameter(
                 "x-wait-time-ms", "header", false, "Max time to wait for synchronous response (ms)"))));
 
-        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
-        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
-        this.bundlePostLambdaJwtAuthorizer = true;
-        this.bundlePostLambdaCustomAuthorizer = false;
-        var bundlePostLambdaHandlerName = "bundlePost.ingestHandler";
-        var bundlePostLambdaWorkerHandlerName = "bundlePost.workerHandler";
-        var bundlePostLambdaHandlerDashed =
-            ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
-        this.bundlePostIngestLambdaFunctionName =
-            "%s-%s".formatted(this.appResourceNamePrefix, bundlePostLambdaHandlerDashed);
-        this.bundlePostIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaHandlerName);
-        this.bundlePostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
-        this.bundlePostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundlePostIngestLambdaArn, this.defaultAliasName);
-        this.bundlePostWorkerLambdaFunctionName = "%s-worker".formatted(this.bundlePostIngestLambdaFunctionName);
-        this.bundlePostWorkerLambdaHandler =
-            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaWorkerHandlerName);
-        this.bundlePostWorkerLambdaArn = "%s-worker".formatted(this.bundlePostIngestLambdaArn);
-        this.bundlePostWorkerDefaultAliasLambdaArn =
-            "%s:%s".formatted(this.bundlePostWorkerLambdaArn, this.defaultAliasName);
+        var bundlePostProps = LambdaNameProps.builder()
+            .apiHttpMethod(HttpMethod.POST)
+            .apiUrlPath("/api/v1/bundle")
+            .handlerPath("account")
+            .ingestHandlerName("bundlePost.ingestHandler")
+            .workerHandlerName("bundlePost.workerHandler")
+            .apiJwtAuthorizer(true)
+            .apiCustomAuthorizer(false)
+            .resourceNamePrefix(this.appResourceNamePrefix)
+            .lambdaArnPrefix(appLambdaArnPrefix)
+            .build();
+        this.bundlePost = new LambdaNames(bundlePostProps);
+        // TODO: Remove and reference bundlePost directly where used
+        this.bundlePostLambdaHttpMethod = this.bundlePost.apiHttpMethod;
+        this.bundlePostLambdaUrlPath = this.bundlePost.apiUrlPath;
+        this.bundlePostLambdaJwtAuthorizer = this.bundlePost.apiJwtAuthorizer;
+        this.bundlePostLambdaCustomAuthorizer = this.bundlePost.apiCustomAuthorizer;
+        this.bundlePostIngestLambdaFunctionName = this.bundlePost.ingestLambdaFunctionName;
+        this.bundlePostIngestLambdaHandler = this.bundlePost.ingestLambdaHandler;
+        this.bundlePostIngestLambdaArn = this.bundlePost.ingestLambdaArn;
+        this.bundlePostIngestDefaultAliasLambdaArn = this.bundlePost.ingestDefaultAliasLambdaArn;
+        this.bundlePostWorkerLambdaFunctionName = this.bundlePost.workerLambdaFunctionName;
+        this.bundlePostWorkerLambdaHandler = this.bundlePost.workerLambdaHandler;
+        this.bundlePostWorkerLambdaArn = this.bundlePost.workerLambdaArn;
+        this.bundlePostWorkerDefaultAliasLambdaArn = this.bundlePost.workerDefaultAliasLambdaArn;
         this.bundlePostLambdaQueueName = "%s-queue".formatted(this.bundlePostIngestLambdaFunctionName);
         this.bundlePostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundlePostIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -434,6 +442,33 @@ public class SubmitSharedNames {
             "Request new bundle",
             "Creates a new bundle request for the authenticated user",
             "requestBundle"));
+//        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
+//        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
+//        this.bundlePostLambdaJwtAuthorizer = true;
+//        this.bundlePostLambdaCustomAuthorizer = false;
+//        var bundlePostLambdaHandlerName = "bundlePost.ingestHandler";
+//        var bundlePostLambdaWorkerHandlerName = "bundlePost.workerHandler";
+//        var bundlePostLambdaHandlerDashed =
+//            ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
+//        this.bundlePostIngestLambdaFunctionName =
+//            "%s-%s".formatted(this.appResourceNamePrefix, bundlePostLambdaHandlerDashed);
+//        this.bundlePostIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaHandlerName);
+//        this.bundlePostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
+//        this.bundlePostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundlePostIngestLambdaArn, this.defaultAliasName);
+//        this.bundlePostWorkerLambdaFunctionName = "%s-worker".formatted(this.bundlePostIngestLambdaFunctionName);
+//        this.bundlePostWorkerLambdaHandler =
+//            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaWorkerHandlerName);
+//        this.bundlePostWorkerLambdaArn = "%s-worker".formatted(this.bundlePostIngestLambdaArn);
+//        this.bundlePostWorkerDefaultAliasLambdaArn =
+//            "%s:%s".formatted(this.bundlePostWorkerLambdaArn, this.defaultAliasName);
+//        this.bundlePostLambdaQueueName = "%s-queue".formatted(this.bundlePostIngestLambdaFunctionName);
+//        this.bundlePostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundlePostIngestLambdaFunctionName);
+//        publishedApiLambdas.add(new PublishedLambda(
+//            this.bundlePostLambdaHttpMethod,
+//            this.bundlePostLambdaUrlPath,
+//            "Request new bundle",
+//            "Creates a new bundle request for the authenticated user",
+//            "requestBundle"));
 
         this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
         this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
