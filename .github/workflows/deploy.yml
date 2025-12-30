@@ -1577,26 +1577,6 @@ jobs:
     outputs:
       originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
 
-#  scale-lambda-concurrency:
-#    name: 'scale Lambda concurrency to ready'
-#    #if: ${{ needs.names.outputs.environment-name == 'prod' }}
-#    needs:
-#      - names
-#      - skip-deploy-check
-#      - deploy-auth
-#      - deploy-hmrc
-#      - deploy-account
-#      - deploy-api
-#      - deploy-edge
-#    uses: './.github/workflows/scale-to.yml'
-#    permissions:
-#      id-token: write
-#      contents: read
-#    with:
-#      concurrency-level: 'ready'
-#      environment-name: ${{ needs.names.outputs.environment-name }}
-#      deployment-name: ${{ needs.names.outputs.deployment-name }}
-
   deploy-publish:
     name: 'deploy publish'
     needs:
@@ -2895,6 +2875,27 @@ jobs:
           retention-days: 30
           path: |
             target/test-reports/
+
+  scale-lambda-concurrency:
+    name: 'scale Lambda concurrency to ready'
+    if: ${{ !cancelled() && needs.names.outputs.environment-name != 'prod' }}
+    needs:
+      - names
+      - web-test-bundle
+      - web-test-submit-vat
+      - web-test-submit-vat-sandbox
+      - web-test-post-vat-return-sandbox
+      - web-test-get-vat-return-sandbox
+      - web-test-obligation-sandbox
+      - web-test-fraud-prevention-headers-vat-sandbox
+    uses: './.github/workflows/scale-to.yml'
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      concurrency-level: 'zero'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
 
   upload-web-test-results:
     if: ${{ !cancelled() }}

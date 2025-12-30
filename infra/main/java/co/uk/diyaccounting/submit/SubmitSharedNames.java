@@ -280,8 +280,8 @@ public class SubmitSharedNames {
                         props.deploymentName,
                         props.subDomainName,
                         props.hostedZoneName); // TODO -> deploymentDomainName
-        this.defaultAliasName = "zero";
-        // this.defaultAliasName = "hot";
+        // this.defaultAliasName = "zero";
+        this.defaultAliasName = "hot";
         this.baseUrl = "https://%s/".formatted(this.deploymentDomainName);
         this.dashedDeploymentDomainName = buildDashedDomainName(this.deploymentDomainName);
 
