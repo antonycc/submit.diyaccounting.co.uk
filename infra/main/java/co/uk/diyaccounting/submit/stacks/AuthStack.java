@@ -130,7 +130,7 @@ public class AuthStack extends Stack {
         this.cognitoTokenPostLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.cognitoTokenPostLambdaProps);
         infof(
-                "Created Lambda %s for Cognito exchange token with handler %s",
+                "Created Lambda %s for Cognito exchange token with ingestHandler %s",
                 this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostIngestLambdaHandler);
 
         // Grant Lambdas access to DynamoDB Bundles Table
@@ -166,7 +166,7 @@ public class AuthStack extends Stack {
         this.customAuthorizerLambda = customAuthorizerLambda.lambda;
         this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;
         infof(
-                "Created Custom Authorizer Lambda %s with handler %s",
+                "Created Custom Authorizer Lambda %s with ingestHandler %s",
                 this.customAuthorizerLambda.getNode().getId(), props.sharedNames().customAuthorizerIngestLambdaHandler);
 
         // Grant Custom Authorizer Lambda access to DynamoDB Bundles Table

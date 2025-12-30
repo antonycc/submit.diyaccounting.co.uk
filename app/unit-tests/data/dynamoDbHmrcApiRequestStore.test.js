@@ -69,11 +69,6 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
     const { hashSub } = await import("@app/services/subHasher.js");
 
-    // add request correlation data
-    context.set("requestId", "req-123");
-    context.set("amznTraceId", "Root=1-abc");
-    context.set("traceparent", "00-8f3c...-01");
-
     const input = {
       url: "https://hmrc.example/api",
       httpRequest: { method: "POST", headers: { a: "b" }, body: { x: 1 } },
@@ -81,24 +76,31 @@ describe("dynamoDbHmrcApiRequestStore", () => {
       duration: 42,
     };
 
-    // Capture the PutCommand input passed via mock send
-    mockSend.mockImplementation(async (cmd) => {
-      // mimic AWS client behaviour
-      expect(cmd).toBeInstanceOf((await import("@aws-sdk/lib-dynamodb")).PutCommand);
-      const expectedHashedSub = hashSub("user-sub");
-      expect(cmd.input.TableName).toBe("unit-test-hmrc-requests");
-      expect(cmd.input.Item.hashedSub).toBe(expectedHashedSub);
-      expect(cmd.input.Item.requestId).toBe("req-123");
-      expect(cmd.input.Item.url).toBe(input.url);
-      expect(cmd.input.Item.method).toBe("POST");
-      // duration and ttl should be numbers
-      expect(typeof cmd.input.Item.duration).toBe("number");
-      expect(typeof cmd.input.Item.ttl).toBe("number");
-      return {};
-    });
+    await context.run(new Map(), async () => {
+      // add request correlation data
+      context.set("requestId", "req-123");
+      context.set("amznTraceId", "Root=1-abc");
+      context.set("traceparent", "00-8f3c...-01");
 
-    // Act
-    await putHmrcApiRequest("user-sub", input);
+      // Capture the PutCommand input passed via mock send
+      mockSend.mockImplementation(async (cmd) => {
+        // mimic AWS client behaviour
+        expect(cmd).toBeInstanceOf((await import("@aws-sdk/lib-dynamodb")).PutCommand);
+        const expectedHashedSub = hashSub("user-sub");
+        expect(cmd.input.TableName).toBe("unit-test-hmrc-requests");
+        expect(cmd.input.Item.hashedSub).toBe(expectedHashedSub);
+        expect(cmd.input.Item.requestId).toBe("req-123");
+        expect(cmd.input.Item.url).toBe(input.url);
+        expect(cmd.input.Item.method).toBe("POST");
+        // duration and ttl should be numbers
+        expect(typeof cmd.input.Item.duration).toBe("number");
+        expect(typeof cmd.input.Item.ttl).toBe("number");
+        return {};
+      });
+
+      // Act
+      await putHmrcApiRequest("user-sub", input);
+    });
 
     // Assert
     expect(mockSend).toHaveBeenCalledTimes(1);

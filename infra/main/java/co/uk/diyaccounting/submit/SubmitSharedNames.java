@@ -360,7 +360,7 @@ public class SubmitSharedNames {
         this.cognitoTokenPostLambdaUrlPath = "/api/v1/cognito/token";
         this.cognitoTokenPostLambdaJwtAuthorizer = false;
         this.cognitoTokenPostLambdaCustomAuthorizer = false;
-        var cognitoTokenPostLambdaHandlerName = "cognitoTokenPost.handler";
+        var cognitoTokenPostLambdaHandlerName = "cognitoTokenPost.ingestHandler";
         var cognitoTokenPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(cognitoTokenPostLambdaHandlerName);
         this.cognitoTokenPostIngestLambdaFunctionName =
@@ -377,7 +377,7 @@ public class SubmitSharedNames {
                 "exchangeCognitoToken"));
 
         // Custom authorizer for HMRC VAT endpoints
-        var customAuthorizerHandlerName = "customAuthorizer.handler";
+        var customAuthorizerHandlerName = "customAuthorizer.ingestHandler";
         var customAuthorizerHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(customAuthorizerHandlerName);
         this.customAuthorizerIngestLambdaFunctionName =
@@ -391,7 +391,7 @@ public class SubmitSharedNames {
         this.bundleGetLambdaUrlPath = "/api/v1/bundle";
         this.bundleGetLambdaJwtAuthorizer = true;
         this.bundleGetLambdaCustomAuthorizer = false;
-        var bundleGetLambdaHandlerName = "bundleGet.handler";
+        var bundleGetLambdaHandlerName = "bundleGet.ingestHandler";
         var bundleGetLambdaHandlerDashed =
             ResourceNameUtils.convertCamelCaseToDashSeparated(bundleGetLambdaHandlerName);
         this.bundleGetIngestLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
@@ -411,7 +411,7 @@ public class SubmitSharedNames {
         this.bundlePostLambdaUrlPath = "/api/v1/bundle";
         this.bundlePostLambdaJwtAuthorizer = true;
         this.bundlePostLambdaCustomAuthorizer = false;
-        var bundlePostLambdaHandlerName = "bundlePost.handler";
+        var bundlePostLambdaHandlerName = "bundlePost.ingestHandler";
         var bundlePostLambdaWorkerHandlerName = "bundlePost.workerHandler";
         var bundlePostLambdaHandlerDashed =
             ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
@@ -420,12 +420,6 @@ public class SubmitSharedNames {
         this.bundlePostIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaHandlerName);
         this.bundlePostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
         this.bundlePostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundlePostIngestLambdaArn, this.defaultAliasName);
-        publishedApiLambdas.add(new PublishedLambda(
-            this.bundlePostLambdaHttpMethod,
-            this.bundlePostLambdaUrlPath,
-            "Request new bundle",
-            "Creates a new bundle request for the authenticated user",
-            "requestBundle"));
         this.bundlePostWorkerLambdaFunctionName = "%s-worker".formatted(this.bundlePostIngestLambdaFunctionName);
         this.bundlePostWorkerLambdaHandler =
             "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaWorkerHandlerName);
@@ -434,12 +428,18 @@ public class SubmitSharedNames {
             "%s:%s".formatted(this.bundlePostWorkerLambdaArn, this.defaultAliasName);
         this.bundlePostLambdaQueueName = "%s-queue".formatted(this.bundlePostIngestLambdaFunctionName);
         this.bundlePostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundlePostIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+            this.bundlePostLambdaHttpMethod,
+            this.bundlePostLambdaUrlPath,
+            "Request new bundle",
+            "Creates a new bundle request for the authenticated user",
+            "requestBundle"));
 
         this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
         this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
         this.bundleDeleteLambdaJwtAuthorizer = true;
         this.bundleDeleteLambdaCustomAuthorizer = false;
-        var bundleDeleteLambdaHandlerName = "bundleDelete.handler";
+        var bundleDeleteLambdaHandlerName = "bundleDelete.ingestHandler";
         var bundleDeleteLambdaWorkerHandlerName = "bundleDelete.workerHandler";
         var bundleDeleteLambdaHandlerDashed =
             ResourceNameUtils.convertCamelCaseToDashSeparated(bundleDeleteLambdaHandlerName);
@@ -449,6 +449,14 @@ public class SubmitSharedNames {
             "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaHandlerName);
         this.bundleDeleteIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleDeleteLambdaHandlerDashed);
         this.bundleDeleteIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundleDeleteIngestLambdaArn, this.defaultAliasName);
+        this.bundleDeleteWorkerLambdaFunctionName = "%s-worker".formatted(this.bundleDeleteIngestLambdaFunctionName);
+        this.bundleDeleteWorkerLambdaHandler =
+            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaWorkerHandlerName);
+        this.bundleDeleteWorkerLambdaArn = "%s-worker".formatted(this.bundleDeleteIngestLambdaArn);
+        this.bundleDeleteWorkerDefaultAliasLambdaArn =
+            "%s:%s".formatted(this.bundleDeleteWorkerLambdaArn, this.defaultAliasName);
+        this.bundleDeleteLambdaQueueName = "%s-queue".formatted(this.bundleDeleteIngestLambdaFunctionName);
+        this.bundleDeleteLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundleDeleteIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
             this.bundleDeleteLambdaHttpMethod,
             this.bundleDeleteLambdaUrlPath,
@@ -465,20 +473,12 @@ public class SubmitSharedNames {
             "Deletes a bundle for the authenticated user using a path parameter",
             "deleteBundleById",
             List.of(new ApiParameter("id", "path", true, "The bundle id (or name) to delete"))));
-        this.bundleDeleteWorkerLambdaFunctionName = "%s-worker".formatted(this.bundleDeleteIngestLambdaFunctionName);
-        this.bundleDeleteWorkerLambdaHandler =
-            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaWorkerHandlerName);
-        this.bundleDeleteWorkerLambdaArn = "%s-worker".formatted(this.bundleDeleteIngestLambdaArn);
-        this.bundleDeleteWorkerDefaultAliasLambdaArn =
-            "%s:%s".formatted(this.bundleDeleteWorkerLambdaArn, this.defaultAliasName);
-        this.bundleDeleteLambdaQueueName = "%s-queue".formatted(this.bundleDeleteIngestLambdaFunctionName);
-        this.bundleDeleteLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundleDeleteIngestLambdaFunctionName);
 
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
         this.hmrcTokenPostLambdaJwtAuthorizer = false;
         this.hmrcTokenPostLambdaCustomAuthorizer = false;
-        var hmrcTokenPostLambdaHandlerName = "hmrcTokenPost.handler";
+        var hmrcTokenPostLambdaHandlerName = "hmrcTokenPost.ingestHandler";
         var hmrcTokenPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcTokenPostLambdaHandlerName);
         this.hmrcTokenPostIngestLambdaFunctionName =
@@ -498,7 +498,7 @@ public class SubmitSharedNames {
         this.hmrcVatReturnPostLambdaUrlPath = "/api/v1/hmrc/vat/return";
         this.hmrcVatReturnPostLambdaJwtAuthorizer = false;
         this.hmrcVatReturnPostLambdaCustomAuthorizer = true;
-        var hmrcVatReturnPostLambdaHandlerName = "hmrcVatReturnPost.handler";
+        var hmrcVatReturnPostLambdaHandlerName = "hmrcVatReturnPost.ingestHandler";
         var hmrcVatReturnPostLambdaWorkerHandlerName = "hmrcVatReturnPost.workerHandler";
         var hmrcVatReturnPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnPostLambdaHandlerName);
@@ -508,13 +508,6 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaHandlerName);
         this.hmrcVatReturnPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnPostLambdaHandlerDashed);
         this.hmrcVatReturnPostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.hmrcVatReturnPostIngestLambdaArn, this.defaultAliasName);
-        publishedApiLambdas.add(new PublishedLambda(
-                this.hmrcVatReturnPostLambdaHttpMethod,
-                this.hmrcVatReturnPostLambdaUrlPath,
-                "Submit VAT return to HMRC",
-                "Submits a VAT return to HMRC on behalf of the authenticated user",
-                "submitVatReturn",
-                List.of(new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"))));
         this.hmrcVatReturnPostWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         this.hmrcVatReturnPostWorkerLambdaHandler =
             "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaWorkerHandlerName);
@@ -523,12 +516,19 @@ public class SubmitSharedNames {
             "%s:%s".formatted(this.hmrcVatReturnPostWorkerLambdaArn, this.defaultAliasName);
         this.hmrcVatReturnPostLambdaQueueName = "%s-queue".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         this.hmrcVatReturnPostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+            this.hmrcVatReturnPostLambdaHttpMethod,
+            this.hmrcVatReturnPostLambdaUrlPath,
+            "Submit VAT return to HMRC",
+            "Submits a VAT return to HMRC on behalf of the authenticated user",
+            "submitVatReturn",
+            List.of(new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"))));
 
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
         this.hmrcVatObligationGetLambdaJwtAuthorizer = false;
         this.hmrcVatObligationGetLambdaCustomAuthorizer = true;
-        var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.handler";
+        var hmrcVatObligationGetLambdaHandlerName = "hmrcVatObligationGet.ingestHandler";
         var hmrcVatObligationGetLambdaWorkerHandlerName = "hmrcVatObligationGet.workerHandler";
         var hmrcVatObligationGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatObligationGetLambdaHandlerName);
@@ -540,18 +540,6 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatObligationGetLambdaHandlerDashed);
         this.hmrcVatObligationGetIngestDefaultAliasLambdaArn =
                 "%s:%s".formatted(this.hmrcVatObligationGetIngestLambdaArn, this.defaultAliasName);
-        publishedApiLambdas.add(new PublishedLambda(
-                this.hmrcVatObligationGetLambdaHttpMethod,
-                this.hmrcVatObligationGetLambdaUrlPath,
-                "Get VAT obligations from HMRC",
-                "Retrieves VAT obligations from HMRC for the authenticated user",
-                "getVatObligations",
-                List.of(
-                        new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
-                        new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
-                        new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
-                        new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
-                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
         this.hmrcVatObligationGetWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
         this.hmrcVatObligationGetWorkerLambdaHandler =
             "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaWorkerHandlerName);
@@ -560,12 +548,24 @@ public class SubmitSharedNames {
             "%s:%s".formatted(this.hmrcVatObligationGetWorkerLambdaArn, this.defaultAliasName);
         this.hmrcVatObligationGetLambdaQueueName = "%s-queue".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
         this.hmrcVatObligationGetLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+            this.hmrcVatObligationGetLambdaHttpMethod,
+            this.hmrcVatObligationGetLambdaUrlPath,
+            "Get VAT obligations from HMRC",
+            "Retrieves VAT obligations from HMRC for the authenticated user",
+            "getVatObligations",
+            List.of(
+                new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
+                new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
+                new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
         this.hmrcVatReturnGetLambdaJwtAuthorizer = false;
         this.hmrcVatReturnGetLambdaCustomAuthorizer = true;
-        var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.handler";
+        var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.ingestHandler";
         var hmrcVatReturnGetLambdaWorkerHandlerName = "hmrcVatReturnGet.workerHandler";
         var hmrcVatReturnGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatReturnGetLambdaHandlerName);
@@ -575,16 +575,6 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
         this.hmrcVatReturnGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
         this.hmrcVatReturnGetIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.hmrcVatReturnGetIngestLambdaArn, this.defaultAliasName);
-        publishedApiLambdas.add(new PublishedLambda(
-                this.hmrcVatReturnGetLambdaHttpMethod,
-                this.hmrcVatReturnGetLambdaUrlPath,
-                "Get submitted VAT returns from HMRC",
-                "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
-                "getVatReturns",
-                List.of(
-                        new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
-                        new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
-                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
         this.hmrcVatReturnGetWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
         this.hmrcVatReturnGetWorkerLambdaHandler =
             "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaWorkerHandlerName);
@@ -593,13 +583,23 @@ public class SubmitSharedNames {
             "%s:%s".formatted(this.hmrcVatReturnGetWorkerLambdaArn, this.defaultAliasName);
         this.hmrcVatReturnGetLambdaQueueName = "%s-queue".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
         this.hmrcVatReturnGetLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+            this.hmrcVatReturnGetLambdaHttpMethod,
+            this.hmrcVatReturnGetLambdaUrlPath,
+            "Get submitted VAT returns from HMRC",
+            "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+            "getVatReturns",
+            List.of(
+                new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
+                new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
 
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
         this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
         this.receiptGetLambdaJwtAuthorizer = true;
         this.receiptGetLambdaCustomAuthorizer = false;
         this.receiptGetByNameLambdaUrlPath = "/api/v1/hmrc/receipt/{name}";
-        var receiptGetLambdaHandlerName = "hmrcReceiptGet.handler";
+        var receiptGetLambdaHandlerName = "hmrcReceiptGet.ingestHandler";
         var receiptGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(receiptGetLambdaHandlerName);
         this.receiptGetIngestLambdaFunctionName =
@@ -624,7 +624,7 @@ public class SubmitSharedNames {
                 "getReceiptByName",
                 List.of(new ApiParameter("name", "path", true, "The receipt file name including .json"))));
 
-        var appSelfDestructLambdaHandlerName = "selfDestruct.handler";
+        var appSelfDestructLambdaHandlerName = "selfDestruct.ingestHandler";
         var appSelfDestructLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(appSelfDestructLambdaHandlerName);
         this.selfDestructLambdaFunctionName =

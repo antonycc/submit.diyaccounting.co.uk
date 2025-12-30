@@ -121,6 +121,7 @@ runs:
         echo "========================================"
 
         # Heuristic: APIs named like "${DEPLOYMENT_NAME}-..." or exactly "${DEPLOYMENT_NAME}"
+        echo "Discovering API Gateway v2 APIs with prefix: ${DEPLOYMENT_NAME}-"
         API_IDS="$(
           aws apigatewayv2 get-apis \
             --region "${AWS_REGION}" \
@@ -154,8 +155,10 @@ runs:
             ')"
 
             if [ -z "${MATCHING_IDS}" ]; then
+              echo "No matching integrations found for function ${FUNCTION_NAME} in API ${API_ID}"
               continue
             fi
+            echo "Found ${#MATCHING_IDS} matching integration(s) for ${FUNCTION_NAME} in API ${API_ID}:"
 
             for INTEGRATION_ID in ${MATCHING_IDS}; do
               CURRENT_URI="$(echo "${INTEGRATIONS_JSON}" | jq -r --arg id "${INTEGRATION_ID}" '
@@ -171,6 +174,7 @@ runs:
                 SKIPPED=$((SKIPPED + 1))
                 continue
               fi
+              echo "${CURRENT_URI}" | grep -q "${ALIAS_ARN}"
 
               echo "→ Updating API ${API_ID} integration ${INTEGRATION_ID} to ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER})"
               aws apigatewayv2 update-integration \
@@ -178,6 +182,7 @@ runs:
                 --integration-id "${INTEGRATION_ID}" \
                 --integration-uri "${ALIAS_ARN}" \
                 --region "${AWS_REGION}" >/dev/null
+              echo "✓ Updated API ${API_ID} integration ${INTEGRATION_ID} to ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER})"
 
               UPDATED=$((UPDATED + 1))
             done
@@ -202,35 +207,43 @@ runs:
         UPDATED=0
         SKIPPED=0
 
+        echo "Discovering SQS event source mappings from alias-arns.tsv"
+        cat alias-arns.tsv | grep -v '^#' | cut -f 1,2
         while IFS=$'\t' read -r FUNCTION_NAME ALIAS_ARN ALIAS_VER; do
           # List event source mappings for the base function name
           # (Mappings may already point at $LATEST or another alias.)
           MAPPINGS_JSON="$(aws lambda list-event-source-mappings \
             --function-name "${FUNCTION_NAME}" \
             --region "${AWS_REGION}" 2>/dev/null || echo '{}')"
+          echo "MAPPINGS_JSON: ${MAPPINGS_JSON}"
 
           UUIDS="$(echo "${MAPPINGS_JSON}" | jq -r '.EventSourceMappings[]?.UUID')"
+          echo "UUIDS: ${UUIDS}"
 
           if [ -z "${UUIDS}" ]; then
             continue
           fi
+          echo "Found ${#UUIDS} mapping(s) for ${FUNCTION_NAME}"
 
           for UUID in ${UUIDS}; do
             CURRENT_FN_ARN="$(echo "${MAPPINGS_JSON}" | jq -r --arg u "${UUID}" '
               .EventSourceMappings[] | select(.UUID==$u) | .FunctionArn
             ')"
+            echo "CURRENT_FN_ARN: ${CURRENT_FN_ARN}"
 
             if echo "${CURRENT_FN_ARN}" | grep -q "${ALIAS_ARN}"; then
               echo "✓ Mapping ${UUID} already uses ${FUNCTION_NAME}:${CONCURRENCY_LEVEL}"
               SKIPPED=$((SKIPPED + 1))
               continue
             fi
+            echo "${CURRENT_FN_ARN}" | grep -q "${ALIAS_ARN}"
 
             echo "→ Updating mapping ${UUID} to ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER})"
             aws lambda update-event-source-mapping \
               --uuid "${UUID}" \
               --function-name "${ALIAS_ARN}" \
               --region "${AWS_REGION}" >/dev/null
+            echo "✓ Updated mapping ${UUID} to ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER})"
 
             UPDATED=$((UPDATED + 1))
           done
@@ -256,20 +269,28 @@ runs:
         echo "Polling provisioned concurrency readiness"
         echo "========================================"
 
+        echo "Waiting up to ${MAX_WAIT}s for provisioned concurrency to be READY"
         while [ $ELAPSED -lt $MAX_WAIT ]; do
           NOT_READY=0
 
+          echo "Checking provisioned concurrency readiness for alias ${CONCURRENCY_LEVEL}"
           while IFS=$'\t' read -r FUNCTION_NAME ALIAS_ARN ALIAS_VER; do
+            echo "Checking ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER})"
             STATUS="$(aws lambda get-provisioned-concurrency-config \
               --function-name "${FUNCTION_NAME}" \
               --qualifier "${CONCURRENCY_LEVEL}" \
               --region "${AWS_REGION}" \
               --query 'Status' \
               --output text 2>/dev/null || echo 'NONE')"
+            echo "STATUS: ${STATUS}"
 
             if [ "${STATUS}" != 'READY' ]; then
               NOT_READY=$((NOT_READY + 1))
+              echo "✗ ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER}) is NOT READY"
+            else
+              echo "✓ ${FUNCTION_NAME}:${CONCURRENCY_LEVEL} (v${ALIAS_VER}) is READY"
             fi
+
           done < alias-arns.tsv
 
           if [ "${NOT_READY}" -eq 0 ]; then

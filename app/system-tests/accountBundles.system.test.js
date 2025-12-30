@@ -44,14 +44,14 @@ describe("System: account bundle ingestHandlers", () => {
   });
 
   it("GET /bundle returns user bundles (authorized)", async () => {
-    const { handler } = await import("@app/functions/account/bundleGet.js");
+    const { ingestHandler } = await import("@app/functions/account/bundleGet.js");
     const token = makeIdToken("test-sub");
     const event = buildLambdaEvent({
       method: "GET",
       path: "/api/v1/bundle",
       headers: { Authorization: `Bearer ${token}` },
     });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
     // repository returns objects; ensure at least one entry
@@ -59,7 +59,7 @@ describe("System: account bundle ingestHandlers", () => {
   });
 
   it("POST /bundle adds a new bundle when qualifiers satisfied", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-sub", { transactionId: "tx-1", subscriptionTier: "pro" });
     const event = buildLambdaEvent({
       method: "POST",
@@ -71,12 +71,12 @@ describe("System: account bundle ingestHandlers", () => {
         qualifiers: { transactionId: "tx-1", subscriptionTier: "pro" },
       },
     });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect([200, 403, 400, 404]).toContain(res.statusCode);
   });
 
   it("DELETE /bundle removes a specific bundle by query param", async () => {
-    const { handler } = await import("@app/functions/account/bundleDelete.js");
+    const { ingestHandler } = await import("@app/functions/account/bundleDelete.js");
     const token = makeIdToken("test-sub");
     const event = buildLambdaEvent({
       method: "DELETE",
@@ -84,14 +84,14 @@ describe("System: account bundle ingestHandlers", () => {
       headers: { Authorization: `Bearer ${token}` },
       queryStringParameters: { bundleId: "guest" },
     });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect([204, 404]).toContain(res.statusCode);
   });
 
   it("HEAD /bundle returns 200", async () => {
-    const { handler } = await import("@app/functions/account/bundleGet.js");
+    const { ingestHandler } = await import("@app/functions/account/bundleGet.js");
     const event = buildLambdaEvent({ method: "HEAD", path: "/api/v1/bundle" });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(200);
   });
 });

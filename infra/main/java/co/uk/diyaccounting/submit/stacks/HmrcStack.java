@@ -184,7 +184,7 @@ public class HmrcStack extends Stack {
         this.hmrcTokenPostLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
         infof(
-                "Created Lambda %s for HMRC exchange token with handler %s",
+                "Created Lambda %s for HMRC exchange token with ingestHandler %s",
                 this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostIngestLambdaHandler);
 
         // Grant the exchange token Lambda permission to access DynamoDB Bundles Table
@@ -231,7 +231,7 @@ public class HmrcStack extends Stack {
         }
 
         infof(
-                "Created Lambda %s for HMRC exchange token with handler %s",
+                "Created Lambda %s for HMRC exchange token with ingestHandler %s",
                 this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostIngestLambdaHandler);
 
         // Grant the token exchange Lambda permission to access DynamoDB Bundles Table
@@ -284,7 +284,7 @@ public class HmrcStack extends Stack {
         this.hmrcVatReturnPostLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnPostLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT submission with handler %s and worker %s",
+                "Created Async API Lambda %s for VAT submission with ingestHandler %s and worker %s",
                 this.hmrcVatReturnPostLambda.getNode().getId(),
                 props.sharedNames().hmrcVatReturnPostIngestLambdaHandler,
                 props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler);
@@ -344,7 +344,7 @@ public class HmrcStack extends Stack {
         this.hmrcVatObligationGetLambdaLogGroup = hmrcVatObligationGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatObligationGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT obligations with handler %s and worker %s",
+                "Created Async API Lambda %s for VAT obligations with ingestHandler %s and worker %s",
                 this.hmrcVatObligationGetLambda.getNode().getId(),
                 props.sharedNames().hmrcVatObligationGetIngestLambdaHandler,
                 props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler);
@@ -403,7 +403,7 @@ public class HmrcStack extends Stack {
         this.hmrcVatReturnGetLambdaLogGroup = hmrcVatReturnGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT return retrieval with handler %s and worker %s",
+                "Created Async API Lambda %s for VAT return retrieval with ingestHandler %s and worker %s",
                 this.hmrcVatReturnGetLambda.getNode().getId(),
                 props.sharedNames().hmrcVatReturnGetIngestLambdaHandler,
                 props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler);
@@ -462,7 +462,7 @@ public class HmrcStack extends Stack {
                 .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
                 .build());
         infof(
-                "Created Lambda %s for my receipts retrieval with handler %s",
+                "Created Lambda %s for my receipts retrieval with ingestHandler %s",
                 this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetIngestLambdaHandler);
 
         // Grant the MyReceiptsLambda permission to access DynamoDB Bundles Table

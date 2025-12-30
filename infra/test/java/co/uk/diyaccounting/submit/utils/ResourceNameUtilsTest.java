@@ -12,7 +12,8 @@ class ResourceNameUtilsTest {
     void camelCaseAndDotConversions() {
         assertEquals("my-func-name", ResourceNameUtils.convertCamelCaseToDashSeparated("MyFuncName"));
         assertEquals("my-name", ResourceNameUtils.convertCamelCaseToDashSeparated("myName"));
-        assertEquals("my-func", ResourceNameUtils.convertCamelCaseToDashSeparated("my_func.handler"));
+        assertEquals("my-func", ResourceNameUtils.convertCamelCaseToDashSeparated("my_func.ingestHandler"));
+        assertEquals("my-func", ResourceNameUtils.convertCamelCaseToDashSeparated("my_func.workerHandler"));
 
         assertEquals("a-b-c", ResourceNameUtils.convertDotSeparatedToDashSeparated("a.b.c"));
         // With custom mapping applied twice

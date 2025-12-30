@@ -59,17 +59,17 @@ describe("System: account/bundlePost high-level behaviours", () => {
   });
 
   it("returns 400 when bundleId is missing", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-sub");
     const event = buildLambdaEvent({ method: "POST", path: "/api/v1/bundle", headers: { Authorization: `Bearer ${token}` }, body: {} });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(400);
     const body = JSON.parse(res.body);
     expect(body.error).toMatch(/Missing bundleId/i);
   });
 
   it("returns already_granted when user already has the bundle", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const { updateUserBundles } = await import("@app/services/bundleManagement.js");
     const token = makeIdToken("test-sub");
     const expiry = new Date(Date.now() + 3600_000).toISOString();
@@ -80,7 +80,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
       headers: { Authorization: `Bearer ${token}` },
       body: { bundleId: "guest" },
     });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
     expect(body.status).toBe("already_granted");
@@ -88,7 +88,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
   });
 
   it("returns 400 unknown_qualifier when unexpected qualifier is provided", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("qual-user");
     const event = buildLambdaEvent({
       method: "POST",
@@ -96,14 +96,14 @@ describe("System: account/bundlePost high-level behaviours", () => {
       headers: { Authorization: `Bearer ${token}` },
       body: { bundleId: "guest", qualifiers: { foo: "bar" } },
     });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(400);
     const body = JSON.parse(res.body);
     expect(body.error).toBe("unknown_qualifier");
   });
 
   it("grants an automatic bundle when user does not already have it (fresh user)", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("grant-user");
     const event = buildLambdaEvent({
       method: "POST",
@@ -111,7 +111,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
       headers: { Authorization: `Bearer ${token}` },
       body: { bundleId: "guest" },
     });
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
     expect(body.status).toBe("granted");

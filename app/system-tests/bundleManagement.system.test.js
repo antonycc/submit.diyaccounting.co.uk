@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, test } from "vitest";
 import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
-import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 import { parseResponseBody } from "@app/test-helpers/mockHelpers.js";
-import { handler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
+import { ingestHandler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
 
 // We mirror the dynalite setup used by dynamoDbBundleStore.system.test.js
 let stopDynalite;

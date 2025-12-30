@@ -1,7 +1,7 @@
 // app/system-tests/cognitoAuth.system.test.js
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { handler as cognitoTokenPostHandler } from "../functions/auth/cognitoTokenPost.js";
+import { ingestHandler as cognitoTokenPostHandler } from "../functions/auth/cognitoTokenPost.js";
 import { buildLambdaEvent, buildHeadEvent } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess } from "../test-helpers/mockHelpers.js";
 

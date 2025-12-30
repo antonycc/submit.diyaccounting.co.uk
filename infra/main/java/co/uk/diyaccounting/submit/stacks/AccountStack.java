@@ -146,7 +146,7 @@ public class AccountStack extends Stack {
         this.bundleGetLambdaLogGroup = getBundlesAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for get bundles with handler %s",
+                "Created Async API Lambda %s for get bundles with ingestHandler %s",
                 this.bundleGetLambda.getNode().getId(),
                 props.sharedNames().bundleGetIngestLambdaHandler);
 
@@ -210,7 +210,7 @@ public class AccountStack extends Stack {
         this.bundlePostLambdaLogGroup = requestBundlesAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundlePostLambdaProps);
         infof(
-                "Created Async API Lambda %s for request bundles with handler %s and worker %s",
+                "Created Async API Lambda %s for request bundles with ingestHandler %s and worker %s",
                 this.bundlePostLambda.getNode().getId(),
                 props.sharedNames().bundlePostIngestLambdaHandler,
                 props.sharedNames().bundlePostWorkerLambdaHandler);
@@ -302,7 +302,7 @@ public class AccountStack extends Stack {
                 .customAuthorizer(props.sharedNames().bundleDeleteLambdaCustomAuthorizer)
                 .build());
         infof(
-                "Created Async API Lambda %s for delete bundles with handler %s and worker %s",
+                "Created Async API Lambda %s for delete bundles with ingestHandler %s and worker %s",
                 this.bundleDeleteLambda.getNode().getId(),
                 props.sharedNames().bundleDeleteIngestLambdaHandler,
                 props.sharedNames().bundleDeleteWorkerLambdaHandler);
