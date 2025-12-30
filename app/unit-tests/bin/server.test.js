@@ -9,18 +9,18 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Mock the handlers from their respective function files
+// Mock the ingestHandlers from their respective function files
 vi.mock("@app/functions/non-lambda-mocks/mockTokenPost.js", () => ({
-  handler: vi.fn(),
+  ingestHandler: vi.fn(),
 }));
 vi.mock("@app/functions/hmrc/hmrcVatReturnPost.js", () => ({
-  handler: vi.fn(),
+  ingestHandler: vi.fn(),
 }));
 
-// TODO: This `handler()` doesn't exist in the mocked module so perhaps we should delete it
-import { handler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
-// Import the mocked handlers
-import { handler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+// TODO: This `ingestHandler()` doesn't exist in the mocked module so perhaps we should delete it
+import { ingestHandler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
+// Import the mocked ingestHandlers
+import { ingestHandler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 describe("Server Unit Tests", () => {
   const originalEnv = process.env;

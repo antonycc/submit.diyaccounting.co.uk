@@ -265,6 +265,8 @@ public class HmrcStack extends Stack {
                         .workerHandler(props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerLambdaArn)
                         .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerDefaultAliasLambdaArn)
+                        .workerQueueName(props.sharedNames().hmrcVatReturnPostLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnPostLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
@@ -282,20 +284,20 @@ public class HmrcStack extends Stack {
         this.hmrcVatReturnPostLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnPostLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT submission with handler %s and consumer %s",
+                "Created Async API Lambda %s for VAT submission with handler %s and worker %s",
                 this.hmrcVatReturnPostLambda.getNode().getId(),
                 props.sharedNames().hmrcVatReturnPostIngestLambdaHandler,
                 props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler);
 
-        // Grant the VAT submission Lambda and its consumer permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+        // Grant the VAT submission Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda).forEach(fn -> {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             receiptsTable.grantWriteData(fn);
             hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
         });
         infof(
-                "Granted DynamoDB permissions to %s and its consumer",
+                "Granted DynamoDB permissions to %s and its worker",
                 this.hmrcVatReturnPostLambda.getFunctionName());
 
         // VAT obligations GET
@@ -322,6 +324,8 @@ public class HmrcStack extends Stack {
                         .workerHandler(props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerLambdaArn)
                         .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerDefaultAliasLambdaArn)
+                        .workerQueueName(props.sharedNames().hmrcVatObligationGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatObligationGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
@@ -340,19 +344,19 @@ public class HmrcStack extends Stack {
         this.hmrcVatObligationGetLambdaLogGroup = hmrcVatObligationGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatObligationGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT obligations with handler %s and consumer %s",
+                "Created Async API Lambda %s for VAT obligations with handler %s and worker %s",
                 this.hmrcVatObligationGetLambda.getNode().getId(),
                 props.sharedNames().hmrcVatObligationGetIngestLambdaHandler,
                 props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler);
 
-        // Grant the VAT obligations Lambda and its consumer permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+        // Grant the VAT obligations Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
         });
         infof(
-                "Granted DynamoDB permissions to %s and its consumer",
+                "Granted DynamoDB permissions to %s and its worker",
                 this.hmrcVatObligationGetLambda.getFunctionName());
 
         // VAT return GET
@@ -379,6 +383,8 @@ public class HmrcStack extends Stack {
                         .workerHandler(props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerLambdaArn)
                         .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerDefaultAliasLambdaArn)
+                        .workerQueueName(props.sharedNames().hmrcVatReturnGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
@@ -397,19 +403,19 @@ public class HmrcStack extends Stack {
         this.hmrcVatReturnGetLambdaLogGroup = hmrcVatReturnGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT return retrieval with handler %s and consumer %s",
+                "Created Async API Lambda %s for VAT return retrieval with handler %s and worker %s",
                 this.hmrcVatReturnGetLambda.getNode().getId(),
                 props.sharedNames().hmrcVatReturnGetIngestLambdaHandler,
                 props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler);
 
-        // Grant the VAT return retrieval Lambda and its consumer permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+        // Grant the VAT return retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
         });
         infof(
-                "Granted DynamoDB permissions to %s and its consumer",
+                "Granted DynamoDB permissions to %s and its worker",
                 this.hmrcVatReturnGetLambda.getFunctionName());
 
         // myReceipts Lambda

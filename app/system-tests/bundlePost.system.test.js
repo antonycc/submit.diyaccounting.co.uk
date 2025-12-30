@@ -37,22 +37,22 @@ describe("System: account/bundlePost high-level behaviours", () => {
   });
 
   it("returns 401 when Authorization header is missing", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const event = buildLambdaEvent({ method: "POST", path: "/api/v1/bundle", body: { bundleId: "guest" } });
     // Remove Authorization header entirely
     delete event.headers.Authorization;
     delete event.headers.authorization;
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(401);
   });
 
   it("returns 400 for invalid JSON body", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-sub");
     const event = buildLambdaEvent({ method: "POST", path: "/api/v1/bundle", headers: { Authorization: `Bearer ${token}` } });
     // Force invalid JSON
     event.body = "{not-json";
-    const res = await handler(event);
+    const res = await ingestHandler(event);
     expect(res.statusCode).toBe(400);
     const body = JSON.parse(res.body);
     expect(body.error).toMatch(/Invalid JSON/i);

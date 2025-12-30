@@ -61,9 +61,9 @@ describe("functions/infra/selfDestruct", () => {
   });
 
   it("returns 200 and skips deletions when stacks do not exist", async () => {
-    const { handler } = await import("@app/functions/infra/selfDestruct.js");
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
     const fakeContext = { getRemainingTimeInMillis: () => 900000 };
-    const res = await handler(makeEvent(), fakeContext);
+    const res = await ingestHandler(makeEvent(), fakeContext);
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
     expect(body.message).toMatch(/Self-destruct sequence completed/);

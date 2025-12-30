@@ -32,30 +32,30 @@ describe("functions/auth/customAuthorizer", () => {
   });
 
   it("denies when X-Authorization header is missing", async () => {
-    const { handler } = await import("@app/functions/auth/customAuthorizer.js");
-    const res = await handler(makeEvent({}));
+    const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
+    const res = await ingestHandler(makeEvent({}));
     expect(res.policyDocument.Statement[0].Effect).toBe("Deny");
   });
 
   it("denies when X-Authorization is not 'Bearer <token>'", async () => {
-    const { handler } = await import("@app/functions/auth/customAuthorizer.js");
-    const res = await handler(makeEvent({ "X-Authorization": "token" }));
+    const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
+    const res = await ingestHandler(makeEvent({ "X-Authorization": "token" }));
     expect(res.policyDocument.Statement[0].Effect).toBe("Deny");
   });
 
   it("allows when verifier succeeds and returns payload", async () => {
-    const { handler } = await import("@app/functions/auth/customAuthorizer.js");
+    const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
     mockVerify.mockResolvedValueOnce({ sub: "user-sub", username: "user", scope: "read" });
-    const res = await handler(makeEvent({ "x-authorization": "Bearer token-abc" }));
+    const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc" }));
     expect(res.policyDocument.Statement[0].Effect).toBe("Allow");
     expect(res.principalId).toBe("user-sub");
     expect(res.context.sub).toBe("user-sub");
   });
 
   it("denies when verifier throws (invalid token)", async () => {
-    const { handler } = await import("@app/functions/auth/customAuthorizer.js");
+    const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
     mockVerify.mockRejectedValueOnce(new Error("invalid"));
-    const res = await handler(makeEvent({ "x-authorization": "Bearer bad" }));
+    const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer bad" }));
     expect(res.policyDocument.Statement[0].Effect).toBe("Deny");
   });
 });

@@ -5,6 +5,11 @@ rm -rvf cdk-submit-environment.out ;
 rm -rvf cdk-submit-application.out ;
 rm -rvf dependency-reduced-pom.xml ;
 rm -rvf hmrc-test-user.json ;
+rm -rvf .output.txt
+rm -rvf test.txt
+rm -rvf mvnw.txt
+rm -rvf behaviour.txt
+rm -rvf node_modules
 ./mvnw clean compile -DskipTests ;
 npm install ;
 git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true ;

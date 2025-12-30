@@ -9,7 +9,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 let stopDynalite;
 const bundlesTableName = "sys-test-bundles";
 
-describe("System: account bundle handlers", () => {
+describe("System: account bundle ingestHandlers", () => {
   beforeAll(async () => {
     const { ensureBundleTableExists, startDynamoDB } = await import("@app/bin/dynamodb.js");
 

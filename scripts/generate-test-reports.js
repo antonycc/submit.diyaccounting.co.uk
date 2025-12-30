@@ -360,7 +360,7 @@ function findTestArtifacts(testName) {
       const preview = truncList(artifacts.screenshots);
       if (preview.length) logDebug(`Screenshot preview: ${preview.join(", ")}`);
 
-      // Also copy figures.json to a stable location for consumers
+      // Also copy figures.json to a stable location for workers
       try {
         const dest = path.join(OUTPUT_DIR, `${testName}-figures.json`);
         fs.copyFileSync(figuresPath, dest);

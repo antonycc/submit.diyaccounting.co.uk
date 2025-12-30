@@ -118,7 +118,7 @@ export function buildGovClientHeaders() {
 }
 
 /**
- * Build event for HMRC API handlers
+ * Build event for HMRC API ingestHandlers
  */
 export function buildHmrcEvent({
   body = {},

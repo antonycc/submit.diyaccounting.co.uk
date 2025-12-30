@@ -24,12 +24,9 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class AsyncApiLambda extends ApiLambda {
 
-    public final Function consumerLambda;
+    public final Function workerLambda;
     public final Version workerVersion;
-    // public final Version workerVersionReady;
-    // public final Version workerVersionHot;
     public final Alias workerAliasZero;
-    // public final Alias workerAliasReady;
     public final Alias workerAliasHot;
     public final Queue queue;
     public final Queue dlq;
@@ -39,7 +36,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         // 1. Create DLQ
         this.dlq = Queue.Builder.create(scope, props.idPrefix() + "-dlq")
-                .queueName(props.ingestFunctionName() + "-dlq")
+                .queueName(props.workerDeadLetterQueueName())
                 .build();
 
         // DLQ Alarm: > 1 item
@@ -54,7 +51,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         // 2. Create Main Queue
         this.queue = Queue.Builder.create(scope, props.idPrefix() + "-queue")
-                .queueName(props.ingestFunctionName() + "-queue")
+                .queueName(props.workerQueueName())
                 .visibilityTimeout(props.visibilityTimeout())
                 .deadLetterQueue(DeadLetterQueue.builder()
                         .maxReceiveCount(props.maxReceiveCount())
@@ -62,7 +59,7 @@ public class AsyncApiLambda extends ApiLambda {
                         .build())
                 .build();
 
-        // 3. Create Consumer Lambda
+        // 3. Create Worker Lambda
         var imageCodeProps = EcrImageCodeProps.builder()
                 .tagOrDigest(props.baseImageTag())
                 .cmd(List.of(props.workerHandler()))
@@ -73,12 +70,12 @@ public class AsyncApiLambda extends ApiLambda {
                 .repositoryName(props.ecrRepositoryName())
                 .build();
         IRepository repository = Repository.fromRepositoryAttributes(
-                scope, props.idPrefix() + "-EcrRepo-Consumer", repositoryAttributes);
+                scope, props.idPrefix() + "-EcrRepo-worker", repositoryAttributes);
 
-        this.consumerLambda = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-consumer-fn")
+        this.workerLambda = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-worker-fn")
                 .code(DockerImageCode.fromEcr(repository, imageCodeProps))
                 .environment(props.environment())
-                .functionName(props.ingestFunctionName() + "-consumer")
+                .functionName(props.ingestFunctionName() + "-worker")
                 .reservedConcurrentExecutions(props.workerReservedConcurrency())
                 .timeout(props.workerTimeout())
                 .tracing(Tracing.ACTIVE)
@@ -86,7 +83,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         this.workerVersion =
             Version.Builder.create(scope, props.idPrefix() + "-worker-version")
-                .lambda(this.consumerLambda)
+                .lambda(this.workerLambda)
                 .description("No provisioned concurrency")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
@@ -105,18 +102,17 @@ public class AsyncApiLambda extends ApiLambda {
         infof("Created worker Lambda alias %s for version %s", this.workerAliasHot.getAliasName(), this.workerVersion.getVersion());
 
         // 4. Set up SQS trigger
-        //this.consumerLambda.addEventSource(
         this.workerAliasZero.addEventSource(
                 SqsEventSource.Builder.create(this.queue).batchSize(1).build());
 
-        // Alarms for consumer lambda
-        Alarm.Builder.create(scope, props.idPrefix() + "-ConsumerErrorsAlarm")
-                .alarmName(this.consumerLambda.getFunctionName() + "-errors")
-                .metric(this.consumerLambda.metricErrors())
+        // Alarms for worker lambda
+        Alarm.Builder.create(scope, props.idPrefix() + "-WorkerErrorsAlarm")
+                .alarmName(this.workerLambda.getFunctionName() + "-errors")
+                .metric(this.workerLambda.metricErrors())
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .alarmDescription("Consumer Lambda errors for " + this.consumerLambda.getFunctionName())
+                .alarmDescription("Worker Lambda errors for " + this.workerLambda.getFunctionName())
                 .build();
 
         // Grant API Lambda permission to send messages to the queue
@@ -124,6 +120,6 @@ public class AsyncApiLambda extends ApiLambda {
 
         // Pass queue URL to both lambdas
         this.lambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
-        this.consumerLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
+        this.workerLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
     }
 }

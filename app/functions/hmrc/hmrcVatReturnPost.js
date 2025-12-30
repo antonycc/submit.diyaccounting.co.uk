@@ -38,7 +38,7 @@ const DEFAULT_WAIT_MS = 0;
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
@@ -81,8 +81,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount };
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
   validateEnv([
     "HMRC_BASE_URI",
     "RECEIPTS_DYNAMODB_TABLE_NAME",
@@ -303,8 +303,8 @@ export async function handler(event) {
   });
 }
 
-// SQS consumer Lambda handler function
-export async function consumer(event) {
+// SQS worker Lambda ingestHandler function
+export async function workerHandler(event) {
   validateEnv([
     "HMRC_BASE_URI",
     "RECEIPTS_DYNAMODB_TABLE_NAME",
@@ -315,7 +315,7 @@ export async function consumer(event) {
 
   const asyncRequestsTableName = process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME;
 
-  logger.info({ message: "SQS Consumer entry", recordCount: event.Records?.length });
+  logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
 
   for (const record of event.Records || []) {
     let userSub;
@@ -411,7 +411,7 @@ export async function consumer(event) {
       const isRetryable = isRetryableError(error);
 
       if (isRetryable) {
-        logger.warn({ message: "Transient error in consumer, re-throwing for SQS retry", error: error.message, requestId });
+        logger.warn({ message: "Transient error in worker, re-throwing for SQS retry", error: error.message, requestId });
         throw error;
       }
 

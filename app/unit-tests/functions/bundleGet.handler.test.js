@@ -39,13 +39,13 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
-// Defer importing the handlers until after mocks are defined
-import { handler as bundleGetHandler, consumer as bundleGetConsumer } from "@app/functions/account/bundleGet.js";
-import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+// Defer importing the ingestHandlers until after mocks are defined
+import { ingestHandler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
+import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-describe("bundleGet handler", () => {
+describe("bundleGet ingestHandler", () => {
   let asyncRequests = new Map();
 
   beforeEach(() => {
@@ -207,109 +207,6 @@ describe("bundleGet handler", () => {
     expect(response.headers).toHaveProperty("Access-Control-Allow-Origin", "*");
   });
 
-  // // ============================================================================
-  // // Async Polling Tests (202 / 200)
-  // // ============================================================================
-  //
-  // test("returns 202 Accepted when wait time is short and result not ready", async () => {
-  //   process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
-  //   const token = makeIdToken("user-async");
-  //   const event = buildEventWithToken(token, {});
-  //   event.headers["x-wait-time-ms"] = "50"; // Very short wait
-  //
-  //   // Mock GetCommand to return nothing (still processing)
-  //   mockSend.mockImplementation(async (cmd) => {
-  //     const lib = await import("@aws-sdk/lib-dynamodb");
-  //     if (cmd instanceof lib.GetCommand) {
-  //       return { Item: { status: "processing" } };
-  //     }
-  //     if (cmd instanceof lib.QueryCommand) {
-  //       return { Items: [], Count: 0 };
-  //     }
-  //     return {};
-  //   });
-  //
-  //   const response = await bundleGetHandler(event);
-  //   expect(response.statusCode).toBe(202);
-  //   expect(response.headers).toHaveProperty("Location");
-  //   expect(response.headers).toHaveProperty("Retry-After", "5");
-  //   expect(response.headers).toHaveProperty("x-request-id");
-  // });
-
-  // test("returns 200 when polling completes successfully", async () => {
-  //   process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
-  //   const token = makeIdToken("user-async-success");
-  //   const event = buildEventWithToken(token, {});
-  //   event.headers["x-wait-time-ms"] = "500";
-  //
-  //   let callCount = 0;
-  //   mockSend.mockImplementation(async (cmd) => {
-  //     const lib = await import("@aws-sdk/lib-dynamodb");
-  //     if (cmd instanceof lib.GetCommand) {
-  //       callCount++;
-  //       if (callCount >= 2) {
-  //         return {
-  //           Item: {
-  //             status: "completed",
-  //             data: { bundles: [{ bundleId: "async-bundle", expiry: "2025-12-31" }] },
-  //           },
-  //         };
-  //       }
-  //       return { Item: { status: "processing" } };
-  //     }
-  //     if (cmd instanceof lib.QueryCommand) {
-  //       return { Items: [], Count: 0 };
-  //     }
-  //     return {};
-  //   });
-  //
-  //   const response = await bundleGetHandler(event);
-  //   expect(response.statusCode).toBe(200);
-  //   const body = parseResponseBody(response);
-  //   expect(body.bundles[0].bundleId).toBe("async-bundle");
-  // });
-
-  // test("returns 202 Accepted by default when wait time header is missing", async () => {
-  //   const token = makeIdToken("user-default-async");
-  //   const event = buildEventWithToken(token, {});
-  //   // Ensure no wait-time header
-  //   delete event.headers["x-wait-time-ms"];
-  //   delete event.headers["X-Wait-Time-Ms"];
-  //
-  //   // Mock GetCommand to return processing status
-  //   mockSend.mockImplementation(async (cmd) => {
-  //     const lib = await import("@aws-sdk/lib-dynamodb");
-  //     if (cmd instanceof lib.GetCommand) {
-  //       return { Item: { status: "processing" } };
-  //     }
-  //     if (cmd instanceof lib.QueryCommand) {
-  //       return { Items: [], Count: 0 };
-  //     }
-  //     return {};
-  //   });
-  //
-  //   const response = await bundleGetHandler(event);
-  //   expect(response.statusCode).toBe(202);
-  //   expect(response.headers).toHaveProperty("Location");
-  //   expect(response.headers).toHaveProperty("x-request-id");
-  // });
-
-  // test("enqueues request to SQS when SQS_QUEUE_URL is provided", async () => {
-  //   process.env.SQS_QUEUE_URL = "http://test-queue-url";
-  //   const token = makeIdToken("user-sqs");
-  //   const event = buildEventWithToken(token, {});
-  //   delete event.headers["x-wait-time-ms"];
-  //
-  //   mockSqsSend.mockResolvedValue({});
-  //
-  //   const response = await bundleGetHandler(event);
-  //   expect(response.statusCode).toBe(200);
-  //   expect(mockSqsSend).toHaveBeenCalled();
-  //   const call = mockSqsSend.mock.calls[0][0];
-  //   expect(call.input.QueueUrl).toBe("http://test-queue-url");
-  //   expect(JSON.parse(call.input.MessageBody)).toHaveProperty("userId", "user-sqs");
-  // });
-
   test("generates requestId if not provided", async () => {
     const token = makeIdToken("user-gen-id");
     const event = buildEventWithToken(token, {});
@@ -339,28 +236,4 @@ describe("bundleGet handler", () => {
 
     await expect(bundleGetHandler(event)).rejects.toThrow();
   });
-
-  // describe("consumer", () => {
-  //   test("processes SQS records and updates DynamoDB", async () => {
-  //     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundle-table";
-  //     process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-table";
-  //
-  //     const event = {
-  //       Records: [
-  //         {
-  //           messageId: "msg-1",
-  //           body: JSON.stringify({ userId: "user-consumer", requestId: "req-consumer" }),
-  //         },
-  //       ],
-  //     };
-  //
-  //     await bundleGetConsumer(event);
-  //
-  //     // Verify DynamoDB was called to update status to completed
-  //     const putCalls = mockSend.mock.calls.filter((c) => {
-  //       return c[0]?.constructor?.name === "PutCommand";
-  //     });
-  //     expect(putCalls.some((c) => c[0].input.Item.status === "completed")).toBe(true);
-  //   });
-  // });
 });

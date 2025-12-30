@@ -7,7 +7,7 @@ import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcSuccess, mockH
 // ---------------------------------------------------------------------------
 // Mock AWS DynamoDB used by bundle management to avoid real AWS calls
 // We keep behaviour simple: Query returns empty items; Put/Delete succeed.
-// This preserves the current handler behaviour expected by tests without
+// This preserves the current ingestHandler behaviour expected by tests without
 // persisting between calls (so duplicate requests still appear as new).
 // ---------------------------------------------------------------------------
 const mockSend = vi.fn();
@@ -73,14 +73,14 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
   return { DynamoDBClient };
 });
 
-// Defer importing the handlers until after mocks are defined
-import { handler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
+// Defer importing the ingestHandlers until after mocks are defined
+import { ingestHandler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 let mockFetch;
 
-describe("hmrcVatObligationGet handler", () => {
+describe("hmrcVatObligationGet ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
     mockFetch = setupFetchMock();
@@ -209,9 +209,9 @@ describe("hmrcVatObligationGet handler", () => {
   });
 });
 
-import { consumer as hmrcVatObligationGetConsumer } from "@app/functions/hmrc/hmrcVatObligationGet.js";
+import { workerHandler as hmrcVatObligationGetWorker } from "@app/functions/hmrc/hmrcVatObligationGet.js";
 
-describe("hmrcVatObligationGet consumer", () => {
+describe("hmrcVatObligationGet worker", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
     vi.clearAllMocks();
@@ -243,7 +243,7 @@ describe("hmrcVatObligationGet consumer", () => {
       ],
     };
 
-    await hmrcVatObligationGetConsumer(event);
+    await hmrcVatObligationGetWorker(event);
 
     const lib = await import("@aws-sdk/lib-dynamodb");
     const updateCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.UpdateCommand);

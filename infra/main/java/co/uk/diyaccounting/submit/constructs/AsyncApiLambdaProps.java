@@ -10,6 +10,8 @@ public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
     String workerHandler();
     String workerLambdaArn();
     String workerDefaultAliasLambdaArn();
+    String workerQueueName();
+    String workerDeadLetterQueueName();
 
     @Value.Default
     default int workerReservedConcurrency() {

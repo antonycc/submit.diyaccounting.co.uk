@@ -4,7 +4,7 @@ import { CloudFormationClient, DeleteStackCommand, DescribeStacksCommand } from 
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand, GetBucketLocationCommand } from "@aws-sdk/client-s3";
 
-export async function handler(event, context) {
+export async function ingestHandler(event, context) {
   const client = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
   // Ensure context has a fallback for getRemainingTimeInMillis
@@ -92,10 +92,10 @@ export async function handler(event, context) {
       });
     }
   } catch (error) {
-    console.error("Error in self-destruct handler:", error);
+    console.error("Error in self-destruct ingestHandler:", error);
     return http500ServerErrorResponse({
       request,
-      message: "Internal Server Error in self-destruct handler",
+      message: "Internal Server Error in self-destruct ingestHandler",
       data: { error: error.message },
     });
   }

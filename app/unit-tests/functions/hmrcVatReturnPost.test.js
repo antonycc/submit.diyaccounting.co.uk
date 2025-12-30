@@ -36,14 +36,14 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
-// Defer importing the handlers until after mocks are defined
-import { handler as hmrcVatReturnPostHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+// Defer importing the ingestHandlers until after mocks are defined
+import { ingestHandler as hmrcVatReturnPostHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const mockFetch = setupFetchMock();
 
-describe("hmrcVatReturnPost handler", () => {
+describe("hmrcVatReturnPost ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
     // Reset and provide default mock DynamoDB behaviour
