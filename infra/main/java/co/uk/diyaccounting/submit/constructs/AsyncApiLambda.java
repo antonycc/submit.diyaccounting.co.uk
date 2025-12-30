@@ -39,7 +39,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         // 1. Create DLQ
         this.dlq = Queue.Builder.create(scope, props.idPrefix() + "-dlq")
-                .queueName(props.functionName() + "-dlq")
+                .queueName(props.ingestFunctionName() + "-dlq")
                 .build();
 
         // DLQ Alarm: > 1 item
@@ -49,12 +49,12 @@ public class AsyncApiLambda extends ApiLambda {
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .alarmDescription("SQS DLQ for " + props.functionName() + " has items")
+                .alarmDescription("SQS DLQ for " + props.ingestFunctionName() + " has items")
                 .build();
 
         // 2. Create Main Queue
         this.queue = Queue.Builder.create(scope, props.idPrefix() + "-queue")
-                .queueName(props.functionName() + "-queue")
+                .queueName(props.ingestFunctionName() + "-queue")
                 .visibilityTimeout(props.visibilityTimeout())
                 .deadLetterQueue(DeadLetterQueue.builder()
                         .maxReceiveCount(props.maxReceiveCount())
@@ -78,7 +78,7 @@ public class AsyncApiLambda extends ApiLambda {
         this.consumerLambda = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-consumer-fn")
                 .code(DockerImageCode.fromEcr(repository, imageCodeProps))
                 .environment(props.environment())
-                .functionName(props.functionName() + "-consumer")
+                .functionName(props.ingestFunctionName() + "-consumer")
                 .reservedConcurrentExecutions(props.workerReservedConcurrency())
                 .timeout(props.workerTimeout())
                 .tracing(Tracing.ACTIVE)

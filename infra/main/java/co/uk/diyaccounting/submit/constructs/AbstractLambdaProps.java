@@ -14,12 +14,12 @@ public abstract interface AbstractLambdaProps {
 
     String idPrefix();
 
-    String functionName();
+    String ingestFunctionName();
 
-    // TODO: generic event / api invocation handlers (`handler()` -> `ingestHandler()`) vs message consumer handlers (`workerHandler()`).
-    String handler();
+    String ingestHandler();
 
-    String lambdaArn();
+    String ingestLambdaArn();
+
     String ingestDefaultAliasLambdaArn();
 
     @Value.Default

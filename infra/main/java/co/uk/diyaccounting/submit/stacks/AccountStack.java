@@ -125,15 +125,15 @@ public class AccountStack extends Stack {
         var getBundlesAsyncLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundleGetLambdaFunctionName)
+                        .idPrefix(props.sharedNames().bundleGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().bundleGetLambdaFunctionName)
-                        .handler(props.sharedNames().bundleGetLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().bundleGetLambdaArn))
+                        .ingestFunctionName(props.sharedNames().bundleGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().bundleGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().bundleGetIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().bundleGetIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(1)
-                        .lambdaArn(props.sharedNames().bundleGetLambdaArn)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundleGetLambdaJwtAuthorizer)
@@ -146,10 +146,9 @@ public class AccountStack extends Stack {
         this.bundleGetLambdaLogGroup = getBundlesAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for get bundles with handler %s and consumer %s",
+                "Created Async API Lambda %s for get bundles with handler %s",
                 this.bundleGetLambda.getNode().getId(),
-                props.sharedNames().bundleGetLambdaHandler,
-                props.sharedNames().bundleGetLambdaConsumerHandler);
+                props.sharedNames().bundleGetIngestLambdaHandler);
 
         // Grant the GetBundlesLambda permission to access Cognito User Pool
         var getBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
@@ -180,21 +179,20 @@ public class AccountStack extends Stack {
         var requestBundlesAsyncLambda = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundlePostLambdaFunctionName)
+                        .idPrefix(props.sharedNames().bundlePostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().bundlePostLambdaFunctionName)
-                        .handler(props.sharedNames().bundlePostLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().bundlePostLambdaArn))
+                        .ingestFunctionName(props.sharedNames().bundlePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().bundlePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().bundlePostIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().bundlePostIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(1)
-                        // TODO: Refactor these templated values into explicit fields in sharedNames and set the default alias in 1 place
-                        .workerFunctionName("%s-consumer".formatted(props.sharedNames().bundlePostLambdaFunctionName))
-                        .workerHandler(props.sharedNames().bundlePostLambdaConsumerHandler)
-                        .workerLambdaArn("%s-consumer".formatted(props.sharedNames().bundlePostLambdaArn))
-                        .workerDefaultAliasLambdaArn("%s-consumer:%s".formatted(props.sharedNames().bundlePostLambdaArn, "zero"))
+                        .workerFunctionName(props.sharedNames().bundlePostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().bundlePostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().bundlePostWorkerLambdaArn)
+                        .workerDefaultAliasLambdaArn(props.sharedNames().bundlePostWorkerDefaultAliasLambdaArn)
                         .workerProvisionedConcurrencyHot(0)
-                        .lambdaArn(props.sharedNames().bundlePostLambdaArn)
                         .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundlePostLambdaJwtAuthorizer)
@@ -212,8 +210,8 @@ public class AccountStack extends Stack {
         infof(
                 "Created Async API Lambda %s for request bundles with handler %s and consumer %s",
                 this.bundlePostLambda.getNode().getId(),
-                props.sharedNames().bundlePostLambdaHandler,
-                props.sharedNames().bundlePostLambdaConsumerHandler);
+                props.sharedNames().bundlePostIngestLambdaHandler,
+                props.sharedNames().bundlePostWorkerLambdaHandler);
 
         // Grant permissions to both API and Consumer Lambdas
         List.of(this.bundlePostLambda, requestBundlesAsyncLambda.consumerLambda).forEach(fn -> {
@@ -247,20 +245,20 @@ public class AccountStack extends Stack {
         var bundleDeleteAsyncLambda = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName)
+                        .idPrefix(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
-                        .handler(props.sharedNames().bundleDeleteLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().bundleDeleteLambdaArn))
+                        .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().bundleDeleteIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(0)
-                        .workerFunctionName("%s-consumer".formatted(props.sharedNames().bundleDeleteLambdaFunctionName))
-                        .workerHandler(props.sharedNames().bundleDeleteLambdaConsumerHandler)
-                        .workerLambdaArn("%s-consumer".formatted(props.sharedNames().bundleDeleteLambdaArn))
-                        .workerDefaultAliasLambdaArn("%s-consumer:%s".formatted(props.sharedNames().bundleDeleteLambdaArn, "zero"))
+                        .workerFunctionName(props.sharedNames().bundleDeleteWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().bundleDeleteWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().bundleDeleteWorkerLambdaArn)
+                        .workerDefaultAliasLambdaArn(props.sharedNames().bundleDeleteWorkerDefaultAliasLambdaArn)
                         .workerProvisionedConcurrencyHot(0)
-                        .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                         .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
@@ -278,15 +276,15 @@ public class AccountStack extends Stack {
 
         // Also expose a second route for deleting a bundle by path parameter {id}
         this.lambdaFunctionProps.add(ApiLambdaProps.builder()
-                .idPrefix(props.sharedNames().bundleDeleteLambdaFunctionName + "-ByIdRoute")
+                .idPrefix(props.sharedNames().bundleDeleteIngestLambdaFunctionName + "-ByIdRoute")
                 .baseImageTag(props.baseImageTag())
                 .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                 .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                .functionName(props.sharedNames().bundleDeleteLambdaFunctionName)
-                .handler(props.sharedNames().bundleDeleteLambdaHandler)
-                .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().bundleDeleteLambdaArn))
+                .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
+                .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
+                .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
+                .ingestDefaultAliasLambdaArn(props.sharedNames().bundleDeleteIngestDefaultAliasLambdaArn)
                 .ingestProvisionedConcurrencyHot(0)
-                .lambdaArn(props.sharedNames().bundleDeleteLambdaArn)
                 .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                 .urlPath("/api/v1/bundle/{id}")
                 .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
@@ -295,8 +293,8 @@ public class AccountStack extends Stack {
         infof(
                 "Created Async API Lambda %s for delete bundles with handler %s and consumer %s",
                 this.bundleDeleteLambda.getNode().getId(),
-                props.sharedNames().bundleDeleteLambdaHandler,
-                props.sharedNames().bundleDeleteLambdaConsumerHandler);
+                props.sharedNames().bundleDeleteIngestLambdaHandler,
+                props.sharedNames().bundleDeleteWorkerLambdaHandler);
 
         // Grant permissions to both API and Consumer Lambdas
         List.of(this.bundleDeleteLambda, bundleDeleteAsyncLambda.consumerLambda).forEach(fn -> {

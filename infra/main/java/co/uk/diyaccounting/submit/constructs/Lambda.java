@@ -47,7 +47,7 @@ public class Lambda {
         // Create the lambda function
         var imageCodeProps = EcrImageCodeProps.builder()
                 .tagOrDigest(props.baseImageTag()) // e.g. "latest" or specific digest for immutability
-                .cmd(List.of(props.handler()))
+                .cmd(List.of(props.ingestHandler()))
                 .build();
         var repositoryAttributes = RepositoryAttributes.builder()
                 .repositoryArn(props.ecrRepositoryArn())
@@ -62,28 +62,28 @@ public class Lambda {
             this.logGroup = props.logGroup().get();
             infof(
                     "Using custom log group name %s for Lambda %s",
-                    this.logGroup.getNode().getId(), props.functionName());
+                    this.logGroup.getNode().getId(), props.ingestFunctionName());
         } else {
             this.logGroup = new LogGroup(
                     scope,
                     props.idPrefix() + "LogGroup",
                     LogGroupProps.builder()
-                            .logGroupName("/aws/lambda/" + props.functionName())
+                            .logGroupName("/aws/lambda/" + props.ingestFunctionName())
                             .retention(props.logGroupRetention())
                             .removalPolicy(props.logGroupRemovalPolicy())
                             .build());
             infof(
                     "Created log group %s with retention %s for Lambda %s",
-                    this.logGroup.getNode().getId(), props.logGroupRetention(), props.functionName());
+                    this.logGroup.getNode().getId(), props.logGroupRetention(), props.ingestFunctionName());
         }
 
         // Add X-Ray environment variables if enabled
         var environment = new java.util.HashMap<>(props.environment());
-        environment.put("AWS_XRAY_TRACING_NAME", props.functionName());
+        environment.put("AWS_XRAY_TRACING_NAME", props.ingestFunctionName());
         var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-fn")
                 .code(this.dockerImage)
                 .environment(environment)
-                .functionName(props.functionName())
+                .functionName(props.ingestFunctionName())
                 .reservedConcurrentExecutions(props.ingestReservedConcurrency())
                 .timeout(props.timeout())
                 .logGroup(this.logGroup)
@@ -129,7 +129,7 @@ public class Lambda {
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period
         Alarm.Builder.create(scope, props.idPrefix() + "-ErrorsAlarm")
-                .alarmName(props.functionName() + "-errors")
+                .alarmName(props.ingestFunctionName() + "-errors")
                 .metric(this.lambda
                         .metricErrors()
                         .with(MetricOptions.builder()
@@ -144,7 +144,7 @@ public class Lambda {
 
         // 2) Throttles >= 1 in a 5-minute period
         Alarm.Builder.create(scope, props.idPrefix() + "-ThrottlesAlarm")
-                .alarmName(props.functionName() + "-throttles")
+                .alarmName(props.ingestFunctionName() + "-throttles")
                 .metric(this.lambda
                         .metricThrottles()
                         .with(MetricOptions.builder()
@@ -162,7 +162,7 @@ public class Lambda {
         double timeoutMs = props.timeout().toSeconds().doubleValue() * 1000.0;
         double highDurationThresholdMs = timeoutMs * 0.8;
         Alarm.Builder.create(scope, props.idPrefix() + "-HighDurationP95Alarm")
-                .alarmName(props.functionName() + "-high-duration-p95")
+                .alarmName(props.ingestFunctionName() + "-high-duration-p95")
                 .metric(this.lambda
                         .metricDuration()
                         .with(MetricOptions.builder()

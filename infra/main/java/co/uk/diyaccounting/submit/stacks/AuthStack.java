@@ -110,15 +110,15 @@ public class AuthStack extends Stack {
         var exchangeCognitoTokenLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().cognitoTokenPostLambdaFunctionName)
+                        .idPrefix(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().cognitoTokenPostLambdaFunctionName)
+                        .ingestFunctionName(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().cognitoTokenPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().cognitoTokenPostIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().cognitoTokenPostIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(1)
-                        .handler(props.sharedNames().cognitoTokenPostLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().cognitoTokenPostLambdaArn))
-                        .lambdaArn(props.sharedNames().cognitoTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
@@ -131,7 +131,7 @@ public class AuthStack extends Stack {
         this.lambdaFunctionProps.add(this.cognitoTokenPostLambdaProps);
         infof(
                 "Created Lambda %s for Cognito exchange token with handler %s",
-                this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostLambdaHandler);
+                this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostIngestLambdaHandler);
 
         // Grant Lambdas access to DynamoDB Bundles Table
         bundlesTable.grantReadWriteData(this.cognitoTokenPostLambda);
@@ -147,15 +147,15 @@ public class AuthStack extends Stack {
         var customAuthorizerLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().customAuthorizerLambdaFunctionName)
+                        .idPrefix(props.sharedNames().customAuthorizerIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().customAuthorizerLambdaFunctionName)
-                        .handler(props.sharedNames().customAuthorizerLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().customAuthorizerLambdaArn))
+                        .ingestFunctionName(props.sharedNames().customAuthorizerIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().customAuthorizerIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().customAuthorizerIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().customAuthorizerIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(1)
-                        .lambdaArn(props.sharedNames().customAuthorizerLambdaArn)
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
                         .urlPath("/") // Not used for authorizers but required by props
                         .jwtAuthorizer(false)
@@ -167,7 +167,7 @@ public class AuthStack extends Stack {
         this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;
         infof(
                 "Created Custom Authorizer Lambda %s with handler %s",
-                this.customAuthorizerLambda.getNode().getId(), props.sharedNames().customAuthorizerLambdaHandler);
+                this.customAuthorizerLambda.getNode().getId(), props.sharedNames().customAuthorizerIngestLambdaHandler);
 
         // Grant Custom Authorizer Lambda access to DynamoDB Bundles Table
         bundlesTable.grantReadWriteData(this.customAuthorizerLambda);

@@ -164,15 +164,15 @@ public class HmrcStack extends Stack {
         var exchangeHmrcTokenLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcTokenPostLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcTokenPostLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcTokenPostLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().hmrcTokenPostLambdaArn))
+                        .ingestFunctionName(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcTokenPostIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(1)
-                        .lambdaArn(props.sharedNames().hmrcTokenPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)
@@ -185,7 +185,7 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
-                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
+                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostIngestLambdaHandler);
 
         // Grant the exchange token Lambda permission to access DynamoDB Bundles Table
         bundlesTable.grantReadData(this.hmrcTokenPostLambda);
@@ -232,7 +232,7 @@ public class HmrcStack extends Stack {
 
         infof(
                 "Created Lambda %s for HMRC exchange token with handler %s",
-                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
+                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostIngestLambdaHandler);
 
         // Grant the token exchange Lambda permission to access DynamoDB Bundles Table
         bundlesTable.grantReadData(this.hmrcTokenPostLambda);
@@ -252,21 +252,21 @@ public class HmrcStack extends Stack {
         var submitVatLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcVatReturnPostLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().hmrcVatReturnPostLambdaArn))
+                        .ingestFunctionName(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatReturnPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatReturnPostIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnPostIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(1)
-                        .workerFunctionName("%s-consumer".formatted(props.sharedNames().hmrcVatReturnPostLambdaFunctionName))
-                        .workerHandler(props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler)
-                        .workerLambdaArn("%s-consumer".formatted(props.sharedNames().hmrcVatReturnPostLambdaArn))
-                        .workerDefaultAliasLambdaArn("%s-consumer:%s".formatted(props.sharedNames().hmrcVatReturnPostLambdaArn, "zero"))
+                        .workerFunctionName(props.sharedNames().hmrcVatReturnPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerLambdaArn)
+                        .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerDefaultAliasLambdaArn)
                         .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
-                        .lambdaArn(props.sharedNames().hmrcVatReturnPostLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaJwtAuthorizer)
@@ -284,8 +284,8 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Async API Lambda %s for VAT submission with handler %s and consumer %s",
                 this.hmrcVatReturnPostLambda.getNode().getId(),
-                props.sharedNames().hmrcVatReturnPostLambdaHandler,
-                props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler);
+                props.sharedNames().hmrcVatReturnPostIngestLambdaHandler,
+                props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler);
 
         // Grant the VAT submission Lambda and its consumer permission to access DynamoDB Bundles Table
         List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.consumerLambda).forEach(fn -> {
@@ -309,21 +309,21 @@ public class HmrcStack extends Stack {
         var hmrcVatObligationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcVatObligationGetLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().hmrcVatObligationGetLambdaArn))
+                        .ingestFunctionName(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatObligationGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatObligationGetIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcVatObligationGetIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(0)
-                        .workerFunctionName("%s-consumer".formatted(props.sharedNames().hmrcVatObligationGetLambdaFunctionName))
-                        .workerHandler(props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler)
-                        .workerLambdaArn("%s-consumer".formatted(props.sharedNames().hmrcVatObligationGetLambdaArn))
-                        .workerDefaultAliasLambdaArn("%s-consumer:%s".formatted(props.sharedNames().hmrcVatObligationGetLambdaArn, "zero"))
+                        .workerFunctionName(props.sharedNames().hmrcVatObligationGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerLambdaArn)
+                        .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerDefaultAliasLambdaArn)
                         .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
-                        .lambdaArn(props.sharedNames().hmrcVatObligationGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
@@ -342,8 +342,8 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Async API Lambda %s for VAT obligations with handler %s and consumer %s",
                 this.hmrcVatObligationGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatObligationGetLambdaHandler,
-                props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler);
+                props.sharedNames().hmrcVatObligationGetIngestLambdaHandler,
+                props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler);
 
         // Grant the VAT obligations Lambda and its consumer permission to access DynamoDB Bundles Table
         List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
@@ -366,21 +366,21 @@ public class HmrcStack extends Stack {
         var hmrcVatReturnGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcVatReturnGetLambdaHandler)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().hmrcVatReturnGetLambdaArn))
+                        .ingestFunctionName(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatReturnGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatReturnGetIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnGetIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(0)
-                        .workerFunctionName("%s-consumer".formatted(props.sharedNames().hmrcVatReturnGetLambdaFunctionName))
-                        .workerHandler(props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler)
-                        .workerLambdaArn("%s-consumer".formatted(props.sharedNames().hmrcVatReturnGetLambdaArn))
-                        .workerDefaultAliasLambdaArn("%s-consumer:%s".formatted(props.sharedNames().hmrcVatReturnGetLambdaArn, "zero"))
+                        .workerFunctionName(props.sharedNames().hmrcVatReturnGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerLambdaArn)
+                        .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerDefaultAliasLambdaArn)
                         .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
-                        .lambdaArn(props.sharedNames().hmrcVatReturnGetLambdaArn)
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaJwtAuthorizer)
@@ -399,8 +399,8 @@ public class HmrcStack extends Stack {
         infof(
                 "Created Async API Lambda %s for VAT return retrieval with handler %s and consumer %s",
                 this.hmrcVatReturnGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatReturnGetLambdaHandler,
-                props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler);
+                props.sharedNames().hmrcVatReturnGetIngestLambdaHandler,
+                props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler);
 
         // Grant the VAT return retrieval Lambda and its consumer permission to access DynamoDB Bundles Table
         List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
@@ -420,17 +420,17 @@ public class HmrcStack extends Stack {
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().receiptGetLambdaFunctionName)
+                        .idPrefix(props.sharedNames().receiptGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().receiptGetLambdaFunctionName)
-                        .handler(props.sharedNames().receiptGetLambdaHandler)
+                        .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
+                        .ingestDefaultAliasLambdaArn(props.sharedNames().receiptGetIngestDefaultAliasLambdaArn)
                         .ingestProvisionedConcurrencyHot(0)
-                        .lambdaArn(props.sharedNames().receiptGetLambdaArn)
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
-                        .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().receiptGetLambdaArn))
                         .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
                         .environment(myReceiptsLambdaEnv)
@@ -441,15 +441,15 @@ public class HmrcStack extends Stack {
         this.lambdaFunctionProps.add(this.receiptGetLambdaProps);
         // Also expose a second route for retrieving a single receipt by name using the same Lambda
         this.lambdaFunctionProps.add(ApiLambdaProps.builder()
-                .idPrefix(props.sharedNames().receiptGetLambdaFunctionName + "-ByNameRoute")
+                .idPrefix(props.sharedNames().receiptGetIngestLambdaFunctionName + "-ByNameRoute")
                 .baseImageTag(props.baseImageTag())
                 .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                 .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                .functionName(props.sharedNames().receiptGetLambdaFunctionName)
-                .handler(props.sharedNames().receiptGetLambdaHandler)
-                .ingestDefaultAliasLambdaArn("%s:zero".formatted(props.sharedNames().receiptGetLambdaArn))
+                .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
+                .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
+                .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
+                .ingestDefaultAliasLambdaArn(props.sharedNames().receiptGetIngestDefaultAliasLambdaArn)
                 .ingestProvisionedConcurrencyHot(0)
-                .lambdaArn(props.sharedNames().receiptGetLambdaArn)
                 .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
                 .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
@@ -457,7 +457,7 @@ public class HmrcStack extends Stack {
                 .build());
         infof(
                 "Created Lambda %s for my receipts retrieval with handler %s",
-                this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetLambdaHandler);
+                this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetIngestLambdaHandler);
 
         // Grant the MyReceiptsLambda permission to access DynamoDB Bundles Table
         bundlesTable.grantReadData(this.receiptGetLambda);
