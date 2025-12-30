@@ -2876,26 +2876,26 @@ jobs:
           path: |
             target/test-reports/
 
-  scale-lambda-concurrency:
-    name: 'scale Lambda concurrency to ready'
-    if: ${{ !cancelled() && needs.names.outputs.environment-name != 'prod' }}
-    needs:
-      - names
-      - web-test-bundle
-      - web-test-submit-vat
-      - web-test-submit-vat-sandbox
-      - web-test-post-vat-return-sandbox
-      - web-test-get-vat-return-sandbox
-      - web-test-obligation-sandbox
-      - web-test-fraud-prevention-headers-vat-sandbox
-    uses: './.github/workflows/scale-to.yml'
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      concurrency-level: 'zero'
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
+#  scale-lambda-concurrency:
+#    name: 'scale Lambda concurrency to ready'
+#    if: ${{ !cancelled() && needs.names.outputs.environment-name != 'prod' }}
+#    needs:
+#      - names
+#      - web-test-bundle
+#      - web-test-submit-vat
+#      - web-test-submit-vat-sandbox
+#      - web-test-post-vat-return-sandbox
+#      - web-test-get-vat-return-sandbox
+#      - web-test-obligation-sandbox
+#      - web-test-fraud-prevention-headers-vat-sandbox
+#    uses: './.github/workflows/scale-to.yml'
+#    permissions:
+#      id-token: write
+#      contents: read
+#    with:
+#      concurrency-level: 'zero'
+#      environment-name: ${{ needs.names.outputs.environment-name }}
+#      deployment-name: ${{ needs.names.outputs.deployment-name }}
 
   upload-web-test-results:
     if: ${{ !cancelled() }}
