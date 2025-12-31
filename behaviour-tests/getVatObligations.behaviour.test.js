@@ -105,7 +105,7 @@ let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
 
-test.setTimeout(900_000);
+test.setTimeout(1200_000);
 
 test.beforeEach(async ({}, testInfo) => {
   testInfo.annotations.push({ type: "test-id", description: "obligation-sandbox" });

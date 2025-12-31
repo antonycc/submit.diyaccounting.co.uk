@@ -6,6 +6,7 @@ import { S3Client, ListObjectsV2Command, DeleteObjectsCommand, GetBucketLocation
 
 export async function ingestHandler(event, context) {
   const client = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  const clientUE1 = new CloudFormationClient({ region: "us-east-1" });
 
   // Ensure context has a fallback for getRemainingTimeInMillis
   const safeContext = {
@@ -33,17 +34,22 @@ export async function ingestHandler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.HMRC_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.ACCOUNT_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.DEV_STACK_NAME);
+    addStackNameIfPresent(stacksToDelete, process.env.DEV_UE1_STACK_NAME);
     const selfDestructStackName = process.env.SELF_DESTRUCT_STACK_NAME;
 
     console.log(`Stacks to delete in order: ${stacksToDelete.join(", ")}`);
 
     const results = [];
 
-    // Delete stacks in order
+    // Delete stacks in order, the primary region first then us-east-1
     for (const stackName of stacksToDelete) {
       try {
-        console.log(`Checking if stack ${stackName} exists...`);
-        const deleted = await deleteStackIfExistsAndWait(client, safeContext, stackName);
+        console.log(`Checking if stack ${stackName} exists in region ${client.config.region}...`);
+        let deleted = await deleteStackIfExistsAndWait(client, safeContext, stackName);
+        if (!deleted) {
+          console.log(`Checking if stack ${stackName} exists in region ${clientUE1.config.region}...`);
+          deleted = await deleteStackIfExistsAndWait(clientUE1, safeContext, stackName);
+        }
         results.push({
           stackName,
           status: deleted ? "deleted" : "skipped",
@@ -58,7 +64,7 @@ export async function ingestHandler(event, context) {
     // Delete self-destruct stack last if no errors
     if (selfDestructStackName && results.every((r) => r.status !== "error")) {
       try {
-        console.log(`Checking if stack ${selfDestructStackName} exists...`);
+        console.log(`Checking if stack ${selfDestructStackName} exists in region ${client.config.region}...`);
         const deleted = await deleteStackIfExistsAndWait(client, safeContext, selfDestructStackName, true);
         results.push({
           stackName: selfDestructStackName,
@@ -102,7 +108,7 @@ export async function ingestHandler(event, context) {
 }
 
 async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDestruct = false) {
-  // Check if stack exists
+  // Check if a stack exists
   try {
     await client.send(new DescribeStacksCommand({ StackName: stackName }));
   } catch (error) {
