@@ -173,6 +173,7 @@ public class HmrcStack extends Stack {
                         .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(1)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
@@ -231,15 +232,6 @@ public class HmrcStack extends Stack {
                     sandboxSecretArnWithWildcard);
         }
 
-        infof(
-                "Created Lambda %s for HMRC exchange token with ingestHandler %s",
-                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostIngestLambdaHandler);
-
-        // Grant the token exchange Lambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadData(this.hmrcTokenPostLambda);
-        infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.hmrcTokenPostLambda.getFunctionName(), bundlesTable.getTableName());
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
@@ -329,7 +321,7 @@ public class HmrcStack extends Stack {
                         .workerQueueName(props.sharedNames().hmrcVatObligationGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatObligationGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
-                        .workerReservedConcurrency(2)
+                        .workerReservedConcurrency(1) // Avoid HMRC throttling
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -338,7 +330,6 @@ public class HmrcStack extends Stack {
                         .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaCustomAuthorizer)
                         .environment(vatObligationLambdaEnv)
-                        .workerReservedConcurrency(1) // Avoid HMRC throttling
                         .build());
 
         // Update API environment with SQS queue URL

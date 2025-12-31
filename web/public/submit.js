@@ -348,7 +348,7 @@ function generateRandomState() {
 
 // Client request correlation helper
 function fetchWithId(url, opts = {}) {
-  const headers = new Headers(opts.headers || {});
+  const headers = opts.headers instanceof Headers ? opts.headers : new Headers(opts.headers || {});
   try {
     let rid;
     if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -992,25 +992,6 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
   return responseJson;
 }
 
-// Receipt logging API function
-async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-  const url = "/api/v1/hmrc/receipt";
-  const response = await authorizedFetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ processingDate, formBundleNumber, chargeRefNumber }),
-  });
-  const responseJson = await response.json();
-  if (!response.ok) {
-    const message = `Failed to log receipt. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
-  }
-  return responseJson;
-}
-
 // Enhanced IP detection function with multiple fallback methods
 async function getClientIP() {
   // Method 1: Try WebRTC-based IP detection (works for local IPs, limited for public IPs in modern browsers)
@@ -1477,7 +1458,6 @@ if (typeof window !== "undefined") {
   window.generateRandomState = generateRandomState;
   window.getAuthUrl = getAuthUrl;
   window.submitVat = submitVat;
-  window.logReceipt = logReceipt;
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
   // new helpers

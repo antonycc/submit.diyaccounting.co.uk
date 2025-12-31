@@ -26,21 +26,20 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
-    const port = 9003;
     const bundleTableName = "test-bundle-table";
     const hmrcApiRequestsTableName = "test-hmrc-requests-table";
     const receiptsTableName = "test-receipts-table";
 
     const server = dynalite({ createTableMs: 0 });
-    await new Promise((resolve, reject) => {
-      server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+    const actualPort = await new Promise((resolve, reject) => {
+      server.listen(0, host, (err) => (err ? reject(err) : resolve(server.address().port)));
     });
     stopDynalite = async () => {
       try {
         server.close();
       } catch {}
     };
-    const endpoint = `http://${host}:${port}`;
+    const endpoint = `http://${host}:${actualPort}`;
 
     process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
     process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
