@@ -529,7 +529,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     expect(vatPostRequests.length).toBeGreaterThan(0);
     vatPostRequests.forEach((vatPostRequest) => {
       const thisRequestHttp201CreatedResults = countHmrcApiRequestValues(vatPostRequest, {
-        "httpRequest.method": "GET",
+        "httpRequest.method": "POST",
         "httpResponse.statusCode": 201,
       });
       if (thisRequestHttp201CreatedResults === 1) {

@@ -471,7 +471,10 @@ export async function submitVat(
 ) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox") {
-    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub);
+    // This is a fire-and-forget validation that logs results but does not block
+    validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
+      logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
+    });
   }
 
   const hmrcRequestHeaders = {

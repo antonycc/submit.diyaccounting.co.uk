@@ -32,7 +32,7 @@ import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
-const MAX_WAIT_MS = 15000;
+const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
@@ -443,7 +443,10 @@ export async function getVatObligations(
 ) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox") {
-    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub);
+    // This is a fire-and-forget validation that logs results but does not block
+    validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
+      logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
+    });
   }
 
   const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;
