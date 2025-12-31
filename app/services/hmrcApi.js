@@ -394,7 +394,7 @@ export async function hmrcHttpGet(
 
   // Add a conservative timeout to avoid hung connections
   let duration = 0;
-  const timeoutMs = 20000;
+  const timeoutMs = 115000;
   let hmrcResponse;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
@@ -459,7 +459,7 @@ export async function hmrcHttpGet(
 
 export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
-  const httpRequestTimeoutMillis = 20000;
+  const httpRequestTimeoutMillis = 295000;
   const httpRequest = {
     method: "POST",
     headers: {

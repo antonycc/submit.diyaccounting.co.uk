@@ -321,7 +321,7 @@ public class HmrcStack extends Stack {
                         .workerQueueName(props.sharedNames().hmrcVatObligationGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatObligationGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
-                        .workerReservedConcurrency(1) // Avoid HMRC throttling
+                        .workerReservedConcurrency(2)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)

@@ -44,10 +44,10 @@ export async function ingestHandler(event, context) {
     // Delete stacks in order, the primary region first then us-east-1
     for (const stackName of stacksToDelete) {
       try {
-        console.log(`Checking if stack ${stackName} exists in region ${client.config.region}...`);
+        console.log(`Checking if stack ${stackName} exists in region eu-west-2...`);
         let deleted = await deleteStackIfExistsAndWait(client, safeContext, stackName);
         if (!deleted) {
-          console.log(`Checking if stack ${stackName} exists in region ${clientUE1.config.region}...`);
+          console.log(`Checking if stack ${stackName} exists in region us-east-1...`);
           deleted = await deleteStackIfExistsAndWait(clientUE1, safeContext, stackName);
         }
         results.push({
@@ -64,7 +64,7 @@ export async function ingestHandler(event, context) {
     // Delete self-destruct stack last if no errors
     if (selfDestructStackName && results.every((r) => r.status !== "error")) {
       try {
-        console.log(`Checking if stack ${selfDestructStackName} exists in region ${client.config.region}...`);
+        console.log(`Checking if stack ${selfDestructStackName} exists in region eu-west-2...`);
         const deleted = await deleteStackIfExistsAndWait(client, safeContext, selfDestructStackName, true);
         results.push({
           stackName: selfDestructStackName,

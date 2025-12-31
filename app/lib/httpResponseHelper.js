@@ -333,7 +333,7 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
 
   logger.info({ message: "Performing HTTP POST for token exchange", providerUrl });
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
   const startTime = new Date().getTime();
   let response;
   try {
@@ -342,6 +342,7 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     clearTimeout(timeoutId);
     duration = new Date().getTime() - startTime;
   }
+  logger.info({ message: "HTTP POST response received with status and duration", status: response?.status, duration });
 
   let responseTokens;
   try {
