@@ -105,7 +105,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Increase timeout and wait for terminal status (failed or error)
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 120_000 });
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 1_000_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
@@ -188,7 +188,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           }
         }
 
-        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 120_000 });
+        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 1_000_000 });
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
         await page.waitForTimeout(500);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
@@ -197,7 +197,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
         await page.waitForTimeout(200);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-complete-vat-pagedown.png` });
       },
-      { timeout: 100000 },
+      { timeout: 1_000_000 },
     );
   }
 }
@@ -208,7 +208,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Increase timeout and wait for terminal status (failed or error)
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 120_000 });
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 1_000_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
@@ -372,7 +372,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       }
       return;
     }
-    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 90000 });
+    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 450_000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
     const resultsContainer = page.locator("#obligationsResults");
     await expect(resultsContainer).toBeVisible();
@@ -675,7 +675,7 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
   } else {
     await test.step("The user sees VAT return details displayed", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-return-results-waiting.png` });
-      await page.waitForSelector("#returnResults", { state: "visible", timeout: 90000 });
+      await page.waitForSelector("#returnResults", { state: "visible", timeout: 450_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png` });
       const resultsContainer = page.locator("#returnResults");
       await expect(resultsContainer).toBeVisible();

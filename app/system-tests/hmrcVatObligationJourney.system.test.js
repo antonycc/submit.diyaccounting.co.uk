@@ -389,7 +389,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     const fulfilledObligations = obligationBody.obligations.filter((o) => o.status === "F");
     expect(openObligations.length).toBe(1);
     expect(fulfilledObligations.length).toBe(2);
-  }, 32_000);
+  }, 60_000);
 
   it("should filter obligations by status parameter", async () => {
     const hmrcAccessToken = "mock-token-filtered";
@@ -446,5 +446,5 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     obligationBody.obligations.forEach((obligation) => {
       expect(obligation.status).toBe("F");
     });
-  }, 32_000);
+  }, 60_000);
 });

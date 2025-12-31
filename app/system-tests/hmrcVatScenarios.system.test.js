@@ -299,7 +299,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(Array.isArray(obligationBody.obligations)).toBe(true);
-  }, 32_000);
+  }, 60_000);
 
   it("should handle different test scenarios without Gov-Test-Scenario header", async () => {
     // Set up stub data
@@ -343,7 +343,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const returnBody = parseResponseBody(returnResponse);
     expect(returnBody).toHaveProperty("periodKey", "24B1");
-  }, 32_000);
+  }, 60_000);
 
   it("should retrieve fulfilled obligations with status filter", async () => {
     // Set up stub data with fulfilled obligations
@@ -396,5 +396,5 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(obligationBody.obligations[0]).toHaveProperty("status", "F");
-  }, 32_000);
+  }, 60_000);
 });

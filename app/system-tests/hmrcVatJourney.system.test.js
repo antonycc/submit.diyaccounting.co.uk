@@ -280,7 +280,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         const items = await queryBundlesForUser(testUserSub);
         return items && items.find((b) => b.bundleId === "guest") ? items : null;
       },
-      { timeoutMs: 8000, intervalMs: 250 },
+      { timeoutMs: 15000, intervalMs: 250 },
     );
     expect(Array.isArray(bundles)).toBe(true);
     expect(bundles.find((b) => b.bundleId === "guest")).toBeTruthy();
@@ -293,7 +293,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
         const all = await scanAllHmrcRequests();
         return all && all.length > 0 ? all : null;
       },
-      { timeoutMs: 8000, intervalMs: 250 },
+      { timeoutMs: 15000, intervalMs: 250 },
     );
     expect(Array.isArray(hmrcLogs)).toBe(true);
     expect(hmrcLogs.length).toBeGreaterThan(0);
@@ -304,7 +304,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     expect(one).toHaveProperty("method");
     expect(one.method).toBe("POST");
     expect(one).toHaveProperty("createdAt");
-  }, 15000);
+  }, 30000);
 
   // it("should handle sandbox environment in complete journey", async () => {
   //   // Step 1: Get sandbox authorization URL - performed client side

@@ -152,15 +152,15 @@ describe("fetchWithIdToken polling", () => {
     expect(response.status).toBe(200);
 
     // Verify polling logs
-    expect(logSpy).toHaveBeenCalledWith("waiting async request [POST /api/v1/bundle] (timeout: 90000ms)...");
+    expect(logSpy).toHaveBeenCalledWith("waiting async request [POST /api/v1/bundle] (timeout: 60000ms)...");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 90000ms, last status: 202\)\.\.\./,
+        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #1, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
       ),
     );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #5, elapsed: \d+ms, timeout: 90000ms, last status: 202\)\.\.\./,
+        /re-trying async request \[POST \/api\/v1\/bundle\] \(poll #5, elapsed: \d+ms, timeout: 60000ms, last status: 202\)\.\.\./,
       ),
     );
     expect(logSpy).toHaveBeenCalledWith(
@@ -170,7 +170,7 @@ describe("fetchWithIdToken polling", () => {
     vi.useRealTimers();
   });
 
-  it("terminates polling after 90 seconds timeout", async () => {
+  it("terminates polling after 60 seconds timeout", async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn().mockResolvedValue({
       status: 202,
@@ -185,14 +185,63 @@ describe("fetchWithIdToken polling", () => {
       body: JSON.stringify({ bundleId: "test-bundle" }),
     });
 
-    // Advance time by 91 seconds
-    await vi.advanceTimersByTimeAsync(91000);
+    // Advance time by 61 seconds
+    await vi.advanceTimersByTimeAsync(61000);
 
     const response = await promise;
     expect(response.status).toBe(202); // Returns the last 202 response
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/timed out async request \[POST \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms, timeout: 90000ms\)/),
+      expect.stringMatching(/timed out async request \[POST \/api\/v1\/bundle\] \(poll #\d+, elapsed: \d+ms, timeout: 60000ms\)/),
     );
+    vi.useRealTimers();
+  });
+
+  it("follows exponential backoff for HMRC calls (1s, 2s, 4s, 4s...)", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 202,
+      headers: new Headers({ "x-request-id": "hmrc-req-id" }),
+    });
+
+    // Final response after 4 polls
+    fetchMock
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "hmrc-req-id" }) }) // 1
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "hmrc-req-id" }) }) // 2
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "hmrc-req-id" }) }) // 3
+      .mockResolvedValueOnce({ status: 202, headers: new Headers({ "x-request-id": "hmrc-req-id" }) }) // 4
+      .mockResolvedValueOnce({
+        status: 200,
+        headers: new Headers({ "Content-Type": "application/json" }),
+        json: () => Promise.resolve({ success: true }),
+      });
+
+    global.fetch = fetchMock;
+    global.window.fetch = fetchMock;
+
+    const promise = window.fetchWithIdToken("/api/v1/hmrc/vat/return", {
+      method: "POST",
+      body: JSON.stringify({ vatNumber: "123456789" }),
+    });
+
+    // Initial wait (from submit.js loop start)
+    // Poll #1: delay 1000ms (2^0 * 1000)
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // Poll #2: delay 2000ms (2^1 * 1000)
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    // Poll #3: delay 4000ms (2^2 * 1000)
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+
+    // Poll #4: delay 4000ms (max(2^3 * 1000, 4000) -> 4000)
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+
+    const response = await promise;
+    expect(response.status).toBe(200);
     vi.useRealTimers();
   });
 });
