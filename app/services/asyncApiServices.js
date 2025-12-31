@@ -6,6 +6,9 @@ import { http200OkResponse, http202AcceptedResponse } from "../lib/httpResponseH
 
 const logger = createLogger({ source: "app/services/asyncApiServices.js" });
 
+const INITIAL_POLL_INTERVAL_MS = 100;
+const MAX_POLL_INTERVAL_MS = 400;
+
 export class RequestFailedError extends Error {
   constructor(data) {
     super(data?.error || "Request processing failed");
@@ -131,11 +134,9 @@ export async function wait({ userId, requestId, waitTimeMs, tableName }) {
 
   logger.info({ message: `Waiting for ${waitTimeMs}ms for result to be ready`, userId, requestId });
   const start = Date.now();
+  let pollIntervalMs = INITIAL_POLL_INTERVAL_MS;
 
   while (Date.now() - start < waitTimeMs) {
-    // Sleep for a short duration to avoid busy-waiting (100ms interval)
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     try {
       const persistedRequest = await getAsyncRequest(userId, requestId, tableName);
       if (persistedRequest?.status === "completed") {
@@ -150,6 +151,10 @@ export async function wait({ userId, requestId, waitTimeMs, tableName }) {
       }
       logger.warn({ message: "Error checking request status during wait", error: error.message, requestId });
     }
+
+    // Sleep for dynamic duration to avoid busy-waiting (with exponential back-off)
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    pollIntervalMs = Math.min(pollIntervalMs * 2, MAX_POLL_INTERVAL_MS);
   }
 
   return null;

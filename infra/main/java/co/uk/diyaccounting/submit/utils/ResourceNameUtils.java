@@ -43,8 +43,12 @@ public class ResourceNameUtils {
                             Character.isUpperCase(c) ? "-" + Character.toLowerCase((char) c) : String.valueOf((char) c))
                     .collect(Collectors.joining())
                     .replaceAll("[-. _]+", "-")
-                    .replaceAll("-http", "")
-                    .replaceAll("-handler", "");
+                    .replaceAll("(?i)-http", "")
+                    .replaceAll("(?i)-ingest-handler", "")
+                    .replaceAll("(?i)-worker-handler", "")
+                    .replaceAll("(?i)-handler", "")
+                    .replaceAll("(?i)-ingest", "")
+                    .replaceAll("(?i)-worker", "");
             return result.startsWith("-") ? result.substring(1) : result;
         }
     }

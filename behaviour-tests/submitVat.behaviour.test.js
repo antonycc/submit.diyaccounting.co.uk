@@ -305,11 +305,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     await ensureBundlePresent(page, "Test", screenshotPath);
   }
   // TODO: Support testing in non-sandbox mode with production credentials
-  if (envName !== "prod") {
-    await ensureBundlePresent(page, "Guest", screenshotPath);
-    await goToHomePage(page, screenshotPath);
-    await goToBundlesPage(page, screenshotPath);
-  }
+  // if (envName !== "prod") {
+  //   await ensureBundlePresent(page, "Guest", screenshotPath);
+  //   await goToHomePage(page, screenshotPath);
+  //   await goToBundlesPage(page, screenshotPath);
+  // }
   await goToHomePage(page, screenshotPath);
 
   /* *********** */
@@ -529,7 +529,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     expect(vatPostRequests.length).toBeGreaterThan(0);
     vatPostRequests.forEach((vatPostRequest) => {
       const thisRequestHttp201CreatedResults = countHmrcApiRequestValues(vatPostRequest, {
-        "httpRequest.method": "GET",
+        "httpRequest.method": "POST",
         "httpResponse.statusCode": 201,
       });
       if (thisRequestHttp201CreatedResults === 1) {

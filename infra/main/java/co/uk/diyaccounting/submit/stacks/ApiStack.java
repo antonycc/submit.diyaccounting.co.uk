@@ -1,11 +1,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
@@ -37,6 +33,11 @@ import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -218,11 +219,11 @@ public class ApiStack extends Stack {
                 String firstCreator = firstCreatorByRoute.getOrDefault(routeKeyStr, "<unknown>");
                 infof(
                         "Skipping duplicate route %s (attempted by %s, first created by %s)",
-                        routeKeyStr, apiLambdaProps.functionName(), firstCreator);
+                        routeKeyStr, apiLambdaProps.ingestFunctionName(), firstCreator);
                 continue;
             }
             createdRouteKeys.add(routeKeyStr);
-            firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.functionName());
+            firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.ingestFunctionName());
             createRouteForLambda(
                     apiLambdaProps,
                     jwtAuthorizer,
@@ -341,23 +342,25 @@ public class ApiStack extends Stack {
                 .replaceAll("[^A-Za-z0-9]+", "-")
                 .replaceAll("^-+|-+$", "");
 
-        String importedFnId = apiLambdaProps.functionName() + "-imported-" + keySuffix;
-        String integrationId = apiLambdaProps.functionName() + "-Integration-" + keySuffix;
-        String routeId = apiLambdaProps.functionName() + "-Route-" + keySuffix;
+        String importedFnId = apiLambdaProps.ingestFunctionName() + "-imported-" + keySuffix;
+        String integrationId = apiLambdaProps.ingestFunctionName() + "-Integration-" + keySuffix;
+        String routeId = apiLambdaProps.ingestFunctionName() + "-Route-" + keySuffix;
 
         IFunction fn = Function.fromFunctionAttributes(
                 this,
                 importedFnId,
                 FunctionAttributes.builder()
-                        .functionArn(apiLambdaProps.lambdaArn())
+                        .functionArn(apiLambdaProps.ingestProvisionedConcurrencyAliasArn())
                         .sameEnvironment(true)
                         .build());
 
         // Create HTTP Lambda integration
         HttpLambdaIntegration integration =
-                HttpLambdaIntegration.Builder.create(integrationId, fn).build();
+                HttpLambdaIntegration.Builder.create(integrationId, fn)
+                    .timeout(Duration.seconds(29))
+                    .build();
 
-        // Create HTTP route with appropriate authorizer
+        // Create HTTP route with the appropriate authoriser
         var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
         if (apiLambdaProps.customAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)
@@ -387,7 +390,7 @@ public class ApiStack extends Stack {
 
         // Explicitly allow API Gateway to invoke this Lambda (defensive against region/env mismatches)
         fn.addPermission(
-                apiLambdaProps.functionName() + "-AllowInvokeFromHttpApi-" + keySuffix,
+                apiLambdaProps.ingestFunctionName() + "-AllowInvokeFromHttpApi-" + keySuffix,
                 Permission.builder()
                         .action("lambda:InvokeFunction")
                         .principal(new ServicePrincipal("apigateway.amazonaws.com"))
@@ -403,8 +406,8 @@ public class ApiStack extends Stack {
         lambdaIntegrations.lambdaThrottles.add(fn.metricThrottles());
 
         // Per-function error alarm (>=1 error in 5 minutes)
-        Alarm.Builder.create(this, apiLambdaProps.functionName() + "-LambdaErrors-" + keySuffix)
-                .alarmName(apiLambdaProps.functionName() + "-lambda-errors-" + keySuffix)
+        Alarm.Builder.create(this, apiLambdaProps.ingestFunctionName() + "-LambdaErrors-" + keySuffix)
+                .alarmName(apiLambdaProps.ingestFunctionName() + "-lambda-errors-" + keySuffix)
                 .metric(fn.metricErrors())
                 .threshold(1.0)
                 .evaluationPeriods(1)
@@ -421,9 +424,9 @@ public class ApiStack extends Stack {
             if (!createdRouteKeys.contains(headRouteKeyStr)) {
                 // Track so we don't double-create if encountered again
                 createdRouteKeys.add(headRouteKeyStr);
-                firstCreatorByRoute.put(headRouteKeyStr, apiLambdaProps.functionName());
+                firstCreatorByRoute.put(headRouteKeyStr, apiLambdaProps.ingestFunctionName());
 
-                String headRouteId = apiLambdaProps.functionName() + "-Route-HEAD-" + keySuffix;
+                String headRouteId = apiLambdaProps.ingestFunctionName() + "-Route-HEAD-" + keySuffix;
                 var headRouteKey = HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.HEAD);
 
                 if (apiLambdaProps.customAuthorizer()) {

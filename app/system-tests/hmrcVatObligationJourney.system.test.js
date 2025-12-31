@@ -2,10 +2,10 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
-import { handler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
-import { handler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
-import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
-import { handler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
+import { ingestHandler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
+import { ingestHandler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { ingestHandler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
+import { ingestHandler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
 import { startHmrcMockServer } from "../test-helpers/primableMockServer.js";
@@ -389,7 +389,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     const fulfilledObligations = obligationBody.obligations.filter((o) => o.status === "F");
     expect(openObligations.length).toBe(1);
     expect(fulfilledObligations.length).toBe(2);
-  }, 32_000);
+  }, 60_000);
 
   it("should filter obligations by status parameter", async () => {
     const hmrcAccessToken = "mock-token-filtered";
@@ -446,5 +446,5 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     obligationBody.obligations.forEach((obligation) => {
       expect(obligation.status).toBe("F");
     });
-  }, 32_000);
+  }, 60_000);
 });

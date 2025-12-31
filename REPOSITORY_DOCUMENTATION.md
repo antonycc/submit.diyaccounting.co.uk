@@ -12,6 +12,7 @@ This document provides a complete, hierarchical overview of the `submit.diyaccou
 4. [Maven (pom.xml) Operations](#maven-pomxml-operations)
 5. [GitHub Actions Workflows](#github-actions-workflows)
 6. [AWS Deployment Architecture](#aws-deployment-architecture)
+    - [Lambda Execution Models](#lambda-execution-models)
 7. [Local Express Server Architecture](#local-express-server-architecture)
 8. [Directory Structure](#directory-structure)
 
@@ -549,6 +550,7 @@ The `.github/workflows/` directory contains CI/CD workflows for testing, buildin
 | `deploy-environment.yml` | Deploy shared environment infrastructure | Push to any branch (with path filters for env files), manual dispatch, daily schedule (03:51 UTC) |
 | `test.yml` | Run all test suites without deployment | Push to any branch (with path filters for code/tests), manual dispatch, daily schedule (04:23 UTC), workflow_call (reusable) |
 | `set-origins.yml` | Update Route53 DNS and CloudFront distribution aliases | Manual dispatch only |
+| `scale-to.yml` | Set named concurrency for Lambda functions | Manual dispatch only |
 
 ### deploy.yml - Main Deployment Workflow
 
@@ -759,6 +761,30 @@ Application Stacks:
 
 **Typical Execution Time**: ~2-3 minutes
 
+### scale-to.yml - Concurrency Scaling Workflow
+
+**Purpose**: Set a named concurrency level (`zero` or `hot`) for a specific deployment to manage costs and performance.
+
+**Trigger Conditions**:
+- Manual dispatch only
+- Can be called by other workflows
+
+**Input Parameters**:
+- `concurrency-name` (choice): Named concurrency level (`zero`, `hot`)
+- `deployment-name` (string): Target deployment name (e.g., `ci-abc123`)
+- `environment-name` (choice): Environment name (`ci`, `prod`)
+
+**Job Flow**:
+1. **names**: Compute environment and deployment names.
+2. **scale-to**:
+   - Calls `.github/actions/scale-lambda-concurrency` action.
+   - Discovers all Lambda functions prefixed with the deployment name.
+   - Resolves the ARN for the target alias (`zero` or `hot`).
+   - Updates API Gateway v2 integrations to use the target alias ARN.
+   - Updates SQS event source mappings to use the target alias ARN.
+
+**Typical Execution Time**: ~2 minutes
+
 ### GitHub Actions Workflow Reusable Actions
 
 The repository includes custom actions in `.github/actions/`:
@@ -900,6 +926,51 @@ The application deploys to AWS as a serverless, highly scalable architecture.
 | **EventBridge** | Scheduled events | Self-destruct timer for non-prod deployments |
 | **IAM** | Access control | Roles for Lambda execution, GitHub Actions |
 
+### Lambda Execution Models
+
+The application uses two primary Lambda execution models to balance responsiveness and reliability.
+
+#### Synchronous Model (`ApiLambda`)
+
+Used for lightweight operations where an immediate response is required and the operation is fast enough to complete within a typical API timeout.
+
+- **Request Flow**: API Gateway -> Lambda Function -> Response.
+- **Characteristics**: Client waits for the full processing to complete.
+- **Failure Handling**: Immediate error returned to the client; no automatic retries.
+
+#### Asynchronous Model (`AsyncApiLambda`)
+
+Used for long-running operations or those involving external APIs (like HMRC) where durability and retries are critical. This model follows the **Ingest-Worker** pattern.
+
+- **Request Flow**:
+    1. **Ingest Lambda**: Receives the request, validates it, saves the initial state to the **Async Requests** DynamoDB table, and sends a message to an **SQS Queue**.
+    2. **Immediate Response**: Returns a `202 Accepted` status to the client along with a `correlationId`.
+    3. **SQS Queue**: Buffers the request, providing decoupling and durability.
+    4. **Worker Lambda**: Triggered by the SQS message, performs the actual business logic (e.g., calling HMRC MTD APIs), and updates the **Async Requests** table with the final result or error.
+- **Client Interaction**: The client polls a status endpoint using the `correlationId` to retrieve the result.
+- **Failure Handling**:
+    - **Retries**: SQS automatically retries the Worker Lambda on failure (configured via `maxReceiveCount`).
+    - **DLQ**: Messages that exceed the retry limit are moved to a **Dead Letter Queue (DLQ)** for manual inspection.
+    - **Alarms**: CloudWatch alarms monitor both the DLQ and Worker Lambda errors.
+
+### Sync vs Async Lambda Configuration
+
+Lambdas are configured in the CDK code under `./infra` using either `ApiLambda` or `AsyncApiLambda` constructs.
+
+| Stack | Lambda Function | Model | Construct | Purpose |
+|-------|-----------------|-------|-----------|---------|
+| `AuthStack` | `cognitoTokenPost` | Sync | `ApiLambda` | Exchange Cognito code for tokens |
+| `AuthStack` | `customAuthorizer` | Sync | `ApiLambda` | Custom JWT validation authorizer |
+| `AccountStack` | `bundleGet` | Sync | `ApiLambda` | Retrieve user bundles/entitlements |
+| `AccountStack` | `bundlePost` | Async | `AsyncApiLambda` | Request a new bundle |
+| `AccountStack` | `bundleDelete` | Async | `AsyncApiLambda` | Delete a bundle |
+| `HmrcStack` | `hmrcAuthUrlGet` | Sync | `ApiLambda` | Get HMRC OAuth authorization URL |
+| `HmrcStack` | `hmrcTokenPost` | Sync | `ApiLambda` | Exchange HMRC code for tokens |
+| `HmrcStack` | `hmrcVatReturnPost` | Async | `AsyncApiLambda` | Submit a VAT return to HMRC |
+| `HmrcStack` | `hmrcVatReturnGet` | Async | `AsyncApiLambda` | Retrieve a submitted VAT return |
+| `HmrcStack` | `hmrcVatObligationGet` | Async | `AsyncApiLambda` | Retrieve VAT obligations from HMRC |
+| `HmrcStack` | `receiptGet` | Sync | `ApiLambda` | Retrieve HMRC submission receipts |
+
 ### CDK Stack Architecture
 
 The infrastructure is divided into two main CDK applications:
@@ -991,12 +1062,12 @@ Runtime-generated responses that complete within a single request and are safe t
 
 #### 3. Async Polling
 Client initiates work and polls until a terminal result is available.
-- **Characteristics**: Initial HTTP 202, SQS consumer performs work, result persisted to DynamoDB request-state table.
+- **Characteristics**: Initial HTTP 202, SQS worker performs work, result persisted to DynamoDB request-state table.
 - **Example**: HMRC VAT Return POST, VAT Obligations GET.
 
 #### 4. Fire-and-Forget Write
 Client initiates a mutation and does **not** wait for server completion.
-- **Characteristics**: Returns HTTP 202, SQS consumer performs work, optimistic client-side update.
+- **Characteristics**: Returns HTTP 202, SQS worker performs work, optimistic client-side update.
 - **Example**: `POST /api/v1/bundle`, `DELETE /api/v1/bundle`.
 
 ### Lambda Function Details

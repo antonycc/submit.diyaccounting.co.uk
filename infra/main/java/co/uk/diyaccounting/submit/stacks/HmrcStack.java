@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
@@ -10,7 +7,6 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -24,6 +20,11 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -164,27 +165,29 @@ public class HmrcStack extends Stack {
         var exchangeHmrcTokenLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcTokenPostLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcTokenPostLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcTokenPostLambdaHandler)
-                        .lambdaArn(props.sharedNames().hmrcTokenPostLambdaArn)
+                        .ingestFunctionName(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(1)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcTokenPostLambdaCustomAuthorizer)
                         .environment(exchangeHmrcTokenLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
-        this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
+        this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.ingestLambda;
         this.hmrcTokenPostLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
         infof(
-                "Created Lambda %s for HMRC exchange token with handler %s",
-                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
+                "Created Lambda %s for HMRC exchange token with ingestHandler %s",
+                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostIngestLambdaHandler);
 
         // Grant the exchange token Lambda permission to access DynamoDB Bundles Table
         bundlesTable.grantReadData(this.hmrcTokenPostLambda);
@@ -229,15 +232,6 @@ public class HmrcStack extends Stack {
                     sandboxSecretArnWithWildcard);
         }
 
-        infof(
-                "Created Lambda %s for HMRC exchange token with handler %s",
-                this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostLambdaHandler);
-
-        // Grant the token exchange Lambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadData(this.hmrcTokenPostLambda);
-        infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.hmrcTokenPostLambda.getFunctionName(), bundlesTable.getTableName());
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
@@ -251,44 +245,54 @@ public class HmrcStack extends Stack {
         var submitVatLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcVatReturnPostLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcVatReturnPostLambdaHandler)
-                        .consumerHandler(props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler)
-                        .lambdaArn(props.sharedNames().hmrcVatReturnPostLambdaArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatReturnPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatReturnPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(1)
+                        .workerFunctionName(props.sharedNames().hmrcVatReturnPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatReturnPostLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnPostLambdaDeadLetterQueueName)
+                        .workerReservedConcurrency(2)
+                        .workerLambdaTimeout(Duration.seconds(300))
+                        .queueVisibilityTimeout(Duration.seconds(320))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaCustomAuthorizer)
                         .environment(submitVatLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
 
         // Update API environment with SQS queue URL
         submitVatLambdaEnv.put("SQS_QUEUE_URL", submitVatLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcVatReturnPostLambdaProps = submitVatLambdaUrlOrigin.apiProps;
-        this.hmrcVatReturnPostLambda = submitVatLambdaUrlOrigin.lambda;
+        this.hmrcVatReturnPostLambda = submitVatLambdaUrlOrigin.ingestLambda;
         this.hmrcVatReturnPostLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnPostLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT submission with handler %s and consumer %s",
+                "Created Async API Lambda %s for VAT submission with ingestHandler %s and worker %s",
                 this.hmrcVatReturnPostLambda.getNode().getId(),
-                props.sharedNames().hmrcVatReturnPostLambdaHandler,
-                props.sharedNames().hmrcVatReturnPostLambdaConsumerHandler);
+                props.sharedNames().hmrcVatReturnPostIngestLambdaHandler,
+                props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler);
 
-        // Grant the VAT submission Lambda and its consumer permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+        // Grant the VAT submission Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda).forEach(fn -> {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             receiptsTable.grantWriteData(fn);
             hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
         });
         infof(
-                "Granted DynamoDB permissions to %s and its consumer",
+                "Granted DynamoDB permissions to %s and its worker",
                 this.hmrcVatReturnPostLambda.getFunctionName());
 
         // VAT obligations GET
@@ -302,44 +306,53 @@ public class HmrcStack extends Stack {
         var hmrcVatObligationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcVatObligationGetLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcVatObligationGetLambdaHandler)
-                        .consumerHandler(props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler)
-                        .lambdaArn(props.sharedNames().hmrcVatObligationGetLambdaArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatObligationGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatObligationGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcVatObligationGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatObligationGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatObligationGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerReservedConcurrency(2)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaCustomAuthorizer)
                         .environment(vatObligationLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-                        .consumerConcurrency(1) // Avoid HMRC throttling
                         .build());
 
         // Update API environment with SQS queue URL
         vatObligationLambdaEnv.put("SQS_QUEUE_URL", hmrcVatObligationGetLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcVatObligationGetLambdaProps = hmrcVatObligationGetLambdaUrlOrigin.apiProps;
-        this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.lambda;
+        this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.ingestLambda;
         this.hmrcVatObligationGetLambdaLogGroup = hmrcVatObligationGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatObligationGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT obligations with handler %s and consumer %s",
+                "Created Async API Lambda %s for VAT obligations with ingestHandler %s and worker %s",
                 this.hmrcVatObligationGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatObligationGetLambdaHandler,
-                props.sharedNames().hmrcVatObligationGetLambdaConsumerHandler);
+                props.sharedNames().hmrcVatObligationGetIngestLambdaHandler,
+                props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler);
 
-        // Grant the VAT obligations Lambda and its consumer permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+        // Grant the VAT obligations Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
         });
         infof(
-                "Granted DynamoDB permissions to %s and its consumer",
+                "Granted DynamoDB permissions to %s and its worker",
                 this.hmrcVatObligationGetLambda.getFunctionName());
 
         // VAT return GET
@@ -353,44 +366,52 @@ public class HmrcStack extends Stack {
         var hmrcVatReturnGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
+                        .idPrefix(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().hmrcVatReturnGetLambdaFunctionName)
-                        .handler(props.sharedNames().hmrcVatReturnGetLambdaHandler)
-                        .consumerHandler(props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler)
-                        .lambdaArn(props.sharedNames().hmrcVatReturnGetLambdaArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatReturnGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatReturnGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcVatReturnGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatReturnGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnGetLambdaDeadLetterQueueName)
+                        .workerReservedConcurrency(2)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaCustomAuthorizer)
                         .environment(vatReturnGetLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
-                        .consumerConcurrency(1) // Avoid HMRC throttling
                         .build());
 
         // Update API environment with SQS queue URL
         vatReturnGetLambdaEnv.put("SQS_QUEUE_URL", hmrcVatReturnGetLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcVatReturnGetLambdaProps = hmrcVatReturnGetLambdaUrlOrigin.apiProps;
-        this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.lambda;
+        this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.ingestLambda;
         this.hmrcVatReturnGetLambdaLogGroup = hmrcVatReturnGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
         infof(
-                "Created Async API Lambda %s for VAT return retrieval with handler %s and consumer %s",
+                "Created Async API Lambda %s for VAT return retrieval with ingestHandler %s and worker %s",
                 this.hmrcVatReturnGetLambda.getNode().getId(),
-                props.sharedNames().hmrcVatReturnGetLambdaHandler,
-                props.sharedNames().hmrcVatReturnGetLambdaConsumerHandler);
+                props.sharedNames().hmrcVatReturnGetIngestLambdaHandler,
+                props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler);
 
-        // Grant the VAT return retrieval Lambda and its consumer permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.consumerLambda).forEach(fn -> {
+        // Grant the VAT return retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
         });
         infof(
-                "Granted DynamoDB permissions to %s and its consumer",
+                "Granted DynamoDB permissions to %s and its worker",
                 this.hmrcVatReturnGetLambda.getFunctionName());
 
         // myReceipts Lambda
@@ -401,42 +422,44 @@ public class HmrcStack extends Stack {
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().receiptGetLambdaFunctionName)
+                        .idPrefix(props.sharedNames().receiptGetIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .functionName(props.sharedNames().receiptGetLambdaFunctionName)
-                        .lambdaArn(props.sharedNames().receiptGetLambdaArn)
+                        .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
-                        .handler(props.sharedNames().receiptGetLambdaHandler)
                         .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
                         .environment(myReceiptsLambdaEnv)
-                        .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                         .build());
         this.receiptGetLambdaProps = myReceiptsLambdaUrlOrigin.apiProps;
-        this.receiptGetLambda = myReceiptsLambdaUrlOrigin.lambda;
+        this.receiptGetLambda = myReceiptsLambdaUrlOrigin.ingestLambda;
         this.receiptGetLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.receiptGetLambdaProps);
         // Also expose a second route for retrieving a single receipt by name using the same Lambda
         this.lambdaFunctionProps.add(ApiLambdaProps.builder()
-                .idPrefix(props.sharedNames().receiptGetLambdaFunctionName + "-ByNameRoute")
+                .idPrefix(props.sharedNames().receiptGetIngestLambdaFunctionName + "-ByNameRoute")
                 .baseImageTag(props.baseImageTag())
                 .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                 .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                .functionName(props.sharedNames().receiptGetLambdaFunctionName)
-                .handler(props.sharedNames().receiptGetLambdaHandler)
-                .lambdaArn(props.sharedNames().receiptGetLambdaArn)
+                .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
+                .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
+                .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
+                .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                 .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
                 .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
                 .customAuthorizer(props.sharedNames().receiptGetLambdaCustomAuthorizer)
-                .timeout(Duration.millis(Long.parseLong("29000"))) // 1s below API Gateway
                 .build());
         infof(
-                "Created Lambda %s for my receipts retrieval with handler %s",
-                this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetLambdaHandler);
+                "Created Lambda %s for my receipts retrieval with ingestHandler %s",
+                this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetIngestLambdaHandler);
 
         // Grant the MyReceiptsLambda permission to access DynamoDB Bundles Table
         bundlesTable.grantReadData(this.receiptGetLambda);

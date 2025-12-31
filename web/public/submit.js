@@ -348,7 +348,7 @@ function generateRandomState() {
 
 // Client request correlation helper
 function fetchWithId(url, opts = {}) {
-  const headers = new Headers(opts.headers || {});
+  const headers = opts.headers instanceof Headers ? opts.headers : new Headers(opts.headers || {});
   try {
     let rid;
     if (window.crypto && typeof window.crypto.randomUUID === "function") {
@@ -794,7 +794,15 @@ async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
   }
   const requestDesc = `[${method} ${urlPath}]`;
 
-  console.log(`waiting async request ${requestDesc} (timeout: 90000ms)...`);
+  // 1. Set dynamic timeout based on request type
+  let timeoutMs = 60000; // Default changed from 90s to 60s
+  if (urlPath.includes("/hmrc/vat/return") && method === "POST") {
+    timeoutMs = 960000; // 3 x 320s (Submit VAT)
+  } else if (urlPath.includes("/hmrc/vat/obligation") || (urlPath.includes("/hmrc/vat/return") && method === "GET")) {
+    timeoutMs = 420000; // 3 x 140s (Get VAT and Obligations)
+  }
+
+  console.log(`waiting async request ${requestDesc} (timeout: ${timeoutMs}ms)...`);
   const requestId = res.headers.get("x-request-id");
   if (requestId) {
     currentHeaders.set("x-request-id", requestId);
@@ -802,7 +810,7 @@ async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
 
   let pollCount = 0;
   const startTime = Date.now();
-  const timeoutMs = 90000;
+
   while (res.status === 202) {
     const elapsed = Date.now() - startTime;
     if (init.signal?.aborted) {
@@ -816,7 +824,9 @@ async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
     }
 
     pollCount++;
-    const delay = 1000;
+    // 2. Set check frequency: 1s, 2s, 4s, 4s...
+    // Only applied to HMRC calls as requested
+    const delay = urlPath.includes("/hmrc/") ? Math.min(Math.pow(2, pollCount - 1) * 1000, 4000) : 1000;
 
     if (typeof window !== "undefined" && window.showStatus) {
       window.showStatus(init.pollPendingMessage || `Still processing... (poll #${pollCount})`, "info");
@@ -976,25 +986,6 @@ async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHea
   const responseJson = await response.json();
   if (!response.ok) {
     const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
-  }
-  return responseJson;
-}
-
-// Receipt logging API function
-async function logReceipt(processingDate, formBundleNumber, chargeRefNumber) {
-  const url = "/api/v1/hmrc/receipt";
-  const response = await authorizedFetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ processingDate, formBundleNumber, chargeRefNumber }),
-  });
-  const responseJson = await response.json();
-  if (!response.ok) {
-    const message = `Failed to log receipt. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);
     throw new Error(message);
   }
@@ -1467,7 +1458,6 @@ if (typeof window !== "undefined") {
   window.generateRandomState = generateRandomState;
   window.getAuthUrl = getAuthUrl;
   window.submitVat = submitVat;
-  window.logReceipt = logReceipt;
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
   // new helpers

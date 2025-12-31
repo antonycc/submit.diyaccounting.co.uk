@@ -1,7 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -9,19 +7,36 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 
-public abstract interface AbstractLambdaProps {
+import java.util.Map;
+import java.util.Optional;
+
+public interface AbstractLambdaProps {
 
     String idPrefix();
 
-    String functionName();
+    String ingestFunctionName();
 
-    String handler();
+    String ingestHandler();
 
-    String lambdaArn();
+    String ingestLambdaArn();
+
+    String provisionedConcurrencyAliasName();
+
+    String ingestProvisionedConcurrencyAliasArn();
 
     @Value.Default
-    default Duration timeout() {
-        return Duration.seconds(30);
+    default int ingestReservedConcurrency() {
+        return 5;
+    }
+
+    @Value.Default
+    default int ingestProvisionedConcurrency() {
+        return 0;
+    }
+
+    @Value.Default
+    default Duration ingestLambdaTimeout() {
+        return Duration.seconds(28);
     }
 
     @Value.Default

@@ -21,7 +21,7 @@ const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 export function apiEndpoint(app) {
   app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
@@ -45,8 +45,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { userId };
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request, requestId: extractedRequestId } = extractRequest(event);

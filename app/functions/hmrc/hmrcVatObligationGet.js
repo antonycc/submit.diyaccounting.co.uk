@@ -32,7 +32,7 @@ import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
-const MAX_WAIT_MS = 15000;
+const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
@@ -40,7 +40,7 @@ const DEFAULT_WAIT_MS = 0;
 export function apiEndpoint(app) {
   app.get("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
@@ -83,8 +83,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { vrn, from: finalFrom, to: finalTo, status, testScenario, hmrcAccount };
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
   validateEnv([
     "HMRC_BASE_URI",
     "HMRC_SANDBOX_BASE_URI",
@@ -158,7 +158,7 @@ export async function handler(event) {
   // Keep local override for test scenarios in a consistent variable name
   const govTestScenarioHeader = govClientHeaders["Gov-Test-Scenario"] || testScenario;
 
-  // Simulate an immediate API (this lambda) failure for testing, mirroring POST handler
+  // Simulate an immediate API (this lambda) failure for testing, mirroring POST ingestHandler
   logger.info({ "Checking for test scenario": govTestScenarioHeader });
   if (govTestScenarioHeader === "SUBMIT_API_HTTP_500") {
     return http500ServerErrorResponse({
@@ -287,8 +287,8 @@ export async function handler(event) {
   });
 }
 
-// SQS consumer Lambda handler function
-export async function consumer(event) {
+// SQS worker Lambda ingestHandler function
+export async function workerHandler(event) {
   validateEnv([
     "HMRC_BASE_URI",
     "HMRC_SANDBOX_BASE_URI",
@@ -299,7 +299,7 @@ export async function consumer(event) {
 
   const asyncRequestsTableName = process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME;
 
-  logger.info({ message: "SQS Consumer entry", recordCount: event.Records?.length });
+  logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
 
   for (const record of event.Records || []) {
     let userSub;
@@ -384,7 +384,7 @@ export async function consumer(event) {
       const isRetryable = isRetryableError(error);
 
       if (isRetryable) {
-        logger.warn({ message: "Transient error in consumer, re-throwing for SQS retry", error: error.message, requestId });
+        logger.warn({ message: "Transient error in worker, re-throwing for SQS retry", error: error.message, requestId });
         throw error;
       }
 
@@ -443,7 +443,10 @@ export async function getVatObligations(
 ) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox") {
-    await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub);
+    // This is a fire-and-forget validation that logs results but does not block
+    validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
+      logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
+    });
   }
 
   const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;

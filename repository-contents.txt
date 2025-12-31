@@ -72,11 +72,11 @@
 ./app/unit-tests/test-helpers/mockHelpers.test.js
 ./app/unit-tests/test-helpers/eventBuilders.test.js
 ./app/unit-tests/functions/selfDestruct.test.js
-./app/unit-tests/functions/bundleGet.handler.test.js
-./app/unit-tests/functions/bundlePost.handler.test.js
+./app/unit-tests/functions/bundleGet.ingestHandler.test.js
+./app/unit-tests/functions/bundlePost.ingestHandler.test.js
 ./app/unit-tests/functions/hmrcTokenPost.test.js
 ./app/unit-tests/functions/hmrcReceiptGet.test.js
-./app/unit-tests/functions/bundleDelete.handler.test.js
+./app/unit-tests/functions/bundleDelete.ingestHandler.test.js
 ./app/unit-tests/functions/hmrcVatObligationGet.test.js
 ./app/unit-tests/functions/customAuthorizer.test.js
 ./app/unit-tests/functions/hmrcVatReturnGet.test.js

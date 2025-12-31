@@ -46,7 +46,7 @@ describe("System: async request persistence with dynalite", () => {
   });
 
   it("stores pending request state for async processing", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-async-user");
     const requestId = "async-test-request-1";
 
@@ -63,7 +63,7 @@ describe("System: async request persistence with dynalite", () => {
       },
     });
 
-    const res = await handler(event);
+    const res = await ingestHandler(event);
 
     // Should return 202 for async processing, or 201 if it completed very quickly
     expect([201, 202]).toContain(res.statusCode);
@@ -84,7 +84,7 @@ describe("System: async request persistence with dynalite", () => {
   });
 
   it("retrieves completed request from persistence after waiting", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-async-user");
     const requestId = "async-test-request-2";
 
@@ -101,7 +101,7 @@ describe("System: async request persistence with dynalite", () => {
       },
     });
 
-    const res = await handler(event);
+    const res = await ingestHandler(event);
 
     // Should either return 201 with success or 202 if still processing
     expect([201, 202]).toContain(res.statusCode);
@@ -118,7 +118,7 @@ describe("System: async request persistence with dynalite", () => {
   });
 
   it("returns synchronous response when wait time header is large", async () => {
-    const { handler } = await import("@app/functions/account/bundlePost.js");
+    const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const token = makeIdToken("test-async-user");
     const requestId = "sync-test-request-1";
 
@@ -135,7 +135,7 @@ describe("System: async request persistence with dynalite", () => {
       },
     });
 
-    const res = await handler(event);
+    const res = await ingestHandler(event);
 
     // Should return 201 immediately for synchronous processing
     expect(res.statusCode).toBe(201);
@@ -166,7 +166,7 @@ describe("System: async request persistence with dynalite", () => {
     delete process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
 
     try {
-      const { handler } = await import("@app/functions/account/bundlePost.js");
+      const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
       const token = makeIdToken("test-async-user");
 
       const event = buildLambdaEvent({
@@ -178,7 +178,7 @@ describe("System: async request persistence with dynalite", () => {
         },
       });
 
-      const res = await handler(event);
+      const res = await ingestHandler(event);
 
       // Should still work without async table (synchronous mode)
       expect(res.statusCode).toBe(201);

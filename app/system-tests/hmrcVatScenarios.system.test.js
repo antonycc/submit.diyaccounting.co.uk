@@ -2,9 +2,9 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
-import { handler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
-import { handler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
-import { handler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { ingestHandler as hmrcVatReturnGetHandler } from "../functions/hmrc/hmrcVatReturnGet.js";
+import { ingestHandler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
+import { ingestHandler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
 import * as hmrcHelper from "../services/hmrcApi.js";
 import { buildLambdaEvent, buildGovClientHeaders } from "../test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "../test-helpers/mockHelpers.js";
@@ -26,21 +26,20 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const { default: dynalite } = await import("dynalite");
 
     const host = "127.0.0.1";
-    const port = 9003;
     const bundleTableName = "test-bundle-table";
     const hmrcApiRequestsTableName = "test-hmrc-requests-table";
     const receiptsTableName = "test-receipts-table";
 
     const server = dynalite({ createTableMs: 0 });
-    await new Promise((resolve, reject) => {
-      server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+    const actualPort = await new Promise((resolve, reject) => {
+      server.listen(0, host, (err) => (err ? reject(err) : resolve(server.address().port)));
     });
     stopDynalite = async () => {
       try {
         server.close();
       } catch {}
     };
-    const endpoint = `http://${host}:${port}`;
+    const endpoint = `http://${host}:${actualPort}`;
 
     process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
     process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
@@ -299,7 +298,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(Array.isArray(obligationBody.obligations)).toBe(true);
-  }, 32_000);
+  }, 60_000);
 
   it("should handle different test scenarios without Gov-Test-Scenario header", async () => {
     // Set up stub data
@@ -343,7 +342,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const returnBody = parseResponseBody(returnResponse);
     expect(returnBody).toHaveProperty("periodKey", "24B1");
-  }, 32_000);
+  }, 60_000);
 
   it("should retrieve fulfilled obligations with status filter", async () => {
     // Set up stub data with fulfilled obligations
@@ -396,5 +395,5 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     const obligationBody = parseResponseBody(obligationResponse);
     expect(obligationBody).toHaveProperty("obligations");
     expect(obligationBody.obligations[0]).toHaveProperty("status", "F");
-  }, 32_000);
+  }, 60_000);
 });

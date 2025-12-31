@@ -287,7 +287,7 @@ public class SubmitApplication {
 
         // ExtractLambda ARNs from lambdaFunctions
         var lambdaArns =
-                lambdaFunctions.stream().map(AbstractApiLambdaProps::lambdaArn).toList();
+                lambdaFunctions.stream().map(AbstractApiLambdaProps::ingestLambdaArn).toList();
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,

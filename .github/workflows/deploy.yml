@@ -4,7 +4,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump18
+# Bump19
 
 on:
   workflow_dispatch:
@@ -75,12 +75,7 @@ on:
       - 'package.json'
       - 'pom.xml'
       - 'web/public/submit.catalogue.toml'
-      - 'lambda-concurrency-config.yaml'
-      - '.github/actions/get-names'
-      - '.github/actions/set-origins'
-      - '.github/actions/scale-lambda-concurrency'
       - '.github/workflows/deploy.yml'
-      - '.github/workflows/scale-to.yml'
   schedule:
     - cron: '11 4 * * *'
 
@@ -209,72 +204,73 @@ jobs:
     outputs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
-  behaviour-test-bundle:
-    name: 'behaviour test - bundle (proxy)'
-    needs:
-      - names
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-           npm install
-           npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - bundle
-        run: |
-          npm run test:bundleBehaviour-proxy || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-artifacts-bundle
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-reports-bundle
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-dynamodb-bundle
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/**/*.jsonl
+#  behaviour-test-bundle:
+#    name: 'behaviour test - bundle (proxy)'
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#    needs:
+#      - names
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Set up Docker
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#           npm install
+#           npx playwright install chromium --with-deps
+#
+#      - name: Run behaviour tests - bundle
+#        run: |
+#          npm run test:bundleBehaviour-proxy || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-artifacts-bundle
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-reports-bundle
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
+#
+#      - name: Upload artifacts (dynamodb exports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-dynamodb-bundle
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/**/*.jsonl
 
   behaviour-test-submit-vat:
     if: ${{ !cancelled() }}
     name: 'behaviour test - submit vat (proxy)'
     needs:
       - names
-      - behaviour-test-bundle
+      #- behaviour-test-bundle
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -333,261 +329,261 @@ jobs:
           path: |
             target/behaviour-test-results/**/*.jsonl
 
-  behaviour-test-fraud-prevention-headers-vat:
-    name: 'behaviour test - fraud prevention headers vat (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-    needs:
-      - names
-      - behaviour-test-submit-vat
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - fraud prevention headers vat
-        run: |
-          npm run test:postVatReturnFPHBehaviour-proxy || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          HMRC_ACCOUNT: sandbox
-          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-artifacts-fraud-prevention-headers-vat
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-reports-fraud-prevention-headers-vat
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-dynamodb-fraud-prevention-headers-vat
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/**/*.jsonl
-
-  behaviour-test-obligation:
-    name: 'behaviour test - obligation (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-    needs:
-      - names
-      - behaviour-test-fraud-prevention-headers-vat
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - obligation
-        run: |
-          npm run test:obligationBehaviour-proxy || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          HMRC_ACCOUNT: sandbox
-          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-artifacts-obligation
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-reports-obligation
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-dynamodb-obligation
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/**/*.jsonl
-
-  behaviour-test-post-vat-return:
-    name: 'behaviour test - post vat return (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-    needs:
-      - names
-      - behaviour-test-obligation
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - post-vat-return
-        run: |
-          npm run test:postVatReturnBehaviour-proxy || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          HMRC_ACCOUNT: sandbox
-          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-artifacts-post-vat-return
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-reports-post-vat-return
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-dynamodb-post-vat-return
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/**/*.jsonl
-
-  behaviour-test-get-vat-return:
-    name: 'behaviour test - get vat return (proxy)'
-    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-    needs:
-      - names
-      - behaviour-test-post-vat-return
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - get-vat-return
-        run: |
-          npm run test:getVatReturnBehaviour-proxy || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          HMRC_ACCOUNT: sandbox
-          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-artifacts-get-vat-return
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-reports-get-vat-return
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-dynamodb-get-vat-return
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/**/*.jsonl
+#  behaviour-test-fraud-prevention-headers-vat:
+#    name: 'behaviour test - fraud prevention headers vat (proxy)'
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#    needs:
+#      - names
+#      - behaviour-test-submit-vat
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Set up Docker
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm install
+#          npx playwright install chromium --with-deps
+#
+#      - name: Run behaviour tests - fraud prevention headers vat
+#        run: |
+#          npm run test:postVatReturnFPHBehaviour-proxy || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          HMRC_ACCOUNT: sandbox
+#          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-artifacts-fraud-prevention-headers-vat
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-reports-fraud-prevention-headers-vat
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
+#
+#      - name: Upload artifacts (dynamodb exports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-dynamodb-fraud-prevention-headers-vat
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/**/*.jsonl
+#
+#  behaviour-test-obligation:
+#    name: 'behaviour test - obligation (proxy)'
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#    needs:
+#      - names
+#      - behaviour-test-fraud-prevention-headers-vat
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Set up Docker
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm install
+#          npx playwright install chromium --with-deps
+#
+#      - name: Run behaviour tests - obligation
+#        run: |
+#          npm run test:obligationBehaviour-proxy || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          HMRC_ACCOUNT: sandbox
+#          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-artifacts-obligation
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-reports-obligation
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
+#
+#      - name: Upload artifacts (dynamodb exports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-dynamodb-obligation
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/**/*.jsonl
+#
+#  behaviour-test-post-vat-return:
+#    name: 'behaviour test - post vat return (proxy)'
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#    needs:
+#      - names
+#      - behaviour-test-obligation
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Set up Docker
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm install
+#          npx playwright install chromium --with-deps
+#
+#      - name: Run behaviour tests - post-vat-return
+#        run: |
+#          npm run test:postVatReturnBehaviour-proxy || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          HMRC_ACCOUNT: sandbox
+#          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-artifacts-post-vat-return
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-reports-post-vat-return
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
+#
+#      - name: Upload artifacts (dynamodb exports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-dynamodb-post-vat-return
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/**/*.jsonl
+#
+#  behaviour-test-get-vat-return:
+#    name: 'behaviour test - get vat return (proxy)'
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#    needs:
+#      - names
+#      - behaviour-test-post-vat-return
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Set up Docker
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm install
+#          npx playwright install chromium --with-deps
+#
+#      - name: Run behaviour tests - get-vat-return
+#        run: |
+#          npm run test:getVatReturnBehaviour-proxy || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          HMRC_ACCOUNT: sandbox
+#          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+#          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-artifacts-get-vat-return
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-reports-get-vat-return
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
+#
+#      - name: Upload artifacts (dynamodb exports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: behaviour-test-dynamodb-get-vat-return
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/**/*.jsonl
 
   test-aws-credentials:
     name: 'test aws credentials'
@@ -1581,26 +1577,6 @@ jobs:
     outputs:
       originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
 
-#  scale-lambda-concurrency:
-#    name: 'scale Lambda concurrency to ready'
-#    #if: ${{ needs.names.outputs.environment-name == 'prod' }}
-#    needs:
-#      - names
-#      - skip-deploy-check
-#      - deploy-auth
-#      - deploy-hmrc
-#      - deploy-account
-#      - deploy-api
-#      - deploy-edge
-#    uses: './.github/workflows/scale-to.yml'
-#    permissions:
-#      id-token: write
-#      contents: read
-#    with:
-#      concurrency-level: 'ready'
-#      environment-name: ${{ needs.names.outputs.environment-name }}
-#      deployment-name: ${{ needs.names.outputs.deployment-name }}
-
   deploy-publish:
     name: 'deploy publish'
     needs:
@@ -1981,7 +1957,7 @@ jobs:
       - names
       - set-origins
       - deploy-publish
-      - behaviour-test-get-vat-return
+      #- behaviour-test-get-vat-return
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2102,7 +2078,7 @@ jobs:
             target/test-reports/
 
   web-test-bundle:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test bundle'
     needs:
       - names
@@ -2329,7 +2305,8 @@ jobs:
             target/test-reports/
 
   web-test-submit-vat:
-    if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+    #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'web test submit vat'
     needs:
       - names
@@ -2928,7 +2905,7 @@ jobs:
         run: npm ci
 
       - name: Download artifacts - bundle
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-bundle
@@ -2960,7 +2937,8 @@ jobs:
             target/behaviour-test-results/obligation-sandbox/
 
       - name: Download artifacts - submit vat
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-artifacts-submit-vat
@@ -2991,7 +2969,7 @@ jobs:
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
 
       - name: Download reports - bundle
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-bundle
@@ -3023,7 +3001,8 @@ jobs:
             target/test-reports/obligation-sandbox/
 
       - name: Download reports - submit vat
-        if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
         with:
           name: web-test-reports-submit-vat

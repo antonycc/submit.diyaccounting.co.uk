@@ -11,7 +11,7 @@ const logger = createLogger({ source: "app/functions/non-lambda-mocks/mockAuthUr
 export function apiEndpoint(app) {
   app.get("/api/v1/mock/authUrl", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
 }
@@ -26,8 +26,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { state };
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL"]);
 
   const { request } = extractRequest(event);

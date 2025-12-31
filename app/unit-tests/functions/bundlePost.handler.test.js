@@ -1,5 +1,5 @@
 // app/unit-tests/functions/bundlePost.test.js
-// Comprehensive tests for bundlePost handler
+// Comprehensive tests for bundlePost ingestHandler
 
 import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -40,12 +40,12 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
-// Defer importing the handler until after mocks are defined
-import { handler as bundlePostHandler, consumer as bundlePostConsumer } from "@app/functions/account/bundlePost.js";
+// Defer importing the ingestHandler until after mocks are defined
+import { ingestHandler as bundlePostHandler, workerHandler as bundlePostWorker } from "@app/functions/account/bundlePost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-describe("bundlePost handler", () => {
+describe("bundlePost ingestHandler", () => {
   let asyncRequests = new Map();
 
   beforeEach(() => {
@@ -347,7 +347,7 @@ describe("bundlePost handler", () => {
   });
 
   // ============================================================================
-  // Async & Consumer Tests
+  // Async & Worker Tests
   // ============================================================================
 
   test("returns 202 Accepted for async initiation", async () => {
@@ -380,7 +380,7 @@ describe("bundlePost handler", () => {
       ],
     };
 
-    await bundlePostConsumer(event);
+    await bundlePostWorker(event);
 
     const stored = asyncRequests.get(requestId);
     expect(stored).toBeDefined();

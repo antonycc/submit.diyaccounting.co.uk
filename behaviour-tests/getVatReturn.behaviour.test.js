@@ -109,7 +109,7 @@ let observedTraceparent = null;
 let currentTestUsername;
 let currentTestPassword;
 
-test.setTimeout(600_000);
+test.setTimeout(1200_000);
 
 // Explicit, stable test ID for reporting
 test.beforeEach(async ({}, testInfo) => {

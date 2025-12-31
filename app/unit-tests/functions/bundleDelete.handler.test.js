@@ -1,5 +1,5 @@
 // app/unit-tests/functions/bundleDelete.test.js
-// Comprehensive tests for bundleDelete handler
+// Comprehensive tests for bundleDelete ingestHandler
 
 import { describe, test, beforeEach, afterEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -41,13 +41,13 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
-// Defer importing the handlers until after mocks are defined
-import { handler as bundleDeleteHandler, consumer as bundleDeleteConsumer } from "@app/functions/account/bundleDelete.js";
-import { handler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+// Defer importing the ingestHandlers until after mocks are defined
+import { ingestHandler as bundleDeleteHandler, workerHandler as bundleDeleteWorker } from "@app/functions/account/bundleDelete.js";
+import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-describe("bundleDelete handler", () => {
+describe("bundleDelete ingestHandler", () => {
   let asyncRequests = new Map();
 
   beforeEach(() => {
@@ -322,7 +322,7 @@ describe("bundleDelete handler", () => {
   });
 
   // ============================================================================
-  // Async & Consumer Tests
+  // Async & Worker Tests
   // ============================================================================
 
   test("returns 202 Accepted for async deletion initiation", async () => {
@@ -346,7 +346,7 @@ describe("bundleDelete handler", () => {
       requestId,
     };
 
-    // Mock bundle existence for consumer
+    // Mock bundle existence for worker
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
@@ -386,7 +386,7 @@ describe("bundleDelete handler", () => {
       ],
     };
 
-    await bundleDeleteConsumer(event);
+    await bundleDeleteWorker(event);
 
     const stored = asyncRequests.get(requestId);
     expect(stored).toBeDefined();

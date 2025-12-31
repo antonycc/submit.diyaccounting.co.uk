@@ -25,7 +25,7 @@ let cachedHmrcClientSecret;
 export function apiEndpoint(app) {
   app.post("/api/v1/hmrc/token", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/hmrc/token", async (httpRequest, httpResponse) => {
@@ -51,8 +51,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { code, hmrcAccount };
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
   // Allow local/dev override via HMRC_CLIENT_SECRET. Only require ARN if override is not supplied.
   const required = [
     "HMRC_BASE_URI",

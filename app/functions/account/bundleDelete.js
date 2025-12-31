@@ -29,13 +29,13 @@ const DEFAULT_WAIT_MS = 0; // Fire-and-forget by default for Phase 1 async rollo
 export function apiEndpoint(app) {
   app.delete("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   // Also support deletion via path parameter for parity with API Gateway
   app.delete("/api/v1/bundle/:id", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
@@ -77,8 +77,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { userId, bundleToRemove, removeAll };
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request, requestId: extractedRequestId } = extractRequest(event);
@@ -191,11 +191,11 @@ export async function handler(event) {
   });
 }
 
-// SQS consumer Lambda handler function
-export async function consumer(event) {
+// SQS worker Lambda ingestHandler function
+export async function workerHandler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"]);
 
-  logger.info({ message: "SQS Consumer entry", recordCount: event.Records?.length });
+  logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
 
   for (const record of event.Records || []) {
     let userId;

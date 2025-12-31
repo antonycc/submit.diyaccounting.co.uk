@@ -34,8 +34,8 @@ function getVerifier() {
   return verifier;
 }
 
-// Lambda authorizer handler
-export async function handler(event) {
+// Lambda authorizer ingestHandler
+export async function ingestHandler(event) {
   // HTTP API v2 uses routeArn or methodArn
   const routeArn = event.routeArn || event.methodArn;
 

@@ -88,7 +88,7 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
 export function apiEndpoint(app) {
   app.post("/api/v1/bundle", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
@@ -97,7 +97,7 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
-export async function handler(event) {
+export async function ingestHandler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request, requestId: extractedRequestId } = extractRequest(event);
@@ -232,11 +232,11 @@ export async function handler(event) {
   });
 }
 
-// SQS consumer Lambda handler function
-export async function consumer(event) {
+// SQS worker Lambda ingestHandler function
+export async function workerHandler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"]);
 
-  logger.info({ message: "SQS Consumer entry", recordCount: event.Records?.length });
+  logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
 
   for (const record of event.Records || []) {
     let userId;

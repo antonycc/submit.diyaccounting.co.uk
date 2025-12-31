@@ -335,7 +335,7 @@ When reviewing code changes, check:
 
 ```javascript
 // Standard Lambda function structure
-export const handler = async (event, context) => {
+export const ingestHandler = async (event, context) => {
   try {
     // 1. Extract parameters from event (query, path, headers, body)
     // 2. Validate input

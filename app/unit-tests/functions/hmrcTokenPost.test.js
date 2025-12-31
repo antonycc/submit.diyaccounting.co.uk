@@ -1,13 +1,13 @@
 // app/unit-tests/functions/hmrcTokenPost.test.js
 import { describe, test, beforeEach, expect } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { handler as hmrcTokenPostHandler } from "@app/functions/hmrc/hmrcTokenPost.js";
+import { ingestHandler as hmrcTokenPostHandler } from "@app/functions/hmrc/hmrcTokenPost.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-describe("hmrcTokenPost handler", () => {
+describe("hmrcTokenPost ingestHandler", () => {
   beforeEach(() => {
     Object.assign(process.env, setupTestEnv());
   });

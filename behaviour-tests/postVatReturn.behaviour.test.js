@@ -97,7 +97,7 @@ let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
 
-test.setTimeout(600_000);
+test.setTimeout(1200_000);
 
 // Explicit, stable test ID for reporting
 test.beforeEach(async ({}, testInfo) => {

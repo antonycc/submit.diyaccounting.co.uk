@@ -12,7 +12,7 @@ const logger = createLogger({ source: "app/functions/auth/cognitoTokenPost.js" }
 export function apiEndpoint(app) {
   app.post("/api/v1/cognito/token", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await handler(lambdaEvent);
+    const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
   app.head("/api/v1/cognito/token", async (httpRequest, httpResponse) => {
@@ -48,8 +48,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   return {};
 }
 
-// HTTP request/response, aware Lambda handler function
-export async function handler(event) {
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
   validateEnv(["DIY_SUBMIT_BASE_URL", "COGNITO_CLIENT_ID", "COGNITO_BASE_URI"]);
 
   const { request } = extractRequest(event);
