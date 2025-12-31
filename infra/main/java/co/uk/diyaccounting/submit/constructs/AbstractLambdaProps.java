@@ -10,7 +10,7 @@ import software.amazon.awscdk.services.logs.RetentionDays;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract interface AbstractLambdaProps {
+public interface AbstractLambdaProps {
 
     String idPrefix();
 
@@ -20,26 +20,23 @@ public abstract interface AbstractLambdaProps {
 
     String ingestLambdaArn();
 
-    String ingestDefaultAliasLambdaArn();
+    String provisionedConcurrencyAliasName();
+
+    String ingestProvisionedConcurrencyAliasArn();
 
     @Value.Default
     default int ingestReservedConcurrency() {
-        return 10;
+        return 5;
     }
 
     @Value.Default
-    default Duration timeout() {
-        return Duration.seconds(10);
-    }
-
-    @Value.Default
-    default int ingestProvisionedConcurrencyZero() {
+    default int ingestProvisionedConcurrency() {
         return 0;
     }
 
     @Value.Default
-    default int ingestProvisionedConcurrencyHot() {
-        return 0;
+    default Duration ingestLambdaTimeout() {
+        return Duration.seconds(28);
     }
 
     @Value.Default

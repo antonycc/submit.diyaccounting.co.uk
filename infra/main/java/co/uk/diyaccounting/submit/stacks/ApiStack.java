@@ -350,16 +350,17 @@ public class ApiStack extends Stack {
                 this,
                 importedFnId,
                 FunctionAttributes.builder()
-                        // .functionArn(apiLambdaProps.lambdaArn())
-                        .functionArn(apiLambdaProps.ingestDefaultAliasLambdaArn())
+                        .functionArn(apiLambdaProps.ingestProvisionedConcurrencyAliasArn())
                         .sameEnvironment(true)
                         .build());
 
         // Create HTTP Lambda integration
         HttpLambdaIntegration integration =
-                HttpLambdaIntegration.Builder.create(integrationId, fn).build();
+                HttpLambdaIntegration.Builder.create(integrationId, fn)
+                    .timeout(Duration.seconds(29))
+                    .build();
 
-        // Create HTTP route with appropriate authorizer
+        // Create HTTP route with the appropriate authoriser
         var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
         if (apiLambdaProps.customAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)

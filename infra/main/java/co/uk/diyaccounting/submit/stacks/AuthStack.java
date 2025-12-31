@@ -117,8 +117,9 @@ public class AuthStack extends Stack {
                         .ingestFunctionName(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().cognitoTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().cognitoTokenPostIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().cognitoTokenPostIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(1)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(1)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().cognitoTokenPostLambdaJwtAuthorizer)
@@ -126,7 +127,7 @@ public class AuthStack extends Stack {
                         .environment(exchangeCognitoTokenLambdaEnv)
                         .build());
         this.cognitoTokenPostLambdaProps = exchangeCognitoTokenLambdaUrlOrigin.apiProps;
-        this.cognitoTokenPostLambda = exchangeCognitoTokenLambdaUrlOrigin.lambda;
+        this.cognitoTokenPostLambda = exchangeCognitoTokenLambdaUrlOrigin.ingestLambda;
         this.cognitoTokenPostLambdaLogGroup = exchangeCognitoTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.cognitoTokenPostLambdaProps);
         infof(
@@ -154,8 +155,9 @@ public class AuthStack extends Stack {
                         .ingestFunctionName(props.sharedNames().customAuthorizerIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().customAuthorizerIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().customAuthorizerIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().customAuthorizerIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(1)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(1)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
                         .urlPath("/") // Not used for authorizers but required by props
                         .jwtAuthorizer(false)
@@ -163,7 +165,7 @@ public class AuthStack extends Stack {
                         .environment(customAuthorizerLambdaEnv)
                         .build());
         this.customAuthorizerLambdaProps = customAuthorizerLambda.apiProps;
-        this.customAuthorizerLambda = customAuthorizerLambda.lambda;
+        this.customAuthorizerLambda = customAuthorizerLambda.ingestLambda;
         this.customAuthorizerLambdaLogGroup = customAuthorizerLambda.logGroup;
         infof(
                 "Created Custom Authorizer Lambda %s with ingestHandler %s",

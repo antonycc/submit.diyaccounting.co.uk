@@ -33,8 +33,6 @@ on:
     #   | sort @timestamp desc
     #   | filter @message like /REPORT/
     #   | filter @message like /Init Duration/
-    # Runs at 32 to be 5+15 minutes after 12 past to settle after .github/workflows/scale-to.yml
-    #- cron: '32,39,46 */2 * * *'
     - cron: '*/21 * * * *'
 
 permissions:

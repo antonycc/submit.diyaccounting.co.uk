@@ -14,11 +14,11 @@ public class LambdaNames {
     public String ingestLambdaHandler;
     public String ingestLambdaFunctionName;
     public String ingestLambdaArn;
-    public String ingestDefaultAliasLambdaArn;
+    public String ingestProvisionedConcurrencyLambdaAliasArn;
     public String workerLambdaHandler;
     public String workerLambdaFunctionName;
     public String workerLambdaArn;
-    public String workerDefaultAliasLambdaArn;
+    public String workerProvisionedConcurrencyLambdaAliasArn;
     public String workerQueueName;
     public String workerDeadLetterQueueName;
 
@@ -34,11 +34,11 @@ public class LambdaNames {
         this.ingestLambdaHandler = "%s/%s/%s".formatted(props.handlerPrefix(), props.handlerPath(), props.ingestHandlerName());
         this.ingestLambdaFunctionName = "%s-%s".formatted(props.resourceNamePrefix(), ingestHandlerDashed);
         this.ingestLambdaArn = "%s-%s".formatted(props.lambdaArnPrefix(), ingestHandlerDashed);
-        this.ingestDefaultAliasLambdaArn = "%s:%s".formatted(this.ingestLambdaArn, props.defaultAliasName());
+        this.ingestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.ingestLambdaArn, props.provisionedConcurrencyAliasName());
         this.workerLambdaHandler ="%s/%s/%s".formatted(props.handlerPrefix(), props.handlerPath(), workerHandlerName);
         this.workerLambdaFunctionName = "%s-%s".formatted(this.ingestLambdaFunctionName, props.workerPostfix());
         this.workerLambdaArn = "%s-%s".formatted(this.ingestLambdaArn, props.workerPostfix());
-        this.workerDefaultAliasLambdaArn = "%s:%s".formatted(this.workerLambdaArn, props.defaultAliasName());
+        this.workerProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.workerLambdaArn, props.provisionedConcurrencyAliasName());
         this.workerQueueName = "%s-%s".formatted(this.ingestLambdaFunctionName, props.queuePostfix());
         this.workerDeadLetterQueueName = "%s-%s".formatted(this.ingestLambdaFunctionName, props.deadLetterQueuePostfix());
     }

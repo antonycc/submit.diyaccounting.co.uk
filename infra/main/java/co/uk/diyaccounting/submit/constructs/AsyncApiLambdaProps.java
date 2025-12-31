@@ -7,10 +7,15 @@ import software.amazon.awscdk.Duration;
 public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
 
     String workerFunctionName();
+
     String workerHandler();
+
     String workerLambdaArn();
-    String workerDefaultAliasLambdaArn();
+
+    String workerProvisionedConcurrencyAliasArn();
+
     String workerQueueName();
+
     String workerDeadLetterQueueName();
 
     @Value.Default
@@ -19,27 +24,22 @@ public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
     }
 
     @Value.Default
-    default int workerProvisionedConcurrencyZero() {
+    default int workerProvisionedConcurrency() {
         return 0;
     }
 
     @Value.Default
-    default int workerProvisionedConcurrencyHot() {
-        return 0;
-    }
-
-    @Value.Default
-    default Duration workerTimeout() {
+    default Duration workerLambdaTimeout() {
         return Duration.seconds(10);
     }
 
     @Value.Default
-    default Duration visibilityTimeout() {
+    default Duration queueVisibilityTimeout() {
         return Duration.seconds(30);
     }
 
     @Value.Default
-    default int maxReceiveCount() {
+    default int workerMaxReceiveCount() {
         return 3; // 2 retries + 1 initial attempt
     }
 

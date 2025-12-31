@@ -8,6 +8,7 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -171,8 +172,8 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcTokenPostIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(0)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcTokenPostLambdaJwtAuthorizer)
@@ -180,7 +181,7 @@ public class HmrcStack extends Stack {
                         .environment(exchangeHmrcTokenLambdaEnv)
                         .build());
         this.hmrcTokenPostLambdaProps = exchangeHmrcTokenLambdaUrlOrigin.apiProps;
-        this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.lambda;
+        this.hmrcTokenPostLambda = exchangeHmrcTokenLambdaUrlOrigin.ingestLambda;
         this.hmrcTokenPostLambdaLogGroup = exchangeHmrcTokenLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcTokenPostLambdaProps);
         infof(
@@ -259,16 +260,18 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatReturnPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnPostIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnPostIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(1)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(1)
                         .workerFunctionName(props.sharedNames().hmrcVatReturnPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerLambdaArn)
-                        .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerDefaultAliasLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatReturnPostLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnPostLambdaDeadLetterQueueName)
-                        .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
+                        .workerLambdaTimeout(Duration.seconds(300))
+                        .queueVisibilityTimeout(Duration.seconds(320))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcVatReturnPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnPostLambdaJwtAuthorizer)
@@ -280,7 +283,7 @@ public class HmrcStack extends Stack {
         submitVatLambdaEnv.put("SQS_QUEUE_URL", submitVatLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcVatReturnPostLambdaProps = submitVatLambdaUrlOrigin.apiProps;
-        this.hmrcVatReturnPostLambda = submitVatLambdaUrlOrigin.lambda;
+        this.hmrcVatReturnPostLambda = submitVatLambdaUrlOrigin.ingestLambda;
         this.hmrcVatReturnPostLambdaLogGroup = submitVatLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnPostLambdaProps);
         infof(
@@ -318,16 +321,18 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatObligationGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatObligationGetIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcVatObligationGetIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(0)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcVatObligationGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerLambdaArn)
-                        .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerDefaultAliasLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatObligationGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatObligationGetLambdaDeadLetterQueueName)
-                        .workerProvisionedConcurrencyHot(0)
+                        .workerProvisionedConcurrency(0)
                         .workerReservedConcurrency(2)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcVatObligationGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatObligationGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatObligationGetLambdaJwtAuthorizer)
@@ -340,7 +345,7 @@ public class HmrcStack extends Stack {
         vatObligationLambdaEnv.put("SQS_QUEUE_URL", hmrcVatObligationGetLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcVatObligationGetLambdaProps = hmrcVatObligationGetLambdaUrlOrigin.apiProps;
-        this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.lambda;
+        this.hmrcVatObligationGetLambda = hmrcVatObligationGetLambdaUrlOrigin.ingestLambda;
         this.hmrcVatObligationGetLambdaLogGroup = hmrcVatObligationGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatObligationGetLambdaProps);
         infof(
@@ -377,29 +382,29 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatReturnGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnGetIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnGetIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(0)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcVatReturnGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerLambdaArn)
-                        .workerDefaultAliasLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerDefaultAliasLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatReturnGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnGetLambdaDeadLetterQueueName)
-                        .workerProvisionedConcurrencyHot(0)
                         .workerReservedConcurrency(2)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcVatReturnGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcVatReturnGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().hmrcVatReturnGetLambdaCustomAuthorizer)
                         .environment(vatReturnGetLambdaEnv)
-                        .workerReservedConcurrency(1) // Avoid HMRC throttling
                         .build());
 
         // Update API environment with SQS queue URL
         vatReturnGetLambdaEnv.put("SQS_QUEUE_URL", hmrcVatReturnGetLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcVatReturnGetLambdaProps = hmrcVatReturnGetLambdaUrlOrigin.apiProps;
-        this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.lambda;
+        this.hmrcVatReturnGetLambda = hmrcVatReturnGetLambdaUrlOrigin.ingestLambda;
         this.hmrcVatReturnGetLambdaLogGroup = hmrcVatReturnGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcVatReturnGetLambdaProps);
         infof(
@@ -433,8 +438,8 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().receiptGetIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(0)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)
@@ -442,7 +447,7 @@ public class HmrcStack extends Stack {
                         .environment(myReceiptsLambdaEnv)
                         .build());
         this.receiptGetLambdaProps = myReceiptsLambdaUrlOrigin.apiProps;
-        this.receiptGetLambda = myReceiptsLambdaUrlOrigin.lambda;
+        this.receiptGetLambda = myReceiptsLambdaUrlOrigin.ingestLambda;
         this.receiptGetLambdaLogGroup = myReceiptsLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.receiptGetLambdaProps);
         // Also expose a second route for retrieving a single receipt by name using the same Lambda
@@ -454,8 +459,8 @@ public class HmrcStack extends Stack {
                 .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
                 .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
                 .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
-                .ingestDefaultAliasLambdaArn(props.sharedNames().receiptGetIngestDefaultAliasLambdaArn)
-                .ingestProvisionedConcurrencyHot(0)
+                .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                 .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
                 .jwtAuthorizer(props.sharedNames().receiptGetLambdaJwtAuthorizer)

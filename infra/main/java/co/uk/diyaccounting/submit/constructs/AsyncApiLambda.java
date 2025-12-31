@@ -25,9 +25,9 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 public class AsyncApiLambda extends ApiLambda {
 
     public final Function workerLambda;
-    public final Version workerVersion;
-    public final Alias workerAliasZero;
-    public final Alias workerAliasHot;
+    public final Version workerLambdaVersion;
+    public final Alias workerLambdaAlias;
+    public final String workerLambdaAliasArn;
     public final Queue queue;
     public final Queue dlq;
 
@@ -52,9 +52,9 @@ public class AsyncApiLambda extends ApiLambda {
         // 2. Create Main Queue
         this.queue = Queue.Builder.create(scope, props.idPrefix() + "-queue")
                 .queueName(props.workerQueueName())
-                .visibilityTimeout(props.visibilityTimeout())
+                .visibilityTimeout(props.queueVisibilityTimeout())
                 .deadLetterQueue(DeadLetterQueue.builder()
-                        .maxReceiveCount(props.maxReceiveCount())
+                        .maxReceiveCount(props.workerMaxReceiveCount())
                         .queue(this.dlq)
                         .build())
                 .build();
@@ -75,35 +75,32 @@ public class AsyncApiLambda extends ApiLambda {
         this.workerLambda = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-worker-fn")
                 .code(DockerImageCode.fromEcr(repository, imageCodeProps))
                 .environment(props.environment())
-                .functionName(props.ingestFunctionName() + "-worker")
+                .functionName(props.workerFunctionName())
                 .reservedConcurrentExecutions(props.workerReservedConcurrency())
-                .timeout(props.workerTimeout())
+                .timeout(props.workerLambdaTimeout())
                 .tracing(Tracing.ACTIVE)
                 .build();
 
-        this.workerVersion =
+        this.workerLambdaVersion =
             Version.Builder.create(scope, props.idPrefix() + "-worker-version")
                 .lambda(this.workerLambda)
-                .description("No provisioned concurrency")
+                .description("Created for PC setting in alias")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
-        this.workerAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-worker-zero-alias")
+        this.workerLambdaAlias = Alias.Builder.create(scope, props.idPrefix() + "-worker-zero-alias")
             .aliasName("zero")
-            .version(this.workerVersion)
-            //.provisionedConcurrentExecutions(props.workerProvisionedConcurrencyZero())
+            .version(this.workerLambdaVersion)
+            .provisionedConcurrentExecutions(props.workerProvisionedConcurrency())
             .build();
-        infof("Created worker Lambda alias %s for version %s", this.workerAliasZero.getAliasName(), this.workerVersion.getVersion());
-
-        this.workerAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-worker-hot-alias")
-            .aliasName("hot")
-            .version(this.workerVersion)
-            .provisionedConcurrentExecutions(props.workerProvisionedConcurrencyHot())
-            .build();
-        infof("Created worker Lambda alias %s for version %s", this.workerAliasHot.getAliasName(), this.workerVersion.getVersion());
+        this.workerLambdaAliasArn = "%s:%s".formatted(this.ingestLambda.getFunctionArn(), this.ingestLambdaAlias.getAliasName());
+        infof("Created worker Lambda alias %s for version %s with arn %s", this.workerLambdaAlias.getAliasName(), this.workerLambdaVersion.getVersion(), props.workerProvisionedConcurrencyAliasArn());
 
         // 4. Set up SQS trigger
-        this.workerAliasZero.addEventSource(
-                SqsEventSource.Builder.create(this.queue).batchSize(1).build());
+        this.workerLambdaAlias.addEventSource(
+                SqsEventSource.Builder.create(this.queue)
+                    .batchSize(1)
+                    .build()
+        );
 
         // Alarms for worker lambda
         Alarm.Builder.create(scope, props.idPrefix() + "-WorkerErrorsAlarm")
@@ -116,10 +113,10 @@ public class AsyncApiLambda extends ApiLambda {
                 .build();
 
         // Grant API Lambda permission to send messages to the queue
-        this.queue.grantSendMessages(this.lambda);
+        this.queue.grantSendMessages(this.ingestLambda);
 
         // Pass queue URL to both lambdas
-        this.lambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
+        this.ingestLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
         this.workerLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
     }
 }

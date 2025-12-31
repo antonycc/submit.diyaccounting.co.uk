@@ -2,7 +2,6 @@
 
 echo '.github/workflows/deploy.yml' > repository-contents.txt
 echo '.github/workflows/deploy-environment.yml' >> repository-contents.txt
-echo '.github/workflows/scale-to.yml' >> repository-contents.txt
 echo '.github/workflows/set-origins.yml' >> repository-contents.txt
 echo '.github/workflows/test.yml' >> repository-contents.txt
 echo '.github/actions/scale-to/action.yml' >> repository-contents.txt

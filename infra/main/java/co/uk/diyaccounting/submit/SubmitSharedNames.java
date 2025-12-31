@@ -67,7 +67,7 @@ public class SubmitSharedNames {
     public String dashedDeploymentDomainName;
     public String cognitoBaseUri;
     public String trailName;
-    public String defaultAliasName;
+    public String provisionedConcurrencyAliasName;
 
     public String receiptsTableName;
     public String bundlesTableName;
@@ -119,7 +119,7 @@ public class SubmitSharedNames {
     public String cognitoTokenPostIngestLambdaHandler;
     public String cognitoTokenPostIngestLambdaFunctionName;
     public String cognitoTokenPostIngestLambdaArn;
-    public String cognitoTokenPostIngestDefaultAliasLambdaArn;
+    public String cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod cognitoTokenPostLambdaHttpMethod;
     public String cognitoTokenPostLambdaUrlPath;
     public boolean cognitoTokenPostLambdaJwtAuthorizer;
@@ -128,12 +128,12 @@ public class SubmitSharedNames {
     public String customAuthorizerIngestLambdaHandler;
     public String customAuthorizerIngestLambdaFunctionName;
     public String customAuthorizerIngestLambdaArn;
-    public String customAuthorizerIngestDefaultAliasLambdaArn;
+    public String customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn;
 
     public String bundleGetIngestLambdaHandler;
     public String bundleGetIngestLambdaFunctionName;
     public String bundleGetIngestLambdaArn;
-    public String bundleGetIngestDefaultAliasLambdaArn;
+    public String bundleGetIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod bundleGetLambdaHttpMethod;
     public String bundleGetLambdaUrlPath;
     public boolean bundleGetLambdaJwtAuthorizer;
@@ -144,11 +144,11 @@ public class SubmitSharedNames {
     public String bundlePostIngestLambdaHandler;
     public String bundlePostIngestLambdaFunctionName;
     public String bundlePostIngestLambdaArn;
-    public String bundlePostIngestDefaultAliasLambdaArn;
+    public String bundlePostIngestProvisionedConcurrencyLambdaAliasArn;
     public String bundlePostWorkerLambdaHandler;
     public String bundlePostWorkerLambdaFunctionName;
     public String bundlePostWorkerLambdaArn;
-    public String bundlePostWorkerDefaultAliasLambdaArn;
+    public String bundlePostWorkerProvisionedConcurrencyLambdaAliasArn;
     public String bundlePostLambdaQueueName;
     public String bundlePostLambdaDeadLetterQueueName;
     public HttpMethod bundlePostLambdaHttpMethod;
@@ -159,11 +159,11 @@ public class SubmitSharedNames {
     public String bundleDeleteIngestLambdaHandler;
     public String bundleDeleteIngestLambdaFunctionName;
     public String bundleDeleteIngestLambdaArn;
-    public String bundleDeleteIngestDefaultAliasLambdaArn;
+    public String bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn;
     public String bundleDeleteWorkerLambdaHandler;
     public String bundleDeleteWorkerLambdaFunctionName;
     public String bundleDeleteWorkerLambdaArn;
-    public String bundleDeleteWorkerDefaultAliasLambdaArn;
+    public String bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn;
     public String bundleDeleteLambdaQueueName;
     public String bundleDeleteLambdaDeadLetterQueueName;
     public HttpMethod bundleDeleteLambdaHttpMethod;
@@ -174,7 +174,7 @@ public class SubmitSharedNames {
     public String hmrcTokenPostIngestLambdaHandler;
     public String hmrcTokenPostIngestLambdaFunctionName;
     public String hmrcTokenPostIngestLambdaArn;
-    public String hmrcTokenPostIngestDefaultAliasLambdaArn;
+    public String hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod hmrcTokenPostLambdaHttpMethod;
     public String hmrcTokenPostLambdaUrlPath;
     public boolean hmrcTokenPostLambdaJwtAuthorizer;
@@ -183,11 +183,11 @@ public class SubmitSharedNames {
     public String hmrcVatReturnPostIngestLambdaHandler;
     public String hmrcVatReturnPostIngestLambdaFunctionName;
     public String hmrcVatReturnPostIngestLambdaArn;
-    public String hmrcVatReturnPostIngestDefaultAliasLambdaArn;
+    public String hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn;
     public String hmrcVatReturnPostWorkerLambdaHandler;
     public String hmrcVatReturnPostWorkerLambdaFunctionName;
     public String hmrcVatReturnPostWorkerLambdaArn;
-    public String hmrcVatReturnPostWorkerDefaultAliasLambdaArn;
+    public String hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn;
     public String hmrcVatReturnPostLambdaQueueName;
     public String hmrcVatReturnPostLambdaDeadLetterQueueName;
     public HttpMethod hmrcVatReturnPostLambdaHttpMethod;
@@ -198,11 +198,11 @@ public class SubmitSharedNames {
     public String hmrcVatObligationGetIngestLambdaHandler;
     public String hmrcVatObligationGetIngestLambdaFunctionName;
     public String hmrcVatObligationGetIngestLambdaArn;
-    public String hmrcVatObligationGetIngestDefaultAliasLambdaArn;
+    public String hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn;
     public String hmrcVatObligationGetWorkerLambdaHandler;
     public String hmrcVatObligationGetWorkerLambdaFunctionName;
     public String hmrcVatObligationGetWorkerLambdaArn;
-    public String hmrcVatObligationGetWorkerDefaultAliasLambdaArn;
+    public String hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn;
     public String hmrcVatObligationGetLambdaQueueName;
     public String hmrcVatObligationGetLambdaDeadLetterQueueName;
     public HttpMethod hmrcVatObligationGetLambdaHttpMethod;
@@ -213,11 +213,11 @@ public class SubmitSharedNames {
     public String hmrcVatReturnGetIngestLambdaHandler;
     public String hmrcVatReturnGetIngestLambdaFunctionName;
     public String hmrcVatReturnGetIngestLambdaArn;
-    public String hmrcVatReturnGetIngestDefaultAliasLambdaArn;
+    public String hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn;
     public String hmrcVatReturnGetWorkerLambdaHandler;
     public String hmrcVatReturnGetWorkerLambdaFunctionName;
     public String hmrcVatReturnGetWorkerLambdaArn;
-    public String hmrcVatReturnGetWorkerDefaultAliasLambdaArn;
+    public String hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn;
     public String hmrcVatReturnGetLambdaQueueName;
     public String hmrcVatReturnGetLambdaDeadLetterQueueName;
     public HttpMethod hmrcVatReturnGetLambdaHttpMethod;
@@ -228,7 +228,7 @@ public class SubmitSharedNames {
     public String receiptGetIngestLambdaHandler;
     public String receiptGetIngestLambdaFunctionName;
     public String receiptGetIngestLambdaArn;
-    public String receiptGetIngestDefaultAliasLambdaArn;
+    public String receiptGetIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod receiptGetLambdaHttpMethod;
     public String receiptGetLambdaUrlPath;
     public String receiptGetByNameLambdaUrlPath;
@@ -238,6 +238,7 @@ public class SubmitSharedNames {
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
     public String selfDestructLambdaArn;
+    public String selfDestructProvisionedConcurrencyLambdaAliasArn;
 
     public String edgeStackId;
     public String publishStackId;
@@ -288,7 +289,7 @@ public class SubmitSharedNames {
                         props.subDomainName,
                         props.hostedZoneName); // TODO -> deploymentDomainName
         // this.defaultAliasName = "zero";
-        this.defaultAliasName = "hot";
+        this.provisionedConcurrencyAliasName = "pc";
         this.baseUrl = "https://%s/".formatted(this.deploymentDomainName);
         this.dashedDeploymentDomainName = buildDashedDomainName(this.deploymentDomainName);
 
@@ -370,7 +371,7 @@ public class SubmitSharedNames {
         this.cognitoTokenPostIngestLambdaHandler =
                 "%s/auth/%s".formatted(appLambdaHandlerPrefix, cognitoTokenPostLambdaHandlerName);
         this.cognitoTokenPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, cognitoTokenPostLambdaHandlerDashed);
-        this.cognitoTokenPostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.cognitoTokenPostIngestLambdaArn, this.defaultAliasName);
+        this.cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.cognitoTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.cognitoTokenPostLambdaHttpMethod,
                 this.cognitoTokenPostLambdaUrlPath,
@@ -387,7 +388,7 @@ public class SubmitSharedNames {
         this.customAuthorizerIngestLambdaHandler =
                 "%s/auth/%s".formatted(appLambdaHandlerPrefix, customAuthorizerHandlerName);
         this.customAuthorizerIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, customAuthorizerHandlerDashed);
-        this.customAuthorizerIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.customAuthorizerIngestLambdaArn, this.defaultAliasName);
+        this.customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.customAuthorizerIngestLambdaArn, this.provisionedConcurrencyAliasName);
 
         this.bundleGetLambdaHttpMethod = HttpMethod.GET;
         this.bundleGetLambdaUrlPath = "/api/v1/bundle";
@@ -399,7 +400,7 @@ public class SubmitSharedNames {
         this.bundleGetIngestLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
         this.bundleGetIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaHandlerName);
         this.bundleGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleGetLambdaHandlerDashed);
-        this.bundleGetIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundleGetIngestLambdaArn, this.defaultAliasName);
+        this.bundleGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.bundleGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
             this.bundleGetLambdaHttpMethod,
             this.bundleGetLambdaUrlPath,
@@ -419,6 +420,7 @@ public class SubmitSharedNames {
             .apiCustomAuthorizer(false)
             .resourceNamePrefix(this.appResourceNamePrefix)
             .lambdaArnPrefix(appLambdaArnPrefix)
+            .provisionedConcurrencyAliasName(this.provisionedConcurrencyAliasName)
             .build();
         this.bundlePost = new LambdaNames(bundlePostProps);
         // TODO: Remove and reference bundlePost directly where used
@@ -429,11 +431,11 @@ public class SubmitSharedNames {
         this.bundlePostIngestLambdaFunctionName = this.bundlePost.ingestLambdaFunctionName;
         this.bundlePostIngestLambdaHandler = this.bundlePost.ingestLambdaHandler;
         this.bundlePostIngestLambdaArn = this.bundlePost.ingestLambdaArn;
-        this.bundlePostIngestDefaultAliasLambdaArn = this.bundlePost.ingestDefaultAliasLambdaArn;
+        this.bundlePostIngestProvisionedConcurrencyLambdaAliasArn = this.bundlePost.ingestProvisionedConcurrencyLambdaAliasArn;
         this.bundlePostWorkerLambdaFunctionName = this.bundlePost.workerLambdaFunctionName;
         this.bundlePostWorkerLambdaHandler = this.bundlePost.workerLambdaHandler;
         this.bundlePostWorkerLambdaArn = this.bundlePost.workerLambdaArn;
-        this.bundlePostWorkerDefaultAliasLambdaArn = this.bundlePost.workerDefaultAliasLambdaArn;
+        this.bundlePostWorkerProvisionedConcurrencyLambdaAliasArn = this.bundlePost.workerProvisionedConcurrencyLambdaAliasArn;
         this.bundlePostLambdaQueueName = "%s-queue".formatted(this.bundlePostIngestLambdaFunctionName);
         this.bundlePostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundlePostIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -483,13 +485,13 @@ public class SubmitSharedNames {
         this.bundleDeleteIngestLambdaHandler =
             "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaHandlerName);
         this.bundleDeleteIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleDeleteLambdaHandlerDashed);
-        this.bundleDeleteIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundleDeleteIngestLambdaArn, this.defaultAliasName);
+        this.bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.bundleDeleteIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.bundleDeleteWorkerLambdaFunctionName = "%s-worker".formatted(this.bundleDeleteIngestLambdaFunctionName);
         this.bundleDeleteWorkerLambdaHandler =
             "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaWorkerHandlerName);
         this.bundleDeleteWorkerLambdaArn = "%s-worker".formatted(this.bundleDeleteIngestLambdaArn);
-        this.bundleDeleteWorkerDefaultAliasLambdaArn =
-            "%s:%s".formatted(this.bundleDeleteWorkerLambdaArn, this.defaultAliasName);
+        this.bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn =
+            "%s:%s".formatted(this.bundleDeleteWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.bundleDeleteLambdaQueueName = "%s-queue".formatted(this.bundleDeleteIngestLambdaFunctionName);
         this.bundleDeleteLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundleDeleteIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -521,7 +523,7 @@ public class SubmitSharedNames {
         this.hmrcTokenPostIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcTokenPostLambdaHandlerName);
         this.hmrcTokenPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcTokenPostLambdaHandlerDashed);
-        this.hmrcTokenPostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.hmrcTokenPostIngestLambdaArn, this.defaultAliasName);
+        this.hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.hmrcTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.hmrcTokenPostLambdaHttpMethod,
                 this.hmrcTokenPostLambdaUrlPath,
@@ -542,13 +544,13 @@ public class SubmitSharedNames {
         this.hmrcVatReturnPostIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaHandlerName);
         this.hmrcVatReturnPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnPostLambdaHandlerDashed);
-        this.hmrcVatReturnPostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.hmrcVatReturnPostIngestLambdaArn, this.defaultAliasName);
+        this.hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.hmrcVatReturnPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatReturnPostWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         this.hmrcVatReturnPostWorkerLambdaHandler =
             "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaWorkerHandlerName);
         this.hmrcVatReturnPostWorkerLambdaArn = "%s-worker".formatted(this.hmrcVatReturnPostIngestLambdaArn);
-        this.hmrcVatReturnPostWorkerDefaultAliasLambdaArn =
-            "%s:%s".formatted(this.hmrcVatReturnPostWorkerLambdaArn, this.defaultAliasName);
+        this.hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn =
+            "%s:%s".formatted(this.hmrcVatReturnPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatReturnPostLambdaQueueName = "%s-queue".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         this.hmrcVatReturnPostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -573,14 +575,14 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaHandlerName);
         this.hmrcVatObligationGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatObligationGetLambdaHandlerDashed);
-        this.hmrcVatObligationGetIngestDefaultAliasLambdaArn =
-                "%s:%s".formatted(this.hmrcVatObligationGetIngestLambdaArn, this.defaultAliasName);
+        this.hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcVatObligationGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatObligationGetWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
         this.hmrcVatObligationGetWorkerLambdaHandler =
             "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaWorkerHandlerName);
         this.hmrcVatObligationGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcVatObligationGetIngestLambdaArn);
-        this.hmrcVatObligationGetWorkerDefaultAliasLambdaArn =
-            "%s:%s".formatted(this.hmrcVatObligationGetWorkerLambdaArn, this.defaultAliasName);
+        this.hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn =
+            "%s:%s".formatted(this.hmrcVatObligationGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatObligationGetLambdaQueueName = "%s-queue".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
         this.hmrcVatObligationGetLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -609,13 +611,13 @@ public class SubmitSharedNames {
         this.hmrcVatReturnGetIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
         this.hmrcVatReturnGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
-        this.hmrcVatReturnGetIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.hmrcVatReturnGetIngestLambdaArn, this.defaultAliasName);
+        this.hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.hmrcVatReturnGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatReturnGetWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
         this.hmrcVatReturnGetWorkerLambdaHandler =
             "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaWorkerHandlerName);
         this.hmrcVatReturnGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcVatReturnGetIngestLambdaArn);
-        this.hmrcVatReturnGetWorkerDefaultAliasLambdaArn =
-            "%s:%s".formatted(this.hmrcVatReturnGetWorkerLambdaArn, this.defaultAliasName);
+        this.hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn =
+            "%s:%s".formatted(this.hmrcVatReturnGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatReturnGetLambdaQueueName = "%s-queue".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
         this.hmrcVatReturnGetLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -641,7 +643,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, receiptGetLambdaHandlerDashed);
         this.receiptGetIngestLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, receiptGetLambdaHandlerName);
         this.receiptGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, receiptGetLambdaHandlerDashed);
-        this.receiptGetIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.receiptGetIngestLambdaArn, this.defaultAliasName);
+        this.receiptGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.receiptGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.receiptGetLambdaHttpMethod,
                 this.receiptGetLambdaUrlPath,
@@ -667,5 +669,6 @@ public class SubmitSharedNames {
         this.selfDestructLambdaHandler =
                 "%s/infra/%s".formatted(appLambdaHandlerPrefix, appSelfDestructLambdaHandlerName);
         this.selfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
+        this.selfDestructProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.selfDestructLambdaArn, this.provisionedConcurrencyAliasName);
     }
 }

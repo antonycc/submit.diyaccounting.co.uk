@@ -205,13 +205,14 @@ public class SelfDestructStack extends Stack {
                         .ingestFunctionName(props.sharedNames().selfDestructLambdaFunctionName)
                         .ingestHandler(props.sharedNames().selfDestructLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().selfDestructLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().selfDestructLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().selfDestructProvisionedConcurrencyLambdaAliasArn)
+                        .ingestLambdaTimeout(Duration.millis(Long.parseLong("900000"))) // 15 minutes
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .environment(selfDestructLambdaEnv)
                         .logGroup(logGroup)
                         .role(this.functionRole)
-                        .timeout(Duration.millis(Long.parseLong("900000"))) // 15 minutes
                         .build());
-        this.selfDestructFunction = lambda.lambda;
+        this.selfDestructFunction = lambda.ingestLambda;
 
         // Create EventBridge rule to trigger self-destruct every delayHours starting at a specific instant.
         // Suggested type for selfDestructStartDatetime: java.time.ZonedDateTime (ensure it is defined earlier).

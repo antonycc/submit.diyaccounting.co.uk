@@ -24,6 +24,8 @@ public interface LambdaNameProps {
 
     String workerHandlerName();
 
+    String provisionedConcurrencyAliasName();
+
     @Value.Default
     default String handlerPrefix() { return "app/functions"; }
 

@@ -132,8 +132,9 @@ public class AccountStack extends Stack {
                         .ingestFunctionName(props.sharedNames().bundleGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().bundleGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().bundleGetIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().bundleGetIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(1)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundleGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(1)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundleGetLambdaJwtAuthorizer)
@@ -142,7 +143,7 @@ public class AccountStack extends Stack {
                         .build());
 
         this.bundleGetLambdaProps = getBundlesAsyncLambda.apiProps;
-        this.bundleGetLambda = getBundlesAsyncLambda.lambda;
+        this.bundleGetLambda = getBundlesAsyncLambda.ingestLambda;
         this.bundleGetLambdaLogGroup = getBundlesAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
         infof(
@@ -186,15 +187,14 @@ public class AccountStack extends Stack {
                         .ingestFunctionName(props.sharedNames().bundlePostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().bundlePostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().bundlePostIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().bundlePostIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(0)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundlePostIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().bundlePostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().bundlePostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().bundlePostWorkerLambdaArn)
-                        .workerDefaultAliasLambdaArn(props.sharedNames().bundlePostWorkerDefaultAliasLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().bundlePostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().bundlePostLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().bundlePostLambdaDeadLetterQueueName)
-                        .workerProvisionedConcurrencyHot(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().bundlePostLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundlePostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundlePostLambdaJwtAuthorizer)
@@ -206,7 +206,7 @@ public class AccountStack extends Stack {
         requestBundlesLambdaEnv.put("SQS_QUEUE_URL", requestBundlesAsyncLambda.queue.getQueueUrl());
 
         this.bundlePostLambdaProps = requestBundlesAsyncLambda.apiProps;
-        this.bundlePostLambda = requestBundlesAsyncLambda.lambda;
+        this.bundlePostLambda = requestBundlesAsyncLambda.ingestLambda;
         this.bundlePostLambdaLogGroup = requestBundlesAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundlePostLambdaProps);
         infof(
@@ -254,15 +254,14 @@ public class AccountStack extends Stack {
                         .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
-                        .ingestDefaultAliasLambdaArn(props.sharedNames().bundleDeleteIngestDefaultAliasLambdaArn)
-                        .ingestProvisionedConcurrencyHot(0)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().bundleDeleteWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().bundleDeleteWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().bundleDeleteWorkerLambdaArn)
-                        .workerDefaultAliasLambdaArn(props.sharedNames().bundleDeleteWorkerDefaultAliasLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().bundleDeleteLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().bundleDeleteLambdaDeadLetterQueueName)
-                        .workerProvisionedConcurrencyHot(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleDeleteLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)
@@ -274,7 +273,7 @@ public class AccountStack extends Stack {
         bundleDeleteLambdaEnv.put("SQS_QUEUE_URL", bundleDeleteAsyncLambda.queue.getQueueUrl());
 
         this.bundleDeleteLambdaProps = bundleDeleteAsyncLambda.apiProps;
-        this.bundleDeleteLambda = bundleDeleteAsyncLambda.lambda;
+        this.bundleDeleteLambda = bundleDeleteAsyncLambda.ingestLambda;
         this.bundleDeleteLambdaLogGroup = bundleDeleteAsyncLambda.logGroup;
         this.lambdaFunctionProps.add(this.bundleDeleteLambdaProps);
 
@@ -287,15 +286,14 @@ public class AccountStack extends Stack {
                 .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
                 .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
                 .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
-                .ingestDefaultAliasLambdaArn(props.sharedNames().bundleDeleteIngestDefaultAliasLambdaArn)
-                .ingestProvisionedConcurrencyHot(0)
+                .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                 .workerFunctionName(props.sharedNames().bundleDeleteWorkerLambdaFunctionName)
                 .workerHandler(props.sharedNames().bundleDeleteWorkerLambdaHandler)
                 .workerLambdaArn(props.sharedNames().bundleDeleteWorkerLambdaArn)
-                .workerDefaultAliasLambdaArn(props.sharedNames().bundleDeleteWorkerDefaultAliasLambdaArn)
+                .workerProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
                 .workerQueueName(props.sharedNames().bundleDeleteLambdaQueueName)
                 .workerDeadLetterQueueName(props.sharedNames().bundleDeleteLambdaDeadLetterQueueName)
-                .workerProvisionedConcurrencyHot(0)
+                .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                 .httpMethod(props.sharedNames().bundleDeleteLambdaHttpMethod)
                 .urlPath("/api/v1/bundle/{id}")
                 .jwtAuthorizer(props.sharedNames().bundleDeleteLambdaJwtAuthorizer)

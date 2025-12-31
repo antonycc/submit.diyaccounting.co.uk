@@ -31,13 +31,10 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 public class Lambda {
 
     public final DockerImageCode dockerImage;
-    public final Function lambda;
-    public final Version ingestVersion;
-    // public final Version ingestVersionReady;
-    // public final Version ingestVersionHot;
-    public final Alias ingestAliasZero;
-    // public final Alias ingestAliasReady;
-    public final Alias ingestAliasHot;
+    public final Function ingestLambda;
+    public final Version ingestLambdaVersion;
+    public final Alias ingestLambdaAlias;
+    public final String ingestLambdaAliasArn;
     public final ILogGroup logGroup;
     public final AbstractLambdaProps props;
 
@@ -85,20 +82,19 @@ public class Lambda {
                 .environment(environment)
                 .functionName(props.ingestFunctionName())
                 .reservedConcurrentExecutions(props.ingestReservedConcurrency())
-                .timeout(props.timeout())
+                .timeout(props.ingestLambdaTimeout())
                 .logGroup(this.logGroup)
                 .tracing(Tracing.ACTIVE);
-        // dockerFunctionBuilder.tracing(Tracing.ACTIVE);
         if (props.role().isPresent()) {
             dockerFunctionBuilder.role(props.role().get());
         }
-        this.lambda = dockerFunctionBuilder.build();
-        infof("Created Lambda %s with function %s", this.lambda.getNode().getId(), this.lambda.toString());
+        this.ingestLambda = dockerFunctionBuilder.build();
+        infof("Created Lambda %s with function %s", this.ingestLambda.getNode().getId(), this.ingestLambda.toString());
 
-        this.ingestVersion =
+        this.ingestLambdaVersion =
             Version.Builder.create(scope, props.idPrefix() + "-ingest-version")
-                .lambda(this.lambda)
-                .description("No provisioned concurrency")
+                .lambda(this.ingestLambda)
+                .description("Created for PC setting in alias")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         // Lambda Version resources with: RemovalPolicy.RETAIN
@@ -106,31 +102,19 @@ public class Lambda {
         //   Leaving an orphaned version is safe
         //   Prevents stack delete deadlocks
         //   AWS themselves recommend this for PC-heavy setups (quietly)
-        this.ingestAliasZero = Alias.Builder.create(scope, props.idPrefix() + "-ingest-zero-alias")
-            .aliasName("zero")
-            .version(this.ingestVersion)
-            //.provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyZero())
+        this.ingestLambdaAlias = Alias.Builder.create(scope, props.idPrefix() + "-ingest-alias")
+            .aliasName(props.provisionedConcurrencyAliasName())
+            .version(this.ingestLambdaVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrency())
             .build();
-        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasZero.getAliasName(), this.ingestVersion.getVersion());
-
-//        this.ingestVersionHot =
-//            Version.Builder.create(scope, props.idPrefix() + "-ingest-hot-version")
-//                .lambda(this.lambda)
-//                .description("Hot provisioned concurrency")
-//                .removalPolicy(RemovalPolicy.RETAIN)
-//                .build();
-        this.ingestAliasHot = Alias.Builder.create(scope, props.idPrefix() + "-ingest-hot-alias")
-            .aliasName("hot")
-            .version(this.ingestVersion)
-            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrencyHot())
-            .build();
-        infof("Created ingest Lambda alias %s for version %s", this.ingestAliasHot.getAliasName(), this.ingestVersion.getVersion());
+        this.ingestLambdaAliasArn = "%s:%s".formatted(this.ingestLambda.getFunctionArn(), this.ingestLambdaAlias.getAliasName());
+        infof("Created ingest Lambda alias %s for version %s with arn %s", this.ingestLambdaAlias.getAliasName(), this.ingestLambdaVersion.getVersion(), props.ingestProvisionedConcurrencyAliasArn());
 
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period
         Alarm.Builder.create(scope, props.idPrefix() + "-ErrorsAlarm")
                 .alarmName(props.ingestFunctionName() + "-errors")
-                .metric(this.lambda
+                .metric(this.ingestLambda
                         .metricErrors()
                         .with(MetricOptions.builder()
                                 .period(Duration.minutes(5))
@@ -139,13 +123,13 @@ public class Lambda {
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Lambda errors >= 1 for function " + this.lambda.getFunctionName())
+                .alarmDescription("Lambda errors >= 1 for function " + this.ingestLambda.getFunctionName())
                 .build();
 
         // 2) Throttles >= 1 in a 5-minute period
         Alarm.Builder.create(scope, props.idPrefix() + "-ThrottlesAlarm")
                 .alarmName(props.ingestFunctionName() + "-throttles")
-                .metric(this.lambda
+                .metric(this.ingestLambda
                         .metricThrottles()
                         .with(MetricOptions.builder()
                                 .period(Duration.minutes(5))
@@ -154,16 +138,16 @@ public class Lambda {
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Lambda throttles >= 1 for function " + this.lambda.getFunctionName())
+                .alarmDescription("Lambda throttles >= 1 for function " + this.ingestLambda.getFunctionName())
                 .build();
 
         // 3) High duration (p95) approaching timeout (>= 80% of configured timeout)
         // Lambda Duration metric unit is milliseconds. Convert timeout to ms and apply 80% threshold.
-        double timeoutMs = props.timeout().toSeconds().doubleValue() * 1000.0;
+        double timeoutMs = props.ingestLambdaTimeout().toSeconds().doubleValue() * 1000.0;
         double highDurationThresholdMs = timeoutMs * 0.8;
         Alarm.Builder.create(scope, props.idPrefix() + "-HighDurationP95Alarm")
                 .alarmName(props.ingestFunctionName() + "-high-duration-p95")
-                .metric(this.lambda
+                .metric(this.ingestLambda
                         .metricDuration()
                         .with(MetricOptions.builder()
                                 .statistic("p95")
@@ -173,13 +157,13 @@ public class Lambda {
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Lambda p95 duration >= 80% of timeout for function " + this.lambda.getFunctionName())
+                .alarmDescription("Lambda p95 duration >= 80% of timeout for function " + this.ingestLambda.getFunctionName())
                 .build();
 
         // 4) Log-based error detection using a CloudWatch Logs Metric Filter
         // This avoids external scanners: we scan for common error terms in logs and emit a custom metric.
         String logErrorMetricNamespace = "Submit/LambdaLogs";
-        String logErrorMetricName = this.lambda.getFunctionName() + "-log-errors";
+        String logErrorMetricName = this.ingestLambda.getFunctionName() + "-log-errors";
         MetricFilter.Builder.create(scope, props.idPrefix() + "-LogErrorsMetricFilter")
                 .logGroup(this.logGroup)
                 .filterPattern(FilterPattern.anyTerm(
@@ -198,14 +182,14 @@ public class Lambda {
                 .build();
 
         Alarm.Builder.create(scope, props.idPrefix() + "-LogErrorsAlarm")
-                .alarmName(this.lambda.getFunctionName() + "-log-errors")
+                .alarmName(this.ingestLambda.getFunctionName() + "-log-errors")
                 .metric(logErrorMetric)
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("Detected >= 1 error-like log line in the last 5 minutes for function "
-                        + this.lambda.getFunctionName())
+                        + this.ingestLambda.getFunctionName())
                 .build();
     }
 }
