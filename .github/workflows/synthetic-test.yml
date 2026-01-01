@@ -34,10 +34,10 @@ on:
           - 'behaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
-        type: string
-        description: 'Generate test reports, e.g. "true" or "false"'
+        type: boolean
+        description: 'Generate test reports, e.g. true (default) or false'
         required: false
-        default: 'false'
+        default: true
   workflow_call:
     inputs:
       environment-name:
@@ -311,54 +311,54 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+#      - name: Copy screenshots to S3 origin bucket
+#        if: ${{ !cancelled() }}
+#        env:
+#          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
+#        shell: bash
+#        run: |
+#          for figuresPath in target/behaviour-test-results/*/figures.json; do
+#            [ -e "$figuresPath" ] || continue
+#            testName=$(echo "${figuresPath?}" | sed -n 's|target/behaviour-test-results/\([^/]*\)/figures.json|\1|p')
+#            echo "Processing figures for test: ${testName?}"
+#
+#            # Extract filenames from figures.json using jq and iterate over them
+#            jq -r '.[].filename' "${figuresPath?}" | while read -r fileName; do
+#              [ -z "$fileName" ] && continue
+#
+#              # Search for the file under the test results directory to handle random bits in the path
+#              filePath=$(find "target/behaviour-test-results/${testName?}" -name "${fileName?}" | head -n 1)
+#
+#              if [ -n "$filePath" ]; then
+#                echo "Uploading screenshot file: ${filePath?}"
+#                echo "Test name: ${testName?}, File name: ${fileName?}, Uploading to s3://${BUCKET_NAME?}/tests/behaviour-test-results/${testName?}/${fileName?}"
+#                mkdir -p "screenshots/${testName?}"
+#                cp "${filePath?}" "screenshots/${testName?}/${fileName?}"
+#              else
+#                echo "Warning: Screenshot ${fileName?} not found in target/behaviour-test-results/${testName?}"
+#              fi
+#            done
+#          done
+#
+#          if [ -d "screenshots" ]; then
+#            aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
+#          fi
+
       - name: Copy screenshots to S3 origin bucket
         if: ${{ !cancelled() }}
         env:
           BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
         shell: bash
         run: |
-          for figuresPath in target/behaviour-test-results/*/figures.json; do
-            [ -e "$figuresPath" ] || continue
-            testName=$(echo "${figuresPath?}" | sed -n 's|target/behaviour-test-results/\([^/]*\)/figures.json|\1|p')
-            echo "Processing figures for test: ${testName?}"
-
-            # Extract filenames from figures.json using jq and iterate over them
-            jq -r '.[].filename' "${figuresPath?}" | while read -r fileName; do
-              [ -z "$fileName" ] && continue
-
-              # Search for the file under the test results directory to handle random bits in the path
-              filePath=$(find "target/behaviour-test-results/${testName?}" -name "${fileName?}" | head -n 1)
-
-              if [ -n "$filePath" ]; then
-                echo "Uploading screenshot file: ${filePath?}"
-                echo "Test name: ${testName?}, File name: ${fileName?}, Uploading to s3://${BUCKET_NAME?}/tests/behaviour-test-results/${testName?}/${fileName?}"
-                mkdir -p "screenshots/${testName?}"
-                cp "${filePath?}" "screenshots/${testName?}/${fileName?}"
-              else
-                echo "Warning: Screenshot ${fileName?} not found in target/behaviour-test-results/${testName?}"
-              fi
-            done
+          for filePath in target/behaviour-test-results/*/screenshots/*/*.png; do
+            echo "Uploading screenshot file: ${filePath?}"
+            testName=$(echo "${filePath?}" | sed -n 's|target/behaviour-test-results/\([^/]*\)/screenshots/.*|\1|p')
+            fileName=$(basename "${filePath?}")
+            echo "Test name: ${testName?}, File name: ${fileName?}, Uploading to s3://${BUCKET_NAME?}/tests/${testName?}/${fileName?}"
+            mkdir -p "screenshots/${testName?}"
+            cp "${filePath?}" "screenshots/${testName?}/${fileName?}"
           done
-
-          if [ -d "screenshots" ]; then
-            aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
-          fi
-
-      #      - name: Copy screenshots to S3 origin bucket
-      #        if: ${{ !cancelled() }}
-      #        env:
-      #          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
-      #        shell: bash
-      #        run: |
-      #          for filePath in target/behaviour-test-results/*/screenshots/*/*.png; do
-      #            echo "Uploading screenshot file: ${filePath?}"
-      #            testName=$(echo "${filePath?}" | sed -n 's|target/behaviour-test-results/\([^/]*\)/screenshots/.*|\1|p')
-      #            fileName=$(basename "${filePath?}")
-      #            echo "Test name: ${testName?}, File name: ${fileName?}, Uploading to s3://${BUCKET_NAME?}/tests/${testName?}/${fileName?}"
-      #            mkdir -p "screenshots/${testName?}"
-      #            cp "${filePath?}" "screenshots/${testName?}/${fileName?}"
-      #          done
-      #          aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
+          aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
 
       - name: Copy Playwright test reports to S3 origin bucket
         if: ${{ !cancelled() }}
