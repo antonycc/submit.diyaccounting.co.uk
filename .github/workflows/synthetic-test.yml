@@ -150,7 +150,7 @@ jobs:
           aws cloudwatch put-metric-data \
             --namespace "submit.diyaccounting.co.uk" \
             --metric-name "behaviour-tests" \
-            --dimensions env=${{ env.ENVIRONMENT_NAME }},test=submit-vat-behaviour-tests \
+            --dimensions env=${{ env.ENVIRONMENT_NAME }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
             --value ${{ steps.behaviour-tests.outputs.RESULT }} \
             --region ${{ env.AWS_REGION }}
 
