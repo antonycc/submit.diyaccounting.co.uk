@@ -176,8 +176,8 @@ jobs:
       - name: publish cloudwatch metric
         run: |
           aws cloudwatch put-metric-data \
-            --namespace "${{ needs.names.outputs.environment-name }}-submit.diyaccounting.co.uk" \
-            --metric-name "behaviour-tests" \
-            --dimensions env=${{ needs.names.outputs.environment-name }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
-            --value ${{ needs.web-test-submit-vat-sandbox.outputs.result }} \
+            --namespace "${{ needs.names.outputs.apex-domain }}" \
+            --metric-name "behaviour-test" \
+            --dimensions env=${{ needs.names.outputs.deployment-name }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
+            --value ${{ needs.behaviour-test.outputs.result }} \
             --region ${{ env.AWS_REGION }}
