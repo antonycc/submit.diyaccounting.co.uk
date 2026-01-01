@@ -2217,10 +2217,13 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Run behaviour tests - submitVatBehaviour
+      - name: Run behaviour test - submitVatBehaviour
+        id: behaviour-test
         if: ${{ !cancelled() }}
         run: |
           npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          ; RESULT=${exit_code:-0} \
+          ; echo "RESULT=${RESULT}" >> $GITHUB_OUTPUT
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
@@ -2256,15 +2259,6 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
-
-      - name: publish cloudwatch metric
-        run: |
-          aws cloudwatch put-metric-data \
-            --namespace "submit.diyaccounting.co.uk" \
-            --metric-name "behaviour-tests" \
-            --dimensions env=${{ env.ENVIRONMENT_NAME }},test=submitVatBehaviour \
-            --value ${{ steps.behaviour-tests.outputs.RESULT }} \
-            --region ${{ env.AWS_REGION }}
 
       - name: Export DynamoDB data for test users
         if: ${{ !cancelled() }}
@@ -2312,6 +2306,50 @@ jobs:
           retention-days: 30
           path: |
             target/test-reports/
+    outputs:
+      result: ${{ steps.behaviour-test.outputs.RESULT }}
+
+  web-test-submit-vat-sandbox-publish-cloudwatch-metric:
+    if: ${{ !cancelled() }}
+    name: 'web test submit vat sandbox publish cloudwatch metric'
+    needs:
+      - names
+      - web-test-submit-vat-sandbox
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: publish cloudwatch metric
+        run: |
+          aws cloudwatch put-metric-data \
+            --namespace "${{ needs.names.outputs.environment-name }}-submit.diyaccounting.co.uk" \
+            --metric-name "behaviour-tests" \
+            --dimensions env=${{ needs.names.outputs.environment-name }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
+            --value ${{ needs.web-test-submit-vat-sandbox.outputs.result }} \
+            --region ${{ env.AWS_REGION }}
 
 #  web-test-submit-vat:
 #    #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}

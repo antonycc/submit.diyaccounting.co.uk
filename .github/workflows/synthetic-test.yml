@@ -79,11 +79,10 @@ jobs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
 
-  web-test-submit-vat-sandbox:
-    name: 'web test submit vat sandbox'
+  behaviour-test:
+    name: 'web behaviour test'
     needs:
       - names
-      #- web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -105,8 +104,8 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Run behaviour tests - submitVatBehaviour
-        id: behaviour-tests
+      - name: Run behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }}
+        id: behaviour-test
         if: ${{ !cancelled() }}
         run: |
           npm run 'test:${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
@@ -121,6 +120,35 @@ jobs:
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: web-test-artifacts-submit-vat-sandbox
+          retention-days: 30
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: web-test-reports-submit-vat-sandbox
+          retention-days: 30
+          path: |
+            target/test-reports/
+    outputs:
+      result: ${{ steps.behaviour-test.outputs.RESULT }}
+
+  web-test-submit-vat-sandbox-publish-cloudwatch-metric:
+    if: ${{ !cancelled() }}
+    name: 'web test submit vat sandbox publish cloudwatch metric'
+    needs:
+      - names
+      - behaviour-test
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
@@ -148,35 +176,8 @@ jobs:
       - name: publish cloudwatch metric
         run: |
           aws cloudwatch put-metric-data \
-            --namespace "submit.diyaccounting.co.uk" \
+            --namespace "${{ needs.names.outputs.environment-name }}-submit.diyaccounting.co.uk" \
             --metric-name "behaviour-tests" \
-            --dimensions env=${{ env.ENVIRONMENT_NAME }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
-            --value ${{ steps.behaviour-tests.outputs.RESULT }} \
+            --dimensions env=${{ needs.names.outputs.environment-name }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
+            --value ${{ needs.web-test-submit-vat-sandbox.outputs.result }} \
             --region ${{ env.AWS_REGION }}
-
-      - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() }}
-        run: |
-          chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          RESULTS_DIR: target/behaviour-test-results
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-artifacts-submit-vat-sandbox
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-reports-submit-vat-sandbox
-          retention-days: 30
-          path: |
-            target/test-reports/
