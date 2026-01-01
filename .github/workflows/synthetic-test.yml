@@ -110,7 +110,7 @@ jobs:
         run: |
           npm run 'test:${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; RESULT=${exit_code:-0} \
-          ; echo "RESULT=$RESULT" | tee -a "$RESULT" \
+          ; echo "RESULT=$RESULT" | tee -a "$GITHUB_OUTPUT" \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
