@@ -33,7 +33,7 @@ on:
     #   | sort @timestamp desc
     #   | filter @message like /REPORT/
     #   | filter @message like /Init Duration/
-    - cron: '*/21 * * * *'
+    - cron: '*/43 * * * *'
 
 permissions:
   id-token: write
@@ -200,10 +200,14 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
+      # Also set output RESULT for downstream steps to use
       - name: Run behaviour tests - submitVatBehaviour
+        id: behaviour-tests
         if: ${{ !cancelled() }}
         run: |
           npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          ; RESULT=${exit_code:-0} \
+          ; echo "RESULT=${RESULT}" >> $GITHUB_OUTPUT
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
@@ -237,7 +241,14 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # TODO: Write the result to a metric available to CloudWatch Alarms
+      - name: publish cloudwatch metric
+        run: |
+          aws cloudwatch put-metric-data \
+            --namespace "submit.diyaccounting.co.uk" \
+            --metric-name "behaviour-tests" \
+            --dimensions env=${{ env.ENVIRONMENT_NAME }},test=submit-vat-behaviour-tests \
+            --value ${{ steps.behaviour-tests.outputs.RESULT }} \
+            --region ${{ env.AWS_REGION }}
 
       - name: Export DynamoDB data for test users
         if: ${{ !cancelled() }}
