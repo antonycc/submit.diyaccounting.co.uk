@@ -194,9 +194,9 @@ jobs:
     outputs:
       result: ${{ steps.behaviour-test.outputs.RESULT }}
 
-  web-test-submit-vat-sandbox-publish-cloudwatch-metric:
+  publish-cloudwatch-metric:
     if: ${{ !cancelled() }}
-    name: 'web test submit vat sandbox publish cloudwatch metric'
+    name: 'publish cloudwatch metric'
     needs:
       - names
       - behaviour-test
@@ -232,7 +232,7 @@ jobs:
           aws cloudwatch put-metric-data \
             --namespace "${{ needs.names.outputs.apex-domain }}" \
             --metric-name "behaviour-test" \
-            --dimensions env=${{ needs.names.outputs.deployment-name }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
+            --dimensions deployment-name=${{ needs.names.outputs.deployment-name }},test=${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} \
             --value ${{ needs.behaviour-test.outputs.result }} \
             --region ${{ env.AWS_REGION }}
 
