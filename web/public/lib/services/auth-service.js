@@ -1,7 +1,6 @@
 // Authentication service for managing user authentication and tokens
 import { getJwtExpiryMs } from "../utils/jwt-utils.js";
 import { getLocalStorage, setLocalStorage, removeLocalStorage } from "../utils/storage-utils.js";
-import { showStatus } from "../utils/dom-utils.js";
 
 let __ensureSessionInflight = null;
 

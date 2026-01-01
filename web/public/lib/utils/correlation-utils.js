@@ -92,9 +92,7 @@ export function setLastXRequestId(requestId) {
   try {
     const seenAt = new Date().toISOString();
     window.sessionStorage?.setItem?.("lastXRequestIdSeenAt", seenAt);
-    window.dispatchEvent(
-      new CustomEvent("correlation:update", { detail: { lastXRequestId: v, seenAt: seenAt } }),
-    );
+    window.dispatchEvent(new CustomEvent("correlation:update", { detail: { lastXRequestId: v, seenAt: seenAt } }));
   } catch (err) {
     console.warn("Failed to save lastXRequestIdSeenAt to sessionStorage:", err.message);
   }

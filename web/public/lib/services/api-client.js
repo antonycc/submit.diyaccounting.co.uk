@@ -2,7 +2,6 @@
 import { generateRequestId } from "../utils/correlation-utils.js";
 import { getAccessToken, getIdToken, ensureSession, handle403Error } from "./auth-service.js";
 import { getLocalStorage, setLocalStorage } from "../utils/storage-utils.js";
-import { showStatus } from "../utils/dom-utils.js";
 
 /**
  * Fetch with client request ID and HMRC account headers
@@ -12,7 +11,6 @@ import { showStatus } from "../utils/dom-utils.js";
  */
 export async function fetchWithId(url, opts = {}) {
   const headers = opts.headers instanceof Headers ? opts.headers : new Headers(opts.headers || {});
-  
   try {
     const rid = generateRequestId();
     headers.set("X-Client-Request-Id", rid);
@@ -42,6 +40,7 @@ export async function fetchWithId(url, opts = {}) {
  * @param {Headers} currentHeaders - Current headers object
  * @returns {Promise<Response>} Final response
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
   if (init.fireAndForget) return res;
 
