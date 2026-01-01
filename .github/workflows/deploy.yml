@@ -2257,6 +2257,15 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: publish cloudwatch metric
+        run: |
+          aws cloudwatch put-metric-data \
+            --namespace "submit.diyaccounting.co.uk" \
+            --metric-name "behaviour-tests" \
+            --dimensions env=${{ env.ENVIRONMENT_NAME }},test=submit-vat-behaviour-tests \
+            --value ${{ steps.behaviour-tests.outputs.RESULT }} \
+            --region ${{ env.AWS_REGION }}
+
       - name: Export DynamoDB data for test users
         if: ${{ !cancelled() }}
         run: |
@@ -3098,14 +3107,14 @@ jobs:
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
 
-      - name: Copy test artifacts to S3 origin bucket
-        if: ${{ !cancelled() }}
-        env:
-          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
-        shell: bash
-        run: |
-          echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
+#      - name: Copy test artifacts to S3 origin bucket
+#        if: ${{ !cancelled() }}
+#        env:
+#          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
+#        shell: bash
+#        run: |
+#          echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
+#          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
 
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
@@ -3127,7 +3136,7 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - web-test-submit-vat
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
