@@ -3,6 +3,7 @@ run-name: "synthetic test of ${{ github.ref_name }}"
 concurrency:
   group: synthetic-test-${{ github.ref_name }}
   cancel-in-progress: false
+  # TODO: Use the synthetic test like the to delegate the web tests to the synthetic test workflow
 
 # bump 00
 
@@ -77,6 +78,7 @@ jobs:
           environment-name: ${{ github.event.inputs.environment-name || '' }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
 
   behaviour-test:

@@ -128,6 +128,7 @@ jobs:
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
+  # TODO: Use the synthetic test like the to delegate the web tests to the synthetic test workflow
   test:
     name: 'delegate to test workflow'
     needs:
