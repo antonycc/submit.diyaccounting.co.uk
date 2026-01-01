@@ -78,6 +78,7 @@ jobs:
           environment-name: ${{ github.event.inputs.environment-name || '' }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
       apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
 
