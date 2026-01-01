@@ -2938,7 +2938,7 @@ jobs:
     needs:
       - names
       - deploy-publish
-      - web-test-bundle
+      #- web-test-bundle
       #- web-test-submit-vat
       - web-test-submit-vat-sandbox
       - web-test-post-vat-return-sandbox
@@ -2960,13 +2960,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download artifacts - bundle
-        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#      - name: Download artifacts - bundle
+#        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#        uses: actions/download-artifact@v7
+#        with:
+#          name: web-test-artifacts-bundle
+#          path: |
+#            target/behaviour-test-results/bundle/
+
+      #      - name: Download artifacts - submit vat
+      #        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+      #        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+      #        uses: actions/download-artifact@v7
+      #        with:
+      #          name: web-test-artifacts-submit-vat
+      #          path: |
+      #            target/behaviour-test-results/submit-vat/
+
+      - name: Download artifacts - submit vat sandbox
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-artifacts-bundle
+          name: web-test-artifacts-submit-vat-sandbox
           path: |
-            target/behaviour-test-results/bundle/
+            target/behaviour-test-results/submit-vat-sandbox/
 
       - name: Download artifacts - postVatReturn sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
@@ -2992,23 +3009,6 @@ jobs:
           path: |
             target/behaviour-test-results/obligation-sandbox/
 
-#      - name: Download artifacts - submit vat
-#        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-#        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-#        uses: actions/download-artifact@v7
-#        with:
-#          name: web-test-artifacts-submit-vat
-#          path: |
-#            target/behaviour-test-results/submit-vat/
-
-      - name: Download artifacts - submit vat sandbox
-        if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v7
-        with:
-          name: web-test-artifacts-submit-vat-sandbox
-          path: |
-            target/behaviour-test-results/submit-vat-sandbox/
-
       - name: Download artifacts - fraud prevention headers vat sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
@@ -3024,13 +3024,30 @@ jobs:
           echo "Behaviour test results files:"
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
 
-      - name: Download reports - bundle
-        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#      - name: Download reports - bundle
+#        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#        uses: actions/download-artifact@v7
+#        with:
+#          name: web-test-reports-bundle
+#          path: |
+#            target/test-reports/bundle/
+
+#      - name: Download reports - submit vat
+#        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+#        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#        uses: actions/download-artifact@v7
+#        with:
+#          name: web-test-reports-submit-vat
+#          path: |
+#            target/test-reports/submit-vat/
+
+      - name: Download reports - submit vat sandbox
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-reports-bundle
+          name: web-test-reports-submit-vat-sandbox
           path: |
-            target/test-reports/bundle/
+            target/test-reports/submit-vat-sandbox/
 
       - name: Download reports - postVatReturn sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
@@ -3055,23 +3072,6 @@ jobs:
           name: web-test-reports-obligation-sandbox
           path: |
             target/test-reports/obligation-sandbox/
-
-      - name: Download reports - submit vat
-        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-        uses: actions/download-artifact@v7
-        with:
-          name: web-test-reports-submit-vat
-          path: |
-            target/test-reports/submit-vat/
-
-      - name: Download reports - submit vat sandbox
-        if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v7
-        with:
-          name: web-test-reports-submit-vat-sandbox
-          path: |
-            target/test-reports/submit-vat-sandbox/
 
       - name: Download reports - fraud prevention headers vat sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
