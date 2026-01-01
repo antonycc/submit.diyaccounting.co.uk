@@ -81,7 +81,7 @@
       </div>
     </footer>
 
-    <script src="./submit.js"></script>
+    <script src="./submit.bundle.js"></script>
     <script src="lib/request-cache.js"></script>
     <script src="lib/toml-parser.js"></script>
     <script src="widgets/hamburger-menu.js"></script>
@@ -117,7 +117,7 @@
                 init: { headers: { Authorization: `Bearer ${idToken}` }, signal },
               });
             } else {
-              const response = await window.fetchWithIdToken("/api/v1/bundle", { signal });
+              const response = await fetchWithIdToken("/api/v1/bundle", { signal });
               if (response.ok) {
                 bundlesData = await response.json();
               }
@@ -266,14 +266,8 @@
 
         try {
           // Fetch catalog
-          const response = await fetch("/submit.catalogue.toml");
-          if (!response.ok) {
-            dynamicContainer.innerHTML = '<p style="color: #b00020;">Unable to load activities. Please try again later.</p>';
-            return;
-          }
-
-          const text = await response.text();
-          const catalog = window.TOML ? window.TOML.parse(text) : await response.json().catch(() => ({}));
+          const text = await fetchCatalogText("/submit.catalogue.toml");
+          const catalog = window.TOML ? window.TOML.parse(text) : JSON.parse(text);
           const userBundles = parseUserBundles();
           const activeBundles = getActiveBundles(catalog, userBundles);
           const expiredBundles = getExpiredBundles(userBundles);

@@ -155,13 +155,16 @@
     <script src="../../lib/env-loader.js"></script>
     <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../lib/test-data-generator.js"></script>
-    <script src="../../submit.js"></script>
+    <script src="../../submit.bundle.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../widgets/hamburger-menu.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/loading-spinner.js"></script>
+    <script type="module" src="../../widgets/view-source-link.js"></script>
+    <script src="../../widgets/localstorage-viewer.js"></script>
     <script>
       (async function () {
         try {
@@ -318,44 +321,6 @@
           requestHeaders["Gov-Test-Scenario"] = testScenario;
         }
         return await submitVat(vatNumber, periodKey, vatDue, accessToken, requestHeaders);
-      }
-
-      async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
-        const url = "/api/v1/hmrc/vat/return";
-        const body = JSON.stringify({
-          vatNumber,
-          periodKey,
-          vatDue,
-          accessToken,
-        });
-        console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
-
-        const requestHeaders = {
-          "Content-Type": "application/json",
-          ...headers,
-        };
-
-        // Add hmrcAccount header if present
-        const hmrcAccount = localStorage.getItem("hmrcAccount");
-        if (hmrcAccount) {
-          requestHeaders["hmrcAccount"] = hmrcAccount;
-        }
-
-        const response = await window.authorizedFetch(url, {
-          method: "POST",
-          headers: requestHeaders,
-          body,
-        });
-        const responseJson = await response.json();
-        if (!response.ok) {
-          const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-          console.error(message);
-          throw new Error(message);
-        }
-
-        console.log(`Submitted VAT. Remote call completed successfully: POST ${url}`, responseJson, responseJson.receipt);
-        // Return the receipt object when present (production), otherwise return the full body (tests/mocks)
-        return responseJson?.receipt ?? responseJson;
       }
 
       function displayReceipt(response) {

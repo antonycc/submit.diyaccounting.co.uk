@@ -60,7 +60,7 @@
       </div>
     </footer>
 
-    <script src="../submit.js"></script>
+    <script src="../submit.bundle.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/hamburger-menu.js"></script>
@@ -81,18 +81,6 @@
         }
       }
 
-      function base64UrlDecode(str) {
-        // Replace URL-safe chars
-        str = str.replace(/-/g, "+").replace(/_/g, "/");
-        // Add padding if missing
-        const pad = str.length % 4;
-        if (pad) {
-          str += "=".repeat(4 - pad);
-        }
-        return atob(str);
-      }
-
-      // Handle authentication callback from mock
       async function handleAuthCallback(code, state) {
         try {
           showLoading();

@@ -82,7 +82,7 @@ describe("VAT Flow Frontend JavaScript", () => {
     document.documentElement.innerHTML = htmlContent;
 
     // Load and execute submit.js first
-    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
+    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.bundle.js"), "utf-8");
     const submitScript = document.createElement("script");
     submitScript.textContent = submitJsContent;
     document.head.appendChild(submitScript);
@@ -94,12 +94,15 @@ describe("VAT Flow Frontend JavaScript", () => {
     document.head.appendChild(loadingSpinnerScript);
 
     // Execute the inline script content to define page-specific functions
-    const scriptMatch = htmlContent.match(/<script>([\s\S]*?)<\/script>/);
+    const scriptMatch = htmlContent.match(/<script(?:\s+type="module")?>([\s\S]*?)<\/script>/);
     if (scriptMatch) {
       const scriptContent = scriptMatch[1];
       // Execute script in the window context
       const script = document.createElement("script");
-      script.textContent = scriptContent;
+      // Strip imports from module scripts so they can execute in happy-dom without a loader
+      const strippedContent = scriptContent.replace(/^\s*import\s+[\s\S]*?from\s+['"].*?['"];?/gm, "");
+      // console.log("DEBUG: Stripped script content:", strippedContent);
+      script.textContent = strippedContent;
       document.head.appendChild(script);
     }
   });
