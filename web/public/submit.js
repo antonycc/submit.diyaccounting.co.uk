@@ -764,6 +764,8 @@ if (typeof window !== "undefined") {
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
   window.fetchWithId = fetchWithId;
+  window.authorizedFetch = authorizedFetch;
+  window.fetchWithIdToken = fetchWithIdToken;
   // token management
   window.checkTokenExpiry = checkTokenExpiry;
   window.ensureSession = ensureSession;

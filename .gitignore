@@ -354,3 +354,6 @@ fabric.properties
 /behaviour.txt
 /mvnw.txt
 /test.txt
+
+# Generated test bundle
+/web/public/submit.bundle.js
