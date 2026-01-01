@@ -35,7 +35,7 @@
     "test:coverage": "npx vitest --coverage --run app/unit-tests/*.test.js app/unit-tests/*/*.test.js app/system-tests/*.test.js",
     "test:system": "npx vitest --run app/system-tests/*.test.js",
     "test:system-coverage": "npx vitest --coverage --run app/system-tests/*.test.js",
-    "test:browser": "playwright test --project=browser-tests web/browser-tests/*.test.js",
+    "test:browser": "node scripts/bundle-for-tests.js && playwright test --project=browser-tests web/browser-tests/*.test.js",
     "playwright:install": "npx playwright install chromium --with-deps",
     "users:provision": "node app/bin/provision-user.mjs",
     "test:behaviour": "playwright test --project=behaviour-tests",
