@@ -19,6 +19,11 @@ on:
           - 'ci'
           - 'prod'
         default: ''
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: false
+        default: ''
       behaviour-test-suite:
         type: choice
         description: 'Behaviour test to run'
@@ -99,6 +104,10 @@ jobs:
         uses: './.github/actions/get-names'
         with:
           environment-name: ${{ github.event.inputs.environment-name || '' }}
+          deployment-name: ${{ github.event.inputs.deployment-name || '' }}
+      - name: Show input flag
+        run: |
+          echo "generate-test-reports: inputs=[${{ inputs.generate-test-reports }}] github.event.inputs=[${{ github.event.inputs.generate-test-reports || 'true' }}]"
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -147,7 +156,7 @@ jobs:
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
       - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() && (inputs == null || inputs.generate-test-reports == 'true') }}
+        if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
         run: |
           chmod +x scripts/export-test-dynamodb.sh
           scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
@@ -156,7 +165,7 @@ jobs:
           RESULTS_DIR: target/behaviour-test-results
 
       - name: Generate test report JSON files
-        if: ${{ !cancelled() && (inputs == null || inputs.generate-test-reports == 'true') }}
+        if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
         run: |
           echo "Generating test report JSON files from behaviour test results..."
           node scripts/generate-test-reports.js \
@@ -166,7 +175,7 @@ jobs:
         shell: bash
 
       - name: List artefacts
-        if: ${{ !cancelled() && (inputs == null || inputs.generate-test-reports == 'true') }}
+        if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
         run: |
           echo "Behaviour test results files:"
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
@@ -237,7 +246,7 @@ jobs:
             --region ${{ env.AWS_REGION }}
 
   upload-web-test-results:
-    if: ${{ !cancelled() && (inputs == null || inputs.generate-test-reports == 'true') }}
+    if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
     name: 'upload web test results'
     needs:
       - names
@@ -395,7 +404,7 @@ jobs:
 
   invalidate-cloudfront:
     name: 'invalidate CloudFront paths (test/** and docs/**)'
-    if: ${{ !cancelled() && (inputs == null || inputs.generate-test-reports == 'true') }}
+    if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
     needs:
       - names
       - upload-web-test-results
