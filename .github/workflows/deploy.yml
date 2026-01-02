@@ -128,6 +128,7 @@ jobs:
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
+  # TODO: Use the synthetic test like the to delegate the web tests to the synthetic test workflow
   test:
     name: 'delegate to test workflow'
     needs:
@@ -1950,141 +1951,253 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
-  web-test-auth-bundle:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true'  }}
-    name: 'web test auth bundle'
+#  web-test-auth-bundle:
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true'  }}
+#    name: 'web test auth bundle'
+#    needs:
+#      - names
+#      - set-origins
+#      - deploy-publish
+#      #- behaviour-test-get-vat-return
+#    runs-on: ubuntu-24.04
+#    container: mcr.microsoft.com/playwright:v1.57.0-jammy
+#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm ci --ignore-scripts
+#        env:
+#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+#
+#      - name: Run behaviour tests - authBehaviour
+#        run: |
+#          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+#
+#      - name: Run behaviour tests - authBehaviour
+#        run: |
+#          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+#
+#      - name: Run behaviour tests - authBehaviour
+#        run: |
+#          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+#
+#      - name: Configure AWS role via GitHub OIDC
+#        if: ${{ !cancelled() }}
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        if: ${{ !cancelled() }}
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Export DynamoDB data for test users
+#        if: ${{ !cancelled() }}
+#        run: |
+#          chmod +x scripts/export-test-dynamodb.sh
+#          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
+#        env:
+#          AWS_REGION: ${{ env.AWS_REGION }}
+#          RESULTS_DIR: target/behaviour-test-results
+#
+#      - name: Generate test report JSON files
+#        if: ${{ !cancelled() }}
+#        run: |
+#          echo "Generating test report JSON files from behaviour test results..."
+#          node scripts/generate-test-reports.js \
+#            --testName bundle \
+#            --testFile 'behaviour-tests/auth.behaviour.test.js' \
+#            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+#          ;
+#        shell: bash
+#
+#      - name: List artefacts
+#        if: ${{ !cancelled() }}
+#        run: |
+#          echo "Behaviour test results files:"
+#          find target/behaviour-test-results/ -type f -exec ls -l {} \;
+#          echo "Test report files:"
+#          find target/test-reports/ -type f -exec ls -l {} \;
+#        shell: bash
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: web-test-artifacts-auth-bundle
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: web-test-reports-auth-bundle
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
+
+#  web-test-bundle:
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#    name: 'web test bundle'
+#    needs:
+#      - names
+#      - set-origins
+#      - deploy-publish
+#      #- web-test-auth-bundle
+#    runs-on: ubuntu-24.04
+#    container: mcr.microsoft.com/playwright:v1.57.0-jammy
+#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm ci --ignore-scripts
+#        env:
+#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+#
+#      - name: Run behaviour tests - bundleBehaviour
+#        run: |
+#          npm run 'test:bundleBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+#          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+#          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+#          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+#
+#      - name: Configure AWS role via GitHub OIDC
+#        if: ${{ !cancelled() }}
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        if: ${{ !cancelled() }}
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Export DynamoDB data for test users
+#        if: ${{ !cancelled() }}
+#        run: |
+#          chmod +x scripts/export-test-dynamodb.sh
+#          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
+#        env:
+#          AWS_REGION: ${{ env.AWS_REGION }}
+#          RESULTS_DIR: target/behaviour-test-results
+#
+#      - name: Generate test report JSON files
+#        if: ${{ !cancelled() }}
+#        run: |
+#          echo "Generating test report JSON files from behaviour test results..."
+#          node scripts/generate-test-reports.js \
+#            --testName bundle \
+#            --testFile 'behaviour-tests/bundles.behaviour.test.js' \
+#            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+#          ;
+#        shell: bash
+#
+#      - name: List artefacts
+#        if: ${{ !cancelled() }}
+#        run: |
+#          echo "Behaviour test results files:"
+#          find target/behaviour-test-results/ -type f -exec ls -l {} \;
+#          echo "Test report files:"
+#          find target/test-reports/ -type f -exec ls -l {} \;
+#        shell: bash
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: web-test-artifacts-bundle
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: web-test-reports-bundle
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
+
+  web-test-submit-vat-sandbox:
+    if: ${{ !cancelled() }}
+    name: 'web test submit vat sandbox'
     needs:
       - names
       - set-origins
       - deploy-publish
-      #- behaviour-test-get-vat-return
-    runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.57.0-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      - name: Run behaviour tests - authBehaviour
-        run: |
-          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-
-      - name: Run behaviour tests - authBehaviour
-        run: |
-          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-
-      - name: Run behaviour tests - authBehaviour
-        run: |
-          npm run 'test:authBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-
-      - name: Configure AWS role via GitHub OIDC
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() }}
-        run: |
-          chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          RESULTS_DIR: target/behaviour-test-results
-
-      - name: Generate test report JSON files
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Generating test report JSON files from behaviour test results..."
-          node scripts/generate-test-reports.js \
-            --testName bundle \
-            --testFile 'behaviour-tests/auth.behaviour.test.js' \
-            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
-          ;
-        shell: bash
-
-      - name: List artefacts
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Behaviour test results files:"
-          find target/behaviour-test-results/ -type f -exec ls -l {} \;
-          echo "Test report files:"
-          find target/test-reports/ -type f -exec ls -l {} \;
-        shell: bash
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-artifacts-auth-bundle
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-reports-auth-bundle
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-  web-test-bundle:
-    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-    name: 'web test bundle'
-    needs:
-      - names
-      - set-origins
-      - deploy-publish
-      - web-test-auth-bundle
+      #- web-test-bundle
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2114,113 +2227,13 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          #TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          #TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          #TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
 
-      - name: Configure AWS role via GitHub OIDC
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() }}
-        run: |
-          chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          RESULTS_DIR: target/behaviour-test-results
-
-      - name: Generate test report JSON files
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Generating test report JSON files from behaviour test results..."
-          node scripts/generate-test-reports.js \
-            --testName bundle \
-            --testFile 'behaviour-tests/bundles.behaviour.test.js' \
-            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
-          ;
-        shell: bash
-
-      - name: List artefacts
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Behaviour test results files:"
-          find target/behaviour-test-results/ -type f -exec ls -l {} \;
-          echo "Test report files:"
-          find target/test-reports/ -type f -exec ls -l {} \;
-        shell: bash
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-artifacts-bundle
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-reports-bundle
-          retention-days: 30
-          path: |
-            target/test-reports/
-
-  web-test-submit-vat-sandbox:
-    if: ${{ !cancelled() }}
-    name: 'web test submit vat sandbox'
-    needs:
-      - names
-      - set-origins
-      - web-test-bundle
-    runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.57.0-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      - name: Run behaviour tests - submitVatBehaviour
-        if: ${{ !cancelled() }}
+      - name: Run behaviour test - submitVatBehaviour
+        id: behaviour-test
         run: |
           npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+          ; RESULT=${exit_code:-0} \
+          ; echo "RESULT=$RESULT" | tee -a "$GITHUB_OUTPUT" \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
           ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
           ; exit ${exit_code:-0} \
@@ -2303,51 +2316,18 @@ jobs:
           retention-days: 30
           path: |
             target/test-reports/
+    outputs:
+      result: ${{ steps.behaviour-test.outputs.RESULT }}
 
-  web-test-submit-vat:
-    #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-    name: 'web test submit vat'
+  publish-cloudwatch-metric:
+    if: ${{ !cancelled() }}
+    name: 'web test submit vat sandbox publish cloudwatch metric'
     needs:
       - names
-      - set-origins
-      - web-test-bundle
       - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.57.0-jammy
-    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
-    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
-
-      - name: Run behaviour tests - submitVatBehaviour
-        if: ${{ !cancelled() }}
-        run: |
-          npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
-          # TODO: Change to HMRC_SYTH_PRODUCTION_USERNAME when available
-          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
-          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
-          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
-
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
@@ -2372,52 +2352,129 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() }}
+      - name: publish cloudwatch metric
         run: |
-          chmod +x scripts/export-test-dynamodb.sh
-          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          RESULTS_DIR: target/behaviour-test-results
+          aws cloudwatch put-metric-data \
+            --namespace "${{ needs.names.outputs.apex-domain }}" \
+            --metric-name "behaviour-test" \
+            --dimensions deployment-name=${{ needs.names.outputs.environment-name }},test=submitVatBehaviour \
+            --value ${{ needs.web-test-submit-vat-sandbox.outputs.result }} \
+            --region ${{ env.AWS_REGION }}
 
-      - name: Generate test report JSON files
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Generating test report JSON files from behaviour test results..."
-          node scripts/generate-test-reports.js \
-            --testName submit-vat-sandbox \
-            --testFile 'behaviour-tests/submitVat.behaviour.test.js' \
-            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
-          ;
-        shell: bash
-
-      - name: List artefacts
-        if: ${{ !cancelled() }}
-        run: |
-          echo "Behaviour test results files:"
-          find target/behaviour-test-results/ -type f -exec ls -l {} \;
-          echo "Test report files:"
-          find target/test-reports/ -type f -exec ls -l {} \;
-        shell: bash
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-artifacts-submit-vat
-          retention-days: 30
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: web-test-reports-submit-vat
-          retention-days: 30
-          path: |
-            target/test-reports/
+#  web-test-submit-vat:
+#    #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+#    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#    name: 'web test submit vat'
+#    needs:
+#      - names
+#      - set-origins
+#      - web-test-bundle
+#      - web-test-submit-vat-sandbox
+#    runs-on: ubuntu-24.04
+#    container: mcr.microsoft.com/playwright:v1.57.0-jammy
+#    # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
+#    # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Install dependencies
+#        run: |
+#          npm ci --ignore-scripts
+#        env:
+#          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+#
+#      - name: Run behaviour tests - submitVatBehaviour
+#        if: ${{ !cancelled() }}
+#        run: |
+#          npm run 'test:submitVatBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+#          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+#          ; exit ${exit_code:-0} \
+#          ;
+#        env:
+#          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
+#          # TODO: Change to HMRC_SYTH_PRODUCTION_USERNAME when available
+#          TEST_HMRC_USERNAME: ${{ vars.TEST_HMRC_USERNAME }}
+#          TEST_HMRC_PASSWORD: ${{ secrets.TEST_HMRC_PASSWORD }}
+#          TEST_HMRC_VAT_NUMBER: ${{ vars.TEST_HMRC_VAT_NUMBER }}
+#
+#      - name: Configure AWS role via GitHub OIDC
+#        if: ${{ !cancelled() }}
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        if: ${{ !cancelled() }}
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Export DynamoDB data for test users
+#        if: ${{ !cancelled() }}
+#        run: |
+#          chmod +x scripts/export-test-dynamodb.sh
+#          scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'submit-diyaccounting-co-uk' || format('{0}-submit-diyaccounting-co-uk', needs.names.outputs.environment-name) }}
+#        env:
+#          AWS_REGION: ${{ env.AWS_REGION }}
+#          RESULTS_DIR: target/behaviour-test-results
+#
+#      - name: Generate test report JSON files
+#        if: ${{ !cancelled() }}
+#        run: |
+#          echo "Generating test report JSON files from behaviour test results..."
+#          node scripts/generate-test-reports.js \
+#            --testName submit-vat-sandbox \
+#            --testFile 'behaviour-tests/submitVat.behaviour.test.js' \
+#            --envFile '.env.${{ needs.names.outputs.environment-name }}' \
+#          ;
+#        shell: bash
+#
+#      - name: List artefacts
+#        if: ${{ !cancelled() }}
+#        run: |
+#          echo "Behaviour test results files:"
+#          find target/behaviour-test-results/ -type f -exec ls -l {} \;
+#          echo "Test report files:"
+#          find target/test-reports/ -type f -exec ls -l {} \;
+#        shell: bash
+#
+#      - name: Upload artifacts (results)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: web-test-artifacts-submit-vat
+#          retention-days: 30
+#          path: |
+#            target/behaviour-test-results/
+#
+#      - name: Upload artifacts (reports)
+#        if: ${{ !cancelled() }}
+#        uses: actions/upload-artifact@v6
+#        with:
+#          name: web-test-reports-submit-vat
+#          retention-days: 30
+#          path: |
+#            target/test-reports/
 
   web-test-post-vat-return-sandbox:
     if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
@@ -2425,7 +2482,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-submit-vat
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2540,7 +2597,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-submit-vat
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2652,7 +2709,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-submit-vat
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2767,7 +2824,7 @@ jobs:
     needs:
       - names
       - set-origins
-      - web-test-submit-vat
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
@@ -2882,8 +2939,8 @@ jobs:
     needs:
       - names
       - deploy-publish
-      - web-test-bundle
-      - web-test-submit-vat
+      #- web-test-bundle
+      #- web-test-submit-vat
       - web-test-submit-vat-sandbox
       - web-test-post-vat-return-sandbox
       - web-test-get-vat-return-sandbox
@@ -2904,13 +2961,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Download artifacts - bundle
-        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#      - name: Download artifacts - bundle
+#        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#        uses: actions/download-artifact@v7
+#        with:
+#          name: web-test-artifacts-bundle
+#          path: |
+#            target/behaviour-test-results/bundle/
+
+      #      - name: Download artifacts - submit vat
+      #        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+      #        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+      #        uses: actions/download-artifact@v7
+      #        with:
+      #          name: web-test-artifacts-submit-vat
+      #          path: |
+      #            target/behaviour-test-results/submit-vat/
+
+      - name: Download artifacts - submit vat sandbox
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-artifacts-bundle
+          name: web-test-artifacts-submit-vat-sandbox
           path: |
-            target/behaviour-test-results/bundle/
+            target/behaviour-test-results/submit-vat-sandbox/
 
       - name: Download artifacts - postVatReturn sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
@@ -2936,23 +3010,6 @@ jobs:
           path: |
             target/behaviour-test-results/obligation-sandbox/
 
-      - name: Download artifacts - submit vat
-        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-        uses: actions/download-artifact@v7
-        with:
-          name: web-test-artifacts-submit-vat
-          path: |
-            target/behaviour-test-results/submit-vat/
-
-      - name: Download artifacts - submit vat sandbox
-        if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v7
-        with:
-          name: web-test-artifacts-submit-vat-sandbox
-          path: |
-            target/behaviour-test-results/submit-vat-sandbox/
-
       - name: Download artifacts - fraud prevention headers vat sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
         uses: actions/download-artifact@v7
@@ -2968,13 +3025,30 @@ jobs:
           echo "Behaviour test results files:"
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
 
-      - name: Download reports - bundle
-        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#      - name: Download reports - bundle
+#        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#        uses: actions/download-artifact@v7
+#        with:
+#          name: web-test-reports-bundle
+#          path: |
+#            target/test-reports/bundle/
+
+#      - name: Download reports - submit vat
+#        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+#        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+#        uses: actions/download-artifact@v7
+#        with:
+#          name: web-test-reports-submit-vat
+#          path: |
+#            target/test-reports/submit-vat/
+
+      - name: Download reports - submit vat sandbox
+        if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-reports-bundle
+          name: web-test-reports-submit-vat-sandbox
           path: |
-            target/test-reports/bundle/
+            target/test-reports/submit-vat-sandbox/
 
       - name: Download reports - postVatReturn sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
@@ -2999,23 +3073,6 @@ jobs:
           name: web-test-reports-obligation-sandbox
           path: |
             target/test-reports/obligation-sandbox/
-
-      - name: Download reports - submit vat
-        #if: ${{ !cancelled() && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
-        if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
-        uses: actions/download-artifact@v7
-        with:
-          name: web-test-reports-submit-vat
-          path: |
-            target/test-reports/submit-vat/
-
-      - name: Download reports - submit vat sandbox
-        if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v7
-        with:
-          name: web-test-reports-submit-vat-sandbox
-          path: |
-            target/test-reports/submit-vat-sandbox/
 
       - name: Download reports - fraud prevention headers vat sandbox
         if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
@@ -3062,15 +3119,48 @@ jobs:
           BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
         shell: bash
         run: |
-          for filePath in target/behaviour-test-results/*/screenshots/*/*.png; do
-            echo "Uploading screenshot file: ${filePath?}"
-            testName=$(echo "${filePath?}" | sed -n 's|target/behaviour-test-results/\([^/]*\)/screenshots/.*|\1|p')
-            fileName=$(basename "${filePath?}")
-            echo "Test name: ${testName?}, File name: ${fileName?}, Uploading to s3://${BUCKET_NAME?}/tests/${testName?}/${fileName?}"
-            mkdir -p "screenshots/${testName?}"
-            cp "${filePath?}" "screenshots/${testName?}/${fileName?}"
+          for figuresPath in target/behaviour-test-results/*/figures.json; do
+            [ -e "$figuresPath" ] || continue
+            testName=$(echo "${figuresPath?}" | sed -n 's|target/behaviour-test-results/\([^/]*\)/figures.json|\1|p')
+            echo "Processing figures for test: ${testName?}"
+
+            # Extract filenames from figures.json using jq and iterate over them
+            jq -r '.[].filename' "${figuresPath?}" | while read -r fileName; do
+              [ -z "$fileName" ] && continue
+
+              # Search for the file under the test results directory to handle random bits in the path
+              filePath=$(find "target/behaviour-test-results/${testName?}" -name "${fileName?}" | head -n 1)
+
+              if [ -n "$filePath" ]; then
+                echo "Uploading screenshot file: ${filePath?}"
+                echo "Test name: ${testName?}, File name: ${fileName?}, Uploading to s3://${BUCKET_NAME?}/tests/behaviour-test-results/${testName?}/${fileName?}"
+                mkdir -p "screenshots/${testName?}"
+                cp "${filePath?}" "screenshots/${testName?}/${fileName?}"
+              else
+                echo "Warning: Screenshot ${fileName?} not found in target/behaviour-test-results/${testName?}"
+              fi
+            done
           done
-          aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
+
+          if [ -d "screenshots" ]; then
+            aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
+          fi
+
+#      - name: Copy screenshots to S3 origin bucket
+#        if: ${{ !cancelled() }}
+#        env:
+#          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
+#        shell: bash
+#        run: |
+#          for filePath in target/behaviour-test-results/*/screenshots/*/*.png; do
+#            echo "Uploading screenshot file: ${filePath?}"
+#            testName=$(echo "${filePath?}" | sed -n 's|target/behaviour-test-results/\([^/]*\)/screenshots/.*|\1|p')
+#            fileName=$(basename "${filePath?}")
+#            echo "Test name: ${testName?}, File name: ${fileName?}, Uploading to s3://${BUCKET_NAME?}/tests/${testName?}/${fileName?}"
+#            mkdir -p "screenshots/${testName?}"
+#            cp "${filePath?}" "screenshots/${testName?}/${fileName?}"
+#          done
+#          aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
 
       - name: Copy Playwright test reports to S3 origin bucket
         if: ${{ !cancelled() }}
@@ -3081,14 +3171,14 @@ jobs:
           echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp target/test-reports/ s3://${BUCKET_NAME?}/tests/ --recursive
 
-      - name: Copy test artifacts to S3 origin bucket
-        if: ${{ !cancelled() }}
-        env:
-          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
-        shell: bash
-        run: |
-          echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
-          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
+#      - name: Copy test artifacts to S3 origin bucket
+#        if: ${{ !cancelled() }}
+#        env:
+#          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
+#        shell: bash
+#        run: |
+#          echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
+#          aws s3 cp target/behaviour-test-results/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/ --recursive
 
       - name: Copy test reports to S3 origin bucket
         if: ${{ !cancelled() }}
@@ -3110,7 +3200,7 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - web-test-submit-vat
+      - web-test-submit-vat-sandbox
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
