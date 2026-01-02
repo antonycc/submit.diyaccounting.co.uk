@@ -105,6 +105,9 @@ jobs:
         with:
           environment-name: ${{ github.event.inputs.environment-name || '' }}
           deployment-name: ${{ github.event.inputs.deployment-name || '' }}
+      - name: Show input flag
+        run: |
+          echo 'generate-test-reports: [${{ inputs.generate-test-reports }}]'
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
