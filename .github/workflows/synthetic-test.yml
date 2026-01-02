@@ -107,7 +107,7 @@ jobs:
           deployment-name: ${{ github.event.inputs.deployment-name || '' }}
       - name: Show input flag
         run: |
-          echo 'generate-test-reports: [${{ inputs.generate-test-reports }}]'
+          echo "generate-test-reports: inputs=[${{ inputs.generate-test-reports }}] github.event.inputs=[${{ github.event.inputs.generate-test-reports || 'true' }}]"
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
