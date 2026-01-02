@@ -76,7 +76,7 @@ on:
     #   | sort @timestamp desc
     #   | filter @message like /REPORT/
     #   | filter @message like /Init Duration/
-    - cron: '*/43 * * * *'
+    - cron: '*/57 * * * *'
 
 permissions:
   id-token: write
