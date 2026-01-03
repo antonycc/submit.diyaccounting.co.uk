@@ -462,10 +462,17 @@ export async function getVatObligations(
 ) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
+    logger.info("Validating fraud prevention headers for HMRC API request", hmrcAccount, runFraudPreventionHeaderValidation);
     // This is a fire-and-forget validation that logs results but does not block
     validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
       logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
     });
+  } else {
+    logger.info(
+      "Skipping fraud prevention header validation for non-sandbox HMRC API request",
+      hmrcAccount,
+      runFraudPreventionHeaderValidation,
+    );
   }
 
   const hmrcRequestUrl = `/organisations/vat/${vrn}/obligations`;
