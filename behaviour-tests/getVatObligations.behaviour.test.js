@@ -97,6 +97,7 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
+const runFraudPreventionHeaderValidation = false;
 
 let mockOAuth2Process;
 let serverProcess;
@@ -185,9 +186,8 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 async function requestAndVerifyObligations(page, obligationsQuery) {
-  // Fulfilled obligations
   await initVatObligations(page, screenshotPath);
-  await fillInVatObligations(page, obligationsQuery, screenshotPath);
+  await fillInVatObligations(page, { ...obligationsQuery, runFraudPreventionHeaderValidation }, screenshotPath);
   await submitVatObligationsForm(page, screenshotPath);
   await verifyVatObligationsResults(page, obligationsQuery, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
@@ -321,6 +321,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodToDate,
       /* All status values */
       /* No test scenario */
+      runFraudPreventionHeaderValidation,
     },
     screenshotPath,
   );

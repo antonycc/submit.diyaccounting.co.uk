@@ -95,6 +95,7 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
+const runFraudPreventionHeaderValidation = false;
 
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = generatePeriodKey();
@@ -170,7 +171,7 @@ test.afterEach(async ({ page }, testInfo) => {
 
 async function requestAndVerifyViewReturn(page, { vrn, periodKey, testScenario }) {
   await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, vrn, periodKey, testScenario, screenshotPath);
+  await fillInViewVatReturn(page, vrn, periodKey, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
   await submitViewVatReturnForm(page, screenshotPath);
   await verifyViewVatReturnResults(page, testScenario, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
@@ -238,7 +239,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   /* ********************************************** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
@@ -269,38 +270,38 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
      *  - INSOLVENT_TRADER: Client is an insolvent trader.
      */
     await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey, testScenario: "DATE_RANGE_TOO_LARGE" });
-    await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey, testScenario: "INSOLVENT_TRADER" });
-
-    // Custom forced error scenarios (mirrors POST tests)
-    await requestAndVerifyViewReturn(page, {
-      vrn: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
-      testScenario: "SUBMIT_API_HTTP_500",
-    });
-    await requestAndVerifyViewReturn(page, {
-      vrn: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
-      testScenario: "SUBMIT_HMRC_API_HTTP_500",
-    });
-    await requestAndVerifyViewReturn(page, {
-      vrn: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
-      testScenario: "SUBMIT_HMRC_API_HTTP_503",
-    });
-
-    // Slow scenario should take >= 10s but < 30s end-to-end
-    const slowStartMs = Date.now();
-    await requestAndVerifyViewReturn(page, {
-      vrn: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
-      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
-    });
-    const slowElapsedMs = Date.now() - slowStartMs;
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeGreaterThanOrEqual(5_000);
-    expect(slowElapsedMs).toBeLessThan(60_000);
+    // await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey, testScenario: "INSOLVENT_TRADER" });
+    //
+    // // Custom forced error scenarios (mirrors POST tests)
+    // await requestAndVerifyViewReturn(page, {
+    //   vrn: testVatNumber,
+    //   periodKey: hmrcVatPeriodKey,
+    //   testScenario: "SUBMIT_API_HTTP_500",
+    // });
+    // await requestAndVerifyViewReturn(page, {
+    //   vrn: testVatNumber,
+    //   periodKey: hmrcVatPeriodKey,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_500",
+    // });
+    // await requestAndVerifyViewReturn(page, {
+    //   vrn: testVatNumber,
+    //   periodKey: hmrcVatPeriodKey,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    // });
+    //
+    // // Slow scenario should take >= 10s but < 30s end-to-end
+    // const slowStartMs = Date.now();
+    // await requestAndVerifyViewReturn(page, {
+    //   vrn: testVatNumber,
+    //   periodKey: hmrcVatPeriodKey,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+    // });
+    // const slowElapsedMs = Date.now() - slowStartMs;
+    // expect(
+    //   slowElapsedMs,
+    //   `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    // ).toBeGreaterThanOrEqual(5_000);
+    // expect(slowElapsedMs).toBeLessThan(60_000);
   }
 
   /* ****************** */

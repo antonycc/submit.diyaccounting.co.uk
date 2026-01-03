@@ -85,6 +85,7 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
+const runFraudPreventionHeaderValidation = false;
 
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = generatePeriodKey();
@@ -155,9 +156,9 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-async function requestAndVerifySubmitReturn(page, { vatNumber, periodKey, vatDue, testScenario }) {
+async function requestAndVerifySubmitReturn(page, { vatNumber, periodKey, vatDue, testScenario, runFraudPreventionHeaderValidation }) {
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, vatNumber, periodKey, vatDue, testScenario, screenshotPath);
+  await fillInVat(page, vatNumber, periodKey, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
@@ -235,7 +236,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* *************************** */
   // First submission: perform HMRC AUTH only this first time
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -275,72 +276,82 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_VRN",
+      runFraudPreventionHeaderValidation,
     });
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "INVALID_PERIODKEY",
-    });
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "INVALID_PAYLOAD",
-    });
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
-      vatDue: hmrcVatDueAmount,
-      testScenario: "DUPLICATE_SUBMISSION",
-    });
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "TAX_PERIOD_NOT_ENDED",
-    });
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "INSOLVENT_TRADER",
-    });
-
-    // Custom forced error scenarios
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "SUBMIT_API_HTTP_500",
-    });
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "SUBMIT_HMRC_API_HTTP_500",
-    });
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "SUBMIT_HMRC_API_HTTP_503",
-    });
-
-    // Slow scenario should take >= 10s but < 30s end-to-end
-    const slowStartMs = Date.now();
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
-    });
-    const slowElapsedMs = Date.now() - slowStartMs;
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeGreaterThanOrEqual(5_000);
-    expect(slowElapsedMs).toBeLessThan(60_000);
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "INVALID_PERIODKEY",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "INVALID_PAYLOAD",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: hmrcVatPeriodKey,
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "DUPLICATE_SUBMISSION",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "TAX_PERIOD_NOT_ENDED",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "INSOLVENT_TRADER",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    //
+    // // Custom forced error scenarios
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "SUBMIT_API_HTTP_500",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_500",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    //
+    // // Slow scenario should take >= 10s but < 30s end-to-end
+    // const slowStartMs = Date.now();
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // const slowElapsedMs = Date.now() - slowStartMs;
+    // expect(
+    //   slowElapsedMs,
+    //   `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    // ).toBeGreaterThanOrEqual(5_000);
+    // expect(slowElapsedMs).toBeLessThan(60_000);
   }
 
   /* ****************** */

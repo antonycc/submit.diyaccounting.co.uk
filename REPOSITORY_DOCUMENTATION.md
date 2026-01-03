@@ -304,7 +304,7 @@ Behaviour tests use Playwright to test complete user journeys against running in
 |--------|---------|-------------|
 | `server` | `npx dotenv -e .env.proxy -- node app/bin/server.js` | **Start Express server**: Runs Node.js server on port 3000 (default) with `.env.proxy` config |
 | `proxy` | `npx dotenv -e .env.proxy -- node app/bin/ngrok.js` | **Start ngrok proxy**: Exposes local server via ngrok tunnel for OAuth callbacks |
-| `auth` | `npx dotenv -e .env.proxy -- docker run ... ghcr.io/navikt/mock-oauth2-server:2.2.1` | **Start mock OAuth2 server**: Runs Docker container on port 8080 for local OAuth testing |
+| `auth` | `npx dotenv -e .env.proxy -- docker run ... ghcr.io/navikt/mock-oauth2-server:3.0.1` | **Start mock OAuth2 server**: Runs Docker container on port 8080 for local OAuth testing |
 | `data` | `npx dotenv -e .env.proxy -- node app/bin/dynamodb.js` | **Start local DynamoDB**: Runs dynalite (lightweight DynamoDB clone) for local data storage |
 | `mock` | `wiremock --port 9090 --root-dir wiremock-recordings --verbose --preserve-host-header` | **Start WireMock**: HTTP mock server for recording/replaying API interactions |
 
@@ -1373,7 +1373,7 @@ npx dotenv -e .env.proxy -- node app/bin/ngrok.js
 
 #### 3. Mock OAuth2 Server (`npm run auth`)
 
-**File**: Docker container (`ghcr.io/navikt/mock-oauth2-server:2.2.1`)
+**File**: Docker container (`ghcr.io/navikt/mock-oauth2-server:3.0.1`)
 
 **Purpose**: Simulate OAuth2 provider (Google/Cognito) for local testing
 
@@ -1395,7 +1395,7 @@ npx dotenv -e .env.proxy -- docker run -p 8080:8080 \
   -e JSON_CONFIG_PATH=/config/mock-oauth2-config.json \
   -e LOG_LEVEL=DEBUG \
   -v $(pwd)/mock-oauth2-config.json:/config/mock-oauth2-config.json:ro \
-  ghcr.io/navikt/mock-oauth2-server:2.2.1
+  ghcr.io/navikt/mock-oauth2-server:3.0.1
 ```
 
 #### 4. Local DynamoDB (`npm run data`)

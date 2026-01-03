@@ -49,7 +49,14 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { vatNumber, periodKey, vatDue, accessToken, hmrcAccessToken: hmrcAccessTokenInBody } = parsedBody || {};
+  const {
+    vatNumber,
+    periodKey,
+    vatDue,
+    accessToken,
+    hmrcAccessToken: hmrcAccessTokenInBody,
+    runFraudPreventionHeaderValidation,
+  } = parsedBody || {};
   // TODO: Remove the alternate paths at source, then remove this compatibility code
   // accessToken takes precedence over hmrcAccessToken for backward compatibility and ergonomics
   const hmrcAccessToken = accessToken || hmrcAccessTokenInBody;
@@ -78,7 +85,17 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
   }
 
-  return { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount };
+  const runFraudPreventionHeaderValidationBool =
+    runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
+
+  return {
+    vatNumber,
+    periodKey,
+    hmrcAccessToken,
+    numVatDue,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
+  };
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
@@ -121,7 +138,8 @@ export async function ingestHandler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
+  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount, runFraudPreventionHeaderValidation } =
+    extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
@@ -176,6 +194,7 @@ export async function ingestHandler(event) {
     govClientHeaders,
     userSub,
     govTestScenarioHeader,
+    runFraudPreventionHeaderValidation,
   };
 
   const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
@@ -208,6 +227,7 @@ export async function ingestHandler(event) {
           payload.govClientHeaders,
           payload.userSub,
           payload.govTestScenarioHeader,
+          payload.runFraudPreventionHeaderValidation,
         );
 
         const serializableHmrcResponse = {
@@ -348,6 +368,7 @@ export async function workerHandler(event) {
         payload.govClientHeaders,
         payload.userSub,
         payload.govTestScenarioHeader,
+        payload.runFraudPreventionHeaderValidation,
       );
 
       const serializableHmrcResponse = {
@@ -468,13 +489,21 @@ export async function submitVat(
   govClientHeaders,
   auditForUserSub,
   govTestScenarioHeader,
+  runFraudPreventionHeaderValidation = false,
 ) {
   // Validate fraud prevention headers for sandbox accounts
-  if (hmrcAccount === "sandbox") {
+  if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
+    logger.info({ message: "Validating fraud prevention headers for sandbox account", hmrcAccount, runFraudPreventionHeaderValidation });
     // This is a fire-and-forget validation that logs results but does not block
     validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
       logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
     });
+  } else {
+    logger.info(
+      "Skipping fraud prevention header validation for non-sandbox HMRC API request",
+      hmrcAccount,
+      runFraudPreventionHeaderValidation,
+    );
   }
 
   const hmrcRequestHeaders = {
