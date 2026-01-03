@@ -95,50 +95,29 @@ jobs:
   params:
     runs-on: ubuntu-24.04
     steps:
-      - name: "inputs.environment-name=[${{ inputs.environment-name }}] github.event.inputs.environment-name=[${{ github.event.inputs.environment-name }}]"
-        run: ":"
-      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}] github.event.inputs.deployment-name=[${{ github.event.inputs.deployment-name }}]"
-        run: ":"
-      - name: "inputs.behaviour-test-suite=[${{ inputs.behaviour-test-suite }}] github.event.inputs.behaviour-test-suite=[${{ github.event.inputs.behaviour-test-suite }}]"
-        run: ":"
-      - name: "inputs.generate-test-reports=[${{ inputs.generate-test-reports }}] github.event.inputs.generate-test-reports=[${{ github.event.inputs.generate-test-reports }}]"
-        run: ":"
       - name: "github.event_name=[${{ github.event_name }}]"
         run: ":"
-
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
+        run: ":"
+      - name: "inputs.behaviour-test-suite=[${{ inputs.behaviour-test-suite }}]"
+        run: ":"
+      - name: "inputs.generate-test-reports=[${{ inputs.generate-test-reports }}]"
+        run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
         run: |
-          # Use inputs context which covers both workflow_dispatch and workflow_call
-          # For push/schedule, these will be empty
-          ENVIRONMENT_NAME="${{ inputs.environment-name || github.event.inputs.environment-name }}"
-          DEPLOYMENT_NAME="${{ inputs.deployment-name || github.event.inputs.deployment-name }}"
-          BEHAVIOUR_TEST_SUITE="${{ inputs.behaviour-test-suite || github.event.inputs.behaviour-test-suite }}"
-          GENERATE_TEST_REPORTS="${{ inputs.generate-test-reports || github.event.inputs.generate-test-reports }}"
-
-          echo "environment-name=${ENVIRONMENT_NAME}" >> "$GITHUB_OUTPUT"
-          echo "deployment-name=${DEPLOYMENT_NAME}" >> "$GITHUB_OUTPUT"
-          echo "behaviour-test-suite=${BEHAVIOUR_TEST_SUITE:-submitVatBehaviour}" >> "$GITHUB_OUTPUT"
-          echo "generate-test-reports=${GENERATE_TEST_REPORTS:-true}" >> "$GITHUB_OUTPUT"
-          echo "trigger-event=${{ github.event_name }}" >> "$GITHUB_OUTPUT"
-
-      - name: "environment-name: ${{ steps.normalise.outputs.environment-name }}"
-        run: ":"
-      - name: "deployment-name: ${{ steps.normalise.outputs.deployment-name }}"
-        run: ":"
-      - name: "behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}"
-        run: ":"
-      - name: "generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}"
-        run: ":"
-      - name: "trigger-event: ${{ steps.normalise.outputs.trigger-event }}"
-        run: ":"
+          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo "behaviour-test-suite=${${{ inputs.behaviour-test-suite }}:-submitVatBehaviour}" | tee -a "$GITHUB_OUTPUT"
+          echo "generate-test-reports=${${{ inputs.generate-test-reports }}:-true}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
       generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}
-      trigger-event: ${{ steps.normalise.outputs.trigger-event }}
 
   check-reports-param-false:
     name: 'check reports param expecting false'
@@ -146,7 +125,6 @@ jobs:
     needs:
       - params
     runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
     steps:
       - name: Check reports param expecting false
         run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
@@ -157,7 +135,6 @@ jobs:
     needs:
       - params
     runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
     steps:
       - name: Check reports param expecting true
         run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
