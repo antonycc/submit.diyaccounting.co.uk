@@ -448,11 +448,11 @@ export async function getVatReturn(
       logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
     });
   } else {
-    logger.info(
-      "Skipping fraud prevention header validation for non-sandbox HMRC API request",
+    logger.info({
+      message: "Skipping fraud prevention header validation for HMRC API request",
       hmrcAccount,
       runFraudPreventionHeaderValidation,
-    );
+    });
   }
 
   const hmrcRequestUrl = `/organisations/vat/${vrn}/returns/${periodKey}`;

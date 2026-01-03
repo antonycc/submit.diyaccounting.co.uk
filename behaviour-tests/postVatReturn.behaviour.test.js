@@ -278,34 +278,34 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       testScenario: "INVALID_VRN",
       runFraudPreventionHeaderValidation,
     });
-    // await requestAndVerifySubmitReturn(page, {
-    //   vatNumber: testVatNumber,
-    //   periodKey: generatePeriodKey(),
-    //   vatDue: hmrcVatDueAmount,
-    //   testScenario: "INVALID_PERIODKEY",
-    //   runFraudPreventionHeaderValidation,
-    // });
-    // await requestAndVerifySubmitReturn(page, {
-    //   vatNumber: testVatNumber,
-    //   periodKey: generatePeriodKey(),
-    //   vatDue: hmrcVatDueAmount,
-    //   testScenario: "INVALID_PAYLOAD",
-    //   runFraudPreventionHeaderValidation,
-    // });
-    // await requestAndVerifySubmitReturn(page, {
-    //   vatNumber: testVatNumber,
-    //   periodKey: hmrcVatPeriodKey,
-    //   vatDue: hmrcVatDueAmount,
-    //   testScenario: "DUPLICATE_SUBMISSION",
-    //   runFraudPreventionHeaderValidation,
-    // });
-    // await requestAndVerifySubmitReturn(page, {
-    //   vatNumber: testVatNumber,
-    //   periodKey: generatePeriodKey(),
-    //   vatDue: hmrcVatDueAmount,
-    //   testScenario: "TAX_PERIOD_NOT_ENDED",
-    //   runFraudPreventionHeaderValidation,
-    // });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: generatePeriodKey(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "INVALID_PERIODKEY",
+      runFraudPreventionHeaderValidation,
+    });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: generatePeriodKey(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "INVALID_PAYLOAD",
+      runFraudPreventionHeaderValidation,
+    });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: hmrcVatPeriodKey,
+      vatDue: hmrcVatDueAmount,
+      testScenario: "DUPLICATE_SUBMISSION",
+      runFraudPreventionHeaderValidation,
+    });
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: generatePeriodKey(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "TAX_PERIOD_NOT_ENDED",
+      runFraudPreventionHeaderValidation,
+    });
     // await requestAndVerifySubmitReturn(page, {
     //   vatNumber: testVatNumber,
     //   periodKey: generatePeriodKey(),
