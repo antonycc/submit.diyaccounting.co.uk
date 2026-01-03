@@ -124,15 +124,15 @@ jobs:
           echo "generate-test-reports=${GTR:-true}" >> "$GITHUB_OUTPUT"
           echo "trigger-event=${{ github.event_name }}" >> "$GITHUB_OUTPUT"
 
-      - name: "normalised.environment-name=[${{ steps.normalise.outputs.environment-name }}]"
+      - name: "environment-name: ${{ steps.normalise.outputs.environment-name }}"
         run: ":"
-      - name: "normalised.deployment-name=[${{ steps.normalise.outputs.deployment-name }}]"
+      - name: "deployment-name: ${{ steps.normalise.outputs.deployment-name }}"
         run: ":"
-      - name: "normalised.behaviour-test-suite=[${{ steps.normalise.outputs.behaviour-test-suite }}]"
+      - name: "behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}"
         run: ":"
-      - name: "normalised.generate-test-reports=[${{ steps.normalise.outputs.generate-test-reports }}]"
+      - name: "generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}"
         run: ":"
-      - name: "normalised.trigger-event=[${{ steps.normalise.outputs.trigger-event }}]"
+      - name: "trigger-event: ${{ steps.normalise.outputs.trigger-event }}"
         run: ":"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
@@ -172,7 +172,7 @@ jobs:
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - name: Running behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} - ${{ needs.names.outputs.behaviour-test-suite }}
+      - name: Running behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} - ${{ needs.params.outputs.behaviour-test-suite }}
         run: ":"
 
       - name: "Show needs.params.outputs.generate-test-reports=[${{ needs.params.outputs.generate-test-reports }}]"
@@ -193,7 +193,7 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Run behaviour test
+      - name: Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}
         id: behaviour-test
         if: ${{ !cancelled() }}
         run: |
