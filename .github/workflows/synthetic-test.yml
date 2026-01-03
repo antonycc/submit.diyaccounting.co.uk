@@ -93,7 +93,7 @@ env:
 
 jobs:
 
-  log-and-normalise-params:
+  params:
     runs-on: ubuntu-24.04
     steps:
       - name: "inputs.environment-name=[${{ inputs.environment-name }}] github.event.inputs.environment-name=[${{ github.event.inputs.environment-name }}]"
@@ -142,6 +142,8 @@ jobs:
       trigger-event: ${{ steps.normalise.outputs.trigger-event }}
 
   names:
+    needs:
+      params
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
@@ -151,8 +153,8 @@ jobs:
         id: deployment-config
         uses: './.github/actions/get-names'
         with:
-          environment-name: ${{ github.event.inputs.environment-name || '' }}
-          deployment-name: ${{ github.event.inputs.deployment-name || '' }}
+          environment-name: ${{ needs.params.outputs.environment-name }}
+          deployment-name: ${{ needs.params.outputs.deployment-name }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -162,6 +164,7 @@ jobs:
   behaviour-test:
     name: 'web behaviour test'
     needs:
+      - params
       - names
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.57.0-jammy
@@ -184,7 +187,8 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Run behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }}
+      #- name: Run behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }}
+      - name: Run behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} - ${{ needs.names.outputs.behaviour-test-suite }}
         id: behaviour-test
         if: ${{ !cancelled() }}
         run: |
@@ -252,6 +256,7 @@ jobs:
     if: ${{ !cancelled() }}
     name: 'publish cloudwatch metric'
     needs:
+      - params
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
@@ -294,6 +299,7 @@ jobs:
     if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
     name: 'upload web test results'
     needs:
+      - params
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
@@ -451,6 +457,7 @@ jobs:
     name: 'invalidate CloudFront paths (test/** and docs/**)'
     if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
     needs:
+      - params
       - names
       - upload-web-test-results
     runs-on: ubuntu-24.04
