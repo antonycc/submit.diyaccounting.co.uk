@@ -172,6 +172,12 @@ jobs:
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
+      - name: Running behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} - ${{ needs.names.outputs.behaviour-test-suite }}
+        run: ":"
+
+      - name: "Show needs.params.outputs.generate-test-reports=[${{ needs.params.outputs.generate-test-reports }}]"
+        run: ":"
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -187,8 +193,7 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      #- name: Run behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }}
-      - name: Run behaviour test - ${{ inputs.behaviour-test-suite || 'submitVatBehaviour' }} - ${{ needs.names.outputs.behaviour-test-suite }}
+      - name: Run behaviour test
         id: behaviour-test
         if: ${{ !cancelled() }}
         run: |
@@ -214,7 +219,7 @@ jobs:
           RESULTS_DIR: target/behaviour-test-results
 
       - name: Generate test report JSON files
-        if: ${{ !cancelled() && inputs.generate-test-reports != 'false' && github.event.inputs.generate-test-reports != 'false' }}
+        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports != 'false' }}
         run: |
           echo "Generating test report JSON files from behaviour test results..."
           node scripts/generate-test-reports.js \
