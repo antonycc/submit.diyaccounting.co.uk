@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 // Load the script content and eval it in this context
-const submitJsPath = path.join(process.cwd(), "web/public/submit.js");
+const submitJsPath = path.join(process.cwd(), "web/public/submit.bundle.js");
 const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 
 describe("RUM Configuration", () => {

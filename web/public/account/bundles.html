@@ -88,7 +88,7 @@
       </div>
     </footer>
 
-    <script src="../submit.js"></script>
+    <script src="../submit.bundle.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/bundle-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
@@ -99,14 +99,13 @@
     <script src="../widgets/loading-spinner.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
-
     <script>
       // --- helpers
-      const getIdToken = () => {
+      // Use window.getIdToken from submit.bundle.js with fallback
+      const getLocalIdToken = () => {
         try {
-          return localStorage.getItem("cognitoIdToken");
+          return window.getIdToken ? window.getIdToken() : localStorage.getItem("cognitoIdToken");
         } catch (e) {
-          // In opaque origins (e.g., setContent in tests), localStorage may be inaccessible
           return null;
         }
       };
@@ -121,8 +120,8 @@
         const init = opts.init || {};
         const hasAuthHeader = init.headers && (init.headers.Authorization || init.headers.authorization);
         let res;
-        if (hasAuthHeader && window.fetchWithIdToken) {
-          res = await window.fetchWithIdToken(url, init);
+        if (hasAuthHeader && fetchWithIdToken) {
+          res = await fetchWithIdToken(url, init);
         } else {
           res = await fetch(url, init);
         }
@@ -151,7 +150,7 @@
 
       // Fetch bundles from API endpoint (single source of truth, with lightweight caching)
       const fetchUserBundles = async () => {
-        const idToken = getIdToken();
+        const idToken = getLocalIdToken();
         if (!idToken) {
           __userBundles = [];
           return __userBundles;
@@ -206,10 +205,10 @@
         return __userBundles;
       };
 
-      const hasBundle = (bundles, id) =>
+      const hasBundle = (bundles, bundleId) =>
         (bundles || []).some((b) => {
-          if (typeof b === "string") return b === id;
-          return b?.bundleId === id;
+          const id = typeof b === "string" ? b : b?.bundleId;
+          return id === bundleId || (id && id.startsWith(`${bundleId}|`));
         });
 
       const markToRequest = (btn, message = "Request bundle") => {
@@ -226,7 +225,7 @@
 
       // --- request individual bundle
       async function requestBundle(bundleId, bundleName, qualifiers = {}, fireAndForget = true) {
-        const idToken = getIdToken();
+        const idToken = getLocalIdToken();
         if (!idToken) {
           showStatus("Please log in first to request bundles.", "warning");
           window.location.href = "../auth/login.html";
@@ -234,7 +233,7 @@
         }
 
         try {
-          const r = await window.fetchWithIdToken("/api/v1/bundle", {
+          const r = await fetchWithIdToken("/api/v1/bundle", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -449,7 +448,7 @@
         }
 
         try {
-          const response = await window.fetchWithIdToken("/api/v1/bundle", {
+          const response = await fetchWithIdToken("/api/v1/bundle", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
@@ -495,7 +494,7 @@
         }
 
         try {
-          const response = await window.fetchWithIdToken("/api/v1/bundle", {
+          const response = await fetchWithIdToken("/api/v1/bundle", {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",

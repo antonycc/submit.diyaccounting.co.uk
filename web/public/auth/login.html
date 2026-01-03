@@ -79,7 +79,7 @@
 
     <script src="../lib/env-loader.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
-    <script src="../submit.js"></script>
+    <script src="../submit.bundle.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/status-messages.js"></script>
@@ -110,7 +110,7 @@
         localStorage.removeItem("authState");
 
         // Generate state parameter for security
-        const state = Math.random().toString(36).substring(2, 15);
+        const state = window.generateRandomState ? window.generateRandomState() : Math.random().toString(36).substring(2, 15);
         localStorage.setItem("authState", state);
 
         let authResponseUrl;
@@ -143,7 +143,7 @@
         localStorage.removeItem("authState");
 
         // Generate state parameter for security
-        const state = Math.random().toString(36).substring(2, 15);
+        const state = window.generateRandomState ? window.generateRandomState() : Math.random().toString(36).substring(2, 15);
         localStorage.setItem("authState", state);
 
         // Get OAuth URL

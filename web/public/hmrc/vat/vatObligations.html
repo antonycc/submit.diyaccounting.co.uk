@@ -172,7 +172,7 @@
     <script src="../../lib/env-loader.js"></script>
     <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../lib/test-data-generator.js"></script>
-    <script src="../../submit.js"></script>
+    <script src="../../submit.bundle.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../widgets/hamburger-menu.js"></script>
@@ -481,7 +481,7 @@
         }
       }
 
-      // getAuthUrl is provided globally by submit.js (now supports optional scope)
+      // getAuthUrl is provided globally by submit.bundle.js (now supports optional scope)
 
       function displayObligations(obligations) {
         const tableContainer = document.getElementById("obligationsTable");
