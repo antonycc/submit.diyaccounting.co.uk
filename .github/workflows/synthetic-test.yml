@@ -97,16 +97,11 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
-      - name: Show input flag
-        run: |
-          echo "generate-test-reports: inputs.*=[${{ inputs.generate-test-reports }}] github.event.inputs.*=[${{ github.event.inputs.generate-test-reports }}]"
+      - name: "inputs.generate-test-reports=[${{ inputs.generate-test-reports }}] github.event.inputs.generate-test-reports=[${{ github.event.inputs.generate-test-reports}}]"
+        run: echo
 
-      - name: "generate-test-reports: inputs.*=[${{ inputs.generate-test-reports }}] github.event.inputs.*=[${{ github.event.inputs.generate-test-reports}}]"
-        run: echo "inputs.*=${{ inputs.generate-test-reports }} github.event.inputs.*=${{ github.event.inputs.generate-test-reports}}"
-
-      - name: "behaviour-test-suite: inputs.*=[${{ inputs.behaviour-test-suite }}] github.event.inputs.*=[${{ github.event.inputs.behaviour-test-suite }}]"
-        run: |
-          echo "behaviour-test-suite: inputs.*=[${{ inputs.behaviour-test-suite }}] github.event.inputs.*=[${{ github.event.inputs.behaviour-test-suite }}]"
+      - name: "inputs.behaviour-test-suite=[${{ inputs.behaviour-test-suite }}] github.event.inputs.behaviour-test-suite=[${{ github.event.inputs.behaviour-test-suite }}]"
+        run: echo
 
   names:
     runs-on: ubuntu-24.04
