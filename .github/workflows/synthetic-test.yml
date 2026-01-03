@@ -93,6 +93,21 @@ env:
 
 jobs:
 
+  log-params:
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Show input flag
+        run: |
+          echo "generate-test-reports: inputs.*=[${{ inputs.generate-test-reports }}] github.event.inputs.*=[${{ github.event.inputs.generate-test-reports }}]"
+
+      - name: "generate-test-reports: inputs.*=[${{ inputs.generate-test-reports }}] github.event.inputs.*=[${{ github.event.inputs.generate-test-reports}}]"
+        run: echo "inputs.*=${{ inputs.generate-test-reports }} github.event.inputs.*=${{ github.event.inputs.generate-test-reports}}"
+
+      - name: "behaviour-test-suite: inputs.*=[${{ inputs.behaviour-test-suite }}] github.event.inputs.*=[${{ github.event.inputs.behaviour-test-suite }}]"
+        run: |
+          echo "behaviour-test-suite: inputs.*=[${{ inputs.behaviour-test-suite }}] github.event.inputs.*=[${{ github.event.inputs.behaviour-test-suite }}]"
+
   names:
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -105,9 +120,6 @@ jobs:
         with:
           environment-name: ${{ github.event.inputs.environment-name || '' }}
           deployment-name: ${{ github.event.inputs.deployment-name || '' }}
-      - name: Show input flag
-        run: |
-          echo "generate-test-reports: inputs=[${{ inputs.generate-test-reports }}] github.event.inputs=[${{ github.event.inputs.generate-test-reports || 'true' }}]"
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -187,7 +199,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
-          name: web-test-artifacts-submit-vat-sandbox
+          name: web-test-artifacts
           retention-days: 30
           path: |
             target/behaviour-test-results/
@@ -196,7 +208,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
-          name: web-test-reports-submit-vat-sandbox
+          name: web-test-reports
           retention-days: 30
           path: |
             target/test-reports/
@@ -270,7 +282,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-artifacts-submit-vat-sandbox
+          name: web-test-artifacts
           path: |
             target/behaviour-test-results/submit-vat-sandbox/
 
@@ -285,7 +297,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-reports-submit-vat-sandbox
+          name: web-test-reports
           path: |
             target/test-reports/submit-vat-sandbox/
 
