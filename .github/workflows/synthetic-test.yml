@@ -1,9 +1,8 @@
 name: synthetic-test
 run-name: "synthetic test of ${{ github.ref_name }}"
-concurrency:
-  group: synthetic-test-${{ github.ref_name }}
-  cancel-in-progress: false
-  # TODO: Use the synthetic test like the to delegate the web tests to the synthetic test workflow
+#concurrency:
+#  group: synthetic-test-${{ github.ref_name }}
+#  cancel-in-progress: false
 
 # bump 00
 
@@ -140,6 +139,32 @@ jobs:
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
       generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}
       trigger-event: ${{ steps.normalise.outputs.trigger-event }}
+
+  check-reports-param-false:
+    name: 'check reports param'
+    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'false' }}
+    needs:
+      - params
+      - names
+      - upload-web-test-results
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    steps:
+      - name: Check reports param expecting false
+        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
+
+  check-reports-param-true:
+    name: 'check reports param'
+    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
+    needs:
+      - params
+      - names
+      - upload-web-test-results
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    steps:
+      - name: Check reports param expecting true
+        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
 
   names:
     needs:
