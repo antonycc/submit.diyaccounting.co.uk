@@ -415,9 +415,18 @@ function isRetryableError(error) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function getVatReturn(vrn, periodKey, hmrcAccessToken, govClientHeaders, testScenario, hmrcAccount, auditForUserSub) {
+export async function getVatReturn(
+  vrn,
+  periodKey,
+  hmrcAccessToken,
+  govClientHeaders,
+  testScenario,
+  hmrcAccount,
+  auditForUserSub,
+  runFraudPreventionHeaderValidation = false,
+) {
   // Validate fraud prevention headers for sandbox accounts
-  if (hmrcAccount === "sandbox") {
+  if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
     // This is a fire-and-forget validation that logs results but does not block
     validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
       logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
