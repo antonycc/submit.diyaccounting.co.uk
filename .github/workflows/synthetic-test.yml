@@ -111,8 +111,8 @@ jobs:
         run: |
           echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
-          echo "behaviour-test-suite=${${{ inputs.behaviour-test-suite }}:-submitVatBehaviour}" | tee -a "$GITHUB_OUTPUT"
-          echo "generate-test-reports=${${{ inputs.generate-test-reports }}:-true}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.behaviour-test-suite }}' ; echo "behaviour-test-suite=${X:-submitVatBehaviour}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.generate-test-reports }}' ; echo "generate-test-reports=${X:-true}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
