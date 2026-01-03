@@ -51,7 +51,8 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { vrn, from, to, status, "Gov-Test-Scenario": testScenario } = queryParams;
+  const { vrn, from, to, status, runFraudPreventionHeaderValidation } = queryParams;
+  const { "Gov-Test-Scenario": testScenario } = queryParams;
 
   if (!vrn) errorMessages.push("Missing vrn parameter");
   if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
@@ -80,7 +81,18 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
   }
 
-  return { vrn, from: finalFrom, to: finalTo, status, testScenario, hmrcAccount };
+  const runFraudPreventionHeaderValidationBool =
+    runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
+
+  return {
+    vrn,
+    from: finalFrom,
+    to: finalTo,
+    status,
+    testScenario,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
+  };
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
@@ -127,7 +139,10 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { vrn, from, to, status, testScenario, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
+  const { vrn, from, to, status, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } = extractAndValidateParameters(
+    event,
+    errorMessages,
+  );
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -180,6 +195,7 @@ export async function ingestHandler(event) {
     testScenario: govTestScenarioHeader,
     hmrcAccount,
     userSub,
+    runFraudPreventionHeaderValidation,
   };
 
   const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
@@ -215,6 +231,7 @@ export async function ingestHandler(event) {
             status: payload.status,
           },
           payload.userSub,
+          payload.runFraudPreventionHeaderValidation,
         );
 
         const serializableHmrcResponse = {
@@ -335,6 +352,7 @@ export async function workerHandler(event) {
           status: payload.status,
         },
         payload.userSub,
+        payload.runFraudPreventionHeaderValidation,
       );
 
       const serializableHmrcResponse = {

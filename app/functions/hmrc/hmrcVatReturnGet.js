@@ -52,7 +52,7 @@ export function apiEndpoint(app) {
 export function extractAndValidateParameters(event, errorMessages) {
   const pathParams = event.pathParameters || {};
   const queryParams = event.queryStringParameters || {};
-  const { vrn, periodKey } = { ...pathParams, ...queryParams };
+  const { vrn, periodKey, runFraudPreventionHeaderValidation } = { ...pathParams, ...queryParams };
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
   // Collect validation errors for required fields and formats
@@ -72,7 +72,16 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
   }
 
-  return { vrn, periodKey: normalizedPeriodKey, testScenario, hmrcAccount };
+  const runFraudPreventionHeaderValidationBool =
+    runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
+
+  return {
+    vrn,
+    periodKey: normalizedPeriodKey,
+    testScenario,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
+  };
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
@@ -119,7 +128,10 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { vrn, periodKey, testScenario, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
+  const { vrn, periodKey, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } = extractAndValidateParameters(
+    event,
+    errorMessages,
+  );
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -171,6 +183,7 @@ export async function ingestHandler(event) {
     testScenario: govTestScenarioHeader,
     hmrcAccount,
     userSub,
+    runFraudPreventionHeaderValidation,
   };
 
   const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
@@ -202,6 +215,7 @@ export async function ingestHandler(event) {
           payload.testScenario,
           payload.hmrcAccount,
           payload.userSub,
+          payload.runFraudPreventionHeaderValidation,
         );
 
         const serializableHmrcResponse = {
@@ -318,6 +332,7 @@ export async function workerHandler(event) {
         payload.testScenario,
         payload.hmrcAccount,
         payload.userSub,
+        payload.runFraudPreventionHeaderValidation,
       );
 
       const serializableHmrcResponse = {

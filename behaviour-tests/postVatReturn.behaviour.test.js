@@ -156,9 +156,12 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-async function requestAndVerifySubmitReturn(page, { vatNumber, periodKey, vatDue, testScenario }) {
+async function requestAndVerifySubmitReturn(
+  page,
+  { vatNumber, periodKey, vatDue, testScenario, runFraudPreventionHeaderValidation: runFph = false },
+) {
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, vatNumber, periodKey, vatDue, testScenario, screenshotPath);
+  await fillInVat(page, vatNumber, periodKey, vatDue, testScenario, runFph, screenshotPath);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
@@ -236,7 +239,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* *************************** */
   // First submission: perform HMRC AUTH only this first time
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */

@@ -78,6 +78,16 @@
               <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
             </select>
             <div class="help-text">Test different HMRC sandbox scenarios</div>
+            <div style="margin-top: 10px">
+              <input
+                type="checkbox"
+                id="runFraudPreventionHeaderValidation"
+                name="runFraudPreventionHeaderValidation"
+              />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
           </div>
 
           <button type="submit" id="retrieveBtn" class="btn">View Return</button>
@@ -210,10 +220,15 @@
           if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
           if (pendingRequest.periodKey) document.getElementById("periodKey").value = pendingRequest.periodKey;
           if (pendingRequest.testScenario) document.getElementById("testScenario").value = pendingRequest.testScenario;
+          if (pendingRequest.runFraudPreventionHeaderValidation)
+            document.getElementById("runFraudPreventionHeaderValidation").checked =
+              pendingRequest.runFraudPreventionHeaderValidation;
 
           // Build query parameters
           const params = new URLSearchParams({ vrn: pendingRequest.vrn });
           if (pendingRequest.testScenario) params.append("Gov-Test-Scenario", pendingRequest.testScenario);
+          if (pendingRequest.runFraudPreventionHeaderValidation)
+            params.append("runFraudPreventionHeaderValidation", "true");
 
           // Get Gov-Client headers
           const govClientHeaders = await getGovClientHeaders();
@@ -280,6 +295,8 @@
         const vrn = formData.get("vrn").trim();
         const periodKey = formData.get("periodKey").trim();
         const testScenario = formData.get("testScenario");
+        const runFraudPreventionHeaderValidation =
+          document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
         // Basic validation
         if (!vrn || !periodKey) {
@@ -302,7 +319,12 @@
 
             // Store request parameters and generate state
             const state = generateRandomState();
-            const requestData = { vrn, periodKey, testScenario };
+            const requestData = {
+              vrn,
+              periodKey,
+              testScenario,
+              runFraudPreventionHeaderValidation,
+            };
 
             // Add current activity hmrcAccount header if present in URL
             const urlParams = new URLSearchParams(window.location.search);
@@ -350,6 +372,7 @@
             // Build query parameters
             const params = new URLSearchParams({ vrn });
             if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+            if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
 
             // Get Gov-Client headers
             const govClientHeaders = await getGovClientHeaders();

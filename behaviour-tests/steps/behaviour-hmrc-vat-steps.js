@@ -34,6 +34,7 @@ export async function fillInVat(
   hmrcVatPeriodKey,
   hmrcVatDueAmount,
   testScenario = null,
+  runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
 ) {
   await test.step("The user completes the VAT form with valid values and sees the Submit button", async () => {
@@ -67,10 +68,20 @@ export async function fillInVat(
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
-    if (testScenario) {
-      await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
+        screenshotPath,
+      });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-clicked-options.png` });
-      await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
+          screenshotPath,
+        });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-selected-scenario.png` });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-options-shown.png` });
     }
@@ -260,7 +271,8 @@ export async function initVatObligations(page, screenshotPath = defaultScreensho
 
 export async function fillInVatObligations(page, obligationsQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the VAT obligations form with VRN and date range", async () => {
-    const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario } = obligationsQuery || {};
+    const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario, runFraudPreventionHeaderValidation } =
+      obligationsQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png` });
 
     // Compute a wide date range with likely hits if not provided
@@ -313,12 +325,22 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       await loggedSelectOption(page, "#status", statusValue, "obligations status", { screenshotPath });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
-    if (testScenario) {
-      await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
+        screenshotPath,
+      });
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-obligations-fill-in.png` });
-      await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
+          screenshotPath,
+        });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-obligations-filled-in.png` });
     }
 
@@ -594,6 +616,7 @@ export async function fillInViewVatReturn(
   hmrcTestVatNumber,
   periodKey = DEFAULT_PERIOD_KEY,
   testScenario = null,
+  runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
 ) {
   await test.step("The user fills in the view VAT return form with VRN and period key", async () => {
@@ -622,17 +645,25 @@ export async function fillInViewVatReturn(
     await loggedFill(page, "#periodKey", periodKey, "Entering period key", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-view-vat-fill-in.png` });
 
-    if (testScenario) {
-      await loggedClick(page, `button:has-text('Show Developer Options')`, "Show Developer Options", { screenshotPath });
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
+        screenshotPath,
+      });
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-view-vat-fill-in.png` });
       // Prefer selecting by value; if the caller provided a label, fall back to selecting by label
-      try {
-        await page.selectOption("#testScenario", String(testScenario));
-      } catch (error) {
-        console.log(`Failed to select test scenario ${testScenario} error: ${JSON.stringify(error)}`);
-        await page.selectOption("#testScenario", { label: String(testScenario) });
+      if (testScenario) {
+        try {
+          await page.selectOption("#testScenario", String(testScenario));
+        } catch (error) {
+          console.log(`Failed to select test scenario ${testScenario} error: ${JSON.stringify(error)}`);
+          await page.selectOption("#testScenario", { label: String(testScenario) });
+        }
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-view-vat-filled-in.png` });
     }

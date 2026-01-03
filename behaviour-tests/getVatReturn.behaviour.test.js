@@ -171,7 +171,7 @@ test.afterEach(async ({ page }, testInfo) => {
 
 async function requestAndVerifyViewReturn(page, { vrn, periodKey, testScenario }) {
   await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, vrn, periodKey, testScenario, screenshotPath);
+  await fillInViewVatReturn(page, vrn, periodKey, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
   await submitViewVatReturnForm(page, screenshotPath);
   await verifyViewVatReturnResults(page, testScenario, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
@@ -239,7 +239,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   /* ********************************************** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);

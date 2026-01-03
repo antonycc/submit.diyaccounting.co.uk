@@ -99,6 +99,16 @@
               <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
             </select>
             <div class="help-text">Test different HMRC sandbox error scenarios</div>
+            <div style="margin-top: 10px">
+              <input
+                type="checkbox"
+                id="runFraudPreventionHeaderValidation"
+                name="runFraudPreventionHeaderValidation"
+              />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
           </div>
 
           <button type="submit" class="btn" id="submitBtn">Submit VAT Return</button>
@@ -180,6 +190,8 @@
         const periodKey = formData.get("periodKey").trim();
         const vatDue = formData.get("vatDue");
         const testScenario = (document.getElementById("testScenario")?.value || "").trim();
+        const runFraudPreventionHeaderValidation =
+          document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
         // Basic validation
         if (!vatNumber || !periodKey || !vatDue) {
@@ -203,7 +215,13 @@
 
           // Store submission data and generate state
           const state = generateRandomState();
-          submissionData = { vatNumber, periodKey, vatDue, testScenario };
+          submissionData = {
+            vatNumber,
+            periodKey,
+            vatDue,
+            testScenario,
+            runFraudPreventionHeaderValidation,
+          };
 
           // Add current activity hmrcAccount header if present in URL
           const urlParams = new URLSearchParams(window.location.search);
@@ -300,11 +318,12 @@
       }
 
       async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, accessToken) {
-        const testScenario = (
-          document.getElementById("testScenario")?.value ||
-          JSON.parse(localStorage.getItem("submission_data") || "null")?.testScenario ||
-          ""
-        ).trim();
+        const storedData = JSON.parse(localStorage.getItem("submission_data") || "null");
+        const testScenario = (document.getElementById("testScenario")?.value || storedData?.testScenario || "").trim();
+        const runFraudPreventionHeaderValidation =
+          document.getElementById("runFraudPreventionHeaderValidation")?.checked ||
+          storedData?.runFraudPreventionHeaderValidation ||
+          false;
 
         // Get Gov-Client headers
         const govClientHeaders = await getGovClientHeaders();
@@ -317,16 +336,24 @@
         if (testScenario) {
           requestHeaders["Gov-Test-Scenario"] = testScenario;
         }
-        return await submitVat(vatNumber, periodKey, vatDue, accessToken, requestHeaders);
+        return await submitVat(
+          vatNumber,
+          periodKey,
+          vatDue,
+          accessToken,
+          requestHeaders,
+          runFraudPreventionHeaderValidation,
+        );
       }
 
-      async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers) {
+      async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers, runFraudPreventionHeaderValidation) {
         const url = "/api/v1/hmrc/vat/return";
         const body = JSON.stringify({
           vatNumber,
           periodKey,
           vatDue,
           accessToken,
+          runFraudPreventionHeaderValidation,
         });
         console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 

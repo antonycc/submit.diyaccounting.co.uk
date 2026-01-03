@@ -237,6 +237,14 @@
             "type" : "string",
             "example" : "QUARTERLY_ONE_MET"
           }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "requestBody" : {
           "required" : true,
@@ -394,6 +402,14 @@
             "type" : "string",
             "example" : "QUARTERLY_ONE_MET"
           }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "tags" : [ "HMRC" ],
         "security" : [ {
@@ -438,6 +454,14 @@
           "schema" : {
             "type" : "string",
             "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "tags" : [ "HMRC" ],

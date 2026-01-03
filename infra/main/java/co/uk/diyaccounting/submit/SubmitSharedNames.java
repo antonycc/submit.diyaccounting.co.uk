@@ -559,7 +559,9 @@ public class SubmitSharedNames {
             "Submit VAT return to HMRC",
             "Submits a VAT return to HMRC on behalf of the authenticated user",
             "submitVatReturn",
-            List.of(new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"))));
+            List.of(
+                new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"),
+                new ApiParameter("runFraudPreventionHeaderValidation", "query", false, "When true, validates HMRC Fraud Prevention Headers"))));
 
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
@@ -596,7 +598,8 @@ public class SubmitSharedNames {
                 new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
                 new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
                 new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
-                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                new ApiParameter("runFraudPreventionHeaderValidation", "query", false, "When true, validates HMRC Fraud Prevention Headers"))));
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
@@ -629,7 +632,8 @@ public class SubmitSharedNames {
             List.of(
                 new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
                 new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
-                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"))));
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                new ApiParameter("runFraudPreventionHeaderValidation", "query", false, "When true, validates HMRC Fraud Prevention Headers"))));
 
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
         this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
