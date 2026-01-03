@@ -145,8 +145,6 @@ jobs:
     if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'false' }}
     needs:
       - params
-      - names
-      - upload-web-test-results
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
@@ -158,8 +156,6 @@ jobs:
     if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
     needs:
       - params
-      - names
-      - upload-web-test-results
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
