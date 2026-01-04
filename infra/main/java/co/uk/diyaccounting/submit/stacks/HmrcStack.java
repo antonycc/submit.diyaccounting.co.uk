@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
@@ -10,7 +7,6 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -24,6 +20,11 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -171,8 +172,7 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
@@ -232,6 +232,7 @@ public class HmrcStack extends Stack {
                     sandboxSecretArnWithWildcard);
         }
 
+
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -240,9 +241,7 @@ public class HmrcStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
-                .with(
-                        "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatReturnPostAsyncRequestsTable.getTableName());
+                .with("HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME", hmrcVatReturnPostAsyncRequestsTable.getTableName());
         var submitVatLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -253,14 +252,12 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatReturnPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .workerFunctionName(props.sharedNames().hmrcVatReturnPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatReturnPostLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnPostLambdaDeadLetterQueueName)
                         .workerReservedConcurrency(2)
@@ -288,14 +285,15 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler);
 
         // Grant the VAT submission Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda)
-                .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    receiptsTable.grantWriteData(fn);
-                    hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
-                });
-        infof("Granted DynamoDB permissions to %s and its worker", this.hmrcVatReturnPostLambda.getFunctionName());
+        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            receiptsTable.grantWriteData(fn);
+            hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
+        });
+        infof(
+                "Granted DynamoDB permissions to %s and its worker",
+                this.hmrcVatReturnPostLambda.getFunctionName());
 
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
@@ -304,9 +302,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with(
-                        "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatObligationGetAsyncRequestsTable.getTableName());
+                .with("HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcVatObligationGetAsyncRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -317,13 +313,11 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatObligationGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatObligationGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcVatObligationGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatObligationGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatObligationGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
@@ -352,13 +346,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler);
 
         // Grant the VAT obligations Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.workerLambda)
-                .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
-                });
-        infof("Granted DynamoDB permissions to %s and its worker", this.hmrcVatObligationGetLambda.getFunctionName());
+        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
+        });
+        infof(
+                "Granted DynamoDB permissions to %s and its worker",
+                this.hmrcVatObligationGetLambda.getFunctionName());
 
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
@@ -367,9 +362,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with(
-                        "HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatReturnGetAsyncRequestsTable.getTableName());
+                .with("HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcVatReturnGetAsyncRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -380,13 +373,11 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatReturnGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcVatReturnGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatReturnGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnGetLambdaDeadLetterQueueName)
                         .workerReservedConcurrency(2)
@@ -414,13 +405,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler);
 
         // Grant the VAT return retrieval Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.workerLambda)
-                .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
-                });
-        infof("Granted DynamoDB permissions to %s and its worker", this.hmrcVatReturnGetLambda.getFunctionName());
+        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
+        });
+        infof(
+                "Granted DynamoDB permissions to %s and its worker",
+                this.hmrcVatReturnGetLambda.getFunctionName());
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
@@ -437,8 +429,7 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
@@ -459,8 +450,7 @@ public class HmrcStack extends Stack {
                 .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
                 .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
                 .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
-                .ingestProvisionedConcurrencyAliasArn(
-                        props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
                 .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                 .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)

@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.constructs;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-
-import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
@@ -26,6 +23,10 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.MetricFilter;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class Lambda {
 
@@ -90,7 +91,8 @@ public class Lambda {
         this.ingestLambda = dockerFunctionBuilder.build();
         infof("Created Lambda %s with function %s", this.ingestLambda.getNode().getId(), this.ingestLambda.toString());
 
-        this.ingestLambdaVersion = Version.Builder.create(scope, props.idPrefix() + "-ingest-version")
+        this.ingestLambdaVersion =
+            Version.Builder.create(scope, props.idPrefix() + "-ingest-version")
                 .lambda(this.ingestLambda)
                 .description("Created for PC setting in alias")
                 .removalPolicy(RemovalPolicy.RETAIN)
@@ -101,17 +103,12 @@ public class Lambda {
         //   Prevents stack delete deadlocks
         //   AWS themselves recommend this for PC-heavy setups (quietly)
         this.ingestLambdaAlias = Alias.Builder.create(scope, props.idPrefix() + "-ingest-alias")
-                .aliasName(props.provisionedConcurrencyAliasName())
-                .version(this.ingestLambdaVersion)
-                .provisionedConcurrentExecutions(props.ingestProvisionedConcurrency())
-                .build();
-        this.ingestLambdaAliasArn =
-                "%s:%s".formatted(this.ingestLambda.getFunctionArn(), this.ingestLambdaAlias.getAliasName());
-        infof(
-                "Created ingest Lambda alias %s for version %s with arn %s",
-                this.ingestLambdaAlias.getAliasName(),
-                this.ingestLambdaVersion.getVersion(),
-                props.ingestProvisionedConcurrencyAliasArn());
+            .aliasName(props.provisionedConcurrencyAliasName())
+            .version(this.ingestLambdaVersion)
+            .provisionedConcurrentExecutions(props.ingestProvisionedConcurrency())
+            .build();
+        this.ingestLambdaAliasArn = "%s:%s".formatted(this.ingestLambda.getFunctionArn(), this.ingestLambdaAlias.getAliasName());
+        infof("Created ingest Lambda alias %s for version %s with arn %s", this.ingestLambdaAlias.getAliasName(), this.ingestLambdaVersion.getVersion(), props.ingestProvisionedConcurrencyAliasArn());
 
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period
@@ -160,8 +157,7 @@ public class Lambda {
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription(
-                        "Lambda p95 duration >= 80% of timeout for function " + this.ingestLambda.getFunctionName())
+                .alarmDescription("Lambda p95 duration >= 80% of timeout for function " + this.ingestLambda.getFunctionName())
                 .build();
 
         // 4) Log-based error detection using a CloudWatch Logs Metric Filter

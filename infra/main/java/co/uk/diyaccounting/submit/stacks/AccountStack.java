@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
@@ -10,7 +7,6 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -24,6 +20,11 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AccountStack extends Stack {
 
@@ -131,8 +132,7 @@ public class AccountStack extends Stack {
                         .ingestFunctionName(props.sharedNames().bundleGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().bundleGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().bundleGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundleGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundleGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
@@ -148,7 +148,8 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.bundleGetLambdaProps);
         infof(
                 "Created Async API Lambda %s for get bundles with ingestHandler %s",
-                this.bundleGetLambda.getNode().getId(), props.sharedNames().bundleGetIngestLambdaHandler);
+                this.bundleGetLambda.getNode().getId(),
+                props.sharedNames().bundleGetIngestLambdaHandler);
 
         // Grant the GetBundlesLambda permission to access Cognito User Pool
         var getBundlesLambdaGrantPrincipal = this.bundleGetLambda.getGrantPrincipal();
@@ -186,13 +187,11 @@ public class AccountStack extends Stack {
                         .ingestFunctionName(props.sharedNames().bundlePostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().bundlePostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().bundlePostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundlePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundlePostIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().bundlePostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().bundlePostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().bundlePostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundlePostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().bundlePostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().bundlePostLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().bundlePostLambdaDeadLetterQueueName)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -235,7 +234,9 @@ public class AccountStack extends Stack {
             bundlePostAsyncRequestsTable.grantReadWriteData(fn);
         });
 
-        infof("Granted Cognito and DynamoDB permissions to %s and its worker", this.bundlePostLambda.getFunctionName());
+        infof(
+                "Granted Cognito and DynamoDB permissions to %s and its worker",
+                this.bundlePostLambda.getFunctionName());
 
         // Delete Bundles Lambda
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
@@ -253,13 +254,11 @@ public class AccountStack extends Stack {
                         .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().bundleDeleteWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().bundleDeleteWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().bundleDeleteWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().bundleDeleteLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().bundleDeleteLambdaDeadLetterQueueName)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -287,13 +286,11 @@ public class AccountStack extends Stack {
                 .ingestFunctionName(props.sharedNames().bundleDeleteIngestLambdaFunctionName)
                 .ingestHandler(props.sharedNames().bundleDeleteIngestLambdaHandler)
                 .ingestLambdaArn(props.sharedNames().bundleDeleteIngestLambdaArn)
-                .ingestProvisionedConcurrencyAliasArn(
-                        props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                .ingestProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                 .workerFunctionName(props.sharedNames().bundleDeleteWorkerLambdaFunctionName)
                 .workerHandler(props.sharedNames().bundleDeleteWorkerLambdaHandler)
                 .workerLambdaArn(props.sharedNames().bundleDeleteWorkerLambdaArn)
-                .workerProvisionedConcurrencyAliasArn(
-                        props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
+                .workerProvisionedConcurrencyAliasArn(props.sharedNames().bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
                 .workerQueueName(props.sharedNames().bundleDeleteLambdaQueueName)
                 .workerDeadLetterQueueName(props.sharedNames().bundleDeleteLambdaDeadLetterQueueName)
                 .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
