@@ -5,8 +5,8 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Load the script content and eval it in this context to populate window.* functions via happy-dom
-const submitJsPath = path.join(process.cwd(), "web/public/submit.js");
+// Load the bundled script content (for tests) and eval it to populate window.* functions via happy-dom
+const submitJsPath = path.join(process.cwd(), "web/public/submit.bundle.js");
 const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 
 // Node-safe base64url encoding for JWT payloads

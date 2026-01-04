@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-// Load the script content and eval it in this context to populate window.* functions
-const submitJsPath = path.join(process.cwd(), "web/public/submit.js");
+// Load the bundled script content (for tests) and eval it to populate window.* functions
+const submitJsPath = path.join(process.cwd(), "web/public/submit.bundle.js");
 const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 
 describe("fetchWithIdToken polling", () => {

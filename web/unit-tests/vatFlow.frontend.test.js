@@ -81,8 +81,8 @@ describe("VAT Flow Frontend JavaScript", () => {
     // Load the HTML content
     document.documentElement.innerHTML = htmlContent;
 
-    // Load and execute submit.js first
-    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
+    // Load and execute submit.bundle.js first (bundled version for tests)
+    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.bundle.js"), "utf-8");
     const submitScript = document.createElement("script");
     submitScript.textContent = submitJsContent;
     document.head.appendChild(submitScript);
