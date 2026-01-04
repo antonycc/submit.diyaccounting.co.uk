@@ -2205,8 +2205,10 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'submitVatBehaviour'
       generate-test-reports: 'false'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-#  web-test-submit-vat-sandbox:
+  #  web-test-submit-vat-sandbox:
 #    if: ${{ !cancelled() }}
 #    name: 'web test submit vat sandbox'
 #    needs:
