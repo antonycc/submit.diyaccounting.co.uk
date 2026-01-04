@@ -1,12 +1,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Environment;
@@ -47,6 +41,13 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class EdgeStack extends Stack {
 
@@ -314,8 +315,8 @@ public class EdgeStack extends Stack {
                 .compress(true)
                 .build();
 
-        // Create custom cache policy for test reports with short TTL
-        CachePolicy testsCachePolicy = CachePolicy.Builder.create(this, props.resourceNamePrefix() + "-TestsCP")
+        // Create a custom cache policy for test reports and docs with short TTL
+        CachePolicy testsAndDocsCachePolicy = CachePolicy.Builder.create(this, props.resourceNamePrefix() + "-TestsCP")
                 .cachePolicyName(props.resourceNamePrefix() + "-tests-cp")
                 .comment("Short TTL cache policy for test reports and results")
                 .minTtl(software.amazon.awscdk.Duration.seconds(0))
@@ -323,14 +324,14 @@ public class EdgeStack extends Stack {
                 .maxTtl(software.amazon.awscdk.Duration.seconds(300))
                 .build();
 
-        // Behavior options for /tests/* paths with short TTL
-        BehaviorOptions testsBehaviorOptions = BehaviorOptions.builder()
+        // Behaviour options for /tests/* and /docs/* paths with short TTL
+        BehaviorOptions testsAndDocsBehaviorOptions = BehaviorOptions.builder()
                 .origin(localOrigin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
                 .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(webResponseHeadersPolicy)
-                .cachePolicy(testsCachePolicy)
+                .cachePolicy(testsAndDocsCachePolicy)
                 .compress(true)
                 .build();
 
@@ -341,9 +342,11 @@ public class EdgeStack extends Stack {
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
 
-        // Add behavior for /tests/* with short TTL cache policy
-        additionalBehaviors.put("/tests/*", testsBehaviorOptions);
+        // Add behaviour for /tests/* and /docs/* with short TTL cache policy
+        additionalBehaviors.put("/tests/*", testsAndDocsBehaviorOptions);
         infof("Added /tests/* behavior with short TTL cache policy");
+        additionalBehaviors.put("/docs/*", testsAndDocsBehaviorOptions);
+        infof("Added /docs/* behavior with short TTL cache policy");
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")

@@ -1,4 +1,4 @@
-// behaviour-tests/postVatReturnFPH.behaviour.test.js
+// behaviour-tests/postVatReturnFraudPreventionHeaders.behaviour.test.js
 // Simplified test to verify HMRC fraud prevention headers compliance
 
 import { test } from "./helpers/playwrightTestWithout.js";

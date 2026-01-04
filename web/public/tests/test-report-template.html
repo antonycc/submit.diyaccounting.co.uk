@@ -402,7 +402,7 @@
         // Set Playwright link (validate test name)
         const playwrightLink = document.getElementById("playwrightLink");
         if (/^[a-zA-Z0-9_-]+$/.test(report.testName)) {
-          playwrightLink.href = `${report.testName}/html-report/index.html`;
+          playwrightLink.href = `test-reports/${report.testName}/html-report/index.html`;
         } else {
           playwrightLink.href = "#";
           playwrightLink.style.display = "none";

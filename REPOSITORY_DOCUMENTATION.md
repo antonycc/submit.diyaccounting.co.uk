@@ -258,24 +258,24 @@ Behaviour tests use Playwright to test complete user journeys against running in
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `test:behaviour` | `playwright test --project=behaviour-tests` | **All behaviour tests**: Runs all Playwright behaviour tests |
-| `test:behaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:behaviour` | **Behaviour tests (local proxy)**: Tests against local ngrok + mock OAuth2 |
-| `test:behaviour-proxy-sandbox` | `HMRC_ACCOUNT=sandbox npx dotenv -e .env.proxy -- npm run test:behaviour` | **Behaviour tests (proxy + HMRC sandbox)**: Tests against local setup with HMRC sandbox API |
+| `test:allBehaviour` | `playwright test --project=behaviour-tests` | **All behaviour tests**: Runs all Playwright behaviour tests |
+| `test:allBehaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:allBehaviour` | **Behaviour tests (local proxy)**: Tests against local ngrok + mock OAuth2 |
+| `test:allBehaviour-proxy-sandbox` | `HMRC_ACCOUNT=sandbox npx dotenv -e .env.proxy -- npm run test:allBehaviour` | **Behaviour tests (proxy + HMRC sandbox)**: Tests against local setup with HMRC sandbox API |
 | **Bundle Tests** | | |
-| `test:bundleBehaviour` | `playwright test --project=bundle-behaviour-tests` | **Bundle journey tests**: Tests bundle/entitlement workflows |
+| `test:bundleBehaviour` | `playwright test --project=bundleBehaviour` | **Bundle journey tests**: Tests bundle/entitlement workflows |
 | `test:bundleBehaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:bundleBehaviour` | Tests bundle flows locally with mock data |
 | `test:bundleBehaviour-proxy-record` | `TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:bundleBehaviour` | Records HTTP interactions to WireMock |
 | `test:bundleBehaviour-proxy-mock` | `TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:bundleBehaviour` | Replays recorded HTTP interactions |
 | `test:bundleBehaviour-ci` | `npx dotenv -e .env.ci -- npm run test:bundleBehaviour` | Tests against CI environment |
 | `test:bundleBehaviour-prod` | `npx dotenv -e .env.prod -- npm run test:bundleBehaviour` | Tests against production environment |
 | **VAT Obligation Tests** | | |
-| `test:obligationBehaviour` | `playwright test --project=obligation-behaviour-tests` | **VAT obligation journey tests**: Tests retrieving VAT obligations |
-| `test:obligationBehaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:obligationBehaviour ; npm run test-report ...` | Tests locally and generates HTML report |
-| `test:obligationBehaviour-proxy-sandbox` | `HMRC_ACCOUNT=sandbox npm run test:obligationBehaviour-proxy` | Tests with HMRC sandbox API |
-| `test:obligationBehaviour-ci` | `npx dotenv -e .env.ci -- npm run test:obligationBehaviour` | Tests against CI environment |
-| `test:obligationBehaviour-prod` | `npx dotenv -e .env.prod -- npm run test:obligationBehaviour` | Tests against production |
+| `test:getVatObligationsBehaviour` | `playwright test --project=getVatObligationsBehaviour` | **VAT obligation journey tests**: Tests retrieving VAT obligations |
+| `test:getVatObligationsBehaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:getVatObligationsBehaviour ; npm run test-report ...` | Tests locally and generates HTML report |
+| `test:getVatObligationsBehaviour-proxy-sandbox` | `HMRC_ACCOUNT=sandbox npm run test:getVatObligationsBehaviour-proxy` | Tests with HMRC sandbox API |
+| `test:getVatObligationsBehaviour-ci` | `npx dotenv -e .env.ci -- npm run test:getVatObligationsBehaviour` | Tests against CI environment |
+| `test:getVatObligationsBehaviour-prod` | `npx dotenv -e .env.prod -- npm run test:getVatObligationsBehaviour` | Tests against production |
 | **VAT Submission Tests** | | |
-| `test:submitVatBehaviour` | `playwright test --project=submit-vat-behaviour-tests` | **VAT submission journey tests**: Tests full VAT return submission |
+| `test:submitVatBehaviour` | `playwright test --project=submitVatBehaviour` | **VAT submission journey tests**: Tests full VAT return submission |
 | `test:submitVatBehaviour-proxy` | `npx dotenv -e .env.proxy -- npm run test:submitVatBehaviour` | Tests submission locally |
 | `test:submitVatBehaviour-proxy-sandbox` | `HMRC_ACCOUNT=sandbox npm run test:submitVatBehaviour-proxy` | Tests submission with HMRC sandbox |
 | `test:submitVatBehaviour-proxyRunning` | `npx dotenv -e .env.proxyRunning -- npm run test:submitVatBehaviour` | Tests against already-running services |
@@ -286,7 +286,7 @@ Behaviour tests use Playwright to test complete user journeys against running in
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `test:all` | `vitest ... && npm run test:browser && npm run test:behaviour-proxy && git restore ...` | **All tests**: Runs unit, system, browser, and behaviour tests |
+| `test:all` | `vitest ... && npm run test:browser && npm run test:allBehaviour-proxy && git restore ...` | **All tests**: Runs unit, system, browser, and behaviour tests |
 | `everything` | `time sh -c 'rm -rf ... && npm install && npm test && ... npm run cdk && ...'` | **Complete validation**: Full clean build, all tests, Docker build, CDK synth for CI and prod |
 
 ### CDK Scripts
@@ -1489,11 +1489,11 @@ OAuth Callback: https://wanted-finally-anteater.ngrok-free.app/auth/loginWithMoc
 **Running Tests Against Local Server**:
 ```bash
 # Behaviour tests (full end-to-end)
-npm run test:behaviour-proxy
+npm run test:allBehaviour-proxy
 
 # Specific behaviour tests
 npm run test:bundleBehaviour-proxy
-npm run test:obligationBehaviour-proxy-sandbox
+npm run test:getVatObligationsBehaviour-proxy-sandbox
 npm run test:submitVatBehaviour-proxy-sandbox
 ```
 

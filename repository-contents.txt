@@ -261,7 +261,7 @@
 ./behaviour-tests/submitVat.behaviour.test.js
 ./behaviour-tests/postVatReturn.behaviour.test.js
 ./behaviour-tests/getVatObligations.behaviour.test.js
-./behaviour-tests/postVatReturnFPH.behaviour.test.js
+./behaviour-tests/postVatReturnFraudPreventionHeaders.behaviour.test.js
 ./behaviour-tests/helpers/wiremock-helper.js
 ./behaviour-tests/helpers/figures-helper.js
 ./behaviour-tests/helpers/dynamodb-export.js
