@@ -797,11 +797,11 @@ async function executeAsyncRequestPolling(res, input, init, currentHeaders) {
   // 1. Set dynamic timeout based on request type
   let timeoutMs = 60000; // Default changed from 90s to 60s
   if (urlPath.includes("/hmrc/vat/return") && method === "POST") {
-    timeoutMs = 960000; // 3 x 320s (Submit VAT)
+    // timeoutMs = 1_630_000; // 90s + 3 x 300s (Submit VAT) + 2 x 320s (visibility)
+    timeoutMs = 120_000;
   } else if (urlPath.includes("/hmrc/vat/obligation") || (urlPath.includes("/hmrc/vat/return") && method === "GET")) {
-    timeoutMs = 420000; // 3 x 140s (Get VAT and Obligations)
+    timeoutMs = 730_000; // 90s + 3 x 120s (Get VAT and Obligations) + 2 x 140s (visibility)
   }
-
   console.log(`waiting async request ${requestDesc} (timeout: ${timeoutMs}ms)...`);
   const requestId = res.headers.get("x-request-id");
   if (requestId) {

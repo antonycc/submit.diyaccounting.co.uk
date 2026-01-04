@@ -119,25 +119,25 @@ jobs:
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
       generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}
 
-  check-reports-param-false:
-    name: 'check reports param expecting false'
-    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'false' }}
-    needs:
-      - params
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Check reports param expecting false
-        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
-
-  check-reports-param-true:
-    name: 'check reports param expecting true'
-    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
-    needs:
-      - params
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Check reports param expecting true
-        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
+#  check-reports-param-false:
+#    name: 'check reports param expecting false'
+#    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'false' }}
+#    needs:
+#      - params
+#    runs-on: ubuntu-24.04
+#    steps:
+#      - name: Check reports param expecting false
+#        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
+#
+#  check-reports-param-true:
+#    name: 'check reports param expecting true'
+#    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
+#    needs:
+#      - params
+#    runs-on: ubuntu-24.04
+#    steps:
+#      - name: Check reports param expecting true
+#        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
 
   names:
     needs:
@@ -147,12 +147,60 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: If main, read back last known good prod deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
+        run: |
+          PARAMETER_NAME="/submit/prod/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+
+      - name: If not main, read back last known good ci deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref != 'refs/heads/main' }}
+        run: |
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+
+      - name: If last-known-good-deployment set use that otherwise use current deployment name
+        id: deployment-name
+        run: |
+            if [ -s /tmp/last_known_good_deployment.txt ]; then
+                echo "Using last known good deployment from SSM Parameter Store"
+                echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
+            else
+                echo "No last known good deployment found, using current deployment name"
+                echo "deployment-name=${{ needs.params.outputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
+            fi
+
       - name: Compute environment name and apex URL
         id: deployment-config
         uses: './.github/actions/get-names'
         with:
           environment-name: ${{ needs.params.outputs.environment-name }}
-          deployment-name: ${{ needs.params.outputs.deployment-name }}
+          deployment-name: ${{ steps.deployment-name.outputs.deployment-name }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -456,55 +504,55 @@ jobs:
           cat target/behaviour-test-results/test-reports-index.txt
           aws s3 cp target/behaviour-test-results/test-reports-index.txt s3://${BUCKET_NAME?}/tests/
 
-  invalidate-cloudfront:
-    name: 'invalidate CloudFront paths (test/** and docs/**)'
-    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
-    needs:
-      - params
-      - names
-      - upload-web-test-results
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
-    steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Invalidate CloudFront paths
-        env:
-          STACK_NAME: ${{ needs.names.outputs.deployment-name }}-app-EdgeStack
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Looking up CloudFront DistributionId from stack: ${STACK_NAME?} (us-east-1)"
-          DIST_ID=$(aws cloudformation describe-stacks --region us-east-1 --stack-name "${STACK_NAME?}" \
-            --query "Stacks[0].Outputs[?OutputKey==\`DistributionId\`].OutputValue" --output text)
-          if [ -z "${DIST_ID}" ] || [ "${DIST_ID}" = "None" ]; then
-            echo "ERROR: Could not resolve DistributionId output from stack ${STACK_NAME}" >&2
-            exit 1
-          fi
-          echo "Found DistributionId: ${DIST_ID}"
-          CALLER_REF="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(date -u +%s)"
-          echo "Creating invalidation for paths: /tests/*, /docs/* with caller-ref ${CALLER_REF}"
-          aws cloudfront create-invalidation --region us-east-1 \
-            --distribution-id "${DIST_ID}" \
-            --paths "/tests/*" "/docs/*" \
-          ;
+#  invalidate-cloudfront:
+#    name: 'invalidate CloudFront paths (test/** and docs/**)'
+#    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
+#    needs:
+#      - params
+#      - names
+#      - upload-web-test-results
+#    runs-on: ubuntu-24.04
+#    environment: ${{ needs.names.outputs.environment-name }}
+#    steps:
+#      - name: Configure AWS role via GitHub OIDC
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Invalidate CloudFront paths
+#        env:
+#          STACK_NAME: ${{ needs.names.outputs.deployment-name }}-app-EdgeStack
+#        shell: bash
+#        run: |
+#          set -euo pipefail
+#          echo "Looking up CloudFront DistributionId from stack: ${STACK_NAME?} (us-east-1)"
+#          DIST_ID=$(aws cloudformation describe-stacks --region us-east-1 --stack-name "${STACK_NAME?}" \
+#            --query "Stacks[0].Outputs[?OutputKey==\`DistributionId\`].OutputValue" --output text)
+#          if [ -z "${DIST_ID}" ] || [ "${DIST_ID}" = "None" ]; then
+#            echo "ERROR: Could not resolve DistributionId output from stack ${STACK_NAME}" >&2
+#            exit 1
+#          fi
+#          echo "Found DistributionId: ${DIST_ID}"
+#          CALLER_REF="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(date -u +%s)"
+#          echo "Creating invalidation for paths: /tests/*, /docs/* with caller-ref ${CALLER_REF}"
+#          aws cloudfront create-invalidation --region us-east-1 \
+#            --distribution-id "${DIST_ID}" \
+#            --paths "/tests/*" "/docs/*" \
+#          ;
