@@ -3216,7 +3216,7 @@ jobs:
     name: 'set last known good deployment'
     needs:
       - names
-      - web-test-submit-vat-sandbox
+      - web-test
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
