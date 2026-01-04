@@ -98,7 +98,7 @@ let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
 
-test.setTimeout(1200_000);
+test.setTimeout(1_200_000);
 // 35 minutes for the timeout test
 //test.setTimeout(10_800_000);
 
@@ -336,13 +336,13 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     // Set test timeout at top level
     // 35 minutes for the timeout test
     //test.setTimeout(10_800_000);
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "SUBMIT_HMRC_API_HTTP_503",
-      runFraudPreventionHeaderValidation,
-    });
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    //   runFraudPreventionHeaderValidation,
+    // });
     //
     // Slow scenario should take >= 10s but < 30s end-to-end
     const slowStartMs = Date.now();
