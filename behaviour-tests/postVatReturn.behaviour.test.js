@@ -333,6 +333,9 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     });
     // VERY EXPENSIVE: Triggers after 1 HTTP 503, this triggers 2 retries (visibility delay 320s), so 27+ minutes to dlq
     // with a client timeout  = 1_630_000; // 90s + 3 x 300s (Submit VAT) + 2 x 320s (visibility)
+    // Set test timeout at top level
+    // 35 minutes for the timeout test
+    //test.setTimeout(10_800_000);
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
       periodKey: generatePeriodKey(),
@@ -341,24 +344,24 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       runFraudPreventionHeaderValidation,
     });
     //
-    // // Slow scenario should take >= 10s but < 30s end-to-end
-    // const slowStartMs = Date.now();
-    // await requestAndVerifySubmitReturn(page, {
-    //   vatNumber: testVatNumber,
-    //   periodKey: generatePeriodKey(),
-    //   vatDue: hmrcVatDueAmount,
-    //   testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
-    //   runFraudPreventionHeaderValidation,
-    // });
-    // const slowElapsedMs = Date.now() - slowStartMs;
-    // expect(
-    //   slowElapsedMs,
-    //   `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
-    // ).toBeGreaterThanOrEqual(5_000);
-    // expect(
-    //   slowElapsedMs,
-    //   `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
-    // ).toBeLessThan(60_000);
+    // Slow scenario should take >= 10s but < 30s end-to-end
+    const slowStartMs = Date.now();
+    await requestAndVerifySubmitReturn(page, {
+      vatNumber: testVatNumber,
+      periodKey: generatePeriodKey(),
+      vatDue: hmrcVatDueAmount,
+      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+      runFraudPreventionHeaderValidation,
+    });
+    const slowElapsedMs = Date.now() - slowStartMs;
+    expect(
+      slowElapsedMs,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    ).toBeGreaterThanOrEqual(5_000);
+    expect(
+      slowElapsedMs,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    ).toBeLessThan(60_000);
   }
 
   /* ****************** */

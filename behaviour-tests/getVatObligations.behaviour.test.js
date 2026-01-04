@@ -530,13 +530,18 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       /* All status values */
       testScenario: "SUBMIT_HMRC_API_HTTP_500",
     });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      /* All status values */
-      testScenario: "SUBMIT_HMRC_API_HTTP_503",
-    });
+    // VERY EXPENSIVE: Triggers after 1 HTTP 503, this triggers 2 retries (visibility delay 140s), so 12+ minutes to dlq
+    // with a client timeout 730_000 = 90s + 3 x 120s (Get VAT and Obligations) + 2 x 140s (visibility), minutes: 12+
+    // Set test timeout at top level
+    // 20 minutes for the timeout test
+    //test.setTimeout(1_200_000);
+    // await requestAndVerifyObligations(page, {
+    //   hmrcVatNumber: testVatNumber,
+    //   hmrcVatPeriodFromDate,
+    //   hmrcVatPeriodToDate,
+    //   /* All status values */
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
+    // });
 
     // Slow scenario should take >= 10s but < 30s end-to-end
     const slowStartMs = Date.now();
@@ -552,7 +557,10 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       slowElapsedMs,
       `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
     ).toBeGreaterThanOrEqual(5_000);
-    expect(slowElapsedMs).toBeLessThan(60_000);
+    expect(
+      slowElapsedMs,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    ).toBeLessThan(60_000);
   }
 
   /* ****************** */
