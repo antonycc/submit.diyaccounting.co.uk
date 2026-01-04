@@ -19,7 +19,13 @@ cat "web/public/tests/test-report-${targetTest?}.json" \
 | while read -r screenshotFilename; do
   screenshotPath=$(find "${reportDir?}" -name "${screenshotFilename?}" | head -1)
   # fullPath="${reportDir?}/${screenshotPath?}"
-  cp -v "${screenshotPath?}" "${targetTestDir?}"
+  # Strip the volatile part of the file name from the screenshot filename,
+  # e.g. 2026-01-04_17-54-34-236753738-10-fill-in-submission-pagedown.png -> 10-fill-in-submission-pagedown.png
+  cleanScreenshotFilename=${screenshotFilename##*[0-9][0-9]-}
+  echo "Cleaned from ${screenshotFilename?} to ${cleanScreenshotFilename?}"
+  cp -v "${screenshotPath?}" "${targetTestDir?}/${cleanScreenshotFilename?}"
+  # Clean the screenshot name in the report
+  sed -i '' "s/${screenshotFilename?}/${cleanScreenshotFilename?}/g" "web/public/tests/test-report-${targetTest?}.json"
 done
 # If sourceTestName is not the same as targetTest, then replace occurrences of sourceTestName in web/public/tests/test-report-web-test-local.json with targetTest
 if [[ "${sourceTestName?}" != "${targetTest?}" ]]; then
