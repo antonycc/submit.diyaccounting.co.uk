@@ -1,12 +1,38 @@
 // app/functions/selfDestruct.js
 
-import { CloudFormationClient, DeleteStackCommand, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
-import { S3Client, ListObjectsV2Command, DeleteObjectsCommand, GetBucketLocationCommand } from "@aws-sdk/client-s3";
+
+let cloudFormationClient = null;
+let cloudFormationClientUE1 = null;
+let s3Client = null;
+
+async function getCloudFormationClient(region = "eu-west-2") {
+  if (region === "us-east-1") {
+    if (!cloudFormationClientUE1) {
+      const { CloudFormationClient } = await import("@aws-sdk/client-cloudformation");
+      cloudFormationClientUE1 = new CloudFormationClient({ region: "us-east-1" });
+    }
+    return cloudFormationClientUE1;
+  } else {
+    if (!cloudFormationClient) {
+      const { CloudFormationClient } = await import("@aws-sdk/client-cloudformation");
+      cloudFormationClient = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });
+    }
+    return cloudFormationClient;
+  }
+}
+
+async function getS3Client() {
+  if (!s3Client) {
+    const { S3Client } = await import("@aws-sdk/client-s3");
+    s3Client = new S3Client({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return s3Client;
+}
 
 export async function ingestHandler(event, context) {
-  const client = new CloudFormationClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  const clientUE1 = new CloudFormationClient({ region: "us-east-1" });
+  const client = await getCloudFormationClient();
+  const clientUE1 = await getCloudFormationClient("us-east-1");
 
   // Ensure context has a fallback for getRemainingTimeInMillis
   const safeContext = {
@@ -109,6 +135,8 @@ export async function ingestHandler(event, context) {
 
 async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDestruct = false) {
   // Check if a stack exists
+  const { DescribeStacksCommand, DeleteStackCommand } = await import("@aws-sdk/client-cloudformation");
+  
   try {
     await client.send(new DescribeStacksCommand({ StackName: stackName }));
   } catch (error) {
@@ -154,6 +182,7 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
     }
 
     try {
+      const { DescribeStacksCommand } = await import("@aws-sdk/client-cloudformation");
       await client.send(new DescribeStacksCommand({ StackName: stackName }));
       console.log(`Stack ${stackName} still exists, waiting...`);
     } catch (error) {
@@ -174,7 +203,8 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
 
 async function resolveBucketRegion(bucketName) {
   try {
-    const probe = new S3Client({ region: process.env.AWS_REGION || "eu-west-2" });
+    const probe = await getS3Client();
+    const { GetBucketLocationCommand } = await import("@aws-sdk/client-s3");
     const out = await probe.send(new GetBucketLocationCommand({ Bucket: bucketName }));
     const loc = out.LocationConstraint;
     if (!loc) return "us-east-1";
@@ -190,7 +220,10 @@ async function emptyBucket(bucketName) {
   console.log(`Emptying bucket: ${bucketName}`);
 
   const region = await resolveBucketRegion(bucketName);
+  const { S3Client } = await import("@aws-sdk/client-s3");
   const s3Client = new S3Client({ region });
+  
+  const { ListObjectsV2Command, DeleteObjectsCommand } = await import("@aws-sdk/client-s3");
 
   let continuationToken;
   do {

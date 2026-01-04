@@ -1,6 +1,5 @@
 // app/functions/hmrc/hmrcTokenPost.js
 
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
@@ -16,9 +15,17 @@ import { getUserSub } from "../../lib/jwtHelper.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
-const secretsClient = new SecretsManagerClient();
-
+let secretsClient = null;
 let cachedHmrcClientSecret;
+
+// Lazy initialization of SecretsManagerClient
+async function getSecretsClient() {
+  if (!secretsClient) {
+    const { SecretsManagerClient } = await import("@aws-sdk/client-secrets-manager");
+    secretsClient = new SecretsManagerClient();
+  }
+  return secretsClient;
+}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -131,7 +138,9 @@ async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
     cachedHmrcClientSecret = overrideSecret;
     logger.info(`Secret retrieved from override and cached`);
   } else if (!cachedHmrcClientSecret) {
-    const data = await secretsClient.send(new GetSecretValueCommand({ SecretId: secretArn }));
+    const client = await getSecretsClient();
+    const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
+    const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
     cachedHmrcClientSecret = data.SecretString;
     logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);
   }
