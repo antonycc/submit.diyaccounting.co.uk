@@ -29,8 +29,16 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
+      cdk-application:
+        description: 'CDK application name'
+        required: false
+        options:
+          - ''
+          - 'application'
+          - 'environment'
+        default: ''
       base-image-tag:
-        description: 'Base image tag to use'
+        description: 'Base image tag to use. e.g. github.sha'
         required: false
         default: ''
       self-destruct-start-datetime:
@@ -59,6 +67,10 @@ on:
       deployment-name:
         type: string
         required: true
+      cdk-application:
+        type: string
+        required: true
+        default: ''
       base-image-tag:
         type: string
         required: true
@@ -99,9 +111,23 @@ jobs:
     steps:
       - name: "github.event_name=[${{ github.event_name }}]"
         run: ":"
+      - name: "inputs.stackName=[${{ inputs.stackName }}]"
+        run: ":"
+      - name: "inputs.force-all-stack-deployment=[${{ inputs.force-all-stack-deployment }}]"
+        run: ":"
       - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
         run: ":"
       - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
+        run: ":"
+      - name: "inputs.cdk-application=[${{ inputs.cdk-application }}]"
+        run: ":"
+      - name: "inputs.base-image-tag=[${{ inputs['base-image-tag'] }}]"
+        run: ":"
+      - name: "inputs.self-destruct-start-datetime=[${{ inputs['self-destruct-start-datetime'] }}]"
+        run: ":"
+      - name: "inputs.http-api-url=[${{ inputs['http-api-url'] }}]"
+        run: ":"
+      - name: "inputs.website-hash=[${{ inputs['website-hash'] }}]"
         run: ":"
       - name: Normalise Params
         id: normalise
@@ -111,6 +137,7 @@ jobs:
           X='${{ inputs.force-all-stack-deployment }}' ; echo "force-all-stack-deployment=${X:-true}" | tee -a "$GITHUB_OUTPUT"
           echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.cdk-application }}' ; echo "cdk-application=${X:-application}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.base-image-tag }}' ; echo "base-image-tag=${X:-${{ github.sha }}}" | tee -a "$GITHUB_OUTPUT"
           echo "self-destruct-start-datetime=${{ inputs['self-destruct-start-datetime'] }}" | tee -a "$GITHUB_OUTPUT"
           echo "http-api-url=${{ inputs['http-api-url'] }}" | tee -a "$GITHUB_OUTPUT"
@@ -120,6 +147,7 @@ jobs:
       force-all-stack-deployment: ${{ steps.normalise.outputs.force-all-stack-deployment }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+      cdk-application: ${{ steps.normalise.outputs.cdk-application }}
       base-image-tag: ${{ steps.normalise.outputs['base-image-tag'] }}
       self-destruct-start-datetime: ${{ steps.normalise.outputs['self-destruct-start-datetime'] }}
       http-api-url: ${{ steps.normalise.outputs['http-api-url'] }}
@@ -269,8 +297,8 @@ jobs:
       - name: Deploy ${{ needs.params.outputs.stackName }} Stack (CDK)
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ needs.params.outputs['java-version'] }} -Dmaven.compiler.target=${{ needs.params.outputs['java-version'] }} \
-            && cd cdk-application \
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-${{ needs.params.outputs.cdk-application }} \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
@@ -279,7 +307,7 @@ jobs:
                 --ci true \
                 --concurrency 4 \
                 --asset-parallelism \
-                --outputs-file ../cdk-submit-application.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json \
+                --outputs-file ../cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json \
             && cd .. \
           ;
         env:
@@ -295,4 +323,4 @@ jobs:
           WEBSITE_HASH: ${{ needs.params.outputs['website-hash'] }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
-      - run: cat cdk-submit-application.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json | jq '.'
+      - run: cat cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json | jq '.'
