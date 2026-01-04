@@ -314,12 +314,36 @@ public class EdgeStack extends Stack {
                 .compress(true)
                 .build();
 
+        // Create custom cache policy for test reports with short TTL
+        CachePolicy testsCachePolicy = CachePolicy.Builder.create(this, props.resourceNamePrefix() + "-TestsCP")
+                .cachePolicyName(props.resourceNamePrefix() + "-tests-cp")
+                .comment("Short TTL cache policy for test reports and results")
+                .minTtl(software.amazon.awscdk.Duration.seconds(0))
+                .defaultTtl(software.amazon.awscdk.Duration.seconds(60))
+                .maxTtl(software.amazon.awscdk.Duration.seconds(300))
+                .build();
+
+        // Behavior options for /tests/* paths with short TTL
+        BehaviorOptions testsBehaviorOptions = BehaviorOptions.builder()
+                .origin(localOrigin)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(webResponseHeadersPolicy)
+                .cachePolicy(testsCachePolicy)
+                .compress(true)
+                .build();
+
         // Create additional behaviours for the API Gateway Lambda origins
         HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
         BehaviorOptions apiGatewayBehavior =
                 createBehaviorOptionsForApiGateway(props.apiGatewayUrl(), webResponseHeadersPolicy);
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
+
+        // Add behavior for /tests/* with short TTL cache policy
+        additionalBehaviors.put("/tests/*", testsBehaviorOptions);
+        infof("Added /tests/* behavior with short TTL cache policy");
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
