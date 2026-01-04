@@ -5,6 +5,14 @@ sourceReport="${1?Missing sourceReport argument}"
 sourceTestName=$(jq -r '.testName' "${sourceReport?}")
 reportDir=$(dirname "${sourceReport?}")
 targetTest="${2-'web-test-local'}"
+
+# Determine sed in-place flag: macOS (BSD) requires -i '', GNU sed (Linux) uses -i
+if sed --version >/dev/null 2>&1; then
+  sedInPlace=(-i)
+else
+  sedInPlace=(-i '')
+fi
+
 targetTestDir="web/public/tests/behaviour-test-results/${targetTest?}/"
 targetTestReportDir="web/public/tests/test-reports/${targetTest?}/"
 mkdir -p "${targetTestDir?}"
@@ -25,12 +33,12 @@ cat "web/public/tests/test-report-${targetTest?}.json" \
   echo "Cleaned from ${screenshotFilename?} to ${cleanScreenshotFilename?}"
   cp -v "${screenshotPath?}" "${targetTestDir?}/${cleanScreenshotFilename?}"
   # Clean the screenshot name in the report
-  sed -i '' "s/${screenshotFilename?}/${cleanScreenshotFilename?}/g" "web/public/tests/test-report-${targetTest?}.json"
+  sed "${sedInPlace[@]}" "s/${screenshotFilename?}/${cleanScreenshotFilename?}/g" "web/public/tests/test-report-${targetTest?}.json"
 done
 # If sourceTestName is not the same as targetTest, then replace occurrences of sourceTestName in web/public/tests/test-report-web-test-local.json with targetTest
 if [[ "${sourceTestName?}" != "${targetTest?}" ]]; then
   # Replace occurrences of sourceTestName in web/public/tests/test-report-web-test-local.json with targetTest
-  sed -i '' "s/${sourceTestName?}/${targetTest?}/g" "web/public/tests/test-report-${targetTest?}.json"
+  sed "${sedInPlace[@]}" "s/${sourceTestName?}/${targetTest?}/g" "web/public/tests/test-report-${targetTest?}.json"
 fi
 # Copy target/test-reports/html-report to web/public/tests/test-reports/web-test-local
 cp -rv "target/test-reports/html-report" "${targetTestReportDir?}"
