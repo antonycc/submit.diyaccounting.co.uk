@@ -1,10 +1,15 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -16,12 +21,6 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Optional;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class AuthStack extends Stack {
 
@@ -117,7 +116,8 @@ public class AuthStack extends Stack {
                         .ingestFunctionName(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().cognitoTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().cognitoTokenPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
@@ -155,7 +155,8 @@ public class AuthStack extends Stack {
                         .ingestFunctionName(props.sharedNames().customAuthorizerIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().customAuthorizerIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().customAuthorizerIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props

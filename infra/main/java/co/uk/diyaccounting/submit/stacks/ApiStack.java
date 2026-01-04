@@ -1,7 +1,11 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
@@ -33,11 +37,6 @@ import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class ApiStack extends Stack {
 
@@ -355,10 +354,9 @@ public class ApiStack extends Stack {
                         .build());
 
         // Create HTTP Lambda integration
-        HttpLambdaIntegration integration =
-                HttpLambdaIntegration.Builder.create(integrationId, fn)
-                    .timeout(Duration.seconds(29))
-                    .build();
+        HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(integrationId, fn)
+                .timeout(Duration.seconds(29))
+                .build();
 
         // Create HTTP route with the appropriate authoriser
         var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
