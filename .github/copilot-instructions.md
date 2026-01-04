@@ -129,7 +129,7 @@ This repository uses a **four-tier testing pyramid**:
 
 4. **Behaviour Tests** (Playwright): End-to-end user journey tests
    - Location: `behaviour-tests/`
-   - Run: `npm run test:behaviour` (with environment variants: `-proxy`, `-ci`, `-prod`)
+   - Run: `npm run test:allBehaviour` (with environment variants: `-proxy`, `-ci`, `-prod`)
    - Focus: Complete flows (auth, VAT submission, bundles, receipts)
 
 **Default test command**: `npm test` runs unit + system tests (~4 seconds, 108 tests)
@@ -193,7 +193,7 @@ See REPOSITORY_DOCUMENTATION.md Section "Package.json Operations" for the comple
 - `npm run test:unit` - Unit tests only
 - `npm run test:system` - System tests only
 - `npm run test:browser` - Playwright browser tests
-- `npm run test:behaviour` - End-to-end behaviour tests
+- `npm run test:allBehaviour` - End-to-end behaviour tests
 
 **Code Quality**:
 - `npm run formatting` - Check JS/Java formatting
@@ -240,7 +240,7 @@ See REPOSITORY_DOCUMENTATION.md Section "Package.json Operations" for the comple
 - CDK stacks: `{Purpose}Stack` (e.g., `AuthStack`, `HmrcStack`)
 - DynamoDB tables: `{env}-submit-{purpose}` (e.g., `ci-submit-bundles`)
 - Environment variables: `{SERVICE}_{RESOURCE}_ARN` format
-- npm scripts: Use `:` separator for variants (e.g., `test:unit`, `test:behaviour-proxy`)
+- npm scripts: Use `:` separator for variants (e.g., `test:unit`, `test:allBehaviour-proxy`)
 
 **Error Handling**:
 - Lambda functions should catch errors and return appropriate HTTP status codes

@@ -30,9 +30,9 @@ on:
         options:
           - 'bundleBehaviour'
           - 'postVatReturnBehaviour'
-          - 'obligationBehaviour'
+          - 'getVatObligationsBehaviour'
           - 'getVatReturnBehaviour'
-          - 'postVatReturnFPHBehaviour'
+          - 'postVatReturnFraudPreventionHeadersBehaviour'
           - 'submitVatBehaviour'
           - 'authBehaviour'
           - 'behaviour'

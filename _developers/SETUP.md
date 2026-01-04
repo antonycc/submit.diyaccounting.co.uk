@@ -73,7 +73,7 @@ npm run test:browser
 ```
 - Behaviour tests (Playwright) — orchestrates server, ngrok, mock OAuth2, and local DynamoDB using .env.proxy:
 ```bash
-npm run test:behaviour
+npm run test:allBehaviour
 ```
 - Full suite:
 ```bash

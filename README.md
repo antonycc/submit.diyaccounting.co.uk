@@ -58,7 +58,7 @@ Test suites (run progressively)
 - Unit + system tests (Vitest): npm test
 - Browser tests (Playwright): npm run test:browser
 - Behaviour tests (Playwright; orchestrates server, ngrok, mock OAuth2, and local DynamoDB using .env.proxy):
-  - npm run test:behaviour
+  - npm run test:allBehaviour
 - Everything above in one go:
   - npm run test:all
 

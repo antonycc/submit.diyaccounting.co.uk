@@ -36,7 +36,7 @@ Purpose: Scan the repository for TODO/FIXME items, cluster them by related area 
 
 4. **Testing & Verification**
    - Run focused tests first, then broader suites.
-   - For JS/TS: `npm run test:unit`, `npm run test:system`, `npm run test:behaviour`.
+   - For JS/TS: `npm run test:unit`, `npm run test:system`, `npm run test:allBehaviour`.
    - For Java/CDK: `npm run build`.
 
 5. **Formatting & Quality Gates**

@@ -357,7 +357,7 @@ jobs:
 #
 #      - name: Run behaviour tests - fraud prevention headers vat
 #        run: |
-#          npm run test:postVatReturnFPHBehaviour-proxy || exit_code=$? \
+#          npm run test:postVatReturnFraudPreventionHeadersBehaviour-proxy || exit_code=$? \
 #          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
 #          ; exit ${exit_code:-0} \
 #          ;
@@ -421,7 +421,7 @@ jobs:
 #
 #      - name: Run behaviour tests - obligation
 #        run: |
-#          npm run test:obligationBehaviour-proxy || exit_code=$? \
+#          npm run test:getVatObligationsBehaviour-proxy || exit_code=$? \
 #          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
 #          ; exit ${exit_code:-0} \
 #          ;
@@ -2633,7 +2633,7 @@ jobs:
 
   web-test-fraud-prevention-headers-vat-sandbox:
     if: ${{ !cancelled() }}
-    name: 'postVatReturnFPHBehaviour-proxy via synthetic test'
+    name: 'postVatReturnFraudPreventionHeadersBehaviour-proxy via synthetic test'
     needs:
       - names
       - set-origins
@@ -2646,7 +2646,7 @@ jobs:
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'postVatReturnFPHBehaviour'
+      behaviour-test-suite: 'postVatReturnFraudPreventionHeadersBehaviour'
       generate-test-reports: 'false'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
@@ -2679,10 +2679,10 @@ jobs:
 #        env:
 #          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 #
-#      - name: Run behaviour tests - postVatReturnFPHBehaviour
+#      - name: Run behaviour tests - postVatReturnFraudPreventionHeadersBehaviour
 #        if: ${{ !cancelled() }}
 #        run: |
-#          npm run 'test:postVatReturnFPHBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+#          npm run 'test:postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
 #          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
 #          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
 #          ; exit ${exit_code:-0} \
@@ -2900,7 +2900,7 @@ jobs:
 
   web-test-obligation-sandbox:
     if: ${{ !cancelled() }}
-    name: 'obligationBehaviour-proxy via synthetic test'
+    name: 'getVatObligationsBehaviour-proxy via synthetic test'
     needs:
       - names
       - set-origins
@@ -2913,7 +2913,7 @@ jobs:
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'obligationBehaviour'
+      behaviour-test-suite: 'getVatObligationsBehaviour'
       generate-test-reports: 'false'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
@@ -2946,10 +2946,10 @@ jobs:
 #        env:
 #          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 #
-#      - name: Run behaviour tests - obligationBehaviour
+#      - name: Run behaviour tests - getVatObligationsBehaviour
 #        if: ${{ !cancelled() }}
 #        run: |
-#          npm run 'test:obligationBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
+#          npm run 'test:getVatObligationsBehaviour-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
 #          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
 #          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
 #          ; exit ${exit_code:-0} \

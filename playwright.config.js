@@ -4,7 +4,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   projects: [
     {
-      name: "behaviour-tests",
+      name: "allBehaviour",
       testDir: "behaviour-tests",
       // testMatch: ["**/submitVat.behaviour.test.js", "**/bundles.behaviour.test.js"],
       testMatch: [
@@ -21,7 +21,7 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "auth-behaviour-tests",
+      name: "authBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/auth.behaviour.test.js"],
       workers: 1,
@@ -29,7 +29,7 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "bundle-behaviour-tests",
+      name: "bundleBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/bundles.behaviour.test.js"],
       workers: 1,
@@ -37,7 +37,7 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "submit-vat-behaviour-tests",
+      name: "submitVatBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/submitVat.behaviour.test.js"],
       workers: 1,
@@ -45,7 +45,7 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "fraud-prevention-headers-vat-behaviour-tests",
+      name: "postVatReturnFraudPreventionHeadersBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/postVatReturnFPH.behaviour.test.js"],
       workers: 1,
@@ -53,7 +53,7 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "obligation-behaviour-tests",
+      name: "getVatObligationsBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/getVatObligations.behaviour.test.js"],
       workers: 1,
@@ -61,7 +61,7 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "post-vat-return-behaviour-tests",
+      name: "postVatReturnBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/postVatReturn.behaviour.test.js"],
       workers: 1,
@@ -69,7 +69,7 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "get-vat-return-behaviour-tests",
+      name: "getVatReturnBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/getVatReturn.behaviour.test.js"],
       workers: 1,

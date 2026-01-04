@@ -37,7 +37,7 @@
       "testUrl": "https://wanted-finally-anteater.ngrok-free.app/",
       "isSandboxMode": true
     },
-    "artefactsDir": "/Users/antony/projects/submit.diyaccounting.co.uk/target/behaviour-test-results/vatObligations.behaviour-C-5c45b-w-VAT-obligations-from-HMRC-obligation-behaviour-tests",
+    "artefactsDir": "/Users/antony/projects/submit.diyaccounting.co.uk/target/behaviour-test-results/vatObligations.behaviour-C-5c45b-w-VAT-obligations-from-HMRC-getVatObligationsBehaviour",
     "screenshotPath": "target/behaviour-test-results/screenshots/vat-obligations-behaviour-test",
     "testStartTime": "2025-12-05T23:38:46.581Z"
   },
