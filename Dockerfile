@@ -1,6 +1,7 @@
 # Optimized Dockerfile for AWS Lambda with ARM64 architecture
 # Uses multi-stage pattern to ensure clean, minimal image
-FROM public.ecr.aws/lambda/nodejs:22-arm64 as builder
+# Platform is specified during build with --platform linux/arm64
+FROM public.ecr.aws/lambda/nodejs:22 AS builder
 
 # Copy package files first for better layer caching
 COPY package.json package-lock.json ./
@@ -10,7 +11,7 @@ COPY web/public/submit.catalogue.toml web/public/submit.catalogue.toml
 RUN npm ci --omit=dev --ignore-scripts
 
 # Final stage
-FROM public.ecr.aws/lambda/nodejs:22-arm64
+FROM public.ecr.aws/lambda/nodejs:22
 
 # Copy dependencies from builder
 COPY --from=builder /var/task/node_modules ./node_modules

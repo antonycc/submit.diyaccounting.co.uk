@@ -345,6 +345,7 @@ jobs:
       - name: Build base image
         run: |
           docker build \
+            --platform linux/arm64 \
             -t "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" \
             -f Dockerfile .
 
