@@ -30,9 +30,9 @@ Purpose: Master the end-to-end behavioral testing of the VAT submission flow. Th
 2. **Trace Path**: Trace the code execution path for the scenario in both local and AWS-like environments.
 3. **Draft Test**: Create or update `.behaviour.test.js` files using Playwright.
 4. **Run Tests**:
-   - Use the appropriate command (e.g., `npm run test:behaviour-proxy`).
+   - Use the appropriate command (e.g., `npm run test:allBehaviour-proxy`).
    - **Crucial**: Pipe output to a file to manage verbosity:
-     `npm run test:behaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`
+     `npm run test:allBehaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`
 5. **Analyze & Refine**: Read the generated log file, identify issues, and iterate.
 
 ## Constraints

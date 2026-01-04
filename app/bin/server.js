@@ -78,6 +78,18 @@ app.get("/submit.env", (req, res) => {
   res.send(lines.join("\n") + "\n");
 });
 
+// Middleware to set short cache TTL for test reports and docs
+app.use("/tests", (req, res, next) => {
+  // Set short cache control for test reports (60 seconds max-age)
+  res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
+  next();
+});
+app.use("/docs", (req, res, next) => {
+  // Set short cache control for docs (60 seconds max-age)
+  res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
+  next();
+});
+
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 
 mockAuthUrlGetApiEndpoint(app);

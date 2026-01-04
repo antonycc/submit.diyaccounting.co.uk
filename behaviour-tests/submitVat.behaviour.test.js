@@ -486,6 +486,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
   writeFiguresJson(outputDir, figures);
+  console.log(`[Figures]: Generated figures.json in ${outputDir}`);
 
   /* **************** */
   /*  EXPORT DYNAMODB */

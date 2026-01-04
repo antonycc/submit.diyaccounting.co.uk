@@ -35,7 +35,7 @@ To record interactions with HMRC APIs during a behavior test:
 TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:bundleBehaviour
 
 # Record VAT obligations test
-TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:obligationBehaviour
+TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:getVatObligationsBehaviour
 
 # Record VAT submission test
 TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:submitVatBehaviour
@@ -56,7 +56,7 @@ To run tests using previously recorded interactions:
 TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:bundleBehaviour
 
 # Use recorded mocks for other tests
-TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:obligationBehaviour
+TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:getVatObligationsBehaviour
 ```
 
 Or use the pre-configured npm scripts:
