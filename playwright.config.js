@@ -13,7 +13,7 @@ export default defineConfig({
         "**/submitVat.behaviour.test.js",
         "**/postVatReturn.behaviour.test.js",
         "**/getVatReturn.behaviour.test.js",
-        "**/postVatReturnFPH.behaviour.test.js",
+        "**/postVatReturnFraudPreventionHeaders.behaviour.test.js",
         "**/getVatObligations.behaviour.test.js",
       ],
       workers: 1,
@@ -47,7 +47,7 @@ export default defineConfig({
     {
       name: "postVatReturnFraudPreventionHeadersBehaviour",
       testDir: "behaviour-tests",
-      testMatch: ["**/postVatReturnFPH.behaviour.test.js"],
+      testMatch: ["**/postVatReturnFraudPreventionHeaders.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 300_000,
