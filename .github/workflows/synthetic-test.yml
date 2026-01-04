@@ -100,47 +100,27 @@ jobs:
     steps:
       - name: "github.event_name=[${{ github.event_name }}]"
         run: ":"
-      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
-        run: ":"
-      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
-        run: ":"
       - name: "inputs.behaviour-test-suite=[${{ inputs.behaviour-test-suite }}]"
         run: ":"
       - name: "inputs.generate-test-reports=[${{ inputs.generate-test-reports }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
         run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
         run: |
-          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
-          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.behaviour-test-suite }}' ; echo "behaviour-test-suite=${X:-submitVatBehaviour}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.generate-test-reports }}' ; echo "generate-test-reports=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
     outputs:
-      environment-name: ${{ steps.normalise.outputs.environment-name }}
-      deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
       generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}
-
-#  check-reports-param-false:
-#    name: 'check reports param expecting false'
-#    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'false' }}
-#    needs:
-#      - params
-#    runs-on: ubuntu-24.04
-#    steps:
-#      - name: Check reports param expecting false
-#        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
-#
-#  check-reports-param-true:
-#    name: 'check reports param expecting true'
-#    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
-#    needs:
-#      - params
-#    runs-on: ubuntu-24.04
-#    steps:
-#      - name: Check reports param expecting true
-#        run: echo "generate-test-reports=${{ needs.params.outputs.generate-test-reports }}"
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+      deployment-name: ${{ steps.normalise.outputs.deployment-name }}
 
   names:
     needs:

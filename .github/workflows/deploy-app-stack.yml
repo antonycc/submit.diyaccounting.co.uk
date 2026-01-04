@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       stackName:
-        description: 'Stack name to deploy'
+        description: 'Stack name to deploy. e.g. ci-reports-app-DevStack'
         required: true
-      forceAllStackDeployment:
+      force-all-stack-deployment:
         description: 'Force re-deploy of all stacks even if they already exist or pass comparison checks'
         type: choice
         options:
@@ -29,46 +29,6 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
-      loadTestDuration:
-        description: 'Duration for load test (e.g. 30s, 10m, 1h)'
-        required: false
-        default: '30s'
-      selfDestructDelayHours:
-        description: 'Hours before self-destruct triggers for non-prod environments'
-        required: false
-        default: '8'
-      java-version:
-        description: 'Java version to use'
-        required: false
-        default: '21'
-      node-version:
-        description: 'Node version to use'
-        required: false
-        default: '22'
-      actions-role-arn:
-        description: 'AWS role ARN for GitHub Actions'
-        required: false
-        default: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
-      deploy-role-arn:
-        description: 'AWS deployment role ARN'
-        required: false
-        default: 'arn:aws:iam::887764105431:role/submit-deployment-role'
-      aws-region:
-        description: 'AWS region'
-        required: false
-        default: 'eu-west-2'
-      aws-account-id:
-        description: 'AWS account ID'
-        required: false
-        default: '887764105431'
-      aws-hosted-zone-id:
-        description: 'AWS hosted zone ID'
-        required: false
-        default: 'Z0315522208PWZSSBI9AL'
-      base-image-tag-prefix:
-        description: 'Prefix for base image tag'
-        required: false
-        default: 'submit-base'
       base-image-tag:
         description: 'Base image tag to use'
         required: false
@@ -81,57 +41,22 @@ on:
         description: 'HTTP API URL'
         required: false
         default: ''
-      cognito-user-pool-arn:
-        description: 'Cognito User Pool ARN'
+      website-hash:
+        description: 'Website hash to use'
         required: false
         default: ''
-      cognito-client-id:
-        description: 'Cognito Client ID'
-        required: false
-        default: ''
-
   workflow_call:
     inputs:
       stackName:
         type: string
         required: true
-      forceAllStackDeployment:
+      force-all-stack-deployment:
         type: string
         required: true
       environment-name:
         type: string
         required: true
       deployment-name:
-        type: string
-        required: true
-      loadTestDuration:
-        type: string
-        required: true
-      selfDestructDelayHours:
-        type: string
-        required: true
-      java-version:
-        type: string
-        required: true
-      node-version:
-        type: string
-        required: true
-      actions-role-arn:
-        type: string
-        required: true
-      deploy-role-arn:
-        type: string
-        required: true
-      aws-region:
-        type: string
-        required: true
-      aws-account-id:
-        type: string
-        required: true
-      aws-hosted-zone-id:
-        type: string
-        required: true
-      base-image-tag-prefix:
         type: string
         required: true
       base-image-tag:
@@ -142,13 +67,10 @@ on:
         required: true
       http-api-url:
         type: string
-        required: true
-      cognito-user-pool-arn:
+        required: false
+      website-hash:
         type: string
-        required: true
-      cognito-client-id:
-        type: string
-        required: true
+        required: false
 
 permissions:
   id-token: write
@@ -157,8 +79,15 @@ permissions:
   pages: write
 
 env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+  AWS_ACCOUNT_ID: '887764105431'
+  AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
   GITHUB_ACTOR: ${{ github.actor }}
-  COMMIT_HASH: ${{ github.sha }}
+  BASE_IMAGE_TAG: ${{ github.sha }}
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
   GITHUB_REF_TO_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -170,49 +99,31 @@ jobs:
     steps:
       - name: "github.event_name=[${{ github.event_name }}]"
         run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
+        run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
         run: |
-          echo "stackName=${{ inputs.stackName }}" | tee -a "$GITHUB_OUTPUT"
-          echo "forceAllStackDeployment=${{ inputs.forceAllStackDeployment }}" | tee -a "$GITHUB_OUTPUT"
-          echo "environment-name=${{ inputs.environment-name }}" | tee -a "$GITHUB_OUTPUT"
-          echo "deployment-name=${{ inputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
-          echo "loadTestDuration=${{ inputs.loadTestDuration }}" | tee -a "$GITHUB_OUTPUT"
-          echo "selfDestructDelayHours=${{ inputs.selfDestructDelayHours }}" | tee -a "$GITHUB_OUTPUT"
-          echo "java-version=${{ inputs['java-version'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "node-version=${{ inputs['node-version'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "actions-role-arn=${{ inputs['actions-role-arn'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "deploy-role-arn=${{ inputs['deploy-role-arn'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "aws-region=${{ inputs['aws-region'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "aws-account-id=${{ inputs['aws-account-id'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "aws-hosted-zone-id=${{ inputs['aws-hosted-zone-id'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "base-image-tag-prefix=${{ inputs['base-image-tag-prefix'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "base-image-tag=${{ inputs['base-image-tag'] }}" | tee -a "$GITHUB_OUTPUT"
+          echo 'stackName=${{ inputs.stackName }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.force-all-stack-deployment }}' ; echo "force-all-stack-deployment=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.base-image-tag }}' ; echo "base-image-tag=${X:-${{ github.sha }}}" | tee -a "$GITHUB_OUTPUT"
           echo "self-destruct-start-datetime=${{ inputs['self-destruct-start-datetime'] }}" | tee -a "$GITHUB_OUTPUT"
           echo "http-api-url=${{ inputs['http-api-url'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "cognito-user-pool-arn=${{ inputs['cognito-user-pool-arn'] }}" | tee -a "$GITHUB_OUTPUT"
-          echo "cognito-client-id=${{ inputs['cognito-client-id'] }}" | tee -a "$GITHUB_OUTPUT"
+          echo "website-hash=${{ inputs['website-hash'] }}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       stackName: ${{ steps.normalise.outputs.stackName }}
-      forceAllStackDeployment: ${{ steps.normalise.outputs.forceAllStackDeployment }}
+      force-all-stack-deployment: ${{ steps.normalise.outputs.force-all-stack-deployment }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
-      loadTestDuration: ${{ steps.normalise.outputs.loadTestDuration }}
-      selfDestructDelayHours: ${{ steps.normalise.outputs.selfDestructDelayHours }}
-      java-version: ${{ steps.normalise.outputs['java-version'] }}
-      node-version: ${{ steps.normalise.outputs['node-version'] }}
-      actions-role-arn: ${{ steps.normalise.outputs['actions-role-arn'] }}
-      deploy-role-arn: ${{ steps.normalise.outputs['deploy-role-arn'] }}
-      aws-region: ${{ steps.normalise.outputs['aws-region'] }}
-      aws-account-id: ${{ steps.normalise.outputs['aws-account-id'] }}
-      aws-hosted-zone-id: ${{ steps.normalise.outputs['aws-hosted-zone-id'] }}
-      base-image-tag-prefix: ${{ steps.normalise.outputs['base-image-tag-prefix'] }}
       base-image-tag: ${{ steps.normalise.outputs['base-image-tag'] }}
       self-destruct-start-datetime: ${{ steps.normalise.outputs['self-destruct-start-datetime'] }}
       http-api-url: ${{ steps.normalise.outputs['http-api-url'] }}
-      cognito-user-pool-arn: ${{ steps.normalise.outputs['cognito-user-pool-arn'] }}
-      cognito-client-id: ${{ steps.normalise.outputs['cognito-client-id'] }}
+      website-hash: ${{ steps.normalise.outputs['website-hash'] }}
 
   names:
     needs:
@@ -226,8 +137,8 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ needs.params.outputs['actions-role-arn'] }}
-          aws-region: ${{ needs.params.outputs['aws-region'] }}
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
@@ -237,8 +148,8 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ needs.params.outputs['deploy-role-arn'] }}
-          aws-region: ${{ needs.params.outputs['aws-region'] }}
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
@@ -298,8 +209,8 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ needs.params.outputs['actions-role-arn'] }}
-          aws-region: ${{ needs.params.outputs['aws-region'] }}
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
@@ -309,8 +220,8 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ needs.params.outputs['deploy-role-arn'] }}
-          aws-region: ${{ needs.params.outputs['aws-region'] }}
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
@@ -334,36 +245,36 @@ jobs:
           fi
 
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v6
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ needs.params.outputs['node-version'] }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
-          java-version: ${{ needs.params.outputs['java-version'] }}
+          java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Deploy ${{ needs.params.outputs.stackName }} Stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ needs.params.outputs['java-version'] }} -Dmaven.compiler.target=${{ needs.params.outputs['java-version'] }} \
             && cd cdk-application \
             && cat ../.env.${{ needs.names.outputs.environment-name }} \
             && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
               npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-app-${{ needs.params.outputs.stackName }} \
+                ${{ needs.params.outputs.stackName }} \
                 --require-approval never \
                 --ci true \
                 --concurrency 4 \
@@ -374,14 +285,14 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          COGNITO_USER_POOL_ARN: ${{ needs.params.outputs['cognito-user-pool-arn'] }}
-          COGNITO_CLIENT_ID: ${{ needs.params.outputs['cognito-client-id'] }}
+          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
           BASE_IMAGE_TAG: ${{ needs.params.outputs['base-image-tag'] }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.params.outputs['self-destruct-start-datetime'] }}
-          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:${{ needs.params.outputs['aws-region'] }}:${{ needs.params.outputs['aws-account-id'] }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
-          HMRC_SANDBOX_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:${{ needs.params.outputs['aws-region'] }}:${{ needs.params.outputs['aws-account-id'] }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret"
-          WEBSITE_HASH: "placeholder"
+          HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
+          HMRC_SANDBOX_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret"
           HTTP_API_URL: ${{ needs.params.outputs['http-api-url'] }}
+          WEBSITE_HASH: ${{ needs.params.outputs['website-hash'] }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json | jq '.'
