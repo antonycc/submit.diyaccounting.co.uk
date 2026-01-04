@@ -1456,6 +1456,7 @@ jobs:
           echo "HTTP_API_URL=$HTTP_API_URL" >> $GITHUB_OUTPUT
         shell: bash
     outputs:
+      # TODO: Can this be derrived from shared names?
       httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
 
   deploy-edge:
@@ -1563,19 +1564,19 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
-      - run: cat cdk-submit-application.out/cdk-outputs-edge.json | jq '.'
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+#      - run: cat cdk-submit-application.out/cdk-outputs-edge.json | jq '.'
+#        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
 
-      - name: Resolve stack outputs
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        id: edge-outputs
-        run: |
-          ORIGIN_BUCKET_NAME=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-EdgeStack"].OriginBucketName' cdk-submit-application.out/cdk-outputs-edge.json)
-          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
-          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
-        shell: bash
-    outputs:
-      originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
+#      - name: Resolve stack outputs
+#        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+#        id: edge-outputs
+#        run: |
+#          ORIGIN_BUCKET_NAME=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-EdgeStack"].OriginBucketName' cdk-submit-application.out/cdk-outputs-edge.json)
+#          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME"
+#          echo "ORIGIN_BUCKET_NAME=$ORIGIN_BUCKET_NAME" >> $GITHUB_OUTPUT
+#        shell: bash
+    #outputs:
+    #  originBucketName: ${{ steps.edge-outputs.outputs.ORIGIN_BUCKET_NAME }}
 
   deploy-publish:
     name: 'deploy publish'

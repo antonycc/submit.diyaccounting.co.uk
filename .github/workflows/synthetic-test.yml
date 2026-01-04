@@ -290,7 +290,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
-          name: web-test-artifacts
+          name: ${{ needs.params.outputs.behaviour-test-suite }}-artifacts
           retention-days: 30
           path: |
             target/behaviour-test-results/
@@ -299,7 +299,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v6
         with:
-          name: web-test-reports
+          name: ${{ needs.params.outputs.behaviour-test-suite }}-reports
           retention-days: 30
           path: |
             target/test-reports/
@@ -375,7 +375,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-artifacts
+          name: ${{ needs.params.outputs.behaviour-test-suite }}-artifacts
           path: |
             target/behaviour-test-results/submit-vat-sandbox/
 
@@ -390,7 +390,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/download-artifact@v7
         with:
-          name: web-test-reports
+          name: ${{ needs.params.outputs.behaviour-test-suite }}-reports
           path: |
             target/test-reports/submit-vat-sandbox/
 
