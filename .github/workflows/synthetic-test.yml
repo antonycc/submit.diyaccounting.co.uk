@@ -60,6 +60,8 @@ on:
         type: string
         description: 'Generate test reports, e.g. "true" or "false"'
         required: true
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
   push:
     branches:
       - '**'
