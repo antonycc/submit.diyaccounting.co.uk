@@ -2,6 +2,7 @@ package co.uk.diyaccounting.submit.constructs;
 
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.services.lambda.Architecture;
 
 @Value.Immutable
 public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
@@ -41,6 +42,16 @@ public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
     @Value.Default
     default int workerMaxReceiveCount() {
         return 3; // 2 retries + 1 initial attempt
+    }
+
+    @Value.Default
+    default int workerMemorySize() {
+        return 1024;
+    }
+
+    @Value.Default
+    default Architecture workerArchitecture() {
+        return Architecture.ARM_64;
     }
 
     static ImmutableAsyncApiLambdaProps.Builder builder() {

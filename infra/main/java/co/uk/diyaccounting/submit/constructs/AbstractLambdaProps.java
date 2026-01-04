@@ -4,6 +4,7 @@ import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 
@@ -37,6 +38,16 @@ public interface AbstractLambdaProps {
     @Value.Default
     default Duration ingestLambdaTimeout() {
         return Duration.seconds(28);
+    }
+
+    @Value.Default
+    default int ingestMemorySize() {
+        return 1024;
+    }
+
+    @Value.Default
+    default Architecture ingestArchitecture() {
+        return Architecture.ARM_64;
     }
 
     @Value.Default

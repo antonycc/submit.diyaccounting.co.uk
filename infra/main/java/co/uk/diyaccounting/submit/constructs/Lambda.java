@@ -83,6 +83,8 @@ public class Lambda {
                 .functionName(props.ingestFunctionName())
                 .reservedConcurrentExecutions(props.ingestReservedConcurrency())
                 .timeout(props.ingestLambdaTimeout())
+                .memorySize(props.ingestMemorySize())
+                .architecture(props.ingestArchitecture())
                 .logGroup(this.logGroup)
                 .tracing(Tracing.ACTIVE);
         if (props.role().isPresent()) {
