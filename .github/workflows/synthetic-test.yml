@@ -465,7 +465,7 @@ jobs:
         shell: bash
         run: |
           chmod +x ./scripts/publish-web-test-local.sh
-          ./scripts/publish-web-test-local.sh "target/behaviour-test-results/test-report-${{ needs.params.outputs.behaviour-test-suite }}.json" web-test
+          ./scripts/publish-web-test-local.sh "target/behaviour-test-results/${{ needs.params.outputs.behaviour-test-suite }}/test-report-${{ needs.params.outputs.behaviour-test-suite }}.json" web-test
 
           # Copy the following files to S3:
           # web/public/tests/test-report-web-test.json
