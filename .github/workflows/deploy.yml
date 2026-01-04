@@ -360,14 +360,14 @@ jobs:
           path: docker-image/image.tar
           if-no-files-found: error
 
-#  # TODO: Roll out stack deployments using the reusable workflow deploy-stack.yml
+#  # TODO: Roll out stack deployments using the reusable workflow deploy-cdk-stack.yml
 #  deploy-dev-new:
 #    if: ${{ !cancelled() }}
-#    name: 'deploy dev via deploy-stack.yml'
+#    name: 'deploy dev via deploy-cdk-stack.yml'
 #    needs:
 #      - names
 #      - skip-deploy-check
-#    uses: ./.github/workflows/deploy-stack.yml
+#    uses: ./.github/workflows/deploy-cdk-stack.yml
 #    permissions:
 #      contents: read
 #      packages: read
@@ -1000,14 +1000,14 @@ jobs:
 
 #  deploy-account-new:
 #    if: ${{ !cancelled() }}
-#    name: 'deploy account via deploy-stack.yml'
+#    name: 'deploy account via deploy-cdk-stack.yml'
 #    needs:
 #      - names
 #      - skip-deploy-check
 #      - deploy-dev
 #      - docker-build
 #      - push-images
-#    uses: ./.github/workflows/deploy-stack.yml
+#    uses: ./.github/workflows/deploy-cdk-stack.yml
 #    permissions:
 #      contents: read
 #      packages: read

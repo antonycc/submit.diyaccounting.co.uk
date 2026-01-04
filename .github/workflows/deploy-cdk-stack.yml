@@ -1,5 +1,5 @@
-name: deploy-stack
-run-name: "deploy stack from ${{ github.ref_name }}"
+name: deploy-cdk-stack
+run-name: "deploy cdk stack from ${{ github.ref_name }}"
 
 on:
   workflow_dispatch:
