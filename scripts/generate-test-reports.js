@@ -455,17 +455,6 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
       logOk(`Read ${hmrcApiRequests.length} HMRC API requests`);
       const preview = truncList(hmrcApiRequests.map((r) => r?.request?.url || r?.url || "?"));
       if (preview.length) logDebug(`API request URL preview: ${preview.join(", ")}`);
-
-      // Cat the JSONL file so each entry is visible one-per-line
-      try {
-        const raw = fs.readFileSync(hmrcApiRequestsPath, "utf-8");
-        logInfo(`── BEGIN ${path.basename(hmrcApiRequestsPath)} ──`);
-        process.stdout.write(raw);
-        if (!raw.endsWith("\n")) process.stdout.write("\n");
-        logInfo(`── END ${path.basename(hmrcApiRequestsPath)} ──`);
-      } catch (catErr) {
-        logWarn(`Failed to print ${hmrcApiRequestsPath}: ${catErr.message}`);
-      }
     } catch (e) {
       logWarn(`Failed to read HMRC API requests: ${e.message}`);
     }
