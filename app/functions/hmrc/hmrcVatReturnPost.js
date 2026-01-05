@@ -26,7 +26,7 @@ import {
 } from "../../services/hmrcApi.js";
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
-import { buildFraudHeaders } from "@app/lib/buildFraudHeaders.js";
+import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 

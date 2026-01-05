@@ -28,7 +28,7 @@ import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidVrn, isValidIsoDate, isValidDateRange } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
-import { buildFraudHeaders } from "@app/lib/buildFraudHeaders.js";
+import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 

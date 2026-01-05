@@ -261,9 +261,9 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
     );
 
     const responseBody = fraudPreventionHeadersValidationGetRequest.httpResponse.body;
-    console.log(`[DynamoDB Assertions]: Request code: ${responseBody.code}`);
-    console.log(`[DynamoDB Assertions]: Errors: ${responseBody.errors.length}`);
-    console.log(`[DynamoDB Assertions]: Warnings: ${responseBody.warnings.length}`);
+    console.log(`[DynamoDB Assertions]: Request code: ${responseBody?.code}`);
+    console.log(`[DynamoDB Assertions]: Errors: ${responseBody?.errors?.length}`);
+    console.log(`[DynamoDB Assertions]: Warnings: ${responseBody?.warnings?.length}`);
     console.log(`[DynamoDB Assertions]: Ignored headers: ${intentionallyNotSuppliedHeaders}`);
 
     const errors = responseBody.errors.filter((error) => {
