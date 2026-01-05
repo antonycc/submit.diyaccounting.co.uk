@@ -238,6 +238,28 @@ jobs:
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
       - name: Export DynamoDB data for test users
         if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
         run: |
@@ -257,36 +279,36 @@ jobs:
           ;
         shell: bash
 
-      - name: Inject DynamoDB HMRC API requests into test report
-        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
-        run: |
-          echo "Injecting DynamoDB HMRC API requests into test report JSON..."
-          # Find the test report JSON file
-          REPORT_FILE=$(find target/behaviour-test-results/ -name "test-report-${{ needs.params.outputs.behaviour-test-suite }}.json" | head -n 1)
-          if [ -z "$REPORT_FILE" ]; then
-            echo "⚠️  Test report file not found, trying alternative location..."
-            REPORT_FILE="target/behaviour-test-results/test-report-${{ needs.params.outputs.behaviour-test-suite }}.json"
-          fi
-          
-          # Find the DynamoDB export file
-          DYNAMODB_FILE="target/behaviour-test-results/hmrc-api-requests.jsonl"
-          
-          if [ -f "$REPORT_FILE" ]; then
-            echo "Found test report: $REPORT_FILE"
-            if [ -f "$DYNAMODB_FILE" ]; then
-              echo "Found DynamoDB export: $DYNAMODB_FILE"
-              node scripts/inject-dynamodb-into-test-report.js \
-                --reportFile "$REPORT_FILE" \
-                --dynamoDbFile "$DYNAMODB_FILE"
-            else
-              echo "⚠️  DynamoDB export file not found: $DYNAMODB_FILE"
-              echo "Test report will not include HMRC API requests from DynamoDB"
-            fi
-          else
-            echo "⚠️  Test report file not found: $REPORT_FILE"
-            echo "Skipping DynamoDB injection"
-          fi
-        shell: bash
+#      - name: Inject DynamoDB HMRC API requests into test report
+#        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
+#        run: |
+#          echo "Injecting DynamoDB HMRC API requests into test report JSON..."
+#          # Find the test report JSON file
+#          REPORT_FILE=$(find target/behaviour-test-results/ -name "test-report-${{ needs.params.outputs.behaviour-test-suite }}.json" | head -n 1)
+#          if [ -z "$REPORT_FILE" ]; then
+#            echo "⚠️  Test report file not found, trying alternative location..."
+#            REPORT_FILE="target/behaviour-test-results/test-report-${{ needs.params.outputs.behaviour-test-suite }}.json"
+#          fi
+#
+#          # Find the DynamoDB export file
+#          DYNAMODB_FILE="target/behaviour-test-results/hmrc-api-requests.jsonl"
+#
+#          if [ -f "$REPORT_FILE" ]; then
+#            echo "Found test report: $REPORT_FILE"
+#            if [ -f "$DYNAMODB_FILE" ]; then
+#              echo "Found DynamoDB export: $DYNAMODB_FILE"
+#              node scripts/inject-dynamodb-into-test-report.js \
+#                --reportFile "$REPORT_FILE" \
+#                --dynamoDbFile "$DYNAMODB_FILE"
+#            else
+#              echo "⚠️  DynamoDB export file not found: $DYNAMODB_FILE"
+#              echo "Test report will not include HMRC API requests from DynamoDB"
+#            fi
+#          else
+#            echo "⚠️  Test report file not found: $REPORT_FILE"
+#            echo "Skipping DynamoDB injection"
+#          fi
+#        shell: bash
 
       - name: List artefacts
         if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
