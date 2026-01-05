@@ -20,8 +20,14 @@ export function buildFraudHeaders(event) {
 
   // Helper to get header case-insensitively
   const getHeader = (name) => {
+    if (!eventHeaders || !name) return null;
     const lowerName = name.toLowerCase();
-    return eventHeaders[name] ?? eventHeaders[lowerName] ?? eventHeaders[name.toUpperCase()];
+    for (const [key, value] of Object.entries(eventHeaders)) {
+      if (key.toLowerCase() === lowerName) {
+        return value;
+      }
+    }
+    return null;
   };
 
   // 1. Client public IP – extract the first non-private IP from X-Forwarded-For header

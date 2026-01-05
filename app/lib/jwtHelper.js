@@ -1,6 +1,7 @@
 // app/lib/jwtHelper.js
 
 import { createLogger } from "./logger.js";
+import { getHeader } from "./httpResponseHelper.js";
 
 const logger = createLogger({ source: "app/lib/jwtHelper.js" });
 
@@ -21,7 +22,7 @@ export function decodeJwtNoVerify(token) {
 
 // Extract Cognito JWT from Authorization header
 export function decodeJwtToken(eventHeaders) {
-  const authHeader = eventHeaders?.authorization || eventHeaders?.Authorization;
+  const authHeader = getHeader(eventHeaders, "Authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new Error("Unauthorized - Missing or invalid authorization header");
   }
@@ -41,7 +42,6 @@ export function decodeJwtToken(eventHeaders) {
 export function getUserSub(event) {
   // Try standard Authorization header first
   const headers = event?.headers || {};
-  const findHeader = (name) => headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()];
 
   const tryExtract = (bearerValue) => {
     if (!bearerValue || !bearerValue.startsWith("Bearer ")) return null;
@@ -59,15 +59,12 @@ export function getUserSub(event) {
   };
 
   // Case-insensitive lookup for Authorization header
-  let auth = findHeader("authorization");
-  if (!auth) {
-    auth = Object.entries(headers).find(([k]) => k.toLowerCase() === "authorization")?.[1];
-  }
+  const auth = getHeader(headers, "authorization");
   const subFromAuth = tryExtract(auth);
   if (subFromAuth) return subFromAuth;
 
   // Fallback to X-Authorization header if present
-  const xAuth = Object.entries(headers).find(([k]) => k.toLowerCase() === "x-authorization")?.[1];
+  const xAuth = getHeader(headers, "x-authorization");
   const subFromXAuth = tryExtract(xAuth);
   if (subFromXAuth) return subFromXAuth;
 
