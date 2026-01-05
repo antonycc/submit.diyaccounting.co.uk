@@ -138,6 +138,7 @@ jobs:
         env:
           HMRC_SANDBOX_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret
 
+  # TODO: Switch to deploy-cdk-stack.yml
   deploy-observability:
     name: 'deploy observability'
     needs:
