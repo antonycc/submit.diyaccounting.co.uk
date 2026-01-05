@@ -365,119 +365,119 @@ jobs:
           if-no-files-found: error
 
 #  # TODO: Roll out stack deployments using the reusable workflow deploy-cdk-stack.yml
-#  deploy-dev-new:
-#    if: ${{ !cancelled() }}
-#    name: 'deploy dev via deploy-cdk-stack.yml'
-#    needs:
-#      - names
-#      - skip-deploy-check
-#    uses: ./.github/workflows/deploy-cdk-stack.yml
-#    permissions:
-#      contents: read
-#      packages: read
-#      id-token: write
-#    with:
-#      stackName: ${{ needs.names.outputs.deployment-name }}-app-AccountStack
-#      force-all-stack-deployment: ${{ env.FORCE_ALL_STACK_DEPLOYMENT }}
-#      environment-name: ${{ needs.names.outputs.environment-name }}
-#      deployment-name: ${{ needs.names.outputs.deployment-name }}
-#      cdk-application: 'application'
-#      # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-#      # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
-#      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
-#      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
-
-  deploy-dev:
-    name: 'deploy dev'
+  deploy-dev-new:
+    if: ${{ !cancelled() }}
+    name: 'deploy dev via deploy-cdk-stack.yml'
     needs:
       - names
       - skip-deploy-check
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      stackName: ${{ needs.names.outputs.deployment-name }}-app-DevStack
+      force-all-stack-deployment: ${{ env.FORCE_ALL_STACK_DEPLOYMENT }}
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      cdk-application: 'application'
+      # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+      # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
+      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Check if DevStack exists
-        id: static-skip
-        shell: bash
-        run: |
-          STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-DevStack"
-          echo "Checking for existing COMPLETE stack: $STACK_NAME"
-          COUNT=$(aws cloudformation list-stacks \
-            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
-            --output text)
-          if [ "$COUNT" -ge 1 ]; then
-            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        run: npm ci
-
-      - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Deploy Dev Stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
-        run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-application \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-app-DevStack \
-                --require-approval never \
-                --ci true \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-application.out/cdk-outputs-dev.json \
-            && cd .. \
-          ;
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+#  deploy-dev:
+#    name: 'deploy dev'
+#    needs:
+#      - names
+#      - skip-deploy-check
+#    runs-on: ubuntu-24.04
+#    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+#    steps:
+#
+#      - name: Configure AWS role via GitHub OIDC
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: false
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Assume AWS deployment role
+#        uses: aws-actions/configure-aws-credentials@v5
+#        with:
+#          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          role-chaining: true
+#          audience: sts.amazonaws.com
+#          role-skip-session-tagging: true
+#          output-credentials: true
+#          retry-max-attempts: 3
+#
+#      - name: Check if DevStack exists
+#        id: static-skip
+#        shell: bash
+#        run: |
+#          STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-DevStack"
+#          echo "Checking for existing COMPLETE stack: $STACK_NAME"
+#          COUNT=$(aws cloudformation list-stacks \
+#            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+#            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
+#            --output text)
+#          if [ "$COUNT" -ge 1 ]; then
+#            echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
+#          else
+#            echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
+#          fi
+#
+#      - name: Checkout
+#        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+#        uses: actions/checkout@v6
+#
+#      - name: Setup Node
+#        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+#        uses: actions/setup-node@v6
+#        with:
+#          node-version: ${{ env.NODE_VERSION }}
+#          cache: 'npm'
+#
+#      - name: Node dependencies
+#        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+#        run: npm ci
+#
+#      - uses: actions/setup-java@v5
+#        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+#        with:
+#          distribution: 'temurin'
+#          java-version: ${{ env.JAVA_VERSION }}
+#          cache: 'maven'
+#
+#      - name: Deploy Dev Stack (CDK)
+#        if: ${{ needs.names.outputs.environment-name == 'prod' || env.FORCE_ALL_STACK_DEPLOYMENT == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+#        run: |
+#          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+#            && cd cdk-application \
+#            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+#            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+#              npx cdk deploy \
+#                ${{ needs.names.outputs.deployment-name }}-app-DevStack \
+#                --require-approval never \
+#                --ci true \
+#                --concurrency 4 \
+#                --asset-parallelism \
+#                --outputs-file ../cdk-submit-application.out/cdk-outputs-dev.json \
+#            && cd .. \
+#          ;
+#        env:
+#          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+#          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+#          # Set by deploy-environment.yml after the environment's AuthStack is deployed
+#          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
+#          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
 
   deploy-dev-us-east-1:
     name: 'deploy dev us-east-1'
@@ -1693,7 +1693,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-post-vat-return-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'postVatReturnBehaviour-proxy via synthetic test'
     needs:
       - names
@@ -1712,28 +1712,8 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-fraud-prevention-headers-vat-sandbox:
-    if: ${{ !cancelled() }}
-    name: 'postVatReturnFraudPreventionHeadersBehaviour-proxy via synthetic test'
-    needs:
-      - names
-      - set-origins
-      - web-test
-    uses: ./.github/workflows/synthetic-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'postVatReturnFraudPreventionHeadersBehaviour'
-      generate-test-reports: 'false'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
   web-test-get-vat-return-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'getVatReturnBehaviour-proxy via synthetic test'
     needs:
       - names
@@ -1753,7 +1733,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-obligation-sandbox:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
     name: 'getVatObligationsBehaviour-proxy via synthetic test'
     needs:
       - names
@@ -1768,6 +1748,26 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'getVatObligationsBehaviour'
+      generate-test-reports: 'false'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-fraud-prevention-headers-vat-sandbox:
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+    name: 'postVatReturnFraudPreventionHeadersBehaviour-proxy via synthetic test'
+    needs:
+      - names
+      - set-origins
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'postVatReturnFraudPreventionHeadersBehaviour'
       generate-test-reports: 'false'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
