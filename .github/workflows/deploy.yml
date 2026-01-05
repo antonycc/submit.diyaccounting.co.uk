@@ -378,7 +378,7 @@ jobs:
       id-token: write
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-DevStack
-      force-all-stack-deployment: ${{ env.FORCE_ALL_STACK_DEPLOYMENT }}
+      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
