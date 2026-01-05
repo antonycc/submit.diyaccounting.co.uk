@@ -56,6 +56,10 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME = asyncReturnGetTable;
     process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME = asyncObligationGetTable;
 
+    // Initialize the salt for hashing user subs (already set in .env.test)
+    const { initializeSalt } = await import("../services/subHasher.js");
+    await initializeSalt();
+
     await ensureBundleTableExists(bundleTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcApiRequestsTableName, endpoint);
     await ensureReceiptsTableExists(receiptsTableName, endpoint);

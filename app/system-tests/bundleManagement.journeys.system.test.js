@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { hashSub } from "../services/subHasher.js";
 
 /** @typedef {typeof import("../services/bundleManagement.js")} BundleManagement */
 /** @type {BundleManagement} */
 let bm;
+/** @type {typeof import("../services/subHasher.js").hashSub} */
+let hashSub;
 let stopDynalite;
 const bundlesTableName = "bundles-system-test-bm-journeys";
 
@@ -23,13 +24,13 @@ function makeDocClient() {
 }
 
 async function queryBundlesForUser(userId) {
-  const hashedSub = hashSub(userId);
+  const hashedSubValue = hashSub(userId);
   const doc = makeDocClient();
   const resp = await doc.send(
     new QueryCommand({
       TableName: bundlesTableName,
       KeyConditionExpression: "hashedSub = :h",
-      ExpressionAttributeValues: { ":h": hashedSub },
+      ExpressionAttributeValues: { ":h": hashedSubValue },
     }),
   );
   return resp.Items || [];
@@ -79,17 +80,16 @@ beforeAll(async () => {
   const { default: dynalite } = await import("dynalite");
 
   const host = "127.0.0.1";
-  const port = 9007; // use distinct port to avoid conflicts
   const server = dynalite({ createTableMs: 0 });
-  await new Promise((resolve, reject) => {
-    server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+  const address = await new Promise((resolve, reject) => {
+    server.listen(0, host, (err) => (err ? reject(err) : resolve(server.address())));
   });
   stopDynalite = async () => {
     try {
       server.close();
     } catch {}
   };
-  const endpoint = `http://${host}:${port}`;
+  const endpoint = `http://${host}:${address.port}`;
 
   process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
   process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
@@ -97,6 +97,14 @@ beforeAll(async () => {
   process.env.AWS_ENDPOINT_URL = endpoint;
   process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
   process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
+
+  // Set salt for hashing user subs (required by subHasher.js)
+  process.env.USER_SUB_HASH_SALT = "test-salt-for-system-tests";
+
+  // Initialize the salt before importing modules that use hashSub
+  const subHasher = await import("../services/subHasher.js");
+  await subHasher.initializeSalt();
+  hashSub = subHasher.hashSub;
 
   await ensureBundleTableExists(bundlesTableName, endpoint);
 

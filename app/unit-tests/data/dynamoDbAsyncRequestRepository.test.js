@@ -1,6 +1,7 @@
 // app/unit-tests/data/dynamoDbAsyncRequestRepository.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { _setTestSalt, _clearSalt } from "../../services/subHasher.js";
 
 const mockSend = vi.fn();
 
@@ -36,10 +37,13 @@ describe("dynamoDbAsyncRequestRepository", () => {
     vi.clearAllMocks();
     process.env = { ...originalEnv };
     process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = "test-async-requests";
+    // Initialize salt for tests that use hashSub
+    _setTestSalt("test-salt-for-unit-tests");
   });
 
   afterEach(() => {
     process.env = originalEnv;
+    _clearSalt();
   });
 
   test("putAsyncRequest uses UpdateCommand and preserves createdAt via if_not_exists", async () => {

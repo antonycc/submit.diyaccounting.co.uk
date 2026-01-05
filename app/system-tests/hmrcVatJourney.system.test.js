@@ -3,8 +3,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { hashSub } from "../services/subHasher.js";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
+
+/** @type {typeof import("../services/subHasher.js").hashSub} */
+let hashSub;
 import { ingestHandler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
 import { ingestHandler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { ingestHandler as hmrcReceiptGetHandler } from "../functions/hmrc/hmrcReceiptGet.js";
@@ -114,6 +116,11 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = hmrcReqsTableName;
     process.env.RECEIPTS_DYNAMODB_TABLE_NAME = receiptsTableName;
     process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME = asyncReturnPostTable;
+
+    // Initialize the salt for hashing user subs (already set in .env.test)
+    const subHasher = await import("../services/subHasher.js");
+    await subHasher.initializeSalt();
+    hashSub = subHasher.hashSub;
 
     await ensureBundleTableExists(bundlesTableName, endpoint);
     await ensureHmrcApiRequestsTableExists(hmrcReqsTableName, endpoint);

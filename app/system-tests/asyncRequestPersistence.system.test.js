@@ -28,6 +28,10 @@ describe("System: async request persistence with dynalite", () => {
     process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME = asyncRequestsTableName;
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
 
+    // Initialize the salt for hashing user subs (already set in .env.test)
+    const { initializeSalt } = await import("@app/services/subHasher.js");
+    await initializeSalt();
+
     await ensureAsyncRequestsTableExists(asyncRequestsTableName, endpoint);
     await ensureBundleTableExists(bundlesTableName, endpoint);
   });
