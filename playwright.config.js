@@ -10,6 +10,7 @@ export default defineConfig({
       testMatch: [
         "**/auth.behaviour.test.js",
         "**/bundles.behaviour.test.js",
+        "**/compliance.behaviour.test.js",
         "**/submitVat.behaviour.test.js",
         "**/postVatReturn.behaviour.test.js",
         "**/getVatReturn.behaviour.test.js",
@@ -72,6 +73,14 @@ export default defineConfig({
       name: "getVatReturnBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/getVatReturn.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
+      name: "complianceBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/compliance.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 300_000,
