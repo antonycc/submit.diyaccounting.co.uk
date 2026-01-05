@@ -376,6 +376,8 @@ jobs:
       contents: read
       packages: read
       id-token: write
+      pages: write
+      pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-DevStack
       force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
