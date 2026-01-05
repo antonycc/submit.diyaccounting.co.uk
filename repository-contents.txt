@@ -110,7 +110,6 @@
 ./app/lib/logger.js
 ./app/lib/httpResponseHelper.js
 ./app/lib/hmrcValidation.js
-./app/lib/eventToGovClientHeaders.js
 ./app/lib/buildFraudHeaders.js
 ./app/lib/jwtHelper.js
 ./app/test-helpers/mockHelpers.js

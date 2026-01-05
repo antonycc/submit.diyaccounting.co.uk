@@ -25,7 +25,6 @@ HMRC specifies minimum functionality for MTD VAT software before production cred
 | Area | Current state | Gap / risk |
 |------|---------------|------------|
 | VAT submission | Working in sandbox; logs all requests and responses | Needs validation of numeric formats and period-key logic |
-| Fraud prevention headers | Partially implemented (`eventToGovClientHeaders.js`, `submit.js`) | Uses static IPs and placeholder licence IDs; missing cross-validation |
 | OAuth / security | Basic PKCE flow, static secrets | Must enforce nonce/state, rotate secrets, and add CSRF protection |
 | Entitlements / bundles | In-memory, catalogue not persisted | Requires DynamoDB or similar persistence for user entitlements |
 | Logging and monitoring | Console and simple JSON logs | Needs CloudWatch structure, X-Ray, correlation IDs |

@@ -1644,8 +1644,7 @@ app/
 │   ├── httpServerToLambdaAdaptor.js      # Express ↔ Lambda adapter
 │   ├── jwtHelper.js                      # JWT utilities
 │   ├── logger.js                         # Pino logger configuration
-│   ├── httpResponseHelper.js             # Lambda response helpers
-│   └── eventToGovClientHeaders.js        # Gov-Client-* header generation
+│   └── httpResponseHelper.js             # Lambda response helpers
 ├── services/               # Business logic services
 │   ├── bundleManagement.js               # Bundle management logic
 │   ├── hmrcApi.js                        # HMRC API client

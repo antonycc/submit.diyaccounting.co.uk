@@ -92,9 +92,7 @@ HMRC’s VAT API allows developers to retrieve obligations, submit and view retu
    - Redirect unauthorized users to bundles page
 
 2. **Common Gov-Client Headers Helper (Backend)**
-   - Create `app/lib/buildGovClientHeaders.js` to centralize header building
-   - Use in `getVatObligations.js` and `hmrcVatReturnGet.js`
-   - Already using `eventToGovClientHeaders.js` but could be refactored further
+   - Create `app/lib/buildGovClientHeaders.js` - Done.
 
 3. **Environment Variables for Stubbed Data**
    - `TEST_VAT_OBLIGATIONS` already implemented

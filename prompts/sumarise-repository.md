@@ -140,7 +140,6 @@ repository-contents.txt:
 ./app/lib/httpServerToLambdaAdaptor.js
 ./app/lib/logger.js
 ./app/lib/httpResponseHelper.js
-./app/lib/eventToGovClientHeaders.js
 ./app/lib/jwtHelper.js
 ./app/test-helpers/mockHelpers.js
 ./app/test-helpers/primableMockServer.js

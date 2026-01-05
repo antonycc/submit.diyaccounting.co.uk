@@ -5,13 +5,11 @@ import {
   extractRequest,
   http200OkResponse,
   http400BadRequestResponse,
-  extractClientIPFromHeaders,
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
-import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
@@ -29,8 +27,8 @@ import {
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
-import { v4 as uuidv4 } from "uuid";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { buildFraudHeaders } from "@app/lib/buildFraudHeaders.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnGet.js" });
 
@@ -121,8 +119,7 @@ export async function ingestHandler(event) {
     });
   }
 
-  const detectedIP = extractClientIPFromHeaders(event);
-  const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
+  const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event);
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
