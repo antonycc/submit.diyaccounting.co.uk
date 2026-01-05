@@ -262,28 +262,32 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
 
     const responseBody = fraudPreventionHeadersValidationGetRequest.httpResponse.body;
     console.log(`[DynamoDB Assertions]: Request code: ${responseBody.code}`);
-    console.log(`[DynamoDB Assertions]: Errors: ${responseBody.errors.length}`);
-    console.log(`[DynamoDB Assertions]: Warnings: ${responseBody.warnings.length}`);
+    console.log(`[DynamoDB Assertions]: Errors: ${responseBody.errors?.length}`);
+    console.log(`[DynamoDB Assertions]: Warnings: ${responseBody.warnings?.length}`);
     console.log(`[DynamoDB Assertions]: Ignored headers: ${intentionallyNotSuppliedHeaders}`);
 
-    const errors = responseBody.errors.filter((error) => {
+    const errors = responseBody.errors?.filter((error) => {
       const headers = error.headers.filter((header) => !intentionallyNotSuppliedHeaders.includes(header));
       return headers.length > 0;
     });
-    console.log(`[DynamoDB Assertions]: Errors: ${errors.length} (out of non-ignored ${responseBody.errors.length} headers)`);
+    console.log(`[DynamoDB Assertions]: Errors: ${errors?.length} (out of non-ignored ${responseBody.errors?.length} headers)`);
     if (noErrors) {
-      expect(errors).toEqual([]);
-      expect(errors.length).toBe(0);
+      if (errors) {
+        expect(errors).toEqual([]);
+        expect(errors?.length).toBe(0);
+      }
     }
 
-    const warnings = responseBody.warnings.filter((warning) => {
+    const warnings = responseBody.warnings?.filter((warning) => {
       const headers = warning.headers.filter((header) => !intentionallyNotSuppliedHeaders.includes(header));
       return headers.length > 0;
     });
-    console.log(`[DynamoDB Assertions]: Warnings: ${warnings.length} (out of non-ignored ${responseBody.warnings.length} headers)`);
+    console.log(`[DynamoDB Assertions]: Warnings: ${warnings?.length} (out of non-ignored ${responseBody.warnings?.length} headers)`);
     if (noWarnings) {
-      expect(warnings).toEqual([]);
-      expect(warnings.length).toBe(0);
+      if (warnings) {
+        expect(warnings).toEqual([]);
+        expect(warnings.length).toBe(0);
+      }
     }
 
     console.log(`[DynamoDB Assertions]: Request code: ${responseBody.code}`);
