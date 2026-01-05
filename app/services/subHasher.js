@@ -1,41 +1,75 @@
 // app/services/subHasher.js
 
 import crypto from "crypto";
+import { createLogger } from "../lib/logger.js";
 
-let cachedSalt = null;
+const logger = createLogger({ source: "app/services/subHasher.js" });
+
+let __cachedSalt = null;
+let __initPromise = null;
 
 /**
  * Initialize the salt from environment variable or AWS Secrets Manager.
- * Must be called during application startup before any hashSub calls.
+ * Call this at the top of your Lambda handler before using hashSub().
+ *
+ * Features:
+ * - One-time fetch per Lambda container (cold start), then cached
+ * - Concurrent initialization protection (prevents race conditions)
+ * - Clear error messages for troubleshooting
  *
  * @returns {Promise<void>}
  */
 export async function initializeSalt() {
-  if (cachedSalt) return;
-
-  // For local development/testing, allow env var override
-  if (process.env.USER_SUB_HASH_SALT) {
-    cachedSalt = process.env.USER_SUB_HASH_SALT;
+  if (__cachedSalt) {
+    logger.debug({ message: "Salt already initialized (warm start)" });
     return;
   }
 
-  // For deployed environments, fetch from Secrets Manager
-  const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
-  const client = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-
-  const envName = process.env.ENVIRONMENT_NAME || "ci";
-  const secretName = `${envName}/submit/user-sub-hash-salt`;
-
-  try {
-    const response = await client.send(new GetSecretValueCommand({ SecretId: secretName }));
-    cachedSalt = response.SecretString;
-
-    if (!cachedSalt) {
-      throw new Error(`Salt secret ${secretName} exists but has no value`);
-    }
-  } catch (error) {
-    throw new Error(`Failed to retrieve salt from ${secretName}: ${error.message}`);
+  // Prevent concurrent initialization during cold start
+  if (__initPromise) {
+    logger.debug({ message: "Salt initialization in progress, waiting..." });
+    return __initPromise;
   }
+
+  __initPromise = (async () => {
+    try {
+      // For local development/testing, allow env var override
+      if (process.env.USER_SUB_HASH_SALT) {
+        logger.info({ message: "Using USER_SUB_HASH_SALT from environment (local dev/test)" });
+        __cachedSalt = process.env.USER_SUB_HASH_SALT;
+        return;
+      }
+
+      // For deployed environments, fetch from Secrets Manager
+      const envName = process.env.ENVIRONMENT_NAME || "ci";
+      const secretName = `${envName}/submit/user-sub-hash-salt`;
+
+      logger.info({ message: "Fetching salt from Secrets Manager", secretName });
+
+      const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
+      const client = new SecretsManagerClient({
+        region: process.env.AWS_REGION || "eu-west-2",
+      });
+
+      const response = await client.send(new GetSecretValueCommand({ SecretId: secretName }));
+
+      if (!response.SecretString) {
+        throw new Error(`Secret ${secretName} exists but has no SecretString value`);
+      }
+
+      __cachedSalt = response.SecretString;
+      logger.info({ message: "Salt successfully fetched and cached" });
+    } catch (error) {
+      logger.error({ message: "Failed to fetch salt", error: error.message });
+      __initPromise = null; // Clear promise so next call will retry
+      throw new Error(
+        `Failed to initialize salt: ${error.message}. ` +
+          `Ensure secret exists and Lambda has secretsmanager:GetSecretValue permission.`
+      );
+    }
+  })();
+
+  return __initPromise;
 }
 
 /**
@@ -43,7 +77,7 @@ export async function initializeSalt() {
  * @returns {boolean}
  */
 export function isSaltInitialized() {
-  return cachedSalt !== null;
+  return __cachedSalt !== null;
 }
 
 /**
@@ -59,11 +93,14 @@ export function hashSub(sub) {
     throw new Error("Invalid sub: must be a non-empty string");
   }
 
-  if (!cachedSalt) {
-    throw new Error("Salt not initialized. Call initializeSalt() during application startup.");
+  if (!__cachedSalt) {
+    throw new Error(
+      "Salt not initialized. Call initializeSalt() in your Lambda handler before using hashSub(). " +
+        "For local dev, set USER_SUB_HASH_SALT in .env file."
+    );
   }
 
-  return crypto.createHmac("sha256", cachedSalt).update(sub).digest("hex");
+  return crypto.createHmac("sha256", __cachedSalt).update(sub).digest("hex");
 }
 
 // ============================================================================
@@ -78,7 +115,8 @@ export function _setTestSalt(salt) {
   if (process.env.NODE_ENV !== "test") {
     throw new Error("_setTestSalt can only be used in test environment");
   }
-  cachedSalt = salt;
+  __cachedSalt = salt;
+  __initPromise = null;
 }
 
 /**
@@ -88,5 +126,6 @@ export function _clearSalt() {
   if (process.env.NODE_ENV !== "test") {
     throw new Error("_clearSalt can only be used in test environment");
   }
-  cachedSalt = null;
+  __cachedSalt = null;
+  __initPromise = null;
 }

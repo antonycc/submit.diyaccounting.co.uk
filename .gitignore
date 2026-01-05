@@ -351,3 +351,6 @@ fabric.properties
 
 # HMRC test user credentials
 /hmrc-test-user.json
+
+# Salt backups (sensitive - store securely, not in Git)
+salt-backup-*.json
