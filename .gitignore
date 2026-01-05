@@ -351,6 +351,3 @@ fabric.properties
 
 # HMRC test user credentials
 /hmrc-test-user.json
-/behaviour.txt
-/mvnw.txt
-/test.txt
