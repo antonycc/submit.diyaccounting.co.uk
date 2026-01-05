@@ -9,6 +9,7 @@ import {
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
+  getHeader,
 } from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
@@ -23,6 +24,7 @@ import {
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
   validateFraudPreventionHeaders,
+  buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
@@ -109,11 +111,8 @@ export async function ingestHandler(event) {
     "SQS_QUEUE_URL",
   ]);
 
-  const { request, requestId: extractedRequestId } = extractRequest(event);
-  const requestId = extractedRequestId || uuidv4();
-  if (!extractedRequestId) {
-    context.set("requestId", requestId);
-  }
+  // trace: 1
+  const { request, requestId, traceparent, correlationId } = extractRequest(event);
 
   const asyncRequestsTableName = process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME;
   const sqsQueueUrl = process.env.SQS_QUEUE_URL;
@@ -125,6 +124,7 @@ export async function ingestHandler(event) {
   try {
     userSub = await enforceBundles(event);
   } catch (error) {
+    // TODO: Pass back any generated tracing headers in error responses.
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
@@ -144,7 +144,7 @@ export async function ingestHandler(event) {
   // Generate Gov-Client headers and collect any header-related validation errors
   const detectedIP = extractClientIPFromHeaders(event);
   const { govClientHeaders, govClientErrorMessages } = eventToGovClientHeaders(event, detectedIP);
-  const govTestScenarioHeader = govClientHeaders["Gov-Test-Scenario"];
+  const govTestScenarioHeader = getHeader(govClientHeaders, "Gov-Test-Scenario");
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Normalise periodKey to uppercase for HMRC if provided as string
@@ -183,8 +183,9 @@ export async function ingestHandler(event) {
     });
   }
 
-  const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
+  const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
 
+  // trace: 2
   const payload = {
     vatNumber,
     periodKey: normalizedPeriodKey,
@@ -195,9 +196,12 @@ export async function ingestHandler(event) {
     userSub,
     govTestScenarioHeader,
     runFraudPreventionHeaderValidation,
+    requestId,
+    traceparent,
+    correlationId,
   };
 
-  const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+  const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
   let persistedRequest = null;
   if (!isInitialRequest) {
     persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
@@ -217,6 +221,7 @@ export async function ingestHandler(event) {
       // If processing, result stays null and we skip initiation
     } else {
       logger.info({ message: "Initiating new processing", requestId });
+      // trace: 3
       const processor = async (payload) => {
         const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
           payload.periodKey,
@@ -228,6 +233,9 @@ export async function ingestHandler(event) {
           payload.userSub,
           payload.govTestScenarioHeader,
           payload.runFraudPreventionHeaderValidation,
+          payload.requestId,
+          payload.traceparent,
+          payload.correlationId,
         );
 
         const serializableHmrcResponse = {
@@ -270,10 +278,13 @@ export async function ingestHandler(event) {
         return resultData;
       };
 
+      // trace: 4
       result = await asyncApiServices.initiateProcessing({
         processor,
         userId: userSub,
         requestId,
+        traceparent,
+        correlationId,
         waitTimeMs,
         payload,
         tableName: asyncRequestsTableName,
@@ -340,10 +351,16 @@ export async function workerHandler(event) {
   for (const record of event.Records || []) {
     let userSub;
     let requestId;
+    // trace: 5
+    let traceparent;
+    let correlationId;
     try {
       const body = JSON.parse(record.body);
       userSub = body.userId;
       requestId = body.requestId;
+      // trace: 6
+      traceparent = body.traceparent;
+      correlationId = body.correlationId;
       const payload = body.payload;
 
       if (!userSub || !requestId) {
@@ -355,10 +372,14 @@ export async function workerHandler(event) {
         context.enterWith(new Map());
       }
       context.set("requestId", requestId);
+      // trace: 7
+      context.set("traceparent", traceparent);
+      context.set("correlationId", correlationId);
       context.set("userSub", userSub);
 
       logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
 
+      // trace: 8
       const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
         payload.periodKey,
         payload.numVatDue,
@@ -369,6 +390,9 @@ export async function workerHandler(event) {
         payload.userSub,
         payload.govTestScenarioHeader,
         payload.runFraudPreventionHeaderValidation,
+        payload.requestId,
+        payload.traceparent,
+        payload.correlationId,
       );
 
       const serializableHmrcResponse = {
@@ -480,6 +504,7 @@ function isRetryableError(error) {
 }
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+// trace: 9
 export async function submitVat(
   periodKey,
   vatDue,
@@ -490,14 +515,18 @@ export async function submitVat(
   auditForUserSub,
   govTestScenarioHeader,
   runFraudPreventionHeaderValidation = false,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
 ) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
     logger.info({ message: "Validating fraud prevention headers for sandbox account", hmrcAccount, runFraudPreventionHeaderValidation });
-    // This is a fire-and-forget validation that logs results but does not block
-    validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
+    try {
+      await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub, requestId, traceparent, correlationId);
+    } catch (error) {
       logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
-    });
+    }
   } else {
     logger.info({
       message: "Skipping fraud prevention header validation for HMRC API request",
@@ -506,15 +535,6 @@ export async function submitVat(
     });
   }
 
-  const hmrcRequestHeaders = {
-    "Content-Type": "application/json",
-    "Accept": "application/vnd.hmrc.1.0+json",
-    "Authorization": `Bearer ${hmrcAccessToken}`,
-    "x-request-id": context.get("requestId"),
-    ...(context.get("correlationId") || context.get("requestId")
-      ? { "x-correlationid": context.get("correlationId") || context.get("requestId") }
-      : {}),
-  };
   const hmrcRequestBody = {
     periodKey,
     vatDueSales: parseFloat(vatDue),
@@ -552,6 +572,15 @@ export async function submitVat(
       await new Promise((resolve) => setTimeout(resolve, slowTime));
       logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waited): ${govTestScenarioHeader}`, slowTime });
     }
+    // trace: 10
+    const hmrcRequestHeaders = buildHmrcHeaders(
+      hmrcAccessToken,
+      govClientHeaders,
+      govTestScenarioHeader,
+      requestId,
+      traceparent,
+      correlationId,
+    );
     /* v8 ignore stop */
     logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);
     const httpResult = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);

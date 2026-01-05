@@ -9,6 +9,7 @@ import {
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
+  getHeader,
 } from "../../lib/httpResponseHelper.js";
 import eventToGovClientHeaders from "../../lib/eventToGovClientHeaders.js";
 import { validateEnv } from "../../lib/env.js";
@@ -23,6 +24,7 @@ import {
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
   validateFraudPreventionHeaders,
+  buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
@@ -66,7 +68,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   const normalizedPeriodKey = typeof periodKey === "string" ? periodKey.toUpperCase() : periodKey;
 
   // Extract HMRC account (sandbox/live) from header hmrcAccount
-  const hmrcAccountHeader = (event.headers && event.headers.hmrcaccount) || "";
+  const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
   if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
@@ -95,11 +97,7 @@ export async function ingestHandler(event) {
     "SQS_QUEUE_URL",
   ]);
 
-  const { request, requestId: extractedRequestId } = extractRequest(event);
-  const requestId = extractedRequestId || uuidv4();
-  if (!extractedRequestId) {
-    context.set("requestId", requestId);
-  }
+  const { request, requestId, traceparent, correlationId } = extractRequest(event);
 
   const asyncRequestsTableName = process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME;
   const sqsQueueUrl = process.env.SQS_QUEUE_URL;
@@ -161,7 +159,7 @@ export async function ingestHandler(event) {
   }
 
   // Keep local override for test scenarios in a consistent variable name
-  const govTestScenarioHeader = govClientHeaders["Gov-Test-Scenario"] || testScenario;
+  const govTestScenarioHeader = getHeader(govClientHeaders, "Gov-Test-Scenario") || testScenario;
 
   // Simulate an immediate API (this lambda) failure for testing, mirroring POST ingestHandler
   logger.info({ "Checking for test scenario": govTestScenarioHeader });
@@ -173,7 +171,7 @@ export async function ingestHandler(event) {
     });
   }
 
-  const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
+  const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
 
   const payload = {
     vrn,
@@ -184,9 +182,12 @@ export async function ingestHandler(event) {
     hmrcAccount,
     userSub,
     runFraudPreventionHeaderValidation,
+    requestId,
+    traceparent,
+    correlationId,
   };
 
-  const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+  const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
   let persistedRequest = null;
   if (!isInitialRequest) {
     persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
@@ -216,6 +217,9 @@ export async function ingestHandler(event) {
           payload.hmrcAccount,
           payload.userSub,
           payload.runFraudPreventionHeaderValidation,
+          payload.requestId,
+          payload.traceparent,
+          payload.correlationId,
         );
 
         const serializableHmrcResponse = {
@@ -241,6 +245,8 @@ export async function ingestHandler(event) {
         processor,
         userId: userSub,
         requestId,
+        traceparent,
+        correlationId,
         waitTimeMs,
         payload,
         tableName: asyncRequestsTableName,
@@ -305,10 +311,14 @@ export async function workerHandler(event) {
   for (const record of event.Records || []) {
     let userSub;
     let requestId;
+    let traceparent;
+    let correlationId;
     try {
       const body = JSON.parse(record.body);
       userSub = body.userId;
       requestId = body.requestId;
+      traceparent = body.traceparent;
+      correlationId = body.correlationId;
       const payload = body.payload;
 
       if (!userSub || !requestId) {
@@ -320,6 +330,8 @@ export async function workerHandler(event) {
         context.enterWith(new Map());
       }
       context.set("requestId", requestId);
+      context.set("traceparent", traceparent);
+      context.set("correlationId", correlationId);
       context.set("userSub", userSub);
 
       logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
@@ -333,6 +345,9 @@ export async function workerHandler(event) {
         payload.hmrcAccount,
         payload.userSub,
         payload.runFraudPreventionHeaderValidation,
+        payload.requestId,
+        payload.traceparent,
+        payload.correlationId,
       );
 
       const serializableHmrcResponse = {
@@ -439,14 +454,18 @@ export async function getVatReturn(
   hmrcAccount,
   auditForUserSub,
   runFraudPreventionHeaderValidation = false,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
 ) {
   // Validate fraud prevention headers for sandbox accounts
   if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
     logger.info({ message: "Validating fraud prevention headers for sandbox account", hmrcAccount, runFraudPreventionHeaderValidation });
-    // This is a fire-and-forget validation that logs results but does not block
-    validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub).catch((error) => {
+    try {
+      await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub, requestId, traceparent, correlationId);
+    } catch (error) {
       logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
-    });
+    }
   } else {
     logger.info({
       message: "Skipping fraud prevention header validation for HMRC API request",
@@ -475,10 +494,11 @@ export async function getVatReturn(
       await new Promise((resolve) => setTimeout(resolve, slowTime));
       logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waited): ${testScenario}`, slowTime });
     }
+    const hmrcRequestHeaders = buildHmrcHeaders(hmrcAccessToken, govClientHeaders, testScenario, requestId, traceparent, correlationId);
     /* v8 ignore stop */
     hmrcResponse = await hmrcHttpGet(
       hmrcRequestUrl,
-      hmrcAccessToken,
+      hmrcRequestHeaders,
       govClientHeaders,
       testScenario === "SUBMIT_HMRC_API_HTTP_SLOW_10S" ? null : testScenario,
       hmrcAccount,

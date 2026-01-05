@@ -155,6 +155,8 @@ function readJsonlFile(filePath) {
         const status = obj?.response?.status || obj?.status || "";
         const parts = ["HMRC API request" + (method ? ` ${method}` : ""), url, status ? `(status ${status})` : ""].filter(Boolean);
         logInfo(parts.join(" "));
+        logInfo(obj?.request?.httpRequest?.headers?.traceparent);
+        logInfo(obj?.request?.traceparent);
       }
     } catch (e) {
       failures++;

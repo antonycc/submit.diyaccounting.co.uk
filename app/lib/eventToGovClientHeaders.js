@@ -19,7 +19,16 @@ const logger = createLogger({ source: "app/lib/eventToGovClientHeaders.js" });
 export default function eventToGovClientHeaders(event, detectedIP) {
   const headers = event.headers || {};
   // Case-insensitive header getter
-  const h = (name) => headers[name] ?? headers[String(name).toLowerCase()] ?? headers[String(name).toUpperCase()];
+  const h = (name) => {
+    if (!headers || !name) return null;
+    const lowerName = String(name).toLowerCase();
+    for (const [key, value] of Object.entries(headers)) {
+      if (key.toLowerCase() === lowerName) {
+        return value;
+      }
+    }
+    return null;
+  };
 
   // Treat literal strings like "undefined"/"null" and blanks as missing
   const sanitize = (value) => {

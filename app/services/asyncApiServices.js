@@ -35,6 +35,8 @@ export async function initiateProcessing({
   processor,
   userId,
   requestId,
+  traceparent,
+  correlationId,
   waitTimeMs,
   payload,
   tableName, // = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME,
@@ -70,7 +72,7 @@ export async function initiateProcessing({
       await sqs.send(
         new SendMessageCommand({
           QueueUrl: queueUrl,
-          MessageBody: JSON.stringify({ userId, requestId, payload }),
+          MessageBody: JSON.stringify({ userId, requestId, traceparent, correlationId, payload }),
           MessageAttributes: {
             requestId: { DataType: "String", StringValue: requestId },
             userId: { DataType: "String", StringValue: userId },

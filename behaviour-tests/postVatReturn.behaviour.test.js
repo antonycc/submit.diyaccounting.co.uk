@@ -15,7 +15,6 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  checkFraudPreventionHeadersFeedback,
   generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {
@@ -104,7 +103,7 @@ test.setTimeout(1_200_000);
 
 // Explicit, stable test ID for reporting
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "post-vat-return-sandbox" });
+  testInfo.annotations.push({ type: "test-id", description: "postVatReturnBehaviour" });
 });
 
 test.beforeAll(async ({ page }, testInfo) => {
@@ -378,7 +377,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
 
   // Build testContext.json
   const testContext = {
-    testId: "post-vat-return-sandbox",
+    testId: "postVatReturnBehaviour",
     name: testInfo.title,
     title: "Submit VAT Return (Single API Focus: POST)",
     description: "Submits VAT returns to HMRC with default and sandbox Gov-Test-Scenario variations.",

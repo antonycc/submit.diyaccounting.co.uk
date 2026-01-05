@@ -8,6 +8,7 @@ import {
   buildValidationError,
   http200OkResponse,
   extractUserFromAuthorizerContext,
+  getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -49,7 +50,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!code) errorMessages.push("Missing code from event body");
 
   // Extract HMRC account (sandbox/live) from header hmrcAccount
-  const hmrcAccountHeader = (event.headers && event.headers.hmrcaccount) || "";
+  const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
   if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
@@ -105,9 +106,7 @@ export async function ingestHandler(event) {
   let userSub = getUserSub(event);
   if (!userSub) userSub = extractUserFromAuthorizerContext(event)?.sub || null;
   if (!userSub) {
-    const hdrs = event.headers || {};
-    const xUserSub = Object.entries(hdrs).find(([k]) => k.toLowerCase() === "x-user-sub")?.[1];
-    userSub = xUserSub || null;
+    userSub = getHeader(event.headers, "x-user-sub") || null;
   }
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
 }

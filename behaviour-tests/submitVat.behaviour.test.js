@@ -15,7 +15,6 @@ import {
   runLocalDynamoDb,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  checkFraudPreventionHeadersFeedback,
   generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {
@@ -123,6 +122,10 @@ let userSub = null;
 let observedTraceparent = null;
 
 test.setTimeout(300_000);
+
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.annotations.push({ type: "test-id", description: "submitVatBehaviour" });
+});
 
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
@@ -407,6 +410,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
+    testId: "submitVatBehaviour",
     name: testInfo.title,
     title: "Submit VAT Return (HMRC: VAT Return POST)",
     description: "Clicks through the app to submit a VAT return to HMRC MTD VAT API, then verifies receipt visibility and navigation.",

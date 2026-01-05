@@ -4,6 +4,7 @@
 
 import { createLogger } from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
+import { getHeader } from "../../lib/httpResponseHelper.js";
 
 const logger = createLogger({ source: "app/functions/auth/customAuthorizer.js" });
 
@@ -50,15 +51,7 @@ export async function ingestHandler(event) {
   try {
     // Extract token from X-Authorization header (case-insensitive)
     const headers = event.headers || {};
-    let xAuthHeader = null;
-
-    // Case-insensitive header lookup
-    for (const [key, value] of Object.entries(headers)) {
-      if (key.toLowerCase() === "x-authorization") {
-        xAuthHeader = value;
-        break;
-      }
-    }
+    const xAuthHeader = getHeader(headers, "x-authorization");
 
     if (!xAuthHeader) {
       logger.warn({ message: "Missing X-Authorization header", headers: Object.keys(headers) });

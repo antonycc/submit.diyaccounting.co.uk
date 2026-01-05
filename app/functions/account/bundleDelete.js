@@ -10,6 +10,7 @@ import {
   http404NotFoundResponse,
   http500ServerErrorResponse,
   buildValidationError,
+  getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -81,11 +82,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 export async function ingestHandler(event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
-  const { request, requestId: extractedRequestId } = extractRequest(event);
-  const requestId = extractedRequestId || uuidv4();
-  if (!extractedRequestId) {
-    context.set("requestId", requestId);
-  }
+  const { request, requestId, traceparent, correlationId } = extractRequest(event);
 
   const asyncTableName = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;
   const asyncQueueUrl = process.env.SQS_QUEUE_URL;
@@ -125,12 +122,12 @@ export async function ingestHandler(event) {
   let result;
   // Processing
   try {
-    const waitTimeMs = parseInt(event.headers?.["x-wait-time-ms"] || event.headers?.["X-Wait-Time-Ms"] || DEFAULT_WAIT_MS, 10);
+    const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
 
     logger.info({ message: "Processing bundle delete for user", userId, bundleToRemove, removeAll, requestId, waitTimeMs });
 
     // Check if there is already a persisted request for this ID
-    const isInitialRequest = event.headers?.["x-initial-request"] === "true" || event.headers?.["X-Initial-Request"] === "true";
+    const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
     let persistedRequest = null;
     if (!isInitialRequest) {
       persistedRequest = await getAsyncRequest(userId, requestId, asyncTableName);
@@ -148,8 +145,10 @@ export async function ingestHandler(event) {
         processor,
         userId,
         requestId,
+        traceparent,
+        correlationId,
         waitTimeMs,
-        payload: { userId, bundleToRemove, removeAll, requestId },
+        payload: { userId, bundleToRemove, removeAll, requestId, traceparent, correlationId },
         tableName: asyncTableName,
         queueUrl: asyncQueueUrl,
         maxWaitMs: MAX_WAIT_MS,
@@ -200,10 +199,14 @@ export async function workerHandler(event) {
   for (const record of event.Records || []) {
     let userId;
     let requestId;
+    let traceparent;
+    let correlationId;
     try {
       const body = JSON.parse(record.body);
       userId = body.userId;
       requestId = body.requestId;
+      traceparent = body.traceparent;
+      correlationId = body.correlationId;
       const { bundleToRemove, removeAll } = body.payload;
 
       if (!userId || !requestId) {
@@ -215,6 +218,8 @@ export async function workerHandler(event) {
         context.enterWith(new Map());
       }
       context.set("requestId", requestId);
+      context.set("traceparent", traceparent);
+      context.set("correlationId", correlationId);
       context.set("userId", userId);
 
       logger.info({ message: "Processing SQS message", userId, requestId, messageId: record.messageId });

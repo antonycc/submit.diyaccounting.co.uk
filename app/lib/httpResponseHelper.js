@@ -149,6 +149,23 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
   return response;
 }
 
+/**
+ * Get a header value case-insensitively from a headers object.
+ * @param {object} headers - The headers object (e.g. event.headers)
+ * @param {string} name - The header name to look for
+ * @returns {string|null} The header value or null if not found
+ */
+export function getHeader(headers, name) {
+  if (!headers || !name) return null;
+  const lowerName = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === lowerName) {
+      return value;
+    }
+  }
+  return null;
+}
+
 export function extractRequest(event) {
   let request;
   // Initialise the store if it doesn't exist
@@ -157,22 +174,23 @@ export function extractRequest(event) {
   }
   // Extract correlation headers and set context explicitly to avoid leakage across invocations
   // PRIORITISE client-supplied headers over the AWS-generated requestId
-  const requestId = event?.headers?.["x-request-id"] || event?.headers?.["X-Request-Id"] || event?.requestContext?.requestId || null;
-  const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
-  const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
-  const correlationId = event?.headers?.["x-correlationid"] || event?.headers?.["X-CorrelationId"] || null;
-  context.set("requestId", requestId || null);
-  context.set("amznTraceId", amznTraceId || null);
-  context.set("traceparent", traceparent || null);
-  context.set("correlationId", correlationId || requestId || null);
+  const requestId = getHeader(event.headers, "x-request-id") || event?.requestContext?.requestId || uuidv4();
+  const amznTraceId = getHeader(event.headers, "x-amzn-trace-id") || null;
+  const traceparent = getHeader(event.headers, "traceparent") || null;
+  const correlationId = getHeader(event.headers, "x-correlationid") || requestId;
+  context.set("requestId", requestId);
+  context.set("amznTraceId", amznTraceId);
+  context.set("traceparent", traceparent);
+  context.set("correlationId", correlationId);
   if (event.headers) {
     try {
       let baseRequestUrl;
-      if (event.headers.referer) {
-        const refererUrl = new URL(event.headers.referer);
+      const referer = getHeader(event.headers, "referer");
+      if (referer) {
+        const refererUrl = new URL(referer);
         baseRequestUrl = `${refererUrl.protocol}//${refererUrl.host}`;
       } else {
-        baseRequestUrl = `https://${event.headers.host || "unknown-host"}`;
+        baseRequestUrl = `https://${getHeader(event.headers, "host") || "unknown-host"}`;
       }
       const path = event.rawPath || event.path || event.requestContext?.http?.path || "";
       const queryString = event.rawQueryString || "";
@@ -191,7 +209,7 @@ export function extractRequest(event) {
     logger.warn({ message: "Event has missing URL path or host header", event });
     request = "https://unknown";
   }
-  return { request, requestId, amznTraceId, traceparent, correlationId: context.get("correlationId") };
+  return { request, requestId, amznTraceId, traceparent, correlationId };
 }
 
 // Helper function to extract client IP from request headers
@@ -209,7 +227,7 @@ export function extractClientIPFromHeaders(event) {
   ];
 
   for (const header of possibleIPHeaders) {
-    const value = headers[header];
+    const value = getHeader(headers, header);
     if (value) {
       // x-forwarded-for can contain multiple IPs, take the first one
       const ip = value.split(",")[0].trim();
@@ -224,7 +242,7 @@ export function extractClientIPFromHeaders(event) {
 }
 
 export function extractBearerTokenFromAuthHeaderInLambdaEvent(event) {
-  const authHeader = event.headers?.authorization || event.headers?.Authorization;
+  const authHeader = getHeader(event.headers, "authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
@@ -233,15 +251,7 @@ export function extractBearerTokenFromAuthHeaderInLambdaEvent(event) {
 
 export function extractAuthTokenFromXAuthorization(event) {
   const headers = event.headers || {};
-  let xAuthHeader = null;
-
-  // Case-insensitive header lookup
-  for (const [key, value] of Object.entries(headers)) {
-    if (key.toLowerCase() === "x-authorization") {
-      xAuthHeader = value;
-      break;
-    }
-  }
+  const xAuthHeader = getHeader(headers, "x-authorization");
 
   if (!xAuthHeader || !xAuthHeader.startsWith("Bearer ")) {
     return null;

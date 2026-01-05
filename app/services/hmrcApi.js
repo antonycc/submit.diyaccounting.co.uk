@@ -5,6 +5,24 @@ import { createLogger, context } from "../lib/logger.js";
 import { BundleEntitlementError } from "./bundleManagement.js";
 import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
+
+/**
+ * Get a header value case-insensitively from a headers object.
+ * @param {object} headers - The headers object
+ * @param {string} name - The header name to look for
+ * @returns {string|null} The header value or null if not found
+ */
+function getHeader(headers, name) {
+  if (!headers || !name) return null;
+  if (typeof headers.get === "function") return headers.get(name);
+  const lowerName = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === lowerName) {
+      return value;
+    }
+  }
+  return null;
+}
 import { getHmrcErrorMessage, extractHmrcErrorCode } from "../lib/hmrcValidation.js";
 
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
@@ -18,11 +36,21 @@ export function getHmrcBaseUrl(hmrcAccount) {
   return base;
 }
 
-export function buildHmrcHeaders(accessToken, govClientHeaders = {}, testScenario = null) {
+export function buildHmrcHeaders(
+  accessToken,
+  govClientHeaders = {},
+  testScenario = undefined,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
+) {
   const headers = {
     "Content-Type": "application/json",
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${accessToken}`,
+    "x-request-id": requestId,
+    "traceparent": traceparent,
+    "x-correlationid": correlationId,
     ...govClientHeaders,
   };
 
@@ -85,30 +113,34 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
  *
  * @param {string} accessToken - HMRC OAuth access token
  * @param {Object} govClientHeaders - Gov-Client-* fraud prevention headers
- * @param {string} auditForUserSub - User sub for auditing to DynamoDB
- * @returns {Promise<Object>} Validation result with {isValid, response}
+ * @param {string|null} auditForUserSub - User sub for auditing to DynamoDB
+ * @param {string|null} requestId - Optional request ID to use for the validation request
+ * @param {string|null} traceparent - Optional traceparent header for distributed tracing
+ * @param {string|null} correlationId - Optional correlation ID for tracing
+ * @returns {Promise<Object>} Validation result with isValid flag and response details
  */
-export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}, auditForUserSub) {
+export async function validateFraudPreventionHeaders(
+  accessToken,
+  govClientHeaders = {},
+  auditForUserSub = null,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
+) {
   const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const validationUrl = `${hmrcBase}/test/fraud-prevention-headers/validate`;
   const nonValidatedHeaders = ["gov-test-scenario"];
   const govClientHeadersWithoutNonValidated = Object.fromEntries(
     Object.entries(govClientHeaders).filter(([key]) => !nonValidatedHeaders.includes(key.toLowerCase())),
   );
-  const requestId = `req-${uuidv4()}`;
   const headers = {
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${accessToken}`,
     ...govClientHeadersWithoutNonValidated,
     "x-request-id": requestId,
-    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    "traceparent": traceparent,
+    "x-correlationid": correlationId,
   };
-  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
-  if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
-    const cid = context.get("correlationId") || context.get("requestId");
-    if (cid) headers["x-correlationid"] = cid;
-  }
 
   logger.info({
     message: `Validating fraud prevention headers`,
@@ -233,24 +265,29 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
  * @param {string} api - The API name (e.g., 'vat-mtd')
  * @param {string} accessToken - HMRC OAuth access token
  * @param {string} auditForUserSub - User sub for auditing to DynamoDB
+ * @param {string|null} requestId - Optional request ID to use for the validation request
+ * @param {string|null} traceparent - Optional traceparent header for distributed tracing
+ * @param {string|null} correlationId - Optional correlation ID for tracing
  * @returns {Promise<Object>} Validation feedback
  */
-export async function getFraudPreventionHeadersFeedback(api, accessToken, auditForUserSub) {
+export async function getFraudPreventionHeadersFeedback(
+  api,
+  accessToken,
+  auditForUserSub,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
+) {
   const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const feedbackUrl = `${hmrcBase}/test/fraud-prevention-headers/${api}/validation-feedback`;
 
   const headers = {
-    Accept: "application/vnd.hmrc.1.0+json",
-    Authorization: `Bearer ${accessToken}`,
-    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${accessToken}`,
+    "x-request-id": requestId,
+    "traceparent": traceparent,
+    "x-correlationid": correlationId,
   };
-  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
-  if (!headers["x-correlationid"] && !headers["X-CorrelationId"]) {
-    const cid = context.get("correlationId") || context.get("requestId");
-    if (cid) headers["x-correlationid"] = cid;
-  }
 
   logger.info({
     message: `Getting fraud prevention headers validation feedback`,
@@ -349,7 +386,7 @@ export async function getFraudPreventionHeadersFeedback(api, accessToken, auditF
 
 export async function hmrcHttpGet(
   endpoint,
-  accessToken,
+  hmrcRequestHeaders,
   govClientHeaders = {},
   testScenario = null,
   hmrcAccount,
@@ -364,7 +401,6 @@ export async function hmrcHttpGet(
   const queryString = new URLSearchParams(cleanParams).toString();
   // eslint-disable-next-line sonarjs/no-nested-template-literals
   const hmrcRequestUrl = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
-  const hmrcRequestHeaders = buildHmrcHeaders(accessToken, govClientHeaders, testScenario);
   const httpRequest = {
     method: "GET",
     headers: {
@@ -376,7 +412,7 @@ export async function hmrcHttpGet(
     },
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
-  if (!httpRequest.headers["x-correlationid"] && !httpRequest.headers["X-CorrelationId"]) {
+  if (!getHeader(httpRequest.headers, "x-correlationid")) {
     const cid = context.get("correlationId") || context.get("requestId");
     if (cid) httpRequest.headers["x-correlationid"] = cid;
   }
@@ -472,7 +508,7 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
     body: JSON.stringify(hmrcRequestBody),
   };
   // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
-  if (!httpRequest.headers["x-correlationid"] && !httpRequest.headers["X-CorrelationId"]) {
+  if (!getHeader(httpRequest.headers, "x-correlationid")) {
     const cid = context.get("correlationId") || context.get("requestId");
     if (cid) httpRequest.headers["x-correlationid"] = cid;
   }
@@ -553,10 +589,7 @@ export function generateHmrcErrorResponseWithRetryAdvice(request, hmrcResponse, 
   } else if (hmrcResponse.status === 404) {
     return http404NotFoundFromHmrcResponse(request, hmrcResponse, responseHeaders, errorDetails);
   } else if (hmrcResponse.status === 429) {
-    const retryAfter =
-      (hmrcResponse.headers &&
-        (hmrcResponse.headers.get ? hmrcResponse.headers.get("Retry-After") : hmrcResponse.headers["retry-after"])) ||
-      undefined;
+    const retryAfter = getHeader(hmrcResponse.headers, "Retry-After") || undefined;
     return http500ServerErrorResponse({
       request,
       headers: { ...responseHeaders },

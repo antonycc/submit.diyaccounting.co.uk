@@ -92,7 +92,7 @@ let observedTraceparent = null;
 test.setTimeout(300_000);
 
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "fraud-prevention-headers-vat-sandbox" });
+  testInfo.annotations.push({ type: "test-id", description: "postVatReturnFraudPreventionHeadersBehaviour" });
 });
 
 test.beforeAll(async ({ page }, testInfo) => {
@@ -318,8 +318,10 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* ********************************** */
 
   // For sandbox tests, fetch fraud prevention headers validation feedback
-  // TODO: Find out why this isn't in the dynamodb export
-  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
+  const requestId = "request-123";
+  const traceparent = observedTraceparent;
+  const correlationId = "correlation-123";
+  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub, requestId, traceparent, correlationId);
   //await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
 
   /* ********* */
@@ -334,7 +336,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
 
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
-    testId: "fraud-prevention-headers-vat-sandbox",
+    testId: "postVatReturnFraudPreventionHeadersBehaviour",
     name: testInfo.title,
     title: "Fraud Prevention Headers Validation (HMRC: VAT Return POST)",
     description: "Submits a VAT return to HMRC MTD VAT API and validates fraud prevention headers compliance.",
