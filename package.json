@@ -110,7 +110,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudfront": "^3.958.0",
+    "@aws-sdk/client-cloudfront": "^3.962.0",
     "@aws-sdk/client-dynamodb": "^3.958.0",
     "@aws-sdk/lib-dynamodb": "^3.958.0",
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
