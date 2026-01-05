@@ -48,19 +48,19 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("\n🧪 Setting up test environment for compliance tests...\n");
 
     if (testAuthProvider === "mock" && runMockOAuth2 === "run") {
-      mockOAuth2Process = await runLocalOAuth2Server();
+      mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
     }
 
     if (testDynamoDb === "run") {
-      dynamoDbProcess = await runLocalDynamoDb(dynamoDbPort);
+      dynamoDbProcess = await runLocalDynamoDb(testDynamoDb);
     }
 
     if (runTestServer === "run") {
-      httpServer = await runLocalHttpServer(httpServerPort);
+      httpServer = await runLocalHttpServer(runTestServer, httpServerPort);
     }
 
     if (runProxy === "run") {
-      proxyProcess = await runLocalSslProxy(httpServerPort);
+      proxyProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
     }
 
     console.log("\n✅ Test environment ready\n");
@@ -70,7 +70,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("\n🧹 Cleaning up test environment...\n");
 
     if (httpServer) {
-      httpServer.close();
+      httpServer.kill();
     }
     if (proxyProcess) {
       proxyProcess.kill();
@@ -78,8 +78,8 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     if (mockOAuth2Process) {
       mockOAuth2Process.kill();
     }
-    if (dynamoDbProcess) {
-      dynamoDbProcess.kill();
+    if (dynamoDbProcess && dynamoDbProcess.stop) {
+      await dynamoDbProcess.stop();
     }
 
     Object.assign(process.env, originalEnv);

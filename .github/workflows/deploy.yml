@@ -1241,6 +1241,26 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-compliance-sandbox:
+    if: ${{ !cancelled() && inputs.skipTestScenarios != null && inputs.skipTestScenarios != 'true' }}
+    name: 'complianceBehaviour-proxy via synthetic test'
+    needs:
+      - names
+      - set-origins
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'complianceBehaviour'
+      generate-test-reports: 'false'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
   set-last-known-good-deployment:
     name: 'set last known good deployment'
