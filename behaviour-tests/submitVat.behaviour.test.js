@@ -291,6 +291,19 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
 
+  /* ************************ */
+  /*  PRIVACY & TERMS CHECKS  */
+  /* ************************ */
+
+  // Verify privacy and terms links are present on home page
+  const privacyLink = page.locator('footer a[href="privacy.html"]');
+  await expect(privacyLink).toBeVisible();
+  console.log("✅ [Compliance] Privacy link visible on home page");
+
+  const termsLink = page.locator('footer a[href="terms.html"]');
+  await expect(termsLink).toBeVisible();
+  console.log("✅ [Compliance] Terms link visible on home page");
+
   /* ******* */
   /*  LOGIN  */
   /* ******* */

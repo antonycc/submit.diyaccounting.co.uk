@@ -126,14 +126,32 @@
 
       <section>
         <h2>Data retention</h2>
+        <h3>Application Data</h3>
+        <ul>
+          <li>
+            <strong>User bundles (entitlements)</strong>: Retained while your account is active. Deleted within 30 days of account closure or
+            deletion request.
+          </li>
+          <li>
+            <strong>HMRC submission receipts</strong>: Retained for 7 years in line with UK tax record-keeping requirements. This includes
+            submission metadata, timestamps, and HMRC receipt confirmations.
+          </li>
+          <li>
+            <strong>Authentication data</strong>: OAuth access tokens from HMRC expire per HMRC policy (typically 4 hours). Refresh tokens are
+            deleted on logout or authorization revocation. Cognito user profile data is retained while your account is active; deleted within 30
+            days of account closure.
+          </li>
+        </ul>
+
+        <h3>Monitoring and Infrastructure Data</h3>
         <ul>
           <li>
             <strong>CloudWatch RUM</strong>: Raw RUM events are stored by AWS for 30 days. Aggregated metrics are retained longer for trend
             analysis, but contain no personally identifiable information.
           </li>
           <li>
-            <strong>Other AWS logs</strong> (e.g., CloudFront, API access logs): Have retention policies configured in our account and are
-            generally kept for short operational periods (typically 30-90 days) unless required for security investigations or compliance.
+            <strong>Infrastructure logs</strong> (e.g., CloudFront, API Gateway, Lambda logs): Retained for 30-90 days for security and
+            operational purposes unless required for security investigations or compliance.
           </li>
         </ul>
       </section>
@@ -158,6 +176,35 @@
       </section>
 
       <section>
+        <h2>Your data rights (UK GDPR)</h2>
+        <p>Under UK GDPR, you have the following rights regarding your personal data:</p>
+        <ul>
+          <li><strong>Right of access</strong>: Request a copy of the personal data we hold about you</li>
+          <li><strong>Right to rectification</strong>: Request correction of inaccurate data</li>
+          <li><strong>Right to erasure ("right to be forgotten")</strong>: Request deletion of your account and personal data</li>
+          <li>
+            <strong>Right to data portability</strong>: Request to export your data in a structured, machine-readable format (JSON or CSV) to
+            transfer to another service
+          </li>
+          <li><strong>Right to object</strong>: Object to processing of your personal data</li>
+          <li><strong>Right to restrict processing</strong>: Request temporary restriction of data processing</li>
+        </ul>
+
+        <h3>How to Exercise Your Rights</h3>
+        <p>To exercise any of these rights, contact us at <strong>admin@diyaccounting.co.uk</strong> with:</p>
+        <ul>
+          <li>Your name and email address associated with your account</li>
+          <li>The specific right you wish to exercise</li>
+          <li>Any additional details to help us process your request</li>
+        </ul>
+        <p>
+          We will respond to your request within <strong>30 days</strong>. For data deletion, we will delete your bundles and authentication
+          data within 30 days. HMRC submission receipts will be retained for 7 years per UK tax record-keeping requirements, but will be
+          anonymized where possible.
+        </p>
+      </section>
+
+      <section>
         <h2>Data processors</h2>
         <p>
           We use Amazon Web Services (AWS) to host and operate the website, API, and monitoring services. RUM data is processed by AWS in
@@ -174,11 +221,35 @@
       </section>
 
       <section>
+        <h2>Security incidents</h2>
+        <p>
+          We implement industry-standard security measures including encryption at rest and in transit (TLS 1.2+, AES-256), access controls, and
+          regular security monitoring.
+        </p>
+        <p>
+          In the event of a data breach affecting your personal data, we will notify you and the Information Commissioner's Office (ICO) within
+          <strong>72 hours</strong> as required by UK GDPR. We will also notify HMRC within 72 hours if the breach affects HMRC-related data or
+          OAuth credentials.
+        </p>
+      </section>
+
+      <section>
+        <h2>Changes to this policy</h2>
+        <p>
+          We may update this Privacy Policy from time to time. The "Last updated" date at the top reflects the most recent changes. Material
+          changes will be notified via email or prominent notice in the application. Continued use after changes constitutes acceptance of the
+          updated policy.
+        </p>
+      </section>
+
+      <section>
         <h2>Contact</h2>
         <p>
-          For privacy questions, contact DIY Accounting Limited. Please include your browser, approximate time, and the page you were on if
-          reporting an issue.
+          For privacy questions, data requests, or security concerns, contact:<br />
+          <strong>Email:</strong> admin@diyaccounting.co.uk<br />
+          <strong>Company:</strong> DIY Accounting Limited
         </p>
+        <p>For issue reports, please include your browser, approximate time, and the page you were on.</p>
       </section>
     </main>
 
@@ -188,6 +259,8 @@
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
           <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
           <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
+          <a href="./privacy.html">privacy</a>
+          <a href="./terms.html">terms</a>
         </div>
         <div class="footer-center">
           <p>&copy; 2025 DIY Accounting Limited</p>

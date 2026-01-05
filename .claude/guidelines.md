@@ -2,6 +2,21 @@
 
 **Last Updated:** 2026-01-05
 
+You may:
+- create branches
+- commit changes
+- push branches
+- open pull requests
+
+You may NOT:
+- merge pull requests
+- push to main
+- delete branches
+- rewrite history
+
+Every task must be done on a new branch named:
+claude/<short-description>
+
 ## About This File
 
 This file contains guidelines for **Claude Agent** (the AI assistant you're using now). The repository also has guidelines for other AI coding assistants:
