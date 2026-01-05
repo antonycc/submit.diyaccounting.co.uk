@@ -78,6 +78,8 @@ public class AsyncApiLambda extends ApiLambda {
                 .functionName(props.workerFunctionName())
                 .reservedConcurrentExecutions(props.workerReservedConcurrency())
                 .timeout(props.workerLambdaTimeout())
+                .memorySize(props.workerMemorySize())
+                .architecture(props.workerArchitecture())
                 .logGroup(this.logGroup)
                 .tracing(Tracing.ACTIVE)
                 .build();

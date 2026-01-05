@@ -1,0 +1,71 @@
+# Exclude development and test files from Docker image
+# This reduces image size and speeds up build/cold start times
+
+# Git
+.git
+.gitignore
+.github
+
+# Development tools
+.editorconfig
+.prettierrc
+.prettierignore
+eslint.config.js
+vitest.config.js
+playwright.config.js
+.ncurc.json
+.run
+
+# Tests
+**/unit-tests
+**/system-tests
+**/browser-tests
+behaviour-tests
+web/unit-tests
+
+# Documentation
+README.md
+REPOSITORY_DOCUMENTATION.md
+*.md
+prompts
+_developers
+repository-contents.txt
+scale-to-next.md
+
+# Build artifacts
+node_modules
+target
+cdk.out
+dist
+.mvn
+*.iml
+
+# Environment files (secrets should come from AWS Secrets Manager)
+.env*
+!.env.test
+
+# Mock servers and test data
+mock-oauth2-server.json
+wiremock-recordings
+product-subscribers.subs
+
+# CDK and infrastructure code (not needed in Lambda runtime)
+infra
+cdk-environment
+cdk-application
+pom.xml
+mvnw
+mvnw.cmd
+
+# Scripts
+scripts
+codexsh
+codexw
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temp files
+tmp
+.tmp
