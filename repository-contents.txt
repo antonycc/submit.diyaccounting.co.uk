@@ -7,7 +7,7 @@
 .github/actions/get-names/action.yml
 ./jsconfig.json
 ./LICENSE.md
-./behaviour.txt
+./target/behaviour.txt
 ./product-subscribers.subs
 ./infra/test/resources/fake-self-destruct-lambda.jar
 ./infra/test/resources/log4j2.yml
@@ -313,6 +313,6 @@
 ./behaviour-tests/helpers/gotoWithRetries.js
 ./behaviour-tests/helpers/dynamodb-assertions.js
 ./behaviour-tests/helpers/playwrightTestWithout.js
-./test.txt
+./target/test.txt
 ./eslint.config.js
 ./scale-to-next.md

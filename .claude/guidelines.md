@@ -36,16 +36,16 @@ npm run test:submitVatBehaviour-proxy
 
 **Capturing Test Output**: When you need to analyze test output, capture to files:
 ```bash
-npm test > test.txt 2>&1
-./mvnw clean verify > mvnw.txt 2>&1
-npm run test:submitVatBehaviour-proxy > behaviour.txt 2>&1
+npm test > target/test.txt 2>&1
+./mvnw clean verify > target/mvnw.txt 2>&1
+npm run test:submitVatBehaviour-proxy > target/behaviour.txt 2>&1
 ```
 
 **Analyzing Failures**: Query for failures and errors:
 ```bash
-grep -i -n -A 20 -E 'fail|error' test.txt
-grep -i -n -A 20 -E 'fail|error' mvnw.txt
-grep -i -n -A 20 -E 'fail|error' behaviour.txt
+grep -i -n -A 20 -E 'fail|error' target/test.txt
+grep -i -n -A 20 -E 'fail|error' target/mvnw.txt
+grep -i -n -A 20 -E 'fail|error' target/behaviour.txt
 ```
 
 **Note**: Behaviour tests generate extensive output. Always pipe to a file rather than viewing directly.
