@@ -365,7 +365,7 @@ jobs:
           if-no-files-found: error
 
 #  # TODO: Roll out stack deployments using the reusable workflow deploy-cdk-stack.yml
-  deploy-dev-new:
+  deploy-dev:
     if: ${{ !cancelled() }}
     name: 'deploy dev via deploy-cdk-stack.yml'
     needs:
