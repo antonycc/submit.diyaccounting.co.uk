@@ -171,6 +171,7 @@ describe("services/hmrcApi", () => {
 
   it("getFraudPreventionHeadersFeedback calls HMRC feedback endpoint with correct parameters", async () => {
     const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
+    const auditForUserSub = "user-sub-1";
 
     const mockFetch = vi.fn();
     vi.stubGlobal("fetch", mockFetch);
@@ -189,7 +190,7 @@ describe("services/hmrcApi", () => {
         }),
     });
 
-    const result = await getFraudPreventionHeadersFeedback("vat-mtd", "token-123");
+    const result = await getFraudPreventionHeadersFeedback("vat-mtd", "token-123", auditForUserSub);
 
     expect(result.ok).toBe(true);
     expect(result.status).toBe(200);
@@ -210,12 +211,13 @@ describe("services/hmrcApi", () => {
 
   it("getFraudPreventionHeadersFeedback handles errors gracefully", async () => {
     const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
+    const auditForUserSub = "user-sub-1";
 
     const mockFetch = vi.fn();
     vi.stubGlobal("fetch", mockFetch);
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-    const result = await getFraudPreventionHeadersFeedback("vat-mtd", "token-123");
+    const result = await getFraudPreventionHeadersFeedback("vat-mtd", "token-123", auditForUserSub);
 
     expect(result.ok).toBe(false);
     expect(result.error).toBe("Network error");

@@ -15,7 +15,6 @@ import {
   runLocalDynamoDb,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  checkFraudPreventionHeadersFeedback,
   generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {

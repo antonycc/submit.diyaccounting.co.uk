@@ -318,8 +318,10 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* ********************************** */
 
   // For sandbox tests, fetch fraud prevention headers validation feedback
-  // TODO: Find out why this isn't in the dynamodb export
-  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub);
+  const requestId = "request-123";
+  const traceparent = observedTraceparent;
+  const correlationId = "correlation-123";
+  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub, requestId, traceparent, correlationId);
   //await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
 
   /* ********* */

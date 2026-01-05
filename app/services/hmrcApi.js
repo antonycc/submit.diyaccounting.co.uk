@@ -39,10 +39,10 @@ export function getHmrcBaseUrl(hmrcAccount) {
 export function buildHmrcHeaders(
   accessToken,
   govClientHeaders = {},
-  testScenario = null,
-  requestId = null,
-  traceparent = null,
-  correlationId = null,
+  testScenario = undefined,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
 ) {
   const headers = {
     "Content-Type": "application/json",
@@ -113,30 +113,34 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
  *
  * @param {string} accessToken - HMRC OAuth access token
  * @param {Object} govClientHeaders - Gov-Client-* fraud prevention headers
- * @param {string} auditForUserSub - User sub for auditing to DynamoDB
- * @returns {Promise<Object>} Validation result with {isValid, response}
+ * @param {string|null} auditForUserSub - User sub for auditing to DynamoDB
+ * @param {string|null} requestId - Optional request ID to use for the validation request
+ * @param {string|null} traceparent - Optional traceparent header for distributed tracing
+ * @param {string|null} correlationId - Optional correlation ID for tracing
+ * @returns {Promise<Object>} Validation result with isValid flag and response details
  */
-export async function validateFraudPreventionHeaders(accessToken, govClientHeaders = {}, auditForUserSub) {
+export async function validateFraudPreventionHeaders(
+  accessToken,
+  govClientHeaders = {},
+  auditForUserSub = null,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
+) {
   const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const validationUrl = `${hmrcBase}/test/fraud-prevention-headers/validate`;
   const nonValidatedHeaders = ["gov-test-scenario"];
   const govClientHeadersWithoutNonValidated = Object.fromEntries(
     Object.entries(govClientHeaders).filter(([key]) => !nonValidatedHeaders.includes(key.toLowerCase())),
   );
-  const requestId = `req-${uuidv4()}`;
   const headers = {
     "Accept": "application/vnd.hmrc.1.0+json",
     "Authorization": `Bearer ${accessToken}`,
     ...govClientHeadersWithoutNonValidated,
     "x-request-id": requestId,
-    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    "traceparent": traceparent,
+    "x-correlationid": correlationId,
   };
-  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
-  if (!getHeader(headers, "x-correlationid")) {
-    const cid = context.get("correlationId") || context.get("requestId");
-    if (cid) headers["x-correlationid"] = cid;
-  }
 
   logger.info({
     message: `Validating fraud prevention headers`,
@@ -261,24 +265,29 @@ export async function validateFraudPreventionHeaders(accessToken, govClientHeade
  * @param {string} api - The API name (e.g., 'vat-mtd')
  * @param {string} accessToken - HMRC OAuth access token
  * @param {string} auditForUserSub - User sub for auditing to DynamoDB
+ * @param {string|null} requestId - Optional request ID to use for the validation request
+ * @param {string|null} traceparent - Optional traceparent header for distributed tracing
+ * @param {string|null} correlationId - Optional correlation ID for tracing
  * @returns {Promise<Object>} Validation feedback
  */
-export async function getFraudPreventionHeadersFeedback(api, accessToken, auditForUserSub) {
+export async function getFraudPreventionHeadersFeedback(
+  api,
+  accessToken,
+  auditForUserSub,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
+) {
   const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const feedbackUrl = `${hmrcBase}/test/fraud-prevention-headers/${api}/validation-feedback`;
 
   const headers = {
-    Accept: "application/vnd.hmrc.1.0+json",
-    Authorization: `Bearer ${accessToken}`,
-    ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-    ...(context.get("amznTraceId") ? { "x-amzn-trace-id": context.get("amznTraceId") } : {}),
-    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${accessToken}`,
+    "x-request-id": requestId,
+    "traceparent": traceparent,
+    "x-correlationid": correlationId,
   };
-  // Ensure x-correlationid is set; prefer existing header, otherwise mirror requestId/correlationId from context
-  if (!getHeader(headers, "x-correlationid")) {
-    const cid = context.get("correlationId") || context.get("requestId");
-    if (cid) headers["x-correlationid"] = cid;
-  }
 
   logger.info({
     message: `Getting fraud prevention headers validation feedback`,

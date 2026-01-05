@@ -15,7 +15,6 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  checkFraudPreventionHeadersFeedback,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
