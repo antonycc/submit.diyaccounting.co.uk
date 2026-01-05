@@ -110,6 +110,7 @@ export async function ingestHandler(event) {
   ]);
 
   const { request, requestId: extractedRequestId } = extractRequest(event);
+  // TODO: Push this inside extractRequest()
   const requestId = extractedRequestId || uuidv4();
   if (!extractedRequestId) {
     context.set("requestId", requestId);
@@ -218,6 +219,10 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Initiating new processing", requestId });
       const processor = async (payload) => {
+        // TODO: Add to outbound call:
+        // const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
+        // const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
+        // const correlationId = event?.headers?.["x-correlationid"] || event?.headers?.["X-CorrelationId"] || null;
         const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
           payload.periodKey,
           payload.numVatDue,
@@ -270,6 +275,10 @@ export async function ingestHandler(event) {
         return resultData;
       };
 
+      // TODO: Add to async queue:
+      // const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
+      // const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
+      // const correlationId = event?.headers?.["x-correlationid"] || event?.headers?.["X-CorrelationId"] || null;
       result = await asyncApiServices.initiateProcessing({
         processor,
         userId: userSub,
@@ -355,10 +364,21 @@ export async function workerHandler(event) {
         context.enterWith(new Map());
       }
       context.set("requestId", requestId);
+      // TODO: Set these from the event
+      // const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
+      // const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
+      // const correlationId = event?.headers?.["x-correlationid"] || event?.headers?.["X-CorrelationId"] || null;
+      // context.set("amznTraceId", amznTraceId || null);
+      // context.set("traceparent", traceparent || null);
+      // context.set("correlationId", correlationId || requestId || null);
       context.set("userSub", userSub);
 
       logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
 
+      // TODO: Add to outbound call:
+      // const amznTraceId = event?.headers?.["x-amzn-trace-id"] || event?.headers?.["X-Amzn-Trace-Id"] || null;
+      // const traceparent = event?.headers?.["traceparent"] || event?.headers?.["Traceparent"] || null;
+      // const correlationId = event?.headers?.["x-correlationid"] || event?.headers?.["X-CorrelationId"] || null;
       const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
         payload.periodKey,
         payload.numVatDue,
