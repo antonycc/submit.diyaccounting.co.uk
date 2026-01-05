@@ -46,9 +46,9 @@ Produce a high‑quality Pull Request that:
      - Unit tests: `npm run test:unit` (or `npm run test`)
      - System: `npm run test:system`
      - Behaviour/Browser (if relevant): `npm run test:allBehaviour` / `npm run test:browser`
-       - For proxy environment, prefer `npm run test:allBehaviour-proxy`
+       - For proxy environment, prefer `npm run test:submitVatBehaviour-proxy`
        - Behaviour tests are very verbose — pipe output to a file, e.g.:
-         - `npm run test:allBehaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`
+         - `npm run test:submitVatBehaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`
    - For Java/CDK:
      - Build/validate: `npm run build` (Maven + Spotless checks)
    - Add/extend tests to cover new behaviours; stabilize flaky tests encountered during execution.

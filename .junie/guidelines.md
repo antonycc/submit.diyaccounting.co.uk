@@ -1,5 +1,17 @@
 Instructions for Junie to follow:
 
+**Last Updated:** 2026-01-05
+
+## About This File
+
+This file contains guidelines for **Junie** (custom agent). The repository also has guidelines for other AI coding assistants:
+- `.claude/guidelines.md` - Guidelines for Claude Agent (emphasis on autonomous task execution & implementation)
+- `.github/copilot-instructions.md` - Guidelines for GitHub Copilot (emphasis on code review & analysis)
+
+Each assistant has complementary strengths - Junie is optimized for continuous testing, iteration, and rapid development cycles.
+
+## Primary References
+
 Orientate yourself with the repository using <repository root>/`REPOSITORY_DOCUMENTATION.md`
 
 Use the script section of <repository root>/`package.json` to find the test commands.

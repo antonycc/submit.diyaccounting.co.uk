@@ -4,7 +4,7 @@
 # Example (running behaviour tests against the ci environment with a freshly provisioned user):
 #  $ . ./scripts/aws-assume-user-provisioning-role.sh
 #  $ . ./scripts/provision-user.sh
-#  $ cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:allBehaviour
+#  $ cp '.env.ci' '.env.proxy' ; npx dotenv -e '.env.ci' -- npm run test:submitVatBehaviour-proxy
 # Provisioning user 72db57b6-68dc-4274-a14a-a91be209a1b1 in table oidc-antonycc-com-prod-users
 # created 72db57b6-68dc-4274-a14a-a91be209a1b1
 export TEST_AUTH_USERNAME=$(uuidgen | tr '[:upper:]' '[:lower:]')

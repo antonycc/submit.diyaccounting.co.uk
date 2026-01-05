@@ -1,5 +1,15 @@
 # DIY Accounting Submit - GitHub Copilot Code Review Instructions
 
+**Last Updated:** 2026-01-05
+
+## About This File
+
+This file contains guidelines for **GitHub Copilot** code review agent. The repository also has guidelines for other AI coding assistants:
+- `.claude/guidelines.md` - Guidelines for Claude Agent (emphasis on autonomous task execution & implementation)
+- `.junie/guidelines.md` - Guidelines for Junie (custom agent, emphasis on testing & iteration)
+
+Each assistant has complementary strengths - GitHub Copilot is optimized for code review, analysis, and providing thoughtful feedback.
+
 ## Purpose
 
 These instructions guide GitHub Copilot's code review agent to provide specialized, high-quality reviews for this repository. The focus is on **analysis and understanding** rather than test execution.
@@ -240,7 +250,7 @@ See REPOSITORY_DOCUMENTATION.md Section "Package.json Operations" for the comple
 - CDK stacks: `{Purpose}Stack` (e.g., `AuthStack`, `HmrcStack`)
 - DynamoDB tables: `{env}-submit-{purpose}` (e.g., `ci-submit-bundles`)
 - Environment variables: `{SERVICE}_{RESOURCE}_ARN` format
-- npm scripts: Use `:` separator for variants (e.g., `test:unit`, `test:allBehaviour-proxy`)
+- npm scripts: Use `:` separator for variants (e.g., `test:unit`, `test:submitVatBehaviour-proxy`)
 
 **Error Handling**:
 - Lambda functions should catch errors and return appropriate HTTP status codes

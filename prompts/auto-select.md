@@ -86,7 +86,7 @@ Begin your response with:
 - Maintain compatibility with existing functionality
 - Consider the project's AWS serverless architecture, Cognito (with Google IdP) usage, and HMRC OAuth 2.0 integration context
 - Before running tests, trace the relevant code paths (local Express and Lambda adaptor) and fix obvious defects found by inspection
-- Behaviour tests can be very verbose — pipe output to a file when running (e.g. `npm run test:allBehaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`)
+- Behaviour tests can be very verbose — pipe output to a file when running (e.g. `npm run test:submitVatBehaviour-proxy > target/behaviour-test-results/behaviour.log 2>&1`)
 
 > Formatting and style: Use the repository’s tooling — ESLint (flat config) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Run `npm run formatting. See README → Code style, formatting, and IDE setup.
 > Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

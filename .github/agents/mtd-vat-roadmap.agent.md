@@ -45,10 +45,10 @@ grep -i -n -A 20 -E 'fail|error' behaviour.txt
 
 ## Verification Guidance
 
-- Use `npm run test:allBehaviour-proxy` for E2E verification.
+- Use `npm run test:submitVatBehaviour-proxy` for E2E verification.
 - Use `npm run build` and `npm run cdk` for infrastructure validation.
 - Always trace code paths before running tests to catch obvious defects.
-- Pipe verbose behavioral test output to a file: `npm run test:allBehaviour-proxy > target/behaviour-test-results/roadmap.log 2>&1`.
+- Pipe verbose behavioral test output to a file: `npm run test:submitVatBehaviour-proxy > target/behaviour-test-results/roadmap.log 2>&1`.
 
 ## Success Criteria
 
