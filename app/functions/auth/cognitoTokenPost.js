@@ -4,6 +4,7 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest, buildTokenExchangeResponse, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/auth/cognitoTokenPost.js" });
 
@@ -50,6 +51,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
+  await initializeSalt();
   validateEnv(["DIY_SUBMIT_BASE_URL", "COGNITO_CLIENT_ID", "COGNITO_BASE_URI"]);
 
   const { request } = extractRequest(event);

@@ -13,6 +13,7 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
@@ -61,6 +62,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
+  await initializeSalt();
   // Allow local/dev override via HMRC_CLIENT_SECRET. Only require ARN if override is not supplied.
   const required = [
     "HMRC_BASE_URI",

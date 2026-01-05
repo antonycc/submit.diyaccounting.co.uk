@@ -27,6 +27,7 @@ import {
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -100,6 +101,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
+  await initializeSalt();
   validateEnv([
     "HMRC_BASE_URI",
     "RECEIPTS_DYNAMODB_TABLE_NAME",
@@ -333,6 +335,7 @@ export async function ingestHandler(event) {
 
 // SQS worker Lambda ingestHandler function
 export async function workerHandler(event) {
+  await initializeSalt();
   validateEnv([
     "HMRC_BASE_URI",
     "RECEIPTS_DYNAMODB_TABLE_NAME",
