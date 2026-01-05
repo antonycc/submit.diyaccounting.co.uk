@@ -36,11 +36,11 @@ on:
           - ''
           - 'application'
           - 'environment'
-        default: ''
+        default: 'application'
       base-image-tag:
         description: 'Base image tag to use. e.g. github.sha'
         required: false
-        default: ''
+        default: '' # ${{ github.sha }}
       self-destruct-start-datetime:
         description: 'Self-destruct start datetime'
         required: false
@@ -69,20 +69,24 @@ on:
         required: true
       cdk-application:
         type: string
-        required: true
-        default: ''
+        required: false
+        default: 'application'
       base-image-tag:
         type: string
-        required: true
+        required: false
+        default: '' # ${{ github.sha }}
       self-destruct-start-datetime:
         type: string
-        required: true
+        required: false
+        default: ''
       http-api-url:
         type: string
         required: false
+        default: ''
       website-hash:
         type: string
         required: false
+        default: ''
 
 permissions:
   id-token: write
@@ -134,7 +138,7 @@ jobs:
         shell: bash
         run: |
           echo 'stackName=${{ inputs.stackName }}' | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.force-all-stack-deployment }}' ; echo "force-all-stack-deployment=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.force-all-stack-deployment }}' ; echo "force-all-stack-deployment=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.cdk-application }}' ; echo "cdk-application=${X:-application}" | tee -a "$GITHUB_OUTPUT"
