@@ -111,7 +111,7 @@ test.setTimeout(1200_000);
 //test.setTimeout(10_800_000);
 
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "obligation-sandbox" });
+  testInfo.annotations.push({ type: "test-id", description: "getVatObligationsBehaviour" });
 });
 
 test.beforeAll(async ({ page }, testInfo) => {
@@ -583,7 +583,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
 
   // Build and write testContext.json
   const testContext = {
-    testId: "obligation-sandbox",
+    testId: "getVatObligations",
     name: testInfo.title,
     title: "View VAT Obligations (HMRC: VAT Obligations GET)",
     description: "Retrieves VAT obligations from HMRC MTD VAT API and verifies the results flow in the UI.",

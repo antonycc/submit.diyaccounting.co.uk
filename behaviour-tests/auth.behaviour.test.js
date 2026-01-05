@@ -67,6 +67,10 @@ let observedTraceparent = null;
 
 test.setTimeout(300_000);
 
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.annotations.push({ type: "test-id", description: "authBehaviour" });
+});
+
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
 
@@ -217,6 +221,7 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
 
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
+    testId: "authBehaviour",
     name: testInfo.title,
     title: "Cognito Auth",
     description: "Clicks through the app to complete the Cognito Auth.",

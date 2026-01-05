@@ -92,7 +92,7 @@ let observedTraceparent = null;
 test.setTimeout(300_000);
 
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "fraud-prevention-headers-vat-sandbox" });
+  testInfo.annotations.push({ type: "test-id", description: "postVatReturnFraudPreventionHeadersBehaviour" });
 });
 
 test.beforeAll(async ({ page }, testInfo) => {
@@ -334,7 +334,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
 
   // Build test context metadata and write testContext.json next to the video
   const testContext = {
-    testId: "fraud-prevention-headers-vat-sandbox",
+    testId: "postVatReturnFraudPreventionHeadersBehaviour",
     name: testInfo.title,
     title: "Fraud Prevention Headers Validation (HMRC: VAT Return POST)",
     description: "Submits a VAT return to HMRC MTD VAT API and validates fraud prevention headers compliance.",

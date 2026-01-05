@@ -116,7 +116,7 @@ test.setTimeout(1_200_000);
 
 // Explicit, stable test ID for reporting
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "get-vat-return-sandbox" });
+  testInfo.annotations.push({ type: "test-id", description: "getVatReturnBehaviour" });
 });
 
 test.beforeAll(async ({ page }, testInfo) => {
@@ -328,7 +328,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
 
   // Build testContext.json
   const testContext = {
-    testId: "get-vat-return-sandbox",
+    testId: "getVatReturnBehaviour",
     name: testInfo.title,
     title: "View VAT Return (Single API Focus: GET)",
     description: "Retrieves VAT return data from HMRC with default and sandbox Gov-Test-Scenario variations.",

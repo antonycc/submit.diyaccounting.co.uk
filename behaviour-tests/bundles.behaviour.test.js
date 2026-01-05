@@ -69,6 +69,10 @@ let observedTraceparent = null;
 
 test.setTimeout(300_000);
 
+test.beforeEach(async ({}, testInfo) => {
+  testInfo.annotations.push({ type: "test-id", description: "bundleBehaviour" });
+});
+
 test.beforeAll(async ({ page }, testInfo) => {
   console.log("Starting beforeAll hook...");
 
@@ -220,6 +224,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
 
   // Build and write testContext.json (no HMRC API directly exercised here)
   const testContext = {
+    testId: "bundleBehaviour",
     name: testInfo.title,
     title: "Bundles management (App UI)",
     description: "Adds and removes bundles via the UI while authenticated; ensures flows behave as expected.",
