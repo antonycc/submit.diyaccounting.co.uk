@@ -703,7 +703,8 @@ async function handle403Error(response) {
 async function authorizedFetch(input, init = {}) {
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
-  // TODO: Does this still need X-Authorization instead of Authorization? - Retest when otherwise stable.
+  // Uses X-Authorization (not Authorization) to match API Gateway Lambda authorizer configuration
+  // See ApiStack.java identitySource("$request.header.X-Authorization")
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
   if (init.fireAndForget) headers.set("x-wait-time-ms", "0");
   headers.set("x-initial-request", "true");

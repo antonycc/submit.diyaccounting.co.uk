@@ -101,8 +101,7 @@ export async function ingestHandler(event) {
 
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
-  // TODO: Simplify this and/or rename because exchangeCodeForToken does not do the exchange, it just creates the body
-  const tokenResponse = await exchangeCodeForToken(code, hmrcAccount);
+  const tokenResponse = await prepareTokenExchangeRequest(code, hmrcAccount);
   // Ensure HMRC OAuth token exchange audit is associated with the authenticated web user's sub
   // Try Authorization header, then authorizer context, then custom x-user-sub header (case-insensitive)
   let userSub = getUserSub(event);
@@ -114,7 +113,8 @@ export async function ingestHandler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function exchangeCodeForToken(code, hmrcAccount) {
+// Prepares the URL and body for a token exchange request, but does not execute the exchange itself
+export async function prepareTokenExchangeRequest(code, hmrcAccount) {
   const secretArn = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
   const overrideSecret = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
