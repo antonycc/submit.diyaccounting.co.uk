@@ -186,19 +186,17 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
   return hashedSubs;
 }
 
-// TODO: Declare no Gov-Vendor-License-IDs header supplied
-// * The software is open-source
-// * There is no per-device or per-user license key
-// * The application runs in a browser with no installable licensed component
-// TODO: Declare no Gov-Client-Public-Port to HMRC
-// The Submit service is a browser-based web application delivered over HTTPS via
-// CloudFront and AWS load balancers. The client TCP source port is not exposed to
-// application code in the browser and is not forwarded through the CDN/load
-// balancer layer.
-// In accordance with HMRC Fraud Prevention guidance, this header is omitted
-// because the data cannot be collected.
-// headers["Gov-Client-Public-Port"] = null;
-// TODO: Implement Gov-Client-Multi-Factor for cognito and omit when no MFA present
+/**
+ * HMRC Fraud Prevention headers that are intentionally NOT supplied.
+ * These headers are documented to HMRC as not applicable for this application.
+ *
+ * - gov-client-multi-factor: Cognito MFA not yet implemented
+ * - gov-vendor-license-ids: Open-source software with no license keys
+ * - gov-client-public-port: Browser apps cannot access client TCP port
+ *
+ * @see buildFraudHeaders.js for server-side header generation
+ * @see submit.js buildGovClientHeaders() for client-side header generation
+ */
 export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
 
 export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = false, noWarnings = false, allValidFeedbackHeaders = false) {

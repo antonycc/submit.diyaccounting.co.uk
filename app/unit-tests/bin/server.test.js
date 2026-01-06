@@ -17,9 +17,8 @@ vi.mock("@app/functions/hmrc/hmrcVatReturnPost.js", () => ({
   ingestHandler: vi.fn(),
 }));
 
-// TODO: This `ingestHandler()` doesn't exist in the mocked module so perhaps we should delete it
-import { ingestHandler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
 // Import the mocked ingestHandlers
+import { ingestHandler as exchangeTokenHandler } from "@app/functions/non-lambda-mocks/mockTokenPost.js";
 import { ingestHandler as submitVatHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 describe("Server Unit Tests", () => {

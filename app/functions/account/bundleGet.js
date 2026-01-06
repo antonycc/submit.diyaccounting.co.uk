@@ -74,8 +74,7 @@ export async function ingestHandler(event) {
 
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
-  // Authentication errors
-  // TODO: It looks like we are cover treating errorMessages as related to authentication errors, check and fix here and everywhere.
+  // Authentication errors - extractAndValidateParameters only adds JWT decode errors
   if (errorMessages.length > 0 || !userId) {
     return http401UnauthorizedResponse({
       request,
