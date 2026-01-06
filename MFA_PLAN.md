@@ -7,6 +7,54 @@
 
 ---
 
+## AI-Assisted Development Approach
+
+This implementation is designed to be executed by an AI coding agent (Claude Code) with human oversight for commits and deployments.
+
+### Agent Configuration Reference
+
+- `CLAUDE.md` - Deployment workflow, test commands, git permissions
+- `.claude/rules/lambda-functions.md` - Lambda handler patterns
+- `.claude/rules/cdk-infrastructure.md` - CDK stack patterns
+- `.claude/rules/testing.md` - Test patterns
+
+### Agent Workflow for This Task
+
+1. **Read existing code** to understand current patterns:
+   - `infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java` (Cognito config)
+   - `web/public/submit.js` (fraud prevention header collection)
+   - `app/functions/hmrc/*.js` (HMRC API calls)
+   - `behaviour-tests/helpers/dynamodb-assertions.js` (header validation)
+
+2. **Implement changes** following the steps below
+
+3. **Local validation**:
+   ```bash
+   npm test                              # Unit + system tests
+   ./mvnw clean verify                   # Java CDK build
+   npm run test:submitVatBehaviour-proxy # E2E behaviour tests
+   ```
+
+4. **Human commits and pushes** - triggers GitHub Actions deployment
+
+5. **Agent monitors deployment** via `gh run view/watch` commands
+
+6. **Iterate on failures** - analyze logs, fix issues, repeat
+
+### Collaboration Model
+
+| Task | Owner |
+|------|-------|
+| Code implementation | AI Agent |
+| Test creation/updates | AI Agent |
+| Local validation | AI Agent |
+| Commit/push | Human |
+| Deployment monitoring | AI Agent |
+| Failure diagnosis | AI Agent |
+| HMRC correspondence | Human |
+
+---
+
 ## Overview
 
 Implement Multi-Factor Authentication (MFA) using Cognito TOTP and ensure the `Gov-Client-Multi-Factor` fraud prevention header is sent with all HMRC API requests. This is a mandatory requirement for HMRC MTD VAT production approval.
@@ -726,34 +774,55 @@ npm run test:submitVatBehaviour-prod
 
 ---
 
-## Rollout Plan
+## Rollout Plan (AI Agent Execution)
 
-### Week 1: Development & Local Testing
-- Implement Cognito MFA configuration
-- Update frontend MFA header generation
-- Create mock MFA test helpers
-- Test in proxy environment with mock data
-- **Deliverable**: All proxy tests pass with mock MFA
+### Iteration 1: Development & Local Testing (Agent)
+**Agent tasks**:
+1. Read existing Cognito config in IdentityStack.java
+2. Implement Cognito MFA configuration changes
+3. Update frontend MFA header generation in submit.js
+4. Create mock MFA test helpers in behaviour-helpers.js
+5. Run local validation: `npm test && ./mvnw clean verify`
+6. Run proxy tests: `npm run test:submitVatBehaviour-proxy`
 
-### Week 2: CI Integration
-- Deploy MFA-enabled Cognito to CI
-- Configure test user with TOTP
-- Store TOTP secret in Secrets Manager
-- Update behaviour tests for real Cognito MFA
-- **Deliverable**: All CI tests pass with real MFA
+**Human checkpoint**: Review changes, commit, push
 
-### Week 3: Production Deployment
-- Deploy to production
-- Document MFA setup process for users
-- Run production smoke tests
-- Collect test evidence for HMRC
-- **Deliverable**: Production ready, evidence collected
+**Success criteria**: All proxy tests pass with mock MFA
 
-### Week 4: HMRC Approval
+### Iteration 2: CI Integration (Agent + Human)
+**Human tasks**:
+- Commit and push to trigger deployment
+- Create TOTP secret in Secrets Manager (one-time)
+
+**Agent tasks**:
+1. Monitor deployment via `gh run view <run-id>`
+2. Analyze any deployment failures from logs
+3. Update behaviour tests for real Cognito MFA if needed
+4. Run CI tests: `npm run test:submitVatBehaviour-ci`
+5. Diagnose and fix any CI test failures
+
+**Success criteria**: All CI tests pass with real MFA
+
+### Iteration 3: Production Deployment (Human + Agent)
+**Human tasks**:
+- Approve production deployment
+- Create production TOTP secret in Secrets Manager
+
+**Agent tasks**:
+1. Monitor production deployment
+2. Run production smoke tests
+3. Collect test evidence artifacts
+4. Update documentation
+
+**Success criteria**: Production ready, evidence collected
+
+### Iteration 4: HMRC Approval (Human)
+**Human tasks**:
 - Submit evidence to HMRC
 - Address any feedback
 - Complete fraud prevention header validation
-- **Deliverable**: HMRC approval obtained
+
+**Success criteria**: HMRC approval obtained
 
 ---
 
@@ -857,6 +926,7 @@ After MFA implementation is complete:
 
 ---
 
-**Last Updated**: 2026-01-05
-**Owner**: Development Team
-**Status**: Ready for implementation
+**Last Updated**: 2026-01-06
+**Executor**: AI Agent (Claude Code) with human oversight
+**Status**: Ready for AI agent implementation
+**Agent Guidance**: See `CLAUDE.md` for deployment workflow and permissions
