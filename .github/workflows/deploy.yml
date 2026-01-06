@@ -422,6 +422,143 @@ jobs:
           echo "Warning: Some stacks may still be deleting after ${MAX_WAIT_SECONDS}s timeout. Proceeding anyway."
           echo "Stacks still in DELETE_IN_PROGRESS: ${DELETING_STACKS}"
 
+  validate-secrets:
+    name: 'validate required secrets'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Validate all required secrets exist
+        id: validate
+        run: |
+          ENV_NAME="${{ needs.names.outputs.environment-name }}"
+          MISSING=""
+          ALL_VALID=true
+
+          echo "=== Validating secrets for environment: $ENV_NAME ==="
+          echo ""
+
+          # List of required secrets
+          SECRETS=(
+            "$ENV_NAME/submit/user-sub-hash-salt"
+            "$ENV_NAME/submit/google/client_secret"
+            "$ENV_NAME/submit/hmrc/client_secret"
+            "$ENV_NAME/submit/hmrc/sandbox_client_secret"
+          )
+
+          for SECRET in "${SECRETS[@]}"; do
+            echo -n "Checking: $SECRET ... "
+            if aws secretsmanager describe-secret --secret-id "$SECRET" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+              # Verify it has a value
+              VALUE=$(aws secretsmanager get-secret-value --secret-id "$SECRET" \
+                --query 'SecretString' --output text --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+              if [ -n "$VALUE" ] && [ "$VALUE" != "null" ]; then
+                echo "OK (has value)"
+              else
+                echo "EMPTY VALUE"
+                MISSING="$MISSING\n  - $SECRET (exists but empty)"
+                ALL_VALID=false
+              fi
+            else
+              echo "MISSING"
+              MISSING="$MISSING\n  - $SECRET"
+              ALL_VALID=false
+            fi
+          done
+
+          echo ""
+
+          if [ "$ALL_VALID" = "false" ]; then
+            echo "=============================================="
+            echo "ERROR: Missing or invalid secrets detected!"
+            echo "=============================================="
+            echo -e "Missing secrets:$MISSING"
+            echo ""
+            echo "To fix this, run the 'deploy environment' workflow first:"
+            echo "  1. Go to Actions -> 'deploy environment'"
+            echo "  2. Run workflow for the '$ENV_NAME' environment"
+            echo ""
+            echo "Or use the 'manage secrets' workflow to check status:"
+            echo "  1. Go to Actions -> 'manage secrets'"
+            echo "  2. Select 'check' action for '$ENV_NAME' environment"
+            echo ""
+            exit 1
+          fi
+
+          echo "All required secrets validated successfully"
+          echo "secrets-valid=true" >> $GITHUB_OUTPUT
+
+      - name: Validate salt secret specifically
+        run: |
+          ENV_NAME="${{ needs.names.outputs.environment-name }}"
+          SECRET_NAME="$ENV_NAME/submit/user-sub-hash-salt"
+
+          echo "=== Salt Secret Validation ==="
+          echo "Checking: $SECRET_NAME"
+
+          # Get secret metadata
+          METADATA=$(aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+
+          if [ -z "$METADATA" ]; then
+            echo "CRITICAL: Salt secret does not exist!"
+            echo "This will cause all Lambda functions to fail at runtime."
+            exit 1
+          fi
+
+          # Check for tags
+          echo ""
+          echo "Secret metadata:"
+          echo "$METADATA" | jq '{Name: .Name, Created: .CreatedDate, Modified: .LastChangedDate, Tags: .Tags}'
+
+          # Verify value exists and has expected length
+          VALUE=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" \
+            --query 'SecretString' --output text --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+
+          if [ -z "$VALUE" ]; then
+            echo "CRITICAL: Salt secret has no value!"
+            exit 1
+          fi
+
+          VALUE_LENGTH=${#VALUE}
+          echo ""
+          echo "Salt value length: $VALUE_LENGTH characters"
+
+          # Base64-encoded 32-byte salt should be ~44 characters
+          if [ $VALUE_LENGTH -lt 40 ]; then
+            echo "WARNING: Salt value seems short (expected ~44 chars for 32-byte base64)"
+          else
+            echo "Salt value length appears valid"
+          fi
+
+          echo ""
+          echo "Salt secret validation passed"
+
+    outputs:
+      secrets-valid: ${{ steps.validate.outputs.secrets-valid }}
+
   deploy-dev:
     if: ${{ !cancelled() }}
     name: 'deploy DevStack via deploy-cdk-stack.yml'
@@ -708,6 +845,7 @@ jobs:
       - skip-deploy-check
       - deploy-dev
       - push-images
+      - validate-secrets
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -734,6 +872,7 @@ jobs:
       - skip-deploy-check
       - deploy-dev
       - push-images
+      - validate-secrets
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -760,6 +899,7 @@ jobs:
       - skip-deploy-check
       - deploy-dev
       - push-images
+      - validate-secrets
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read

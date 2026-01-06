@@ -133,4 +133,4 @@ Documentation
 - lambda-concurrency-cost-analysis.md: Detailed cost analysis for Lambda scaling
 
 License
-GPL-3.0. See LICENSE for details.
+AGPL-3.0. See LICENSE for details.

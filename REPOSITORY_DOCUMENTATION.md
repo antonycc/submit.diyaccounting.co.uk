@@ -1613,7 +1613,7 @@ Hierarchical overview of the repository organized by function.
 | `Dockerfile` | File | Docker image definition for Lambda runtime |
 | `eslint.config.js` | File | ESLint configuration (flat config) |
 | `jsconfig.json` | File | JavaScript project configuration |
-| `LICENSE` | File | GPL-3.0 license |
+| `LICENSE` | File | AGPL-3.0 license |
 | `mock-oauth2-server.json` | File | Mock OAuth2 server configuration |
 | `mvnw`, `mvnw.cmd` | Files | Maven wrapper scripts |
 | `package.json` | File | Node.js dependencies and scripts |
