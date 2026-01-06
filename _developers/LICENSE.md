@@ -16,4 +16,4 @@ Format for the header: `Gov-Vendor-License-IDs: submit.diyaccounting.co.uk=019b3
 
 ## Software License
 
-For the software license terms, see the [LICENSE](LICENSE) file in this repository.
+For the software license terms, see the [LICENSE](../LICENSE) file in this repository.
