@@ -200,6 +200,21 @@ All environment files should define these core variables:
 - GitHub Actions workflow creates/updates secrets automatically
 - Secrets are injected at runtime via environment variables
 
+**AWS Secrets Manager Secrets**:
+| Secret Name Pattern | Purpose | Created By |
+|---------------------|---------|------------|
+| `{env}/submit/hmrc/client_secret` | HMRC production OAuth client secret | `deploy-environment.yml` |
+| `{env}/submit/hmrc/sandbox_client_secret` | HMRC sandbox OAuth client secret | `deploy-environment.yml` |
+| `{env}/submit/user-sub-hash-salt` | Salt for HMAC-SHA256 hashing of user subs | `deploy-environment.yml` |
+
+**User Sub Hash Salt** (Critical Secret):
+- Used by `app/services/subHasher.js` to hash Cognito user `sub` claims before storing in DynamoDB
+- **Algorithm**: HMAC-SHA256 (more secure than plain SHA-256)
+- **Must be preserved**: If lost, all user data becomes orphaned
+- See `_developers/SALTED_HASH_IMPLEMENTATION.md` for implementation details
+- See `_developers/SALT_SECRET_RECOVERY.md` for backup/recovery procedures
+- Use `manage-secrets.yml` workflow for backup and restore operations
+
 **GitHub Secrets** (for Actions workflows):
 - `HMRC_CLIENT_SECRET`: Production HMRC OAuth secret
 - `HMRC_SANDBOX_CLIENT_SECRET`: Sandbox HMRC OAuth secret
@@ -1679,7 +1694,7 @@ app/
 │   ├── bundleManagement.js               # Bundle management logic
 │   ├── hmrcApi.js                        # HMRC API client
 │   ├── productCatalog.js                 # Product catalog parser (TOML)
-│   └── subHasher.js                      # Subscriber ID hashing
+│   └── subHasher.js                      # HMAC-SHA256 salted subscriber ID hashing
 ├── test-helpers/           # Test utilities
 │   ├── eventBuilders.js                  # Lambda event builders
 │   ├── mockHelpers.js                    # Mocking utilities

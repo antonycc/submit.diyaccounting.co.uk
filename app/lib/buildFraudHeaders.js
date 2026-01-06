@@ -117,5 +117,5 @@ export function buildFraudHeaders(event) {
   }
 
   logger.debug({ message: "Built fraud prevention headers", headers });
-  return headers;
+  return { govClientHeaders: headers, govClientErrorMessages: [] };
 }

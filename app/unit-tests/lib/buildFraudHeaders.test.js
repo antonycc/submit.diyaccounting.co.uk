@@ -24,6 +24,19 @@ describe("buildFraudHeaders", () => {
     });
   });
 
+  it("should return govClientHeaders and govClientErrorMessages", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {},
+    };
+
+    const result = buildFraudHeaders(event);
+
+    expect(result).toHaveProperty("govClientHeaders");
+    expect(result).toHaveProperty("govClientErrorMessages");
+    expect(Array.isArray(result.govClientErrorMessages)).toBe(true);
+  });
+
   it("should build vendor forwarded chain from x-forwarded-for", () => {
     const event = {
       headers: {
@@ -34,7 +47,7 @@ describe("buildFraudHeaders", () => {
       },
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     // Gov-Vendor-Forwarded should now be a JSON array of objects
     const forwarded = headers["Gov-Vendor-Forwarded"];
@@ -49,7 +62,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     // Should use first public IP (198.51.100.1), not private IP (10.0.0.5)
     expect(headers["Gov-Client-Public-IP"]).toBe("198.51.100.1");
@@ -63,7 +76,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(privateIpEvent);
+    const { govClientHeaders: headers } = buildFraudHeaders(privateIpEvent);
 
     // Should not have client IP since all are private
     expect(headers["Gov-Client-Public-IP"]).toBeUndefined();
@@ -75,7 +88,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Vendor-Product-Name"]).toBe("web-submit-diyaccounting-co-uk");
     expect(headers["Gov-Vendor-Version"]).toBe("web-submit-diyaccounting-co-uk=0.0.2-4");
@@ -87,7 +100,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
   });
@@ -102,7 +115,7 @@ describe("buildFraudHeaders", () => {
       },
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-abc123");
   });
@@ -113,7 +126,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Client-User-IDs"]).toBe("server=anonymous");
   });
@@ -129,7 +142,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Client-Browser-JS-User-Agent"]).toBe("Mozilla/5.0...");
     expect(headers["Gov-Client-Timezone"]).toBe("Europe/London");
@@ -142,7 +155,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     // Should still include vendor headers and connection method
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
@@ -158,7 +171,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Client-Device-ID"]).toBe("device-uuid-12345");
   });
@@ -173,7 +186,7 @@ describe("buildFraudHeaders", () => {
       requestContext: {},
     };
 
-    const headers = buildFraudHeaders(event);
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Vendor-Public-IP"]).toBe("203.0.113.100");
     const forwarded = headers["Gov-Vendor-Forwarded"];
