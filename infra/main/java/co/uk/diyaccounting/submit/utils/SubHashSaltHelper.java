@@ -1,10 +1,9 @@
 package co.uk.diyaccounting.submit.utils;
 
+import java.util.List;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
-
-import java.util.List;
 
 /**
  * Helper for granting Lambda functions access to user sub hash salt secret.
@@ -26,9 +25,7 @@ public class SubHashSaltHelper {
         // Secret ARN pattern includes wildcard suffix because Secrets Manager
         // appends a random suffix to secret names
         String saltSecretArn = String.format(
-                "arn:aws:secretsmanager:%s:%s:secret:%s/submit/user-sub-hash-salt*",
-                region, account, envName
-        );
+                "arn:aws:secretsmanager:%s:%s:secret:%s/submit/user-sub-hash-salt*", region, account, envName);
 
         lambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)

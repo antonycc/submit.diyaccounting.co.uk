@@ -1,6 +1,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Environment;
@@ -15,7 +21,10 @@ import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
+import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
+import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
+import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeader;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeadersBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentSecurityPolicy;
@@ -41,13 +50,6 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class EdgeStack extends Stack {
 
@@ -335,10 +337,47 @@ public class EdgeStack extends Stack {
                 .compress(true)
                 .build();
 
+        // Create a custom OriginRequestPolicy for API Gateway that forwards HMRC fraud prevention headers
+        // These Gov-Client-* headers are sent by the browser and must reach the Lambda functions
+        OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-FraudPreventionORP")
+                .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
+                .comment(
+                        "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
+                .headerBehavior(OriginRequestHeaderBehavior.allowList(
+                        // HMRC Fraud Prevention Headers - sent by browser, needed by Lambda
+                        "Gov-Client-Browser-JS-User-Agent",
+                        "Gov-Client-Device-ID",
+                        "Gov-Client-Public-IP",
+                        "Gov-Client-Public-IP-Timestamp",
+                        "Gov-Client-Screens",
+                        "Gov-Client-Timezone",
+                        "Gov-Client-User-IDs",
+                        "Gov-Client-Window-Size",
+                        "Gov-Client-Multi-Factor",
+                        "Gov-Client-Browser-Do-Not-Track",
+                        // Fallback headers used by buildFraudHeaders.js
+                        "x-device-id",
+                        "x-forwarded-for",
+                        // Standard headers needed for API requests
+                        "Authorization",
+                        "Content-Type",
+                        "Accept",
+                        "User-Agent",
+                        "Referer",
+                        "Origin",
+                        // Test scenario header for HMRC sandbox
+                        "Gov-Test-Scenario",
+                        // HMRC account header for multi-account support
+                        "x-hmrc-account"))
+                .queryStringBehavior(OriginRequestQueryStringBehavior.all())
+                .cookieBehavior(OriginRequestCookieBehavior.none())
+                .build();
+
         // Create additional behaviours for the API Gateway Lambda origins
         HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
-        BehaviorOptions apiGatewayBehavior =
-                createBehaviorOptionsForApiGateway(props.apiGatewayUrl(), webResponseHeadersPolicy);
+        BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(
+                props.apiGatewayUrl(), webResponseHeadersPolicy, fraudPreventionHeadersPolicy);
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
 
@@ -403,7 +442,9 @@ public class EdgeStack extends Stack {
     }
 
     public BehaviorOptions createBehaviorOptionsForApiGateway(
-            String apiGatewayUrl, ResponseHeadersPolicy responseHeadersPolicy) {
+            String apiGatewayUrl,
+            ResponseHeadersPolicy responseHeadersPolicy,
+            OriginRequestPolicy originRequestPolicy) {
         // Extract the host from the API Gateway URL (e.g., "https://abc123.execute-api.us-east-1.amazonaws.com/" ->
         // "abc123.execute-api.us-east-1.amazonaws.com")
         var apiGatewayHost = getHostFromUrl(apiGatewayUrl);
@@ -414,7 +455,7 @@ public class EdgeStack extends Stack {
                 .origin(origin)
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+                .originRequestPolicy(originRequestPolicy)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(responseHeadersPolicy)
                 .build();
