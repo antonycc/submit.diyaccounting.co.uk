@@ -364,12 +364,60 @@ jobs:
           path: docker-image/image.tar
           if-no-files-found: error
 
+  wait-for-previous-cleanup:
+    name: 'wait for previous cleanup'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Wait for any DELETE_IN_PROGRESS stacks
+        run: |
+          DEPLOYMENT_PREFIX="${{ needs.names.outputs.deployment-name }}-app"
+          MAX_WAIT_SECONDS=300
+          POLL_INTERVAL=15
+          ELAPSED=0
+
+          echo "Checking for stacks with prefix: ${DEPLOYMENT_PREFIX} in DELETE_IN_PROGRESS state"
+
+          while [ $ELAPSED -lt $MAX_WAIT_SECONDS ]; do
+            DELETING_STACKS=$(aws cloudformation list-stacks \
+              --stack-status-filter DELETE_IN_PROGRESS \
+              --query "StackSummaries[?starts_with(StackName, '${DEPLOYMENT_PREFIX}')].StackName" \
+              --output text)
+
+            if [ -z "$DELETING_STACKS" ] || [ "$DELETING_STACKS" == "None" ]; then
+              echo "No stacks in DELETE_IN_PROGRESS state. Proceeding with deployment."
+              exit 0
+            fi
+
+            echo "Found stacks still deleting: ${DELETING_STACKS}"
+            echo "Waiting ${POLL_INTERVAL} seconds... (${ELAPSED}s / ${MAX_WAIT_SECONDS}s)"
+            sleep $POLL_INTERVAL
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          done
+
+          echo "Warning: Some stacks may still be deleting after ${MAX_WAIT_SECONDS}s timeout. Proceeding anyway."
+          echo "Stacks still in DELETE_IN_PROGRESS: ${DELETING_STACKS}"
+
   deploy-dev:
     if: ${{ !cancelled() }}
     name: 'deploy DevStack via deploy-cdk-stack.yml'
     needs:
       - names
       - skip-deploy-check
+      - wait-for-previous-cleanup
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -394,6 +442,7 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - wait-for-previous-cleanup
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
