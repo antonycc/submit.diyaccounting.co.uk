@@ -7,6 +7,7 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -171,6 +172,12 @@ public class AccountStack extends Stack {
                 "Granted DynamoDB permissions to %s and its worker for Bundles and Async Requests Tables",
                 this.bundleGetLambda.getFunctionName());
 
+        // Grant access to user sub hash salt secret in Secrets Manager
+        SubHashSaltHelper.grantSaltAccess(this.bundleGetLambda, region, account, props.envName());
+        infof(
+                "Granted Secrets Manager salt access to %s",
+                this.bundleGetLambda.getFunctionName());
+
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
@@ -232,10 +239,13 @@ public class AccountStack extends Stack {
             // Grant DynamoDB permissions
             bundlesTable.grantReadWriteData(fn);
             bundlePostAsyncRequestsTable.grantReadWriteData(fn);
+
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
         });
 
         infof(
-                "Granted Cognito and DynamoDB permissions to %s and its worker",
+                "Granted Cognito, DynamoDB, and Secrets Manager salt permissions to %s and its worker",
                 this.bundlePostLambda.getFunctionName());
 
         // Delete Bundles Lambda
@@ -322,10 +332,13 @@ public class AccountStack extends Stack {
             // Grant DynamoDB permissions
             bundlesTable.grantReadWriteData(fn);
             bundleDeleteAsyncRequestsTable.grantReadWriteData(fn);
+
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
         });
 
         infof(
-                "Granted Cognito and DynamoDB permissions to %s and its worker",
+                "Granted Cognito, DynamoDB, and Secrets Manager salt permissions to %s and its worker",
                 this.bundleDeleteLambda.getFunctionName());
 
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
