@@ -57,9 +57,7 @@ This implementation is designed to be executed by an AI coding agent (Claude Cod
 
 ## Overview
 
-Extract MFA status from federated identity provider (Google, OIDC) tokens and include the `Gov-Client-Multi-Factor` fraud prevention header with all HMRC API requests. This is a mandatory requirement for HMRC MTD VAT production approval.
-
-**Approach**: Since all users authenticate via federated identity providers (Google or antonycc OIDC), MFA is handled by those providers. We extract MFA status from the `amr` (authentication method reference) claim in the ID token.
+Implement Multi-Factor Authentication (MFA) using Cognito TOTP and ensure the `Gov-Client-Multi-Factor` fraud prevention header is sent with all HMRC API requests. This is a mandatory requirement for HMRC MTD VAT production approval.
 
 ---
 
@@ -68,17 +66,17 @@ Extract MFA status from federated identity provider (Google, OIDC) tokens and in
 ### Gov-Client-Multi-Factor Header Specification
 
 ```
-Gov-Client-Multi-Factor: type=OTHER&timestamp=<ISO8601>&unique-reference=<session-id>
+Gov-Client-Multi-Factor: type=TOTP&timestamp=<ISO8601>&unique-reference=<session-id>
 ```
 
 **Required Fields**:
-- `type`: MFA type - use `OTHER` for federated IdP MFA (Google 2FA, passkeys), `TOTP` for authenticator apps, or `AUTH_CODE` for SMS
+- `type`: MFA type - use `TOTP` (authenticator app), `AUTH_CODE` (SMS), or `OTHER`
 - `timestamp`: ISO 8601 timestamp when MFA was verified (e.g., `2026-01-05T12:34:56Z`)
-- `unique-reference`: Unique identifier for the MFA session (IdP session ID or login timestamp)
+- `unique-reference`: Unique identifier for the MFA session (Cognito session ID or UUID)
 
 **When to send**:
-- Include header on **all** HMRC API calls when user has completed MFA at their identity provider
-- Omit header when MFA status cannot be determined from the IdP token (allowed by HMRC spec)
+- Include header on **all** HMRC API calls when user has completed MFA
+- Omit header when user has not completed MFA (e.g., MFA not enforced)
 
 **HMRC Reference**: [Fraud Prevention Headers Specification](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/)
 
@@ -86,19 +84,60 @@ Gov-Client-Multi-Factor: type=OTHER&timestamp=<ISO8601>&unique-reference=<sessio
 
 ## Implementation Steps
 
-### Step 1: No Infrastructure Changes Required
+### Step 1: Enable MFA in Cognito User Pool
 
 **File**: `infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java`
 
-**Current State**: The Cognito User Pool (lines 143-155) has NO MFA configured. All users authenticate via federated identity providers:
+**Current State**: The Cognito User Pool (lines 143-155) has NO MFA configured. Users authenticate via:
 - **Google Identity Provider** (`UserPoolIdentityProviderGoogle`, lines 158-170)
 - **antonycc OIDC Provider** (`CfnUserPoolIdentityProvider`, lines 173-194)
 
-**Key Insight**: With federated identity providers, MFA is handled by the IdP, not Cognito:
-- **Google users**: MFA happens at Google (e.g., Google 2FA, passkeys) - the `amr` (authentication method reference) claim in the ID token indicates MFA was used
+**Important**: With federated identity providers, MFA works differently:
+- **Google users**: MFA happens at Google (e.g., Google 2FA) - Cognito receives claims after Google MFA is complete
 - **OIDC users**: MFA depends on the OIDC provider configuration
+- **Direct Cognito users**: Would use Cognito TOTP (but currently no direct sign-up users exist)
 
-**No Cognito changes needed** - we extract MFA information from the IdP's token claims in the frontend.
+Update Cognito User Pool configuration (after line 154, before `.removalPolicy`):
+
+```java
+// Import required (add at top of file):
+// import software.amazon.awscdk.services.cognito.Mfa;
+// import software.amazon.awscdk.services.cognito.MfaSecondFactor;
+
+this.userPool = UserPool.Builder.create(this, props.resourceNamePrefix() + "-UserPool")
+    .userPoolName(props.resourceNamePrefix() + "-user-pool")
+    .selfSignUpEnabled(true)
+    .signInAliases(SignInAliases.builder().email(true).build())
+    .standardAttributes(standardAttributes)
+    .customAttributes(Map.of(
+            "bundles",
+            StringAttribute.Builder.create()
+                    .maxLen(2048)
+                    .mutable(true)
+                    .build()))
+    // MFA Configuration - applies to direct Cognito authentication only
+    // Federated identity providers (Google, OIDC) handle their own MFA
+    .mfa(Mfa.OPTIONAL)  // Start with OPTIONAL to avoid breaking federated users
+    .mfaSecondFactor(MfaSecondFactor.builder()
+            .otp(true)   // Enable TOTP (authenticator apps)
+            .sms(false)  // Disable SMS MFA
+            .build())
+    .removalPolicy(RemovalPolicy.DESTROY)
+    .build();
+```
+
+**Note**: Use `Mfa.OPTIONAL` initially for federated IdP compatibility. Federated users (Google, OIDC) complete MFA at their identity provider, not at Cognito.
+
+**Testing**: After deployment, verify MFA is enforced:
+```bash
+# CI environment
+aws cognito-idp describe-user-pool \
+  --user-pool-id <ci-user-pool-id> \
+  --region eu-west-2 \
+  --query 'UserPool.MfaConfiguration'
+
+# Should return: "ON"
+```
 
 ---
 
@@ -257,21 +296,47 @@ export function buildFraudHeaders(event) {
 
 ---
 
-### Step 4: No User-Facing MFA Setup Required
+### Step 4: MFA for Federated Identity Provider Users
 
-**Summary**: All users authenticate via federated identity providers (Google or antonycc OIDC). MFA is handled by these providers, not by our application.
+**Current Reality**: All current users authenticate via federated identity providers (Google or antonycc OIDC), not directly with Cognito. This changes the MFA approach significantly.
+
+**MFA Options by User Type**:
 
 | User Type | MFA Handler | How MFA Info Is Available |
 |-----------|-------------|---------------------------|
 | Google users | Google (2FA, passkeys) | `amr` claim in ID token |
 | antonycc OIDC users | OIDC provider | Custom claims or `amr` |
+| Direct Cognito users | Cognito TOTP | Cognito session (not currently used) |
 
-**No MFA setup UI needed** - users configure MFA at their identity provider (e.g., Google Account security settings).
+**Recommendation**: Rather than implementing Cognito TOTP setup (which no current users would use), focus on:
 
-**HMRC Documentation**: When applying for production access, document that:
-- Users authenticate via Google or OIDC federation
-- Google provides strong MFA (2FA, passkeys)
-- MFA status is extracted from IdP token claims and included in the `Gov-Client-Multi-Factor` header
+1. **Extract MFA status from federated IdP tokens** (implemented in Step 2)
+2. **Trust the IdP's MFA implementation** (Google 2FA is strong)
+3. **Document MFA coverage for HMRC** - explain that users authenticate via Google/OIDC which provide their own MFA
+
+**If Direct Cognito MFA Is Required Later**:
+
+If HMRC requires direct Cognito MFA (unlikely given federated IdP use), the setup flow would be:
+
+**New File**: `web/public/mfa-setup.html`
+
+```html
+<div id="mfa-setup">
+  <h2>Set Up Two-Factor Authentication</h2>
+  <p>This is only required if you sign in directly (not via Google).</p>
+  <p>Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)</p>
+  <div id="qr-code"></div>
+  <p>Or enter this code manually: <code id="totp-secret"></code></p>
+
+  <form id="verify-mfa-form">
+    <label>Enter 6-digit code from your app:</label>
+    <input type="text" name="mfa-code" pattern="[0-9]{6}" maxlength="6" required />
+    <button type="submit">Verify</button>
+  </form>
+</div>
+```
+
+**Note**: This is deferred unless HMRC specifically requires Cognito-level MFA for federated users.
 
 ---
 
