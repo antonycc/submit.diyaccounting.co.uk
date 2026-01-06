@@ -169,6 +169,27 @@
           console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
           showStatus("Authenticated successfully. Fetching bundles...", "info");
 
+          // Extract MFA status from amr (Authentication Methods Reference) claim
+          // Google and other federated IdPs include MFA indicators in the amr array
+          const amrClaims = idTokenPayload.amr || [];
+          const mfaIndicators = ["mfa", "swk", "hwk", "otp"]; // mfa=multi-factor, swk=software key, hwk=hardware key, otp=one-time password
+          const hasMFA = Array.isArray(amrClaims) && amrClaims.some((method) => mfaIndicators.includes(method));
+
+          if (hasMFA) {
+            // Store MFA metadata for use in fraud prevention headers
+            const mfaMetadata = {
+              type: "OTHER", // Use OTHER for federated IdP MFA (Google 2FA, passkeys, etc.)
+              timestamp: new Date().toISOString(),
+              uniqueReference: crypto.randomUUID(),
+            };
+            sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
+            console.log("MFA detected from federated IdP:", amrClaims, "Stored metadata:", mfaMetadata);
+          } else {
+            // No MFA detected - remove any existing metadata
+            sessionStorage.removeItem("mfaMetadata");
+            console.log("No MFA detected in amr claims:", amrClaims);
+          }
+
           // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle
           showStatus("Authenticated successfully. Redirecting...", "info");
 
