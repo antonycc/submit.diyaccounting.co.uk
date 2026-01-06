@@ -139,7 +139,7 @@ test.afterEach(async ({ page }, testInfo) => {
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
   appendUserSubTxt(outputDir, testInfo, userSub);
-  appendHashedUserSubTxt(outputDir, testInfo, userSub);
+  await appendHashedUserSubTxt(outputDir, testInfo, userSub);
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 

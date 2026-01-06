@@ -2,7 +2,29 @@
 
 import path from "node:path";
 import fs from "node:fs";
-import { hashSub } from "@app/services/subHasher.js";
+import { hashSub, initializeSalt } from "@app/services/subHasher.js";
+
+// Track if salt initialization has been attempted
+let __saltInitialized = false;
+let __saltAvailable = false;
+
+/**
+ * Try to initialize salt for hashing. This is best-effort for test diagnostics.
+ * If salt is not available (no env var, no Secrets Manager access), we skip hashing.
+ */
+async function tryInitializeSalt() {
+  if (__saltInitialized) return __saltAvailable;
+  __saltInitialized = true;
+  try {
+    await initializeSalt();
+    __saltAvailable = true;
+    console.log("[fileHelper] Salt initialized successfully for test diagnostics");
+  } catch (e) {
+    __saltAvailable = false;
+    console.log(`[fileHelper] Salt not available for test diagnostics (this is OK): ${e.message}`);
+  }
+  return __saltAvailable;
+}
 
 export function deleteUserSubTxt(outputDir) {
   // Delete ${outputDir}/userSub.txt
@@ -66,13 +88,26 @@ export function appendTraceparentTxt(outputDir, testInfo, observedTraceparent) {
   }
 }
 
-export function appendHashedUserSubTxt(outputDir, testInfo, userSub) {
+export async function appendHashedUserSubTxt(outputDir, testInfo, userSub) {
   // Write hashed user sub in parallel with userSub.txt
   try {
     const hasValidSub = userSub && userSub !== "null" && userSub !== "undefined";
-    const valueToWrite = hasValidSub ? hashSub(String(userSub)) : "";
+    let valueToWrite = "";
+
+    if (hasValidSub) {
+      // Try to initialize salt (best-effort for diagnostics)
+      const saltAvailable = await tryInitializeSalt();
+      if (saltAvailable) {
+        valueToWrite = hashSub(String(userSub));
+      } else {
+        console.log(
+          `[afterEach] Skipping hash for hashedUserSub.txt (salt not available) for test "${testInfo.title}"`,
+        );
+      }
+    }
+
     console.log(
-      `[afterEach] Saving ${outputDir}/hashedUserSub.txt for test "${testInfo.title}": ${valueToWrite ? valueToWrite : "(empty - user may not have logged in)"}`,
+      `[afterEach] Saving ${outputDir}/hashedUserSub.txt for test "${testInfo.title}": ${valueToWrite ? valueToWrite : "(empty - user may not have logged in or salt not available)"}`,
     );
     fs.appendFileSync(path.join(outputDir, "hashedUserSub.txt"), valueToWrite, "utf-8");
   } catch (e) {
