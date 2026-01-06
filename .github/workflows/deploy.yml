@@ -382,6 +382,17 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
       - name: Wait for any DELETE_IN_PROGRESS stacks
         run: |
           DEPLOYMENT_PREFIX="${{ needs.names.outputs.deployment-name }}-app"
