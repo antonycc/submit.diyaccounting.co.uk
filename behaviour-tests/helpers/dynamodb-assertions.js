@@ -199,6 +199,35 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
  */
 export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
 
+/**
+ * Essential HMRC Fraud Prevention headers that MUST be present in every HMRC API request.
+ * These are generated server-side by buildFraudHeaders.js and should always exist.
+ */
+export const essentialFraudPreventionHeaders = [
+  "gov-client-connection-method",
+  "gov-client-user-ids",
+  "gov-vendor-product-name",
+  "gov-vendor-version",
+];
+
+/**
+ * Assert that essential fraud prevention headers are present in an HMRC API request.
+ * @param {object} hmrcApiRequest - The HMRC API request from DynamoDB
+ * @param {string} context - Description of the request for error messages
+ */
+export function assertEssentialFraudPreventionHeadersPresent(hmrcApiRequest, context = "HMRC API request") {
+  const requestHeaders = hmrcApiRequest.httpRequest?.headers || {};
+  const headerKeysLower = Object.keys(requestHeaders).map((k) => k.toLowerCase());
+
+  const missingHeaders = essentialFraudPreventionHeaders.filter((header) => !headerKeysLower.includes(header.toLowerCase()));
+
+  if (missingHeaders.length > 0) {
+    console.error(`[DynamoDB Assertions]: Missing essential fraud prevention headers in ${context}:`, missingHeaders);
+    console.error(`[DynamoDB Assertions]: Present headers:`, Object.keys(requestHeaders));
+    expect(missingHeaders, `Missing essential fraud prevention headers in ${context}`).toEqual([]);
+  }
+}
+
 export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = false, noWarnings = false, allValidFeedbackHeaders = false) {
   let fraudPreventionHeadersValidationFeedbackGetRequests;
   if (allValidFeedbackHeaders) {
@@ -263,6 +292,15 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
     console.log(`[DynamoDB Assertions]: Errors: ${responseBody.errors?.length}`);
     console.log(`[DynamoDB Assertions]: Warnings: ${responseBody.warnings?.length}`);
     console.log(`[DynamoDB Assertions]: Ignored headers: ${intentionallyNotSuppliedHeaders}`);
+
+    // CRITICAL: Fail if NO fraud prevention headers were submitted at all
+    // This is different from "some headers invalid" - we specifically check for the "no headers" message
+    const noHeadersSubmittedMessage = "No fraud prevention headers submitted";
+    if (responseBody.code === "INVALID_HEADERS" && responseBody.message?.includes(noHeadersSubmittedMessage)) {
+      console.error(`[DynamoDB Assertions]: CRITICAL - No fraud prevention headers submitted at all!`);
+      console.error(`[DynamoDB Assertions]: Message: ${responseBody.message}`);
+      expect.fail(`HMRC fraud prevention validation failed: No fraud prevention headers were submitted. This indicates a bug in buildFraudHeaders.`);
+    }
 
     const errors = responseBody.errors?.filter((error) => {
       const headers = error.headers.filter((header) => !intentionallyNotSuppliedHeaders.includes(header));
