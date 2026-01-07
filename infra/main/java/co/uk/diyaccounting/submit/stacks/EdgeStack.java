@@ -346,22 +346,15 @@ public class EdgeStack extends Stack {
                 .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
                 .comment(
                         "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
-                .headerBehavior(OriginRequestHeaderBehavior.allowList(
-                        // HMRC Fraud Prevention Headers - sent by browser, needed by Lambda (8 headers)
-                        "Gov-Client-Browser-JS-User-Agent",
-                        "Gov-Client-Device-ID",
-                        "Gov-Client-Public-IP-Timestamp",
-                        "Gov-Client-Screens",
-                        "Gov-Client-Timezone",
-                        "Gov-Client-Window-Size",
-                        "Gov-Client-Multi-Factor",
-                        "Gov-Client-Browser-Do-Not-Track",
-                        // Fallback header for device ID (1 header)
-                        "x-device-id",
-                        // Test scenario header for HMRC sandbox (1 header)
-                        "Gov-Test-Scenario"))
+                // Use all() to forward ALL viewer headers including:
+                // - Authorization (required for API authentication)
+                // - Gov-Client-* headers (HMRC fraud prevention)
+                // - x-device-id, Gov-Test-Scenario, etc.
+                // Note: allowList is limited to 10 headers and can't include Authorization
+                .headerBehavior(OriginRequestHeaderBehavior.all())
                 .queryStringBehavior(OriginRequestQueryStringBehavior.all())
-                .cookieBehavior(OriginRequestCookieBehavior.none())
+                // Forward all cookies to support authentication
+                .cookieBehavior(OriginRequestCookieBehavior.all())
                 .build();
 
         // Create additional behaviours for the API Gateway Lambda origins
