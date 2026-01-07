@@ -340,37 +340,26 @@ public class EdgeStack extends Stack {
 
         // Create a custom OriginRequestPolicy for API Gateway that forwards HMRC fraud prevention headers
         // These Gov-Client-* headers are sent by the browser and must reach the Lambda functions
+        // Note: CloudFront limits custom OriginRequestPolicy to 10 headers maximum
         OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-FraudPreventionORP")
                 .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
                 .comment(
                         "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
                 .headerBehavior(OriginRequestHeaderBehavior.allowList(
-                        // HMRC Fraud Prevention Headers - sent by browser, needed by Lambda
+                        // HMRC Fraud Prevention Headers - sent by browser, needed by Lambda (8 headers)
                         "Gov-Client-Browser-JS-User-Agent",
                         "Gov-Client-Device-ID",
-                        "Gov-Client-Public-IP",
                         "Gov-Client-Public-IP-Timestamp",
                         "Gov-Client-Screens",
                         "Gov-Client-Timezone",
-                        "Gov-Client-User-IDs",
                         "Gov-Client-Window-Size",
                         "Gov-Client-Multi-Factor",
                         "Gov-Client-Browser-Do-Not-Track",
-                        // Fallback headers used by buildFraudHeaders.js
+                        // Fallback header for device ID (1 header)
                         "x-device-id",
-                        "x-forwarded-for",
-                        // Standard headers needed for API requests
-                        // Note: Authorization and Accept-Encoding cannot be in OriginRequestPolicy
-                        // They are handled by CachePolicy.CACHING_DISABLED instead
-                        "Content-Type",
-                        "User-Agent",
-                        "Referer",
-                        "Origin",
-                        // Test scenario header for HMRC sandbox
-                        "Gov-Test-Scenario",
-                        // HMRC account header for multi-account support
-                        "x-hmrc-account"))
+                        // Test scenario header for HMRC sandbox (1 header)
+                        "Gov-Test-Scenario"))
                 .queryStringBehavior(OriginRequestQueryStringBehavior.all())
                 .cookieBehavior(OriginRequestCookieBehavior.none())
                 .build();

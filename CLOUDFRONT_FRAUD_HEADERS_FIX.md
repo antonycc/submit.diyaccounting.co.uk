@@ -31,34 +31,30 @@ OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.c
     .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
     .comment("Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
     .headerBehavior(OriginRequestHeaderBehavior.allowList(
-        // HMRC Fraud Prevention Headers
+        // HMRC Fraud Prevention Headers (8 headers)
         "Gov-Client-Browser-JS-User-Agent",
         "Gov-Client-Device-ID",
-        "Gov-Client-Public-IP",
         "Gov-Client-Public-IP-Timestamp",
         "Gov-Client-Screens",
         "Gov-Client-Timezone",
-        "Gov-Client-User-IDs",
         "Gov-Client-Window-Size",
         "Gov-Client-Multi-Factor",
         "Gov-Client-Browser-Do-Not-Track",
-        // Fallback headers
+        // Fallback header (1 header)
         "x-device-id",
-        "x-forwarded-for",
-        // Standard headers
-        // Note: Authorization and Accept-Encoding cannot be in OriginRequestPolicy
-        // They are handled by CachePolicy.CACHING_DISABLED instead
-        "Content-Type",
-        "User-Agent",
-        "Referer",
-        "Origin",
-        // Test/account headers
-        "Gov-Test-Scenario",
-        "x-hmrc-account"))
+        // Test scenario header (1 header)
+        "Gov-Test-Scenario"))
     .queryStringBehavior(OriginRequestQueryStringBehavior.all())
     .cookieBehavior(OriginRequestCookieBehavior.none())
     .build();
 ```
+
+**Note**: CloudFront limits custom OriginRequestPolicy to 10 headers maximum. Headers not in the list are automatically forwarded by API Gateway or built server-side:
+- `x-forwarded-for` - Automatically forwarded by API Gateway
+- `Gov-Client-Public-IP` - Derived server-side from x-forwarded-for
+- `Gov-Client-User-IDs` - Built server-side from authenticated user context
+- Standard HTTP headers (Content-Type, User-Agent, etc.) - Forwarded by API Gateway/CachePolicy
+
 
 ### Updated Header Flow
 1. **Browser** → Sends Gov-Client-* headers
