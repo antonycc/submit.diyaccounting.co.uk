@@ -15,7 +15,10 @@ import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
+import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
+import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
+import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeader;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeadersBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentSecurityPolicy;
@@ -335,10 +338,36 @@ public class EdgeStack extends Stack {
                 .compress(true)
                 .build();
 
+        // Create a custom OriginRequestPolicy for API Gateway that forwards HMRC fraud prevention headers
+        // These Gov-Client-* headers are sent by the browser and must reach the Lambda functions
+        // Note: CloudFront limits custom OriginRequestPolicy to 10 headers maximum
+        OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-FraudPreventionORP")
+                .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
+                .comment(
+                        "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
+                .headerBehavior(OriginRequestHeaderBehavior.allowList(
+                        // HMRC Fraud Prevention Headers - sent by browser, needed by Lambda (8 headers)
+                        "Gov-Client-Browser-JS-User-Agent",
+                        "Gov-Client-Device-ID",
+                        "Gov-Client-Public-IP-Timestamp",
+                        "Gov-Client-Screens",
+                        "Gov-Client-Timezone",
+                        "Gov-Client-Window-Size",
+                        "Gov-Client-Multi-Factor",
+                        "Gov-Client-Browser-Do-Not-Track",
+                        // Fallback header for device ID (1 header)
+                        "x-device-id",
+                        // Test scenario header for HMRC sandbox (1 header)
+                        "Gov-Test-Scenario"))
+                .queryStringBehavior(OriginRequestQueryStringBehavior.all())
+                .cookieBehavior(OriginRequestCookieBehavior.none())
+                .build();
+
         // Create additional behaviours for the API Gateway Lambda origins
         HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
-        BehaviorOptions apiGatewayBehavior =
-                createBehaviorOptionsForApiGateway(props.apiGatewayUrl(), webResponseHeadersPolicy);
+        BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(
+                props.apiGatewayUrl(), webResponseHeadersPolicy, fraudPreventionHeadersPolicy);
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
 
@@ -403,7 +432,9 @@ public class EdgeStack extends Stack {
     }
 
     public BehaviorOptions createBehaviorOptionsForApiGateway(
-            String apiGatewayUrl, ResponseHeadersPolicy responseHeadersPolicy) {
+            String apiGatewayUrl,
+            ResponseHeadersPolicy responseHeadersPolicy,
+            OriginRequestPolicy originRequestPolicy) {
         // Extract the host from the API Gateway URL (e.g., "https://abc123.execute-api.us-east-1.amazonaws.com/" ->
         // "abc123.execute-api.us-east-1.amazonaws.com")
         var apiGatewayHost = getHostFromUrl(apiGatewayUrl);
@@ -414,7 +445,7 @@ public class EdgeStack extends Stack {
                 .origin(origin)
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER)
+                .originRequestPolicy(originRequestPolicy)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(responseHeadersPolicy)
                 .build();
