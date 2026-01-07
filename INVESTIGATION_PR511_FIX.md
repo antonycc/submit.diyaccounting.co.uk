@@ -95,11 +95,34 @@ Lines 344-365 (the custom OriginRequestPolicy creation)
 - Cannot add more headers without removing existing ones
 - Using `all()` bypasses this limit
 
+## Applied Fix
+Fix 1 was applied:
+
+```java
+// Changed from:
+.headerBehavior(OriginRequestHeaderBehavior.allowList(...10 headers...))
+.cookieBehavior(OriginRequestCookieBehavior.none())
+
+// Changed to:
+.headerBehavior(OriginRequestHeaderBehavior.all())
+.cookieBehavior(OriginRequestCookieBehavior.all())
+```
+
+This ensures:
+- ALL viewer headers are forwarded (including Authorization and Gov-Client-* headers)
+- ALL cookies are forwarded (for authentication support)
+
+## Deployment Status
+- Fix applied in commit: `4cedecac`
+- Deployment run: https://github.com/antonycc/submit.diyaccounting.co.uk/actions/runs/20797962400
+- Started: 2026-01-07T22:03:01Z
+- Expected completion: ~20-25 minutes
+
 ## Next Steps
-1. Apply Fix 1 (recommended) - change to `headerBehavior.all()` and `cookieBehavior.all()`
-2. Commit and push to saltedhash branch
-3. Wait for deployment (20-25 minutes)
-4. Verify website works
+1. ~~Apply Fix 1 (recommended) - change to `headerBehavior.all()` and `cookieBehavior.all()`~~ DONE
+2. ~~Commit and push to saltedhash branch~~ DONE (commit 4cedecac)
+3. Wait for deployment (20-25 minutes) - IN PROGRESS
+4. Verify website works at https://ci-saltedhas.submit.diyaccounting.co.uk/
 5. If Fix 1 fails, try Fix 2 (full revert)
 
 ## Files Changed in PR #511
