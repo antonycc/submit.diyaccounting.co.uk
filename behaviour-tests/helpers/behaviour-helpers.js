@@ -770,6 +770,15 @@ export async function checkFraudPreventionHeadersFeedback(
     console.log(`[HMRC Fraud Prevention] Checking fraud prevention header validation feedback for user sub: ${auditForUserSub}`);
   }
 
+  // Initialize salt for hashing (needed when getFraudPreventionHeadersFeedback stores to DynamoDB)
+  // This is called from the test executor, not Lambda, so salt needs explicit initialization
+  try {
+    const { initializeSalt } = await import("@app/services/subHasher.js");
+    await initializeSalt();
+  } catch (e) {
+    console.log(`[HMRC Fraud Prevention] Salt initialization skipped (this is OK for CI): ${e.message}`);
+  }
+
   const { extractHmrcAccessTokenFromSessionStorage } = await import("./fileHelper.js");
   const { fetchFraudPreventionHeadersFeedback } = await import("../steps/behaviour-hmrc-vat-steps.js");
 

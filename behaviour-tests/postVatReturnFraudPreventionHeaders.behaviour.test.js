@@ -441,9 +441,23 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   if (validationFeedbackResult) {
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
     const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+
+    // Hash the userSub to match DynamoDB record format (hashedSub field)
+    let hashedSubForRecord = "unknown";
+    if (userSub) {
+      try {
+        const { hashSub } = await import("@app/services/subHasher.js");
+        hashedSubForRecord = hashSub(userSub);
+      } catch (e) {
+        console.log(`[Validation Feedback]: Could not hash userSub for record: ${e.message}`);
+        hashedSubForRecord = userSub; // Fall back to raw sub if hashing fails
+      }
+    }
+
     const validationFeedbackRecord = {
-      userId: userSub || "unknown",
-      requestId: `validation-feedback-${Date.now()}`,
+      hashedSub: hashedSubForRecord, // Use hashedSub to match DynamoDB record format
+      id: `validation-feedback-${Date.now()}`,
+      requestId: correlationId,
       url: `${hmrcBase}/test/fraud-prevention-headers/vat-mtd/validation-feedback`,
       httpRequest: {
         method: "GET",
