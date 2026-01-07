@@ -46,9 +46,9 @@ OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.c
         "x-device-id",
         "x-forwarded-for",
         // Standard headers
-        "Authorization",
+        // Note: Authorization and Accept-Encoding cannot be in OriginRequestPolicy
+        // They are handled by CachePolicy.CACHING_DISABLED instead
         "Content-Type",
-        "Accept",
         "User-Agent",
         "Referer",
         "Origin",
