@@ -24,7 +24,7 @@
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { hashSub } from "../app/services/subHasher.js";
+import { hashSub, initializeSalt } from "../app/services/subHasher.js";
 import fs from "fs";
 import path from "path";
 
@@ -51,8 +51,9 @@ function makeDocClient(region) {
 async function scanTableForHashedSubs(docClient, tableName, hashedSubs) {
   const allItems = [];
   let lastEvaluatedKey = undefined;
+  const filterByHash = hashedSubs && hashedSubs.length > 0;
 
-  console.log(`Scanning table: ${tableName}`);
+  console.log(`Scanning table: ${tableName}${filterByHash ? ` (filtering by ${hashedSubs.length} hashed subs)` : " (no filter - salt not available)"}`);
 
   try {
     do {
@@ -64,14 +65,19 @@ async function scanTableForHashedSubs(docClient, tableName, hashedSubs) {
       const response = await docClient.send(new ScanCommand(params));
       const items = response.Items || [];
 
-      // Filter items by hashedSub
-      const filteredItems = items.filter((item) => item.hashedSub && hashedSubs.includes(item.hashedSub));
-      allItems.push(...filteredItems);
+      if (filterByHash) {
+        // Filter items by hashedSub
+        const filteredItems = items.filter((item) => item.hashedSub && hashedSubs.includes(item.hashedSub));
+        allItems.push(...filteredItems);
+      } else {
+        // No filtering - include all items (for diagnostic purposes)
+        allItems.push(...items);
+      }
 
       lastEvaluatedKey = response.LastEvaluatedKey;
     } while (lastEvaluatedKey);
 
-    console.log(`  Found ${allItems.length} items for specified users in ${tableName}`);
+    console.log(`  Found ${allItems.length} items${filterByHash ? " for specified users" : " (all items)"} in ${tableName}`);
     return allItems;
   } catch (error) {
     if (error.name === "ResourceNotFoundException") {
@@ -92,8 +98,23 @@ async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
   console.log(`Output dir: ${outputDir}`);
   console.log(`Region: ${region}\n`);
 
-  // Hash all user subs
-  const hashedSubs = userSubs.map((sub) => hashSub(sub));
+  // Initialize salt before hashing (required for hashSub)
+  let saltAvailable = false;
+  try {
+    await initializeSalt();
+    saltAvailable = true;
+    console.log("Salt initialized successfully");
+  } catch (error) {
+    console.warn(`Salt initialization failed: ${error.message}`);
+    console.warn("Will skip user-specific filtering - exporting all data from tables");
+  }
+
+  // Hash all user subs (only if salt is available)
+  let hashedSubs = [];
+  if (saltAvailable) {
+    hashedSubs = userSubs.map((sub) => hashSub(sub));
+    console.log(`Hashed ${hashedSubs.length} user sub(s) for filtering`);
+  }
 
   // Create DynamoDB client
   const docClient = makeDocClient(region);

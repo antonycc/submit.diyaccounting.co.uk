@@ -5,6 +5,7 @@
 import { createLogger } from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { getHeader } from "../../lib/httpResponseHelper.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/auth/customAuthorizer.js" });
 
@@ -37,6 +38,7 @@ function getVerifier() {
 
 // Lambda authorizer ingestHandler
 export async function ingestHandler(event) {
+  await initializeSalt();
   // HTTP API v2 uses routeArn or methodArn
   const routeArn = event.routeArn || event.methodArn;
 

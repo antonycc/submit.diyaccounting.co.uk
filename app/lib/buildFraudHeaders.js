@@ -84,12 +84,11 @@ export function buildFraudHeaders(event) {
       .join(",");
   }
 
-  // 7. Vendor licence IDs – from environment variable
-  // TODO: Declare no Gov-Vendor-License-IDs header supplied
-  // * The software is open-source
-  // * There is no per-device or per-user license key
-  // * The application runs in a browser with no installable licensed component
-  // headers["Gov-Vendor-License-IDs"] = null;
+  // 7. Gov-Vendor-License-IDs is intentionally NOT supplied because:
+  // - The software is open-source (no commercial license)
+  // - There is no per-device or per-user license key
+  // - The application runs in a browser with no installable licensed component
+  // This is declared in intentionallyNotSuppliedHeaders in dynamodb-assertions.js
 
   // 8. Vendor product name – from environment variable (must be percent-encoded)
   headers["Gov-Vendor-Product-Name"] = encodeURIComponent(packageName);
@@ -117,5 +116,5 @@ export function buildFraudHeaders(event) {
   }
 
   logger.debug({ message: "Built fraud prevention headers", headers });
-  return headers;
+  return { govClientHeaders: headers, govClientErrorMessages: [] };
 }

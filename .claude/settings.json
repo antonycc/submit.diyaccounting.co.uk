@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh pr:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run linting:*)",
+      "Bash(npm run formatting:*)",
+      "Bash(./mvnw:*)",
+      "WebFetch(domain:developer.service.hmrc.gov.uk)"
+    ],
+    "deny": [
+      "Bash(git push origin main:*)",
+      "Bash(git push --force:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git rebase -i:*)"
+    ]
+  }
+}

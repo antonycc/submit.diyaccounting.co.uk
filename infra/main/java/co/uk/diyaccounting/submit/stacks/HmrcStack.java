@@ -7,6 +7,7 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -146,6 +147,10 @@ public class HmrcStack extends Stack {
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
+        // Region and account for Secrets Manager access
+        var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
+        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
+
         // exchangeToken - HMRC
         var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
@@ -232,6 +237,11 @@ public class HmrcStack extends Stack {
                     sandboxSecretArnWithWildcard);
         }
 
+        // Grant access to user sub hash salt secret in Secrets Manager
+        SubHashSaltHelper.grantSaltAccess(this.hmrcTokenPostLambda, region, account, props.envName());
+        infof(
+                "Granted Secrets Manager salt access to %s",
+                this.hmrcTokenPostLambda.getFunctionName());
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
@@ -290,9 +300,12 @@ public class HmrcStack extends Stack {
             hmrcApiRequestsTable.grantWriteData(fn);
             receiptsTable.grantWriteData(fn);
             hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
+
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
         });
         infof(
-                "Granted DynamoDB permissions to %s and its worker",
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatReturnPostLambda.getFunctionName());
 
         // VAT obligations GET
@@ -350,9 +363,12 @@ public class HmrcStack extends Stack {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
+
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
         });
         infof(
-                "Granted DynamoDB permissions to %s and its worker",
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatObligationGetLambda.getFunctionName());
 
         // VAT return GET
@@ -409,9 +425,12 @@ public class HmrcStack extends Stack {
             bundlesTable.grantReadData(fn);
             hmrcApiRequestsTable.grantWriteData(fn);
             hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
+
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
         });
         infof(
-                "Granted DynamoDB permissions to %s and its worker",
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatReturnGetLambda.getFunctionName());
 
         // myReceipts Lambda
@@ -470,6 +489,12 @@ public class HmrcStack extends Stack {
         // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts DynamoDB
         // table
         receiptsTable.grantReadData(this.receiptGetLambda);
+
+        // Grant access to user sub hash salt secret in Secrets Manager
+        SubHashSaltHelper.grantSaltAccess(this.receiptGetLambda, region, account, props.envName());
+        infof(
+                "Granted Secrets Manager salt access to %s",
+                this.receiptGetLambda.getFunctionName());
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());
         cfnOutput(this, "SubmitVatLambdaArn", this.hmrcVatReturnPostLambda.getFunctionArn());

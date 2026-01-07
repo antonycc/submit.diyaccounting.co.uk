@@ -1,6 +1,6 @@
 # Gov-Vendor-License-IDs
 
-The Submit service is an open-source (GPL-3.0) web application delivered as a SaaS.
+The Submit service is an open-source (AGPL-3.0) web application delivered as a SaaS.
 It does not install licensed software on the client device, nor does it use
 per-device or per-user vendor license keys.
 

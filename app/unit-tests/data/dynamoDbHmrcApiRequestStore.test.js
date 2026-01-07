@@ -2,6 +2,7 @@
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { context } from "@app/lib/logger.js";
+import { _setTestSalt, _clearSalt } from "@app/services/subHasher.js";
 
 // Mocks for AWS SDK clients used via dynamic import in the implementation
 const mockSend = vi.fn();
@@ -40,10 +41,13 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     vi.clearAllMocks();
     process.env = { ...originalEnv };
     context.enterWith(new Map());
+    // Initialize salt for tests that use hashSub
+    _setTestSalt("test-salt-for-unit-tests");
   });
 
   afterEach(() => {
     process.env = originalEnv;
+    _clearSalt();
   });
 
   test("skips put when HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME is not set", async () => {

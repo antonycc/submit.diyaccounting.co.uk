@@ -351,3 +351,10 @@ fabric.properties
 
 # HMRC test user credentials
 /hmrc-test-user.json
+
+# Salt backups (sensitive - store securely, not in Git)
+salt-backup-*.json
+
+# Claude Code local files (personal settings, not shared)
+.claude/settings.local.json
+CLAUDE.local.md

@@ -73,6 +73,8 @@ Architecture (high level)
 - Optional Cognito + Google IdP: hosted UI; user identity for gated features
 - Route53 + ACM: DNS and CloudFront certificate
 - Secrets Manager: HMRC and Google client secrets for non-local environments
+- DynamoDB: User bundles, receipts, and HMRC API request audit logs
+- Privacy: User identifiers are salted and hashed (HMAC-SHA256) before storage
 - Local dev: ngrok, mock OAuth2, and local DynamoDB (via dynalite)
 
 Environment files
@@ -129,8 +131,10 @@ House style and tooling
 Documentation
 - This README: high-level architecture and quickstart
 - _developers/SETUP.md: step-by-step developer setup (local, tests, and AWS)
+- _developers/SALTED_HASH_IMPLEMENTATION.md: Privacy-preserving user ID hashing
+- CLOUDFRONT_FRAUD_HEADERS_FIX.md: HMRC fraud prevention headers flow
 - lambda-concurrency-scaling.md: Lambda provisioned concurrency scaling system
 - lambda-concurrency-cost-analysis.md: Detailed cost analysis for Lambda scaling
 
 License
-GPL-3.0. See LICENSE for details.
+AGPL-3.0. See LICENSE for details.

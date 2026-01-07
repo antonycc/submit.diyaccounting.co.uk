@@ -5,6 +5,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -140,6 +141,14 @@ public class AuthStack extends Stack {
                 "Granted Lambda %s read/write access to DynamoDB Table %s",
                 this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().bundlesTableName);
 
+        // Grant access to user sub hash salt secret in Secrets Manager
+        var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
+        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
+        SubHashSaltHelper.grantSaltAccess(this.cognitoTokenPostLambda, region, account, props.envName());
+        infof(
+                "Granted Secrets Manager salt access to %s",
+                this.cognitoTokenPostLambda.getFunctionName());
+
         // Custom authorizer Lambda for X-Authorization header
         var customAuthorizerLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
@@ -176,6 +185,12 @@ public class AuthStack extends Stack {
         infof(
                 "Granted Custom Authorizer Lambda %s read/write access to DynamoDB Table %s",
                 this.customAuthorizerLambda.getNode().getId(), props.sharedNames().bundlesTableName);
+
+        // Grant Custom Authorizer Lambda access to user sub hash salt secret
+        SubHashSaltHelper.grantSaltAccess(this.customAuthorizerLambda, region, account, props.envName());
+        infof(
+                "Granted Secrets Manager salt access to %s",
+                this.customAuthorizerLambda.getFunctionName());
 
         // cfnOutput(this, "AuthUrlCognitoLambdaArn", this.cognitoAuthUrlGetLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.cognitoTokenPostLambda.getFunctionArn());

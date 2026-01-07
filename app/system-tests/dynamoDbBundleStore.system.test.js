@@ -25,17 +25,16 @@ beforeAll(async () => {
   const { default: dynalite } = await import("dynalite");
 
   const host = "127.0.0.1";
-  const port = 9008; // use distinct port to avoid conflicts
   const server = dynalite({ createTableMs: 0 });
-  await new Promise((resolve, reject) => {
-    server.listen(port, host, (err) => (err ? reject(err) : resolve(null)));
+  const address = await new Promise((resolve, reject) => {
+    server.listen(0, host, (err) => (err ? reject(err) : resolve(server.address())));
   });
   stopDynalite = async () => {
     try {
       server.close();
     } catch {}
   };
-  const endpoint = `http://${host}:${port}`;
+  const endpoint = `http://${host}:${address.port}`;
 
   // Minimal AWS SDK env for local usage with endpoint override
   process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
@@ -48,6 +47,13 @@ beforeAll(async () => {
 
   // Enable DynamoDB usage in the bundle store
   process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+
+  // Set salt for hashing user subs (required by subHasher.js)
+  process.env.USER_SUB_HASH_SALT = "test-salt-for-system-tests";
+
+  // Initialize the salt before importing modules that use hashSub
+  const { initializeSalt } = await import("../services/subHasher.js");
+  await initializeSalt();
 
   // Ensure the table exists on the local endpoint
   await ensureBundleTableExists(tableName, endpoint);

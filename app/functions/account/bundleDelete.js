@@ -19,6 +19,7 @@ import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
@@ -80,6 +81,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
+  await initializeSalt();
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request, requestId, traceparent, correlationId } = extractRequest(event);
@@ -192,6 +194,7 @@ export async function ingestHandler(event) {
 
 // SQS worker Lambda ingestHandler function
 export async function workerHandler(event) {
+  await initializeSalt();
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"]);
 
   logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });

@@ -27,6 +27,7 @@ import {
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -100,6 +101,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
+  await initializeSalt();
   validateEnv([
     "HMRC_BASE_URI",
     "RECEIPTS_DYNAMODB_TABLE_NAME",
@@ -122,7 +124,9 @@ export async function ingestHandler(event) {
   try {
     userSub = await enforceBundles(event);
   } catch (error) {
-    // TODO: Pass back any generated tracing headers in error responses.
+    // Note: Tracing headers (x-request-id, traceparent) are available via context
+    // but not currently included in 403 error responses. The request URL is passed
+    // for logging purposes. See httpResponseHelper.js for response header handling.
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
@@ -333,6 +337,7 @@ export async function ingestHandler(event) {
 
 // SQS worker Lambda ingestHandler function
 export async function workerHandler(event) {
+  await initializeSalt();
   validateEnv([
     "HMRC_BASE_URI",
     "RECEIPTS_DYNAMODB_TABLE_NAME",

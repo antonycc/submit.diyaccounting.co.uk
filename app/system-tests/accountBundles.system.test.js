@@ -26,6 +26,10 @@ describe("System: account bundle ingestHandlers", () => {
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundlesTableName;
 
+    // Initialize the salt for hashing user subs (already set in .env.test)
+    const { initializeSalt } = await import("@app/services/subHasher.js");
+    await initializeSalt();
+
     await ensureBundleTableExists(bundlesTableName, endpoint);
   });
 

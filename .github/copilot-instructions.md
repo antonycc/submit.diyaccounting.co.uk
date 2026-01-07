@@ -5,7 +5,7 @@
 ## About This File
 
 This file contains guidelines for **GitHub Copilot** code review agent. The repository also has guidelines for other AI coding assistants:
-- `.claude/guidelines.md` - Guidelines for Claude Agent (emphasis on autonomous task execution & implementation)
+- `CLAUDE.md` + `.claude/rules/` - Guidelines for Claude Code (emphasis on autonomous task execution & implementation)
 - `.junie/guidelines.md` - Guidelines for Junie (custom agent, emphasis on testing & iteration)
 
 Each assistant has complementary strengths - GitHub Copilot is optimized for code review, analysis, and providing thoughtful feedback.

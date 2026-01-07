@@ -13,6 +13,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 
@@ -47,6 +48,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
+  await initializeSalt();
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME"]);
 
   const { request, requestId: extractedRequestId } = extractRequest(event);
@@ -72,8 +74,7 @@ export async function ingestHandler(event) {
 
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
-  // Authentication errors
-  // TODO: It looks like we are cover treating errorMessages as related to authentication errors, check and fix here and everywhere.
+  // Authentication errors - extractAndValidateParameters only adds JWT decode errors
   if (errorMessages.length > 0 || !userId) {
     return http401UnauthorizedResponse({
       request,

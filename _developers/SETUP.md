@@ -37,11 +37,13 @@ export NGROK_AUTHTOKEN=YOUR_NGROK_AUTHTOKEN
   - TEST_PROXY=run
   - TEST_MOCK_OAUTH2=run
   - TEST_DYNAMODB=run
-- Do NOT commit plaintext secrets. Behaviour tests reference secrets from your shell env or from ARNs in AWS Secrets Manager. Typical values you’ll need to supply locally include:
+  - USER_SUB_HASH_SALT=local-development-salt-not-for-production (required for user ID hashing)
+- Do NOT commit plaintext secrets. Behaviour tests reference secrets from your shell env or from ARNs in AWS Secrets Manager. Typical values you'll need to supply locally include:
   - HMRC_SANDBOX_CLIENT_ID
   - HMRC_SANDBOX_CLIENT_SECRET (or HMRC_SANDBOX_CLIENT_SECRET_ARN when using AWS)
   - Optional: GOOGLE_CLIENT_SECRET / DIY_SUBMIT_GOOGLE_CLIENT_ID, COGNITO_* if testing those paths
 - DynamoDB table names for local tests (bundles, HMRC API requests, receipts) default sensibly; tables are created automatically by the behaviour test harness when TEST_DYNAMODB=run.
+- User IDs are salted and hashed before storage (privacy feature). See `_developers/SALTED_HASH_IMPLEMENTATION.md` for details.
 
 5) HMRC sandbox application
 - In the HMRC Developer Hub (Sandbox), create an app and add your redirect URI:

@@ -15,6 +15,7 @@ import { getUserSub } from "../../lib/jwtHelper.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptGet.js" });
 
@@ -79,6 +80,7 @@ export function extractAndValidateParameters(event, errorMessages, userSub) {
 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
+  await initializeSalt();
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "RECEIPTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);

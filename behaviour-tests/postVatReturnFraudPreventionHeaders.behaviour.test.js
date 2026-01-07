@@ -164,7 +164,7 @@ test.afterEach(async ({ page }, testInfo) => {
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
   appendUserSubTxt(outputDir, testInfo, userSub);
-  appendHashedUserSubTxt(outputDir, testInfo, userSub);
+  await appendHashedUserSubTxt(outputDir, testInfo, userSub);
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
@@ -318,10 +318,12 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* ********************************** */
 
   // For sandbox tests, fetch fraud prevention headers validation feedback
+  // Note: This request is made directly from test executor to HMRC, not through Lambda
+  // We capture the result to include in the test report even without DynamoDB access
   const requestId = "request-123";
   const traceparent = observedTraceparent;
   const correlationId = "correlation-123";
-  await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub, requestId, traceparent, correlationId);
+  const validationFeedbackResult = await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub, requestId, traceparent, correlationId);
   //await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
 
   /* ********* */
@@ -372,6 +374,14 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       isSandboxMode: isSandboxMode(),
       intentionallyNotSuppliedHeaders,
     },
+    // Validation feedback from HMRC (captured directly from test executor, not via Lambda/DynamoDB)
+    validationFeedback: validationFeedbackResult
+      ? {
+          ok: validationFeedbackResult.ok,
+          status: validationFeedbackResult.status,
+          feedback: validationFeedbackResult.feedback,
+        }
+      : null,
     artefactsDir: outputDir,
     screenshotPath,
     testStartTime: new Date().toISOString(),
@@ -419,6 +429,57 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       console.log("[DynamoDB Export]: Export completed:", exportResults);
     } catch (error) {
       console.error("[DynamoDB Export]: Failed to export tables:", error);
+    }
+  }
+
+  /* ********************************************* */
+  /*  APPEND VALIDATION FEEDBACK TO HMRC REQUESTS  */
+  /* ********************************************* */
+
+  // Write validation feedback to hmrc-api-requests.jsonl even without DynamoDB
+  // This ensures the test report can display the feedback in CI environments
+  if (validationFeedbackResult) {
+    const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
+    const hmrcBase = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+
+    // Hash the userSub to match DynamoDB record format (hashedSub field)
+    let hashedSubForRecord = "unknown";
+    if (userSub) {
+      try {
+        const { hashSub } = await import("@app/services/subHasher.js");
+        hashedSubForRecord = hashSub(userSub);
+      } catch (e) {
+        console.log(`[Validation Feedback]: Could not hash userSub for record: ${e.message}`);
+        hashedSubForRecord = userSub; // Fall back to raw sub if hashing fails
+      }
+    }
+
+    const validationFeedbackRecord = {
+      hashedSub: hashedSubForRecord, // Use hashedSub to match DynamoDB record format
+      id: `validation-feedback-${Date.now()}`,
+      requestId: correlationId,
+      url: `${hmrcBase}/test/fraud-prevention-headers/vat-mtd/validation-feedback`,
+      httpRequest: {
+        method: "GET",
+        headers: {
+          Accept: "application/vnd.hmrc.1.0+json",
+          "x-request-id": requestId,
+          traceparent: traceparent,
+          "x-correlationid": correlationId,
+        },
+      },
+      httpResponse: {
+        statusCode: validationFeedbackResult.status,
+        body: validationFeedbackResult.feedback,
+      },
+      timestamp: new Date().toISOString(),
+      source: "test-executor-direct", // Indicates this was captured directly, not via Lambda
+    };
+    try {
+      fs.appendFileSync(hmrcApiRequestsFile, JSON.stringify(validationFeedbackRecord) + "\n", "utf-8");
+      console.log("[Validation Feedback]: Appended validation feedback to hmrc-api-requests.jsonl");
+    } catch (error) {
+      console.error("[Validation Feedback]: Failed to append validation feedback:", error);
     }
   }
 

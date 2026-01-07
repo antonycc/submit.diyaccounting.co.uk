@@ -743,6 +743,8 @@ export async function fetchFraudPreventionHeadersFeedback(
   traceparent = undefined,
   correlationId = undefined,
 ) {
+  let capturedResult = null;
+
   await test.step("Fetch fraud prevention headers validation feedback from HMRC", async () => {
     const { getFraudPreventionHeadersFeedback } = await import("@app/services/hmrcApi.js");
 
@@ -755,6 +757,9 @@ export async function fetchFraudPreventionHeadersFeedback(
       traceparent,
       correlationId,
     );
+
+    // Capture the result for return
+    capturedResult = result;
 
     if (result.ok) {
       console.log("Fraud prevention headers validation feedback received:");
@@ -771,4 +776,6 @@ export async function fetchFraudPreventionHeadersFeedback(
       console.warn("Failed to fetch fraud prevention headers validation feedback:", result.error || result.status);
     }
   });
+
+  return capturedResult;
 }

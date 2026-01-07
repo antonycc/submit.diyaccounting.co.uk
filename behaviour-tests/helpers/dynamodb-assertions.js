@@ -186,20 +186,47 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
   return hashedSubs;
 }
 
-// TODO: Declare no Gov-Vendor-License-IDs header supplied
-// * The software is open-source
-// * There is no per-device or per-user license key
-// * The application runs in a browser with no installable licensed component
-// TODO: Declare no Gov-Client-Public-Port to HMRC
-// The Submit service is a browser-based web application delivered over HTTPS via
-// CloudFront and AWS load balancers. The client TCP source port is not exposed to
-// application code in the browser and is not forwarded through the CDN/load
-// balancer layer.
-// In accordance with HMRC Fraud Prevention guidance, this header is omitted
-// because the data cannot be collected.
-// headers["Gov-Client-Public-Port"] = null;
-// TODO: Implement Gov-Client-Multi-Factor for cognito and omit when no MFA present
+/**
+ * HMRC Fraud Prevention headers that are intentionally NOT supplied.
+ * These headers are documented to HMRC as not applicable for this application.
+ *
+ * - gov-client-multi-factor: Cognito MFA not yet implemented
+ * - gov-vendor-license-ids: Open-source software with no license keys
+ * - gov-client-public-port: Browser apps cannot access client TCP port
+ *
+ * @see buildFraudHeaders.js for server-side header generation
+ * @see submit.js buildGovClientHeaders() for client-side header generation
+ */
 export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
+
+/**
+ * Essential HMRC Fraud Prevention headers that MUST be present in every HMRC API request.
+ * These are generated server-side by buildFraudHeaders.js and should always exist.
+ */
+export const essentialFraudPreventionHeaders = [
+  "gov-client-connection-method",
+  "gov-client-user-ids",
+  "gov-vendor-product-name",
+  "gov-vendor-version",
+];
+
+/**
+ * Assert that essential fraud prevention headers are present in an HMRC API request.
+ * @param {object} hmrcApiRequest - The HMRC API request from DynamoDB
+ * @param {string} context - Description of the request for error messages
+ */
+export function assertEssentialFraudPreventionHeadersPresent(hmrcApiRequest, context = "HMRC API request") {
+  const requestHeaders = hmrcApiRequest.httpRequest?.headers || {};
+  const headerKeysLower = Object.keys(requestHeaders).map((k) => k.toLowerCase());
+
+  const missingHeaders = essentialFraudPreventionHeaders.filter((header) => !headerKeysLower.includes(header.toLowerCase()));
+
+  if (missingHeaders.length > 0) {
+    console.error(`[DynamoDB Assertions]: Missing essential fraud prevention headers in ${context}:`, missingHeaders);
+    console.error(`[DynamoDB Assertions]: Present headers:`, Object.keys(requestHeaders));
+    expect(missingHeaders, `Missing essential fraud prevention headers in ${context}`).toEqual([]);
+  }
+}
 
 export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = false, noWarnings = false, allValidFeedbackHeaders = false) {
   let fraudPreventionHeadersValidationFeedbackGetRequests;
@@ -265,6 +292,15 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
     console.log(`[DynamoDB Assertions]: Errors: ${responseBody.errors?.length}`);
     console.log(`[DynamoDB Assertions]: Warnings: ${responseBody.warnings?.length}`);
     console.log(`[DynamoDB Assertions]: Ignored headers: ${intentionallyNotSuppliedHeaders}`);
+
+    // CRITICAL: Fail if NO fraud prevention headers were submitted at all
+    // This is different from "some headers invalid" - we specifically check for the "no headers" message
+    const noHeadersSubmittedMessage = "No fraud prevention headers submitted";
+    if (responseBody.code === "INVALID_HEADERS" && responseBody.message?.includes(noHeadersSubmittedMessage)) {
+      console.error(`[DynamoDB Assertions]: CRITICAL - No fraud prevention headers submitted at all!`);
+      console.error(`[DynamoDB Assertions]: Message: ${responseBody.message}`);
+      expect.fail(`HMRC fraud prevention validation failed: No fraud prevention headers were submitted. This indicates a bug in buildFraudHeaders.`);
+    }
 
     const errors = responseBody.errors?.filter((error) => {
       const headers = error.headers.filter((header) => !intentionallyNotSuppliedHeaders.includes(header));
