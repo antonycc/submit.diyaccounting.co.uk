@@ -1,13 +1,14 @@
 package co.uk.diyaccounting.submit;
 
+import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
+import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
-
-import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
-import java.util.ArrayList;
-import java.util.List;
-import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 
 public class SubmitSharedNames {
 
@@ -306,12 +307,9 @@ public class SubmitSharedNames {
         this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
         this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envDashedDomainName);
         this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envDashedDomainName);
-        this.hmrcVatReturnPostAsyncRequestsTableName =
-                "%s-hmrc-vat-return-post-async-requests".formatted(this.envDashedDomainName);
-        this.hmrcVatReturnGetAsyncRequestsTableName =
-                "%s-hmrc-vat-return-get-async-requests".formatted(this.envDashedDomainName);
-        this.hmrcVatObligationGetAsyncRequestsTableName =
-                "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatReturnPostAsyncRequestsTableName = "%s-hmrc-vat-return-post-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatReturnGetAsyncRequestsTableName = "%s-hmrc-vat-return-get-async-requests".formatted(this.envDashedDomainName);
+        this.hmrcVatObligationGetAsyncRequestsTableName = "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envDashedDomainName);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
         this.distributionAccessLogDeliveryHoldingSourceName =
@@ -372,10 +370,8 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, cognitoTokenPostLambdaHandlerDashed);
         this.cognitoTokenPostIngestLambdaHandler =
                 "%s/auth/%s".formatted(appLambdaHandlerPrefix, cognitoTokenPostLambdaHandlerName);
-        this.cognitoTokenPostIngestLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, cognitoTokenPostLambdaHandlerDashed);
-        this.cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.cognitoTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.cognitoTokenPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, cognitoTokenPostLambdaHandlerDashed);
+        this.cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.cognitoTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.cognitoTokenPostLambdaHttpMethod,
                 this.cognitoTokenPostLambdaUrlPath,
@@ -392,8 +388,7 @@ public class SubmitSharedNames {
         this.customAuthorizerIngestLambdaHandler =
                 "%s/auth/%s".formatted(appLambdaHandlerPrefix, customAuthorizerHandlerName);
         this.customAuthorizerIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, customAuthorizerHandlerDashed);
-        this.customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.customAuthorizerIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.customAuthorizerIngestLambdaArn, this.provisionedConcurrencyAliasName);
 
         this.bundleGetLambdaHttpMethod = HttpMethod.GET;
         this.bundleGetLambdaUrlPath = "/api/v1/bundle";
@@ -401,35 +396,32 @@ public class SubmitSharedNames {
         this.bundleGetLambdaCustomAuthorizer = false;
         var bundleGetLambdaHandlerName = "bundleGet.ingestHandler";
         var bundleGetLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(bundleGetLambdaHandlerName);
-        this.bundleGetIngestLambdaFunctionName =
-                "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
-        this.bundleGetIngestLambdaHandler =
-                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaHandlerName);
+            ResourceNameUtils.convertCamelCaseToDashSeparated(bundleGetLambdaHandlerName);
+        this.bundleGetIngestLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, bundleGetLambdaHandlerDashed);
+        this.bundleGetIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleGetLambdaHandlerName);
         this.bundleGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleGetLambdaHandlerDashed);
-        this.bundleGetIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.bundleGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.bundleGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.bundleGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
-                this.bundleGetLambdaHttpMethod,
-                this.bundleGetLambdaUrlPath,
-                "Get user bundles",
-                "Retrieves all bundles for the authenticated user",
-                "getBundles",
-                List.of(new ApiParameter(
-                        "x-wait-time-ms", "header", false, "Max time to wait for synchronous response (ms)"))));
+            this.bundleGetLambdaHttpMethod,
+            this.bundleGetLambdaUrlPath,
+            "Get user bundles",
+            "Retrieves all bundles for the authenticated user",
+            "getBundles",
+            List.of(new ApiParameter(
+                "x-wait-time-ms", "header", false, "Max time to wait for synchronous response (ms)"))));
 
         var bundlePostProps = LambdaNameProps.builder()
-                .apiHttpMethod(HttpMethod.POST)
-                .apiUrlPath("/api/v1/bundle")
-                .handlerPath("account")
-                .ingestHandlerName("bundlePost.ingestHandler")
-                .workerHandlerName("bundlePost.workerHandler")
-                .apiJwtAuthorizer(true)
-                .apiCustomAuthorizer(false)
-                .resourceNamePrefix(this.appResourceNamePrefix)
-                .lambdaArnPrefix(appLambdaArnPrefix)
-                .provisionedConcurrencyAliasName(this.provisionedConcurrencyAliasName)
-                .build();
+            .apiHttpMethod(HttpMethod.POST)
+            .apiUrlPath("/api/v1/bundle")
+            .handlerPath("account")
+            .ingestHandlerName("bundlePost.ingestHandler")
+            .workerHandlerName("bundlePost.workerHandler")
+            .apiJwtAuthorizer(true)
+            .apiCustomAuthorizer(false)
+            .resourceNamePrefix(this.appResourceNamePrefix)
+            .lambdaArnPrefix(appLambdaArnPrefix)
+            .provisionedConcurrencyAliasName(this.provisionedConcurrencyAliasName)
+            .build();
         this.bundlePost = new LambdaNames(bundlePostProps);
         // TODO: Remove and reference bundlePost directly where used
         this.bundlePostLambdaHttpMethod = this.bundlePost.apiHttpMethod;
@@ -439,52 +431,46 @@ public class SubmitSharedNames {
         this.bundlePostIngestLambdaFunctionName = this.bundlePost.ingestLambdaFunctionName;
         this.bundlePostIngestLambdaHandler = this.bundlePost.ingestLambdaHandler;
         this.bundlePostIngestLambdaArn = this.bundlePost.ingestLambdaArn;
-        this.bundlePostIngestProvisionedConcurrencyLambdaAliasArn =
-                this.bundlePost.ingestProvisionedConcurrencyLambdaAliasArn;
+        this.bundlePostIngestProvisionedConcurrencyLambdaAliasArn = this.bundlePost.ingestProvisionedConcurrencyLambdaAliasArn;
         this.bundlePostWorkerLambdaFunctionName = this.bundlePost.workerLambdaFunctionName;
         this.bundlePostWorkerLambdaHandler = this.bundlePost.workerLambdaHandler;
         this.bundlePostWorkerLambdaArn = this.bundlePost.workerLambdaArn;
-        this.bundlePostWorkerProvisionedConcurrencyLambdaAliasArn =
-                this.bundlePost.workerProvisionedConcurrencyLambdaAliasArn;
+        this.bundlePostWorkerProvisionedConcurrencyLambdaAliasArn = this.bundlePost.workerProvisionedConcurrencyLambdaAliasArn;
         this.bundlePostLambdaQueueName = "%s-queue".formatted(this.bundlePostIngestLambdaFunctionName);
         this.bundlePostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundlePostIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
-                this.bundlePostLambdaHttpMethod,
-                this.bundlePostLambdaUrlPath,
-                "Request new bundle",
-                "Creates a new bundle request for the authenticated user",
-                "requestBundle"));
-        //        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
-        //        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
-        //        this.bundlePostLambdaJwtAuthorizer = true;
-        //        this.bundlePostLambdaCustomAuthorizer = false;
-        //        var bundlePostLambdaHandlerName = "bundlePost.ingestHandler";
-        //        var bundlePostLambdaWorkerHandlerName = "bundlePost.workerHandler";
-        //        var bundlePostLambdaHandlerDashed =
-        //            ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
-        //        this.bundlePostIngestLambdaFunctionName =
-        //            "%s-%s".formatted(this.appResourceNamePrefix, bundlePostLambdaHandlerDashed);
-        //        this.bundlePostIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix,
-        // bundlePostLambdaHandlerName);
-        //        this.bundlePostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
-        //        this.bundlePostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundlePostIngestLambdaArn,
-        // this.defaultAliasName);
-        //        this.bundlePostWorkerLambdaFunctionName =
-        // "%s-worker".formatted(this.bundlePostIngestLambdaFunctionName);
-        //        this.bundlePostWorkerLambdaHandler =
-        //            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaWorkerHandlerName);
-        //        this.bundlePostWorkerLambdaArn = "%s-worker".formatted(this.bundlePostIngestLambdaArn);
-        //        this.bundlePostWorkerDefaultAliasLambdaArn =
-        //            "%s:%s".formatted(this.bundlePostWorkerLambdaArn, this.defaultAliasName);
-        //        this.bundlePostLambdaQueueName = "%s-queue".formatted(this.bundlePostIngestLambdaFunctionName);
-        //        this.bundlePostLambdaDeadLetterQueueName =
-        // "%s-dlq".formatted(this.bundlePostIngestLambdaFunctionName);
-        //        publishedApiLambdas.add(new PublishedLambda(
-        //            this.bundlePostLambdaHttpMethod,
-        //            this.bundlePostLambdaUrlPath,
-        //            "Request new bundle",
-        //            "Creates a new bundle request for the authenticated user",
-        //            "requestBundle"));
+            this.bundlePostLambdaHttpMethod,
+            this.bundlePostLambdaUrlPath,
+            "Request new bundle",
+            "Creates a new bundle request for the authenticated user",
+            "requestBundle"));
+//        this.bundlePostLambdaHttpMethod = HttpMethod.POST;
+//        this.bundlePostLambdaUrlPath = "/api/v1/bundle";
+//        this.bundlePostLambdaJwtAuthorizer = true;
+//        this.bundlePostLambdaCustomAuthorizer = false;
+//        var bundlePostLambdaHandlerName = "bundlePost.ingestHandler";
+//        var bundlePostLambdaWorkerHandlerName = "bundlePost.workerHandler";
+//        var bundlePostLambdaHandlerDashed =
+//            ResourceNameUtils.convertCamelCaseToDashSeparated(bundlePostLambdaHandlerName);
+//        this.bundlePostIngestLambdaFunctionName =
+//            "%s-%s".formatted(this.appResourceNamePrefix, bundlePostLambdaHandlerDashed);
+//        this.bundlePostIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaHandlerName);
+//        this.bundlePostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundlePostLambdaHandlerDashed);
+//        this.bundlePostIngestDefaultAliasLambdaArn = "%s:%s".formatted(this.bundlePostIngestLambdaArn, this.defaultAliasName);
+//        this.bundlePostWorkerLambdaFunctionName = "%s-worker".formatted(this.bundlePostIngestLambdaFunctionName);
+//        this.bundlePostWorkerLambdaHandler =
+//            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundlePostLambdaWorkerHandlerName);
+//        this.bundlePostWorkerLambdaArn = "%s-worker".formatted(this.bundlePostIngestLambdaArn);
+//        this.bundlePostWorkerDefaultAliasLambdaArn =
+//            "%s:%s".formatted(this.bundlePostWorkerLambdaArn, this.defaultAliasName);
+//        this.bundlePostLambdaQueueName = "%s-queue".formatted(this.bundlePostIngestLambdaFunctionName);
+//        this.bundlePostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundlePostIngestLambdaFunctionName);
+//        publishedApiLambdas.add(new PublishedLambda(
+//            this.bundlePostLambdaHttpMethod,
+//            this.bundlePostLambdaUrlPath,
+//            "Request new bundle",
+//            "Creates a new bundle request for the authenticated user",
+//            "requestBundle"));
 
         this.bundleDeleteLambdaHttpMethod = HttpMethod.DELETE;
         this.bundleDeleteLambdaUrlPath = "/api/v1/bundle";
@@ -493,38 +479,37 @@ public class SubmitSharedNames {
         var bundleDeleteLambdaHandlerName = "bundleDelete.ingestHandler";
         var bundleDeleteLambdaWorkerHandlerName = "bundleDelete.workerHandler";
         var bundleDeleteLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(bundleDeleteLambdaHandlerName);
+            ResourceNameUtils.convertCamelCaseToDashSeparated(bundleDeleteLambdaHandlerName);
         this.bundleDeleteIngestLambdaFunctionName =
-                "%s-%s".formatted(this.appResourceNamePrefix, bundleDeleteLambdaHandlerDashed);
+            "%s-%s".formatted(this.appResourceNamePrefix, bundleDeleteLambdaHandlerDashed);
         this.bundleDeleteIngestLambdaHandler =
-                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaHandlerName);
+            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaHandlerName);
         this.bundleDeleteIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, bundleDeleteLambdaHandlerDashed);
-        this.bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.bundleDeleteIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.bundleDeleteIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.bundleDeleteIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.bundleDeleteWorkerLambdaFunctionName = "%s-worker".formatted(this.bundleDeleteIngestLambdaFunctionName);
         this.bundleDeleteWorkerLambdaHandler =
-                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaWorkerHandlerName);
+            "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleDeleteLambdaWorkerHandlerName);
         this.bundleDeleteWorkerLambdaArn = "%s-worker".formatted(this.bundleDeleteIngestLambdaArn);
         this.bundleDeleteWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.bundleDeleteWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+            "%s:%s".formatted(this.bundleDeleteWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.bundleDeleteLambdaQueueName = "%s-queue".formatted(this.bundleDeleteIngestLambdaFunctionName);
         this.bundleDeleteLambdaDeadLetterQueueName = "%s-dlq".formatted(this.bundleDeleteIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
-                this.bundleDeleteLambdaHttpMethod,
-                this.bundleDeleteLambdaUrlPath,
-                "Delete bundle",
-                "Deletes a bundle for the authenticated user",
-                "deleteBundle",
-                List.of(
-                        new ApiParameter("bundleId", "query", false, "The bundle id (or name) to delete"),
-                        new ApiParameter("removeAll", "query", false, "When true, removes all bundles"))));
+            this.bundleDeleteLambdaHttpMethod,
+            this.bundleDeleteLambdaUrlPath,
+            "Delete bundle",
+            "Deletes a bundle for the authenticated user",
+            "deleteBundle",
+            List.of(
+                new ApiParameter("bundleId", "query", false, "The bundle id (or name) to delete"),
+                new ApiParameter("removeAll", "query", false, "When true, removes all bundles"))));
         publishedApiLambdas.add(new PublishedLambda(
-                this.bundleDeleteLambdaHttpMethod,
-                "/api/v1/bundle/{id}",
-                "Delete bundle by id",
-                "Deletes a bundle for the authenticated user using a path parameter",
-                "deleteBundleById",
-                List.of(new ApiParameter("id", "path", true, "The bundle id (or name) to delete"))));
+            this.bundleDeleteLambdaHttpMethod,
+            "/api/v1/bundle/{id}",
+            "Delete bundle by id",
+            "Deletes a bundle for the authenticated user using a path parameter",
+            "deleteBundleById",
+            List.of(new ApiParameter("id", "path", true, "The bundle id (or name) to delete"))));
 
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
@@ -538,8 +523,7 @@ public class SubmitSharedNames {
         this.hmrcTokenPostIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcTokenPostLambdaHandlerName);
         this.hmrcTokenPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcTokenPostLambdaHandlerDashed);
-        this.hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.hmrcTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.hmrcTokenPostLambdaHttpMethod,
                 this.hmrcTokenPostLambdaUrlPath,
@@ -559,33 +543,25 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnPostLambdaHandlerDashed);
         this.hmrcVatReturnPostIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaHandlerName);
-        this.hmrcVatReturnPostIngestLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnPostLambdaHandlerDashed);
-        this.hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcVatReturnPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
-        this.hmrcVatReturnPostWorkerLambdaFunctionName =
-                "%s-worker".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
+        this.hmrcVatReturnPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnPostLambdaHandlerDashed);
+        this.hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.hmrcVatReturnPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatReturnPostWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         this.hmrcVatReturnPostWorkerLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaWorkerHandlerName);
+            "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnPostLambdaWorkerHandlerName);
         this.hmrcVatReturnPostWorkerLambdaArn = "%s-worker".formatted(this.hmrcVatReturnPostIngestLambdaArn);
         this.hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcVatReturnPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+            "%s:%s".formatted(this.hmrcVatReturnPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatReturnPostLambdaQueueName = "%s-queue".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
-        this.hmrcVatReturnPostLambdaDeadLetterQueueName =
-                "%s-dlq".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
+        this.hmrcVatReturnPostLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatReturnPostIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
-                this.hmrcVatReturnPostLambdaHttpMethod,
-                this.hmrcVatReturnPostLambdaUrlPath,
-                "Submit VAT return to HMRC",
-                "Submits a VAT return to HMRC on behalf of the authenticated user",
-                "submitVatReturn",
-                List.of(
-                        new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"),
-                        new ApiParameter(
-                                "runFraudPreventionHeaderValidation",
-                                "query",
-                                false,
-                                "When true, validates HMRC Fraud Prevention Headers"))));
+            this.hmrcVatReturnPostLambdaHttpMethod,
+            this.hmrcVatReturnPostLambdaUrlPath,
+            "Submit VAT return to HMRC",
+            "Submits a VAT return to HMRC on behalf of the authenticated user",
+            "submitVatReturn",
+            List.of(
+                new ApiParameter("Gov-Test-Scenario", "header", false, "HMRC sandbox test scenario"),
+                new ApiParameter("runFraudPreventionHeaderValidation", "query", false, "When true, validates HMRC Fraud Prevention Headers"))));
 
         this.hmrcVatObligationGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatObligationGetLambdaUrlPath = "/api/v1/hmrc/vat/obligation";
@@ -603,34 +579,27 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatObligationGetLambdaHandlerDashed);
         this.hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.hmrcVatObligationGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
-        this.hmrcVatObligationGetWorkerLambdaFunctionName =
-                "%s-worker".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
+        this.hmrcVatObligationGetWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
         this.hmrcVatObligationGetWorkerLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaWorkerHandlerName);
+            "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatObligationGetLambdaWorkerHandlerName);
         this.hmrcVatObligationGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcVatObligationGetIngestLambdaArn);
         this.hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcVatObligationGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
-        this.hmrcVatObligationGetLambdaQueueName =
-                "%s-queue".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
-        this.hmrcVatObligationGetLambdaDeadLetterQueueName =
-                "%s-dlq".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
+            "%s:%s".formatted(this.hmrcVatObligationGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatObligationGetLambdaQueueName = "%s-queue".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
+        this.hmrcVatObligationGetLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatObligationGetIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
-                this.hmrcVatObligationGetLambdaHttpMethod,
-                this.hmrcVatObligationGetLambdaUrlPath,
-                "Get VAT obligations from HMRC",
-                "Retrieves VAT obligations from HMRC for the authenticated user",
-                "getVatObligations",
-                List.of(
-                        new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
-                        new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
-                        new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
-                        new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
-                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
-                        new ApiParameter(
-                                "runFraudPreventionHeaderValidation",
-                                "query",
-                                false,
-                                "When true, validates HMRC Fraud Prevention Headers"))));
+            this.hmrcVatObligationGetLambdaHttpMethod,
+            this.hmrcVatObligationGetLambdaUrlPath,
+            "Get VAT obligations from HMRC",
+            "Retrieves VAT obligations from HMRC for the authenticated user",
+            "getVatObligations",
+            List.of(
+                new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
+                new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
+                new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                new ApiParameter("runFraudPreventionHeaderValidation", "query", false, "When true, validates HMRC Fraud Prevention Headers"))));
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
@@ -644,35 +613,27 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatReturnGetLambdaHandlerDashed);
         this.hmrcVatReturnGetIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaHandlerName);
-        this.hmrcVatReturnGetIngestLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
-        this.hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcVatReturnGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
-        this.hmrcVatReturnGetWorkerLambdaFunctionName =
-                "%s-worker".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
+        this.hmrcVatReturnGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcVatReturnGetLambdaHandlerDashed);
+        this.hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.hmrcVatReturnGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatReturnGetWorkerLambdaFunctionName = "%s-worker".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
         this.hmrcVatReturnGetWorkerLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaWorkerHandlerName);
+            "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatReturnGetLambdaWorkerHandlerName);
         this.hmrcVatReturnGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcVatReturnGetIngestLambdaArn);
         this.hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcVatReturnGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+            "%s:%s".formatted(this.hmrcVatReturnGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatReturnGetLambdaQueueName = "%s-queue".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
-        this.hmrcVatReturnGetLambdaDeadLetterQueueName =
-                "%s-dlq".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
+        this.hmrcVatReturnGetLambdaDeadLetterQueueName = "%s-dlq".formatted(this.hmrcVatReturnGetIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
-                this.hmrcVatReturnGetLambdaHttpMethod,
-                this.hmrcVatReturnGetLambdaUrlPath,
-                "Get submitted VAT returns from HMRC",
-                "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
-                "getVatReturns",
-                List.of(
-                        new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
-                        new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
-                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
-                        new ApiParameter(
-                                "runFraudPreventionHeaderValidation",
-                                "query",
-                                false,
-                                "When true, validates HMRC Fraud Prevention Headers"))));
+            this.hmrcVatReturnGetLambdaHttpMethod,
+            this.hmrcVatReturnGetLambdaUrlPath,
+            "Get submitted VAT returns from HMRC",
+            "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+            "getVatReturns",
+            List.of(
+                new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
+                new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                new ApiParameter("runFraudPreventionHeaderValidation", "query", false, "When true, validates HMRC Fraud Prevention Headers"))));
 
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
         this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
@@ -684,11 +645,9 @@ public class SubmitSharedNames {
                 ResourceNameUtils.convertCamelCaseToDashSeparated(receiptGetLambdaHandlerName);
         this.receiptGetIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, receiptGetLambdaHandlerDashed);
-        this.receiptGetIngestLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, receiptGetLambdaHandlerName);
+        this.receiptGetIngestLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, receiptGetLambdaHandlerName);
         this.receiptGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, receiptGetLambdaHandlerDashed);
-        this.receiptGetIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.receiptGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.receiptGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.receiptGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.receiptGetLambdaHttpMethod,
                 this.receiptGetLambdaUrlPath,
@@ -714,7 +673,6 @@ public class SubmitSharedNames {
         this.selfDestructLambdaHandler =
                 "%s/infra/%s".formatted(appLambdaHandlerPrefix, appSelfDestructLambdaHandlerName);
         this.selfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
-        this.selfDestructProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.selfDestructLambdaArn, this.provisionedConcurrencyAliasName);
+        this.selfDestructProvisionedConcurrencyLambdaAliasArn = "%s:%s".formatted(this.selfDestructLambdaArn, this.provisionedConcurrencyAliasName);
     }
 }

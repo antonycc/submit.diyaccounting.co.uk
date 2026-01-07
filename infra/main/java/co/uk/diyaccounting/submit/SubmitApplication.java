@@ -1,9 +1,5 @@
 package co.uk.diyaccounting.submit;
 
-import static co.uk.diyaccounting.submit.utils.Kind.envOr;
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.warnf;
-
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
@@ -15,14 +11,19 @@ import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.Environment;
+import software.constructs.Construct;
+
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.Environment;
-import software.constructs.Construct;
+
+import static co.uk.diyaccounting.submit.utils.Kind.envOr;
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 public class SubmitApplication {
 
@@ -205,7 +206,7 @@ public class SubmitApplication {
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .cognitoUserPoolClientId(cognitoUserPoolClientId)
                         .build());
-        // this.authStack.addDependency(devStack);
+        //this.authStack.addDependency(devStack);
 
         // Create the HmrcStack
         infof(
@@ -231,7 +232,7 @@ public class SubmitApplication {
                         .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
-        // this.hmrcStack.addDependency(devStack);
+        //this.hmrcStack.addDependency(devStack);
 
         // Create the AccountStack
         infof(
@@ -251,7 +252,7 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
                         .build());
-        // this.accountStack.addDependency(devStack);
+        //this.accountStack.addDependency(devStack);
 
         // Create the ApiStack with API Gateway v2 for all Lambda endpoints
         infof(
@@ -285,9 +286,8 @@ public class SubmitApplication {
         this.apiStack.addDependency(authStack);
 
         // ExtractLambda ARNs from lambdaFunctions
-        var lambdaArns = lambdaFunctions.stream()
-                .map(AbstractApiLambdaProps::ingestLambdaArn)
-                .toList();
+        var lambdaArns =
+                lambdaFunctions.stream().map(AbstractApiLambdaProps::ingestLambdaArn).toList();
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,
@@ -301,8 +301,8 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .lambdaFunctionArns(lambdaArns)
                         .build());
-        // this.opsStack.addDependency(hmrcStack);
-        // this.opsStack.addDependency(apiStack);
+        //this.opsStack.addDependency(hmrcStack);
+        //this.opsStack.addDependency(apiStack);
 
         // Create the Edge stack (CloudFront, Route53)
         infof(
@@ -347,7 +347,7 @@ public class SubmitApplication {
                         .buildNumber(buildNumber)
                         .docRootPath(docRootPath)
                         .build());
-        // this.publishStack.addDependency(this.edgeStack);
+        //this.publishStack.addDependency(this.edgeStack);
 
         // Create the SelfDestruct stack only for non-prod deployments
         if (!"prod".equals(deploymentName)) {

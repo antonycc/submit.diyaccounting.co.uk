@@ -1,18 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
-import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -33,6 +23,17 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
+
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 public class SelfDestructStack extends Stack {
 
@@ -166,8 +167,7 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> selfDestructLambdaEnv = new HashMap<>();
         putIfNotNull(selfDestructLambdaEnv, "EDGE_ORIGIN_BUCKET", props.sharedNames().originBucketName);
-        putIfNotNull(
-                selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", props.sharedNames().selfDestructLambdaFunctionName);
+        putIfNotNull(selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", props.sharedNames().selfDestructLambdaFunctionName);
         putIfNotNull(selfDestructLambdaEnv, "DEV_STACK_NAME", props.sharedNames().devStackId);
         putIfNotNull(selfDestructLambdaEnv, "DEV_UE1_STACK_NAME", props.sharedNames().ue1DevStackId);
         putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
@@ -205,8 +205,7 @@ public class SelfDestructStack extends Stack {
                         .ingestFunctionName(props.sharedNames().selfDestructLambdaFunctionName)
                         .ingestHandler(props.sharedNames().selfDestructLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().selfDestructLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().selfDestructProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().selfDestructProvisionedConcurrencyLambdaAliasArn)
                         .ingestLambdaTimeout(Duration.millis(Long.parseLong("900000"))) // 15 minutes
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .environment(selfDestructLambdaEnv)
@@ -260,8 +259,7 @@ public class SelfDestructStack extends Stack {
         cfnOutput(
                 this,
                 "SelfDestructInstructions",
-                "aws lambda invoke --function-name " + this.selfDestructFunction.getFunctionName()
-                        + " /tmp/response.json");
+                "aws lambda invoke --function-name " + this.selfDestructFunction.getFunctionName() + " /tmp/response.json");
 
         infof("SelfDestructStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());
     }

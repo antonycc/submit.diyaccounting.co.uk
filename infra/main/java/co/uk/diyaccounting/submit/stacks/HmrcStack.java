@@ -1,8 +1,5 @@
 package co.uk.diyaccounting.submit.stacks;
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
@@ -11,7 +8,6 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
-import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -25,6 +21,11 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
+
+import java.util.List;
+
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class HmrcStack extends Stack {
 
@@ -176,8 +177,7 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
@@ -239,7 +239,9 @@ public class HmrcStack extends Stack {
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.hmrcTokenPostLambda, region, account, props.envName());
-        infof("Granted Secrets Manager salt access to %s", this.hmrcTokenPostLambda.getFunctionName());
+        infof(
+                "Granted Secrets Manager salt access to %s",
+                this.hmrcTokenPostLambda.getFunctionName());
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
@@ -249,9 +251,7 @@ public class HmrcStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
-                .with(
-                        "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatReturnPostAsyncRequestsTable.getTableName());
+                .with("HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME", hmrcVatReturnPostAsyncRequestsTable.getTableName());
         var submitVatLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -262,14 +262,12 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatReturnPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
                         .workerFunctionName(props.sharedNames().hmrcVatReturnPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatReturnPostLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnPostLambdaDeadLetterQueueName)
                         .workerReservedConcurrency(2)
@@ -297,16 +295,15 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler);
 
         // Grant the VAT submission Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda)
-                .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    receiptsTable.grantWriteData(fn);
-                    hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
+        List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            receiptsTable.grantWriteData(fn);
+            hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
 
-                    // Grant access to user sub hash salt secret in Secrets Manager
-                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
-                });
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+        });
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatReturnPostLambda.getFunctionName());
@@ -318,9 +315,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with(
-                        "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatObligationGetAsyncRequestsTable.getTableName());
+                .with("HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcVatObligationGetAsyncRequestsTable.getTableName());
         var hmrcVatObligationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -331,13 +326,11 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatObligationGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatObligationGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcVatObligationGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatObligationGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatObligationGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatObligationGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatObligationGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
@@ -366,15 +359,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcVatObligationGetWorkerLambdaHandler);
 
         // Grant the VAT obligations Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.workerLambda)
-                .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
+        List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
 
-                    // Grant access to user sub hash salt secret in Secrets Manager
-                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
-                });
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+        });
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatObligationGetLambda.getFunctionName());
@@ -386,9 +378,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with(
-                        "HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatReturnGetAsyncRequestsTable.getTableName());
+                .with("HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcVatReturnGetAsyncRequestsTable.getTableName());
         var hmrcVatReturnGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -399,13 +389,11 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatReturnGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcVatReturnGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames().hmrcVatReturnGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatReturnGetLambdaQueueName)
                         .workerDeadLetterQueueName(props.sharedNames().hmrcVatReturnGetLambdaDeadLetterQueueName)
                         .workerReservedConcurrency(2)
@@ -433,15 +421,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcVatReturnGetWorkerLambdaHandler);
 
         // Grant the VAT return retrieval Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.workerLambda)
-                .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
+        List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
+            bundlesTable.grantReadData(fn);
+            hmrcApiRequestsTable.grantWriteData(fn);
+            hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
 
-                    // Grant access to user sub hash salt secret in Secrets Manager
-                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
-                });
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+        });
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatReturnGetLambda.getFunctionName());
@@ -461,8 +448,7 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().receiptGetLambdaUrlPath)
@@ -483,8 +469,7 @@ public class HmrcStack extends Stack {
                 .ingestFunctionName(props.sharedNames().receiptGetIngestLambdaFunctionName)
                 .ingestHandler(props.sharedNames().receiptGetIngestLambdaHandler)
                 .ingestLambdaArn(props.sharedNames().receiptGetIngestLambdaArn)
-                .ingestProvisionedConcurrencyAliasArn(
-                        props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
+                .ingestProvisionedConcurrencyAliasArn(props.sharedNames().receiptGetIngestProvisionedConcurrencyLambdaAliasArn)
                 .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                 .httpMethod(props.sharedNames().receiptGetLambdaHttpMethod)
                 .urlPath(props.sharedNames().receiptGetByNameLambdaUrlPath)
@@ -507,7 +492,9 @@ public class HmrcStack extends Stack {
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.receiptGetLambda, region, account, props.envName());
-        infof("Granted Secrets Manager salt access to %s", this.receiptGetLambda.getFunctionName());
+        infof(
+                "Granted Secrets Manager salt access to %s",
+                this.receiptGetLambda.getFunctionName());
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());
         cfnOutput(this, "SubmitVatLambdaArn", this.hmrcVatReturnPostLambda.getFunctionArn());
