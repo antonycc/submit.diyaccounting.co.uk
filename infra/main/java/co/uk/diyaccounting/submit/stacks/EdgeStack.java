@@ -346,12 +346,13 @@ public class EdgeStack extends Stack {
                 .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
                 .comment(
                         "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
-                // Use all() to forward ALL viewer headers including:
+                // Use denyList("Host") to forward ALL viewer headers EXCEPT Host:
                 // - Authorization (required for API authentication)
                 // - Gov-Client-* headers (HMRC fraud prevention)
                 // - x-device-id, Gov-Test-Scenario, etc.
-                // Note: allowList is limited to 10 headers and can't include Authorization
-                .headerBehavior(OriginRequestHeaderBehavior.all())
+                // Host header must be excluded so CloudFront sets it to the origin's domain
+                // Note: all() includes Host which causes 403 errors from API Gateway
+                .headerBehavior(OriginRequestHeaderBehavior.denyList("Host"))
                 .queryStringBehavior(OriginRequestQueryStringBehavior.all())
                 // Forward all cookies to support authentication
                 .cookieBehavior(OriginRequestCookieBehavior.all())

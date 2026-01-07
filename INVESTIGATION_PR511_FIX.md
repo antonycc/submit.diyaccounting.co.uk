@@ -95,9 +95,10 @@ Lines 344-365 (the custom OriginRequestPolicy creation)
 - Cannot add more headers without removing existing ones
 - Using `all()` bypasses this limit
 
-## Applied Fix
-Fix 1 was applied:
+## Applied Fixes
 
+### Fix 1 (commit 4cedecac) - Partial fix
+Changed header and cookie behavior:
 ```java
 // Changed from:
 .headerBehavior(OriginRequestHeaderBehavior.allowList(...10 headers...))
@@ -108,8 +109,23 @@ Fix 1 was applied:
 .cookieBehavior(OriginRequestCookieBehavior.all())
 ```
 
+**Result**: Website loads but API calls return 403 Forbidden.
+
+**Problem**: `all()` forwards ALL headers INCLUDING the Host header. When CloudFront forwards the viewer's Host header to API Gateway, API Gateway rejects the request because the Host doesn't match its expected domain.
+
+### Fix 2 (pending) - Complete fix
+Changed to exclude Host header:
+```java
+// Changed from:
+.headerBehavior(OriginRequestHeaderBehavior.all())
+
+// Changed to:
+.headerBehavior(OriginRequestHeaderBehavior.denyList("Host"))
+```
+
 This ensures:
-- ALL viewer headers are forwarded (including Authorization and Gov-Client-* headers)
+- ALL viewer headers EXCEPT Host are forwarded (Authorization, Gov-Client-*, etc.)
+- Host header is set by CloudFront to the origin's domain (required by API Gateway)
 - ALL cookies are forwarded (for authentication support)
 
 ## Deployment Status
