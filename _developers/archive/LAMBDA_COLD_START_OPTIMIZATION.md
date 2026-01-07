@@ -1,6 +1,6 @@
 # Lambda Cold Start Optimization Report
 
-**Generated:** 2026-01-04  
+**Generated:** 2026-01-04
 **Target:** Reduce Lambda cold start times from 380-550ms to 80-120ms (1/10 reduction)
 
 ## Executive Summary
@@ -41,8 +41,8 @@ Function: bundle-get
 ## Applied Optimizations (Ranked 1-5)
 
 ### Rank 1: Increase Lambda Memory to 1024MB ✅
-**Effectiveness:** ⭐⭐⭐⭐⭐ (Highest)  
-**Simplicity:** ⭐⭐⭐⭐⭐ (Very Simple)  
+**Effectiveness:** ⭐⭐⭐⭐⭐ (Highest)
+**Simplicity:** ⭐⭐⭐⭐⭐ (Very Simple)
 **Estimated Impact:** 50-70% reduction in cold start time
 
 #### Why This Works
@@ -92,8 +92,8 @@ var dockerFunctionBuilder = DockerImageFunction.Builder.create(scope, props.idPr
 ---
 
 ### Rank 2: Switch to ARM64 (Graviton2) Architecture ✅
-**Effectiveness:** ⭐⭐⭐⭐ (High)  
-**Simplicity:** ⭐⭐⭐⭐⭐ (Very Simple)  
+**Effectiveness:** ⭐⭐⭐⭐ (High)
+**Simplicity:** ⭐⭐⭐⭐⭐ (Very Simple)
 **Estimated Impact:** 15-25% reduction in cold start time, 20% cost savings
 
 #### Why This Works
@@ -137,8 +137,8 @@ FROM public.ecr.aws/lambda/nodejs:22-arm64  # Was: nodejs:22
 ---
 
 ### Rank 3: Optimize Docker Image Build ✅
-**Effectiveness:** ⭐⭐⭐ (Medium)  
-**Simplicity:** ⭐⭐⭐⭐ (Simple)  
+**Effectiveness:** ⭐⭐⭐ (Medium)
+**Simplicity:** ⭐⭐⭐⭐ (Simple)
 **Estimated Impact:** 10-20% reduction in cold start time
 
 #### Why This Works
@@ -155,21 +155,22 @@ Smaller Docker images:
 **Changes:**
 
 **Multi-stage Dockerfile:**
+
 ```dockerfile
 # Stage 1: Builder - install dependencies
 FROM public.ecr.aws/lambda/nodejs:22-arm64 as builder
-COPY package.json package-lock.json ./
-COPY web/public/submit.catalogue.toml web/public/submit.catalogue.toml
+COPY ../../package.json package-lock.json ./
+COPY ../../web/public/submit.catalogue.toml web/public/submit.catalogue.toml
 RUN npm ci --omit=dev --ignore-scripts
 
 # Stage 2: Runtime - minimal final image
 FROM public.ecr.aws/lambda/nodejs:22-arm64
 COPY --from=builder /var/task/node_modules ./node_modules
 COPY --from=builder /var/task/package.json ./package.json
-COPY app/lib app/lib
-COPY app/functions app/functions
-COPY app/data app/data
-COPY app/services app/services
+COPY ../../app/lib app/lib
+COPY ../../app/functions app/functions
+COPY ../../app/data app/data
+COPY ../../app/services app/services
 ```
 
 **Created .dockerignore:**
@@ -189,15 +190,15 @@ Excludes from Docker build context:
 ---
 
 ### Rank 4: Lazy-Load Heavy AWS SDK Clients ✅
-**Effectiveness:** ⭐⭐⭐ (Medium-High)  
-**Simplicity:** ⭐⭐⭐⭐ (Simple)  
+**Effectiveness:** ⭐⭐⭐ (Medium-High)
+**Simplicity:** ⭐⭐⭐⭐ (Simple)
 **Estimated Impact:** 15-25% reduction in cold start time
 
 **Status:** APPLIED - Most repository code already uses lazy loading, additional functions optimized
 
 #### Why This Works
-**Effectiveness:** ⭐⭐⭐⭐ (High)  
-**Simplicity:** ⭐⭐⭐ (Medium)  
+**Effectiveness:** ⭐⭐⭐⭐ (High)
+**Simplicity:** ⭐⭐⭐ (Medium)
 **Estimated Impact:** 20-40% reduction in cold start time
 
 #### Why This Works
@@ -276,7 +277,7 @@ const lambdaFunctions = await glob('app/functions/**/*.js', {
 
 for (const entry of lambdaFunctions) {
   const outfile = entry.replace('app/functions/', 'dist/functions/');
-  
+
   await esbuild.build({
     entryPoints: [entry],
     bundle: true,
@@ -331,8 +332,8 @@ No changes needed - handler paths remain the same (e.g., `app/functions/hmrc/hmr
 ---
 
 ### Rank 6: Use Lambda Layers for Shared Dependencies
-**Effectiveness:** ⭐⭐⭐ (Medium)  
-**Simplicity:** ⭐⭐ (Medium-Complex)  
+**Effectiveness:** ⭐⭐⭐ (Medium)
+**Simplicity:** ⭐⭐ (Medium-Complex)
 **Estimated Impact:** 10-20% reduction in cold start time
 
 #### Why This Works
@@ -412,8 +413,8 @@ Create `lambda-layers/package.json`:
 ---
 
 ### Rank 7: Configure Provisioned Concurrency (Infrastructure Ready)
-**Effectiveness:** ⭐⭐⭐⭐⭐ (Eliminates cold starts)  
-**Simplicity:** ⭐⭐⭐⭐ (Simple - infrastructure exists)  
+**Effectiveness:** ⭐⭐⭐⭐⭐ (Eliminates cold starts)
+**Simplicity:** ⭐⭐⭐⭐ (Simple - infrastructure exists)
 **Estimated Impact:** 100% cold start elimination (but at operational cost)
 
 #### Why This Works
@@ -484,8 +485,8 @@ Mark as **Rank 7** because:
 ---
 
 ### Rank 8: Optimize Logger and Verifier Initialization
-**Effectiveness:** ⭐⭐ (Low-Medium)  
-**Simplicity:** ⭐⭐⭐⭐ (Simple)  
+**Effectiveness:** ⭐⭐ (Low-Medium)
+**Simplicity:** ⭐⭐⭐⭐ (Simple)
 **Estimated Impact:** 5-10% reduction in cold start time
 
 #### Current State
@@ -518,14 +519,14 @@ const loggers = new Map();
 
 export function createLogger(options) {
   const key = JSON.stringify(options);
-  
+
   if (!loggers.has(key)) {
     loggers.set(key, pino({
       level: process.env.LOG_LEVEL || 'info',
       ...options
     }));
   }
-  
+
   return loggers.get(key);
 }
 ```
@@ -539,8 +540,8 @@ export function createLogger(options) {
 ---
 
 ### Rank 9: Reduce Docker Image Size Further
-**Effectiveness:** ⭐⭐ (Low-Medium)  
-**Simplicity:** ⭐⭐⭐ (Simple)  
+**Effectiveness:** ⭐⭐ (Low-Medium)
+**Simplicity:** ⭐⭐⭐ (Simple)
 **Estimated Impact:** 5-15% reduction in cold start time
 
 #### Additional Optimizations Beyond Rank 3
@@ -587,8 +588,8 @@ Further optimization has diminishing returns.
 ---
 
 ### Rank 10: Code Splitting per Lambda Function
-**Effectiveness:** ⭐⭐ (Low)  
-**Simplicity:** ⭐ (Complex)  
+**Effectiveness:** ⭐⭐ (Low)
+**Simplicity:** ⭐ (Complex)
 **Estimated Impact:** 10-20% reduction (but high maintenance cost)
 
 #### Why This Might Help
@@ -652,13 +653,13 @@ Based on AWS benchmarks and the applied optimizations:
 **CloudWatch Logs Insights Query:**
 ```
 fields @timestamp, @message, @log
-| filter @message like /REPORT/ 
+| filter @message like /REPORT/
 | filter @message like /Init Duration/
 | parse @message /Init Duration: (?<initDuration>[0-9.]+) ms/
 | parse @message /Duration: (?<duration>[0-9.]+) ms/
 | parse @message /Memory Size: (?<memorySize>[0-9]+) MB/
 | parse @message /Max Memory Used: (?<maxMemoryUsed>[0-9]+) MB/
-| stats 
+| stats
     count() as invocations,
     avg(initDuration) as avgInitMs,
     min(initDuration) as minInitMs,
@@ -691,7 +692,7 @@ fields @timestamp, @message, @log
 - Warm execution: 40ms avg (faster CPU)
 - Monthly cost (10K invocations, 20% cold): **~$0.65**
 
-**Net Cost Increase:** +$0.35/month per function (~117% increase)  
+**Net Cost Increase:** +$0.35/month per function (~117% increase)
 **BUT:**
 - 78% faster cold starts (450ms → 100ms)
 - 20% faster warm execution (50ms → 40ms)
@@ -710,7 +711,7 @@ fields @timestamp, @message, @log
 - [x] Rank 3: Optimize Dockerfile
 - [x] Rank 5: Lazy-load AWS SDK clients (hmrcTokenPost, selfDestruct)
 
-**Status:** Complete, awaiting deployment  
+**Status:** Complete, awaiting deployment
 **Tests:** All 383 JavaScript unit/system tests passing ✅
 
 ### Phase 2: Next Sprint (Recommended)
@@ -836,7 +837,7 @@ The applied optimizations (Ranks 1-4) provide the **highest impact with lowest c
 3. **Optimized Docker image:** 10-20% faster initialization
 4. **Lazy-loaded SDK clients:** 15-25% faster initialization
 
-**Combined Expected Result:** 65-80% reduction in cold start time  
+**Combined Expected Result:** 65-80% reduction in cold start time
 **From:** 380-550ms → **To:** 75-140ms (achieving or exceeding target range of 80-120ms)
 
 **Next Steps:**

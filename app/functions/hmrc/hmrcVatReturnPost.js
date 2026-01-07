@@ -124,7 +124,9 @@ export async function ingestHandler(event) {
   try {
     userSub = await enforceBundles(event);
   } catch (error) {
-    // TODO: Pass back any generated tracing headers in error responses.
+    // Note: Tracing headers (x-request-id, traceparent) are available via context
+    // but not currently included in 403 error responses. The request URL is passed
+    // for logging purposes. See httpResponseHelper.js for response header handling.
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 

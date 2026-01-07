@@ -703,7 +703,8 @@ async function handle403Error(response) {
 async function authorizedFetch(input, init = {}) {
   const headers = new Headers(init.headers || {});
   const accessToken = localStorage.getItem("cognitoAccessToken");
-  // TODO: Does this still need X-Authorization instead of Authorization? - Retest when otherwise stable.
+  // Uses X-Authorization (not Authorization) to match API Gateway Lambda authorizer configuration
+  // See ApiStack.java identitySource("$request.header.X-Authorization")
   if (accessToken) headers.set("X-Authorization", `Bearer ${accessToken}`);
   if (init.fireAndForget) headers.set("x-wait-time-ms", "0");
   headers.set("x-initial-request", "true");
@@ -1201,14 +1202,11 @@ async function getGovClientHeaders() {
     headers["Gov-Client-Multi-Factor"] = govClientMultiFactorHeader;
   }
 
-  // TODO: Declare no Gov-Client-Public-Port to HMRC
-  // The Submit service is a browser-based web application delivered over HTTPS via
-  // CloudFront and AWS load balancers. The client TCP source port is not exposed to
-  // application code in the browser and is not forwarded through the CDN/load
-  // balancer layer.
-  // In accordance with HMRC Fraud Prevention guidance, this header is omitted
-  // because the data cannot be collected.
-  // headers["Gov-Client-Public-Port"] = null;
+  // Gov-Client-Public-Port is intentionally NOT supplied because:
+  // - The Submit service is a browser-based web application delivered over HTTPS
+  // - Client TCP source port is not exposed to application code in the browser
+  // - The port is not forwarded through CloudFront/load balancer layer
+  // This is declared in intentionallyNotSuppliedHeaders in dynamodb-assertions.js
 
   return headers;
 }
