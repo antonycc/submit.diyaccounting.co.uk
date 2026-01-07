@@ -1,5 +1,18 @@
 # Investigation: Website Not Rendering After PR #511
 
+## Key Clarification for AI Agents
+
+**IMPORTANT**: The original PR #511 was based on a misunderstanding of the HMRC fraud prevention headers flow.
+
+The fraud prevention headers are NOT primarily about CloudFront forwarding headers from browser to API Gateway. They are about:
+1. **Lambda functions making requests TO HMRC MTD APIs** with fraud prevention headers
+2. **DynamoDB storing the HMRC API requests/responses** including headers for audit and test verification
+3. **Test reports displaying** whether headers were correctly included in outbound HMRC calls
+
+See `CLOUDFRONT_FRAUD_HEADERS_FIX.md` for the correct header flow diagram and detailed explanation.
+
+The CloudFront OriginRequestPolicy change WAS needed because browser-collected headers (like Gov-Client-Screens, Gov-Client-Timezone) must reach the Lambda so they can be included in the outbound HMRC request. But the PR's documentation incorrectly implied the issue was simpler than it actually is.
+
 ## Summary
 The website at `ci.submit.diyaccounting.co.uk` stopped rendering after PR #511 "Forward HMRC fraud prevention headers through CloudFront to API Gateway" was merged.
 
@@ -129,17 +142,15 @@ This ensures:
 - ALL cookies are forwarded (for authentication support)
 
 ## Deployment Status
-- Fix applied in commit: `4cedecac`
-- Deployment run: https://github.com/antonycc/submit.diyaccounting.co.uk/actions/runs/20797962400
-- Started: 2026-01-07T22:03:01Z
-- Expected completion: ~20-25 minutes
+- Fix 1 applied in commit: `4cedecac` (partial - caused 403 errors)
+- Fix 2 applied: Changed to `denyList("Host")`
+- Final deployment run: https://github.com/antonycc/submit.diyaccounting.co.uk/actions/runs/20798721281
+- **Status: RESOLVED** - Website working at https://ci.submit.diyaccounting.co.uk/
 
-## Next Steps
-1. ~~Apply Fix 1 (recommended) - change to `headerBehavior.all()` and `cookieBehavior.all()`~~ DONE
-2. ~~Commit and push to saltedhash branch~~ DONE (commit 4cedecac)
-3. Wait for deployment (20-25 minutes) - IN PROGRESS
-4. Verify website works at https://ci-saltedhas.submit.diyaccounting.co.uk/
-5. If Fix 1 fails, try Fix 2 (full revert)
+## Resolution Summary
+1. ~~Apply Fix 1 - change to `headerBehavior.all()` and `cookieBehavior.all()`~~ DONE (caused 403)
+2. ~~Apply Fix 2 - change to `headerBehavior.denyList("Host")`~~ DONE (resolved)
+3. Website verified working with fraud prevention headers in test reports
 
 ## Files Changed in PR #511
 - `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java` - Added custom OriginRequestPolicy

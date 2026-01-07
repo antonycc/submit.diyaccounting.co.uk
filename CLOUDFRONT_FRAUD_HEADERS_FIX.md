@@ -1,83 +1,90 @@
 # CloudFront Fraud Prevention Headers Fix
 
-**Date**: 2026-01-06  
-**Issue**: HMRC fraud prevention headers missing in CI environment  
-**Status**: Fixed - awaiting deployment
+**Date**: 2026-01-07
+**Issue**: HMRC fraud prevention headers missing in CI environment test reports
+**Status**: Fixed
+
+## Important Clarification for AI Agents
+
+**The HMRC fraud prevention headers issue is NOT about CloudFront forwarding headers from browser to API Gateway.**
+
+The fraud prevention headers must be present in requests that **Lambda functions make TO HMRC MTD APIs**, not in requests from browser to CloudFront. The headers are:
+1. **Collected by the browser** (`submit.js:getGovClientHeaders()`)
+2. **Sent to the app's API** (`/api/v1/hmrc/*` endpoints)
+3. **Forwarded through CloudFront** to API Gateway and Lambda
+4. **Combined with server-derived headers** by `buildFraudHeaders.js`
+5. **Included in outbound requests** from Lambda TO HMRC MTD APIs
+6. **Stored in DynamoDB** with the HMRC API request/response for audit
+
+## Header Flow (Correct Understanding)
+
+```
+[Browser]
+    │
+    ├─► Collects Gov-Client-* headers (screen size, timezone, device ID, etc.)
+    │   via submit.js:getGovClientHeaders()
+    │
+    ▼
+[CloudFront] ──► [API Gateway] ──► [Lambda]
+    │                                   │
+    │ Forwards browser headers          │
+    │ (including Gov-Client-*)          │
+    │                                   ▼
+    │                          buildFraudHeaders.js combines:
+    │                          - Browser-collected headers (Gov-Client-Screens, etc.)
+    │                          - Server-derived headers (Gov-Client-Public-IP from x-forwarded-for)
+    │                          - Static headers (Gov-Vendor-Product-Name, etc.)
+    │                                   │
+    │                                   ▼
+    │                          [HMRC MTD API]
+    │                          Request includes all fraud prevention headers
+    │                                   │
+    │                                   ▼
+    │                          [DynamoDB]
+    │                          Stores request/response including headers
+    │                          for audit and test verification
+```
 
 ## Problem Description
 
-HMRC fraud prevention headers (Gov-Client-*) were present when running tests locally against the local Express server but were missing when tests ran against the CI environment (CloudFront + API Gateway + Lambda).
+When tests ran against the CI environment (AWS), the test reports showed HMRC API requests were missing the fraud prevention headers that were present when running locally. The test report at `web/public/tests/test-report-template.html?test=web-test` showed requests without the expected `Gov-Client-*` headers.
 
 ## Root Cause
 
-The CloudFront EdgeStack configuration was using the default `OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER` for the API Gateway behavior. While this policy forwards most viewer headers, it does not forward custom headers like `Gov-Client-*` by default.
+The CloudFront EdgeStack was using a custom `OriginRequestPolicy` that only forwarded 10 specific headers using `allowList()`. This approach had two problems:
 
-### Header Flow
-1. **Browser** → Sends Gov-Client-* headers (via `submit.js:getGovClientHeaders()`)
-2. **CloudFront** → ❌ **Strips custom headers** (due to default policy)
-3. **API Gateway** → Receives request without Gov-Client-* headers
-4. **Lambda** → buildFraudHeaders.js cannot find the headers
-5. **HMRC API** → Request missing required fraud prevention headers
+1. **Missing Authorization header**: `allowList()` stripped the Authorization header needed for API authentication
+2. **Missing cookies**: `cookieBehavior.none()` stripped cookies needed for session management
+
+The fix was to use `denyList("Host")` which forwards ALL headers except Host (which CloudFront must set to the origin domain).
 
 ## Solution
 
-Created a custom `OriginRequestPolicy` that explicitly whitelists all required headers:
+Updated `EdgeStack.java` to use a policy that forwards all viewer headers:
 
 ```java
-// infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java
-
 OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.create(
         this, props.resourceNamePrefix() + "-FraudPreventionORP")
     .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
     .comment("Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
-    .headerBehavior(OriginRequestHeaderBehavior.allowList(
-        // HMRC Fraud Prevention Headers (8 headers)
-        "Gov-Client-Browser-JS-User-Agent",
-        "Gov-Client-Device-ID",
-        "Gov-Client-Public-IP-Timestamp",
-        "Gov-Client-Screens",
-        "Gov-Client-Timezone",
-        "Gov-Client-Window-Size",
-        "Gov-Client-Multi-Factor",
-        "Gov-Client-Browser-Do-Not-Track",
-        // Fallback header (1 header)
-        "x-device-id",
-        // Test scenario header (1 header)
-        "Gov-Test-Scenario"))
+    // Forward ALL viewer headers EXCEPT Host (which CloudFront sets to origin domain)
+    .headerBehavior(OriginRequestHeaderBehavior.denyList("Host"))
     .queryStringBehavior(OriginRequestQueryStringBehavior.all())
-    .cookieBehavior(OriginRequestCookieBehavior.none())
+    // Forward all cookies for authentication
+    .cookieBehavior(OriginRequestCookieBehavior.all())
     .build();
 ```
 
-**Note**: CloudFront limits custom OriginRequestPolicy to 10 headers maximum. Headers not in the list are automatically forwarded by API Gateway or built server-side:
-- `x-forwarded-for` - Automatically forwarded by API Gateway
-- `Gov-Client-Public-IP` - Derived server-side from x-forwarded-for
-- `Gov-Client-User-IDs` - Built server-side from authenticated user context
-- Standard HTTP headers (Content-Type, User-Agent, etc.) - Forwarded by API Gateway/CachePolicy
+## Why This Works
 
-
-### Updated Header Flow
-1. **Browser** → Sends Gov-Client-* headers
-2. **CloudFront** → ✅ **Forwards whitelisted headers** (via custom policy)
-3. **API Gateway** → Receives request with Gov-Client-* headers
-4. **Lambda** → buildFraudHeaders.js successfully reads and processes headers
-5. **HMRC API** → Request includes all required fraud prevention headers
+- `denyList("Host")` forwards ALL viewer headers (including Authorization and Gov-Client-*) except Host
+- Host header must be excluded so CloudFront sets it to the origin's domain (required by API Gateway)
+- All cookies are forwarded to support authentication flows
+- Browser-collected fraud prevention headers reach Lambda where they're combined with server-derived headers
 
 ## Files Changed
 
 - `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java`
-  - Added imports for OriginRequest policy builders
-  - Created custom OriginRequestPolicy with whitelisted headers
-  - Modified `createBehaviorOptionsForApiGateway()` to use custom policy
-
-## Deployment
-
-The fix requires redeployment of the EdgeStack to take effect:
-
-```bash
-# Deploy to CI environment (via GitHub Actions workflow)
-# The deploy-application.yml workflow will pick up the changes
-```
 
 ## Verification
 
@@ -93,11 +100,18 @@ After deployment, verify the fix by:
    https://ci.submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test
    ```
 
-3. Verifying that HMRC API requests logged in DynamoDB include Gov-Client-* headers in the `httpRequest.headers` field
+3. Verifying that HMRC API requests in the report include Gov-Client-* headers in the `httpRequest.headers` field
+
+## Key Files for HMRC Fraud Prevention Headers
+
+| File | Purpose |
+|------|---------|
+| `web/public/submit.js` | `getGovClientHeaders()` - Collects browser-side headers |
+| `app/lib/buildFraudHeaders.js` | `buildFraudHeaders()` - Combines browser + server headers |
+| `app/functions/hmrc/*.js` | Lambda handlers that call HMRC APIs with fraud headers |
+| `behaviour-tests/helpers/dynamodb-assertions.js` | `assertFraudPreventionHeaders()` - Test assertions |
 
 ## References
 
 - HMRC Fraud Prevention Specification: https://developer.service.hmrc.gov.uk/guides/fraud-prevention/
 - CloudFront Origin Request Policies: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/controlling-origin-requests.html
-- Browser header collection: `web/public/submit.js:getGovClientHeaders()`
-- Lambda header building: `app/lib/buildFraudHeaders.js:buildFraudHeaders()`

@@ -740,6 +740,10 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
 /**
  * Fetch and log HMRC fraud prevention header validation feedback for sandbox tests.
  * This is a shared helper used by multiple behavior tests.
+ * Returns the validation feedback result for inclusion in test reports.
+ *
+ * Note: This request is made directly from the test executor to HMRC, not through Lambda.
+ * In CI environments without DynamoDB access, this is the only way to capture the feedback.
  *
  * @param {Object} page - Playwright page object
  * @param {Object} testInfo - Playwright test info object
@@ -748,6 +752,7 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
  * @param {string} requestId - Optional request ID for auditing to DynamoDB
  * @param {string} traceparent - Optional traceparent for auditing to DynamoDB
  * @param {string} correlationId - Optional correlation ID for auditing to DynamoDB
+ * @returns {Object|null} The validation feedback result, or null if not in sandbox mode or no token
  */
 export async function checkFraudPreventionHeadersFeedback(
   page,
@@ -760,7 +765,7 @@ export async function checkFraudPreventionHeadersFeedback(
 ) {
   if (!isSandboxMode()) {
     console.log("[HMRC Fraud Prevention] Skipping fraud prevention header validation feedback check in non-sandbox mode");
-    return;
+    return null;
   } else {
     console.log(`[HMRC Fraud Prevention] Checking fraud prevention header validation feedback for user sub: ${auditForUserSub}`);
   }
@@ -770,9 +775,11 @@ export async function checkFraudPreventionHeadersFeedback(
 
   const hmrcAccessToken = await extractHmrcAccessTokenFromSessionStorage(page, testInfo);
   if (hmrcAccessToken) {
-    await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath, auditForUserSub, requestId, traceparent, correlationId);
+    const result = await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath, auditForUserSub, requestId, traceparent, correlationId);
+    return result;
   } else {
     console.warn("Could not retrieve HMRC access token from session storage for feedback check");
+    return null;
   }
 }
 
