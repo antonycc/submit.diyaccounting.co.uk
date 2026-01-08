@@ -26,9 +26,12 @@ const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null)
 const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
-const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
+const baseUrlRaw = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const testDynamoDb = getEnvVarAndLog("testDynamoDb", "TEST_DYNAMODB", null);
 const dynamoDbPort = getEnvVarAndLog("dynamoDbPort", "TEST_DYNAMODB_PORT", 8000);
+
+// Normalize baseUrl - remove trailing slash to prevent double slashes in URL construction
+const baseUrl = baseUrlRaw ? baseUrlRaw.replace(/\/+$/, "") : "";
 
 // Screenshot path for compliance tests
 const screenshotPath = "target/behaviour-test-results/screenshots/compliance-behaviour-test";
@@ -58,7 +61,8 @@ let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess;
 test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
   test.beforeAll(async () => {
     console.log("\n🧪 Setting up test environment for compliance tests...\n");
-    console.log(`📍 Base URL: ${baseUrl}`);
+    console.log(`📍 Base URL (raw): ${baseUrlRaw}`);
+    console.log(`📍 Base URL (normalized): ${baseUrl}`);
     console.log(`📍 Environment: ${envName}`);
     console.log(`📍 Screenshot path: ${screenshotPath}`);
 
@@ -135,7 +139,12 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("STEP 1: Navigate to Home Page");
     console.log("=".repeat(60));
 
-    const homeUrl = `${baseUrl}/`;
+    // Set header to bypass ngrok browser warning page (for local proxy testing)
+    await page.setExtraHTTPHeaders({
+      "ngrok-skip-browser-warning": "any value",
+    });
+
+    const homeUrl = baseUrl; // baseUrl already normalized without trailing slash
     console.log(`🏠 Navigating to home page: ${homeUrl}`);
     await page.goto(homeUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.screenshot({ path: `${screenshotPath}/01-home-page.png` });
@@ -293,7 +302,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("STEP 4: Navigate to About page");
     console.log("=".repeat(60));
 
-    const aboutUrl = `${baseUrl}/about.html`;
+    const aboutUrl = `${baseUrl}/about.html`; // baseUrl normalized without trailing slash
     console.log(`📖 Navigating to about page: ${aboutUrl}`);
     await page.goto(aboutUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.screenshot({ path: `${screenshotPath}/04-about-page.png` });
