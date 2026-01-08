@@ -106,6 +106,7 @@ export function buildFraudHeaders(event) {
     "Gov-Client-Timezone",
     "Gov-Client-Window-Size",
     "Gov-Client-Browser-Do-Not-Track",
+    "Gov-Test-Scenario",
   ];
 
   for (const headerName of clientHeaderNames) {

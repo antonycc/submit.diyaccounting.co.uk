@@ -35,6 +35,7 @@ on:
           - 'postVatReturnFraudPreventionHeadersBehaviour'
           - 'submitVatBehaviour'
           - 'authBehaviour'
+          - 'compliance'
           - 'behaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
