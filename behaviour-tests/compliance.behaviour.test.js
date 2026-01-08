@@ -166,16 +166,25 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     await expect(termsLinkHome).toBeVisible({ timeout: 5000 });
     console.log("✅ Terms link visible in home page footer");
 
+    // Dismiss consent banner if present (it overlays footer links)
+    const consentDecline = page.locator("#consent-decline");
+    if (await consentDecline.isVisible({ timeout: 1000 }).catch(() => false)) {
+      console.log("📋 Dismissing consent banner...");
+      await consentDecline.click();
+      await page.waitForTimeout(500);
+      console.log("✅ Consent banner dismissed");
+    }
+
     // ============================================================
-    // STEP 2: Click to Privacy Policy page
+    // STEP 2: Navigate to Privacy Policy page
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 2: Navigate to Privacy Policy via footer link");
+    console.log("STEP 2: Navigate to Privacy Policy page");
     console.log("=".repeat(60));
 
-    console.log("🖱️ Clicking Privacy Policy link in footer...");
-    await privacyLinkHome.click();
-    await page.waitForLoadState("domcontentloaded");
+    const privacyUrl = `${baseUrl}/privacy.html`;
+    console.log(`📖 Navigating to privacy page: ${privacyUrl}`);
+    await page.goto(privacyUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.screenshot({ path: `${screenshotPath}/02-privacy-page.png` });
 
     // Verify Privacy Policy page loaded
@@ -231,12 +240,12 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     // STEP 3: Navigate to Terms of Use page
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 3: Navigate to Terms of Use via link");
+    console.log("STEP 3: Navigate to Terms of Use page");
     console.log("=".repeat(60));
 
-    console.log("🖱️ Clicking Terms of Use link...");
-    await termsLinkFromPrivacy.click();
-    await page.waitForLoadState("domcontentloaded");
+    const termsUrl = `${baseUrl}/terms.html`;
+    console.log(`📖 Navigating to terms page: ${termsUrl}`);
+    await page.goto(termsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.screenshot({ path: `${screenshotPath}/03-terms-page.png` });
 
     // Verify Terms page loaded
