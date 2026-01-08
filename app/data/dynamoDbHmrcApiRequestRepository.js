@@ -2,6 +2,7 @@
 
 import { createLogger, context } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
+import { maskHttpData } from "../lib/dataMasking.js";
 import { v4 as uuidv4 } from "uuid";
 
 const logger = createLogger({ source: "app/data/dynamoDbHmrcApiRequestRepository.js" });
@@ -65,6 +66,12 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
     const tableName = getTableName();
 
     const now = new Date();
+
+    // Mask sensitive data before persisting to DynamoDB
+    // This prevents leakage of credentials, tokens, and passwords in audit logs
+    const maskedHttpRequest = maskHttpData(httpRequest);
+    const maskedHttpResponse = maskHttpData(httpResponse);
+
     const item = {
       hashedSub,
       id,
@@ -73,8 +80,8 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
       traceparent,
       url,
       method,
-      httpRequest,
-      httpResponse,
+      httpRequest: maskedHttpRequest,
+      httpResponse: maskedHttpResponse,
       duration,
       createdAt: now.toISOString(),
     };

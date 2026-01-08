@@ -109,4 +109,131 @@ describe("dynamoDbHmrcApiRequestStore", () => {
     // Assert
     expect(mockSend).toHaveBeenCalledTimes(1);
   });
+
+  test("masks sensitive data in httpRequest and httpResponse before storing", async () => {
+    // Arrange
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = "unit-test-hmrc-requests";
+    process.env.AWS_REGION = process.env.AWS_REGION || "eu-west-2";
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
+
+    const input = {
+      url: "https://test-api.service.hmrc.gov.uk/oauth/token",
+      httpRequest: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer actualToken123",
+        },
+        body: {
+          grant_type: "authorization_code",
+          client_secret: "actualSecret123",
+        },
+      },
+      httpResponse: {
+        statusCode: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: {
+          access_token: "actualAccessToken123",
+          refresh_token: "actualRefreshToken123",
+          expires_in: 14400,
+          token_type: "Bearer",
+        },
+      },
+      duration: 250,
+    };
+
+    await context.run(new Map(), async () => {
+      context.set("requestId", "req-456");
+
+      // Capture the PutCommand to verify masking
+      mockSend.mockImplementation(async (cmd) => {
+        const item = cmd.input.Item;
+
+        // Verify Authorization header is masked
+        expect(item.httpRequest.headers.Authorization).toBe("***MASKED***");
+        expect(item.httpRequest.headers["Content-Type"]).toBe("application/json");
+
+        // Verify client_secret in request body is masked
+        expect(item.httpRequest.body.client_secret).toBe("***MASKED***");
+        expect(item.httpRequest.body.grant_type).toBe("authorization_code");
+
+        // Verify tokens in response body are masked
+        expect(item.httpResponse.body.access_token).toBe("***MASKED***");
+        expect(item.httpResponse.body.refresh_token).toBe("***MASKED***");
+        expect(item.httpResponse.body.expires_in).toBe(14400);
+        expect(item.httpResponse.body.token_type).toBe("Bearer");
+
+        // Verify response headers are not masked
+        expect(item.httpResponse.headers["Content-Type"]).toBe("application/json");
+
+        return {};
+      });
+
+      // Act
+      await putHmrcApiRequest("user-sub", input);
+    });
+
+    // Assert
+    expect(mockSend).toHaveBeenCalledTimes(1);
+  });
+
+  test("masks hmrcTestPassword in nested test data", async () => {
+    // Arrange
+    process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME = "unit-test-hmrc-requests";
+    process.env.AWS_REGION = process.env.AWS_REGION || "eu-west-2";
+    const { putHmrcApiRequest } = await import("@app/data/dynamoDbHmrcApiRequestRepository.js");
+
+    const input = {
+      url: "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      httpRequest: {
+        method: "GET",
+        headers: {
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "Bearer testToken",
+          "Gov-Client-Public-IP": "88.97.27.180",
+        },
+        body: {
+          testData: {
+            hmrcTestUsername: "869172854733",
+            hmrcTestPassword: "actualTestPassword",
+            hmrcTestVatNumber: "123456789",
+          },
+        },
+      },
+      httpResponse: {
+        statusCode: 200,
+        headers: {},
+        body: { code: "VALID_HEADERS" },
+      },
+      duration: 150,
+    };
+
+    await context.run(new Map(), async () => {
+      context.set("requestId", "req-789");
+
+      // Capture the PutCommand to verify masking
+      mockSend.mockImplementation(async (cmd) => {
+        const item = cmd.input.Item;
+
+        // Verify hmrcTestPassword in nested test data is masked
+        expect(item.httpRequest.body.testData.hmrcTestPassword).toBe("***MASKED***");
+        expect(item.httpRequest.body.testData.hmrcTestUsername).toBe("869172854733");
+        expect(item.httpRequest.body.testData.hmrcTestVatNumber).toBe("123456789");
+
+        // Verify Authorization header is masked
+        expect(item.httpRequest.headers.Authorization).toBe("***MASKED***");
+        expect(item.httpRequest.headers.Accept).toBe("application/vnd.hmrc.1.0+json");
+
+        return {};
+      });
+
+      // Act
+      await putHmrcApiRequest("user-sub", input);
+    });
+
+    // Assert
+    expect(mockSend).toHaveBeenCalledTimes(1);
+  });
 });
