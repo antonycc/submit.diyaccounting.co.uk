@@ -350,7 +350,7 @@ public class SubmitApplication {
         //this.publishStack.addDependency(this.edgeStack);
 
         // Create the SelfDestruct stack only for non-prod deployments
-        if (!"prod".equals(deploymentName)) {
+        if (!"prod".equals(envName)) {
             this.selfDestructStack = new SelfDestructStack(
                     app,
                     sharedNames.selfDestructStackId,

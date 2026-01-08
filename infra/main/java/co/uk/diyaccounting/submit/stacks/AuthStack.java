@@ -153,7 +153,8 @@ public class AuthStack extends Stack {
         var customAuthorizerLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName);
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("ENVIRONMENT_NAME", props.envName());
         var customAuthorizerLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
