@@ -36,7 +36,7 @@ on:
           - 'submitVatBehaviour'
           - 'authBehaviour'
           - 'complianceBehaviour'
-          - 'behaviour'
+          - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
         type: boolean
