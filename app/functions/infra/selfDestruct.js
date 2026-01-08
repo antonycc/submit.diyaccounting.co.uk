@@ -136,7 +136,7 @@ export async function ingestHandler(event, context) {
 async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDestruct = false) {
   // Check if a stack exists
   const { DescribeStacksCommand, DeleteStackCommand } = await import("@aws-sdk/client-cloudformation");
-  
+
   try {
     await client.send(new DescribeStacksCommand({ StackName: stackName }));
   } catch (error) {
@@ -222,7 +222,7 @@ async function emptyBucket(bucketName) {
   const region = await resolveBucketRegion(bucketName);
   const { S3Client } = await import("@aws-sdk/client-s3");
   const s3Client = new S3Client({ region });
-  
+
   const { ListObjectsV2Command, DeleteObjectsCommand } = await import("@aws-sdk/client-s3");
 
   let continuationToken;

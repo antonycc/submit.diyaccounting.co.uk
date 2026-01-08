@@ -105,7 +105,9 @@ async function deleteUserData(deploymentName, userSub, confirm = false) {
   console.log(`   Bundles: ${bundles.length} item(s)`);
 
   const receipts = await scanTableForUser(docClient, tableNames.receipts, hashedSub);
-  console.log(`   Receipts: ${receipts.length} item(s) ${anonymizeReceipts ? "(will be anonymized)" : "(will be RETAINED for 7 years - legal requirement)"}`);
+  console.log(
+    `   Receipts: ${receipts.length} item(s) ${anonymizeReceipts ? "(will be anonymized)" : "(will be RETAINED for 7 years - legal requirement)"}`,
+  );
 
   const hmrcApiRequests = await scanTableForUser(docClient, tableNames.hmrcApiRequests, hashedSub);
   console.log(`   HMRC API Requests: ${hmrcApiRequests.length} item(s)`);

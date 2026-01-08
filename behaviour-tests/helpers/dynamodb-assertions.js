@@ -299,7 +299,9 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
     if (responseBody.code === "INVALID_HEADERS" && responseBody.message?.includes(noHeadersSubmittedMessage)) {
       console.error(`[DynamoDB Assertions]: CRITICAL - No fraud prevention headers submitted at all!`);
       console.error(`[DynamoDB Assertions]: Message: ${responseBody.message}`);
-      expect.fail(`HMRC fraud prevention validation failed: No fraud prevention headers were submitted. This indicates a bug in buildFraudHeaders.`);
+      expect.fail(
+        `HMRC fraud prevention validation failed: No fraud prevention headers were submitted. This indicates a bug in buildFraudHeaders.`,
+      );
     }
 
     const errors = responseBody.errors?.filter((error) => {

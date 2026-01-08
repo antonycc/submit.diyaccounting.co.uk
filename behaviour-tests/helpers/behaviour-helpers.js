@@ -784,7 +784,14 @@ export async function checkFraudPreventionHeadersFeedback(
 
   const hmrcAccessToken = await extractHmrcAccessTokenFromSessionStorage(page, testInfo);
   if (hmrcAccessToken) {
-    const result = await fetchFraudPreventionHeadersFeedback(hmrcAccessToken, screenshotPath, auditForUserSub, requestId, traceparent, correlationId);
+    const result = await fetchFraudPreventionHeadersFeedback(
+      hmrcAccessToken,
+      screenshotPath,
+      auditForUserSub,
+      requestId,
+      traceparent,
+      correlationId,
+    );
     return result;
   } else {
     console.warn("Could not retrieve HMRC access token from session storage for feedback check");

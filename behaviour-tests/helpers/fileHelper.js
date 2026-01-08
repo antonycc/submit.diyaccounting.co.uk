@@ -100,9 +100,7 @@ export async function appendHashedUserSubTxt(outputDir, testInfo, userSub) {
       if (saltAvailable) {
         valueToWrite = hashSub(String(userSub));
       } else {
-        console.log(
-          `[afterEach] Skipping hash for hashedUserSub.txt (salt not available) for test "${testInfo.title}"`,
-        );
+        console.log(`[afterEach] Skipping hash for hashedUserSub.txt (salt not available) for test "${testInfo.title}"`);
       }
     }
 

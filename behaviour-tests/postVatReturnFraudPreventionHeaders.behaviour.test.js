@@ -328,7 +328,15 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   const requestId = "request-123";
   const traceparent = observedTraceparent;
   const correlationId = "correlation-123";
-  const validationFeedbackResult = await checkFraudPreventionHeadersFeedback(page, testInfo, screenshotPath, userSub, requestId, traceparent, correlationId);
+  const validationFeedbackResult = await checkFraudPreventionHeadersFeedback(
+    page,
+    testInfo,
+    screenshotPath,
+    userSub,
+    requestId,
+    traceparent,
+    correlationId,
+  );
   //await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
 
   /* ********* */
@@ -467,9 +475,9 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       httpRequest: {
         method: "GET",
         headers: {
-          Accept: "application/vnd.hmrc.1.0+json",
+          "Accept": "application/vnd.hmrc.1.0+json",
           "x-request-id": requestId,
-          traceparent: traceparent,
+          "traceparent": traceparent,
           "x-correlationid": correlationId,
         },
       },

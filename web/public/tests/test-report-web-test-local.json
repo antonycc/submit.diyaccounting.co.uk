@@ -49,11 +49,7 @@
       "observedTraceparent": "00-632bc3d0ce73772becc2a8a6a4bda9d6-8713f015f357a91b-01",
       "testUrl": "https://wanted-finally-anteater.ngrok-free.app/",
       "isSandboxMode": true,
-      "intentionallyNotSuppliedHeaders": [
-        "gov-client-multi-factor",
-        "gov-vendor-license-ids",
-        "gov-client-public-port"
-      ]
+      "intentionallyNotSuppliedHeaders": ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"]
     },
     "artefactsDir": "/Users/antony/projects/submit.diyaccounting.co.uk/target/behaviour-test-results/submitVat.behaviour-Click--3e6d3-Submit-a-VAT-return-to-HMRC-web-test-local",
     "screenshotPath": "target/behaviour-test-results/screenshots/submitVat-behaviour-test",
@@ -118,25 +114,19 @@
             {
               "code": "MISSING_HEADER",
               "message": "Header missing. You will not be able to submit a header if the connection is between client and server in a private network. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-public-port"
-              ]
+              "headers": ["gov-client-public-port"]
             }
           ],
           "warnings": [
             {
               "code": "MISSING_HEADER",
               "message": "Header missing. This may be correct for single factor authentication, for example username and password. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-multi-factor"
-              ]
+              "headers": ["gov-client-multi-factor"]
             },
             {
               "code": "MISSING_HEADER",
               "message": "Header required",
-              "headers": [
-                "gov-vendor-license-ids"
-              ]
+              "headers": ["gov-vendor-license-ids"]
             }
           ]
         }
@@ -432,9 +422,7 @@
       "view-vat-return-results.png",
       "submit-mock.png"
     ],
-    "videos": [
-      "video.webm"
-    ],
+    "videos": ["video.webm"],
     "figures": [
       {
         "filename": "fill-in-submission-pagedown.png",

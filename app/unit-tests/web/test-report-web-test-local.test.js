@@ -61,53 +61,42 @@ describe("web/public/tests/test-report-web-test-local.json", () => {
     testReport.hmrcApiRequests.forEach((request, index) => {
       // Check Authorization headers are masked
       if (request.httpRequest?.headers?.Authorization) {
-        expect(
-          request.httpRequest.headers.Authorization,
-          `Request ${index}: Authorization header should be masked`,
-        ).toBe("***MASKED***");
+        expect(request.httpRequest.headers.Authorization, `Request ${index}: Authorization header should be masked`).toBe("***MASKED***");
       }
 
       // Check access_token in response body is masked
       if (request.httpResponse?.body?.access_token) {
-        expect(
-          request.httpResponse.body.access_token,
-          `Request ${index}: access_token in response should be masked`,
-        ).toBe("***MASKED***");
+        expect(request.httpResponse.body.access_token, `Request ${index}: access_token in response should be masked`).toBe("***MASKED***");
       }
 
       // Check refresh_token in response body is masked
       if (request.httpResponse?.body?.refresh_token) {
-        expect(
-          request.httpResponse.body.refresh_token,
-          `Request ${index}: refresh_token in response should be masked`,
-        ).toBe("***MASKED***");
+        expect(request.httpResponse.body.refresh_token, `Request ${index}: refresh_token in response should be masked`).toBe(
+          "***MASKED***",
+        );
       }
 
       // Check client_secret in request body is masked
       if (request.httpRequest?.body && typeof request.httpRequest.body === "string") {
         const bodyContainsClientSecret = request.httpRequest.body.includes("client_secret=");
         if (bodyContainsClientSecret) {
-          expect(
-            request.httpRequest.body,
-            `Request ${index}: client_secret in request body should be masked`,
-          ).toContain("client_secret=***MASKED***");
-          expect(
-            request.httpRequest.body,
-            `Request ${index}: client_secret should not contain actual UUID`,
-          ).not.toMatch(/client_secret=[a-f0-9-]{36}/);
+          expect(request.httpRequest.body, `Request ${index}: client_secret in request body should be masked`).toContain(
+            "client_secret=***MASKED***",
+          );
+          expect(request.httpRequest.body, `Request ${index}: client_secret should not contain actual UUID`).not.toMatch(
+            /client_secret=[a-f0-9-]{36}/,
+          );
         }
 
         // Check authorization code in request body is masked
         const bodyContainsCode = request.httpRequest.body.includes("code=");
         if (bodyContainsCode) {
-          expect(
-            request.httpRequest.body,
-            `Request ${index}: authorization code in request body should be masked`,
-          ).toContain("code=***MASKED***");
-          expect(
-            request.httpRequest.body,
-            `Request ${index}: authorization code should not contain actual 32-char hex value`,
-          ).not.toMatch(/code=[a-f0-9]{32}/);
+          expect(request.httpRequest.body, `Request ${index}: authorization code in request body should be masked`).toContain(
+            "code=***MASKED***",
+          );
+          expect(request.httpRequest.body, `Request ${index}: authorization code should not contain actual 32-char hex value`).not.toMatch(
+            /code=[a-f0-9]{32}/,
+          );
         }
       }
     });

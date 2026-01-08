@@ -63,8 +63,7 @@ export async function initializeSalt() {
       logger.error({ message: "Failed to fetch salt", error: error.message });
       __initPromise = null; // Clear promise so next call will retry
       throw new Error(
-        `Failed to initialize salt: ${error.message}. ` +
-          `Ensure secret exists and Lambda has secretsmanager:GetSecretValue permission.`
+        `Failed to initialize salt: ${error.message}. ` + `Ensure secret exists and Lambda has secretsmanager:GetSecretValue permission.`,
       );
     }
   })();
@@ -96,7 +95,7 @@ export function hashSub(sub) {
   if (!__cachedSalt) {
     throw new Error(
       "Salt not initialized. Call initializeSalt() in your Lambda handler before using hashSub(). " +
-        "For local dev, set USER_SUB_HASH_SALT in .env file."
+        "For local dev, set USER_SUB_HASH_SALT in .env file.",
     );
   }
 

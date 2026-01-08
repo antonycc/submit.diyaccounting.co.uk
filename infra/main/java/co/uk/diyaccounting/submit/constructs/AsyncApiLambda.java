@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.constructs;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+
+import java.util.List;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -17,10 +20,6 @@ import software.amazon.awscdk.services.lambda.eventsources.SqsEventSource;
 import software.amazon.awscdk.services.sqs.DeadLetterQueue;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
-
-import java.util.List;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 public class AsyncApiLambda extends ApiLambda {
 
@@ -69,8 +68,8 @@ public class AsyncApiLambda extends ApiLambda {
                 .repositoryArn(props.ecrRepositoryArn())
                 .repositoryName(props.ecrRepositoryName())
                 .build();
-        IRepository repository = Repository.fromRepositoryAttributes(
-                scope, props.idPrefix() + "-EcrRepo-worker", repositoryAttributes);
+        IRepository repository =
+                Repository.fromRepositoryAttributes(scope, props.idPrefix() + "-EcrRepo-worker", repositoryAttributes);
 
         this.workerLambda = DockerImageFunction.Builder.create(scope, props.idPrefix() + "-worker-fn")
                 .code(DockerImageCode.fromEcr(repository, imageCodeProps))
@@ -84,26 +83,27 @@ public class AsyncApiLambda extends ApiLambda {
                 .tracing(Tracing.ACTIVE)
                 .build();
 
-        this.workerLambdaVersion =
-            Version.Builder.create(scope, props.idPrefix() + "-worker-version")
+        this.workerLambdaVersion = Version.Builder.create(scope, props.idPrefix() + "-worker-version")
                 .lambda(this.workerLambda)
                 .description("Created for PC setting in alias")
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.workerLambdaAlias = Alias.Builder.create(scope, props.idPrefix() + "-worker-zero-alias")
-            .aliasName("zero")
-            .version(this.workerLambdaVersion)
-            .provisionedConcurrentExecutions(props.workerProvisionedConcurrency())
-            .build();
-        this.workerLambdaAliasArn = "%s:%s".formatted(this.ingestLambda.getFunctionArn(), this.ingestLambdaAlias.getAliasName());
-        infof("Created worker Lambda alias %s for version %s with arn %s", this.workerLambdaAlias.getAliasName(), this.workerLambdaVersion.getVersion(), props.workerProvisionedConcurrencyAliasArn());
+                .aliasName("zero")
+                .version(this.workerLambdaVersion)
+                .provisionedConcurrentExecutions(props.workerProvisionedConcurrency())
+                .build();
+        this.workerLambdaAliasArn =
+                "%s:%s".formatted(this.ingestLambda.getFunctionArn(), this.ingestLambdaAlias.getAliasName());
+        infof(
+                "Created worker Lambda alias %s for version %s with arn %s",
+                this.workerLambdaAlias.getAliasName(),
+                this.workerLambdaVersion.getVersion(),
+                props.workerProvisionedConcurrencyAliasArn());
 
         // 4. Set up SQS trigger
         this.workerLambdaAlias.addEventSource(
-                SqsEventSource.Builder.create(this.queue)
-                    .batchSize(1)
-                    .build()
-        );
+                SqsEventSource.Builder.create(this.queue).batchSize(1).build());
 
         // Alarms for worker lambda
         Alarm.Builder.create(scope, props.idPrefix() + "-WorkerErrorsAlarm")
