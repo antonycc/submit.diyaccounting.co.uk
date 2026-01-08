@@ -350,8 +350,8 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     response = await fetch(providerUrl, { ...httpRequest, signal: controller.signal });
   } finally {
     clearTimeout(timeoutId);
-    duration = new Date().getTime() - startTime;
   }
+  duration = new Date().getTime() - startTime;
   logger.info({ message: "HTTP POST response received with status and duration", status: response?.status, duration });
 
   let responseTokens;
