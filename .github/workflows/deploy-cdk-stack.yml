@@ -7,7 +7,7 @@ on:
       stackName:
         description: 'Stack name to deploy. e.g. ci-reports-app-DevStack'
         required: true
-      force-all-stack-deployment:
+      force-stack-deployment:
         description: 'Force re-deploy of all stacks even if they already exist or pass comparison checks'
         type: choice
         options:
@@ -58,7 +58,7 @@ on:
       stackName:
         type: string
         required: true
-      force-all-stack-deployment:
+      force-stack-deployment:
         type: string
         required: true
       environment-name:
@@ -117,7 +117,7 @@ jobs:
         run: ":"
       - name: "inputs.stackName=[${{ inputs.stackName }}]"
         run: ":"
-      - name: "inputs.force-all-stack-deployment=[${{ inputs.force-all-stack-deployment }}]"
+      - name: "inputs.force-stack-deployment=[${{ inputs.force-stack-deployment }}]"
         run: ":"
       - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
         run: ":"
@@ -138,7 +138,7 @@ jobs:
         shell: bash
         run: |
           echo 'stackName=${{ inputs.stackName }}' | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.force-all-stack-deployment }}' ; echo "force-all-stack-deployment=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.force-stack-deployment }}' ; echo "force-stack-deployment=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.cdk-application }}' ; echo "cdk-application=${X:-application}" | tee -a "$GITHUB_OUTPUT"
@@ -148,7 +148,7 @@ jobs:
           echo "website-hash=${{ inputs['website-hash'] }}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       stackName: ${{ steps.normalise.outputs.stackName }}
-      force-all-stack-deployment: ${{ steps.normalise.outputs.force-all-stack-deployment }}
+      force-stack-deployment: ${{ steps.normalise.outputs.force-stack-deployment }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       cdk-application: ${{ steps.normalise.outputs.cdk-application }}
@@ -277,29 +277,29 @@ jobs:
           fi
 
       - name: Checkout
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v6
 
       - name: Setup Node
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Node dependencies
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Deploy ${{ needs.params.outputs.stackName }} Stack (CDK)
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-all-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
           ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
             && cd cdk-${{ needs.params.outputs.cdk-application }} \

@@ -560,7 +560,6 @@ jobs:
       secrets-valid: ${{ steps.validate.outputs.secrets-valid }}
 
   deploy-dev:
-    if: ${{ !cancelled() }}
     name: 'deploy DevStack via deploy-cdk-stack.yml'
     needs:
       - names
@@ -575,7 +574,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-DevStack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
@@ -585,7 +584,6 @@ jobs:
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-dev-us-east-1:
-    if: ${{ !cancelled() }}
     name: 'deploy DevUE1Stack via deploy-cdk-stack.yml'
     needs:
       - names
@@ -600,7 +598,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-DevUE1Stack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
@@ -828,7 +826,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-SelfDestructStack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
@@ -838,7 +836,6 @@ jobs:
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-auth:
-    if: ${{ !cancelled() }}
     name: 'deploy AuthStack via deploy-cdk-stack.yml'
     needs:
       - names
@@ -855,7 +852,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-AuthStack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
@@ -865,7 +862,6 @@ jobs:
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-hmrc:
-    if: ${{ !cancelled() }}
     name: 'deploy HmrcStack via deploy-cdk-stack.yml'
     needs:
       - names
@@ -882,7 +878,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-HmrcStack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
@@ -892,7 +888,6 @@ jobs:
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-account:
-    if: ${{ !cancelled() }}
     name: 'deploy AccountStack via deploy-cdk-stack.yml'
     needs:
       - names
@@ -909,7 +904,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-AccountStack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
@@ -1026,7 +1021,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-EdgeStack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
@@ -1266,7 +1261,7 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.deployment-name }}-app-OpsStack
-      force-all-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
+      force-stack-deployment: ${{ inputs.forceAllStackDeployment || 'false' }}
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
