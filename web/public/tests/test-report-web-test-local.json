@@ -72,7 +72,7 @@
         "method": "GET",
         "headers": {
           "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "Bearer 3272583c6767455c5f4751d6f48b1076",
+          "Authorization": "***MASKED***",
           "Gov-Client-Public-IP": "88.97.27.180",
           "Gov-Client-Device-ID": "b76e1602-11f2-49f5-8030-296a075931a3",
           "Gov-Client-User-IDs": "server=anonymous",
@@ -159,7 +159,7 @@
         "headers": {
           "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "Bearer 3272583c6767455c5f4751d6f48b1076",
+          "Authorization": "***MASKED***",
           "x-request-id": "f0cb8d51-c9f2-433d-8366-e84834ebd00e",
           "traceparent": "00-632bc3d0ce73772becc2a8a6a4bda9d6-8713f015f357a91b-01",
           "x-correlationid": "f0cb8d51-c9f2-433d-8366-e84834ebd00e",
@@ -239,7 +239,7 @@
           "traceparent": "00-632bc3d0ce73772becc2a8a6a4bda9d6-8713f015f357a91b-01",
           "x-correlationid": "b91379b0-ea3b-4e49-828d-d13638a411ce"
         },
-        "body": "grant_type=authorization_code&client_id=uqMHA6RsDGGa7h8EG2VqfqAmv4tV&client_secret=049b662f-61ea-4113-b38d-a9c8b1bb9f13&redirect_uri=https%3A%2F%2Fwanted-finally-anteater.ngrok-free.app%2Factivities%2FsubmitVatCallback.html&code=15d929e02a51491ea9ac310457815a3c"
+        "body": "grant_type=authorization_code&client_id=uqMHA6RsDGGa7h8EG2VqfqAmv4tV&client_secret=***MASKED***&redirect_uri=https%3A%2F%2Fwanted-finally-anteater.ngrok-free.app%2Factivities%2FsubmitVatCallback.html&code=15d929e02a51491ea9ac310457815a3c"
       },
       "httpResponse": {
         "statusCode": 200,
@@ -260,8 +260,8 @@
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
-          "access_token": "3272583c6767455c5f4751d6f48b1076",
-          "refresh_token": "4f1ff589d447319988116b71633c9ba1",
+          "access_token": "***MASKED***",
+          "refresh_token": "***MASKED***",
           "expires_in": 14400,
           "scope": "write:vat read:vat",
           "token_type": "bearer"
@@ -285,7 +285,7 @@
         "headers": {
           "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "Bearer 3272583c6767455c5f4751d6f48b1076",
+          "Authorization": "***MASKED***",
           "x-request-id": "e974b8ad-d75c-4631-99e7-006babb12a55",
           "traceparent": "00-632bc3d0ce73772becc2a8a6a4bda9d6-8713f015f357a91b-01",
           "x-correlationid": "e974b8ad-d75c-4631-99e7-006babb12a55",
@@ -355,7 +355,7 @@
         "headers": {
           "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "Bearer 3272583c6767455c5f4751d6f48b1076",
+          "Authorization": "***MASKED***",
           "x-request-id": "665b3d53-ac7e-4311-8bca-864bf233ea09",
           "traceparent": "00-632bc3d0ce73772becc2a8a6a4bda9d6-8713f015f357a91b-01",
           "x-correlationid": "665b3d53-ac7e-4311-8bca-864bf233ea09",
