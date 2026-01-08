@@ -148,6 +148,28 @@
           );
 
           console.log("User authenticated successfully using mock:", idTokenPayload.email);
+
+          // Extract MFA status from amr (Authentication Methods Reference) claim
+          // Mock OAuth server can include amr claims to simulate MFA (e.g., ["mfa", "pwd"])
+          const amrClaims = idTokenPayload.amr || [];
+          const mfaIndicators = ["mfa", "swk", "hwk", "otp"]; // mfa=multi-factor, swk=software key, hwk=hardware key, otp=one-time password
+          const hasMFA = Array.isArray(amrClaims) && amrClaims.some((method) => mfaIndicators.includes(method));
+
+          if (hasMFA) {
+            // Store MFA metadata for use in fraud prevention headers
+            const mfaMetadata = {
+              type: "OTHER", // Use OTHER for federated IdP MFA (mock simulates Google 2FA, etc.)
+              timestamp: new Date().toISOString(),
+              uniqueReference: crypto.randomUUID(),
+            };
+            sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
+            console.log("MFA detected from mock IdP:", amrClaims, "Stored metadata:", mfaMetadata);
+          } else {
+            // No MFA detected - remove any existing metadata
+            sessionStorage.removeItem("mfaMetadata");
+            console.log("No MFA detected in mock amr claims:", amrClaims);
+          }
+
           showStatus("Authenticated successfully. Fetching bundles...", "info");
 
           // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle

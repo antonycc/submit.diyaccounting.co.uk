@@ -1,0 +1,23 @@
+{
+  "interactiveLogin": true,
+  "tokenCallbacks": [
+    {
+      "issuerId": "default",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "code",
+          "match": ".*",
+          "claims": {
+            "sub": "user",
+            "email": "user@example.com",
+            "aud": ["debugger"],
+            "scope": "openid somescope",
+            "nonce": "5678",
+            "amr": ["mfa", "pwd"]
+          }
+        }
+      ]
+    }
+  ]
+}

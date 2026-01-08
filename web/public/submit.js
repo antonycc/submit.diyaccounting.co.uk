@@ -1141,12 +1141,20 @@ async function getGovClientHeaders() {
   const govClientBrowserJSUserAgentHeader = navigator.userAgent;
   const govClientDeviceIDHeader = crypto.randomUUID();
 
-  // Gov-Client-Multi-Factor: Must include timestamp and unique-reference
-  // TODO: Implement Gov-Client-Multi-Factor for cognito and omit when no MFA present
+  // Gov-Client-Multi-Factor: Extract from sessionStorage if MFA was detected during login
+  // MFA metadata is stored by loginWithCognitoCallback.html after extracting amr claims from ID token
+  // Header format: type=<TYPE>&timestamp=<ISO8601>&unique-reference=<UUID>
+  // Omit header if no MFA detected (HMRC allows omission)
   let govClientMultiFactorHeader;
-  // const mfaTimestamp = new Date().toISOString();
-  // const mfaUniqueRef = crypto.randomUUID();
-  // govClientMultiFactorHeader = `type=OTHER&timestamp=${encodeURIComponent(mfaTimestamp)}&unique-reference=${encodeURIComponent(mfaUniqueRef)}`;
+  try {
+    const mfaMetadata = sessionStorage.getItem("mfaMetadata");
+    if (mfaMetadata) {
+      const mfa = JSON.parse(mfaMetadata);
+      govClientMultiFactorHeader = `type=${mfa.type}&timestamp=${encodeURIComponent(mfa.timestamp)}&unique-reference=${encodeURIComponent(mfa.uniqueReference)}`;
+    }
+  } catch (err) {
+    console.warn("Failed to read MFA metadata from sessionStorage:", err);
+  }
 
   const govClientPublicIPTimestampHeader = new Date().toISOString();
 

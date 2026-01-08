@@ -9,6 +9,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
+  injectMockMfa,
   isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -311,6 +312,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await clickLogIn(page, screenshotPath);
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
   await verifyLoggedInStatus(page, screenshotPath);
+
+  // Inject mock MFA metadata for testing Gov-Client-Multi-Factor header
+  // This simulates MFA detection from federated IdP (Google 2FA, etc.)
+  await injectMockMfa(page);
+
   await consentToDataCollection(page, screenshotPath);
 
   /* ********* */
