@@ -66,6 +66,32 @@ export function isSensitiveField(fieldName) {
 }
 
 /**
+ * Mask sensitive values in URL-encoded form body strings.
+ * Handles patterns like "client_secret=xxx&code=yyy"
+ *
+ * @param {string} body - URL-encoded form body string
+ * @returns {string} Body with sensitive values masked
+ */
+export function maskUrlEncodedBody(body) {
+  if (!body || typeof body !== "string") {
+    return body;
+  }
+
+  let masked = body;
+
+  // Mask client_secret (UUID format)
+  masked = masked.replace(/client_secret=[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi, `client_secret=${MASK_VALUE}`);
+
+  // Mask authorization code (32-char hex)
+  masked = masked.replace(/([&?])code=[a-f0-9]{32}/gi, `$1code=${MASK_VALUE}`);
+
+  // Mask code at start of string (no leading & or ?)
+  masked = masked.replace(/^code=[a-f0-9]{32}/gi, `code=${MASK_VALUE}`);
+
+  return masked;
+}
+
+/**
  * Deep clone and mask sensitive data in an object or array.
  * Creates a new copy with sensitive field values replaced with MASK_VALUE.
  *
@@ -109,6 +135,9 @@ export function maskSensitiveData(data, visited = new Set()) {
       } else if (value !== null && typeof value === "object") {
         // Recursively mask nested objects and arrays
         masked[key] = maskSensitiveData(value, visited);
+      } else if (typeof value === "string" && key.toLowerCase() === "body") {
+        // Apply URL-encoded masking to body fields
+        masked[key] = maskUrlEncodedBody(value);
       } else {
         // Copy non-sensitive primitives as-is
         masked[key] = value;

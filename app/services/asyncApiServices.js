@@ -7,6 +7,36 @@ import { http200OkResponse, http202AcceptedResponse } from "../lib/httpResponseH
 const logger = createLogger({ source: "app/services/asyncApiServices.js" });
 
 const INITIAL_POLL_INTERVAL_MS = 100;
+
+/**
+ * Runs async processing locally (fire and forget) with flat async/await structure.
+ * Used for local development when no SQS queue is configured.
+ */
+async function runLocalAsyncProcessing({ processor, payload, tableName, requestId, userId }) {
+  try {
+    const result = await processor(payload);
+    logger.info({ message: "Local async processing completed successfully", requestId });
+
+    if (!tableName) return;
+
+    try {
+      await complete({ asyncRequestsTableName: tableName, requestId, userSub: userId, result });
+    } catch (dbError) {
+      logger.error({ message: "Error updating status after local async success", error: dbError.message, requestId });
+    }
+  } catch (err) {
+    logger.error({ message: "Unhandled error in local async processing", error: err.message, userId, requestId });
+
+    if (!tableName) return;
+
+    try {
+      await error({ asyncRequestsTableName: tableName, requestId, userSub: userId, error: err });
+    } catch (dbError) {
+      logger.error({ message: "Error updating status after local async error", error: dbError.message, requestId });
+    }
+  }
+}
+
 const MAX_POLL_INTERVAL_MS = 400;
 
 export class RequestFailedError extends Error {
@@ -83,23 +113,7 @@ export async function initiateProcessing({
     } else {
       logger.info({ message: "Starting async processing locally (no SQS queue URL)", userId, requestId });
       // Fire and forget for local development fallback
-      processor(payload)
-        .then((result) => {
-          logger.info({ message: "Local async processing completed successfully", requestId });
-          if (tableName) {
-            complete({ asyncRequestsTableName: tableName, requestId, userSub: userId, result }).catch((error) => {
-              logger.error({ message: "Error updating status after local async success", error: error.message, requestId });
-            });
-          }
-        })
-        .catch((err) => {
-          logger.error({ message: "Unhandled error in local async processing", error: err.message, userId, requestId });
-          if (tableName) {
-            error({ asyncRequestsTableName: tableName, requestId, userSub: userId, error: err }).catch((dbError) => {
-              logger.error({ message: "Error updating status after local async error", error: dbError.message, requestId });
-            });
-          }
-        });
+      runLocalAsyncProcessing({ processor, payload, tableName, requestId, userId });
     }
   } catch (error) {
     logger.error({ message: "Error in async processing initiation", error: error.message, userId, requestId });
