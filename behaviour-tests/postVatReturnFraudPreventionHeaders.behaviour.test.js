@@ -9,6 +9,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
+  injectMockMfa,
   isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -268,6 +269,10 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   await clickLogIn(page, screenshotPath);
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
   await verifyLoggedInStatus(page, screenshotPath);
+
+  // Inject mock MFA metadata for testing Gov-Client-Multi-Factor header
+  await injectMockMfa(page);
+
   await consentToDataCollection(page, screenshotPath);
 
   /* ********* */
