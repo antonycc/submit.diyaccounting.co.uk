@@ -2,7 +2,7 @@
   "interactiveLogin": true,
   "tokenCallbacks": [
     {
-      "issuerId": "debugger",
+      "issuerId": "default",
       "tokenExpiry": 3600,
       "requestMappings": [
         {
@@ -12,7 +12,8 @@
             "email": "user@example.com",
             "aud": ["debugger"],
             "scope": "openid somescope",
-            "nonce": "5678"
+            "nonce": "5678",
+            "amr": ["mfa", "pwd"]
           }
         }
       ]

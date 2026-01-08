@@ -166,16 +166,21 @@ Gov-Client-Multi-Factor: type=<TYPE>&timestamp=<ISO8601>&unique-reference=<UUID>
 - Currently in `intentionallyNotSuppliedHeaders` list in `behaviour-tests/helpers/dynamodb-assertions.js`
 - Will be removed from this list after validation with real MFA
 
+### Proxy Mode Testing (Updated 2026-01-07)
+- `mock-oauth2-server.json` now includes `amr: ["mfa", "pwd"]` claims
+- `loginWithMockCallback.html` now extracts MFA from mock tokens (same logic as Cognito callback)
+- Proxy tests should now automatically detect MFA and generate the header
+
 ---
 
 ## Next Steps
 
 ### Phase 1: Proxy Environment Testing
 
-1. **Deploy Frontend Changes**
+1. **Test MFA Detection in Proxy Mode**
    ```bash
-   # Changes are in branch: copilot/deliver-mfa-plan-changes
-   # Merge to main and deploy
+   # Run proxy tests - MFA should now be automatically detected
+   npm run test:submitVatBehaviour-proxy
    ```
 
 2. **Manual Testing with Real Google Account**
@@ -327,11 +332,13 @@ npm run test:submitVatBehaviour-proxy
 | File | Lines | Purpose |
 |------|-------|---------|
 | `web/public/auth/loginWithCognitoCallback.html` | 172-191 | Extract MFA from ID token |
+| `web/public/auth/loginWithMockCallback.html` | 152-171 | Extract MFA from mock token |
 | `web/public/submit.js` | 1143-1156 | Generate MFA header |
+| `mock-oauth2-server.json` | 16 | Add `amr` claims to mock tokens |
 | `behaviour-tests/helpers/behaviour-helpers.js` | +51 lines | Test helpers |
 | `package-lock.json` | Updated | Dependencies |
 
-**Total**: 4 files changed, 61 insertions, 10 deletions
+**Total**: 5 files changed (+ mock config update)
 
 ---
 
@@ -350,7 +357,8 @@ npm run test:submitVatBehaviour-proxy
 - ✅ Header generated when MFA detected
 - ✅ Header format complies with HMRC specification
 - ✅ Header omitted when no MFA (HMRC compliant)
-- ✅ Tests pass with mock MFA injection
+- ✅ Mock OAuth server includes `amr` claims for proxy testing
+- ✅ Mock callback extracts MFA claims (same as Cognito callback)
 - ⏳ **Pending**: Real-world testing with Google 2FA
 - ⏳ **Pending**: HMRC validation endpoint approval
 - ⏳ **Pending**: Remove from intentionallyNotSuppliedHeaders list
