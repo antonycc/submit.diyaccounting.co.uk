@@ -112,6 +112,8 @@ export default [
       "scripts/",
       "behaviour-tests/",
       "web/browser-tests/",
+      // Generated test reports (Playwright HTML reports contain bundled JS)
+      "web/public/tests/",
     ],
   },
 ];
