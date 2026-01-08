@@ -97,6 +97,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
+// TODO: Remove all but the initial wait and async options.
 export async function ingestHandler(event) {
   await initializeSalt();
   validateEnv([
