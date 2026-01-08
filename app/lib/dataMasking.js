@@ -18,6 +18,7 @@ const SENSITIVE_FIELD_NAMES = [
   "password",
   "client_secret",
   "clientsecret",
+  "code", // OAuth authorization codes
 ];
 
 /**

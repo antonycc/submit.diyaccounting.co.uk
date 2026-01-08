@@ -239,7 +239,7 @@
           "traceparent": "00-632bc3d0ce73772becc2a8a6a4bda9d6-8713f015f357a91b-01",
           "x-correlationid": "b91379b0-ea3b-4e49-828d-d13638a411ce"
         },
-        "body": "grant_type=authorization_code&client_id=uqMHA6RsDGGa7h8EG2VqfqAmv4tV&client_secret=***MASKED***&redirect_uri=https%3A%2F%2Fwanted-finally-anteater.ngrok-free.app%2Factivities%2FsubmitVatCallback.html&code=15d929e02a51491ea9ac310457815a3c"
+        "body": "grant_type=authorization_code&client_id=uqMHA6RsDGGa7h8EG2VqfqAmv4tV&client_secret=***MASKED***&redirect_uri=https%3A%2F%2Fwanted-finally-anteater.ngrok-free.app%2Factivities%2FsubmitVatCallback.html&code=***MASKED***"
       },
       "httpResponse": {
         "statusCode": 200,

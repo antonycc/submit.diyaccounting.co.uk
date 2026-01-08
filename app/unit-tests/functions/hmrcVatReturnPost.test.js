@@ -1,4 +1,5 @@
 // app/unit-tests/functions/hmrcVatReturnPost.test.js
+// NOTE: Test data in this file (test-token, test-client-id, etc.) are not real credentials
 
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";

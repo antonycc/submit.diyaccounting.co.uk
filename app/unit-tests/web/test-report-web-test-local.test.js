@@ -96,6 +96,19 @@ describe("web/public/tests/test-report-web-test-local.json", () => {
             `Request ${index}: client_secret should not contain actual UUID`,
           ).not.toMatch(/client_secret=[a-f0-9-]{36}/);
         }
+
+        // Check authorization code in request body is masked
+        const bodyContainsCode = request.httpRequest.body.includes("code=");
+        if (bodyContainsCode) {
+          expect(
+            request.httpRequest.body,
+            `Request ${index}: authorization code in request body should be masked`,
+          ).toContain("code=***MASKED***");
+          expect(
+            request.httpRequest.body,
+            `Request ${index}: authorization code should not contain actual 32-char hex value`,
+          ).not.toMatch(/code=[a-f0-9]{32}/);
+        }
       }
     });
 
@@ -115,6 +128,11 @@ describe("web/public/tests/test-report-web-test-local.json", () => {
         name: "Unmasked client_secret in URL-encoded body",
         pattern: /client_secret=[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/gi,
         description: "Found client_secret with UUID value in request body - should be masked",
+      },
+      {
+        name: "Unmasked authorization code in URL-encoded body",
+        pattern: /[&?]code=[a-f0-9]{32}/gi,
+        description: "Found authorization code with 32-char hex value in request body - should be masked",
       },
       {
         name: "Unmasked Bearer token in Authorization header",
