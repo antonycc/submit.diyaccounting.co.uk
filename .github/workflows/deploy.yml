@@ -812,7 +812,7 @@ jobs:
       base-image-tag: ${{ github.sha }}
 
   deploy-application-self-destruct:
-    if: ${{ !cancelled() }}
+    if: ${{ inputs.skipDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     name: 'deploy SelfDestructStack via deploy-cdk-stack.yml'
     needs:
       - names
