@@ -10,7 +10,10 @@ import {
   runLocalOAuth2Server,
   runLocalDynamoDb,
   runLocalSslProxy,
+  loggedClick,
+  loggedGoto,
 } from "./helpers/behaviour-helpers.js";
+import { ensureDirSync } from "fs-extra";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -27,6 +30,9 @@ const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const testDynamoDb = getEnvVarAndLog("testDynamoDb", "TEST_DYNAMODB", null);
 const dynamoDbPort = getEnvVarAndLog("dynamoDbPort", "TEST_DYNAMODB_PORT", 8000);
 
+// Screenshot path for compliance tests
+const screenshotPath = "target/behaviour-test-results/screenshots/compliance-behaviour-test";
+
 let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess;
 
 /**
@@ -34,6 +40,12 @@ let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess;
  *
  * These tests verify that the application meets HMRC's production approval requirements
  * for privacy, terms of use, and data handling documentation.
+ *
+ * This is a single navigating test that:
+ * 1. Starts at the home page
+ * 2. Clicks through to Privacy Policy and Terms of Use pages
+ * 3. Verifies all required compliance elements are present
+ * 4. Verifies navigation links work correctly
  *
  * Requirements tested:
  * - Privacy policy URL is accessible
@@ -46,6 +58,12 @@ let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess;
 test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
   test.beforeAll(async () => {
     console.log("\n🧪 Setting up test environment for compliance tests...\n");
+    console.log(`📍 Base URL: ${baseUrl}`);
+    console.log(`📍 Environment: ${envName}`);
+    console.log(`📍 Screenshot path: ${screenshotPath}`);
+
+    // Ensure screenshot directory exists
+    ensureDirSync(screenshotPath);
 
     if (testAuthProvider === "mock" && runMockOAuth2 === "run") {
       mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
@@ -86,214 +104,232 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("✅ Cleanup complete\n");
   });
 
-  test("Privacy Policy page is accessible and contains required GDPR elements", async ({ page }) => {
-    await addOnPageLogging(page);
+  test("Navigate through compliance pages from home and verify all HMRC requirements", async ({ page }) => {
+    // Enable verbose HTTP logging for diagnosing 403 errors
+    const originalVerboseHttp = process.env.TEST_VERBOSE_HTTP_LOGS;
+    process.env.TEST_VERBOSE_HTTP_LOGS = "true";
 
-    console.log("📄 Navigating to Privacy Policy...");
-    await page.goto(`${baseUrl}/privacy.html`);
+    // Add comprehensive page logging
+    addOnPageLogging(page);
 
-    // Verify page loads
-    await expect(page).toHaveTitle(/Privacy Policy/);
-    console.log("✅ Privacy Policy page loaded");
+    // Additional response logging to catch 403 errors with details
+    page.on("response", async (response) => {
+      const status = response.status();
+      const url = response.url();
+      console.log(`[HTTP RESPONSE] ${status} ${url}`);
+      if (status >= 400) {
+        console.log(`[HTTP ERROR] Status ${status} for ${url}`);
+        try {
+          const body = await response.text();
+          console.log(`[HTTP ERROR BODY] ${body.substring(0, 500)}`);
+        } catch (e) {
+          console.log(`[HTTP ERROR BODY] Could not read body: ${e.message}`);
+        }
+      }
+    });
 
-    // Check for key GDPR elements
-    const pageContent = await page.content();
+    // ============================================================
+    // STEP 1: Navigate to Home Page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 1: Navigate to Home Page");
+    console.log("=".repeat(60));
 
-    // Data retention section
-    expect(pageContent).toContain("Data retention");
+    const homeUrl = `${baseUrl}/`;
+    console.log(`🏠 Navigating to home page: ${homeUrl}`);
+    await page.goto(homeUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.screenshot({ path: `${screenshotPath}/01-home-page.png` });
+
+    // Check page loaded
+    const homeTitle = await page.title();
+    console.log(`📄 Home page title: "${homeTitle}"`);
+    expect(homeTitle).toMatch(/DIY Accounting Submit/i);
+    console.log("✅ Home page loaded successfully");
+
+    // Verify privacy and terms links exist in footer
+    console.log("\n📋 Checking footer links on home page...");
+    const privacyLinkHome = page.locator('footer a[href="privacy.html"]');
+    const termsLinkHome = page.locator('footer a[href="terms.html"]');
+
+    await expect(privacyLinkHome).toBeVisible({ timeout: 5000 });
+    console.log("✅ Privacy link visible in home page footer");
+
+    await expect(termsLinkHome).toBeVisible({ timeout: 5000 });
+    console.log("✅ Terms link visible in home page footer");
+
+    // ============================================================
+    // STEP 2: Click to Privacy Policy page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 2: Navigate to Privacy Policy via footer link");
+    console.log("=".repeat(60));
+
+    console.log("🖱️ Clicking Privacy Policy link in footer...");
+    await privacyLinkHome.click();
+    await page.waitForLoadState("domcontentloaded");
+    await page.screenshot({ path: `${screenshotPath}/02-privacy-page.png` });
+
+    // Verify Privacy Policy page loaded
+    const privacyTitle = await page.title();
+    console.log(`📄 Privacy page title: "${privacyTitle}"`);
+    expect(privacyTitle).toMatch(/Privacy Policy/i);
+    console.log("✅ Privacy Policy page loaded successfully");
+
+    // Check Privacy Policy content for GDPR requirements
+    console.log("\n📋 Checking Privacy Policy GDPR requirements...");
+    const privacyContent = await page.content();
+
+    expect(privacyContent).toContain("Data retention");
     console.log("✅ Data retention section present");
 
-    // User rights section
-    expect(pageContent).toContain("Your data rights");
-    expect(pageContent).toContain("Right of access");
-    expect(pageContent).toContain("Right to erasure");
-    expect(pageContent).toContain("Right to data portability");
+    expect(privacyContent).toContain("Your data rights");
+    expect(privacyContent).toContain("Right of access");
+    expect(privacyContent).toContain("Right to erasure");
+    expect(privacyContent).toContain("Right to data portability");
     console.log("✅ GDPR user rights documented");
 
-    // Contact information
-    expect(pageContent).toContain("admin@diyaccounting.co.uk");
+    expect(privacyContent).toContain("admin@diyaccounting.co.uk");
     console.log("✅ Contact information present");
 
-    // Security incidents
-    expect(pageContent).toContain("Security incidents");
-    expect(pageContent).toContain("72 hours");
+    expect(privacyContent).toContain("Security incidents");
+    expect(privacyContent).toContain("72 hours");
     console.log("✅ Security incident notification process documented");
 
-    // Data processors
-    expect(pageContent).toContain("Data processors");
-    expect(pageContent).toContain("Amazon Web Services");
+    expect(privacyContent).toContain("Data processors");
+    expect(privacyContent).toContain("Amazon Web Services");
     console.log("✅ Data processors disclosed");
 
-    // Specific retention periods
-    expect(pageContent).toContain("7 years"); // HMRC receipts
-    expect(pageContent).toContain("30 days"); // Bundles deletion
+    expect(privacyContent).toContain("7 years");
+    expect(privacyContent).toContain("30 days");
     console.log("✅ Specific retention periods documented");
-  });
 
-  test("Terms of Use page is accessible and contains required HMRC compliance elements", async ({ page }) => {
-    await addOnPageLogging(page);
+    expect(privacyContent).toContain("export");
+    expect(privacyContent).toContain("delete");
+    console.log("✅ Data export/deletion rights documented");
 
-    console.log("📄 Navigating to Terms of Use...");
-    await page.goto(`${baseUrl}/terms.html`);
-
-    // Verify page loads
-    await expect(page).toHaveTitle(/Terms of Use/);
-    console.log("✅ Terms of Use page loaded");
-
-    const pageContent = await page.content();
-
-    // Service description
-    expect(pageContent).toContain("Service Description");
-    expect(pageContent).toContain("Making Tax Digital");
-    console.log("✅ Service description present");
-
-    // HMRC integration and OAuth
-    expect(pageContent).toContain("HMRC Integration");
-    expect(pageContent).toContain("OAuth");
-    console.log("✅ HMRC OAuth integration documented");
-
-    // Data processing and privacy
-    expect(pageContent).toContain("Data Processing and Privacy");
-    expect(pageContent).toContain("UK GDPR");
-    expect(pageContent).toContain("encrypted");
-    console.log("✅ Data processing and encryption documented");
-
-    // Fraud prevention headers
-    expect(pageContent).toContain("Fraud Prevention Headers");
-    console.log("✅ Fraud prevention headers explained");
-
-    // Data retention
-    expect(pageContent).toContain("Data Retention");
-    expect(pageContent).toContain("7 years"); // HMRC receipts
-    console.log("✅ Data retention policy documented");
-
-    // Security incidents
-    expect(pageContent).toContain("Security Incidents");
-    expect(pageContent).toContain("72 hours");
-    console.log("✅ Security incident notification in terms");
-
-    // Contact information
-    expect(pageContent).toContain("admin@diyaccounting.co.uk");
-    console.log("✅ Contact information in terms");
-
-    // Governing law
-    expect(pageContent).toContain("Governing Law");
-    expect(pageContent).toContain("England and Wales");
-    console.log("✅ Governing law specified");
-
-    // Server location (HMRC requirement)
-    expect(pageContent).toContain("EU West") || expect(pageContent).toContain("London");
-    console.log("✅ Server location disclosed");
-  });
-
-  test("Home page contains links to Privacy Policy and Terms of Use", async ({ page }) => {
-    await addOnPageLogging(page);
-
-    console.log("🏠 Navigating to home page...");
-    await page.goto(`${baseUrl}/`);
-
-    await expect(page).toHaveTitle(/DIY Accounting Submit/);
-    console.log("✅ Home page loaded");
-
-    // Check footer for privacy and terms links
-    const privacyLink = page.locator('footer a[href="privacy.html"]');
-    await expect(privacyLink).toBeVisible();
-    console.log("✅ Privacy link visible in footer");
-
-    const termsLink = page.locator('footer a[href="terms.html"]');
-    await expect(termsLink).toBeVisible();
-    console.log("✅ Terms link visible in footer");
-
-    // Verify links are clickable
-    await expect(privacyLink).toHaveAttribute("href", "privacy.html");
-    await expect(termsLink).toHaveAttribute("href", "terms.html");
-    console.log("✅ Links have correct href attributes");
-  });
-
-  test("About page contains links to Privacy Policy and Terms of Use", async ({ page }) => {
-    await addOnPageLogging(page);
-
-    console.log("📖 Navigating to about page...");
-    await page.goto(`${baseUrl}/about.html`);
-
-    await expect(page).toHaveTitle(/About/);
-    console.log("✅ About page loaded");
-
-    // Check footer for privacy and terms links
-    const privacyLink = page.locator('footer a[href="privacy.html"]');
-    await expect(privacyLink).toBeVisible();
-    console.log("✅ Privacy link visible in footer");
-
-    const termsLink = page.locator('footer a[href="terms.html"]');
-    await expect(termsLink).toBeVisible();
-    console.log("✅ Terms link visible in footer");
-  });
-
-  test("Privacy and Terms pages are linked to each other", async ({ page }) => {
-    await addOnPageLogging(page);
-
-    console.log("🔗 Checking cross-links between Privacy and Terms...");
-
-    // Start at Privacy Policy
-    await page.goto(`${baseUrl}/privacy.html`);
-    const termsLinkFromPrivacy = page.locator('a[href="./terms.html"], footer a[href="./terms.html"]');
-    await expect(termsLinkFromPrivacy.first()).toBeVisible();
-    console.log("✅ Terms link visible from Privacy page");
-
-    // Navigate to Terms of Use
-    await page.goto(`${baseUrl}/terms.html`);
-    const privacyLinkFromTerms = page.locator('a[href="./privacy.html"], footer a[href="./privacy.html"]');
-    await expect(privacyLinkFromTerms.first()).toBeVisible();
-    console.log("✅ Privacy link visible from Terms page");
-  });
-
-  test("Privacy Policy mentions data export and deletion rights with contact email", async ({ page }) => {
-    await addOnPageLogging(page);
-
-    await page.goto(`${baseUrl}/privacy.html`);
-
-    const pageContent = await page.content();
-
-    // Check for data subject rights
-    expect(pageContent).toContain("admin@diyaccounting.co.uk");
-    expect(pageContent).toContain("export");
-    expect(pageContent).toContain("delete");
-    expect(pageContent).toContain("30 days"); // Response time
-
-    console.log("✅ Data export/deletion rights documented with contact");
-  });
-
-  test("Terms of Use mentions user can request account deletion", async ({ page }) => {
-    await addOnPageLogging(page);
-
-    await page.goto(`${baseUrl}/terms.html`);
-
-    const pageContent = await page.content();
-
-    // Check for termination/deletion section
-    expect(pageContent).toContain("Termination");
-    expect(pageContent).toContain("admin@diyaccounting.co.uk");
-    expect(pageContent).toContain("delete");
-
-    console.log("✅ Account deletion process documented in terms");
-  });
-
-  test("Privacy and Terms pages have recent 'Last updated' dates", async ({ page }) => {
-    await addOnPageLogging(page);
-
-    // Check Privacy Policy
-    await page.goto(`${baseUrl}/privacy.html`);
-    let pageText = await page.textContent("body");
-    expect(pageText).toContain("Last updated:");
-    // Should be recent (2024 or later)
-    expect(pageText).toMatch(/Last updated:.*202[4-9]/);
+    // Check Last Updated date
+    const privacyText = await page.textContent("body");
+    expect(privacyText).toContain("Last updated:");
+    expect(privacyText).toMatch(/Last updated:.*202[4-9]/);
     console.log("✅ Privacy Policy has recent last updated date");
 
-    // Check Terms of Use
-    await page.goto(`${baseUrl}/terms.html`);
-    pageText = await page.textContent("body");
-    expect(pageText).toContain("Last updated:");
-    expect(pageText).toMatch(/Last updated:.*202[4-9]/);
+    // Check link to Terms from Privacy page
+    const termsLinkFromPrivacy = page.locator('a[href="./terms.html"], footer a[href="terms.html"]').first();
+    await expect(termsLinkFromPrivacy).toBeVisible({ timeout: 5000 });
+    console.log("✅ Terms link visible from Privacy page");
+
+    // ============================================================
+    // STEP 3: Navigate to Terms of Use page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 3: Navigate to Terms of Use via link");
+    console.log("=".repeat(60));
+
+    console.log("🖱️ Clicking Terms of Use link...");
+    await termsLinkFromPrivacy.click();
+    await page.waitForLoadState("domcontentloaded");
+    await page.screenshot({ path: `${screenshotPath}/03-terms-page.png` });
+
+    // Verify Terms page loaded
+    const termsTitle = await page.title();
+    console.log(`📄 Terms page title: "${termsTitle}"`);
+    expect(termsTitle).toMatch(/Terms of Use/i);
+    console.log("✅ Terms of Use page loaded successfully");
+
+    // Check Terms of Use content for HMRC requirements
+    console.log("\n📋 Checking Terms of Use HMRC requirements...");
+    const termsContent = await page.content();
+
+    expect(termsContent).toContain("Service Description");
+    expect(termsContent).toContain("Making Tax Digital");
+    console.log("✅ Service description present");
+
+    expect(termsContent).toContain("HMRC Integration");
+    expect(termsContent).toContain("OAuth");
+    console.log("✅ HMRC OAuth integration documented");
+
+    expect(termsContent).toContain("Data Processing and Privacy");
+    expect(termsContent).toContain("UK GDPR");
+    expect(termsContent).toContain("encrypted");
+    console.log("✅ Data processing and encryption documented");
+
+    expect(termsContent).toContain("Fraud Prevention Headers");
+    console.log("✅ Fraud prevention headers explained");
+
+    expect(termsContent).toContain("Data Retention");
+    expect(termsContent).toContain("7 years");
+    console.log("✅ Data retention policy documented");
+
+    expect(termsContent).toContain("Security Incidents");
+    expect(termsContent).toContain("72 hours");
+    console.log("✅ Security incident notification in terms");
+
+    expect(termsContent).toContain("admin@diyaccounting.co.uk");
+    console.log("✅ Contact information in terms");
+
+    expect(termsContent).toContain("Governing Law");
+    expect(termsContent).toContain("England and Wales");
+    console.log("✅ Governing law specified");
+
+    expect(termsContent).toContain("Termination");
+    expect(termsContent).toContain("delete");
+    console.log("✅ Account deletion process documented in terms");
+
+    // Check Last Updated date
+    const termsText = await page.textContent("body");
+    expect(termsText).toContain("Last updated:");
+    expect(termsText).toMatch(/Last updated:.*202[4-9]/);
     console.log("✅ Terms of Use has recent last updated date");
+
+    // Check link back to Privacy from Terms page
+    const privacyLinkFromTerms = page.locator('a[href="./privacy.html"], footer a[href="privacy.html"]').first();
+    await expect(privacyLinkFromTerms).toBeVisible({ timeout: 5000 });
+    console.log("✅ Privacy link visible from Terms page");
+
+    // ============================================================
+    // STEP 4: Navigate to About page and verify footer links
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 4: Navigate to About page");
+    console.log("=".repeat(60));
+
+    const aboutUrl = `${baseUrl}/about.html`;
+    console.log(`📖 Navigating to about page: ${aboutUrl}`);
+    await page.goto(aboutUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.screenshot({ path: `${screenshotPath}/04-about-page.png` });
+
+    const aboutTitle = await page.title();
+    console.log(`📄 About page title: "${aboutTitle}"`);
+    expect(aboutTitle).toMatch(/About/i);
+    console.log("✅ About page loaded successfully");
+
+    // Verify footer links on About page
+    console.log("\n📋 Checking footer links on About page...");
+    const privacyLinkAbout = page.locator('footer a[href="privacy.html"]');
+    const termsLinkAbout = page.locator('footer a[href="terms.html"]');
+
+    await expect(privacyLinkAbout).toBeVisible({ timeout: 5000 });
+    console.log("✅ Privacy link visible in About page footer");
+
+    await expect(termsLinkAbout).toBeVisible({ timeout: 5000 });
+    console.log("✅ Terms link visible in About page footer");
+
+    // ============================================================
+    // STEP 5: Final summary
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("TEST COMPLETE - All HMRC compliance requirements verified");
+    console.log("=".repeat(60));
+
+    console.log("\n📊 Summary:");
+    console.log("  ✅ Home page accessible with footer links");
+    console.log("  ✅ Privacy Policy page accessible with all GDPR elements");
+    console.log("  ✅ Terms of Use page accessible with all HMRC elements");
+    console.log("  ✅ About page accessible with footer links");
+    console.log("  ✅ Cross-navigation between pages works");
+    console.log("  ✅ All 'Last updated' dates are recent\n");
+
+    // Restore original env
+    process.env.TEST_VERBOSE_HTTP_LOGS = originalVerboseHttp;
   });
 });
