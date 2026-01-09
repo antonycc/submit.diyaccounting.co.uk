@@ -1,16 +1,8 @@
 # Phased Rollout Plan: Frontend Refactoring and Cleanup
 
-This document outlines a phased approach to rolling out changes from the `webclean` and `copilot/refactor-js-code-structure` branches. Both branches attempted comprehensive refactoring that proved difficult to debug. This plan breaks the work into testable, low-risk phases.
+This document outlines a phased approach to rolling out changes from the `copilot/refactor-js-code-structure` branch which attempted comprehensive refactoring that proved difficult to debug. This plan breaks the work into testable, low-risk phases.
 
 ## Overview of Original Branch Changes
-
-### webclean branch
-- Frontend JS modularization (services + utils)
-- Backend Lambda cleanups (removed `getHeader` helper, simplified header access)
-- GitHub Actions workflow consolidation
-- Removed deprecated files (LAMBDA_COLD_START_OPTIMIZATION.md, PRIVACY_DUTIES.md, etc.)
-- Added `submit.bundle.js` for test compatibility
-- Behaviour test updates
 
 ### copilot/refactor-js-code-structure branch
 - Similar frontend JS modularization
@@ -212,111 +204,6 @@ npm run test:submitVatBehaviour-proxy > target/behaviour.txt 2>&1
 
 ---
 
-## Phase 6: Backend Lambda Cleanup
-
-**Goal**: Simplify backend header handling without changing behaviour.
-
-**Changes**:
-1. Simplify header access in `httpResponseHelper.js`
-2. Update Lambda functions to use direct header access
-3. Remove unused `getHeader` function
-
-**Files to modify**:
-```
-app/lib/httpResponseHelper.js
-app/functions/account/bundleDelete.js
-app/functions/account/bundlePost.js
-app/functions/hmrc/hmrcTokenPost.js
-app/functions/hmrc/hmrcVatObligationGet.js
-app/functions/hmrc/hmrcVatReturnGet.js
-app/functions/hmrc/hmrcVatReturnPost.js
-```
-
-**Test commands**:
-```bash
-npm test
-./mvnw clean verify > target/mvnw.txt 2>&1
-npm run test:submitVatBehaviour-proxy > target/behaviour.txt 2>&1
-```
-
-**Success criteria**:
-- All unit tests pass
-- CDK builds successfully
-- Behaviour tests pass
-- Header extraction still works correctly
-
-**Rollback**: Revert all Lambda files
-
----
-
-## Phase 7: Add Gov-Client Headers Helper (Optional)
-
-**Goal**: Add new backend helper for fraud prevention headers.
-
-**Changes**:
-1. Create `app/lib/eventToGovClientHeaders.js`
-2. Update HMRC Lambda functions to use new helper
-
-**Files to create**:
-```
-app/lib/eventToGovClientHeaders.js
-```
-
-**Test commands**:
-```bash
-npm test
-npm run test:submitVatBehaviour-proxy > target/behaviour.txt 2>&1
-```
-
-**Success criteria**:
-- Fraud prevention headers correctly populated
-- HMRC API calls succeed
-
----
-
-## Phase 8: Documentation and Cleanup
-
-**Goal**: Remove deprecated files and update documentation.
-
-**Changes**:
-1. Remove deprecated markdown files
-2. Update REPOSITORY_DOCUMENTATION.md
-3. Clean up behaviour tests
-
-**Files to delete**:
-```
-LAMBDA_COLD_START_OPTIMIZATION.md
-PRIVACY_DUTIES.md
-scripts/delete-user-data.js (if unused)
-scripts/export-user-data.js (if unused)
-scripts/inject-dynamodb-into-test-report.js (if unused)
-```
-
-**Test commands**:
-```bash
-npm test
-./mvnw clean verify
-```
-
-**Success criteria**:
-- No broken links in documentation
-- All tests still pass
-
----
-
-## Phase 9: GitHub Actions Workflow Updates (Separate PR)
-
-**Goal**: Consolidate and improve GitHub Actions workflows.
-
-**Note**: This phase should be done in a separate PR after all other phases are merged and stable. Workflow changes are high-risk and should not be combined with application changes.
-
-**Changes**:
-1. Review workflow consolidation from webclean branch
-2. Apply incrementally
-3. Test on feature branch before merging
-
----
-
 ## Recommended Execution Order
 
 ```
@@ -330,15 +217,6 @@ Phase 4 (Additional Services) [Optional] ─────────────
                                                        │
 Phase 5 (ES Modules in HTML) ──────────────────────────┤
                                                        │
-Phase 6 (Backend Lambda Cleanup) ──────────────────────┤
-                                                       │
-Phase 7 (Gov-Client Headers) [Optional] ───────────────┤
-                                                       │
-Phase 8 (Documentation) ───────────────────────────────┘
-
-                    ↓ After stabilization
-
-Phase 9 (Workflow Updates) ─── Separate PR
 ```
 
 ## Per-Phase Checklist
@@ -394,7 +272,6 @@ For each phase:
 ## Notes
 
 - Both original branches have comprehensive changes that are largely compatible
-- The `webclean` branch has more backend cleanup
 - The `copilot/refactor-js-code-structure` branch has better test bundling
 - This plan cherry-picks the best of both approaches
 - Phases 4 and 7 are optional and can be skipped for faster rollout
