@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
 // scripts/playwright-video-reporter.js
 // A minimal Playwright custom reporter that copies the first recorded video of a run
 // to a stable path for backward compatibility with existing tooling.

@@ -1,161 +1,359 @@
 # .github/workflows/publish.yml
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2025-2026 DIY Accounting Ltd
 
 name: publish
-concurrency: write
-run-name: 'publish packages [${{ github.ref_name }}] [${{ github.event.head_commit.message }}]'
+concurrency: publish
+run-name: 'publish ${{ inputs.versionIncrement }} [${{ github.ref_name }}]'
 
 on:
   workflow_dispatch:
     inputs:
       versionIncrement:
-        description: 'Select the Semantic Versioning segment to increment'
+        description: 'Semantic version increment type'
         required: true
-        default: 'prerelease'
+        default: 'patch'
         type: choice
         options:
-          - prerelease
           - patch
           - minor
           - major
-          - premajor
-          - preminor
-          - prepatch
-#  schedule:
-#    - cron: '14 6 9 * *'
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
 
 jobs:
-  npm-test:
+  # ============================================================================
+  # Calculate the new version based on current version and increment type
+  # ============================================================================
+  calculate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      current-version: ${{ steps.version.outputs.current_version }}
+      new-version: ${{ steps.version.outputs.new_version }}
+      release-tag: ${{ steps.version.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Calculate new version
+        id: version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          # Parse current version (handle prerelease suffix)
+          BASE_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-.*//')
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+
+          # Increment based on input
+          case "${{ inputs.versionIncrement }}" in
+            major)
+              NEW_VERSION="$((MAJOR + 1)).0.0"
+              ;;
+            minor)
+              NEW_VERSION="${MAJOR}.$((MINOR + 1)).0"
+              ;;
+            patch)
+              NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+              ;;
+          esac
+
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "release_tag=v$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "New version: $NEW_VERSION"
+          echo "Release tag: v$NEW_VERSION"
+
+  # ============================================================================
+  # Run all tests before publishing
+  # ============================================================================
+  test-npm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
-      - name: test
-        id: test
-        shell: bash
-        run: 'npm test'
+      - name: Run npm tests
+        run: npm test
 
-  mvn-package-cdk-synth:
+  test-maven:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - run: npm ci || npm install
+      - run: npm ci
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
 
-      - name: download-dependencies
-        id: download-dependencies
-        shell: bash
-        run: ./mvnw --batch-mode --quiet dependency:go-offline > /dev/null 2>&1
+      - name: Run Maven tests
+        run: ./mvnw clean verify
 
-      - name: package
-        id: package
-        shell: bash
-        run: ./mvnw clean package
-
-  publish-npm:
+  # ============================================================================
+  # Sync versions and commit
+  # ============================================================================
+  sync-versions:
     needs:
-      - npm-test
-      - mvn-package-cdk-synth
-    permissions:
-      contents: write
-      packages: write
-    uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-npm-publish.yml@6.10.2'
-    with:
-      npmAuthOrganisation: '@${{ github.repository_owner }}'
-      versionIncrement: ${{ inputs.versionIncrement || 'prerelease' }}
-      buildScript: 'npm run build'
-      releaseNotes: 'Release increment: ${{ inputs.versionIncrement }}.'
-      gitUserEmail: 'action@github.com'
-      gitUserName: 'GitHub Actions[bot]'
-    secrets:
-      PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
-  publish-mvn:
-    needs:
-      - npm-test
-      - publish-npm
-      - mvn-package-cdk-synth
-    if: needs.mvn-package-cdk-synth.outputs.pomXmlExists == 'true'
-    permissions:
-      contents: write
-      packages: write
-    uses: 'xn-intenton-z2a/agentic-lib/.github/workflows/wfr-mvn-publish.yml@6.10.2'
-    with:
-      versionIncrement: ${{ inputs.versionIncrement || 'prerelease' }}
-      releaseVersionOverride: ${{ needs.publish-npm.outputs.releasedVersion }}
-      newVersionOverride: ${{ needs.publish-npm.outputs.newVersion }}
-      githubRelease: false
-      mavenBuildScript: './mvnw --batch-mode clean install'
-      mavenDeployScript: './mvnw --batch-mode deploy'
-      releaseNotes: 'Release increment: ${{ inputs.versionIncrement }}.'
-      gitUserEmail: 'action@github.com'
-      gitUserName: 'GitHub Actions[bot]'
-
-  update-cdk-version:
-    needs:
-      - npm-test
-      - publish-npm
-      - mvn-package-cdk-synth
-      - publish-mvn
+      - calculate-version
+      - test-npm
+      - test-maven
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      commit-sha: ${{ steps.commit.outputs.commit_sha }}
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update cdk.json version references and commit
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Update package.json version
         run: |
-          # Replace web-<some version>.jar with web-<newVersion>.jar in cdk.json
-          sed -i 's/web-.*\.jar/web-${{ needs.publish-npm.outputs.newVersion }}.jar/g' cdk.json
+          npm version ${{ needs.calculate-version.outputs.new-version }} --no-git-tag-version --allow-same-version
 
-          # Check if there are changes to commit
-          if git diff --quiet cdk.json; then
-            echo "No changes to commit"
+      - name: Update pom.xml version
+        run: |
+          # Use sed to update the version in pom.xml (first <version> tag after <artifactId>web</artifactId>)
+          sed -i '/<artifactId>web<\/artifactId>/,/<version>/{s|<version>[^<]*</version>|<version>${{ needs.calculate-version.outputs.new-version }}</version>|}' pom.xml
+
+          # Verify the change
+          echo "Updated pom.xml version to ${{ needs.calculate-version.outputs.new-version }}"
+          grep -A1 '<artifactId>web</artifactId>' pom.xml
+
+      - name: Commit version changes
+        id: commit
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions[bot]"
+
+          git add package.json package-lock.json pom.xml
+
+          if git diff --staged --quiet; then
+            echo "No version changes to commit"
+            echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
-            echo "Committing version updates using gh CLI"
+            git commit -m "$(cat <<'EOF'
+          chore: release v${{ needs.calculate-version.outputs.new-version }}
 
-            # Configure git user for the commit
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Actions[bot]"
+          - Update package.json version to ${{ needs.calculate-version.outputs.new-version }}
+          - Update pom.xml version to ${{ needs.calculate-version.outputs.new-version }}
 
-            # Commit and push using standard git (gh CLI doesn't provide commit functionality)
-            git add cdk.json
-            git commit -m "${{ needs.publish-npm.outputs.newVersion }}"
+          Co-Authored-By: GitHub Actions[bot] <action@github.com>
+          EOF
+          )"
             git push
+            echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
           fi
+
+  # ============================================================================
+  # Publish to npm (GitHub Packages)
+  # ============================================================================
+  publish-npm:
+    needs:
+      - calculate-version
+      - sync-versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.sync-versions.outputs.commit-sha }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@${{ github.repository_owner }}'
+
+      - run: npm ci
+
+      - name: Publish to GitHub Packages (npm)
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # Publish to Maven (GitHub Packages)
+  # ============================================================================
+  publish-maven:
+    needs:
+      - calculate-version
+      - sync-versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.sync-versions.outputs.commit-sha }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build with Maven
+        run: ./mvnw clean package -DskipTests
+
+      - name: Publish to GitHub Packages (Maven)
+        run: ./mvnw deploy -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # Create Git tag and GitHub Release
+  # ============================================================================
+  create-release:
+    needs:
+      - calculate-version
+      - sync-versions
+      - publish-npm
+      - publish-maven
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.sync-versions.outputs.commit-sha }}
+          fetch-depth: 0
+
+      - name: Create and push tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions[bot]"
+
+          TAG="${{ needs.calculate-version.outputs.release-tag }}"
+
+          # Check if tag already exists
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping"
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "Created and pushed tag $TAG"
+          fi
+
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "Generating changelog from $PREVIOUS_TAG to HEAD"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" "$PREVIOUS_TAG"..HEAD 2>/dev/null || echo "Initial release")
+          else
+            echo "No previous tag found, this is the first release"
+            CHANGELOG="Initial release"
+          fi
+
+          # Write to file to preserve newlines
+          cat > release_notes.md << 'NOTES_EOF'
+          ## What's Changed
+
+          $CHANGELOG
+
+          ## Package Links
+
+          - **npm**: [@${{ github.repository_owner }}/web-submit-diyaccounting-co-uk](https://github.com/${{ github.repository }}/packages)
+          - **Maven**: [submit.diyaccounting.co.uk:web](https://github.com/${{ github.repository }}/packages)
+
+          ## Version Info
+
+          - **Version**: ${{ needs.calculate-version.outputs.new-version }}
+          - **Previous**: ${{ needs.calculate-version.outputs.current-version }}
+          - **Increment**: ${{ inputs.versionIncrement }}
+          NOTES_EOF
+
+          # Substitute the changelog
+          sed -i "s|\$CHANGELOG|$CHANGELOG|g" release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.calculate-version.outputs.release-tag }}
+          name: Release ${{ needs.calculate-version.outputs.new-version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # Summary
+  # ============================================================================
+  summary:
+    needs:
+      - calculate-version
+      - sync-versions
+      - publish-npm
+      - publish-maven
+      - create-release
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Publish Summary
+        run: |
+          echo "## Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Previous Version | ${{ needs.calculate-version.outputs.current-version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| New Version | ${{ needs.calculate-version.outputs.new-version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Release Tag | ${{ needs.calculate-version.outputs.release-tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Increment Type | ${{ inputs.versionIncrement }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit SHA | ${{ needs.sync-versions.outputs.commit-sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| npm publish | ${{ needs.publish-npm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Maven publish | ${{ needs.publish-maven.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Release | ${{ needs.create-release.result }} |" >> $GITHUB_STEP_SUMMARY

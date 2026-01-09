@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
 // behaviour-tests/helpers/wiremock-helper.js
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";

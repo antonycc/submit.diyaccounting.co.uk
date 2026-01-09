@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
 import { vi } from "vitest";
 
 // Singleton mock function shared across all test files in the same process
