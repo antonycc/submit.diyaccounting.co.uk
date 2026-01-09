@@ -1,0 +1,218 @@
+# HMRC Approval Readiness Assessment
+
+**Date**: 9 January 2026
+**Branch**: publish
+
+---
+
+## Executive Summary
+
+This document provides a readiness assessment for HMRC MTD VAT production approval, including an analysis of open GitHub issues, quick wins, and critical omissions that must be addressed.
+
+---
+
+## 1. Plans Created
+
+### Synthetic Monitoring Plan
+**File**: `_developers/SYNTHETIC_MONITORING_PLAN.md`
+
+- Complete CDK code for `SyntheticMonitoringStack.java`
+- Two canaries: Health Check + API Endpoints
+- CloudWatch Alarms with SNS notifications
+- Implementation checklist
+- Cost estimate: ~$2.80/month
+
+### Backup Strategy Plan
+**File**: `_developers/BACKUP_STRATEGY_PLAN.md`
+
+- Enable Point-in-Time Recovery on critical DynamoDB tables
+- AWS Backup with daily/weekly/monthly schedules
+- Cross-region backup to eu-west-1 for DR
+- Secrets Manager multi-region replication
+- Recovery procedures documented
+- Cost estimate: ~$5-10/month
+
+---
+
+## 2. Error Handling Audit: PASS
+
+### HMRC Error Codes Handled
+
+| Error Code | User Message | Action Advice |
+|------------|--------------|---------------|
+| `INVALID_VRN` | The VAT registration number (VRN) is not valid | Check VRN and try again |
+| `VRN_NOT_FOUND` | The VRN was not found | Verify VRN is registered with HMRC |
+| `INVALID_PERIODKEY` | The period key is not valid | Check period key format |
+| `NOT_FOUND` | The requested resource was not found | Check VRN and period key |
+| `DATE_RANGE_TOO_LARGE` | The date range is too large | Reduce to < 365 days |
+| `INSOLVENT_TRADER` | VAT registration is for insolvent trader | Contact HMRC |
+| `DUPLICATE_SUBMISSION` | Return already submitted | Cannot resubmit, contact HMRC |
+| `INVALID_SUBMISSION` | Submission not valid | Check values and retry |
+| `TAX_PERIOD_NOT_ENDED` | Tax period not ended | Wait for period to end |
+| `INVALID_CREDENTIALS` | Credentials not valid | Sign in again |
+| `CLIENT_OR_AGENT_NOT_AUTHORISED` | Not authorized | Check permissions |
+| `SERVER_ERROR` | HMRC technical difficulties | Try later |
+| `SERVICE_UNAVAILABLE` | HMRC temporarily unavailable | Try later |
+
+### HTTP Status Code Handling
+
+| Status | Handling | Retry Behavior |
+|--------|----------|----------------|
+| 200-299 | Success | N/A |
+| 400 | Bad request - return error with user message | No retry |
+| 401 | Unauthorized - prompt re-authentication | No retry |
+| 403 | Forbidden - check permissions | No retry |
+| 404 | Not found - return user-friendly message | No retry |
+| 429 | Rate limited - retry with backoff | **Auto-retry via SQS** |
+| 500 | Server error - log and return generic message | No retry |
+| 503 | Service unavailable - retry | **Auto-retry via SQS** |
+| 504 | Gateway timeout - retry | **Auto-retry via SQS** |
+
+### Implementation Details
+
+- **Location**: `app/lib/hmrcValidation.js` - Error message mapping
+- **Location**: `app/services/hmrcApi.js` - HTTP response handling
+- **Pattern**: Async worker lambdas (POST/GET) use SQS retry for transient errors (429, 503, 504)
+- **Logging**: All errors logged with correlation IDs for tracing
+- **Masking**: Sensitive data (IPs, device IDs) masked in logs
+
+---
+
+## 3. GitHub Issues Analysis
+
+### Quick Wins (Low Risk, Can Do Now)
+
+| Issue | Title | Effort | Notes |
+|-------|-------|--------|-------|
+| **#522** | Copyright and license everywhere | **Done** | SPDX headers added to 179 files |
+| **#519** | Version publish should work | **Done** | New publish.yml created |
+| **#520** | Workflow param consistency | Low | Refactor workflow inputs |
+| **#478** | Status bar feedback | Low | UX polish for bundle operations |
+
+### Critical for HMRC Approval
+
+| Issue | Title | Risk | Action Required |
+|-------|-------|------|-----------------|
+| **#402** | HMRC production credentials | **BLOCKING** | Email HMRC, manual process |
+| **#445** | Synthetic monitoring | Medium | Implement plan (CDK work) |
+| **#398** | Backup strategy | Medium | Implement plan (CDK work) |
+| **#426** | Strengthen security/privacy | **HIGH** | Audit needed before submission |
+| **#508** | Privacy monitoring/auditing | Medium | Operational procedures needed |
+
+### UX Bugs (Could Affect User Perception During HMRC Review)
+
+| Issue | Title | Risk | Notes |
+|-------|-------|------|-------|
+| **#466** | VAT form errors on revisiting | Medium | User confusion |
+| **#467** | Submit form retry loop | **HIGH** | Could cause duplicate submissions |
+
+### Post-Approval / Launch
+
+| Issue | Title | Notes |
+|-------|-------|-------|
+| #403 | Billing integration | Required for commercial launch |
+| #381 | Root account resources | Best practice, not blocking |
+| #425 | Optional VAT endpoints | Nice to have |
+| #468 | LocalStorage optimization | Performance improvement |
+| #396 | Mock HMRC backend | Testing improvement |
+| #521 | Ops dashboard | Nice to have |
+
+---
+
+## 4. Critical Omissions HMRC Might Flag
+
+### HIGH PRIORITY - Fix Before Submission
+
+#### 1. #426 - Security Hardening
+- OAuth state/nonce parameters (CSRF protection)
+- CORS policy review
+- Token logging audit
+- *HMRC may ask about security measures*
+
+#### 2. #467 - Retry Loop Bug
+- Could cause duplicate VAT submissions
+- *This is a serious compliance risk*
+
+#### 3. #508 - Privacy Monitoring
+- No documented audit procedures
+- *HMRC may ask how you monitor data access*
+
+### MEDIUM PRIORITY
+
+#### 4. DynamoDB PITR Not Enabled
+- Currently no point-in-time recovery
+- Receipts must be retained 7 years
+- *Could be flagged in technical review*
+
+#### 5. RemovalPolicy.DESTROY on Production Tables
+- Accidental stack deletion would lose all data
+- *Change to RETAIN for prod*
+
+---
+
+## 5. Recommended Next Steps
+
+### Immediate (before HMRC submission)
+
+1. Fix #467 (retry loop bug)
+2. Review #426 (security items)
+3. Enable PITR on DynamoDB tables (from backup plan)
+
+### This Week
+
+1. Implement synthetic monitoring (#445)
+2. Enable backup strategy (#398)
+3. Document privacy audit procedures (#508)
+
+### Before Production Launch
+
+1. Obtain HMRC credentials (#402)
+2. Implement billing (#403)
+3. Move resources out of root account (#381)
+
+---
+
+## 6. Recent Fixes (This Session)
+
+### ENVIRONMENT_NAME Bug Fix
+- **Problem**: Prod Lambda was accessing `ci/submit/user-sub-hash-salt` instead of `prod/submit/user-sub-hash-salt`
+- **Root Cause**: `ENVIRONMENT_NAME` env var not set on Lambda functions in AccountStack and HmrcStack
+- **Fix**: Added `.with("ENVIRONMENT_NAME", props.envName())` to all Lambda environments
+- **Additional**: Changed `subHasher.js` to fail fast instead of defaulting to "ci"
+
+### SPDX License Headers
+- Added `SPDX-License-Identifier: AGPL-3.0-only` and copyright to 179 source files
+- JavaScript and Java files covered
+
+### New publish.yml Workflow
+- Self-contained (no external workflow dependencies)
+- Standard semver versioning
+- Syncs version between package.json and pom.xml
+- Publishes to GitHub Packages (npm + Maven)
+- Creates git tags and GitHub Releases
+
+---
+
+## 7. Files Changed in This Session
+
+```
+.github/workflows/publish.yml          - Rebuilt self-contained publish workflow
+app/services/subHasher.js              - Fail fast on missing ENVIRONMENT_NAME
+infra/.../AccountStack.java            - Add ENVIRONMENT_NAME to 3 lambdas
+infra/.../HmrcStack.java               - Add ENVIRONMENT_NAME to 5 lambdas
+scripts/add-spdx-headers.js            - Script to add license headers
+179 source files                       - SPDX license headers added
+_developers/SYNTHETIC_MONITORING_PLAN.md - New plan document
+_developers/BACKUP_STRATEGY_PLAN.md    - New plan document
+HMRC_MTD_APPROVAL_PLAN.md              - Updated with audit results
+```
+
+---
+
+## 8. Related Documents
+
+- `HMRC_MTD_APPROVAL_PLAN.md` - Full approval process steps
+- `_developers/SYNTHETIC_MONITORING_PLAN.md` - Implementation plan for #445
+- `_developers/BACKUP_STRATEGY_PLAN.md` - Implementation plan for #398
+- `_developers/SALTED_HASH_ROLLOUT.md` - Hash migration details
+- `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md` - Production approval checklist
