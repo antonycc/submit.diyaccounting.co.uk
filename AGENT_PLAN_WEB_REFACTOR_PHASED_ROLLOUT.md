@@ -241,8 +241,6 @@ For each phase:
 | Utils layer | `web/public/lib/utils/*.js` |
 | Services layer | `web/public/lib/services/*.js` |
 | Test bundler | `scripts/bundle-for-tests.js` |
-| Backend helpers | `app/lib/httpResponseHelper.js` |
-| Lambda functions | `app/functions/**/*.js` |
 | HTML pages | `web/public/**/*.html` |
 
 ## Troubleshooting Common Issues
