@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
 // behaviour-tests/helpers/gotoWithRetries.js
 // ESM module providing a resilient navigation helper for Playwright pages.
 // Designed to be framework-agnostic and easy to unit test with mocked Page-like objects.

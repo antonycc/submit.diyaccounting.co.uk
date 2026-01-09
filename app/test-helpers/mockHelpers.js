@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
 // app/test-helpers/mockHelpers.js
 // Helpers for setting up mocks and test environment
 

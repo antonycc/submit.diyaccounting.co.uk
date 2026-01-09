@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
 import { describe, it, expect, beforeAll, afterAll, beforeEach, test } from "vitest";
 import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";

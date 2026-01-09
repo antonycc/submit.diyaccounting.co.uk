@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
 // app/services/subHasher.js
 
 import crypto from "crypto";
@@ -41,7 +44,13 @@ export async function initializeSalt() {
       }
 
       // For deployed environments, fetch from Secrets Manager
-      const envName = process.env.ENVIRONMENT_NAME || "ci";
+      const envName = process.env.ENVIRONMENT_NAME;
+      if (!envName) {
+        throw new Error(
+          "ENVIRONMENT_NAME environment variable is required for Secrets Manager access. " +
+            "This must be set by the CDK stack (e.g., 'ci' or 'prod').",
+        );
+      }
       const secretName = `${envName}/submit/user-sub-hash-salt`;
 
       logger.info({ message: "Fetching salt from Secrets Manager", secretName });

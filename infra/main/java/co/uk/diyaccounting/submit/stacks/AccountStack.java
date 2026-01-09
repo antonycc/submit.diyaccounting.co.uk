@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: AGPL-3.0-only
+ * Copyright (C) 2025-2026 DIY Accounting Ltd
+ */
+
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
@@ -119,8 +124,9 @@ public class AccountStack extends Stack {
                 String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
 
         // Get Bundles Lambda
-        var getBundlesLambdaEnv =
-                new PopulatedMap<String, String>().with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
+        var getBundlesLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
         // .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
         var getBundlesAsyncLambda = new ApiLambda(
                 this,
@@ -179,6 +185,7 @@ public class AccountStack extends Stack {
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundlePostAsyncRequestsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var requestBundlesAsyncLambda = new AsyncApiLambda(
@@ -251,6 +258,7 @@ public class AccountStack extends Stack {
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundleDeleteAsyncRequestsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
         var bundleDeleteAsyncLambda = new AsyncApiLambda(
