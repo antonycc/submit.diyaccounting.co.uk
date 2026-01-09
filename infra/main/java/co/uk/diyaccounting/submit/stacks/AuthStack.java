@@ -101,7 +101,8 @@ public class AuthStack extends Stack {
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("COGNITO_CLIENT_ID", props.cognitoClientId());
+                .with("COGNITO_CLIENT_ID", props.cognitoClientId())
+                .with("ENVIRONMENT_NAME", props.envName());
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
             exchangeCognitoTokenLambdaEnv.with(
