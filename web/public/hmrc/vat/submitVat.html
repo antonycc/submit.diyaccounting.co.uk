@@ -43,7 +43,14 @@
       <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
 
       <div id="testDataLink" class="test-data-link">
-        <a href="#" onclick="event.preventDefault(); window.testDataGenerator.populateSubmitVatForm();">add test data</a>
+        <a
+          href="#"
+          onclick="
+            event.preventDefault();
+            window.testDataGenerator.populateSubmitVatForm();
+          "
+          >add test data</a
+        >
       </div>
 
       <div id="statusMessagesContainer"></div>
@@ -100,11 +107,7 @@
             </select>
             <div class="help-text">Test different HMRC sandbox error scenarios</div>
             <div style="margin-top: 10px">
-              <input
-                type="checkbox"
-                id="runFraudPreventionHeaderValidation"
-                name="runFraudPreventionHeaderValidation"
-              />
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
               <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
                 >Validate Fraud Prevention Headers</label
               >
@@ -190,8 +193,7 @@
         const periodKey = formData.get("periodKey").trim();
         const vatDue = formData.get("vatDue");
         const testScenario = (document.getElementById("testScenario")?.value || "").trim();
-        const runFraudPreventionHeaderValidation =
-          document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
         // Basic validation
         if (!vatNumber || !periodKey || !vatDue) {
@@ -321,9 +323,7 @@
         const storedData = JSON.parse(localStorage.getItem("submission_data") || "null");
         const testScenario = (document.getElementById("testScenario")?.value || storedData?.testScenario || "").trim();
         const runFraudPreventionHeaderValidation =
-          document.getElementById("runFraudPreventionHeaderValidation")?.checked ||
-          storedData?.runFraudPreventionHeaderValidation ||
-          false;
+          document.getElementById("runFraudPreventionHeaderValidation")?.checked || storedData?.runFraudPreventionHeaderValidation || false;
 
         // Get Gov-Client headers
         const govClientHeaders = await getGovClientHeaders();
@@ -336,14 +336,7 @@
         if (testScenario) {
           requestHeaders["Gov-Test-Scenario"] = testScenario;
         }
-        return await submitVat(
-          vatNumber,
-          periodKey,
-          vatDue,
-          accessToken,
-          requestHeaders,
-          runFraudPreventionHeaderValidation,
-        );
+        return await submitVat(vatNumber, periodKey, vatDue, accessToken, requestHeaders, runFraudPreventionHeaderValidation);
       }
 
       async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers, runFraudPreventionHeaderValidation) {

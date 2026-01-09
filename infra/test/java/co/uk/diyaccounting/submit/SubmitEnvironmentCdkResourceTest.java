@@ -2,19 +2,18 @@ package co.uk.diyaccounting.submit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Test;
-import org.junitpioneer.jupiter.SetEnvironmentVariable;
-import software.amazon.awscdk.App;
-import software.amazon.awscdk.AppProps;
-import software.amazon.awscdk.assertions.Template;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
+import software.amazon.awscdk.App;
+import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
     @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "test"),

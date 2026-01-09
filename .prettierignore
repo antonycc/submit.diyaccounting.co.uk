@@ -17,5 +17,6 @@ package-lock.json
 pom.xml
 prettier.config.js
 app/index.js/exports/
-/cdk/cdk.out/
-/infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java
+cdk/cdk.out/
+infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java
+web/public/test/

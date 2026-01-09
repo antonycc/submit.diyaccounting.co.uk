@@ -1,5 +1,8 @@
 package co.uk.diyaccounting.submit.stacks;
 
+import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
@@ -12,9 +15,6 @@ import software.amazon.awscdk.services.dynamodb.BillingMode;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.constructs.Construct;
-
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 public class DataStack extends Stack {
 
@@ -171,12 +171,23 @@ public class DataStack extends Stack {
         cfnOutput(this, "BundlePostAsyncRequestsTableArn", this.bundlePostAsyncRequestsTable.getTableArn());
         cfnOutput(this, "BundleDeleteAsyncRequestsTableName", this.bundleDeleteAsyncRequestsTable.getTableName());
         cfnOutput(this, "BundleDeleteAsyncRequestsTableArn", this.bundleDeleteAsyncRequestsTable.getTableArn());
-        cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableName", this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
-        cfnOutput(this, "HmrcVatReturnPostAsyncRequestsTableArn", this.hmrcVatReturnPostAsyncRequestsTable.getTableArn());
-        cfnOutput(this, "HmrcVatReturnGetAsyncRequestsTableName", this.hmrcVatReturnGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcVatReturnPostAsyncRequestsTableName",
+                this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this, "HmrcVatReturnPostAsyncRequestsTableArn", this.hmrcVatReturnPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this, "HmrcVatReturnGetAsyncRequestsTableName", this.hmrcVatReturnGetAsyncRequestsTable.getTableName());
         cfnOutput(this, "HmrcVatReturnGetAsyncRequestsTableArn", this.hmrcVatReturnGetAsyncRequestsTable.getTableArn());
-        cfnOutput(this, "HmrcVatObligationGetAsyncRequestsTableName", this.hmrcVatObligationGetAsyncRequestsTable.getTableName());
-        cfnOutput(this, "HmrcVatObligationGetAsyncRequestsTableArn", this.hmrcVatObligationGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcVatObligationGetAsyncRequestsTableName",
+                this.hmrcVatObligationGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcVatObligationGetAsyncRequestsTableArn",
+                this.hmrcVatObligationGetAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
 

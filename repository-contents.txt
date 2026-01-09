@@ -248,7 +248,6 @@
 ./web/browser-tests/navigation.browser.test.js
 ./web/browser-tests/chromium.client.status-stack.test.js
 ./web/holding/index.html
-./codexsh
 ./.claude/guidelines.md
 ./pom.xml
 ./.ncurc.json
@@ -259,7 +258,6 @@
 ./.prettierignore
 ./.editorconfig
 ./README.md
-./codexw
 ./repository-contents.txt
 ./mock-oauth2-server.json
 ./cdk-application/cdk.context.json

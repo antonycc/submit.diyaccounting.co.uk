@@ -41,7 +41,14 @@
       <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
 
       <div id="testDataLink" class="test-data-link">
-        <a href="#" onclick="event.preventDefault(); window.testDataGenerator.populateVatObligationsForm();">add test data</a>
+        <a
+          href="#"
+          onclick="
+            event.preventDefault();
+            window.testDataGenerator.populateVatObligationsForm();
+          "
+          >add test data</a
+        >
       </div>
 
       <div id="statusMessagesContainer"></div>
@@ -128,11 +135,7 @@
               </select>
               <div class="help-text">Test different HMRC sandbox scenarios</div>
               <div style="margin-top: 10px">
-                <input
-                  type="checkbox"
-                  id="runFraudPreventionHeaderValidation"
-                  name="runFraudPreventionHeaderValidation"
-                />
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
                 <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
                   >Validate Fraud Prevention Headers</label
                 >
@@ -286,8 +289,7 @@
           if (pendingRequest.status) document.getElementById("status").value = pendingRequest.status;
           if (pendingRequest.testScenario) document.getElementById("testScenario").value = pendingRequest.testScenario;
           if (pendingRequest.runFraudPreventionHeaderValidation)
-            document.getElementById("runFraudPreventionHeaderValidation").checked =
-              pendingRequest.runFraudPreventionHeaderValidation;
+            document.getElementById("runFraudPreventionHeaderValidation").checked = pendingRequest.runFraudPreventionHeaderValidation;
 
           // Build query parameters
           const params = new URLSearchParams({ vrn: pendingRequest.vrn });
@@ -295,8 +297,7 @@
           if (pendingRequest.to) params.append("to", pendingRequest.to);
           if (pendingRequest.status) params.append("status", pendingRequest.status);
           if (pendingRequest.testScenario) params.append("Gov-Test-Scenario", pendingRequest.testScenario);
-          if (pendingRequest.runFraudPreventionHeaderValidation)
-            params.append("runFraudPreventionHeaderValidation", "true");
+          if (pendingRequest.runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
 
           // Get Gov-Client headers
           const govClientHeaders = await getGovClientHeaders();
@@ -367,8 +368,7 @@
         const to = formData.get("toDate");
         const status = formData.get("status");
         const testScenario = formData.get("testScenario");
-        const runFraudPreventionHeaderValidation =
-          document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
         // Basic validation
         if (!vrn) {

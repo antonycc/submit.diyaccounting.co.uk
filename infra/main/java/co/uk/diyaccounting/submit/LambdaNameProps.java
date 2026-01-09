@@ -10,7 +10,7 @@ public interface LambdaNameProps {
 
     String handlerPath();
 
-    String  apiUrlPath();
+    String apiUrlPath();
 
     boolean apiJwtAuthorizer();
 
@@ -27,19 +27,29 @@ public interface LambdaNameProps {
     String provisionedConcurrencyAliasName();
 
     @Value.Default
-    default String handlerPrefix() { return "app/functions"; }
+    default String handlerPrefix() {
+        return "app/functions";
+    }
 
     @Value.Default
-    default String defaultAliasName() { return "hot"; }
+    default String defaultAliasName() {
+        return "hot";
+    }
 
     @Value.Default
-    default String workerPostfix() { return "worker"; }
+    default String workerPostfix() {
+        return "worker";
+    }
 
     @Value.Default
-    default String queuePostfix() { return "queue"; }
+    default String queuePostfix() {
+        return "queue";
+    }
 
     @Value.Default
-    default String deadLetterQueuePostfix() { return "dlq"; }
+    default String deadLetterQueuePostfix() {
+        return "dlq";
+    }
 
     static ImmutableLambdaNameProps.Builder builder() {
         return ImmutableLambdaNameProps.builder();

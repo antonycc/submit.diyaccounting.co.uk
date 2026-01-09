@@ -53,7 +53,9 @@ async function scanTableForHashedSubs(docClient, tableName, hashedSubs) {
   let lastEvaluatedKey = undefined;
   const filterByHash = hashedSubs && hashedSubs.length > 0;
 
-  console.log(`Scanning table: ${tableName}${filterByHash ? ` (filtering by ${hashedSubs.length} hashed subs)` : " (no filter - salt not available)"}`);
+  console.log(
+    `Scanning table: ${tableName}${filterByHash ? ` (filtering by ${hashedSubs.length} hashed subs)` : " (no filter - salt not available)"}`,
+  );
 
   try {
     do {

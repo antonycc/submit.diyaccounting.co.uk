@@ -16,8 +16,11 @@ function generateTestVrn() {
  * @returns {string} Period key in YYXN format
  */
 function generateTestPeriodKey() {
+  // eslint-disable-next-line sonarjs/pseudo-random
   const year = String(24 + Math.floor(Math.random() * 2)).padStart(2, "0"); // 24 or 25
+  // eslint-disable-next-line sonarjs/pseudo-random
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  // eslint-disable-next-line sonarjs/pseudo-random
   const number = Math.floor(Math.random() * 9) + 1; // 1-9
   return `${year}${letter}${number}`;
 }
@@ -29,7 +32,9 @@ function generateTestPeriodKey() {
  */
 function generateTestVatAmount() {
   // Generate a random amount between 100 and 10000
+  // eslint-disable-next-line sonarjs/pseudo-random
   const amount = Math.floor(Math.random() * 9900) + 100;
+  // eslint-disable-next-line sonarjs/pseudo-random
   const cents = Math.floor(Math.random() * 100);
   return `${amount}.${String(cents).padStart(2, "0")}`;
 }
@@ -40,7 +45,9 @@ function generateTestVatAmount() {
  */
 function generateTestDate() {
   const year = new Date().getFullYear();
+  // eslint-disable-next-line sonarjs/pseudo-random
   const month = Math.floor(Math.random() * 12) + 1; // 1-12
+  // eslint-disable-next-line sonarjs/pseudo-random
   const day = Math.floor(Math.random() * 28) + 1; // 1-28 (safe for all months)
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }

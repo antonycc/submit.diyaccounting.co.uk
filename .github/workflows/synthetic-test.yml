@@ -35,7 +35,8 @@ on:
           - 'postVatReturnFraudPreventionHeadersBehaviour'
           - 'submitVatBehaviour'
           - 'authBehaviour'
-          - 'behaviour'
+          - 'complianceBehaviour'
+          - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
         type: boolean
@@ -323,7 +324,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ needs.params.outputs.behaviour-test-suite }}-artifacts
-          retention-days: 30
+          retention-days: 7
           path: |
             target/behaviour-test-results/
 
@@ -332,7 +333,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ needs.params.outputs.behaviour-test-suite }}-reports
-          retention-days: 30
+          retention-days: 7
           path: |
             target/test-reports/
     outputs:
