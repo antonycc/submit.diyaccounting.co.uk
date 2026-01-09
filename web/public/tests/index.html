@@ -228,9 +228,17 @@
         container.innerHTML = html;
       }
 
-      // Initialize
-      checkAuthStatus();
-      loadTestReports();
+      // Initialize - wait for submit.js module to be ready
+      function initPage() {
+        checkAuthStatus();
+        loadTestReports();
+      }
+
+      if (window.__submitReady__) {
+        initPage();
+      } else {
+        document.addEventListener("submit-ready", initPage, { once: true });
+      }
     </script>
   </body>
 </html>

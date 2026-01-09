@@ -449,6 +449,13 @@ if (typeof window !== "undefined") {
   });
 }
 
+// Signal that submit.js module is ready
+// This is needed because ES modules are deferred and inline scripts may run before the module loads
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  window.__submitReady__ = true;
+  document.dispatchEvent(new CustomEvent("submit-ready"));
+}
+
 // Export for ES module usage
 export {
   // JWT utils

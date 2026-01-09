@@ -327,9 +327,17 @@
         fetchReceipts();
       });
 
-      // Initialize page
-      checkAuthStatus();
-      fetchReceipts();
+      // Initialize page - wait for submit.js module to be ready
+      function initPage() {
+        checkAuthStatus();
+        fetchReceipts();
+      }
+
+      if (window.__submitReady__) {
+        initPage();
+      } else {
+        document.addEventListener("submit-ready", initPage, { once: true });
+      }
     </script>
   </body>
 </html>
