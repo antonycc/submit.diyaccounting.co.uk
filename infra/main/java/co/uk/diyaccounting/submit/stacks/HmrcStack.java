@@ -163,7 +163,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName());
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcTokenLambdaEnv.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
         }
@@ -256,7 +257,8 @@ public class HmrcStack extends Stack {
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
                 .with(
                         "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatReturnPostAsyncRequestsTable.getTableName());
+                        hmrcVatReturnPostAsyncRequestsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
         var submitVatLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -325,7 +327,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with(
                         "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatObligationGetAsyncRequestsTable.getTableName());
+                        hmrcVatObligationGetAsyncRequestsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
         var hmrcVatObligationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -393,7 +396,8 @@ public class HmrcStack extends Stack {
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with(
                         "HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME",
-                        hmrcVatReturnGetAsyncRequestsTable.getTableName());
+                        hmrcVatReturnGetAsyncRequestsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
         var hmrcVatReturnGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
                 AsyncApiLambdaProps.builder()
@@ -455,7 +459,8 @@ public class HmrcStack extends Stack {
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
-                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName);
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("ENVIRONMENT_NAME", props.envName());
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
