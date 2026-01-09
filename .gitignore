@@ -358,3 +358,6 @@ salt-backup-*.json
 # Claude Code local files (personal settings, not shared)
 .claude/settings.local.json
 CLAUDE.local.md
+
+# Generated test bundle
+web/public/submit.bundle.js

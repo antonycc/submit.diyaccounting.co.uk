@@ -81,26 +81,41 @@ describe("VAT Flow Frontend JavaScript", () => {
     // Load the HTML content
     document.documentElement.innerHTML = htmlContent;
 
-    // Load and execute submit.js first
-    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
-    const submitScript = document.createElement("script");
-    submitScript.textContent = submitJsContent;
-    document.head.appendChild(submitScript);
+    // Load and execute the bundled submit.js (for tests, we use the pre-bundled version without ES module imports)
+    // The bundle IIFE captures global window, so we need global.window set up before eval
+    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.bundle.js"), "utf-8");
+    eval(submitJsContent);
 
     // Load and execute loading-spinner.js
     const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
-    const loadingSpinnerScript = document.createElement("script");
-    loadingSpinnerScript.textContent = loadingSpinnerJsContent;
-    document.head.appendChild(loadingSpinnerScript);
+    eval(loadingSpinnerJsContent);
 
     // Execute the inline script content to define page-specific functions
+    // Wrap with function references from window since inline scripts call them directly
     const scriptMatch = htmlContent.match(/<script>([\s\S]*?)<\/script>/);
     if (scriptMatch) {
       const scriptContent = scriptMatch[1];
-      // Execute script in the window context
-      const script = document.createElement("script");
-      script.textContent = scriptContent;
-      document.head.appendChild(script);
+      // Extract commonly used functions from window into local scope
+      // Use var to allow redeclarations in inline scripts
+      const wrappedScript = `
+        var showStatus = window.showStatus;
+        var hideStatus = window.hideStatus;
+        var showLoading = window.showLoading;
+        var hideLoading = window.hideLoading;
+        var generateRandomState = window.generateRandomState;
+        var getAuthUrl = window.getAuthUrl;
+        var submitVat = window.submitVat;
+        var getGovClientHeaders = window.getGovClientHeaders;
+        var authorizedFetch = window.authorizedFetch;
+        var fetchWithIdToken = window.fetchWithIdToken;
+        var fetchWithId = window.fetchWithId;
+        var checkAuthStatus = window.checkAuthStatus;
+        var ensureSession = window.ensureSession;
+        var localStorage = window.localStorage;
+        var sessionStorage = window.sessionStorage;
+        ${scriptContent}
+      `;
+      eval(wrappedScript);
     }
   });
 
