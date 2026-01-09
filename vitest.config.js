@@ -10,6 +10,11 @@ export default defineConfig(({ mode }) => {
   if (mode) {
     dotenv.config({ path: path.resolve(process.cwd(), `.env.${mode}`) });
   }
+
+  // Clear AWS_PROFILE to ensure tests use dummy credentials with local DynamoDB
+  // AWS SDK v3 prefers AWS_PROFILE over AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY
+  delete process.env.AWS_PROFILE;
+
   const env = process.env;
 
   return {
