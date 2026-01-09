@@ -281,6 +281,93 @@ Packages are organized thematically and ordered by: (1) cleanup first, (2) small
 
 ---
 
+### Package 8: Fix Flaky Async Tests
+
+**Theme:** Fix failing async/timeout tests in getVatReturn
+**Size:** Medium (1 file, complex changes)
+**Testing:** Behaviour tests
+**Estimated Effort:** 4-6 hours
+**Priority:** Medium (test reliability)
+
+| TODO # | Description |
+|--------|-------------|
+| 19 | Fix failing SUBMIT_HMRC_API_HTTP_500 test (async polling issue) |
+| 20 | Fix failing timeout/slow scenario tests (async timing issue) |
+
+**Acceptance Criteria:**
+- HTTP 500 test correctly waits for error state
+- Slow scenario test properly validates timing constraints
+- Async state polling is reliable
+- Tests can be uncommented and pass consistently
+
+---
+
+### Package 9: Receipt Anonymization
+
+**Theme:** Implement PII anonymization for receipts
+**Size:** Medium (2-3 files)
+**Testing:** Unit + System tests
+**Estimated Effort:** 4-6 hours
+**Priority:** Medium (GDPR compliance)
+
+| TODO # | Description |
+|--------|-------------|
+| 4 | Implement anonymization for receipts (remove PII, keep transaction metadata) |
+
+**Acceptance Criteria:**
+- Anonymization logic removes PII from receipts
+- Transaction metadata retained for legal compliance
+- delete-user-data.js properly anonymizes receipts
+- Tests verify anonymization completeness
+
+---
+
+### Package 10: CloudWatch RUM Re-integration
+
+**Theme:** Re-enable Real User Monitoring
+**Size:** Medium (2-3 files)
+**Testing:** Browser tests
+**Estimated Effort:** 4-6 hours
+**Priority:** Low (observability)
+
+| TODO # | Description |
+|--------|-------------|
+| 1 | Re-integrate RUM bootstrapRumConfigFromStorage function |
+| 32 | Verify usage of getGovClientHeaders (may be used for RUM/fraud headers) |
+
+**Acceptance Criteria:**
+- RUM configuration properly loaded from localStorage
+- RUM script integration works in deployed environment
+- Function is no longer marked as unused
+- CloudWatch RUM collects user data
+
+---
+
+---
+
+### Package 12: Infrastructure LambdaNames Consolidation
+
+**Theme:** Refactor infrastructure to use LambdaNames pattern consistently
+**Size:** Large (10+ files)
+**Testing:** CDK build, Integration tests
+**Estimated Effort:** 8-12 hours
+**Priority:** Low (major refactoring)
+
+| TODO # | Description |
+|--------|-------------|
+| 23 | Move async table names to LambdaNames |
+| 24 | Replace individual attributes with LambdaNames instances |
+
+**Acceptance Criteria:**
+- All Lambda functions use LambdaNames pattern
+- Async table names are in LambdaNames structure
+- Individual attributes replaced with LambdaNames references
+- CDK deployment still works (./mvnw clean verify)
+- All stacks updated and tested
+- No breaking changes to existing deployments
+
+---
+
 ## Summary Statistics
 
 | Package | Theme | Size | TODOs | Priority | Effort (hours) |
@@ -293,6 +380,11 @@ Packages are organized thematically and ordered by: (1) cleanup first, (2) small
 | 5 | HEAD Request Fix | Small | 1 | Medium | 2-3 |
 | 6 | Documentation | Medium | 3 | Medium | 3-5 |
 | 7 | Non-Sandbox Testing | Medium | 3 | Medium | 4-6 |
+| 8 | Fix Flaky Tests | Medium | 2 | Medium | 4-6 |
+| 9 | Receipt Anonymization | Medium | 1 | Medium | 4-6 |
+| 10 | RUM Re-integration | Medium | 2 | Low | 4-6 |
+| 11 | MFA Implementation | Medium | 1 | Medium | 5-8 |
+| 12 | LambdaNames Refactor | Large | 2 | Low | 8-12 |
 
 **Total: 37 TODOs across 13 packages**
 
@@ -327,6 +419,10 @@ Package 4 (Workflow) → Depends on Package 1 (shared names)
 Package 5 (HEAD Fix) → Can be done independently
 Package 6 (Docs) → Depends on Package 11 (MFA) for complete evidence
 Package 7 (Non-Sandbox) → Can be done independently
+Package 8 (Flaky Tests) → May depend on Package 7
+Package 9 (Anonymization) → Can be done independently
+Package 10 (RUM) → Can be done independently
+Package 12 (LambdaNames) → Should be done last, depends on stable state
 ```
 
 ### Recommended Execution Order
@@ -338,6 +434,11 @@ Package 7 (Non-Sandbox) → Can be done independently
 5. **Package 3** - File Organization (simple refactor)
 6. **Package 4** - Workflow Improvements (deployment safety)
 7. **Package 7** - Non-Sandbox Testing (enables Package 8)
+8. **Package 8** - Fix Flaky Tests (test reliability)
+9. **Package 9** - Receipt Anonymization (compliance)
+11. **Package 6** - Documentation (requires Package 11 complete)
+12. **Package 10** - RUM Re-integration (observability)
+13. **Package 12** - LambdaNames Refactor (major refactor, do last)
 
 ---
 

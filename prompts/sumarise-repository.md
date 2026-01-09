@@ -231,7 +231,6 @@ repository-contents.txt:
 ./web/browser-tests/navigation.browser.test.js
 ./web/browser-tests/chromium.client.status-stack.test.js
 ./web/holding/index.html
-./codexsh
 ./pom.xml
 ./.ncurc.json
 ./playwright.config.js
@@ -240,7 +239,6 @@ repository-contents.txt:
 ./.prettierignore
 ./.editorconfig
 ./README.md
-./codexw
 ./repository-contents.txt
 ./mock-oauth2-server.json
 ./cdk-application/cdk.context.json
@@ -252,7 +250,6 @@ repository-contents.txt:
 ./scripts/update-java.sh
 ./scripts/add-bundle.sh
 ./scripts/generate-test-reports.js
-./scripts/docker-build-codex.sh
 ./scripts/aws-assume-submit-deployment-role.sh
 ./scripts/provision-user.sh
 ./scripts/export-files.sh
