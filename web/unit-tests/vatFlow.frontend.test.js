@@ -59,6 +59,19 @@ describe("VAT Flow Frontend JavaScript", () => {
       value: global.sessionStorage,
       writable: true,
     });
+
+    // Mock localStorage
+    global.localStorage = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    };
+    // Also add localStorage to window for script access
+    Object.defineProperty(window, "localStorage", {
+      value: global.localStorage,
+      writable: true,
+    });
     global.URLSearchParams = window.URLSearchParams;
     global.FormData = window.FormData;
 
@@ -81,26 +94,75 @@ describe("VAT Flow Frontend JavaScript", () => {
     // Load the HTML content
     document.documentElement.innerHTML = htmlContent;
 
-    // Load and execute submit.js first
-    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
-    const submitScript = document.createElement("script");
-    submitScript.textContent = submitJsContent;
-    document.head.appendChild(submitScript);
+    // Load and execute the bundled submit.js (for tests, we use the pre-bundled version without ES module imports)
+    // The bundle IIFE captures global window, so we need global.window set up before eval
+    const submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.bundle.js"), "utf-8");
+    eval(submitJsContent);
 
     // Load and execute loading-spinner.js
     const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
-    const loadingSpinnerScript = document.createElement("script");
-    loadingSpinnerScript.textContent = loadingSpinnerJsContent;
-    document.head.appendChild(loadingSpinnerScript);
+    eval(loadingSpinnerJsContent);
+
+    // Set up global references so inline scripts can find functions
+    // These use getters so that when tests replace window.X, the global.X reflects the change
+    Object.defineProperty(global, "showStatus", {
+      get: () => window.showStatus,
+      configurable: true,
+    });
+    Object.defineProperty(global, "hideStatus", {
+      get: () => window.hideStatus,
+      configurable: true,
+    });
+    Object.defineProperty(global, "showLoading", {
+      get: () => window.showLoading,
+      configurable: true,
+    });
+    Object.defineProperty(global, "hideLoading", {
+      get: () => window.hideLoading,
+      configurable: true,
+    });
+    Object.defineProperty(global, "generateRandomState", {
+      get: () => window.generateRandomState,
+      configurable: true,
+    });
+    Object.defineProperty(global, "getAuthUrl", {
+      get: () => window.getAuthUrl,
+      configurable: true,
+    });
+    Object.defineProperty(global, "submitVat", {
+      get: () => window.submitVat,
+      configurable: true,
+    });
+    Object.defineProperty(global, "getGovClientHeaders", {
+      get: () => window.getGovClientHeaders,
+      configurable: true,
+    });
+    Object.defineProperty(global, "authorizedFetch", {
+      get: () => window.authorizedFetch,
+      configurable: true,
+    });
+    Object.defineProperty(global, "fetchWithIdToken", {
+      get: () => window.fetchWithIdToken,
+      configurable: true,
+    });
+    Object.defineProperty(global, "fetchWithId", {
+      get: () => window.fetchWithId,
+      configurable: true,
+    });
+    Object.defineProperty(global, "checkAuthStatus", {
+      get: () => window.checkAuthStatus,
+      configurable: true,
+    });
+    Object.defineProperty(global, "ensureSession", {
+      get: () => window.ensureSession,
+      configurable: true,
+    });
 
     // Execute the inline script content to define page-specific functions
     const scriptMatch = htmlContent.match(/<script>([\s\S]*?)<\/script>/);
     if (scriptMatch) {
       const scriptContent = scriptMatch[1];
-      // Execute script in the window context
-      const script = document.createElement("script");
-      script.textContent = scriptContent;
-      document.head.appendChild(script);
+      eval(scriptContent);
     }
   });
 
@@ -255,7 +317,7 @@ describe("VAT Flow Frontend JavaScript", () => {
     });
 
     test("submitVat should make correct API call", async () => {
-      const headers = buildGovClientTestHeaders();
+      const govHeaders = buildGovClientTestHeaders();
 
       const mockResponse = {
         formBundleNumber: "123456789012",
@@ -267,27 +329,32 @@ describe("VAT Flow Frontend JavaScript", () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await window.submitVat("111222333", "24A1", "1000.00", "test-token", headers);
+      const result = await window.submitVat("111222333", "24A1", "1000.00", "test-token", govHeaders);
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/v1/hmrc/vat/return",
-        expect.objectContaining({
-          method: "POST",
-          headers: expect.objectContaining({
-            "Content-Type": "application/json",
-            ...headers,
-            // correlation headers injected by interceptor
-            "traceparent": expect.any(String),
-            "x-request-id": expect.any(String),
-          }),
-          body: JSON.stringify({
-            vatNumber: "111222333",
-            periodKey: "24A1",
-            vatDue: "1000.00",
-            accessToken: "test-token",
-          }),
+      // Verify the fetch was called
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/v1/hmrc/vat/return");
+      expect(init.method).toBe("POST");
+      expect(init.body).toBe(
+        JSON.stringify({
+          vatNumber: "111222333",
+          periodKey: "24A1",
+          vatDue: "1000.00",
+          accessToken: "test-token",
         }),
       );
+
+      // Verify headers - authorizedFetch converts to Headers object
+      const headers = init.headers;
+      expect(headers).toBeInstanceOf(Headers);
+      expect(headers.get("Content-Type")).toBe("application/json");
+      expect(headers.get("Gov-Client-Browser-JS-User-Agent")).toBe(govHeaders["Gov-Client-Browser-JS-User-Agent"]);
+      expect(headers.get("Gov-Client-Device-ID")).toBe(govHeaders["Gov-Client-Device-ID"]);
+      expect(headers.get("Gov-Client-Public-IP")).toBe(govHeaders["Gov-Client-Public-IP"]);
+      // X-Client-Request-Id is injected by fetchWithId
+      expect(headers.get("X-Client-Request-Id")).toBeTruthy();
+
       expect(result).toEqual(mockResponse);
     });
 

@@ -66,9 +66,11 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     logger.info(`[dynamodb]: Started at ${endpoint}`);
 
     // Ensure AWS SDK v3 will talk to local endpoint
+    // Clear AWS_PROFILE to prevent SDK from preferring SSO credentials over static credentials
+    delete process.env.AWS_PROFILE;
     process.env.AWS_REGION = process.env.AWS_REGION || "us-east-1";
-    process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "dummy";
-    process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "dummy";
+    process.env.AWS_ACCESS_KEY_ID = "dummy";
+    process.env.AWS_SECRET_ACCESS_KEY = "dummy";
     process.env.AWS_ENDPOINT_URL = endpoint;
     process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
 
@@ -114,8 +116,9 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
   let serverProcess;
   if (runTestServer === "run") {
     logger.info("[http]: Starting server process...");
+    // Spawn node directly instead of via npm run server to ensure env vars are inherited
     // eslint-disable-next-line sonarjs/no-os-command-from-path
-    serverProcess = spawn("npm", ["run", "server"], {
+    serverProcess = spawn("node", ["app/bin/server.js"], {
       env: {
         ...process.env,
         TEST_SERVER_HTTP_PORT: httpServerPort.toString(),

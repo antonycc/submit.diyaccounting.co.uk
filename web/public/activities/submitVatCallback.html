@@ -61,7 +61,7 @@
       </div>
     </footer>
 
-    <script src="../submit.js"></script>
+    <script type="module" src="../submit.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/hamburger-menu.js"></script>
@@ -154,7 +154,7 @@
         }
 
         // Include Cognito idToken so backend can associate the HMRC OAuth audit with the authenticated web user
-        const response = await fetchWithIdToken(url, {
+        const response = await window.fetchWithIdToken(url, {
           method: "POST",
           headers: requestHeaders,
           body,
@@ -190,7 +190,12 @@
         }
       }
 
-      handleOAuthCallback();
+      // Wait for submit.js module to be ready before running the callback handler
+      if (window.__submitReady__) {
+        handleOAuthCallback();
+      } else {
+        document.addEventListener("submit-ready", handleOAuthCallback, { once: true });
+      }
     </script>
   </body>
 </html>

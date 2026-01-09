@@ -59,7 +59,7 @@
       </div>
     </footer>
 
-    <script src="../submit.js"></script>
+    <script type="module" src="../submit.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/hamburger-menu.js"></script>
@@ -78,8 +78,16 @@
         }
       };
 
-      // Initialize page
-      checkAuthStatus();
+      // Initialize page - wait for submit.js module to be ready
+      function initPage() {
+        checkAuthStatus();
+      }
+
+      if (window.__submitReady__) {
+        initPage();
+      } else {
+        document.addEventListener("submit-ready", initPage, { once: true });
+      }
     </script>
   </body>
 </html>

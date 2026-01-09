@@ -14,11 +14,13 @@ function getTimestamp() {
 
 test.describe("Client Status Message Stacking", () => {
   let htmlContent;
-  let submitJsContent;
+  let statusMessagesJsContent;
 
   test.beforeAll(async () => {
     htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.html"), "utf-8");
-    submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
+    // Use the status-messages widget which is an IIFE that directly sets window.showStatus
+    // (submit.js is an ES module whose imports fail when injected as a string)
+    statusMessagesJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/status-messages.js"), "utf-8");
   });
 
   test.beforeEach(async ({ page }) => {
@@ -27,8 +29,8 @@ test.describe("Client Status Message Stacking", () => {
       waitUntil: "domcontentloaded",
     });
 
-    // Inject submit.js content into the page
-    await page.addScriptTag({ content: submitJsContent });
+    // Inject status-messages widget which provides showStatus/hideStatus globals
+    await page.addScriptTag({ content: statusMessagesJsContent });
   });
 
   test("should stack multiple info messages and auto-remove after 5 seconds", async ({ page }) => {

@@ -190,6 +190,9 @@ jobs:
 
       - run: npm ci || npm install
 
+      - name: Build bundle for tests
+        run: npm run bundle
+
       - run: npm run test:web-unit
 
   npm-browser-test:
