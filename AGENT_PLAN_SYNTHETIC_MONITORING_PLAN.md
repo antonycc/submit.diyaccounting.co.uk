@@ -414,7 +414,7 @@ Add a `TrafficType` dimension to custom metrics:
 - [ ] Add alarm status widget (including github-synthetic alarm)
 - [ ] Update `SubmitApplication.java` to pass new props
 - [ ] Add `ALERT_EMAIL` secret to GitHub
-- [ ] Update `deploy.yml` with new environment variables
+- [ ] Update `deploy-environment.yml` with new environment variables
 - [ ] Test on feature branch
 - [ ] Verify dashboard shows all metrics correctly
 - [ ] Verify GitHub synthetic alarm triggers when tests fail
@@ -476,3 +476,435 @@ Add a `TrafficType` dimension to custom metrics:
 |  [OK] aws-health    [OK] aws-api    [OK] github-synthetic    [OK] error-rate              |
 +============================================================================================+
 ```
+
+---
+
+## Multi-Account Architecture & Disaster Recovery
+
+### AWS Account Structure
+
+```
++-----------------------------------------------------------------------------------+
+|                              AWS Organizations                                     |
+|                                                                                   |
+|  +------------------+  +------------------+  +------------------+  +------------+ |
+|  | Management/Root  |  | CI Account       |  | Prod Account     |  | Backup     | |
+|  | (887764105431)   |  | (TBD)            |  | (TBD)            |  | Account    | |
+|  |                  |  |                  |  |                  |  | (TBD)      | |
+|  | - GitHub Actions |  | - CI deployments |  | - Production     |  | - DynamoDB | |
+|  |   OIDC role      |  | - Feature branch |  |   workloads      |  |   backups  | |
+|  | - Organization   |  |   testing        |  | - User data      |  | - S3       | |
+|  |   management     |  | - Sandbox HMRC   |  | - Live HMRC      |  |   replicas | |
+|  |                  |  |   integration    |  |   integration    |  | - Cross-   | |
+|  |                  |  |                  |  |                  |  |   account  | |
+|  |                  |  |                  |  |                  |  |   restore  | |
+|  +------------------+  +------------------+  +------------------+  +------------+ |
+|           |                    |                    |                    ^        |
+|           |                    |                    |                    |        |
+|           +--------------------+--------------------+--------------------+        |
+|                         GitHub Actions OIDC                                       |
+|                         (assumes roles in each account)                           |
++-----------------------------------------------------------------------------------+
+```
+
+### Account Purposes
+
+| Account | Purpose | Data Classification |
+|---------|---------|---------------------|
+| **Management/Root** | GitHub Actions OIDC, Organizations, billing | No application data |
+| **CI Account** | Feature branch deployments, automated testing | Test data only |
+| **Prod Account** | Production workloads, real user data | Sensitive/PII |
+| **Backup Account** | Cross-account backups, disaster recovery | Encrypted copies |
+
+---
+
+## Cross-Account Backup Strategy
+
+### Data to Backup
+
+| Resource | Source | Backup Method | RPO | RTO |
+|----------|--------|---------------|-----|-----|
+| DynamoDB Tables | Prod | Point-in-time + Cross-account copy | 5 min | 1 hour |
+| Cognito User Pool | Prod | Export to S3 + Cross-account replica | 24 hours | 4 hours |
+| S3 Static Assets | Prod | Cross-region + Cross-account replica | 15 min | 30 min |
+| CloudWatch Logs | All | Export to S3 + Cross-account archive | 24 hours | N/A |
+| Secrets Manager | Prod | Cross-account replica | On change | 1 hour |
+
+### Backup Architecture
+
+```
++------------------+                    +------------------+
+|  Prod Account    |                    |  Backup Account  |
+|                  |                    |                  |
+|  +------------+  |   S3 Replication   |  +------------+  |
+|  | DynamoDB   |--+-------------------->| DynamoDB     |  |
+|  | Tables     |  |   (Cross-account)  |  | Backup      |  |
+|  +------------+  |                    |  +------------+  |
+|                  |                    |                  |
+|  +------------+  |   EventBridge      |  +------------+  |
+|  | Cognito    |--+-------------------->| User Export  |  |
+|  | User Pool  |  |   (Daily export)   |  | Archive     |  |
+|  +------------+  |                    |  +------------+  |
+|                  |                    |                  |
+|  +------------+  |   S3 CRR           |  +------------+  |
+|  | S3 Origin  |--+-------------------->| S3 Replica   |  |
+|  | Bucket     |  |                    |  | Bucket      |  |
+|  +------------+  |                    |  +------------+  |
+|                  |                    |                  |
++------------------+                    +------------------+
+```
+
+---
+
+## Implementation: Backup Account Bootstrap
+
+### 1. Create Backup Account (Manual - AWS Organizations Console)
+
+```bash
+# From management account, create new account
+aws organizations create-account \
+  --email backup@diyaccounting.co.uk \
+  --account-name "DIY Accounting Backup" \
+  --iam-user-access-to-billing DENY
+
+# Note the account ID for subsequent steps
+```
+
+### 2. BackupAccountStack (New CDK Stack)
+
+Create a new CDK application for the backup account:
+
+```java
+public class BackupAccountStack extends Stack {
+
+    @Value.Immutable
+    public interface BackupAccountStackProps extends StackProps {
+        String sourceAccountId();      // Prod account ID
+        String sourceBucketArn();      // S3 bucket to replicate from
+        List<String> sourceTableArns(); // DynamoDB tables to backup
+    }
+
+    public BackupAccountStack(Construct scope, String id, BackupAccountStackProps props) {
+        super(scope, id, props);
+
+        // ================================================================
+        // S3 Backup Bucket (receives cross-account replication)
+        // ================================================================
+        Bucket backupBucket = Bucket.Builder.create(this, "BackupBucket")
+            .bucketName("diy-submit-backup-" + this.getAccount())
+            .encryption(BucketEncryption.KMS)
+            .versioned(true)
+            .lifecycleRules(List.of(
+                LifecycleRule.builder()
+                    .transitions(List.of(
+                        Transition.builder()
+                            .storageClass(StorageClass.GLACIER)
+                            .transitionAfter(Duration.days(90))
+                            .build()))
+                    .noncurrentVersionExpiration(Duration.days(365))
+                    .build()))
+            .build();
+
+        // Allow source account to replicate to this bucket
+        backupBucket.addToResourcePolicy(PolicyStatement.Builder.create()
+            .principals(List.of(new AccountPrincipal(props.sourceAccountId())))
+            .actions(List.of(
+                "s3:ReplicateObject",
+                "s3:ReplicateDelete",
+                "s3:ReplicateTags"))
+            .resources(List.of(backupBucket.arnForObjects("*")))
+            .build());
+
+        // ================================================================
+        // DynamoDB Backup Vault
+        // ================================================================
+        BackupVault backupVault = BackupVault.Builder.create(this, "BackupVault")
+            .backupVaultName("diy-submit-backup-vault")
+            .encryptionKey(Key.Builder.create(this, "BackupKey")
+                .enableKeyRotation(true)
+                .build())
+            .build();
+
+        // ================================================================
+        // Cross-Account Backup Role (for AWS Backup)
+        // ================================================================
+        Role crossAccountBackupRole = Role.Builder.create(this, "CrossAccountBackupRole")
+            .roleName("diy-submit-cross-account-backup")
+            .assumedBy(new ServicePrincipal("backup.amazonaws.com"))
+            .build();
+
+        // ================================================================
+        // Restore Role (for DR scenarios)
+        // ================================================================
+        Role restoreRole = Role.Builder.create(this, "RestoreRole")
+            .roleName("diy-submit-restore-role")
+            .assumedBy(new CompositePrincipal(
+                new AccountPrincipal(props.sourceAccountId()),
+                new ServicePrincipal("backup.amazonaws.com")))
+            .inlinePolicies(Map.of("restore-policy", PolicyDocument.Builder.create()
+                .statements(List.of(
+                    PolicyStatement.Builder.create()
+                        .actions(List.of(
+                            "dynamodb:RestoreTableFromBackup",
+                            "dynamodb:RestoreTableToPointInTime",
+                            "s3:GetObject",
+                            "s3:ListBucket"))
+                        .resources(List.of("*"))
+                        .build()))
+                .build()))
+            .build();
+
+        // Outputs
+        cfnOutput(this, "BackupBucketArn", backupBucket.getBucketArn());
+        cfnOutput(this, "BackupVaultArn", backupVault.getBackupVaultArn());
+        cfnOutput(this, "RestoreRoleArn", restoreRole.getRoleArn());
+    }
+}
+```
+
+### 3. Source Account Configuration (Add to DataStack)
+
+```java
+// In DataStack.java - add cross-account backup configuration
+
+// Enable Point-in-Time Recovery
+Table bundlesTable = Table.Builder.create(this, "BundlesTable")
+    .pointInTimeRecovery(true)  // Enable PITR
+    // ... existing config
+    .build();
+
+// Create AWS Backup Plan
+BackupPlan backupPlan = BackupPlan.Builder.create(this, "BackupPlan")
+    .backupPlanName(props.resourceNamePrefix() + "-backup-plan")
+    .backupPlanRules(List.of(
+        BackupPlanRule.Builder.create()
+            .ruleName("DailyBackup")
+            .scheduleExpression(Schedule.cron(CronOptions.builder()
+                .hour("3")
+                .minute("0")
+                .build()))
+            .startWindow(Duration.hours(1))
+            .completionWindow(Duration.hours(2))
+            .deleteAfter(Duration.days(35))
+            .copyActions(List.of(BackupPlanCopyActionProps.builder()
+                .destinationBackupVault(BackupVault.fromBackupVaultArn(this,
+                    "DestVault", props.backupAccountVaultArn()))
+                .moveToColdStorageAfter(Duration.days(90))
+                .deleteAfter(Duration.days(365))
+                .build()))
+            .build()))
+    .build();
+
+// Add DynamoDB tables to backup selection
+backupPlan.addSelection("DynamoDBSelection", BackupSelection.Builder.create()
+    .resources(List.of(
+        BackupResource.fromDynamoDbTable(bundlesTable),
+        BackupResource.fromDynamoDbTable(receiptsTable)))
+    .build());
+```
+
+---
+
+## Disaster Recovery Procedures
+
+### Scenario 1: Recover Single DynamoDB Table
+
+```bash
+# 1. List available recovery points in backup account
+aws backup list-recovery-points-by-backup-vault \
+  --backup-vault-name diy-submit-backup-vault \
+  --profile backup-account
+
+# 2. Start restore job to prod account
+aws backup start-restore-job \
+  --recovery-point-arn arn:aws:backup:eu-west-2:BACKUP_ACCOUNT:recovery-point:xxx \
+  --iam-role-arn arn:aws:iam::BACKUP_ACCOUNT:role/diy-submit-restore-role \
+  --metadata '{"targetTableName":"restored-bundles-table"}' \
+  --profile backup-account
+
+# 3. Verify restored table
+aws dynamodb describe-table \
+  --table-name restored-bundles-table \
+  --profile prod-account
+```
+
+### Scenario 2: Full Environment Recovery
+
+```bash
+#!/bin/bash
+# disaster-recovery.sh - Full environment recovery script
+
+set -euo pipefail
+
+BACKUP_ACCOUNT="111111111111"
+TARGET_ACCOUNT="222222222222"
+BACKUP_VAULT="diy-submit-backup-vault"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+echo "=== DIY Accounting Submit - Disaster Recovery ==="
+echo "Recovering from backup account $BACKUP_ACCOUNT to $TARGET_ACCOUNT"
+
+# 1. List latest recovery points
+echo "Fetching latest recovery points..."
+aws backup list-recovery-points-by-backup-vault \
+  --backup-vault-name $BACKUP_VAULT \
+  --by-resource-type DynamoDB \
+  --max-results 10 \
+  --profile backup
+
+# 2. Restore DynamoDB tables
+for table in bundles receipts; do
+  echo "Restoring $table table..."
+  RECOVERY_POINT=$(aws backup list-recovery-points-by-backup-vault \
+    --backup-vault-name $BACKUP_VAULT \
+    --by-resource-type DynamoDB \
+    --query "RecoveryPoints[?ResourceName=='$table'] | [0].RecoveryPointArn" \
+    --output text \
+    --profile backup)
+
+  aws backup start-restore-job \
+    --recovery-point-arn $RECOVERY_POINT \
+    --iam-role-arn arn:aws:iam::$BACKUP_ACCOUNT:role/diy-submit-restore-role \
+    --metadata "{\"targetTableName\":\"recovered-$table-$TIMESTAMP\"}" \
+    --profile backup
+done
+
+# 3. Restore S3 static assets
+echo "Syncing S3 assets from backup..."
+aws s3 sync \
+  s3://diy-submit-backup-$BACKUP_ACCOUNT/ \
+  s3://recovered-submit-origin-$TIMESTAMP/ \
+  --profile target
+
+# 4. Update CDK context to use recovered resources
+echo "Update cdk.json with recovered resource names, then redeploy"
+
+echo "=== Recovery Complete ==="
+```
+
+### Scenario 3: Cognito User Pool Recovery
+
+```bash
+# Cognito users are exported daily to S3
+# Recovery requires re-importing users
+
+# 1. Find latest user export
+aws s3 ls s3://diy-submit-backup-ACCOUNT/cognito-exports/ \
+  --profile backup | tail -1
+
+# 2. Download export
+aws s3 cp s3://diy-submit-backup-ACCOUNT/cognito-exports/latest/ ./cognito-export/ \
+  --recursive --profile backup
+
+# 3. Import users to new/recovered pool (using AWS CLI or SDK)
+# Note: Passwords cannot be exported - users will need to reset
+node scripts/import-cognito-users.js \
+  --export-dir ./cognito-export \
+  --user-pool-id NEW_POOL_ID
+```
+
+---
+
+## GitHub Actions Multi-Account Deployment
+
+### Updated deploy-environment.yml for Multi-Account
+
+```yaml
+env:
+  MANAGEMENT_ACCOUNT_ID: '887764105431'
+  CI_ACCOUNT_ID: 'TBD'
+  PROD_ACCOUNT_ID: 'TBD'
+  BACKUP_ACCOUNT_ID: 'TBD'
+
+jobs:
+  determine-account:
+    runs-on: ubuntu-latest
+    outputs:
+      target-account: ${{ steps.account.outputs.account }}
+      deploy-role: ${{ steps.account.outputs.role }}
+    steps:
+      - id: account
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "account=${{ env.PROD_ACCOUNT_ID }}" >> $GITHUB_OUTPUT
+            echo "role=arn:aws:iam::${{ env.PROD_ACCOUNT_ID }}:role/submit-deployment-role" >> $GITHUB_OUTPUT
+          else
+            echo "account=${{ env.CI_ACCOUNT_ID }}" >> $GITHUB_OUTPUT
+            echo "role=arn:aws:iam::${{ env.CI_ACCOUNT_ID }}:role/submit-deployment-role" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    needs: determine-account
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::${{ env.MANAGEMENT_ACCOUNT_ID }}:role/submit-github-actions-role
+          aws-region: eu-west-2
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ needs.determine-account.outputs.deploy-role }}
+          aws-region: eu-west-2
+          role-chaining: true
+
+      # Deploy to target account
+      - run: npx cdk deploy --all --require-approval never
+```
+
+---
+
+## Implementation Checklist - Multi-Account & Backup
+
+### Phase 1: AWS Organizations Setup
+- [ ] Create AWS Organization (if not exists)
+- [ ] Create CI Account via Organizations
+- [ ] Create Prod Account via Organizations
+- [ ] Create Backup Account via Organizations
+- [ ] Set up consolidated billing
+
+### Phase 2: IAM Cross-Account Roles
+- [ ] Create GitHub Actions OIDC role in Management account
+- [ ] Create deployment roles in CI and Prod accounts
+- [ ] Create cross-account backup role in Backup account
+- [ ] Create restore role in Backup account
+- [ ] Test role assumption chain
+
+### Phase 3: Backup Infrastructure
+- [ ] Deploy BackupAccountStack to Backup account
+- [ ] Enable PITR on DynamoDB tables
+- [ ] Configure S3 cross-account replication
+- [ ] Set up AWS Backup plans
+- [ ] Configure Cognito user export
+
+### Phase 4: Recovery Testing
+- [ ] Document recovery procedures
+- [ ] Test single table restore
+- [ ] Test full environment recovery
+- [ ] Create recovery runbook
+- [ ] Schedule quarterly DR drills
+
+---
+
+## Cost Estimate - Multi-Account & Backup
+
+| Resource | Monthly Cost (estimate) |
+|----------|------------------------|
+| Additional AWS accounts | Free |
+| DynamoDB PITR | ~$0.20/GB stored |
+| AWS Backup storage | ~$0.05/GB (S3 Glacier) |
+| S3 Cross-region replication | ~$0.02/GB transferred |
+| Cross-account data transfer | Free (same region) |
+| **Additional Monthly Total** | **~$5-10/month** |
+
+---
+
+## Future Enhancements
+
+1. **OAuth Flow Canary** - Full HMRC sandbox authentication test (Phase 2)
+2. **VAT Submission Canary** - End-to-end sandbox submission (Phase 3)
+3. **Anomaly Detection** - ML-based alerting for unusual patterns
+4. **Cost Dashboard** - AWS Cost Explorer integration
+5. **SLO/SLI Tracking** - Error budget and availability targets
+6. **Automated DR Testing** - Monthly automated recovery verification
+7. **Multi-Region Failover** - Active-passive in eu-west-1
