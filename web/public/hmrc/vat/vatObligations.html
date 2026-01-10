@@ -274,10 +274,8 @@
 
           if (!pendingRequest) {
             console.log("No pending obligations request found");
-            // Clear stale OAuth data
-            sessionStorage.removeItem("hmrcAccessToken");
-            sessionStorage.removeItem("oauth_state");
-            sessionStorage.removeItem("hmrcAccount");
+            // Don't clear token - it might be valid from previous HMRC operation
+            // Let form submission use it directly
             return;
           }
 

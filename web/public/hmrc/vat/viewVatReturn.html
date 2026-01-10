@@ -212,10 +212,8 @@
 
           if (!pendingRequest) {
             console.log("No pending return request found");
-            // Clear stale OAuth data
-            sessionStorage.removeItem("hmrcAccessToken");
-            sessionStorage.removeItem("oauth_state");
-            sessionStorage.removeItem("hmrcAccount");
+            // Don't clear token - it might be valid from VAT submission
+            // Let form submission use it directly
             return;
           }
 
