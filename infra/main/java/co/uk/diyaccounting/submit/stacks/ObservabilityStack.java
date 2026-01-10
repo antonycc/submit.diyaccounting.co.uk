@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -23,7 +24,10 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Dashboard;
 import software.amazon.awscdk.services.cloudwatch.GraphWidget;
+import software.amazon.awscdk.services.cloudwatch.IWidget;
+import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.Metric;
+import software.amazon.awscdk.services.cloudwatch.TextWidget;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cognito.CfnIdentityPool;
 import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
@@ -76,6 +80,12 @@ public class ObservabilityStack extends Stack {
         String cloudTrailLogGroupRetentionPeriodDays();
 
         int accessLogGroupRetentionPeriodDays();
+
+        // Apex domain for GitHub synthetic metrics namespace (e.g., submit.diyaccounting.co.uk)
+        @Value.Default
+        default String apexDomain() {
+            return "";
+        }
 
         static ImmutableObservabilityStackProps.Builder builder() {
             return ImmutableObservabilityStackProps.builder();
@@ -236,8 +246,32 @@ public class ObservabilityStack extends Stack {
                 .alarmDescription("RUM JavaScript errors >= 5 in 5 minutes")
                 .build();
 
-        // Frontend Performance Dashboard
-        var frontendRows = List.<List<software.amazon.awscdk.services.cloudwatch.IWidget>>of(List.of(
+        // ============================================================================
+        // Consolidated Operations Dashboard
+        // ============================================================================
+        // This dashboard provides a single view across all deployments in this environment
+        List<List<IWidget>> dashboardRows = new ArrayList<>();
+
+        // Determine apex domain for GitHub synthetic metrics namespace
+        String apexDomain = props.apexDomain() != null && !props.apexDomain().isBlank()
+                ? props.apexDomain()
+                : props.sharedNames().hostedZoneName;
+
+        // Lambda function search pattern for this environment
+        // Pattern matches: {env}-*-submit-*-app-{function-name}
+        // Example: prod-abc123-submit-diyaccounting-co-uk-app-hmrc-vat-return-post-ingest-handler
+        String lambdaSearchPrefix = props.envName() + "-";
+
+        // Row 1: Real User Traffic (RUM) and Web Vitals
+        Metric inpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsInteractionToNextPaint")
+                .dimensionsMap(Map.of("application_name", rumAppName))
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        dashboardRows.add(List.of(
                 GraphWidget.Builder.create()
                         .title("RUM p75 LCP (ms)")
                         .left(List.of(lcpP75))
@@ -246,13 +280,7 @@ public class ObservabilityStack extends Stack {
                         .build(),
                 GraphWidget.Builder.create()
                         .title("RUM p75 INP (ms)")
-                        .left(List.of(Metric.Builder.create()
-                                .namespace("AWS/RUM")
-                                .metricName("WebVitalsInteractionToNextPaint")
-                                .dimensionsMap(Map.of("application_name", rumAppName))
-                                .statistic("p75")
-                                .period(Duration.minutes(5))
-                                .build()))
+                        .left(List.of(inpP75))
                         .width(8)
                         .height(6)
                         .build(),
@@ -262,9 +290,167 @@ public class ObservabilityStack extends Stack {
                         .width(8)
                         .height(6)
                         .build()));
-        Dashboard frontendDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-FrontendDashboard")
-                .dashboardName(props.resourceNamePrefix() + "-frontend")
-                .widgets(frontendRows)
+
+        // Row 2: GitHub Synthetic Tests and Deployment Events
+        // GitHub synthetic test metrics (sent from deploy.yml)
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("GitHub Synthetic Tests (all deployments)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{%s,deployment-name,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)",
+                                        apexDomain))
+                                .label("Behaviour Tests (0=pass)")
+                                .period(Duration.hours(1))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Deployments")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{%s,deployment-name} MetricName=\"deployment\"', 'Sum', 3600)",
+                                        apexDomain))
+                                .label("Deployment events")
+                                .period(Duration.hours(1))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build()));
+
+        // Row 3: Business Metrics - Key Lambda function invocations across all deployments
+        // Using SEARCH to aggregate across deployment-specific function names
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("VAT Submissions (all deployments)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*hmrc-vat-return-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
+                                        lambdaSearchPrefix))
+                                .label("hmrcVatReturnPost")
+                                .period(Duration.hours(1))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("HMRC Authentications (all deployments)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*hmrc-token-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
+                                        lambdaSearchPrefix))
+                                .label("hmrcTokenPost")
+                                .period(Duration.hours(1))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build()));
+
+        // Row 4: More Business Metrics
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Bundle Operations (all deployments)")
+                        .left(List.of(
+                                MathExpression.Builder.create()
+                                        .expression(String.format(
+                                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*bundle-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
+                                                lambdaSearchPrefix))
+                                        .label("bundlePost")
+                                        .period(Duration.hours(1))
+                                        .build(),
+                                MathExpression.Builder.create()
+                                        .expression(String.format(
+                                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*bundle-get-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
+                                                lambdaSearchPrefix))
+                                        .label("bundleGet")
+                                        .period(Duration.hours(1))
+                                        .build()))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Sign-ups & Cognito Auth (all deployments)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*cognito-token-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
+                                        lambdaSearchPrefix))
+                                .label("cognitoTokenPost")
+                                .period(Duration.hours(1))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build()));
+
+        // Row 5: Lambda Errors across all deployments
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Lambda Errors (all functions, all deployments)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Errors\"', 'Sum', 300)",
+                                        lambdaSearchPrefix))
+                                .label("Errors by function")
+                                .period(Duration.minutes(5))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Lambda Throttles (all functions, all deployments)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Throttles\"', 'Sum', 300)",
+                                        lambdaSearchPrefix))
+                                .label("Throttles by function")
+                                .period(Duration.minutes(5))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build()));
+
+        // Row 6: Lambda Performance across all deployments
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Lambda p95 Duration (all functions, all deployments)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(String.format(
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Duration\"', 'p95', 300)",
+                                        lambdaSearchPrefix))
+                                .label("p95 Duration by function")
+                                .period(Duration.minutes(5))
+                                .build()))
+                        .width(24)
+                        .height(6)
+                        .build()));
+
+        // Row 7: Help text for deployment annotations
+        dashboardRows.add(List.of(TextWidget.Builder.create()
+                .markdown(
+                        """
+                        ### Deployment Tracking
+
+                        Deployment events are tracked via custom metrics sent from GitHub Actions.
+                        The metric namespace is `%s` with dimension `deployment-name`.
+
+                        To send deployment metrics from your CI/CD pipeline:
+                        ```bash
+                        aws cloudwatch put-metric-data \\
+                          --namespace "%s" \\
+                          --metric-name "deployment" \\
+                          --dimensions "deployment-name=$DEPLOYMENT_NAME" \\
+                          --value 1 \\
+                          --unit Count
+                        ```
+                        """
+                                .formatted(apexDomain, apexDomain))
+                .width(24)
+                .height(4)
+                .build()));
+
+        Dashboard operationsDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-OperationsDashboard")
+                .dashboardName(props.resourceNamePrefix() + "-operations")
+                .widgets(dashboardRows)
                 .build();
 
         // Outputs for RUM configuration and dashboard
@@ -274,8 +460,8 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "RumRegion", this.getRegion());
         cfnOutput(
                 this,
-                "FrontendDashboard",
+                "OperationsDashboard",
                 "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
-                        + "#dashboards:name=" + frontendDashboard.getDashboardName());
+                        + "#dashboards:name=" + operationsDashboard.getDashboardName());
     }
 }

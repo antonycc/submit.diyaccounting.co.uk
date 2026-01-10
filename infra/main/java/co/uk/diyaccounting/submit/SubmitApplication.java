@@ -289,11 +289,6 @@ public class SubmitApplication {
         this.apiStack.addDependency(hmrcStack);
         this.apiStack.addDependency(authStack);
 
-        // ExtractLambda ARNs from lambdaFunctions
-        var lambdaArns = lambdaFunctions.stream()
-                .map(AbstractApiLambdaProps::ingestLambdaArn)
-                .toList();
-
         // Get optional alert email from environment variable
         String alertEmail = envOr("ALERT_EMAIL", "");
 
@@ -308,7 +303,6 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
-                        .lambdaFunctionArns(lambdaArns)
                         .baseUrl(sharedNames.baseUrl)
                         .apexDomain(sharedNames.envDomainName)
                         .alertEmail(alertEmail)
