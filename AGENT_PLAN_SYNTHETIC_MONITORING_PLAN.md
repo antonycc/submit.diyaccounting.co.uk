@@ -414,7 +414,7 @@ Add a `TrafficType` dimension to custom metrics:
 - [ ] Add alarm status widget (including github-synthetic alarm)
 - [ ] Update `SubmitApplication.java` to pass new props
 - [ ] Add `ALERT_EMAIL` secret to GitHub
-- [ ] Update `deploy.yml` with new environment variables
+- [ ] Update `deploy-environment.yml` with new environment variables
 - [ ] Test on feature branch
 - [ ] Verify dashboard shows all metrics correctly
 - [ ] Verify GitHub synthetic alarm triggers when tests fail
@@ -807,7 +807,7 @@ node scripts/import-cognito-users.js \
 
 ## GitHub Actions Multi-Account Deployment
 
-### Updated deploy.yml for Multi-Account
+### Updated deploy-environment.yml for Multi-Account
 
 ```yaml
 env:

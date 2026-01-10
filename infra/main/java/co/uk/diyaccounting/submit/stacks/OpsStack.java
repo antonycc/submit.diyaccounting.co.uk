@@ -384,7 +384,9 @@ public class OpsStack extends Stack {
     }
 
     private void createSyntheticCanaries(OpsStackProps props) {
-        String canaryPrefix = sanitizeCanaryName(props.resourceNamePrefix());
+        // Use deployment name for unique canary names (max 21 chars for canary names)
+        // Format: {env}-{suffix} e.g., "ci-monitorin-hlth" or "prod-hlth"
+        String deploymentPrefix = sanitizeCanaryName(props.deploymentName());
 
         // S3 bucket for canary artifacts
         Bucket canaryBucket = Bucket.Builder.create(this, "CanaryArtifacts")
@@ -406,8 +408,8 @@ public class OpsStack extends Stack {
                 .build();
         canaryBucket.grantReadWrite(canaryRole);
 
-        // Health Check Canary
-        String healthCanaryName = truncateCanaryName(canaryPrefix + "-health");
+        // Health Check Canary - use short suffix to maximize prefix uniqueness
+        String healthCanaryName = truncateCanaryName(deploymentPrefix + "-hlth");
         this.healthCanary = Canary.Builder.create(this, "HealthCanary")
                 .canaryName(healthCanaryName)
                 .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_7_0)
@@ -444,8 +446,8 @@ public class OpsStack extends Stack {
         this.healthCheckAlarm.addAlarmAction(new SnsAction(this.alertTopic));
         this.healthCheckAlarm.addOkAction(new SnsAction(this.alertTopic));
 
-        // API Check Canary
-        String apiCanaryName = truncateCanaryName(canaryPrefix + "-api");
+        // API Check Canary - use short suffix to maximize prefix uniqueness
+        String apiCanaryName = truncateCanaryName(deploymentPrefix + "-api");
         this.apiCanary = Canary.Builder.create(this, "ApiCanary")
                 .canaryName(apiCanaryName)
                 .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_7_0)
