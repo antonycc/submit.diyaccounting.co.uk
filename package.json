@@ -1,6 +1,6 @@
 {
   "name": "@antonycc/web-submit-diyaccounting-co-uk",
-  "version": "0.0.2-4",
+  "version": "0.1.0",
   "description": "Submit UK tax information to HMRC",
   "type": "module",
   "main": "app/bin/main.js",
