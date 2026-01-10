@@ -293,6 +293,10 @@ public class SubmitApplication {
         var lambdaArns = lambdaFunctions.stream()
                 .map(AbstractApiLambdaProps::ingestLambdaArn)
                 .toList();
+
+        // Get optional alert email from environment variable
+        String alertEmail = envOr("ALERT_EMAIL", "");
+
         this.opsStack = new OpsStack(
                 app,
                 sharedNames.opsStackId,
@@ -305,6 +309,9 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .lambdaFunctionArns(lambdaArns)
+                        .baseUrl(sharedNames.baseUrl)
+                        .apexDomain(sharedNames.envDomainName)
+                        .alertEmail(alertEmail)
                         .build());
         // this.opsStack.addDependency(hmrcStack);
         // this.opsStack.addDependency(apiStack);
