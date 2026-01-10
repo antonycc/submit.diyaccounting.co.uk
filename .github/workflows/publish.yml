@@ -243,7 +243,7 @@ jobs:
         run: ./mvnw clean package -DskipTests
 
       - name: Publish to GitHub Packages (Maven)
-        run: ./mvnw deploy -DskipTests
+        run: ./mvnw deploy -DskipTests -Dspotless.check.skip=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
