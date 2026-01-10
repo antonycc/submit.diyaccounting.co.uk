@@ -1206,13 +1206,13 @@ jobs:
 
 ### Phase 1: Local Backups (within deployment account)
 
-- [ ] Enable PITR on receiptsTable in DataStack.java
-- [ ] Enable PITR on bundlesTable in DataStack.java
-- [ ] Enable PITR on hmrcApiRequestsTable in DataStack.java
-- [ ] Set RETAIN removal policy for prod tables
-- [ ] Create BackupStack.java with local vault (no cross-region)
-- [ ] Create S3 bucket for exports
-- [ ] Add BackupStack to SubmitEnvironment.java
+- [x] Enable PITR on receiptsTable in DataStack.java
+- [x] Enable PITR on bundlesTable in DataStack.java
+- [x] Enable PITR on hmrcApiRequestsTable in DataStack.java
+- [x] Set RETAIN removal policy for prod tables
+- [x] Create BackupStack.java with local vault (no cross-region)
+- [x] Create S3 bucket for exports (in BackupStack)
+- [x] Add BackupStack to SubmitEnvironment.java
 - [ ] Deploy to CI environment and verify
 - [ ] Deploy to PROD environment
 - [ ] Verify backup jobs execute (AWS console)
@@ -1220,7 +1220,8 @@ jobs:
 ### Phase 2: Multi-Account Strategy
 
 - [ ] Create dedicated backup AWS account
-- [ ] Run setup-backup-account.sh script
+- [x] Create setup-backup-account.yml workflow
+- [ ] Run setup-backup-account workflow (requires backup account)
 - [ ] Configure cross-account KMS access
 - [ ] Configure S3 cross-account replication
 - [ ] Test cross-account backup copy
@@ -1232,7 +1233,7 @@ jobs:
 - [ ] Add no-recent-backup alarm to OpsStack
 - [ ] Add backup metrics to ObservabilityStack dashboard
 - [ ] Test alarm notifications
-- [ ] Create verify-backups.yml workflow
+- [x] Create verify-backups.yml workflow
 - [ ] Create export-dynamodb.yml workflow
 
 ### Phase 4: Disaster Recovery

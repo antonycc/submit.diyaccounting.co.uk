@@ -4,7 +4,12 @@
 // app/unit-tests/lib/buildFraudHeaders.test.js
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { readFileSync } from "fs";
 import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
+
+// Read package info for test assertions (strip scope if present)
+const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
+const packageName = rawPackageName.startsWith("@") ? rawPackageName.split("/")[1] : rawPackageName;
 
 describe("buildFraudHeaders", () => {
   let originalEnv;
@@ -93,8 +98,8 @@ describe("buildFraudHeaders", () => {
 
     const { govClientHeaders: headers } = buildFraudHeaders(event);
 
-    expect(headers["Gov-Vendor-Product-Name"]).toBe("web-submit-diyaccounting-co-uk");
-    expect(headers["Gov-Vendor-Version"]).toBe("web-submit-diyaccounting-co-uk=0.0.2-4");
+    expect(headers["Gov-Vendor-Product-Name"]).toBe(packageName);
+    expect(headers["Gov-Vendor-Version"]).toBe(`${packageName}=${packageVersion}`);
   });
 
   it("should set connection method to WEB_APP_VIA_SERVER", () => {

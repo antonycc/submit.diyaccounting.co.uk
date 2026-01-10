@@ -1,0 +1,197 @@
+name: setup backup account
+run-name: "Setup backup account ${{ inputs.backup-account-id }} from ${{ inputs.source-environment }}"
+
+# Manual workflow to initialize a dedicated backup AWS account with multi-region storage.
+# This workflow creates the backup infrastructure in a separate AWS account that receives
+# backups from deployment accounts (CI, PROD).
+#
+# Prerequisites:
+# - A dedicated AWS account for backups (separate from CI/PROD)
+# - OIDC trust configured for GitHub Actions in the backup account
+# - IAM role for GitHub Actions with permissions to create:
+#   - KMS keys, S3 buckets, IAM roles, AWS Backup vaults
+#
+# See BACKUP_STRATEGY_PLAN.md for full architecture documentation.
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup-account-id:
+        description: 'AWS Account ID for the dedicated backup account'
+        type: string
+        required: true
+      source-environment:
+        description: 'Source environment initiating the setup'
+        type: choice
+        options:
+          - 'ci'
+          - 'prod'
+        required: true
+        default: 'prod'
+      primary-region:
+        description: 'Primary region for backups'
+        type: string
+        required: true
+        default: 'eu-west-2'
+      replica-region:
+        description: 'Replica region for multi-region redundancy'
+        type: string
+        required: true
+        default: 'eu-west-1'
+      dry-run:
+        description: 'Dry run (show commands without executing)'
+        type: boolean
+        required: false
+        default: true
+
+env:
+  # These would need to be updated with actual backup account role ARN
+  BACKUP_ACTIONS_ROLE_ARN: 'arn:aws:iam::${{ inputs.backup-account-id }}:role/backup-github-actions-role'
+
+jobs:
+  setup:
+    name: 'Setup backup account'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.source-environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate inputs
+        run: |
+          echo "=============================================="
+          echo "Backup Account Setup"
+          echo "=============================================="
+          echo ""
+          echo "Backup Account ID: ${{ inputs.backup-account-id }}"
+          echo "Primary Region:    ${{ inputs.primary-region }}"
+          echo "Replica Region:    ${{ inputs.replica-region }}"
+          echo "Dry Run:          ${{ inputs.dry-run }}"
+          echo ""
+
+          # Validate account ID format
+          if ! echo "${{ inputs.backup-account-id }}" | grep -qE '^[0-9]{12}$'; then
+            echo "ERROR: Invalid AWS Account ID format. Expected 12 digits."
+            exit 1
+          fi
+
+          # Validate regions
+          if [ "${{ inputs.primary-region }}" = "${{ inputs.replica-region }}" ]; then
+            echo "ERROR: Primary and replica regions must be different."
+            exit 1
+          fi
+
+          echo "Input validation passed"
+
+      - name: Show setup plan (dry run)
+        if: inputs.dry-run == true
+        run: |
+          echo "=============================================="
+          echo "DRY RUN - Commands that would be executed:"
+          echo "=============================================="
+          echo ""
+          echo "1. Configure AWS credentials for backup account"
+          echo "   Role: ${{ env.BACKUP_ACTIONS_ROLE_ARN }}"
+          echo ""
+          echo "2. Create KMS keys:"
+          echo "   - Primary key in ${{ inputs.primary-region }}"
+          echo "   - Replica key in ${{ inputs.replica-region }}"
+          echo ""
+          echo "3. Create AWS Backup vaults:"
+          echo "   - central-backup-vault in ${{ inputs.primary-region }}"
+          echo "   - central-backup-vault in ${{ inputs.replica-region }}"
+          echo ""
+          echo "4. Create S3 buckets with cross-region replication:"
+          echo "   - diyaccounting-central-backups-${{ inputs.backup-account-id }} (primary)"
+          echo "   - diyaccounting-central-backups-${{ inputs.backup-account-id }}-replica"
+          echo ""
+          echo "5. Configure IAM roles for:"
+          echo "   - S3 replication"
+          echo "   - Cross-account backup copy"
+          echo ""
+          echo "=============================================="
+          echo "To execute, run workflow with 'dry-run' unchecked"
+          echo "=============================================="
+
+      - name: Prerequisites check
+        if: inputs.dry-run == false
+        run: |
+          echo "=============================================="
+          echo "Prerequisites Check"
+          echo "=============================================="
+          echo ""
+          echo "Before proceeding, ensure:"
+          echo ""
+          echo "1. AWS Account ${{ inputs.backup-account-id }} exists"
+          echo ""
+          echo "2. OIDC trust is configured for GitHub Actions:"
+          echo "   - Provider: token.actions.githubusercontent.com"
+          echo "   - Audience: sts.amazonaws.com"
+          echo ""
+          echo "3. IAM role exists: backup-github-actions-role"
+          echo "   - Trust policy allows GitHub Actions OIDC"
+          echo "   - Permissions for: KMS, S3, IAM, AWS Backup"
+          echo ""
+          echo "4. You have reviewed BACKUP_STRATEGY_PLAN.md"
+          echo ""
+          echo "If prerequisites are not met, the workflow will fail"
+          echo "during AWS credential configuration."
+          echo "=============================================="
+
+      # Note: The actual AWS credential configuration and execution
+      # would require the backup account to have OIDC trust configured.
+      # This is a placeholder that shows what needs to happen.
+
+      - name: Configure AWS credentials (backup account)
+        if: inputs.dry-run == false
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.BACKUP_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ inputs.primary-region }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Execute backup account setup
+        if: inputs.dry-run == false
+        run: |
+          chmod +x scripts/setup-backup-account.sh
+          ./scripts/setup-backup-account.sh \
+            "${{ inputs.backup-account-id }}" \
+            "${{ inputs.primary-region }}" \
+            "${{ inputs.replica-region }}"
+
+      - name: Output next steps
+        run: |
+          echo ""
+          echo "=============================================="
+          echo "Next Steps"
+          echo "=============================================="
+          echo ""
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            echo "This was a dry run. To execute:"
+            echo "1. Run this workflow again with 'dry-run' unchecked"
+            echo ""
+          fi
+          echo "After backup account is set up:"
+          echo ""
+          echo "1. Update source accounts (CI/PROD) with backup account ID:"
+          echo "   - Add to CDK context or environment variables"
+          echo "   - Deploy environment stacks to enable cross-account copy"
+          echo ""
+          echo "2. Configure KMS key policies for cross-account access:"
+          echo "   - Allow CI and PROD accounts to use backup encryption keys"
+          echo ""
+          echo "3. Apply the backup vault access policy:"
+          echo "   - See /tmp/backup-account-policy.json from setup script"
+          echo ""
+          echo "4. Test cross-account backup copy:"
+          echo "   - Create a test backup in source account"
+          echo "   - Verify it appears in backup account"
+          echo ""
+          echo "See BACKUP_STRATEGY_PLAN.md for detailed instructions."

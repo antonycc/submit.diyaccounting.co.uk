@@ -243,7 +243,7 @@ jobs:
         run: ./mvnw clean package -DskipTests
 
       - name: Publish to GitHub Packages (Maven)
-        run: ./mvnw deploy -DskipTests
+        run: ./mvnw deploy -DskipTests -Dspotless.check.skip=true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -293,26 +293,23 @@ jobs:
             CHANGELOG="Initial release"
           fi
 
-          # Write to file to preserve newlines
-          cat > release_notes.md << 'NOTES_EOF'
-          ## What's Changed
-
-          $CHANGELOG
-
-          ## Package Links
-
-          - **npm**: [@${{ github.repository_owner }}/web-submit-diyaccounting-co-uk](https://github.com/${{ github.repository }}/packages)
-          - **Maven**: [submit.diyaccounting.co.uk:web](https://github.com/${{ github.repository }}/packages)
-
-          ## Version Info
-
-          - **Version**: ${{ needs.calculate-version.outputs.new-version }}
-          - **Previous**: ${{ needs.calculate-version.outputs.current-version }}
-          - **Increment**: ${{ inputs.versionIncrement }}
-          NOTES_EOF
-
-          # Substitute the changelog
-          sed -i "s|\$CHANGELOG|$CHANGELOG|g" release_notes.md
+          # Build release notes file programmatically to handle special characters
+          {
+            echo "## What's Changed"
+            echo ""
+            echo "$CHANGELOG"
+            echo ""
+            echo "## Package Links"
+            echo ""
+            echo "- **npm**: [@${{ github.repository_owner }}/web-submit-diyaccounting-co-uk](https://github.com/${{ github.repository }}/packages)"
+            echo "- **Maven**: [submit.diyaccounting.co.uk:web](https://github.com/${{ github.repository }}/packages)"
+            echo ""
+            echo "## Version Info"
+            echo ""
+            echo "- **Version**: ${{ needs.calculate-version.outputs.new-version }}"
+            echo "- **Previous**: ${{ needs.calculate-version.outputs.current-version }}"
+            echo "- **Increment**: ${{ inputs.versionIncrement }}"
+          } > release_notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

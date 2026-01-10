@@ -1,0 +1,236 @@
+name: verify backups
+run-name: "Verify backups for ${{ inputs.environment-name }}"
+
+# Scheduled and manual workflow to verify backup health.
+# Checks PITR status, AWS Backup jobs, and export completeness.
+#
+# See BACKUP_STRATEGY_PLAN.md for full architecture documentation.
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC (after 02:00 UTC backup window)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        type: choice
+        description: 'Environment to verify'
+        required: true
+        options:
+          - 'ci'
+          - 'prod'
+        default: 'prod'
+
+env:
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  verify:
+    name: 'Verify backups'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name || 'prod' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set environment variables
+        run: |
+          ENV_NAME="${{ inputs.environment-name || 'prod' }}"
+          echo "ENV_NAME=$ENV_NAME" >> $GITHUB_ENV
+          echo "ENV_PREFIX=$ENV_NAME-submit-diyaccounting-co-uk" >> $GITHUB_ENV
+
+      - name: Check DynamoDB PITR status
+        id: pitr-check
+        run: |
+          echo "=============================================="
+          echo "DynamoDB Point-in-Time Recovery Status"
+          echo "=============================================="
+          echo ""
+
+          TABLES=(
+            "${{ env.ENV_PREFIX }}-receipts"
+            "${{ env.ENV_PREFIX }}-bundles"
+            "${{ env.ENV_PREFIX }}-hmrc-api-requests"
+          )
+
+          ALL_OK=true
+
+          for TABLE in "${TABLES[@]}"; do
+            echo -n "$TABLE: "
+
+            PITR_STATUS=$(aws dynamodb describe-continuous-backups \
+              --table-name "$TABLE" \
+              --query 'ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus' \
+              --output text \
+              --region ${{ env.AWS_REGION }} 2>/dev/null || echo "ERROR")
+
+            if [ "$PITR_STATUS" = "ENABLED" ]; then
+              # Get earliest restore time
+              EARLIEST=$(aws dynamodb describe-continuous-backups \
+                --table-name "$TABLE" \
+                --query 'ContinuousBackupsDescription.PointInTimeRecoveryDescription.EarliestRestorableDateTime' \
+                --output text \
+                --region ${{ env.AWS_REGION }})
+
+              LATEST=$(aws dynamodb describe-continuous-backups \
+                --table-name "$TABLE" \
+                --query 'ContinuousBackupsDescription.PointInTimeRecoveryDescription.LatestRestorableDateTime' \
+                --output text \
+                --region ${{ env.AWS_REGION }})
+
+              echo "ENABLED (restore window: $EARLIEST to $LATEST)"
+            elif [ "$PITR_STATUS" = "ERROR" ]; then
+              echo "TABLE NOT FOUND"
+              ALL_OK=false
+            else
+              echo "DISABLED"
+              ALL_OK=false
+            fi
+          done
+
+          echo ""
+
+          if [ "$ALL_OK" = "true" ]; then
+            echo "All critical tables have PITR enabled"
+            echo "pitr_status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "WARNING: Some tables do not have PITR enabled!"
+            echo "pitr_status=fail" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check AWS Backup vault status
+        id: vault-check
+        run: |
+          echo ""
+          echo "=============================================="
+          echo "AWS Backup Vault Status"
+          echo "=============================================="
+          echo ""
+
+          VAULT_NAME="${{ env.ENV_PREFIX }}-env-primary-vault"
+          echo "Checking vault: $VAULT_NAME"
+          echo ""
+
+          # Check if vault exists
+          if aws backup describe-backup-vault --backup-vault-name "$VAULT_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null >/dev/null; then
+            # Get vault details
+            aws backup describe-backup-vault \
+              --backup-vault-name "$VAULT_NAME" \
+              --region ${{ env.AWS_REGION }} \
+              --query '{Name:BackupVaultName,ARN:BackupVaultArn,Created:CreationDate,RecoveryPoints:NumberOfRecoveryPoints}' \
+              --output table
+
+            echo ""
+            echo "vault_status=pass" >> $GITHUB_OUTPUT
+          else
+            echo "WARNING: Backup vault not found!"
+            echo "This may be expected if BackupStack hasn't been deployed yet."
+            echo "vault_status=missing" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check recent backup jobs
+        id: jobs-check
+        run: |
+          echo ""
+          echo "=============================================="
+          echo "Recent AWS Backup Jobs (last 24 hours)"
+          echo "=============================================="
+          echo ""
+
+          # Calculate timestamp for 24 hours ago
+          SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-24H +%Y-%m-%dT%H:%M:%SZ)
+
+          echo "Looking for jobs since: $SINCE"
+          echo ""
+
+          # List backup jobs
+          JOBS=$(aws backup list-backup-jobs \
+            --by-created-after "$SINCE" \
+            --by-backup-vault-name "${{ env.ENV_PREFIX }}-env-primary-vault" \
+            --region ${{ env.AWS_REGION }} \
+            --query 'BackupJobs[*].{JobId:BackupJobId,Status:State,Resource:ResourceType,Created:CreationDate}' \
+            --output json 2>/dev/null || echo "[]")
+
+          if [ "$JOBS" = "[]" ]; then
+            echo "No backup jobs found in the last 24 hours."
+            echo ""
+            echo "This could mean:"
+            echo "- BackupStack hasn't been deployed yet"
+            echo "- Backup schedule hasn't triggered yet"
+            echo "- Jobs completed more than 24 hours ago"
+            echo ""
+            echo "jobs_status=none" >> $GITHUB_OUTPUT
+          else
+            echo "$JOBS" | jq -r '.[] | "\(.Status) | \(.Resource) | \(.Created)"' | column -t -s '|'
+
+            # Check for failures
+            FAILED=$(echo "$JOBS" | jq '[.[] | select(.Status == "FAILED")] | length')
+
+            if [ "$FAILED" -gt 0 ]; then
+              echo ""
+              echo "WARNING: $FAILED backup job(s) failed!"
+              echo "jobs_status=failed" >> $GITHUB_OUTPUT
+            else
+              echo ""
+              echo "All recent backup jobs completed successfully"
+              echo "jobs_status=pass" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Generate summary
+        run: |
+          echo ""
+          echo "=============================================="
+          echo "Backup Verification Summary"
+          echo "=============================================="
+          echo ""
+          echo "Environment:     ${{ env.ENV_NAME }}"
+          echo "PITR Status:     ${{ steps.pitr-check.outputs.pitr_status || 'unknown' }}"
+          echo "Vault Status:    ${{ steps.vault-check.outputs.vault_status || 'unknown' }}"
+          echo "Jobs Status:     ${{ steps.jobs-check.outputs.jobs_status || 'unknown' }}"
+          echo ""
+
+          # Determine overall status
+          PITR="${{ steps.pitr-check.outputs.pitr_status }}"
+          VAULT="${{ steps.vault-check.outputs.vault_status }}"
+          JOBS="${{ steps.jobs-check.outputs.jobs_status }}"
+
+          if [ "$PITR" = "fail" ] || [ "$JOBS" = "failed" ]; then
+            echo "OVERALL: ATTENTION REQUIRED"
+            echo ""
+            echo "Review the details above and take corrective action."
+            exit 1
+          elif [ "$VAULT" = "missing" ] || [ "$JOBS" = "none" ]; then
+            echo "OVERALL: INCOMPLETE"
+            echo ""
+            echo "BackupStack may not be deployed yet."
+            echo "See BACKUP_STRATEGY_PLAN.md for deployment instructions."
+          else
+            echo "OVERALL: HEALTHY"
+            echo ""
+            echo "All backup systems are functioning correctly."
+          fi

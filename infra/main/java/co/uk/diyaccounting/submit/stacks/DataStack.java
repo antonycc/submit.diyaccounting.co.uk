@@ -18,6 +18,7 @@ import software.amazon.awscdk.services.dynamodb.Attribute;
 import software.amazon.awscdk.services.dynamodb.AttributeType;
 import software.amazon.awscdk.services.dynamodb.BillingMode;
 import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.PointInTimeRecoverySpecification;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.constructs.Construct;
 
@@ -71,7 +72,13 @@ public class DataStack extends Stack {
     public DataStack(Construct scope, String id, StackProps stackProps, DataStackProps props) {
         super(scope, id, stackProps);
 
+        // Determine removal policy based on environment
+        // RETAIN for prod to prevent accidental data loss, DESTROY for non-prod
+        boolean isProd = "prod".equals(props.envName());
+        RemovalPolicy criticalTableRemovalPolicy = isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
+
         // Create receipts DynamoDB table for storing VAT submission receipts
+        // CRITICAL: 7-year HMRC retention requirement - PITR enabled for backup
         this.receiptsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsTable")
                 .tableName(props.sharedNames().receiptsTableName)
                 .partitionKey(Attribute.builder()
@@ -84,13 +91,19 @@ public class DataStack extends Stack {
                         .build())
                 .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
                 .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling (7 years)
-                .removalPolicy(RemovalPolicy.DESTROY)
+                .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
+                        .pointInTimeRecoveryEnabled(true)
+                        .build()) // Enable PITR for 35-day recovery window
+                .removalPolicy(criticalTableRemovalPolicy)
                 .build();
         infof(
-                "Created receipts DynamoDB table with name %s and id %s",
-                this.receiptsTable.getTableName(), this.receiptsTable.getNode().getId());
+                "Created receipts DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
+                this.receiptsTable.getTableName(),
+                this.receiptsTable.getNode().getId(),
+                criticalTableRemovalPolicy);
 
         // Create DynamoDB table for bundle storage
+        // HIGH priority - contains user subscription data - PITR enabled for backup
         this.bundlesTable = Table.Builder.create(this, props.resourceNamePrefix() + "-BundlesTable")
                 .tableName(props.sharedNames().bundlesTableName)
                 .partitionKey(Attribute.builder()
@@ -103,11 +116,16 @@ public class DataStack extends Stack {
                         .build())
                 .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
                 .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
-                .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
+                .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
+                        .pointInTimeRecoveryEnabled(true)
+                        .build()) // Enable PITR for 35-day recovery window
+                .removalPolicy(criticalTableRemovalPolicy)
                 .build();
         infof(
-                "Created bundles DynamoDB table with name %s and id %s",
-                this.bundlesTable.getTableName(), this.bundlesTable.getNode().getId());
+                "Created bundles DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
+                this.bundlesTable.getTableName(),
+                this.bundlesTable.getNode().getId(),
+                criticalTableRemovalPolicy);
 
         // Create DynamoDB table for bundle POST async request storage
         this.bundlePostAsyncRequestsTable = createAsyncRequestsTable(
@@ -149,6 +167,7 @@ public class DataStack extends Stack {
                 this.hmrcVatObligationGetAsyncRequestsTable.getTableName());
 
         // Create DynamoDB table for HMRC API requests storage
+        // MEDIUM priority - 90-day retention, PITR enabled for audit trail
         this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
                 .tableName(props.sharedNames().hmrcApiRequestsTableName)
                 .partitionKey(Attribute.builder()
@@ -161,12 +180,16 @@ public class DataStack extends Stack {
                         .build())
                 .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
                 .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
-                .removalPolicy(RemovalPolicy.DESTROY) // Safe to destroy in non-prod
+                .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
+                        .pointInTimeRecoveryEnabled(true)
+                        .build()) // Enable PITR for 35-day recovery window
+                .removalPolicy(criticalTableRemovalPolicy)
                 .build();
         infof(
-                "Created HMRC API Requests DynamoDB table with name %s and id %s",
+                "Created HMRC API Requests DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
                 this.hmrcApiRequestsTable.getTableName(),
-                this.hmrcApiRequestsTable.getNode().getId());
+                this.hmrcApiRequestsTable.getNode().getId(),
+                criticalTableRemovalPolicy);
 
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
