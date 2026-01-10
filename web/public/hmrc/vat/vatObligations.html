@@ -274,6 +274,10 @@
 
           if (!pendingRequest) {
             console.log("No pending obligations request found");
+            // Clear stale OAuth data
+            sessionStorage.removeItem("hmrcAccessToken");
+            sessionStorage.removeItem("oauth_state");
+            sessionStorage.removeItem("hmrcAccount");
             return;
           }
 
@@ -348,6 +352,9 @@
           // Clean up session storage
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("pendingObligationsRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
           console.log("Obligations retrieval completed successfully");
         } catch (error) {
           console.error("Error retrieving obligations:", error);
