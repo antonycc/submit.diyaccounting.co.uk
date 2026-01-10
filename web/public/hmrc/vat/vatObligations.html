@@ -270,7 +270,7 @@
       async function continueObligationsRetrieval() {
         try {
           const accessToken = sessionStorage.getItem("hmrcAccessToken");
-          const pendingRequest = JSON.parse(localStorage.getItem("pendingObligationsRequest") || "null");
+          const pendingRequest = JSON.parse(sessionStorage.getItem("pendingObligationsRequest") || "null");
 
           if (!pendingRequest) {
             console.log("No pending obligations request found");
@@ -345,9 +345,9 @@
           document.getElementById("obligationsResults").style.display = "block";
           hideStatus();
 
-          // Clean up
-          localStorage.removeItem("currentActivity");
-          localStorage.removeItem("pendingObligationsRequest");
+          // Clean up session storage
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("pendingObligationsRequest");
           console.log("Obligations retrieval completed successfully");
         } catch (error) {
           console.error("Error retrieving obligations:", error);
@@ -406,13 +406,13 @@
             const currentActivity = `${location.pathname}`;
 
             sessionStorage.setItem("oauth_state", state);
-            localStorage.setItem("pendingObligationsRequest", JSON.stringify(requestData));
-            localStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
-            localStorage.setItem("currentActivity", currentActivity);
+            sessionStorage.setItem("pendingObligationsRequest", JSON.stringify(requestData));
+            sessionStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
+            sessionStorage.setItem("currentActivity", currentActivity);
             if (hmrcAccount === "sandbox") {
-              localStorage.setItem("hmrcAccount", hmrcAccount);
+              sessionStorage.setItem("hmrcAccount", hmrcAccount);
             } else {
-              localStorage.removeItem("hmrcAccount");
+              sessionStorage.removeItem("hmrcAccount");
             }
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
@@ -465,7 +465,7 @@
             };
 
             // Add hmrcAccount header if present
-            const hmrcAccount = localStorage.getItem("hmrcAccount");
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
             if (hmrcAccount) {
               requestHeaders["hmrcAccount"] = hmrcAccount;
             }

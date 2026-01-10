@@ -208,7 +208,7 @@
       async function continueReturnRetrieval() {
         try {
           const accessToken = sessionStorage.getItem("hmrcAccessToken");
-          const pendingRequest = JSON.parse(localStorage.getItem("pendingReturnRequest") || "null");
+          const pendingRequest = JSON.parse(sessionStorage.getItem("pendingReturnRequest") || "null");
 
           if (!pendingRequest) {
             console.log("No pending return request found");
@@ -276,9 +276,9 @@
           document.getElementById("searchForm").style.display = "none";
           hideStatus();
 
-          // Clean up
-          localStorage.removeItem("currentActivity");
-          localStorage.removeItem("pendingReturnRequest");
+          // Clean up session storage
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("pendingReturnRequest");
           console.log("Return retrieval completed successfully");
         } catch (error) {
           console.error("Error retrieving VAT return:", error);
@@ -332,12 +332,12 @@
             const currentActivity = `${location.pathname}`;
 
             sessionStorage.setItem("oauth_state", state);
-            localStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
-            localStorage.setItem("currentActivity", currentActivity);
+            sessionStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
+            sessionStorage.setItem("currentActivity", currentActivity);
             if (hmrcAccount === "sandbox") {
-              localStorage.setItem("hmrcAccount", hmrcAccount);
+              sessionStorage.setItem("hmrcAccount", hmrcAccount);
             } else {
-              localStorage.removeItem("hmrcAccount");
+              sessionStorage.removeItem("hmrcAccount");
             }
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
@@ -384,7 +384,7 @@
             };
 
             // Add hmrcAccount header if present
-            const hmrcAccount = localStorage.getItem("hmrcAccount");
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
             if (hmrcAccount) {
               requestHeaders["hmrcAccount"] = hmrcAccount;
             }
