@@ -285,7 +285,17 @@
       async function continueVatSubmission() {
         try {
           const accessToken = sessionStorage.getItem("hmrcAccessToken");
-          const submissionData = JSON.parse(sessionStorage.getItem("submission_data"));
+          const submissionData = JSON.parse(sessionStorage.getItem("submission_data") || "null");
+
+          if (!submissionData) {
+            console.log("No pending submission data found");
+            // Clear stale OAuth data
+            sessionStorage.removeItem("hmrcAccessToken");
+            sessionStorage.removeItem("oauth_state");
+            sessionStorage.removeItem("hmrcAccount");
+            return;
+          }
+
           console.log("Retrieved submission data:", submissionData);
 
           showStatus("Submitting VAT return to HMRC...", "info");
@@ -303,10 +313,11 @@
           displayReceipt(submitResponse);
           // hideStatus(); // Don't hide success status immediately
 
-          // Clean up session storage
+          // Clean up session storage - keep token for subsequent HMRC operations
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("oauth_state");
           sessionStorage.removeItem("submission_data");
+          // Keep hmrcAccessToken and hmrcAccount for subsequent operations (view return, obligations)
           console.log("Continue submission handler (success, session storage cleared)");
         } catch (error) {
           console.error("Submission error:", error);

@@ -212,6 +212,8 @@
 
           if (!pendingRequest) {
             console.log("No pending return request found");
+            // Don't clear token - it might be valid from VAT submission
+            // Let form submission use it directly
             return;
           }
 
@@ -279,6 +281,9 @@
           // Clean up session storage
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("pendingReturnRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
           console.log("Return retrieval completed successfully");
         } catch (error) {
           console.error("Error retrieving VAT return:", error);
