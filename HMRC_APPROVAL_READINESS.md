@@ -84,8 +84,6 @@ This document provides a readiness assessment for HMRC MTD VAT production approv
 
 | Issue | Title | Effort | Notes |
 |-------|-------|--------|-------|
-| **#522** | Copyright and license everywhere | **Done** | SPDX headers added to 179 files |
-| **#519** | Version publish should work | **Done** | New publish.yml created |
 | **#520** | Workflow param consistency | Low | Refactor workflow inputs |
 | **#478** | Status bar feedback | Low | UX polish for bundle operations |
 
@@ -93,29 +91,10 @@ This document provides a readiness assessment for HMRC MTD VAT production approv
 
 | Issue | Title | Risk | Action Required |
 |-------|-------|------|-----------------|
-| **#402** | HMRC production credentials | **BLOCKING** | Email HMRC, manual process |
 | **#445** | Synthetic monitoring | Medium | Implement plan (CDK work) |
 | **#398** | Backup strategy | Medium | Implement plan (CDK work) |
 | **#426** | Strengthen security/privacy | **HIGH** | Audit needed before submission |
 | **#508** | Privacy monitoring/auditing | Medium | Operational procedures needed |
-
-### UX Bugs (Could Affect User Perception During HMRC Review)
-
-| Issue | Title | Risk | Notes |
-|-------|-------|------|-------|
-| **#466** | VAT form errors on revisiting | Medium | User confusion |
-| **#467** | Submit form retry loop | **HIGH** | Could cause duplicate submissions |
-
-### Post-Approval / Launch
-
-| Issue | Title | Notes |
-|-------|-------|-------|
-| #403 | Billing integration | Required for commercial launch |
-| #381 | Root account resources | Best practice, not blocking |
-| #425 | Optional VAT endpoints | Nice to have |
-| #468 | LocalStorage optimization | Performance improvement |
-| #396 | Mock HMRC backend | Testing improvement |
-| #521 | Ops dashboard | Nice to have |
 
 ---
 
@@ -128,10 +107,6 @@ This document provides a readiness assessment for HMRC MTD VAT production approv
 - CORS policy review
 - Token logging audit
 - *HMRC may ask about security measures*
-
-#### 2. #467 - Retry Loop Bug
-- Could cause duplicate VAT submissions
-- *This is a serious compliance risk*
 
 #### 3. #508 - Privacy Monitoring
 - No documented audit procedures
@@ -154,7 +129,6 @@ This document provides a readiness assessment for HMRC MTD VAT production approv
 
 ### Immediate (before HMRC submission)
 
-1. Fix #467 (retry loop bug)
 2. Review #426 (security items)
 3. Enable PITR on DynamoDB tables (from backup plan)
 
@@ -163,49 +137,6 @@ This document provides a readiness assessment for HMRC MTD VAT production approv
 1. Implement synthetic monitoring (#445)
 2. Enable backup strategy (#398)
 3. Document privacy audit procedures (#508)
-
-### Before Production Launch
-
-1. Obtain HMRC credentials (#402)
-2. Implement billing (#403)
-3. Move resources out of root account (#381)
-
----
-
-## 6. Recent Fixes (This Session)
-
-### ENVIRONMENT_NAME Bug Fix
-- **Problem**: Prod Lambda was accessing `ci/submit/user-sub-hash-salt` instead of `prod/submit/user-sub-hash-salt`
-- **Root Cause**: `ENVIRONMENT_NAME` env var not set on Lambda functions in AccountStack and HmrcStack
-- **Fix**: Added `.with("ENVIRONMENT_NAME", props.envName())` to all Lambda environments
-- **Additional**: Changed `subHasher.js` to fail fast instead of defaulting to "ci"
-
-### SPDX License Headers
-- Added `SPDX-License-Identifier: AGPL-3.0-only` and copyright to 179 source files
-- JavaScript and Java files covered
-
-### New publish.yml Workflow
-- Self-contained (no external workflow dependencies)
-- Standard semver versioning
-- Syncs version between package.json and pom.xml
-- Publishes to GitHub Packages (npm + Maven)
-- Creates git tags and GitHub Releases
-
----
-
-## 7. Files Changed in This Session
-
-```
-.github/workflows/publish.yml          - Rebuilt self-contained publish workflow
-app/services/subHasher.js              - Fail fast on missing ENVIRONMENT_NAME
-infra/.../AccountStack.java            - Add ENVIRONMENT_NAME to 3 lambdas
-infra/.../HmrcStack.java               - Add ENVIRONMENT_NAME to 5 lambdas
-scripts/add-spdx-headers.js            - Script to add license headers
-179 source files                       - SPDX license headers added
-_developers/SYNTHETIC_MONITORING_PLAN.md - New plan document
-_developers/BACKUP_STRATEGY_PLAN.md    - New plan document
-HMRC_MTD_APPROVAL_PLAN.md              - Updated with audit results
-```
 
 ---
 
