@@ -106,10 +106,9 @@ class SubmitApplicationCdkResourceTest {
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 20);
-        apiStackTemplate.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
+        // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
-        Template.fromStack(submitApplication.opsStack).resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template.fromStack(submitApplication.edgeStack).resourceCountIs("AWS::CloudFront::Distribution", 1);

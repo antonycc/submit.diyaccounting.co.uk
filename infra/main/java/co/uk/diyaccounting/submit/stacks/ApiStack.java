@@ -29,9 +29,6 @@ import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
 import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.Dashboard;
-import software.amazon.awscdk.services.cloudwatch.GraphWidget;
-import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -45,7 +42,6 @@ import software.constructs.Construct;
 
 public class ApiStack extends Stack {
 
-    public final Dashboard operationalDashboard;
     public final HttpApi httpApi;
 
     @Value.Immutable
@@ -101,12 +97,6 @@ public class ApiStack extends Stack {
         }
     }
 
-    public static class LambdaIntegrations {
-        public final List<Metric> lambdaInvocations = new java.util.ArrayList<>();
-        public final List<Metric> lambdaErrors = new java.util.ArrayList<>();
-        public final List<Metric> lambdaDurationsP95 = new java.util.ArrayList<>();
-        public final List<Metric> lambdaThrottles = new java.util.ArrayList<>();
-    }
 
     public ApiStack(final Construct scope, final String id, final ApiStackProps props) {
         super(scope, id, props);
@@ -178,9 +168,6 @@ public class ApiStack extends Stack {
                 .alarmDescription("API Gateway 5xx errors >= 1 for API " + this.httpApi.getApiId())
                 .build();
 
-        // Create integrations using Lambda function references
-        var lambdaIntegrations = new LambdaIntegrations();
-
         // Create authorizers to selectively apply to routes
         String issuer = "https://cognito-idp.%s.amazonaws.com/%s".formatted(getRegion(), props.userPoolId());
         HttpJwtAuthorizer jwtAuthorizer = HttpJwtAuthorizer.Builder.create(
@@ -228,13 +215,7 @@ public class ApiStack extends Stack {
             }
             createdRouteKeys.add(routeKeyStr);
             firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.ingestFunctionName());
-            createRouteForLambda(
-                    apiLambdaProps,
-                    jwtAuthorizer,
-                    customAuthorizer,
-                    lambdaIntegrations,
-                    createdRouteKeys,
-                    firstCreatorByRoute);
+            createRouteForLambda(apiLambdaProps, jwtAuthorizer, customAuthorizer, createdRouteKeys, firstCreatorByRoute);
         }
 
         // Synthesis-time diagnostics: list all created routes
@@ -250,69 +231,6 @@ public class ApiStack extends Stack {
             infof("No API routes synthesized");
         }
 
-        // Dashboard
-        List<List<software.amazon.awscdk.services.cloudwatch.IWidget>> rows = new java.util.ArrayList<>();
-
-        // Row 1: API Gateway metrics
-        rows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("API Gateway Requests")
-                        .left(List.of(this.httpApi.metricCount()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("API Gateway Errors")
-                        .left(List.of(this.httpApi.metricClientError(), this.httpApi.metricServerError()))
-                        .width(12)
-                        .height(6)
-                        .build()));
-
-        // Row 2: API Gateway latency
-        rows.add(List.of(GraphWidget.Builder.create()
-                .title("API Gateway p95 Latency")
-                .left(List.of(this.httpApi
-                        .metricLatency()
-                        .with(MetricOptions.builder().statistic("p95").build())))
-                .width(24)
-                .height(6)
-                .build()));
-
-        // Row 3: Lambda invocations and errors (if we have any lambdas)
-        if (!lambdaIntegrations.lambdaInvocations.isEmpty()) {
-            rows.add(List.of(
-                    GraphWidget.Builder.create()
-                            .title("Lambda Invocations by Function")
-                            .left(lambdaIntegrations.lambdaInvocations)
-                            .width(12)
-                            .height(6)
-                            .build(),
-                    GraphWidget.Builder.create()
-                            .title("Lambda Errors by Function")
-                            .left(lambdaIntegrations.lambdaErrors)
-                            .width(12)
-                            .height(6)
-                            .build()));
-            rows.add(List.of(
-                    GraphWidget.Builder.create()
-                            .title("Lambda p95 Duration by Function")
-                            .left(lambdaIntegrations.lambdaDurationsP95)
-                            .width(12)
-                            .height(6)
-                            .build(),
-                    GraphWidget.Builder.create()
-                            .title("Lambda Throttles by Function")
-                            .left(lambdaIntegrations.lambdaThrottles)
-                            .width(12)
-                            .height(6)
-                            .build()));
-        }
-
-        this.operationalDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-RestApiDashboard")
-                .dashboardName(props.resourceNamePrefix() + "-api")
-                .widgets(rows)
-                .build();
-
         // Outputs
         cfnOutput(this, "HttpApiId", this.httpApi.getHttpApiId());
 
@@ -322,11 +240,6 @@ public class ApiStack extends Stack {
                 .exportName(props.resourceNamePrefix() + "-HttpApiUrl")
                 .description("API Gateway v2 URL for " + props.resourceNamePrefix())
                 .build();
-        cfnOutput(
-                this,
-                "OperationalDashboard",
-                "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
-                        + "#dashboards:name=" + this.operationalDashboard.getDashboardName());
 
         infof(
                 "ApiStack %s created successfully for %s with API Gateway URL: %s",
@@ -337,7 +250,6 @@ public class ApiStack extends Stack {
             AbstractApiLambdaProps apiLambdaProps,
             HttpJwtAuthorizer jwtAuthorizer,
             HttpLambdaAuthorizer customAuthorizer,
-            LambdaIntegrations lambdaIntegrations,
             java.util.Set<String> createdRouteKeys,
             java.util.Map<String, String> firstCreatorByRoute) {
 
@@ -400,13 +312,6 @@ public class ApiStack extends Stack {
                         .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":"
                                 + this.httpApi.getApiId() + "/*")
                         .build());
-
-        // Collect metrics for monitoring
-        lambdaIntegrations.lambdaInvocations.add(fn.metricInvocations());
-        lambdaIntegrations.lambdaErrors.add(fn.metricErrors());
-        lambdaIntegrations.lambdaDurationsP95.add(fn.metricDuration()
-                .with(MetricOptions.builder().statistic("p95").build()));
-        lambdaIntegrations.lambdaThrottles.add(fn.metricThrottles());
 
         // Per-function error alarm (>=1 error in 5 minutes)
         Alarm.Builder.create(this, apiLambdaProps.ingestFunctionName() + "-LambdaErrors-" + keySuffix)

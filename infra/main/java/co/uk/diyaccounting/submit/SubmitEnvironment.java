@@ -129,6 +129,7 @@ public class SubmitEnvironment {
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                        .apexDomain(sharedNames.hostedZoneName)
                         .build());
 
         // Create ObservabilityUE1Stack with resources used in monitoring the application us-east-1
