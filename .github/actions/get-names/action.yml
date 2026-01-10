@@ -73,35 +73,13 @@ runs:
         fi
 
         if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
-          # Default fallback for prod
+          # Prod: Always use commit SHA for consistent, reproducible deployment names
+          # This ensures the same commit always deploys to the same name, regardless of
+          # whether it's a direct push, merged PR, or re-run of tests
           DEPLOYMENT_NAME="prod-${GET_NAMES_GITHUB_SHA::7}"
-
-          # Try to detect if this prod commit came from a merged PR, and use env-<branch>
-          if [ "${GITHUB_REF:-}" = "refs/heads/${GET_NAMES_PROD_BRANCH_NAME?}" ] && [ "${GET_NAMES_GITHUB_EVENT_NAME:-}" = "push" ]; then
-            API_URL="${GITHUB_API_URL:-https://api.github.com}"
-            REPO="${GITHUB_REPOSITORY?}"
-            AUTH_HEADER="authorization: Bearer ${GET_NAMES_GITHUB_TOKEN:-}"
-            ACCEPT_HEADER="accept: application/vnd.github+json"
-
-            PRS_JSON=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" \
-              "$API_URL/repos/$REPO/commits/${GET_NAMES_GITHUB_SHA}/pulls?per_page=1") || PRS_JSON='[]'
-
-            # Extract the PR head branch name (if jq is available). Fallback to a simple grep if jq is missing
-            if command -v jq >/dev/null 2>&1; then
-              MERGED_BRANCH=$(echo "$PRS_JSON" | jq -r '.[0].head.ref // empty')
-            else
-              MERGED_BRANCH=$(echo "$PRS_JSON" | sed -n 's/.*"head"\s*:\s*{[^}]*"ref"\s*:\s*"\([^"]*\)".*/\1/p' | head -n1)
-            fi
-
-            if [ -n "${MERGED_BRANCH:-}" ]; then
-              CLEANED_MERGED=$(echo "$MERGED_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -e 's/dependabot//g' -e 's/feature//g' -e 's/copilot//g' -e 's/[^a-z0-9]//g')
-              if [ -n "$CLEANED_MERGED" ]; then
-                DEPLOYMENT_NAME="prod-${CLEANED_MERGED:0:7}"
-              fi
-            fi
-          fi
         else
-          # Truncate to 9 chars for branch-based deployments to match prior logic (ci-xxxxxxxxx)
+          # CI: Always use branch name for predictable feature branch deployments
+          # This ensures tests run against the same deployment that was just created
           DEPLOYMENT_NAME="ci-${CLEANED:0:9}"
         fi
         if [ -n "${GET_NAMES_DEPLOYMENT_NAME:-}" ]; then
