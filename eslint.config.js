@@ -66,7 +66,7 @@ export default [
   },
   {
     files: ["**/*.js"],
-    ignores: ["**/*-tests/**/*.js", "**/*.test.js", "eslint.config.js"],
+    ignores: ["**/*-tests/**/*.js", "**/*.test.js", "eslint.config.js", "web/pubic/tests", "web/pubic/docs"],
     rules: {
       ...security.configs.recommended.rules,
       "security/detect-non-literal-fs-filename": "off",

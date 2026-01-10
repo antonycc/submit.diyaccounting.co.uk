@@ -268,22 +268,15 @@ async function maybeInitRum() {
         console.warn("Failed to load RUM client:", e);
       };
       document.head.appendChild(z);
-    })(
-      "cwr",
-      c.appMonitorId,
-      "0.0.2-4",
-      c.region,
-      "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js",
-      {
-        sessionSampleRate: c.sessionSampleRate ?? 1,
-        guestRoleArn: c.guestRoleArn,
-        identityPoolId: c.identityPoolId,
-        endpoint: `https://dataplane.rum.${c.region}.amazonaws.com`,
-        telemetries: ["performance", "errors", "http"],
-        allowCookies: true,
-        enableXRay: true,
-      },
-    );
+    })("cwr", c.appMonitorId, "0.0.2-4", c.region, "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js", {
+      sessionSampleRate: c.sessionSampleRate ?? 1,
+      guestRoleArn: c.guestRoleArn,
+      identityPoolId: c.identityPoolId,
+      endpoint: `https://dataplane.rum.${c.region}.amazonaws.com`,
+      telemetries: ["performance", "errors", "http"],
+      allowCookies: true,
+      enableXRay: true,
+    });
     /* eslint-enable sonarjs/no-parameter-reassignment */
   } catch (e) {
     console.warn("Failed to init RUM:", e);
@@ -459,12 +452,14 @@ if (typeof window !== "undefined") {
     keysToMigrate.forEach((key) => {
       try {
         localStorage.removeItem(key);
-      } catch (e) {
+      } catch (error) {
         // Ignore storage errors
+        console.warn(`Failed to remove stale localStorage key "${key}":`, error);
       }
     });
-  } catch (e) {
+  } catch (error) {
     // Ignore errors in test environments
+    console.warn("Failed to run storage migration:", error);
   }
 })();
 
