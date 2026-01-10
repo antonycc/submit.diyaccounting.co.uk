@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 import co.uk.diyaccounting.submit.stacks.ApexStack;
+import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
@@ -26,6 +27,7 @@ public class SubmitEnvironment {
     public final ObservabilityStack observabilityStack;
     public final ObservabilityUE1Stack observabilityUE1Stack;
     public final DataStack dataStack;
+    public final BackupStack backupStack;
     public final IdentityStack identityStack;
     public final ApexStack apexStack;
 
@@ -166,6 +168,25 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .build());
+
+        // Create BackupStack for AWS Backup infrastructure (depends on DataStack tables)
+        // Note: alertTopic is configured at application level (OpsStack), not here
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.backupStackId, deploymentName, envName);
+        this.backupStack = new BackupStack(
+                app,
+                sharedNames.backupStackId,
+                BackupStack.BackupStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .build());
+        this.backupStack.addDependency(this.dataStack);
 
         // Create the identity stack before any user-aware services
         infof(
