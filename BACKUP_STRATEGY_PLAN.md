@@ -7,9 +7,13 @@
 
 ---
 
-## Overview
+## Executive Summary
 
-This document describes the implementation plan for a comprehensive backup strategy that ensures data durability and disaster recovery capabilities beyond AWS's internal mechanisms.
+This document describes a comprehensive backup strategy with:
+1. **Phase 1**: Same-region local backups with PITR and AWS Backup
+2. **Phase 2**: Multi-account backup strategy with dedicated backup account
+3. **Disaster Recovery**: Scripts and procedures for account loss scenarios
+4. **Monitoring**: Operations dashboard integration and backup health alarms
 
 ---
 
@@ -20,9 +24,17 @@ This document describes the implementation plan for a comprehensive backup strat
 | Resource | Current Protection | Gap |
 |----------|-------------------|-----|
 | DynamoDB Tables | TTL-based expiry only | No PITR, no cross-region backup |
-| Secrets Manager | AWS-managed replication | No external backup |
-| Cognito User Pool | None | No user export/backup |
+| Secrets Manager | AWS-managed replication | Needs cross-region replica |
+| Cognito User Pool | AWS-managed | User list export only (passwords cannot be exported) |
 | S3 Static Assets | Single region | No cross-region replication |
+
+### Resources NOT Backed Up (By Design)
+
+| Resource | Reason | Recovery Strategy |
+|----------|--------|-------------------|
+| **Cognito User Pool** | AWS Cognito does not support password/credential export due to security constraints. User passwords are stored in hashed form and cannot be extracted. | In DR scenario: (1) Export user metadata via `aws cognito-idp list-users`, (2) Import users to new pool without passwords, (3) Force password reset for all users via email. Users retain their `sub` identity. |
+| **OAuth Tokens (HMRC)** | Tokens are short-lived (4 hours) and regenerated on user login. | Users re-authenticate with HMRC after DR. No backup needed. |
+| **Session State** | Stored in browser sessionStorage, not persisted server-side. | Users restart their session after DR. No backup needed. |
 
 ### Critical Data Assets
 
@@ -31,135 +43,177 @@ This document describes the implementation plan for a comprehensive backup strat
 | Receipts Table | **Critical** | RTO: 4 hours | 7 years (HMRC requirement) |
 | Bundles Table | High | RTO: 4 hours | Duration of subscription |
 | User Sub Hash Salt | **Critical** | RTO: 1 hour | Indefinite (data integrity) |
+| HMRC Client Secret | **Critical** | RTO: 1 hour | Until rotated |
 | HMRC API Requests | Medium | RTO: 24 hours | 90 days |
 | Async Request Tables | Low | RTO: 24 hours | 7 days |
 
----
+### Secrets Manager Backup Strategy
 
-## Proposed Architecture
+AWS Secrets Manager secrets require special handling:
 
-```
-                        Primary Region (eu-west-2)
-                        +------------------------+
-                        |                        |
-    +-------------------+  DynamoDB Tables       +-------------------+
-    |                   |  (with PITR enabled)   |                   |
-    |                   +------------------------+                   |
-    |                              |                                 |
-    |                              | Point-in-Time Recovery          |
-    |                              | (35 days continuous)            |
-    |                              v                                 |
-    |                   +------------------------+                   |
-    |                   |  AWS Backup            |                   |
-    |                   |  (Daily snapshots)     |                   |
-    |                   +------------------------+                   |
-    |                              |                                 |
-    |                              | Cross-region copy               |
-    |                              v                                 |
-    |                   +------------------------+                   |
-    |                   |  DR Region (eu-west-1) |                   |
-    |                   |  Backup Vault          |                   |
-    |                   +------------------------+                   |
-    |                                                                |
-    |   Secrets Manager                                              |
-    |   +------------------------+                                   |
-    |   |  Salt Secret           +---------------------------------->|
-    |   |  (with replica)        |  Multi-region replication        |
-    |   +------------------------+                                   |
-    |                                                                |
-    +----------------------------------------------------------------+
+1. **USER_SUB_HASH_SALT**: This salt is used to hash Cognito user `sub` values before storing in DynamoDB. **If lost, all user data mappings become irrecoverable.** This is the most critical secret.
+
+2. **HMRC_CLIENT_SECRET**: OAuth client secret for HMRC API access. Can be regenerated via HMRC Developer Hub if lost, but requires manual re-registration.
+
+**Backup Methods**:
+
+| Method | Implementation | Frequency |
+|--------|---------------|-----------|
+| Cross-region replica | Use Secrets Manager replication to eu-west-1 | Real-time |
+| Encrypted export | Run `scripts/backup-salts.sh` to export to backup account S3 | Monthly |
+| Manual secure storage | Store in password manager (1Password/Bitwarden) | On creation/rotation |
+
+**Existing Script**: `scripts/backup-salts.sh` - Already in place for salt backup.
+
+**Recommended Action**: Enable Secrets Manager cross-region replication:
+```bash
+aws secretsmanager replicate-secret-to-regions \
+    --secret-id prod/submit/user_sub_hash_salt \
+    --add-replica-regions Region=eu-west-1
 ```
 
+### Cognito User Pool Backup Strategy
+
+AWS Cognito does not support full backup/restore of user pools. Passwords are stored in a one-way hashed format and cannot be exported.
+
+**What CAN be backed up**:
+- User attributes (email, sub, custom attributes)
+- User metadata (creation date, status, MFA settings)
+- Group memberships
+
+**What CANNOT be backed up**:
+- User passwords (by AWS security design)
+- MFA device configurations
+
+**Export Script** (add to `scripts/export-cognito-users.sh`):
+```bash
+#!/bin/bash
+# Export Cognito users (metadata only, no passwords)
+USER_POOL_ID="$1"
+OUTPUT_FILE="cognito-users-$(date +%Y%m%d).json"
+
+aws cognito-idp list-users \
+    --user-pool-id "$USER_POOL_ID" \
+    --output json > "$OUTPUT_FILE"
+
+echo "Exported to $OUTPUT_FILE"
+```
+
+**DR Recovery Process for Cognito**:
+1. Create new User Pool with same configuration
+2. Import user metadata from backup
+3. Trigger password reset emails to all users
+4. Update application Cognito configuration
+
 ---
 
-## Implementation Details
+## Architecture Overview
 
-### 1. Enable Point-in-Time Recovery (PITR) on DynamoDB Tables
+### Phase 1: Same-Region Local Backups
+
+```
+Deployment Account (eu-west-2)
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  DynamoDB Tables ──────┬─────► PITR (35-day window)    │
+│  (receipts, bundles)   │       (quick recovery from    │
+│                        │        accidental deletion)   │
+│                        │                                │
+│                        └─────► AWS Backup              │
+│                                └─► Local Vault         │
+│                                    (daily snapshots)   │
+│                                                         │
+│  S3 Backup Bucket ──────────► DynamoDB exports         │
+│  (versioned)                  (JSON archives)          │
+│       │                                                 │
+│       └─────────────────────► Ship to Backup Account   │
+│                               (cross-account copy)     │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+
+Note: No cross-region vault within deployment account.
+Multi-region redundancy is handled by the backup account.
+```
+
+### Phase 2: Multi-Account Backup Strategy
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    AWS Organizations                                │
+│                                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────┐ │
+│  │ CI Account  │  │Prod Account │  │ Backup Account              │ │
+│  │ (eu-west-2) │  │ (eu-west-2) │  │ (Multi-Region Storage)      │ │
+│  │             │  │             │  │                             │ │
+│  │ AWS Backup  │  │ AWS Backup  │  │ ┌─────────────────────────┐ │ │
+│  │  │          │  │  │          │──│─▶│ Central Backup Vault  │ │ │
+│  │  └─►Local   │  │  └─►Local   │  │ │ (WORM/Compliance Mode) │ │ │
+│  │     Vault   │  │       Vault │  │ │                         │ │ │
+│  │             │  │             │  │ │ ┌─────────────────────┐ │ │ │
+│  │ S3 Exports  │  │ S3 Exports  │  │ │ │ S3 Archive Bucket  │ │ │ │
+│  │  │          │  │  │          │──│─▶│ (Multi-Region)       │ │ │ │
+│  │  └──────────│──│──└──────────│──│─▶│ (Object Lock)       │ │ │ │
+│  │             │  │             │  │ │ └─────────────────────┘ │ │ │
+│  └─────────────┘  └─────────────┘  │ └─────────────────────────┘ │ │
+│                                     └─────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### DR Philosophy
+
+**Account loss and region loss are treated identically**: In either scenario, we deploy
+a fresh PROD account seeded from the backup account archives.
+
+**No cross-region failover**: We accept downtime during extreme events (AWS region loss)
+rather than maintaining complex multi-region active infrastructure. A sustained eu-west-2
+or us-east-1 outage is an unreasonably rare event; we would wait it out and redeploy to
+our usual regions when available.
+
+**Data locality matters**: Our customers operate in the UK. Being explicit about eu-west-2
+deployment is more valuable than offering theoretical multi-region flexibility. GDPR
+compliance and data residency are clearer with explicit region targeting.
+
+**Code changes acceptable for region change**: If we ever needed to deploy outside
+eu-west-2/us-east-1 (e.g., persistent region loss), we accept that this requires
+code changes to retarget the deployment.
+
+### Disaster Recovery Flow
+
+```
+1. Total loss of PROD account OR eu-west-2 region detected
+2. Create new AWS account (if account lost) or wait for region recovery
+3. Pull backup archives from backup account (multi-region resilient)
+4. Deploy CDK stacks to new/recovered account
+5. Restore DynamoDB tables from backup archives
+6. Restore secrets (from secure offline storage)
+7. Trigger Cognito password reset for all users
+8. Update DNS to point to new deployment
+```
+
+---
+
+## Phase 1: Same-Region Local Backups
+
+### 1.1 Enable Point-in-Time Recovery (PITR)
 
 **File**: `infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java`
 
-#### Changes to Receipts Table (Critical)
+Update each critical table:
 
 ```java
-// Current:
+// Receipts Table (Critical)
 this.receiptsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsTable")
         .tableName(props.sharedNames().receiptsTableName)
-        .partitionKey(...)
-        .sortKey(...)
+        .partitionKey(Attribute.builder().name("hashedSub").type(AttributeType.STRING).build())
+        .sortKey(Attribute.builder().name("receiptId").type(AttributeType.STRING).build())
         .billingMode(BillingMode.PAY_PER_REQUEST)
         .timeToLiveAttribute("ttl")
-        .removalPolicy(RemovalPolicy.DESTROY)
-        .build();
-
-// Updated:
-this.receiptsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsTable")
-        .tableName(props.sharedNames().receiptsTableName)
-        .partitionKey(Attribute.builder()
-                .name("hashedSub")
-                .type(AttributeType.STRING)
-                .build())
-        .sortKey(Attribute.builder()
-                .name("receiptId")
-                .type(AttributeType.STRING)
-                .build())
-        .billingMode(BillingMode.PAY_PER_REQUEST)
-        .timeToLiveAttribute("ttl")
-        .pointInTimeRecovery(true)  // <-- Enable PITR
-        .removalPolicy(props.envName().equals("prod")
-                ? RemovalPolicy.RETAIN   // <-- Retain in production
-                : RemovalPolicy.DESTROY)
+        .pointInTimeRecovery(true)  // Enable PITR
+        .removalPolicy(props.envName().equals("prod") ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
         .build();
 ```
 
-#### Changes to Bundles Table (High)
-
-```java
-// Updated:
-this.bundlesTable = Table.Builder.create(this, props.resourceNamePrefix() + "-BundlesTable")
-        .tableName(props.sharedNames().bundlesTableName)
-        .partitionKey(Attribute.builder()
-                .name("hashedSub")
-                .type(AttributeType.STRING)
-                .build())
-        .sortKey(Attribute.builder()
-                .name("bundleId")
-                .type(AttributeType.STRING)
-                .build())
-        .billingMode(BillingMode.PAY_PER_REQUEST)
-        .timeToLiveAttribute("ttl")
-        .pointInTimeRecovery(true)  // <-- Enable PITR
-        .removalPolicy(props.envName().equals("prod")
-                ? RemovalPolicy.RETAIN
-                : RemovalPolicy.DESTROY)
-        .build();
-```
-
-#### Changes to HMRC API Requests Table (Medium)
-
-```java
-// Updated:
-this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
-        .tableName(props.sharedNames().hmrcApiRequestsTableName)
-        .partitionKey(Attribute.builder()
-                .name("hashedSub")
-                .type(AttributeType.STRING)
-                .build())
-        .sortKey(Attribute.builder()
-                .name("id")
-                .type(AttributeType.STRING)
-                .build())
-        .billingMode(BillingMode.PAY_PER_REQUEST)
-        .timeToLiveAttribute("ttl")
-        .pointInTimeRecovery(true)  // <-- Enable PITR
-        .removalPolicy(props.envName().equals("prod")
-                ? RemovalPolicy.RETAIN
-                : RemovalPolicy.DESTROY)
-        .build();
-```
-
----
-
-### 2. AWS Backup Integration
+### 1.2 Create BackupStack (Environment Stack)
 
 **File**: `infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java`
 
@@ -183,24 +237,23 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.backup.BackupPlan;
-import software.amazon.awscdk.services.backup.BackupPlanRule;
-import software.amazon.awscdk.services.backup.BackupResource;
-import software.amazon.awscdk.services.backup.BackupSelection;
-import software.amazon.awscdk.services.backup.BackupVault;
+import software.amazon.awscdk.services.backup.*;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.Schedule;
-import software.amazon.awscdk.services.iam.Role;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.*;
+import software.amazon.awscdk.services.kms.Key;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.BucketEncryption;
+import software.amazon.awscdk.services.sns.Topic;
 import software.constructs.Construct;
 
 public class BackupStack extends Stack {
 
     public BackupVault primaryVault;
-    public BackupVault drVault;
     public BackupPlan dailyBackupPlan;
+    public Bucket backupExportsBucket;
+    public Key backupKmsKey;
 
     @Value.Immutable
     public interface BackupStackProps extends StackProps, SubmitStackProps {
@@ -229,13 +282,34 @@ public class BackupStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        // DR region for cross-region backups
-        String drRegion();
+        // Note: No DR region - multi-region redundancy handled by backup account
 
-        // Retention settings
-        int dailyBackupRetentionDays();
-        int weeklyBackupRetentionDays();
-        int monthlyBackupRetentionDays();
+        // Retention settings (days)
+        @Value.Default
+        default int dailyBackupRetentionDays() {
+            return 35;
+        }
+
+        @Value.Default
+        default int weeklyBackupRetentionDays() {
+            return 90;
+        }
+
+        @Value.Default
+        default int monthlyBackupRetentionDays() {
+            return 365;
+        }
+
+        @Value.Default
+        default int complianceRetentionDays() {
+            return 2555; // 7 years for HMRC compliance
+        }
+
+        // Optional: Backup account ID for cross-account replication
+        String backupAccountId();
+
+        // Alert topic for notifications
+        Topic alertTopic();
 
         static ImmutableBackupStackProps.Builder builder() {
             return ImmutableBackupStackProps.builder();
@@ -249,21 +323,70 @@ public class BackupStack extends Stack {
     public BackupStack(Construct scope, String id, StackProps stackProps, BackupStackProps props) {
         super(scope, id, stackProps);
 
+        boolean isProd = props.envName().equals("prod");
+
         // ============================================================================
-        // Backup Vaults
+        // KMS Key for Backup Encryption (cross-account capable)
         // ============================================================================
 
-        // Primary vault in the main region
-        this.primaryVault = BackupVault.Builder.create(this, props.resourceNamePrefix() + "-PrimaryVault")
-                .backupVaultName(props.resourceNamePrefix() + "-primary-vault")
-                .removalPolicy(props.envName().equals("prod")
-                        ? RemovalPolicy.RETAIN
-                        : RemovalPolicy.DESTROY)
+        this.backupKmsKey = Key.Builder.create(this, props.resourceNamePrefix() + "-BackupKey")
+                .alias("alias/" + props.resourceNamePrefix() + "-backup")
+                .enableKeyRotation(true)
+                .removalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .description("KMS key for backup encryption - " + props.resourceNamePrefix())
                 .build();
 
-        // Note: DR vault must be created in the DR region separately
-        // This is a placeholder for documentation purposes
-        // Cross-region copy is configured in the backup rules
+        // Allow backup service and cross-account access if backup account configured
+        if (props.backupAccountId() != null && !props.backupAccountId().isEmpty()) {
+            backupKmsKey.addToResourcePolicy(PolicyStatement.Builder.create()
+                    .principals(List.of(
+                            new ArnPrincipal("arn:aws:iam::" + props.backupAccountId() + ":root"),
+                            new ServicePrincipal("backup.amazonaws.com")))
+                    .actions(List.of("kms:Decrypt", "kms:GenerateDataKey", "kms:CreateGrant"))
+                    .resources(List.of("*"))
+                    .build());
+        }
+
+        // ============================================================================
+        // S3 Bucket for DynamoDB Exports
+        // ============================================================================
+
+        this.backupExportsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-BackupExports")
+                .bucketName(props.sharedNames().dashedDeploymentDomainName + "-backup-exports")
+                .encryption(BucketEncryption.KMS)
+                .encryptionKey(backupKmsKey)
+                .versioned(true)
+                .removalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .autoDeleteObjects(!isProd)
+                .lifecycleRules(List.of(
+                        software.amazon.awscdk.services.s3.LifecycleRule.builder()
+                                .id("TransitionToIA")
+                                .transitions(List.of(
+                                        software.amazon.awscdk.services.s3.Transition.builder()
+                                                .storageClass(software.amazon.awscdk.services.s3.StorageClass.INFREQUENT_ACCESS)
+                                                .transitionAfter(Duration.days(30))
+                                                .build(),
+                                        software.amazon.awscdk.services.s3.Transition.builder()
+                                                .storageClass(software.amazon.awscdk.services.s3.StorageClass.GLACIER)
+                                                .transitionAfter(Duration.days(90))
+                                                .build()))
+                                .build()))
+                .build();
+
+        // ============================================================================
+        // Primary Backup Vault
+        // ============================================================================
+
+        this.primaryVault = BackupVault.Builder.create(this, props.resourceNamePrefix() + "-PrimaryVault")
+                .backupVaultName(props.resourceNamePrefix() + "-primary-vault")
+                .encryptionKey(backupKmsKey)
+                .removalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .notificationTopic(props.alertTopic())
+                .notificationEvents(List.of(
+                        BackupVaultEvents.BACKUP_JOB_FAILED,
+                        BackupVaultEvents.COPY_JOB_FAILED,
+                        BackupVaultEvents.RESTORE_JOB_FAILED))
+                .build();
 
         // ============================================================================
         // IAM Role for AWS Backup
@@ -278,95 +401,70 @@ public class BackupStack extends Stack {
                 .build();
 
         // ============================================================================
-        // Backup Plan - Daily
+        // Backup Plan - Daily, Weekly, Monthly
         // ============================================================================
 
-        this.dailyBackupPlan = BackupPlan.Builder.create(this, props.resourceNamePrefix() + "-DailyBackupPlan")
-                .backupPlanName(props.resourceNamePrefix() + "-daily-backup")
-                .backupPlanRules(List.of(
-                        // Daily backup at 02:00 UTC, retained for configured days
-                        BackupPlanRule.Builder.create()
-                                .ruleName("DailyBackup")
-                                .backupVault(this.primaryVault)
-                                .scheduleExpression(Schedule.cron(software.amazon.awscdk.services.events.CronOptions.builder()
-                                        .hour("2")
-                                        .minute("0")
-                                        .build()))
-                                .deleteAfter(Duration.days(props.dailyBackupRetentionDays()))
-                                .startWindow(Duration.hours(1))
-                                .completionWindow(Duration.hours(2))
-                                // Cross-region copy for disaster recovery
-                                .copyActions(List.of(software.amazon.awscdk.services.backup.BackupPlanCopyActionProps.builder()
-                                        .destinationBackupVault(BackupVault.fromBackupVaultArn(
-                                                this,
-                                                "DRVault",
-                                                String.format("arn:aws:backup:%s:%s:backup-vault:%s-dr-vault",
-                                                        props.drRegion(),
-                                                        this.getAccount(),
-                                                        props.resourceNamePrefix())))
-                                        .deleteAfter(Duration.days(props.dailyBackupRetentionDays()))
-                                        .build()))
-                                .build(),
+        List<BackupPlanRule> backupRules = new java.util.ArrayList<>();
 
-                        // Weekly backup (Sundays), retained longer
-                        BackupPlanRule.Builder.create()
-                                .ruleName("WeeklyBackup")
-                                .backupVault(this.primaryVault)
-                                .scheduleExpression(Schedule.cron(software.amazon.awscdk.services.events.CronOptions.builder()
-                                        .weekDay("SUN")
-                                        .hour("3")
-                                        .minute("0")
-                                        .build()))
-                                .deleteAfter(Duration.days(props.weeklyBackupRetentionDays()))
-                                .startWindow(Duration.hours(1))
-                                .completionWindow(Duration.hours(3))
-                                .build(),
+        // Daily backup at 02:00 UTC (local vault only - cross-account copy handled separately)
+        backupRules.add(BackupPlanRule.Builder.create()
+                .ruleName("DailyBackup")
+                .backupVault(this.primaryVault)
+                .scheduleExpression(Schedule.cron(software.amazon.awscdk.services.events.CronOptions.builder()
+                        .hour("2").minute("0").build()))
+                .deleteAfter(Duration.days(props.dailyBackupRetentionDays()))
+                .startWindow(Duration.hours(1))
+                .completionWindow(Duration.hours(2))
+                .build());
 
-                        // Monthly backup (1st of month), retained for compliance
-                        BackupPlanRule.Builder.create()
-                                .ruleName("MonthlyBackup")
-                                .backupVault(this.primaryVault)
-                                .scheduleExpression(Schedule.cron(software.amazon.awscdk.services.events.CronOptions.builder()
-                                        .day("1")
-                                        .hour("4")
-                                        .minute("0")
-                                        .build()))
-                                .deleteAfter(Duration.days(props.monthlyBackupRetentionDays()))
-                                .startWindow(Duration.hours(1))
-                                .completionWindow(Duration.hours(4))
-                                .build()))
+        // Note: Cross-account copy to backup account is configured via:
+        // 1. S3 cross-account replication for exports
+        // 2. AWS Backup cross-account copy jobs (configured in backup account)
+
+        // Weekly backup (Sundays at 03:00 UTC)
+        backupRules.add(BackupPlanRule.Builder.create()
+                .ruleName("WeeklyBackup")
+                .backupVault(this.primaryVault)
+                .scheduleExpression(Schedule.cron(software.amazon.awscdk.services.events.CronOptions.builder()
+                        .weekDay("SUN").hour("3").minute("0").build()))
+                .deleteAfter(Duration.days(props.weeklyBackupRetentionDays()))
+                .startWindow(Duration.hours(1))
+                .completionWindow(Duration.hours(3))
+                .build());
+
+        // Monthly backup (1st of month at 04:00 UTC) - HMRC compliance
+        backupRules.add(BackupPlanRule.Builder.create()
+                .ruleName("MonthlyCompliance")
+                .backupVault(this.primaryVault)
+                .scheduleExpression(Schedule.cron(software.amazon.awscdk.services.events.CronOptions.builder()
+                        .day("1").hour("4").minute("0").build()))
+                .deleteAfter(Duration.days(props.complianceRetentionDays()))
+                .moveToColdStorageAfter(Duration.days(90))
+                .startWindow(Duration.hours(1))
+                .completionWindow(Duration.hours(4))
+                .build());
+
+        this.dailyBackupPlan = BackupPlan.Builder.create(this, props.resourceNamePrefix() + "-BackupPlan")
+                .backupPlanName(props.resourceNamePrefix() + "-backup-plan")
+                .backupPlanRules(backupRules)
                 .build();
 
         // ============================================================================
         // Backup Selection - Critical Tables
         // ============================================================================
 
-        // Import existing tables by ARN
-        ITable receiptsTable = Table.fromTableArn(
-                this,
-                "ImportedReceiptsTable",
+        ITable receiptsTable = Table.fromTableArn(this, "ImportedReceiptsTable",
                 String.format("arn:aws:dynamodb:%s:%s:table/%s",
-                        this.getRegion(),
-                        this.getAccount(),
-                        props.sharedNames().receiptsTableName));
+                        this.getRegion(), this.getAccount(), props.sharedNames().receiptsTableName));
 
-        ITable bundlesTable = Table.fromTableArn(
-                this,
-                "ImportedBundlesTable",
+        ITable bundlesTable = Table.fromTableArn(this, "ImportedBundlesTable",
                 String.format("arn:aws:dynamodb:%s:%s:table/%s",
-                        this.getRegion(),
-                        this.getAccount(),
-                        props.sharedNames().bundlesTableName));
+                        this.getRegion(), this.getAccount(), props.sharedNames().bundlesTableName));
 
-        ITable hmrcApiRequestsTable = Table.fromTableArn(
-                this,
-                "ImportedHmrcApiRequestsTable",
+        ITable hmrcApiRequestsTable = Table.fromTableArn(this, "ImportedHmrcApiRequestsTable",
                 String.format("arn:aws:dynamodb:%s:%s:table/%s",
-                        this.getRegion(),
-                        this.getAccount(),
-                        props.sharedNames().hmrcApiRequestsTableName));
+                        this.getRegion(), this.getAccount(), props.sharedNames().hmrcApiRequestsTableName));
 
-        // Create backup selection for critical tables
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
                 .backupPlan(this.dailyBackupPlan)
                 .role(backupRole)
@@ -382,214 +480,770 @@ public class BackupStack extends Stack {
         // ============================================================================
         cfnOutput(this, "PrimaryVaultArn", this.primaryVault.getBackupVaultArn());
         cfnOutput(this, "BackupPlanId", this.dailyBackupPlan.getBackupPlanId());
+        cfnOutput(this, "BackupExportsBucket", this.backupExportsBucket.getBucketName());
+        cfnOutput(this, "BackupKmsKeyArn", this.backupKmsKey.getKeyArn());
 
-        infof(
-                "BackupStack %s created successfully for %s",
+        infof("BackupStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 }
 ```
 
----
+### 1.3 Update SubmitEnvironment.java
 
-### 3. DR Vault Setup (Manual One-Time Setup)
+Add BackupStack to the environment application:
 
-The DR vault must be created in the DR region before the main stack deployment:
+```java
+// In SubmitEnvironment.java, after DataStack:
 
-```bash
-#!/bin/bash
-# scripts/create-dr-vault.sh
-
-DR_REGION="eu-west-1"
-VAULT_NAME="prod-submit-dr-vault"
-
-echo "Creating DR backup vault in $DR_REGION..."
-
-aws backup create-backup-vault \
-    --backup-vault-name "$VAULT_NAME" \
-    --region "$DR_REGION" \
-    --backup-vault-tags Environment=prod,Purpose=disaster-recovery
-
-echo "DR vault created: $VAULT_NAME in $DR_REGION"
+// Create BackupStack (local backups only - cross-account shipping configured separately)
+BackupStack backupStack = new BackupStack(
+        app,
+        sharedNames.environmentName + "-" + sharedNames.deploymentName + "-backup",
+        ImmutableBackupStackProps.builder()
+                .env(environment)
+                .envName(props.environmentName())
+                .deploymentName(props.deploymentName())
+                .resourceNamePrefix(resourceNamePrefix)
+                .cloudTrailEnabled(props.cloudTrailEnabled())
+                .sharedNames(sharedNames)
+                .alertTopic(observabilityStack.alertTopic)
+                .backupAccountId(props.backupAccountId()) // For cross-account S3 replication
+                .build());
+backupStack.addDependency(dataStack);
+backupStack.addDependency(observabilityStack);
 ```
 
 ---
 
-### 4. Secrets Manager Multi-Region Replication
+## Phase 2: Multi-Account Backup Strategy
 
-**File**: Update secret creation in deploy workflows
+### 2.1 Dedicated Backup Account Setup
 
-```yaml
-# In deploy-environment.yml, update secret creation step:
-
-- name: Create or update salt secret with replication
-  run: |
-    SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/user-sub-hash-salt"
-
-    # Check if secret exists
-    if aws secretsmanager describe-secret --secret-id "$SECRET_NAME" 2>/dev/null; then
-      echo "Secret exists, checking replication..."
-
-      # Add replica if not present (for prod only)
-      if [ "${{ needs.names.outputs.environment-name }}" == "prod" ]; then
-        aws secretsmanager replicate-secret-to-regions \
-          --secret-id "$SECRET_NAME" \
-          --add-replica-regions Region=eu-west-1 \
-          --force-overwrite-replica-secret || true
-      fi
-    else
-      echo "Creating new secret..."
-      SALT=$(openssl rand -hex 32)
-
-      if [ "${{ needs.names.outputs.environment-name }}" == "prod" ]; then
-        # Create with replica for prod
-        aws secretsmanager create-secret \
-          --name "$SECRET_NAME" \
-          --secret-string "$SALT" \
-          --add-replica-regions Region=eu-west-1
-      else
-        # Create without replica for non-prod
-        aws secretsmanager create-secret \
-          --name "$SECRET_NAME" \
-          --secret-string "$SALT"
-      fi
-    fi
-```
-
----
-
-### 5. Backup Verification Script
-
-**File**: `scripts/verify-backups.sh`
+**One-time setup script**: `scripts/setup-backup-account.sh`
 
 ```bash
 #!/bin/bash
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (C) 2025-2026 DIY Accounting Ltd
-
-# Verify backup configuration and recent backup jobs
+#
+# Setup dedicated backup AWS account
+# Run this once to initialize the backup account
 
 set -e
 
-ENV_NAME="${1:-prod}"
-REGION="${AWS_REGION:-eu-west-2}"
+BACKUP_ACCOUNT_ID="${1:-}"
+BACKUP_REGION="${2:-eu-west-2}"
+DR_REGION="${3:-eu-west-1}"
 
-echo "=== Backup Verification Report ==="
-echo "Environment: $ENV_NAME"
-echo "Region: $REGION"
-echo "Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-echo ""
-
-# Check PITR status on critical tables
-echo "=== DynamoDB Point-in-Time Recovery Status ==="
-for TABLE in "${ENV_NAME}-submit-receipts" "${ENV_NAME}-submit-bundles" "${ENV_NAME}-submit-hmrc-api-requests"; do
-    PITR_STATUS=$(aws dynamodb describe-continuous-backups \
-        --table-name "$TABLE" \
-        --region "$REGION" \
-        --query 'ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus' \
-        --output text 2>/dev/null || echo "TABLE_NOT_FOUND")
-
-    if [ "$PITR_STATUS" == "ENABLED" ]; then
-        echo "  [OK] $TABLE: PITR enabled"
-    else
-        echo "  [WARN] $TABLE: PITR status = $PITR_STATUS"
-    fi
-done
-echo ""
-
-# Check recent backup jobs
-echo "=== Recent Backup Jobs (last 7 days) ==="
-aws backup list-backup-jobs \
-    --by-resource-type DynamoDB \
-    --by-created-after "$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)" \
-    --region "$REGION" \
-    --query 'BackupJobs[*].[ResourceArn,State,CreationDate,CompletionDate]' \
-    --output table
-
-echo ""
-
-# Check backup vault status
-echo "=== Backup Vault Status ==="
-VAULT_NAME="${ENV_NAME}-submit-primary-vault"
-aws backup describe-backup-vault \
-    --backup-vault-name "$VAULT_NAME" \
-    --region "$REGION" \
-    --query '{Name:BackupVaultName,RecoveryPoints:NumberOfRecoveryPoints,CreationDate:CreationDate}' \
-    --output table 2>/dev/null || echo "Vault not found: $VAULT_NAME"
-
-echo ""
-
-# Check secret replication (prod only)
-if [ "$ENV_NAME" == "prod" ]; then
-    echo "=== Secret Replication Status ==="
-    SECRET_NAME="${ENV_NAME}/submit/user-sub-hash-salt"
-    aws secretsmanager describe-secret \
-        --secret-id "$SECRET_NAME" \
-        --region "$REGION" \
-        --query '{Name:Name,ReplicationStatus:ReplicationStatus}' \
-        --output table 2>/dev/null || echo "Secret not found: $SECRET_NAME"
+if [ -z "$BACKUP_ACCOUNT_ID" ]; then
+    echo "Usage: $0 <backup-account-id> [backup-region] [dr-region]"
+    exit 1
 fi
 
+echo "=== Setting up Backup Account $BACKUP_ACCOUNT_ID ==="
+
+# Assume role in backup account (requires cross-account access)
+# You'll need to configure AWS credentials for the backup account
+
+echo "1. Creating KMS key for backup encryption..."
+KMS_KEY_ARN=$(aws kms create-key \
+    --description "Central backup encryption key" \
+    --region "$BACKUP_REGION" \
+    --query 'KeyMetadata.Arn' \
+    --output text)
+
+aws kms create-alias \
+    --alias-name "alias/central-backup-key" \
+    --target-key-id "$KMS_KEY_ARN" \
+    --region "$BACKUP_REGION"
+
+echo "   KMS Key: $KMS_KEY_ARN"
+
+echo "2. Creating central backup vault..."
+aws backup create-backup-vault \
+    --backup-vault-name "central-backup-vault" \
+    --encryption-key-arn "$KMS_KEY_ARN" \
+    --region "$BACKUP_REGION" \
+    --backup-vault-tags Purpose=central-backups,ManagedBy=scripts
+
+echo "3. Creating DR backup vault in $DR_REGION..."
+DR_KMS_KEY_ARN=$(aws kms create-key \
+    --description "DR backup encryption key" \
+    --region "$DR_REGION" \
+    --query 'KeyMetadata.Arn' \
+    --output text)
+
+aws kms create-alias \
+    --alias-name "alias/dr-backup-key" \
+    --target-key-id "$DR_KMS_KEY_ARN" \
+    --region "$DR_REGION"
+
+aws backup create-backup-vault \
+    --backup-vault-name "central-dr-vault" \
+    --encryption-key-arn "$DR_KMS_KEY_ARN" \
+    --region "$DR_REGION" \
+    --backup-vault-tags Purpose=disaster-recovery,ManagedBy=scripts
+
+echo "4. Creating S3 bucket for DynamoDB exports..."
+BUCKET_NAME="diyaccounting-central-backups-${BACKUP_ACCOUNT_ID}"
+aws s3 mb "s3://${BUCKET_NAME}" --region "$BACKUP_REGION"
+
+# Enable versioning
+aws s3api put-bucket-versioning \
+    --bucket "$BUCKET_NAME" \
+    --versioning-configuration Status=Enabled \
+    --region "$BACKUP_REGION"
+
+# Enable Object Lock (must be done at bucket creation for WORM)
+# Note: For existing buckets, you'd need to create a new bucket with Object Lock
+
+echo "5. Creating IAM policy for cross-account access..."
+cat > /tmp/backup-account-policy.json << 'EOF'
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowCrossAccountBackupCopy",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": [
+                    "arn:aws:iam::PROD_ACCOUNT_ID:root",
+                    "arn:aws:iam::CI_ACCOUNT_ID:root"
+                ]
+            },
+            "Action": "backup:CopyIntoBackupVault",
+            "Resource": "arn:aws:backup:*:BACKUP_ACCOUNT_ID:backup-vault:*"
+        }
+    ]
+}
+EOF
+
+echo "=== Backup Account Setup Complete ==="
 echo ""
-echo "=== Verification Complete ==="
+echo "Next steps:"
+echo "1. Update source accounts with backup account ID: $BACKUP_ACCOUNT_ID"
+echo "2. Configure KMS key policies for cross-account access"
+echo "3. Update deploy workflows with cross-account copy actions"
+```
+
+### 2.2 Cross-Account S3 Replication
+
+**File**: `scripts/setup-s3-replication.sh`
+
+```bash
+#!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2025-2026 DIY Accounting Ltd
+#
+# Configure S3 cross-account replication for backup exports
+
+set -e
+
+SOURCE_BUCKET="$1"
+DEST_BUCKET="$2"
+DEST_ACCOUNT_ID="$3"
+ROLE_ARN="$4"
+
+if [ -z "$SOURCE_BUCKET" ] || [ -z "$DEST_BUCKET" ] || [ -z "$DEST_ACCOUNT_ID" ] || [ -z "$ROLE_ARN" ]; then
+    echo "Usage: $0 <source-bucket> <dest-bucket> <dest-account-id> <replication-role-arn>"
+    exit 1
+fi
+
+echo "Configuring S3 replication from $SOURCE_BUCKET to $DEST_BUCKET..."
+
+# Create replication configuration
+cat > /tmp/replication-config.json << EOF
+{
+    "Role": "$ROLE_ARN",
+    "Rules": [
+        {
+            "ID": "BackupReplication",
+            "Status": "Enabled",
+            "Priority": 1,
+            "DeleteMarkerReplication": {
+                "Status": "Disabled"
+            },
+            "Filter": {
+                "Prefix": "exports/"
+            },
+            "Destination": {
+                "Bucket": "arn:aws:s3:::$DEST_BUCKET",
+                "Account": "$DEST_ACCOUNT_ID",
+                "AccessControlTranslation": {
+                    "Owner": "Destination"
+                },
+                "ReplicationTime": {
+                    "Status": "Enabled",
+                    "Time": {
+                        "Minutes": 15
+                    }
+                },
+                "Metrics": {
+                    "Status": "Enabled",
+                    "EventThreshold": {
+                        "Minutes": 15
+                    }
+                }
+            }
+        }
+    ]
+}
+EOF
+
+aws s3api put-bucket-replication \
+    --bucket "$SOURCE_BUCKET" \
+    --replication-configuration file:///tmp/replication-config.json
+
+echo "S3 replication configured successfully"
 ```
 
 ---
 
-## Recovery Procedures
+## Disaster Recovery Procedures
 
-### Scenario 1: Accidental Data Deletion (DynamoDB)
+### Scenario 1: Total Loss of PROD AWS Account
 
-**Using PITR** (within 35 days):
+**Use Case**: PROD account compromised/deleted, need to restore from backup account.
 
-```bash
-# 1. Find the restore point
-aws dynamodb describe-continuous-backups \
-    --table-name prod-submit-receipts \
-    --query 'ContinuousBackupsDescription.PointInTimeRecoveryDescription'
-
-# 2. Restore to a new table
-aws dynamodb restore-table-to-point-in-time \
-    --source-table-name prod-submit-receipts \
-    --target-table-name prod-submit-receipts-restored \
-    --restore-date-time "2026-01-08T12:00:00Z"
-
-# 3. Verify data, then swap tables (application update required)
-```
-
-### Scenario 2: Region Failure
-
-**Using Cross-Region Backups**:
+**Script**: `scripts/dr-restore-from-backup-account.sh`
 
 ```bash
-# 1. List recovery points in DR vault
+#!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2025-2026 DIY Accounting Ltd
+#
+# Disaster Recovery: Restore from backup account to new PROD account
+#
+# Prerequisites:
+# - New AWS account created
+# - AWS credentials configured for new account
+# - Access to backup account
+
+set -e
+
+NEW_ACCOUNT_ID="${1:-}"
+BACKUP_ACCOUNT_ID="${2:-}"
+RESTORE_POINT="${3:-latest}"
+REGION="${4:-eu-west-2}"
+
+if [ -z "$NEW_ACCOUNT_ID" ] || [ -z "$BACKUP_ACCOUNT_ID" ]; then
+    echo "Usage: $0 <new-account-id> <backup-account-id> [restore-point] [region]"
+    echo ""
+    echo "restore-point: 'latest' or specific recovery point ARN"
+    exit 1
+fi
+
+echo "=============================================="
+echo "DISASTER RECOVERY: Restore to New Account"
+echo "=============================================="
+echo "New Account:    $NEW_ACCOUNT_ID"
+echo "Backup Account: $BACKUP_ACCOUNT_ID"
+echo "Restore Point:  $RESTORE_POINT"
+echo "Region:         $REGION"
+echo "=============================================="
+echo ""
+
+# Step 1: List available recovery points
+echo "Step 1: Listing available recovery points in backup account..."
 aws backup list-recovery-points-by-backup-vault \
-    --backup-vault-name prod-submit-dr-vault \
-    --region eu-west-1
+    --backup-vault-name "central-backup-vault" \
+    --region "$REGION" \
+    --max-results 10 \
+    --query 'RecoveryPoints[*].[RecoveryPointArn,CreationDate,ResourceType]' \
+    --output table
 
-# 2. Start restore job
-aws backup start-restore-job \
-    --recovery-point-arn "arn:aws:backup:eu-west-1:ACCOUNT:recovery-point:ID" \
-    --iam-role-arn "arn:aws:iam::ACCOUNT:role/prod-submit-backup-role" \
-    --metadata '{"targetTableName":"prod-submit-receipts"}' \
-    --region eu-west-1
+if [ "$RESTORE_POINT" = "latest" ]; then
+    echo ""
+    echo "Getting latest recovery point..."
+    RECOVERY_POINT_ARN=$(aws backup list-recovery-points-by-backup-vault \
+        --backup-vault-name "central-backup-vault" \
+        --region "$REGION" \
+        --max-results 1 \
+        --query 'RecoveryPoints[0].RecoveryPointArn' \
+        --output text)
+    echo "Using recovery point: $RECOVERY_POINT_ARN"
+else
+    RECOVERY_POINT_ARN="$RESTORE_POINT"
+fi
+
+# Step 2: Create IAM role for restore in new account
+echo ""
+echo "Step 2: Creating restore IAM role in new account..."
+cat > /tmp/restore-role-trust.json << 'EOF'
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "backup.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+EOF
+
+RESTORE_ROLE_ARN=$(aws iam create-role \
+    --role-name "BackupRestoreRole" \
+    --assume-role-policy-document file:///tmp/restore-role-trust.json \
+    --query 'Role.Arn' \
+    --output text 2>/dev/null || \
+    aws iam get-role --role-name "BackupRestoreRole" --query 'Role.Arn' --output text)
+
+aws iam attach-role-policy \
+    --role-name "BackupRestoreRole" \
+    --policy-arn "arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForRestores" || true
+
+echo "Restore role: $RESTORE_ROLE_ARN"
+
+# Step 3: Create local backup vault in new account
+echo ""
+echo "Step 3: Creating backup vault in new account..."
+aws backup create-backup-vault \
+    --backup-vault-name "prod-submit-primary-vault" \
+    --region "$REGION" \
+    --backup-vault-tags Environment=prod,Purpose=primary || true
+
+# Step 4: Copy recovery point to new account
+echo ""
+echo "Step 4: Copying recovery point to new account..."
+COPY_JOB_ID=$(aws backup start-copy-job \
+    --recovery-point-arn "$RECOVERY_POINT_ARN" \
+    --source-backup-vault-name "central-backup-vault" \
+    --destination-backup-vault-arn "arn:aws:backup:${REGION}:${NEW_ACCOUNT_ID}:backup-vault:prod-submit-primary-vault" \
+    --iam-role-arn "$RESTORE_ROLE_ARN" \
+    --region "$REGION" \
+    --query 'CopyJobId' \
+    --output text)
+
+echo "Copy job started: $COPY_JOB_ID"
+echo "Waiting for copy to complete..."
+
+# Wait for copy to complete
+while true; do
+    STATUS=$(aws backup describe-copy-job \
+        --copy-job-id "$COPY_JOB_ID" \
+        --region "$REGION" \
+        --query 'CopyJob.State' \
+        --output text)
+    echo "  Status: $STATUS"
+    if [ "$STATUS" = "COMPLETED" ]; then
+        break
+    elif [ "$STATUS" = "FAILED" ]; then
+        echo "ERROR: Copy job failed!"
+        exit 1
+    fi
+    sleep 30
+done
+
+# Step 5: Get the copied recovery point ARN
+echo ""
+echo "Step 5: Getting copied recovery point..."
+COPIED_RECOVERY_POINT=$(aws backup describe-copy-job \
+    --copy-job-id "$COPY_JOB_ID" \
+    --region "$REGION" \
+    --query 'CopyJob.DestinationRecoveryPointArn' \
+    --output text)
+
+echo "Copied recovery point: $COPIED_RECOVERY_POINT"
+
+# Step 6: Restore DynamoDB tables
+echo ""
+echo "Step 6: Restoring DynamoDB tables..."
+
+# Extract table name from recovery point
+RESOURCE_ARN=$(aws backup describe-recovery-point \
+    --backup-vault-name "prod-submit-primary-vault" \
+    --recovery-point-arn "$COPIED_RECOVERY_POINT" \
+    --region "$REGION" \
+    --query 'ResourceArn' \
+    --output text)
+
+TABLE_NAME=$(echo "$RESOURCE_ARN" | sed 's/.*table\///')
+RESTORE_TABLE_NAME="${TABLE_NAME}"
+
+echo "Restoring table: $RESTORE_TABLE_NAME"
+
+RESTORE_JOB_ID=$(aws backup start-restore-job \
+    --recovery-point-arn "$COPIED_RECOVERY_POINT" \
+    --iam-role-arn "$RESTORE_ROLE_ARN" \
+    --metadata "{\"targetTableName\":\"$RESTORE_TABLE_NAME\"}" \
+    --region "$REGION" \
+    --query 'RestoreJobId' \
+    --output text)
+
+echo "Restore job started: $RESTORE_JOB_ID"
+echo ""
+echo "=============================================="
+echo "DISASTER RECOVERY INITIATED"
+echo "=============================================="
+echo "Monitor restore job: aws backup describe-restore-job --restore-job-id $RESTORE_JOB_ID --region $REGION"
+echo ""
+echo "Next steps after restore completes:"
+echo "1. Verify data in restored table"
+echo "2. Run CDK deployment to recreate infrastructure"
+echo "3. Update DNS records"
+echo "4. Verify application functionality"
 ```
 
-### Scenario 3: Salt Secret Corruption
+### Scenario 2: Accidental Data Deletion
 
-**Using Multi-Region Replica**:
+**Script**: `scripts/restore-dynamodb-pitr.sh`
 
 ```bash
-# 1. Check replica status
-aws secretsmanager describe-secret \
-    --secret-id "prod/submit/user-sub-hash-salt" \
-    --query 'ReplicationStatus'
+#!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2025-2026 DIY Accounting Ltd
+#
+# Restore DynamoDB table using Point-in-Time Recovery
 
-# 2. If primary is corrupted, promote replica
-aws secretsmanager stop-replication-to-replica \
-    --secret-id "prod/submit/user-sub-hash-salt" \
-    --region eu-west-1
+set -e
+
+TABLE_NAME="$1"
+RESTORE_DATETIME="$2"
+TARGET_TABLE="${3:-${TABLE_NAME}-restored}"
+
+if [ -z "$TABLE_NAME" ] || [ -z "$RESTORE_DATETIME" ]; then
+    echo "Usage: $0 <table-name> <restore-datetime> [target-table-name]"
+    echo ""
+    echo "Example: $0 prod-submit-receipts '2026-01-08T12:00:00Z'"
+    exit 1
+fi
+
+echo "Restoring $TABLE_NAME to $TARGET_TABLE at $RESTORE_DATETIME..."
+
+# Check PITR status
+PITR_STATUS=$(aws dynamodb describe-continuous-backups \
+    --table-name "$TABLE_NAME" \
+    --query 'ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus' \
+    --output text)
+
+if [ "$PITR_STATUS" != "ENABLED" ]; then
+    echo "ERROR: PITR is not enabled on $TABLE_NAME"
+    exit 1
+fi
+
+# Restore table
+aws dynamodb restore-table-to-point-in-time \
+    --source-table-name "$TABLE_NAME" \
+    --target-table-name "$TARGET_TABLE" \
+    --restore-date-time "$RESTORE_DATETIME"
+
+echo "Restore initiated. Monitor with:"
+echo "  aws dynamodb describe-table --table-name $TARGET_TABLE --query 'Table.TableStatus'"
 ```
+
+---
+
+## Monitoring & Alerting
+
+### Add to OpsStack.java
+
+```java
+// ============================================================================
+// Backup Monitoring Alarms
+// ============================================================================
+
+// Alarm: Backup job failed
+Alarm backupFailedAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-BackupFailedAlarm")
+        .alarmName(props.resourceNamePrefix() + "-backup-job-failed")
+        .alarmDescription("AWS Backup job failed")
+        .metric(Metric.Builder.create()
+                .namespace("AWS/Backup")
+                .metricName("NumberOfBackupJobsFailed")
+                .dimensionsMap(Map.of(
+                        "BackupVaultName", props.resourceNamePrefix() + "-primary-vault"))
+                .statistic("Sum")
+                .period(Duration.hours(24))
+                .build())
+        .threshold(1)
+        .evaluationPeriods(1)
+        .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+        .treatMissingData(TreatMissingData.NOT_BREACHING)
+        .build();
+backupFailedAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+
+// Alarm: No backup in 48 hours (missed scheduled backup)
+Alarm noBackupAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-NoBackupAlarm")
+        .alarmName(props.resourceNamePrefix() + "-no-recent-backup")
+        .alarmDescription("No successful backup in 48 hours")
+        .metric(Metric.Builder.create()
+                .namespace("AWS/Backup")
+                .metricName("NumberOfBackupJobsCompleted")
+                .dimensionsMap(Map.of(
+                        "BackupVaultName", props.resourceNamePrefix() + "-primary-vault"))
+                .statistic("Sum")
+                .period(Duration.hours(48))
+                .build())
+        .threshold(1)
+        .evaluationPeriods(1)
+        .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
+        .treatMissingData(TreatMissingData.BREACHING)
+        .build();
+noBackupAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+```
+
+### Add to ObservabilityStack Dashboard
+
+```java
+// Add backup metrics row to dashboardRows:
+dashboardRows.add(List.of(
+    GraphWidget.Builder.create()
+            .title("Backup Jobs (24h)")
+            .left(List.of(
+                Metric.Builder.create()
+                    .namespace("AWS/Backup")
+                    .metricName("NumberOfBackupJobsCompleted")
+                    .statistic("Sum")
+                    .period(Duration.hours(1))
+                    .color("#2ca02c")
+                    .label("Completed")
+                    .build(),
+                Metric.Builder.create()
+                    .namespace("AWS/Backup")
+                    .metricName("NumberOfBackupJobsFailed")
+                    .statistic("Sum")
+                    .period(Duration.hours(1))
+                    .color("#d62728")
+                    .label("Failed")
+                    .build()
+            ))
+            .width(8)
+            .height(6)
+            .build(),
+
+    SingleValueWidget.Builder.create()
+            .title("Last Backup Status")
+            .metrics(List.of(
+                Metric.Builder.create()
+                    .namespace("AWS/Backup")
+                    .metricName("NumberOfBackupJobsCompleted")
+                    .statistic("Sum")
+                    .period(Duration.hours(24))
+                    .build()
+            ))
+            .width(4)
+            .height(6)
+            .build()
+));
+```
+
+---
+
+## GitHub Actions Integration
+
+### Workflow: Verify Backups
+
+**File**: `.github/workflows/verify-backups.yml`
+
+```yaml
+name: Verify Backups
+
+on:
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 8 AM UTC
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  verify-prod-backups:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (PROD)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Verify PITR status
+        run: |
+          echo "=== Checking PITR Status ==="
+          for TABLE in prod-submit-receipts prod-submit-bundles prod-submit-hmrc-api-requests; do
+            STATUS=$(aws dynamodb describe-continuous-backups \
+              --table-name "$TABLE" \
+              --query 'ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus' \
+              --output text 2>/dev/null || echo "TABLE_NOT_FOUND")
+            if [ "$STATUS" = "ENABLED" ]; then
+              echo "✅ $TABLE: PITR enabled"
+            else
+              echo "❌ $TABLE: PITR status = $STATUS"
+              exit 1
+            fi
+          done
+
+      - name: Verify recent backups
+        run: |
+          echo "=== Checking Recent Backup Jobs ==="
+          VAULT_NAME="prod-submit-primary-vault"
+
+          # Check for backups in last 48 hours
+          CUTOFF=$(date -u -d '48 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+
+          RECENT_BACKUPS=$(aws backup list-backup-jobs \
+            --by-backup-vault-name "$VAULT_NAME" \
+            --by-created-after "$CUTOFF" \
+            --by-state COMPLETED \
+            --query 'BackupJobs | length(@)' \
+            --output text)
+
+          if [ "$RECENT_BACKUPS" -gt 0 ]; then
+            echo "✅ Found $RECENT_BACKUPS completed backup(s) in last 48 hours"
+          else
+            echo "❌ No completed backups in last 48 hours!"
+            exit 1
+          fi
+
+      - name: Verify backup vault health
+        run: |
+          echo "=== Backup Vault Status ==="
+          aws backup describe-backup-vault \
+            --backup-vault-name "prod-submit-primary-vault" \
+            --query '{Name:BackupVaultName,RecoveryPoints:NumberOfRecoveryPoints}' \
+            --output table
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Backup Verification Complete ==="
+          echo "See AWS Backup console for detailed metrics"
+```
+
+### Workflow: Export DynamoDB to S3
+
+**File**: `.github/workflows/export-dynamodb.yml`
+
+```yaml
+name: Export DynamoDB Tables
+
+on:
+  schedule:
+    - cron: '0 5 1 * *'  # Monthly on 1st at 5 AM UTC
+  workflow_dispatch:
+    inputs:
+      table_name:
+        description: 'Table to export (leave empty for all critical tables)'
+        required: false
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  export-tables:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        table:
+          - prod-submit-receipts
+          - prod-submit-bundles
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PROD_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Export ${{ matrix.table }}
+        if: inputs.table_name == '' || inputs.table_name == matrix.table
+        run: |
+          TABLE_ARN="arn:aws:dynamodb:eu-west-2:${{ secrets.AWS_ACCOUNT_ID }}:table/${{ matrix.table }}"
+          BUCKET="prod.submit.diyaccounting.co.uk-backup-exports"
+          PREFIX="exports/${{ matrix.table }}/$(date +%Y/%m)"
+
+          echo "Exporting ${{ matrix.table }} to s3://${BUCKET}/${PREFIX}/"
+
+          EXPORT_ARN=$(aws dynamodb export-table-to-point-in-time \
+            --table-arn "$TABLE_ARN" \
+            --s3-bucket "$BUCKET" \
+            --s3-prefix "$PREFIX" \
+            --export-format DYNAMODB_JSON \
+            --query 'ExportDescription.ExportArn' \
+            --output text)
+
+          echo "Export started: $EXPORT_ARN"
+          echo "export_arn=$EXPORT_ARN" >> $GITHUB_OUTPUT
+
+      - name: Wait for export completion
+        if: inputs.table_name == '' || inputs.table_name == matrix.table
+        run: |
+          EXPORT_ARN="${{ steps.export.outputs.export_arn }}"
+          while true; do
+            STATUS=$(aws dynamodb describe-export \
+              --export-arn "$EXPORT_ARN" \
+              --query 'ExportDescription.ExportStatus' \
+              --output text)
+            echo "Export status: $STATUS"
+            if [ "$STATUS" = "COMPLETED" ]; then
+              echo "✅ Export completed successfully"
+              break
+            elif [ "$STATUS" = "FAILED" ]; then
+              echo "❌ Export failed"
+              exit 1
+            fi
+            sleep 60
+          done
+```
+
+---
+
+## Implementation Checklist
+
+### Phase 0: Secrets & Identity Backup
+
+- [ ] Enable Secrets Manager cross-region replication for USER_SUB_HASH_SALT
+- [ ] Enable Secrets Manager cross-region replication for HMRC_CLIENT_SECRET
+- [x] Create `scripts/export-cognito-users.sh` for Cognito metadata export
+- [ ] Store USER_SUB_HASH_SALT in secure password manager (1Password/Bitwarden)
+- [x] Document Cognito DR recovery process (password reset flow)
+
+### Phase 1: Local Backups (within deployment account)
+
+- [ ] Enable PITR on receiptsTable in DataStack.java
+- [ ] Enable PITR on bundlesTable in DataStack.java
+- [ ] Enable PITR on hmrcApiRequestsTable in DataStack.java
+- [ ] Set RETAIN removal policy for prod tables
+- [ ] Create BackupStack.java with local vault (no cross-region)
+- [ ] Create S3 bucket for exports
+- [ ] Add BackupStack to SubmitEnvironment.java
+- [ ] Deploy to CI environment and verify
+- [ ] Deploy to PROD environment
+- [ ] Verify backup jobs execute (AWS console)
+
+### Phase 2: Multi-Account Strategy
+
+- [ ] Create dedicated backup AWS account
+- [ ] Run setup-backup-account.sh script
+- [ ] Configure cross-account KMS access
+- [ ] Configure S3 cross-account replication
+- [ ] Test cross-account backup copy
+- [ ] Document backup account access procedures
+
+### Phase 3: Monitoring & Alerting
+
+- [ ] Add backup failure alarm to OpsStack
+- [ ] Add no-recent-backup alarm to OpsStack
+- [ ] Add backup metrics to ObservabilityStack dashboard
+- [ ] Test alarm notifications
+- [ ] Create verify-backups.yml workflow
+- [ ] Create export-dynamodb.yml workflow
+
+### Phase 4: Disaster Recovery
+
+- [x] Create `scripts/dr-restore-from-backup-account.sh` script
+- [x] Create `scripts/restore-dynamodb-pitr.sh` script
+- [x] Create `scripts/setup-backup-account.sh` script
+- [x] Create `scripts/setup-s3-replication.sh` script
+- [x] Document DR procedures in BACKUP_STRATEGY_PLAN.md
+- [ ] Conduct DR drill (restore from backup)
+- [ ] Document lessons learned
 
 ---
 
@@ -600,6 +1254,7 @@ aws secretsmanager stop-replication-to-replica \
 | DynamoDB PITR (3 tables) | ~$0.20/GB stored |
 | AWS Backup (daily, 35-day retention) | ~$0.05/GB |
 | Cross-region data transfer | ~$0.02/GB |
+| S3 exports (Glacier) | ~$0.004/GB |
 | Secrets Manager replica | ~$0.40/secret |
 | **Total (assuming 1GB data)** | **~$5-10/month** |
 
@@ -613,41 +1268,4 @@ aws secretsmanager stop-replication-to-replica \
 | Data integrity | PITR enables point-in-time recovery |
 | Business continuity | Cross-region backups in eu-west-1 |
 | Audit trail | AWS Backup job history |
-
----
-
-## Implementation Checklist
-
-### Phase 1: Enable PITR (Quick Win)
-
-- [ ] Update DataStack.java to enable PITR on receiptsTable
-- [ ] Update DataStack.java to enable PITR on bundlesTable
-- [ ] Update DataStack.java to enable PITR on hmrcApiRequestsTable
-- [ ] Update DataStack.java to use RETAIN removal policy for prod
-- [ ] Deploy to CI environment
-- [ ] Verify PITR status via AWS console
-- [ ] Deploy to prod environment
-
-### Phase 2: AWS Backup Integration
-
-- [ ] Create DR vault in eu-west-1 (manual one-time)
-- [ ] Create BackupStack.java
-- [ ] Update SubmitSharedNames.java with backup-related names
-- [ ] Update SubmitApplication.java to include BackupStack
-- [ ] Add backup configuration to deploy.yml
-- [ ] Deploy to CI environment
-- [ ] Verify backup jobs execute
-- [ ] Deploy to prod environment
-
-### Phase 3: Secret Replication
-
-- [ ] Update deploy-environment.yml to add secret replication
-- [ ] Verify replication status in AWS console
-- [ ] Document recovery procedure
-
-### Phase 4: Verification & Documentation
-
-- [ ] Create verify-backups.sh script
-- [ ] Add backup verification to CI pipeline
-- [ ] Document recovery procedures
-- [ ] Conduct DR drill (restore from backup)
+| Ransomware protection | Object Lock in COMPLIANCE mode |

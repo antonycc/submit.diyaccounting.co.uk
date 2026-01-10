@@ -237,10 +237,36 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       await expect(successHeader).toContainText("VAT Return Submitted Successfully");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-submitted.png` });
 
-      // Verify receipt details are populated
-      // await expect(page.locator("#formBundleNumber")).toContainText("123456789-bundle");
-      // await expect(page.locator("#chargeRefNumber")).toContainText("123456789-charge");
-      await expect(page.locator("#processingDate")).not.toBeEmpty();
+      // Verify receipt details are populated with correct HMRC formats
+      // formBundleNumber: exactly 12 digits per HMRC API spec pattern ^[0-9]{12}$
+      const formBundleNumber = await page.locator("#formBundleNumber").innerText();
+      expect(formBundleNumber, "formBundleNumber should be exactly 12 digits").toMatch(/^\d{12}$/);
+      console.log(`formBundleNumber validated: ${formBundleNumber}`);
+
+      // chargeRefNumber: 1-16 alphanumeric characters (may be empty if netVatDue is credit)
+      const chargeRefNumber = await page.locator("#chargeRefNumber").innerText();
+      if (chargeRefNumber.trim()) {
+        expect(chargeRefNumber, "chargeRefNumber should be 1-16 alphanumeric characters").toMatch(/^[a-zA-Z0-9]{1,16}$/);
+        console.log(`chargeRefNumber validated: ${chargeRefNumber}`);
+      } else {
+        console.log("chargeRefNumber is empty (netVatDue was likely a credit)");
+      }
+
+      // processingDate: should be a valid recent date (within last 24 hours)
+      const processingDateText = await page.locator("#processingDate").innerText();
+      expect(processingDateText, "processingDate should not be empty").toBeTruthy();
+      expect(processingDateText, "processingDate should not be Invalid Date").not.toContain("Invalid Date");
+
+      // Parse the displayed date and verify it's recent (within last 24 hours)
+      // The date is displayed in en-GB format: "10 January 2026 at 15:52"
+      const processingDateClean = processingDateText.replace(" at ", " ");
+      const parsedDate = new Date(processingDateClean);
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      expect(parsedDate.getTime(), "processingDate should be a valid parseable date").not.toBeNaN();
+      expect(parsedDate.getTime(), "processingDate should be within last 24 hours").toBeGreaterThan(twentyFourHoursAgo.getTime());
+      expect(parsedDate.getTime(), "processingDate should not be in the future").toBeLessThanOrEqual(now.getTime() + 60000);
+      console.log(`processingDate validated: ${processingDateText} (parsed as ${parsedDate.toISOString()})`);
 
       // Verify the form is hidden after successful submission
       await expect(page.locator("#vatForm")).toBeHidden();
@@ -251,7 +277,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       await page.waitForTimeout(200);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-verify-vat-pagedown.png` });
 
-      console.log("VAT submission flow completed successfully");
+      console.log("VAT submission flow completed successfully with validated receipt fields");
     });
   }
 }
@@ -425,10 +451,46 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       rows.push({ periodKey, start, end, due, statusText, statusCode, received, actionText });
     }
 
-    // Generic assertions
-    // - periodKey must be present
+    // Generic assertions with HMRC format validation
+    // - periodKey: 1-4 alphanumeric chars (may include #), e.g., "18A1", "24A1", "#001"
     for (const r of rows) {
-      expect(r.periodKey).toBeTruthy();
+      expect(r.periodKey, `periodKey should be 1-4 alphanumeric chars for row ${r.periodKey}`).toBeTruthy();
+      expect(r.periodKey, `periodKey should match HMRC format for row ${r.periodKey}`).toMatch(/^[#a-zA-Z0-9]{1,4}$/);
+      console.log(`periodKey validated: ${r.periodKey}`);
+    }
+
+    // - start/end/due dates: should be parseable dates (displayed as DD/MM/YYYY or similar)
+    const isValidDateString = (dateStr) => {
+      if (!dateStr || dateStr === "-") return true; // Allow empty or placeholder
+      // Try parsing various formats
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) return true;
+      // Try DD/MM/YYYY format
+      const ddmmyyyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (ddmmyyyy) {
+        const [, day, month, year] = ddmmyyyy;
+        const d = new Date(year, month - 1, day);
+        return !isNaN(d.getTime());
+      }
+      return false;
+    };
+
+    for (const r of rows) {
+      expect(isValidDateString(r.start), `start date should be valid for period ${r.periodKey}: ${r.start}`).toBe(true);
+      expect(isValidDateString(r.end), `end date should be valid for period ${r.periodKey}: ${r.end}`).toBe(true);
+      expect(isValidDateString(r.due), `due date should be valid for period ${r.periodKey}: ${r.due}`).toBe(true);
+      // received date only required for Fulfilled obligations
+      if (r.statusCode === "F") {
+        expect(isValidDateString(r.received), `received date should be valid for fulfilled period ${r.periodKey}: ${r.received}`).toBe(
+          true,
+        );
+      }
+      console.log(`Dates validated for ${r.periodKey}: start=${r.start}, end=${r.end}, due=${r.due}, received=${r.received}`);
+    }
+
+    // - Status should be Open or Fulfilled
+    for (const r of rows) {
+      expect(["O", "F"], `status should be Open (O) or Fulfilled (F) for ${r.periodKey}`).toContain(r.statusCode);
     }
 
     // - If a status filter was provided, all rows should match it
@@ -717,12 +779,56 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       // Verify the details are displayed
       const returnDetails = page.locator("#returnDetails");
       await expect(returnDetails).toBeVisible();
+
+      // Validate VAT return fields per HMRC API spec
+      const detailsHtml = await returnDetails.innerHTML();
+
+      // periodKey: 4 alphanumeric characters (may include #), e.g., "18A1", "24A1", "#001"
+      const periodKeyMatch = detailsHtml.match(/Period Key:.*?<strong>([^<]+)<\/strong>/);
+      if (periodKeyMatch) {
+        const periodKey = periodKeyMatch[1].trim();
+        expect(periodKey, "periodKey should be 1-4 alphanumeric chars or # symbol").toMatch(/^[#a-zA-Z0-9]{1,4}$/);
+        console.log(`periodKey validated: ${periodKey}`);
+      }
+
+      // Validate monetary values are properly formatted (£X.XX format)
+      const monetaryFields = [
+        "VAT due on sales",
+        "VAT due on acquisitions",
+        "Total VAT due",
+        "VAT reclaimed on purchases",
+        "Net VAT due",
+        "Total value of sales",
+        "Total value of purchases",
+        "Total value of goods supplied",
+        "Total acquisitions",
+      ];
+
+      for (const field of monetaryFields) {
+        const regex = new RegExp(`${field}[^£]*£([0-9,]+\\.[0-9]{2})`);
+        const match = detailsHtml.match(regex);
+        if (match) {
+          const value = match[1].replace(/,/g, "");
+          const numValue = parseFloat(value);
+          expect(numValue, `${field} should be a valid number`).not.toBeNaN();
+          expect(numValue, `${field} should not be negative`).toBeGreaterThanOrEqual(0);
+          console.log(`${field} validated: £${value}`);
+        }
+      }
+
+      // Validate Finalised status (Yes/No)
+      const finalisedMatch = detailsHtml.match(/Finalised:.*?(Yes|No)/);
+      if (finalisedMatch) {
+        expect(["Yes", "No"], "Finalised should be Yes or No").toContain(finalisedMatch[1]);
+        console.log(`Finalised validated: ${finalisedMatch[1]}`);
+      }
+
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-return-results.png` });
       await page.keyboard.press("PageDown");
       await page.waitForTimeout(200);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-view-vat-return-results.png` });
 
-      console.log("View VAT return completed successfully");
+      console.log("View VAT return completed successfully with validated fields");
     });
   }
 }

@@ -387,12 +387,15 @@
       }
 
       function displayReceipt(response) {
-        console.log("Page display transition: Displaying receipt and hiding form");
+        console.log("Page display transition: Displaying receipt and hiding form", response);
         // Hide the form
         vatFormContainer.style.display = "none";
 
+        // Handle both direct receipt object and wrapped response (from module's submitVat)
+        const receipt = response.receipt ?? response;
+
         // Format and display the processing date
-        const processingDate = new Date(response.processingDate);
+        const processingDate = new Date(receipt.processingDate);
         document.getElementById("processingDate").textContent = processingDate.toLocaleDateString("en-GB", {
           day: "numeric",
           month: "long",
@@ -401,8 +404,8 @@
           minute: "2-digit",
         });
 
-        document.getElementById("formBundleNumber").textContent = response.formBundleNumber;
-        document.getElementById("chargeRefNumber").textContent = response.chargeRefNumber;
+        document.getElementById("formBundleNumber").textContent = receipt.formBundleNumber;
+        document.getElementById("chargeRefNumber").textContent = receipt.chargeRefNumber ?? "";
 
         // Show the receipt
         receiptDisplay.style.display = "block";
