@@ -60,6 +60,13 @@ describe("Token refresh on 401 errors", () => {
       }),
     };
 
+    // Mock sessionStorage (used by correlation-utils for hmrcAccount)
+    global.sessionStorage = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    };
+
     // Setup fetch mock
     fetchMock = vi.fn();
     originalFetch = global.fetch;

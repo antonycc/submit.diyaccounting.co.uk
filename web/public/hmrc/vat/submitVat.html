@@ -232,12 +232,12 @@
           const requestData = JSON.stringify(submissionData);
 
           sessionStorage.setItem("oauth_state", state);
-          localStorage.setItem("submission_data", requestData);
-          localStorage.setItem("currentActivity", currentActivity);
+          sessionStorage.setItem("submission_data", requestData);
+          sessionStorage.setItem("currentActivity", currentActivity);
           if (hmrcAccount === "sandbox") {
-            localStorage.setItem("hmrcAccount", hmrcAccount);
+            sessionStorage.setItem("hmrcAccount", hmrcAccount);
           } else {
-            localStorage.removeItem("hmrcAccount");
+            sessionStorage.removeItem("hmrcAccount");
           }
           console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
@@ -253,7 +253,7 @@
             console.log("Using server-side HMRC Auth URL:", authResponseUrl);
           }
 
-          localStorage.setItem("currentActivity", location.pathname);
+          sessionStorage.setItem("currentActivity", location.pathname);
           console.log("Current activity set to:", location.pathname);
 
           showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
@@ -285,7 +285,7 @@
       async function continueVatSubmission() {
         try {
           const accessToken = sessionStorage.getItem("hmrcAccessToken");
-          const submissionData = JSON.parse(localStorage.getItem("submission_data"));
+          const submissionData = JSON.parse(sessionStorage.getItem("submission_data"));
           console.log("Retrieved submission data:", submissionData);
 
           showStatus("Submitting VAT return to HMRC...", "info");
@@ -303,14 +303,11 @@
           displayReceipt(submitResponse);
           // hideStatus(); // Don't hide success status immediately
 
-          // Reset current activity
-          localStorage.removeItem("currentActivity");
-          console.log("Current activity cleared");
-
           // Clean up session storage
+          sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("oauth_state");
-          localStorage.removeItem("submission_data");
-          console.log("Continue submission handler (success)");
+          sessionStorage.removeItem("submission_data");
+          console.log("Continue submission handler (success, session storage cleared)");
         } catch (error) {
           console.error("Submission error:", error);
           showStatus(`Submission failed: ${error.message}`, "error");
@@ -320,7 +317,7 @@
       }
 
       async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, accessToken) {
-        const storedData = JSON.parse(localStorage.getItem("submission_data") || "null");
+        const storedData = JSON.parse(sessionStorage.getItem("submission_data") || "null");
         const testScenario = (document.getElementById("testScenario")?.value || storedData?.testScenario || "").trim();
         const runFraudPreventionHeaderValidation =
           document.getElementById("runFraudPreventionHeaderValidation")?.checked || storedData?.runFraudPreventionHeaderValidation || false;
@@ -356,7 +353,7 @@
         };
 
         // Add hmrcAccount header if present
-        const hmrcAccount = localStorage.getItem("hmrcAccount");
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         if (hmrcAccount) {
           requestHeaders["hmrcAccount"] = hmrcAccount;
         }

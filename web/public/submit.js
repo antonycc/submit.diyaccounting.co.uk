@@ -449,6 +449,25 @@ if (typeof window !== "undefined") {
   });
 }
 
+// Migration: Clean up stale localStorage keys that should be in sessionStorage
+// These keys were moved from localStorage to sessionStorage to prevent form data retention issues
+// This migration runs once per page load and cleans up any stale data from previous sessions
+(function migrateStorageKeys() {
+  try {
+    if (typeof window === "undefined" || typeof localStorage === "undefined") return;
+    const keysToMigrate = ["submission_data", "currentActivity", "hmrcAccount", "pendingObligationsRequest", "pendingReturnRequest"];
+    keysToMigrate.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        // Ignore storage errors
+      }
+    });
+  } catch (e) {
+    // Ignore errors in test environments
+  }
+})();
+
 // Signal that submit.js module is ready
 // This is needed because ES modules are deferred and inline scripts may run before the module loads
 if (typeof window !== "undefined" && typeof document !== "undefined") {

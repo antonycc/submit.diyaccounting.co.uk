@@ -180,7 +180,7 @@
         await loginWithMockOAuth2();
       });
 
-      localStorage.removeItem("currentActivity");
+      sessionStorage.removeItem("currentActivity");
       console.log("Current activity cleared");
 
       // Initialize authentication on page load
