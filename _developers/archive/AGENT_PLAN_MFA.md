@@ -862,7 +862,7 @@ After MFA implementation is complete:
 
 - [HMRC Fraud Prevention Headers Specification](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/)
 - [Cognito MFA Documentation](https://docs.aws.amazon.com/cognito/latest/developerguide/user-pool-settings-mfa.html)
-- [HMRC_MTD_APPROVAL_PLAN.md](../HMRC_MTD_APPROVAL_PLAN.md) - Parent document
+- [HMRC_MTD_APPROVAL_PLAN.md](../../HMRC_MTD_APPROVAL_PLAN.md) - Parent document
 - [Issue #442](https://github.com/your-org/submit/issues/442) - Gov-Client-MFA header tracking
 
 ---
