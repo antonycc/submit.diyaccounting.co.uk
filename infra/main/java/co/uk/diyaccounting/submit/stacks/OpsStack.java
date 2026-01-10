@@ -173,8 +173,8 @@ public class OpsStack extends Stack {
                                 .build());
                 lambdaInvocations.add(fn.metricInvocations());
                 lambdaErrors.add(fn.metricErrors());
-                lambdaDurationsP95.add(
-                        fn.metricDuration().with(MetricOptions.builder().statistic("p95").build()));
+                lambdaDurationsP95.add(fn.metricDuration()
+                        .with(MetricOptions.builder().statistic("p95").build()));
                 lambdaThrottles.add(fn.metricThrottles());
                 // Extract function name from ARN for filtering
                 String functionName = arn.substring(arn.lastIndexOf(":") + 1);
@@ -192,8 +192,9 @@ public class OpsStack extends Stack {
         // ============================================================================
         // GitHub Actions Synthetic Test Alarm
         // ============================================================================
-        String apexDomain =
-                props.apexDomain() != null && !props.apexDomain().isBlank() ? props.apexDomain() : "submit.diyaccounting.co.uk";
+        String apexDomain = props.apexDomain() != null && !props.apexDomain().isBlank()
+                ? props.apexDomain()
+                : "submit.diyaccounting.co.uk";
 
         this.githubSyntheticAlarm = Alarm.Builder.create(this, "GithubSyntheticAlarm")
                 .alarmName(props.resourceNamePrefix() + "-github-synthetic-failed")
@@ -201,8 +202,7 @@ public class OpsStack extends Stack {
                 .metric(Metric.Builder.create()
                         .namespace(apexDomain)
                         .metricName("behaviour-test")
-                        .dimensionsMap(
-                                Map.of("deployment-name", props.deploymentName(), "test", "submitVatBehaviour"))
+                        .dimensionsMap(Map.of("deployment-name", props.deploymentName(), "test", "submitVatBehaviour"))
                         .statistic("Minimum")
                         .period(Duration.hours(2))
                         .build())
@@ -263,8 +263,7 @@ public class OpsStack extends Stack {
                 .left(List.of(Metric.Builder.create()
                         .namespace(apexDomain)
                         .metricName("behaviour-test")
-                        .dimensionsMap(
-                                Map.of("deployment-name", props.deploymentName(), "test", "submitVatBehaviour"))
+                        .dimensionsMap(Map.of("deployment-name", props.deploymentName(), "test", "submitVatBehaviour"))
                         .statistic("Minimum")
                         .period(Duration.hours(1))
                         .label("submitVatBehaviour (0=pass)")
@@ -394,8 +393,8 @@ public class OpsStack extends Stack {
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
-                .lifecycleRules(
-                        List.of(LifecycleRule.builder().expiration(Duration.days(14)).build()))
+                .lifecycleRules(List.of(
+                        LifecycleRule.builder().expiration(Duration.days(14)).build()))
                 .build();
 
         // IAM role for canaries

@@ -84,9 +84,7 @@ function main() {
 
   // JavaScript files in app/ (excluding node_modules and test fixtures)
   console.log("Processing JavaScript files in app/...");
-  const appJsFiles = findFiles(join(rootDir, "app"), [".js", ".mjs"], [
-    "node_modules",
-  ]);
+  const appJsFiles = findFiles(join(rootDir, "app"), [".js", ".mjs"], ["node_modules"]);
   for (const file of appJsFiles) {
     if (addHeader(file, JS_HEADER)) jsCount++;
   }
@@ -107,9 +105,7 @@ function main() {
 
   // JavaScript files in behaviour-tests/ (main test files only)
   console.log("\nProcessing JavaScript files in behaviour-tests/...");
-  const behaviourJsFiles = findFiles(join(rootDir, "behaviour-tests"), [".js"], [
-    "node_modules",
-  ]);
+  const behaviourJsFiles = findFiles(join(rootDir, "behaviour-tests"), [".js"], ["node_modules"]);
   for (const file of behaviourJsFiles) {
     if (addHeader(file, JS_HEADER)) jsCount++;
   }

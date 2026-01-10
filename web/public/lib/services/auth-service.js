@@ -99,15 +99,14 @@ export function checkAuthStatus() {
     // Check if tokens are expired or about to expire
     checkTokenExpiry(accessToken, idToken);
 
-    // eslint-disable-next-line no-undef
-    if (typeof updateLoginStatus === "function") {
-      updateLoginStatus();
+    if (typeof window.updateLoginStatus === "function") {
+      window.updateLoginStatus();
     }
   } else {
     console.log("User is not authenticated");
-    // eslint-disable-next-line no-undef
-    if (typeof updateLoginStatus === "function") {
-      updateLoginStatus();
+
+    if (typeof window.updateLoginStatus === "function") {
+      window.updateLoginStatus();
     }
   }
 }

@@ -19,4 +19,5 @@ prettier.config.js
 app/index.js/exports/
 cdk/cdk.out/
 infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java
-web/public/test/
+web/public/tests/
+web/public/docs/
