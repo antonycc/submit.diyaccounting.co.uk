@@ -187,14 +187,14 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
             await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-complete-vat-going-back.png` });
             console.log(`Navigating back to submitVat.html from ${currentUrl}`);
-            await loggedGoto(page, `${baseUrl}${maybeSlash}activities/submitVat.html`, "back to Submit VAT page", screenshotPath);
+            await loggedGoto(page, `${baseUrl}${maybeSlash}hmrc/vat/submitVat.html`, "back to Submit VAT page", screenshotPath);
             await page.waitForLoadState("networkidle");
           } else if (currentUrl.includes("chrome-error://")) {
             console.log("Chrome error page detected, navigating directly to submitVat.html");
             await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-complete-vat-error.png` });
             await loggedGoto(
               page,
-              `${baseUrl}${maybeSlash}activities/submitVat.html`,
+              `${baseUrl}${maybeSlash}hmrc/vat/submitVat.html`,
               "back to Submit VAT page (from error)",
               screenshotPath,
             );
