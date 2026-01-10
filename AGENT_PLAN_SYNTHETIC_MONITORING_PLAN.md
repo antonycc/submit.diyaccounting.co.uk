@@ -1,4 +1,4 @@
-# Synthetic Monitoring Implementation Plan
+# Synthetic Monitoring & Operational Dashboard Plan
 
 **Issue**: #445 - Synthetic tests hooked into Alarms are not yet present
 **Priority**: Important for HMRC approval
@@ -9,7 +9,12 @@
 
 ## Overview
 
-This document describes the implementation plan for CloudWatch Synthetics canaries with integrated alarms and SNS notifications. The goal is to provide proactive monitoring that detects issues before users report them.
+Extend the existing OpsStack to provide a comprehensive operational dashboard combining:
+1. **Synthetic Canaries** - Automated health checks with alarms
+2. **Real User Metrics** - Visitors, page views, errors (from CloudWatch RUM)
+3. **Business Metrics** - Sign-ups, form submissions, authentications, bundle changes
+
+The dashboard will clearly separate synthetic test traffic from real human users.
 
 ---
 
@@ -24,539 +29,395 @@ This document describes the implementation plan for CloudWatch Synthetics canari
                     +------------------------+------------------------+
                     |                        |                        |
            +--------v--------+      +--------v--------+      +--------v--------+
-           | CloudWatch      |      | CloudWatch      |      | CloudWatch      |
-           | Alarm: Health   |      | Alarm: OAuth    |      | Alarm: API      |
+           | Alarm:          |      | Alarm:          |      | Alarm:          |
+           | Canary Health   |      | API Errors      |      | Auth Failures   |
            +--------+--------+      +--------+--------+      +--------+--------+
                     |                        |                        |
-           +--------v--------+      +--------v--------+      +--------v--------+
-           | Canary:         |      | Canary:         |      | Canary:         |
-           | Health Check    |      | OAuth Flow      |      | API Endpoints   |
-           +-----------------+      +-----------------+      +-----------------+
-                    |                        |                        |
-                    +------------------------+------------------------+
-                                             |
-                                    +--------v--------+
-                                    | Application     |
-                                    | (submit.diyacc..)|
-                                    +-----------------+
++-------------------+------------------------+------------------------+-------------------+
+|                                                                                         |
+|                           CloudWatch Dashboard (Extended OpsStack)                      |
+|                                                                                         |
+|  +----------------------------------+  +----------------------------------+             |
+|  | SYNTHETIC HEALTH                 |  | REAL USER TRAFFIC               |             |
+|  | - Canary success rate            |  | - RUM page views                |             |
+|  | - Canary latency                 |  | - RUM errors                    |             |
+|  | - Last run status                |  | - CloudFront requests           |             |
+|  +----------------------------------+  +----------------------------------+             |
+|                                                                                         |
+|  +----------------------------------+  +----------------------------------+             |
+|  | BUSINESS METRICS                 |  | INFRASTRUCTURE                  |             |
+|  | - Sign-ups (Cognito)             |  | - Lambda invocations            |             |
+|  | - VAT submissions (hmrcVatReturn)|  | - Lambda errors                 |             |
+|  | - Authentications (HMRC OAuth)   |  | - Lambda duration p95           |             |
+|  | - Bundle purchases (bundlePost)  |  | - API Gateway 4xx/5xx           |             |
+|  +----------------------------------+  +----------------------------------+             |
+|                                                                                         |
++-----------------------------------------------------------------------------------------+
 ```
 
 ---
 
-## Implementation Details
+## Metrics to Monitor
 
-### 1. New Stack: SyntheticMonitoringStack
+### 1. Real User Traffic (CloudWatch RUM)
 
-**File**: `infra/main/java/co/uk/diyaccounting/submit/stacks/SyntheticMonitoringStack.java`
+| Metric | Source | Purpose |
+|--------|--------|---------|
+| Page Views | RUM `PageViewCount` | Track visitor engagement |
+| Unique Visitors | RUM `SessionCount` | Daily/weekly active users |
+| JS Errors | RUM `JsErrorCount` | Frontend stability |
+| HTTP Errors | RUM `HttpErrorCount` | API call failures |
+| Performance | RUM `PerformanceNavigationDuration` | Page load times |
+
+### 2. Business Metrics (Lambda Invocations)
+
+| Metric | Lambda Function | Purpose |
+|--------|-----------------|---------|
+| Sign-ups | `cognitoPostConfirmation` | New user registrations |
+| VAT Submissions | `hmrcVatReturnPost` | Successful form submissions |
+| HMRC Authentications | `hmrcTokenPost` | OAuth token exchanges |
+| Bundle Purchases | `bundlePost` | Bundle activations/changes |
+| View VAT Return | `hmrcVatReturnGet` | Read operations |
+| View Obligations | `hmrcVatObligationGet` | Obligations lookups |
+
+### 3. Synthetic Health (CloudWatch Synthetics + GitHub Actions)
+
+#### CloudWatch Synthetics Canaries (AWS-hosted)
+
+| Canary | Checks | Frequency |
+|--------|--------|-----------|
+| Health Check | Main page, privacy, terms load | 5 min |
+| API Check | OpenAPI docs, API auth enforcement | 5 min |
+
+#### GitHub Actions Synthetic Tests (synthetic-test.yml)
+
+The `synthetic-test.yml` workflow runs Playwright behaviour tests and publishes metrics to CloudWatch.
+
+| Metric | Namespace | Dimensions | Schedule |
+|--------|-----------|------------|----------|
+| `behaviour-test` | `{apex-domain}` | `deployment-name`, `test` | Every 57 min |
+
+**Metric values**:
+- `0` = Test passed (success)
+- Non-zero = Test failed
+
+**Alarm**: Alert if no successful test (value=0) in any 2-hour period.
 
 ```java
-/*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
- */
+// GitHub Actions Synthetic Test Alarm
+Alarm.Builder.create(this, "GithubSyntheticAlarm")
+    .alarmName(props.resourceNamePrefix() + "-github-synthetic-failed")
+    .alarmDescription("GitHub Actions synthetic test has not succeeded in 2 hours")
+    .metric(Metric.Builder.create()
+        .namespace(props.sharedNames().envBaseUrl.replace("https://", ""))
+        .metricName("behaviour-test")
+        .dimensionsMap(Map.of(
+            "deployment-name", props.deploymentName(),
+            "test", "submitVatBehaviour"))
+        .statistic("Minimum")  // Look for any success (0)
+        .period(Duration.hours(2))
+        .build())
+    .threshold(1)  // Alert if minimum is >= 1 (no successes)
+    .evaluationPeriods(1)
+    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+    .treatMissingData(TreatMissingData.BREACHING)  // Missing data = no tests ran
+    .build();
+```
 
-package co.uk.diyaccounting.submit.stacks;
+### 4. Infrastructure Metrics
 
-import static co.uk.diyaccounting.submit.utils.Kind.infof;
-import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+| Metric | Source | Purpose |
+|--------|--------|---------|
+| CloudFront Requests | CloudFront | Total traffic volume |
+| CloudFront Error Rate | CloudFront `4xxErrorRate`, `5xxErrorRate` | CDN health |
+| API Gateway Latency | API Gateway | Backend performance |
+| Lambda Throttles | Lambda | Capacity issues |
 
-import co.uk.diyaccounting.submit.SubmitSharedNames;
-import java.util.List;
-import java.util.Map;
-import org.immutables.value.Value;
-import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.RemovalPolicy;
-import software.amazon.awscdk.Stack;
-import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.cloudwatch.Alarm;
-import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
-import software.amazon.awscdk.services.cloudwatch.actions.SnsAction;
-import software.amazon.awscdk.services.iam.ManagedPolicy;
-import software.amazon.awscdk.services.iam.Role;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.sns.Topic;
-import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
-import software.amazon.awscdk.services.synthetics.Canary;
-import software.amazon.awscdk.services.synthetics.Code;
-import software.amazon.awscdk.services.synthetics.Runtime;
-import software.amazon.awscdk.services.synthetics.Schedule;
-import software.amazon.awscdk.services.synthetics.Test;
-import software.constructs.Construct;
+---
 
-public class SyntheticMonitoringStack extends Stack {
+## Implementation: Extend OpsStack
 
-    public Topic alertTopic;
-    public Canary healthCheckCanary;
-    public Canary apiCanary;
-    public Alarm healthCheckAlarm;
-    public Alarm apiAlarm;
+### 1. Updated OpsStackProps
 
-    @Value.Immutable
-    public interface SyntheticMonitoringStackProps extends StackProps, SubmitStackProps {
+Add new properties to support extended monitoring:
 
-        @Override
-        Environment getEnv();
+```java
+@Value.Immutable
+public interface OpsStackProps extends StackProps, SubmitStackProps {
+    // ... existing props ...
 
-        @Override
-        @Value.Default
-        default Boolean getCrossRegionReferences() {
-            return null;
-        }
+    List<String> lambdaFunctionArns();
 
-        @Override
-        String envName();
+    // New: Alert configuration
+    @Value.Default
+    default String alertEmail() { return ""; }
 
-        @Override
-        String deploymentName();
+    // New: Canary configuration
+    @Value.Default
+    default int canaryIntervalMinutes() { return 5; }
 
-        @Override
-        String resourceNamePrefix();
+    // New: RUM App Monitor ID (from ObservabilityStack)
+    @Value.Default
+    default String rumAppMonitorId() { return ""; }
 
-        @Override
-        String cloudTrailEnabled();
+    // New: CloudFront Distribution ID (from EdgeStack)
+    @Value.Default
+    default String cloudFrontDistributionId() { return ""; }
 
-        @Override
-        SubmitSharedNames sharedNames();
+    // New: Base URL for canaries
+    String baseUrl();
+}
+```
 
-        // Alert configuration
-        String alertEmail();
+### 2. Extended OpsStack Constructor
 
-        // Canary configuration
-        int canaryIntervalMinutes();
+```java
+public OpsStack(final Construct scope, final String id, final OpsStackProps props) {
+    super(scope, id, props);
 
-        static ImmutableSyntheticMonitoringStackProps.Builder builder() {
-            return ImmutableSyntheticMonitoringStackProps.builder();
-        }
+    // ... existing tags and Lambda metric collection ...
+
+    // ============================================================================
+    // SNS Topic for Alerts
+    // ============================================================================
+    this.alertTopic = Topic.Builder.create(this, props.resourceNamePrefix() + "-AlertTopic")
+            .topicName(props.resourceNamePrefix() + "-ops-alerts")
+            .displayName("DIY Accounting Submit - Operational Alerts")
+            .build();
+
+    if (props.alertEmail() != null && !props.alertEmail().isBlank()) {
+        this.alertTopic.addSubscription(new EmailSubscription(props.alertEmail()));
     }
 
-    public SyntheticMonitoringStack(Construct scope, String id, SyntheticMonitoringStackProps props) {
-        this(scope, id, null, props);
+    // ============================================================================
+    // Synthetic Canaries (if baseUrl provided)
+    // ============================================================================
+    if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
+        createSyntheticCanaries(props);
     }
 
-    public SyntheticMonitoringStack(Construct scope, String id, StackProps stackProps, SyntheticMonitoringStackProps props) {
-        super(scope, id, stackProps);
+    // ============================================================================
+    // Build Comprehensive Dashboard
+    // ============================================================================
+    buildDashboard(props, lambdaMetrics);
+}
+```
 
-        String baseUrl = props.sharedNames().envBaseUrl;
-        String canaryNamePrefix = sanitizeCanaryName(props.resourceNamePrefix());
+### 3. Dashboard Layout
 
-        // ============================================================================
-        // SNS Topic for Alerts
-        // ============================================================================
-        this.alertTopic = Topic.Builder.create(this, props.resourceNamePrefix() + "-AlertTopic")
-                .topicName(props.resourceNamePrefix() + "-synthetic-alerts")
-                .displayName("DIY Accounting Submit - Synthetic Monitoring Alerts")
-                .build();
+```java
+private void buildDashboard(OpsStackProps props, LambdaMetrics lambdaMetrics) {
+    List<List<IWidget>> rows = new ArrayList<>();
 
-        // Add email subscription if configured
-        if (props.alertEmail() != null && !props.alertEmail().isBlank()) {
-            this.alertTopic.addSubscription(new EmailSubscription(props.alertEmail()));
-            infof("Added email subscription for alerts: %s", props.alertEmail());
-        }
+    // Row 1: Synthetic Health (AWS Canaries + GitHub Actions)
+    rows.add(List.of(
+        // AWS Synthetics canary success rates
+        GraphWidget.Builder.create()
+            .title("AWS Canary Health")
+            .left(List.of(
+                createCanaryMetric(healthCanaryName, "SuccessPercent"),
+                createCanaryMetric(apiCanaryName, "SuccessPercent")))
+            .width(8).height(6).build(),
 
-        // ============================================================================
-        // S3 Bucket for Canary Artifacts
-        // ============================================================================
-        Bucket canaryArtifactsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-CanaryArtifacts")
-                .bucketName(props.resourceNamePrefix().toLowerCase() + "-canary-artifacts")
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .expiration(Duration.days(30)) // Keep artifacts for 30 days
-                        .build()))
-                .build();
+        // GitHub Actions synthetic test results
+        GraphWidget.Builder.create()
+            .title("GitHub Synthetic Tests")
+            .left(List.of(
+                Metric.Builder.create()
+                    .namespace(apexDomain)
+                    .metricName("behaviour-test")
+                    .dimensionsMap(Map.of(
+                        "deployment-name", props.deploymentName(),
+                        "test", "submitVatBehaviour"))
+                    .statistic("Minimum")
+                    .period(Duration.hours(1))
+                    .build()))
+            .width(8).height(6).build(),
 
-        // ============================================================================
-        // IAM Role for Canaries
-        // ============================================================================
-        Role canaryRole = Role.Builder.create(this, props.resourceNamePrefix() + "-CanaryRole")
-                .roleName(props.resourceNamePrefix() + "-canary-role")
-                .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
-                .managedPolicies(List.of(
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
-                        ManagedPolicy.fromAwsManagedPolicyName("CloudWatchSyntheticsFullAccess")))
-                .build();
+        // RUM page views (if configured)
+        props.rumAppMonitorId().isBlank() ?
+            TextWidget.Builder.create()
+                .markdown("RUM not configured").width(8).height(6).build() :
+            GraphWidget.Builder.create()
+                .title("Real User Traffic (RUM)")
+                .left(List.of(
+                    createRumMetric(props.rumAppMonitorId(), "PageViewCount"),
+                    createRumMetric(props.rumAppMonitorId(), "SessionCount")))
+                .width(8).height(6).build()
+    ));
 
-        canaryArtifactsBucket.grantReadWrite(canaryRole);
+    // Row 2: Business Metrics - Submissions & Sign-ups
+    rows.add(List.of(
+        GraphWidget.Builder.create()
+            .title("VAT Submissions & Sign-ups")
+            .left(List.of(
+                filterLambdaMetric(lambdaMetrics, "hmrcVatReturnPost", "Invocations"),
+                filterLambdaMetric(lambdaMetrics, "cognitoPostConfirmation", "Invocations")))
+            .width(12).height(6).build(),
 
-        // ============================================================================
-        // Canary 1: Health Check
-        // ============================================================================
-        String healthCheckCanaryName = truncateCanaryName(canaryNamePrefix + "-health");
+        GraphWidget.Builder.create()
+            .title("HMRC Authentications & Bundle Changes")
+            .left(List.of(
+                filterLambdaMetric(lambdaMetrics, "hmrcTokenPost", "Invocations"),
+                filterLambdaMetric(lambdaMetrics, "bundlePost", "Invocations")))
+            .width(12).height(6).build()
+    ));
 
-        this.healthCheckCanary = Canary.Builder.create(this, props.resourceNamePrefix() + "-HealthCanary")
-                .canaryName(healthCheckCanaryName)
-                .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_7_0)
-                .test(Test.custom(Map.of(
-                        "handler", "healthCheck.handler",
-                        "code", Code.fromInline(generateHealthCheckCanaryCode(baseUrl)))))
-                .schedule(Schedule.rate(Duration.minutes(props.canaryIntervalMinutes())))
-                .role(canaryRole)
-                .artifactsBucketLocation(software.amazon.awscdk.services.synthetics.ArtifactsBucketLocation.builder()
-                        .bucket(canaryArtifactsBucket)
-                        .prefix("health-check/")
-                        .build())
-                .startAfterCreation(true)
-                .build();
+    // Row 3: Lambda Invocations & Errors (existing)
+    rows.add(List.of(
+        GraphWidget.Builder.create()
+            .title("Lambda Invocations by Function")
+            .left(lambdaMetrics.invocations)
+            .width(12).height(6).build(),
+        GraphWidget.Builder.create()
+            .title("Lambda Errors by Function")
+            .left(lambdaMetrics.errors)
+            .width(12).height(6).build()
+    ));
 
-        // Health Check Alarm
-        Metric healthCheckSuccessMetric = Metric.Builder.create()
-                .namespace("CloudWatchSynthetics")
-                .metricName("SuccessPercent")
-                .dimensionsMap(Map.of("CanaryName", healthCheckCanaryName))
-                .statistic("Average")
-                .period(Duration.minutes(5))
-                .build();
+    // Row 4: Lambda Performance (existing)
+    rows.add(List.of(
+        GraphWidget.Builder.create()
+            .title("Lambda p95 Duration")
+            .left(lambdaMetrics.durationsP95)
+            .width(12).height(6).build(),
+        GraphWidget.Builder.create()
+            .title("Lambda Throttles")
+            .left(lambdaMetrics.throttles)
+            .width(12).height(6).build()
+    ));
 
-        this.healthCheckAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-HealthAlarm")
-                .alarmName(props.resourceNamePrefix() + "-health-check-failed")
-                .alarmDescription("Health check canary is failing - application may be down")
-                .metric(healthCheckSuccessMetric)
-                .threshold(90) // Alert if success rate drops below 90%
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.BREACHING)
-                .build();
+    // Row 5: Alarms Status
+    rows.add(List.of(
+        AlarmStatusWidget.Builder.create()
+            .title("Alarm Status")
+            .alarms(List.of(healthCheckAlarm, apiAlarm, githubSyntheticAlarm))
+            .width(24).height(4).build()
+    ));
 
-        this.healthCheckAlarm.addAlarmAction(new SnsAction(this.alertTopic));
-        this.healthCheckAlarm.addOkAction(new SnsAction(this.alertTopic));
+    this.operationalDashboard = Dashboard.Builder.create(this,
+            props.resourceNamePrefix() + "-Dashboard")
+        .dashboardName(props.resourceNamePrefix() + "-operations")
+        .widgets(rows)
+        .build();
+}
+```
 
-        // ============================================================================
-        // Canary 2: API Endpoints Check
-        // ============================================================================
-        String apiCanaryName = truncateCanaryName(canaryNamePrefix + "-api");
+### 4. Canary Creation Helper
 
-        this.apiCanary = Canary.Builder.create(this, props.resourceNamePrefix() + "-ApiCanary")
-                .canaryName(apiCanaryName)
-                .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_7_0)
-                .test(Test.custom(Map.of(
-                        "handler", "apiCheck.handler",
-                        "code", Code.fromInline(generateApiCheckCanaryCode(baseUrl)))))
-                .schedule(Schedule.rate(Duration.minutes(props.canaryIntervalMinutes())))
-                .role(canaryRole)
-                .artifactsBucketLocation(software.amazon.awscdk.services.synthetics.ArtifactsBucketLocation.builder()
-                        .bucket(canaryArtifactsBucket)
-                        .prefix("api-check/")
-                        .build())
-                .startAfterCreation(true)
-                .build();
+```java
+private void createSyntheticCanaries(OpsStackProps props) {
+    String canaryPrefix = sanitizeCanaryName(props.resourceNamePrefix());
 
-        // API Canary Alarm
-        Metric apiSuccessMetric = Metric.Builder.create()
-                .namespace("CloudWatchSynthetics")
-                .metricName("SuccessPercent")
-                .dimensionsMap(Map.of("CanaryName", apiCanaryName))
-                .statistic("Average")
-                .period(Duration.minutes(5))
-                .build();
+    // S3 bucket for canary artifacts
+    Bucket canaryBucket = Bucket.Builder.create(this, "CanaryArtifacts")
+        .bucketName(props.resourceNamePrefix().toLowerCase() + "-canary-artifacts")
+        .encryption(BucketEncryption.S3_MANAGED)
+        .removalPolicy(RemovalPolicy.DESTROY)
+        .autoDeleteObjects(true)
+        .lifecycleRules(List.of(LifecycleRule.builder()
+            .expiration(Duration.days(14)).build()))
+        .build();
 
-        this.apiAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-ApiAlarm")
-                .alarmName(props.resourceNamePrefix() + "-api-check-failed")
-                .alarmDescription("API check canary is failing - API endpoints may be unavailable")
-                .metric(apiSuccessMetric)
-                .threshold(90)
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.BREACHING)
-                .build();
+    // IAM role for canaries
+    Role canaryRole = Role.Builder.create(this, "CanaryRole")
+        .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
+        .managedPolicies(List.of(
+            ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"),
+            ManagedPolicy.fromAwsManagedPolicyName("CloudWatchSyntheticsFullAccess")))
+        .build();
+    canaryBucket.grantReadWrite(canaryRole);
 
-        this.apiAlarm.addAlarmAction(new SnsAction(this.alertTopic));
-        this.apiAlarm.addOkAction(new SnsAction(this.alertTopic));
+    // Health Check Canary
+    String healthCanaryName = truncateCanaryName(canaryPrefix + "-health");
+    this.healthCanary = Canary.Builder.create(this, "HealthCanary")
+        .canaryName(healthCanaryName)
+        .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_7_0)
+        .test(Test.custom(Map.of(
+            "handler", "healthCheck.handler",
+            "code", Code.fromInline(generateHealthCheckCode(props.baseUrl())))))
+        .schedule(Schedule.rate(Duration.minutes(props.canaryIntervalMinutes())))
+        .role(canaryRole)
+        .artifactsBucketLocation(ArtifactsBucketLocation.builder()
+            .bucket(canaryBucket).prefix("health/").build())
+        .startAfterCreation(true)
+        .build();
 
-        // ============================================================================
-        // Outputs
-        // ============================================================================
-        cfnOutput(this, "AlertTopicArn", this.alertTopic.getTopicArn());
-        cfnOutput(this, "HealthCheckCanaryName", this.healthCheckCanary.getCanaryName());
-        cfnOutput(this, "ApiCanaryName", this.apiCanary.getCanaryName());
-        cfnOutput(this, "HealthCheckAlarmArn", this.healthCheckAlarm.getAlarmArn());
-        cfnOutput(this, "ApiAlarmArn", this.apiAlarm.getAlarmArn());
-        cfnOutput(this, "CanaryArtifactsBucket", canaryArtifactsBucket.getBucketName());
+    // Health Check Alarm
+    this.healthCheckAlarm = Alarm.Builder.create(this, "HealthAlarm")
+        .alarmName(props.resourceNamePrefix() + "-health-failed")
+        .metric(Metric.Builder.create()
+            .namespace("CloudWatchSynthetics")
+            .metricName("SuccessPercent")
+            .dimensionsMap(Map.of("CanaryName", healthCanaryName))
+            .statistic("Average")
+            .period(Duration.minutes(5)).build())
+        .threshold(90)
+        .evaluationPeriods(2)
+        .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
+        .treatMissingData(TreatMissingData.BREACHING)
+        .build();
 
-        infof(
-                "SyntheticMonitoringStack %s created successfully for %s",
-                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
-    }
+    this.healthCheckAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+    this.healthCheckAlarm.addOkAction(new SnsAction(this.alertTopic));
 
-    /**
-     * Sanitize the canary name to meet CloudWatch Synthetics requirements.
-     * Canary names must be lowercase, alphanumeric, with hyphens only.
-     */
-    private String sanitizeCanaryName(String name) {
-        return name.toLowerCase().replaceAll("[^a-z0-9-]", "-").replaceAll("-+", "-");
-    }
-
-    /**
-     * Truncate canary name to maximum 21 characters (CloudWatch Synthetics limit).
-     */
-    private String truncateCanaryName(String name) {
-        if (name.length() <= 21) {
-            return name;
-        }
-        return name.substring(0, 21);
-    }
-
-    /**
-     * Generate the health check canary code.
-     * This canary verifies the application is responding and serving content.
-     */
-    private String generateHealthCheckCanaryCode(String baseUrl) {
-        return """
-            const { URL } = require('url');
-            const synthetics = require('Synthetics');
-            const log = require('SyntheticsLogger');
-
-            const healthCheck = async function () {
-                const baseUrl = '%s';
-
-                // Step 1: Check main page loads
-                log.info('Step 1: Checking main page...');
-                let page = await synthetics.getPage();
-                const response = await page.goto(baseUrl, {
-                    waitUntil: 'domcontentloaded',
-                    timeout: 30000
-                });
-
-                if (response.status() !== 200) {
-                    throw new Error(`Main page returned status ${response.status()}`);
-                }
-                log.info('Main page loaded successfully');
-
-                // Step 2: Check privacy page (static content)
-                log.info('Step 2: Checking privacy page...');
-                const privacyResponse = await page.goto(baseUrl + '/privacy.html', {
-                    waitUntil: 'domcontentloaded',
-                    timeout: 30000
-                });
-
-                if (privacyResponse.status() !== 200) {
-                    throw new Error(`Privacy page returned status ${privacyResponse.status()}`);
-                }
-                log.info('Privacy page loaded successfully');
-
-                // Step 3: Check terms page (static content)
-                log.info('Step 3: Checking terms page...');
-                const termsResponse = await page.goto(baseUrl + '/terms.html', {
-                    waitUntil: 'domcontentloaded',
-                    timeout: 30000
-                });
-
-                if (termsResponse.status() !== 200) {
-                    throw new Error(`Terms page returned status ${termsResponse.status()}`);
-                }
-                log.info('Terms page loaded successfully');
-
-                log.info('Health check completed successfully');
-            };
-
-            exports.handler = async () => {
-                return await healthCheck();
-            };
-            """.formatted(baseUrl);
-    }
-
-    /**
-     * Generate the API check canary code.
-     * This canary verifies API endpoints are responding correctly.
-     */
-    private String generateApiCheckCanaryCode(String baseUrl) {
-        return """
-            const https = require('https');
-            const http = require('http');
-            const { URL } = require('url');
-            const synthetics = require('Synthetics');
-            const log = require('SyntheticsLogger');
-
-            const makeRequest = (urlString) => {
-                return new Promise((resolve, reject) => {
-                    const url = new URL(urlString);
-                    const client = url.protocol === 'https:' ? https : http;
-
-                    const req = client.get(urlString, { timeout: 10000 }, (res) => {
-                        let data = '';
-                        res.on('data', chunk => data += chunk);
-                        res.on('end', () => resolve({ status: res.statusCode, data }));
-                    });
-
-                    req.on('error', reject);
-                    req.on('timeout', () => {
-                        req.destroy();
-                        reject(new Error('Request timeout'));
-                    });
-                });
-            };
-
-            const apiCheck = async function () {
-                const baseUrl = '%s';
-
-                // Step 1: Check OpenAPI documentation is accessible
-                log.info('Step 1: Checking OpenAPI docs endpoint...');
-                try {
-                    const docsResponse = await makeRequest(baseUrl + '/docs/openapi.json');
-                    if (docsResponse.status !== 200) {
-                        throw new Error(`OpenAPI docs returned status ${docsResponse.status}`);
-                    }
-                    // Verify it's valid JSON
-                    JSON.parse(docsResponse.data);
-                    log.info('OpenAPI docs accessible and valid');
-                } catch (error) {
-                    log.error('OpenAPI docs check failed: ' + error.message);
-                    throw error;
-                }
-
-                // Step 2: Check API returns 401 for unauthenticated request (proves API is up)
-                log.info('Step 2: Checking API auth enforcement...');
-                try {
-                    const apiResponse = await makeRequest(baseUrl + '/api/v1/bundles');
-                    // We expect 401 Unauthorized for unauthenticated requests
-                    if (apiResponse.status !== 401) {
-                        log.warn(`API bundles endpoint returned unexpected status ${apiResponse.status}`);
-                        // 403 is also acceptable (means API is responding)
-                        if (apiResponse.status !== 403) {
-                            throw new Error(`API returned unexpected status ${apiResponse.status}`);
-                        }
-                    }
-                    log.info('API is responding correctly (returned expected auth error)');
-                } catch (error) {
-                    if (error.message.includes('unexpected status')) {
-                        throw error;
-                    }
-                    log.error('API check failed: ' + error.message);
-                    throw error;
-                }
-
-                log.info('API check completed successfully');
-            };
-
-            exports.handler = async () => {
-                return await apiCheck();
-            };
-            """.formatted(baseUrl);
-    }
+    // API Check Canary (similar pattern)
+    // ...
 }
 ```
 
 ---
 
-### 2. Integration into SubmitApplication.java
+## Distinguishing Synthetic vs Human Traffic
 
-Add the new stack to the application bootstrap:
+### Option A: User-Agent Filtering (Recommended)
 
-```java
-// In SubmitApplication.java, after other stacks:
-
-// Synthetic Monitoring Stack (only for ci and prod environments)
-if ("ci".equals(envName) || "prod".equals(envName)) {
-    var syntheticMonitoringStack = new SyntheticMonitoringStack(
-            app,
-            sharedNames.syntheticMonitoringStackName,
-            SyntheticMonitoringStackProps.builder()
-                    .env(defaultEnv)
-                    .envName(envName)
-                    .deploymentName(deploymentName)
-                    .resourceNamePrefix(sharedNames.resourceNamePrefix)
-                    .cloudTrailEnabled(String.valueOf(props.cloudTrailEnabled()))
-                    .sharedNames(sharedNames)
-                    .alertEmail(envOr("ALERT_EMAIL", ""))
-                    .canaryIntervalMinutes(Integer.parseInt(envOr("CANARY_INTERVAL_MINUTES", "5")))
-                    .build());
-    infof("Created SyntheticMonitoringStack: %s", syntheticMonitoringStack.getStackName());
-}
-```
-
----
-
-### 3. Update SubmitSharedNames.java
-
-Add new shared names:
-
-```java
-// Add to SubmitSharedNames.java:
-
-public final String syntheticMonitoringStackName;
-public final String alertTopicName;
-public final String canaryArtifactsBucketName;
-
-// In constructor:
-this.syntheticMonitoringStackName = String.format("%s-app-SyntheticMonitoringStack", resourceNamePrefix);
-this.alertTopicName = String.format("%s-synthetic-alerts", resourceNamePrefix);
-this.canaryArtifactsBucketName = String.format("%s-canary-artifacts", resourceNamePrefix.toLowerCase());
-```
-
----
-
-### 4. GitHub Actions Workflow Updates
-
-Add environment variable for alert email in deploy.yml:
-
-```yaml
-env:
-  ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
-  CANARY_INTERVAL_MINUTES: '5'
-```
-
----
-
-## Canary Details
-
-### Health Check Canary
-
-**Purpose**: Verify the web application is accessible and serving content.
-
-**Checks**:
-1. Main page loads with HTTP 200
-2. Privacy page loads with HTTP 200
-3. Terms page loads with HTTP 200
-
-**Frequency**: Every 5 minutes (configurable)
-
-**Alarm Threshold**: Alert if success rate drops below 90% for 2 consecutive periods.
-
-### API Check Canary
-
-**Purpose**: Verify API endpoints are responding correctly.
-
-**Checks**:
-1. OpenAPI documentation is accessible and valid JSON
-2. API returns expected authentication error (401/403) for unauthenticated requests
-
-**Frequency**: Every 5 minutes (configurable)
-
-**Alarm Threshold**: Alert if success rate drops below 90% for 2 consecutive periods.
-
----
-
-## Future Enhancements
-
-### OAuth Flow Canary (Phase 2)
-
-A more comprehensive canary that tests the full OAuth flow with HMRC sandbox:
+Canaries use a distinctive User-Agent header that can be filtered:
 
 ```javascript
-// Requires HMRC sandbox credentials stored in Secrets Manager
-// Would test:
-// 1. Initiate OAuth flow
-// 2. Complete authorization (with test user)
-// 3. Exchange code for token
-// 4. Make authenticated API call
+// In canary code
+const page = await synthetics.getPage();
+await page.setUserAgent('DIYAccounting-Synthetic-Monitor/1.0');
 ```
 
-This would require:
-- Test user credentials in Secrets Manager
-- More complex canary code with Puppeteer automation
-- Longer timeout and less frequent execution (every 30 minutes)
+CloudWatch Logs Insights can then filter:
+```sql
+fields @timestamp, @message
+| filter userAgent NOT LIKE 'DIYAccounting-Synthetic%'
+| stats count(*) as realUsers by bin(1h)
+```
 
-### VAT Submission Canary (Phase 3)
+### Option B: Separate RUM App Monitors
 
-End-to-end test that submits a VAT return to sandbox and verifies the receipt.
+Create two RUM app monitors:
+- `prod-submit-rum` - Production traffic (excludes synthetic IPs)
+- `prod-submit-rum-synthetic` - Synthetic traffic only
+
+### Option C: Custom Dimensions
+
+Add a `TrafficType` dimension to custom metrics:
+- `TrafficType=synthetic` for canary requests
+- `TrafficType=human` for real users (default)
+
+---
+
+## Implementation Checklist
+
+- [ ] Update `OpsStackProps` with new properties
+- [ ] Add SNS topic and email subscription to OpsStack
+- [ ] Create AWS synthetic canaries in OpsStack
+- [ ] Create alarm for AWS canary failures
+- [ ] Create alarm for GitHub synthetic test failures (no success in 2 hours)
+- [ ] Add GitHub synthetic test metric widget to dashboard
+- [ ] Add RUM metrics to dashboard (if rumAppMonitorId provided)
+- [ ] Add business metrics widgets (VAT submissions, sign-ups, etc.)
+- [ ] Add alarm status widget (including github-synthetic alarm)
+- [ ] Update `SubmitApplication.java` to pass new props
+- [ ] Add `ALERT_EMAIL` secret to GitHub
+- [ ] Update `deploy.yml` with new environment variables
+- [ ] Test on feature branch
+- [ ] Verify dashboard shows all metrics correctly
+- [ ] Verify GitHub synthetic alarm triggers when tests fail
 
 ---
 
@@ -567,39 +428,51 @@ End-to-end test that submits a VAT return to sandbox and verifies the receipt.
 | 2 Canaries @ 5-min interval | ~$2.40 |
 | S3 Storage (artifacts) | ~$0.10 |
 | SNS Notifications | ~$0.10 |
-| CloudWatch Alarms | ~$0.20 |
-| **Total** | **~$2.80/month** |
+| CloudWatch Alarms (4) | ~$0.40 |
+| Dashboard (1) | Free (first 3) |
+| **Total** | **~$3.00/month** |
 
 ---
 
-## Testing Plan
+## Dashboard Mockup
 
-1. Deploy to feature branch first
-2. Verify canaries execute successfully in CloudWatch console
-3. Manually trigger alarm state to test SNS notifications
-4. Verify email delivery
-5. Monitor for 24 hours before merging to main
+```
++============================================================================================+
+|                           prod-submit-operations Dashboard                                  |
++============================================================================================+
 
----
++---------------------------+  +---------------------------+  +---------------------------+
+| AWS CANARY HEALTH         |  | GITHUB SYNTHETIC TESTS    |  | REAL USER TRAFFIC (RUM)   |
+|                           |  |                           |  |                           |
+|  health-canary: 100%      |  |  submitVatBehaviour       |  |  Page Views: 1,234 /day   |
+|  api-canary:    100%      |  |  Last success: 45m ago    |  |  Sessions:     456 /day   |
+|  [====] [====]            |  |  [====] Pass rate: 98%    |  |  JS Errors:      2 /day   |
++---------------------------+  +---------------------------+  +---------------------------+
 
-## Rollback Plan
++------------------------------------------+  +------------------------------------------+
+| VAT SUBMISSIONS & SIGN-UPS               |  | HMRC AUTH & BUNDLE CHANGES               |
+|                                          |  |                                          |
+|  [Graph: hmrcVatReturnPost invocations]  |  |  [Graph: hmrcTokenPost invocations]      |
+|  [Graph: cognitoPostConfirmation]        |  |  [Graph: bundlePost invocations]         |
+|                                          |  |                                          |
++------------------------------------------+  +------------------------------------------+
 
-If issues occur:
-1. Delete the SyntheticMonitoringStack via CloudFormation
-2. Canaries and alarms will be removed
-3. S3 bucket will be emptied and deleted (autoDeleteObjects: true)
++------------------------------------------+  +------------------------------------------+
+| LAMBDA INVOCATIONS                       |  | LAMBDA ERRORS                            |
+|                                          |  |                                          |
+|  [Stacked graph by function]             |  |  [Stacked graph by function]             |
+|                                          |  |                                          |
++------------------------------------------+  +------------------------------------------+
 
----
++------------------------------------------+  +------------------------------------------+
+| LAMBDA P95 DURATION                      |  | LAMBDA THROTTLES                         |
+|                                          |  |                                          |
+|  [Line graph by function]                |  |  [Line graph by function]                |
+|                                          |  |                                          |
++------------------------------------------+  +------------------------------------------+
 
-## Implementation Checklist
-
-- [ ] Create `SyntheticMonitoringStack.java`
-- [ ] Update `SubmitSharedNames.java` with new names
-- [ ] Update `SubmitApplication.java` to include new stack
-- [ ] Add `ALERT_EMAIL` secret to GitHub repository
-- [ ] Update `deploy.yml` with new environment variables
-- [ ] Test deployment on feature branch
-- [ ] Verify canary execution in CloudWatch
-- [ ] Test alarm notifications
-- [ ] Merge to main
-- [ ] Verify prod deployment
++============================================================================================+
+| ALARM STATUS                                                                               |
+|  [OK] aws-health    [OK] aws-api    [OK] github-synthetic    [OK] error-rate              |
++============================================================================================+
+```
