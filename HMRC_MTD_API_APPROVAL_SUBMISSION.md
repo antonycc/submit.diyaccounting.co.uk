@@ -4,7 +4,7 @@
 **URL**: https://submit.diyaccounting.co.uk
 **Repository**: https://github.com/antonycc/submit.diyaccounting.co.uk
 **Document Date**: 11 January 2026
-**Version**: 0.0.3
+**Version**: 0.1.1
 
 ---
 
@@ -44,10 +44,9 @@
 ```
 Product Name: Submit DIY Accounting
 Product URL: https://submit.diyaccounting.co.uk
-Version: 0.0.3
+Version: 0.1.1
 Developer: DIY Accounting Ltd
 Contact Email: [your-email@diyaccounting.co.uk]
-Support URL: https://submit.diyaccounting.co.uk/support.html
 
 Description:
 A web application for UK sole traders and small businesses to submit
@@ -151,7 +150,6 @@ Transient errors (429, 503, 504) are automatically retried via SQS.
 Company: DIY Accounting Ltd
 Technical Contact: [contact-name]
 Email: [contact@diyaccounting.co.uk]
-Support URL: https://submit.diyaccounting.co.uk/support.html
 Privacy Policy: https://submit.diyaccounting.co.uk/privacy.html
 Terms of Service: https://submit.diyaccounting.co.uk/terms.html
 ```
@@ -312,7 +310,7 @@ Each header is traced from collection to transmission.
 ### Gov-Client-Connection-Method
 - **Value**: `WEB_APP_VIA_SERVER`
 - **Collection**: Hardcoded constant
-- **Implementation**: `web/public/submit.js:1143`
+- **Implementation**: `app/lib/buildFraudHeaders.js:76`
 - **Test Assertion**: `behaviour-tests/helpers/dynamodb-assertions.js:assertFraudPreventionHeaders()`
 
 ### Gov-Client-Public-IP
@@ -324,7 +322,7 @@ Each header is traced from collection to transmission.
 ### Gov-Client-Device-ID
 - **Value**: Salted HMAC-SHA256 hash of Cognito user sub
 - **Collection**: Generated server-side from authenticated user
-- **Implementation**: `app/lib/subHasher.js`
+- **Implementation**: `app/services/subHasher.js`
 - **Test Assertion**: `assertConsistentHashedSub()` verifies consistency across requests
 
 ### Gov-Client-User-IDs
@@ -372,7 +370,7 @@ Each header is traced from collection to transmission.
 - **Test Assertion**: Timestamp format verified
 
 ### Gov-Vendor-Version
-- **Value**: `web-submit-diyaccounting-co-uk=0.0.3`
+- **Value**: `web-submit-diyaccounting-co-uk=0.1.1`
 - **Collection**: From package.json version
 - **Implementation**: `web/public/submit.js:getGovClientHeaders()`
 - **Test Assertion**: Version format verified
@@ -483,7 +481,7 @@ Each header is traced from collection to transmission.
 
 ### User Sub Hashing
 
-**Implementation**: `app/lib/subHasher.js`
+**Implementation**: `app/services/subHasher.js`
 - Algorithm: HMAC-SHA256
 - Salt: Environment-specific, stored in AWS Secrets Manager
 - Output: 64-character hex string
