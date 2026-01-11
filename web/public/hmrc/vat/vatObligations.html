@@ -347,12 +347,12 @@
           document.getElementById("obligationsResults").style.display = "block";
           hideStatus();
 
-          // Clean up session storage
+          // Clean up session storage - keep token for subsequent HMRC operations
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("pendingObligationsRequest");
-          sessionStorage.removeItem("hmrcAccessToken");
+          // Keep hmrcAccessToken for subsequent operations (view return, submit return)
           sessionStorage.removeItem("oauth_state");
-          sessionStorage.removeItem("hmrcAccount");
+          // Keep hmrcAccount for subsequent operations
           console.log("Obligations retrieval completed successfully");
         } catch (error) {
           console.error("Error retrieving obligations:", error);

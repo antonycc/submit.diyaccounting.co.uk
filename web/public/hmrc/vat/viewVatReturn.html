@@ -278,12 +278,12 @@
           document.getElementById("searchForm").style.display = "none";
           hideStatus();
 
-          // Clean up session storage
+          // Clean up session storage - keep token for subsequent HMRC operations
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("pendingReturnRequest");
-          sessionStorage.removeItem("hmrcAccessToken");
+          // Keep hmrcAccessToken for subsequent operations (obligations, submit return)
           sessionStorage.removeItem("oauth_state");
-          sessionStorage.removeItem("hmrcAccount");
+          // Keep hmrcAccount for subsequent operations
           console.log("Return retrieval completed successfully");
         } catch (error) {
           console.error("Error retrieving VAT return:", error);
