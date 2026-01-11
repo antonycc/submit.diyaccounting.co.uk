@@ -8,6 +8,25 @@
 
 ---
 
+```text
+  Current State
+
+  Based on the test report (web-test-local):
+  - All behaviour tests PASSING
+  - All HMRC APIs working (POST/GET VAT returns, obligations)
+  - Fraud prevention headers validated (minor expected warnings only)
+  - MFA header implemented via mock injection
+
+  Next Steps to Submit to HMRC
+
+  1. Email SDSTeam@hmrc.gov.uk requesting production credentials
+  2. Complete their technical and business questionnaires (responses prepared in Section 4.3)
+  3. Make one live VAT submission with real VRN
+  4. Submit evidence from web/public/tests/ directory
+```
+
+---
+
 ## Table of Contents
 
 1. [Copy-Paste Sections for HMRC Submission](#part-1-copy-paste-sections-for-hmrc-submission)
