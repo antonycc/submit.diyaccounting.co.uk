@@ -33,6 +33,12 @@
         background: #f5f5f5;
         padding: 0 0.25rem;
       }
+      .legal-entity {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        margin: 1rem 0;
+      }
     </style>
   </head>
   <body>
@@ -55,7 +61,7 @@
         </div>
       </div>
       <h1 style="text-align: center">Terms of Use</h1>
-      <p class="muted" style="text-align: center">Last updated: January 5, 2026</p>
+      <p class="muted" style="text-align: center">Last updated: January 12, 2026</p>
     </header>
 
     <main>
@@ -84,6 +90,11 @@
         <h2>2. Eligibility and Account</h2>
         <ul>
           <li>You must be a UK business registered for VAT or an authorized agent acting on behalf of such a business</li>
+          <li>
+            <strong>This Service is intended for business use only.</strong> If you are a sole trader, you are contracting in your business
+            capacity, not as a consumer. Consumer protection laws (including the Consumer Rights Act 2015) may not apply to your use of this
+            Service
+          </li>
           <li>You must have valid HMRC Government Gateway credentials</li>
           <li>You are responsible for maintaining the confidentiality of your login credentials</li>
           <li>You must not share your account with others or allow unauthorized access</li>
@@ -99,8 +110,11 @@
           </li>
           <li>We will never request or store your HMRC Government Gateway password</li>
           <li>
-            We store OAuth access tokens securely to enable API calls. You can revoke authorization at any time through your HMRC account
-            settings
+            We store OAuth access tokens securely to enable API calls. You can revoke authorization at any time through your
+            <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener"
+              >HMRC authorized applications</a
+            >
+            page
           </li>
           <li>You are responsible for the accuracy of data you submit to HMRC through the Service</li>
         </ul>
@@ -118,6 +132,12 @@
           <li>
             Reverse engineer, decompile, or attempt to extract source code (except where permitted by applicable open source licenses)
           </li>
+          <li>Use automated tools, bots, or scripts to access the Service without our written permission</li>
+          <li>Attempt to circumvent rate limits or other technical restrictions</li>
+          <li>
+            Use the Service to build a competing product or resell API access to third parties without our express written consent
+          </li>
+          <li>Scrape, harvest, or collect data from the Service for commercial purposes</li>
         </ul>
       </section>
 
@@ -130,8 +150,8 @@
           </li>
           <li>Data is encrypted at rest and in transit using industry-standard protocols (TLS 1.2+, AES-256)</li>
           <li>
-            We use Amazon Web Services (AWS) as our infrastructure provider. Servers are located in the EU West (London) region. AWS is a
-            GDPR-compliant data processor
+            We use Amazon Web Services (AWS) as our infrastructure provider. Data is processed in the <strong>EU West (London)</strong>
+            region. AWS is a GDPR-compliant data processor
           </li>
           <li>
             You have the right to access, export, and delete your data. Contact admin@diyaccounting.co.uk to exercise these rights. We will
@@ -144,7 +164,13 @@
         <h2>6. Data Retention</h2>
         <ul>
           <li><strong>User bundles:</strong> Retained while your account is active; deleted within 30 days of account closure</li>
-          <li><strong>HMRC submission receipts:</strong> Retained for 7 years in line with UK tax record-keeping requirements</li>
+          <li>
+            <strong>HMRC submission receipts:</strong> Retained for 7 years in line with UK tax record-keeping requirements (HMRC requirement
+            under VAT regulations)
+          </li>
+          <li>
+            <strong>HMRC API audit logs:</strong> Retained for 30 days for compliance and troubleshooting; sensitive data is masked
+          </li>
           <li><strong>Authentication data:</strong> OAuth tokens expire per HMRC policy; refresh tokens deleted on logout or revocation</li>
           <li><strong>Performance monitoring data:</strong> Raw events retained for 30 days; aggregated metrics (anonymized) longer</li>
           <li><strong>Infrastructure logs:</strong> Retained for 30-90 days for security and operational purposes</li>
@@ -154,14 +180,42 @@
       <section>
         <h2>7. Fraud Prevention Headers</h2>
         <p>
-          In compliance with HMRC requirements, the Service collects and transmits fraud prevention headers with each API request. These
-          headers include device, browser, IP address, and timezone information. This is a legal requirement for MTD software and helps
-          protect your data from criminals and fraudsters.
+          In compliance with HMRC Making Tax Digital (MTD) regulations, the Service collects and transmits fraud prevention headers with
+          each VAT return submission. This is a <strong>legal requirement</strong> for all MTD-compliant software.
+        </p>
+        <p>Data collected includes:</p>
+        <ul>
+          <li>Public IP address</li>
+          <li>Device identifier (generated fresh for each submission, not stored persistently)</li>
+          <li>Browser user agent, timezone, screen resolution, and window size</li>
+          <li>User identifier (Cognito user ID)</li>
+          <li>Vendor information (application name and version)</li>
+        </ul>
+        <p>
+          This data helps HMRC identify and prevent fraudulent VAT submissions and supports criminal prosecutions for tax fraud. You consent
+          to this collection when you authorize the Service through HMRC's OAuth flow. For full details, see the
+          <a href="./privacy.html#hmrc-fraud-prevention">HMRC Fraud Prevention section</a> of our Privacy Policy.
         </p>
       </section>
 
       <section>
-        <h2>8. Service Availability</h2>
+        <h2>8. HMRC Software Vendor Status</h2>
+        <p>
+          DIY Accounting Submit is developed to comply with HMRC's Making Tax Digital for VAT requirements. The Service uses HMRC's official
+          APIs and implements all required fraud prevention headers.
+        </p>
+        <p>
+          <strong>Current status:</strong> The Service is fully functional with HMRC's sandbox (test) environment and has been tested
+          against HMRC's fraud prevention header validation endpoint. Production credentials are being sought from HMRC.
+        </p>
+        <p>
+          We are committed to maintaining compliance with all HMRC requirements for MTD software vendors, including ongoing fraud prevention
+          header compliance and security standards.
+        </p>
+      </section>
+
+      <section>
+        <h2>9. Service Availability</h2>
         <ul>
           <li>We strive to maintain high availability but do not guarantee uninterrupted access</li>
           <li>The Service may be unavailable during maintenance windows (we will notify users where possible)</li>
@@ -171,17 +225,27 @@
       </section>
 
       <section>
-        <h2>9. Fees and Bundles</h2>
+        <h2>10. Fees and Bundles</h2>
         <ul>
           <li>The Service offers different feature bundles (e.g., guest, test, production)</li>
-          <li>Pricing and features are subject to change with notice</li>
           <li>Some bundles may be free; others may require payment or approval</li>
-          <li>No refunds will be provided except where required by law</li>
+          <li>
+            <strong>Pricing changes:</strong> We will provide at least <strong>30 days' notice</strong> before any price increases for paid
+            bundles
+          </li>
+          <li>
+            <strong>Existing entitlements:</strong> Paid bundles remain valid for their purchased duration regardless of subsequent price
+            changes
+          </li>
+          <li>
+            <strong>Refunds:</strong> No refunds will be provided except where required by law or in cases of Service unavailability
+            exceeding 7 consecutive days
+          </li>
         </ul>
       </section>
 
       <section>
-        <h2>10. Intellectual Property</h2>
+        <h2>11. Intellectual Property</h2>
         <ul>
           <li>The Service is open source software licensed under AGPL-3.0. See the LICENSE file in the repository</li>
           <li>
@@ -193,7 +257,7 @@
       </section>
 
       <section>
-        <h2>11. Limitation of Liability</h2>
+        <h2>12. Limitation of Liability</h2>
         <p>
           <strong>To the fullest extent permitted by law:</strong>
         </p>
@@ -204,18 +268,22 @@
             We are not liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service
           </li>
           <li>
-            Our total liability to you for any claims arising from the Service shall not exceed the amount you paid for the Service in the
-            12 months preceding the claim
+            Our total liability to you for any claims arising from the Service shall not exceed the greater of: (a) the amount you paid for
+            the Service in the 12 months preceding the claim, or (b) <strong>fifty pounds (£50)</strong>
           </li>
           <li>
             You are responsible for ensuring the accuracy of data submitted to HMRC and compliance with all tax obligations. We are not tax
             advisors
           </li>
+          <li>
+            Nothing in these Terms excludes or limits our liability for death or personal injury caused by negligence, fraud, or any other
+            liability that cannot be excluded by law
+          </li>
         </ul>
       </section>
 
       <section>
-        <h2>12. Indemnification</h2>
+        <h2>13. Indemnification</h2>
         <p>
           You agree to indemnify and hold harmless DIY Accounting Limited, its officers, employees, and agents from any claims, damages, or
           expenses arising from your use of the Service, your violation of these Terms, or your violation of any laws or regulations.
@@ -223,22 +291,43 @@
       </section>
 
       <section>
-        <h2>13. Security Incidents</h2>
+        <h2>14. Force Majeure</h2>
+        <p>
+          Neither party shall be liable for delays or failures in performance resulting from circumstances beyond reasonable control,
+          including but not limited to:
+        </p>
+        <ul>
+          <li>HMRC system outages, maintenance, or API changes</li>
+          <li>Changes to Making Tax Digital regulations or requirements</li>
+          <li>Government or regulatory actions</li>
+          <li>Natural disasters, pandemics, or other acts of God</li>
+          <li>Cyber attacks, denial of service attacks, or security incidents affecting third-party infrastructure</li>
+          <li>Failures of third-party infrastructure providers (including AWS)</li>
+          <li>Internet or telecommunications failures</li>
+        </ul>
+        <p>
+          In the event of a force majeure event, the affected party shall notify the other party as soon as reasonably practicable and use
+          reasonable efforts to mitigate the impact.
+        </p>
+      </section>
+
+      <section>
+        <h2>15. Security Incidents</h2>
         <ul>
           <li>
-            We implement industry-standard security measures to protect your data, including encryption, access controls, and regular
-            security reviews
+            We implement industry-standard security measures to protect your data, including encryption, access controls, Web Application
+            Firewall (WAF) protection, and regular security monitoring
           </li>
           <li>
             In the event of a data breach affecting your personal data, we will notify you and the ICO within 72 hours as required by UK
             GDPR
           </li>
-          <li>We will also notify HMRC within 72 hours if the breach affects HMRC-related data or credentials</li>
+          <li>We will also notify HMRC within 72 hours if the breach affects HMRC-related data or OAuth credentials</li>
         </ul>
       </section>
 
       <section>
-        <h2>14. Termination</h2>
+        <h2>16. Termination</h2>
         <ul>
           <li>You may terminate your account at any time by contacting admin@diyaccounting.co.uk</li>
           <li>
@@ -252,37 +341,78 @@
       </section>
 
       <section>
-        <h2>15. Changes to Terms</h2>
+        <h2>17. Dispute Resolution</h2>
+        <p>If a dispute arises between you and DIY Accounting Limited:</p>
+        <ul>
+          <li>
+            <strong>Good faith negotiation:</strong> Both parties agree to attempt to resolve the dispute through good faith negotiation for
+            a period of <strong>30 days</strong> before initiating any formal proceedings
+          </li>
+          <li>
+            <strong>Mediation:</strong> If negotiation fails, either party may propose mediation through an agreed mediator or a service
+            such as the Centre for Effective Dispute Resolution (CEDR). Mediation costs shall be shared equally unless otherwise agreed
+          </li>
+          <li>
+            <strong>Small claims:</strong> For disputes under £10,000, either party may bring a claim in the Small Claims Court of England
+            and Wales
+          </li>
+          <li>
+            <strong>Court proceedings:</strong> If mediation is unsuccessful or inappropriate, either party may commence court proceedings
+            in accordance with Section 18 (Governing Law)
+          </li>
+        </ul>
+        <p>This clause does not prevent either party from seeking urgent injunctive relief where necessary.</p>
+      </section>
+
+      <section>
+        <h2>18. Changes to Terms</h2>
         <ul>
           <li>We may update these Terms from time to time. The "Last updated" date will reflect the most recent changes</li>
-          <li>Material changes will be notified via email or prominent notice in the Service</li>
+          <li>
+            <strong>Material changes</strong> (including changes to fees, liability, or data processing) will be notified via email at least
+            <strong>30 days</strong> before they take effect
+          </li>
           <li>Continued use of the Service after changes constitutes acceptance of the updated Terms</li>
+          <li>If you do not agree to updated Terms, you may close your account before the changes take effect</li>
         </ul>
       </section>
 
       <section>
-        <h2>16. Governing Law and Disputes</h2>
+        <h2>19. Governing Law and Jurisdiction</h2>
         <ul>
           <li>These Terms are governed by the laws of England and Wales</li>
-          <li>Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales</li>
+          <li>
+            Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales, subject to the dispute
+            resolution process in Section 17
+          </li>
         </ul>
       </section>
 
       <section>
-        <h2>17. Contact</h2>
+        <h2>20. Contact and Legal Entity</h2>
+        <p>For questions about these Terms, data requests, or account issues:</p>
+        <div class="legal-entity">
+          <p>
+            <strong>DIY Accounting Limited</strong><br />
+            Registered Office: 43 Dunnock Place, Newcastle upon Tyne, NE13 6LE<br />
+            Company Number: 06846849<br />
+            Registered in England and Wales<br />
+            Email: admin@diyaccounting.co.uk
+          </p>
+        </div>
         <p>
-          For questions about these Terms, data requests, or account issues, contact:<br />
-          <strong>Email:</strong> admin@diyaccounting.co.uk<br />
-          <strong>Company:</strong> DIY Accounting Limited
+          As required by the Companies Act 2006, our company registration details are displayed above and on all official correspondence.
         </p>
       </section>
 
       <section>
-        <h2>18. Open Source</h2>
+        <h2>21. Open Source</h2>
         <p>
           The source code for this Service is available at
-          <a href="https://github.com/antonycc/submit.diyaccounting.co.uk">github.com/antonycc/submit.diyaccounting.co.uk</a> under the
-          AGPL-3.0 license. Contributions and issue reports are welcome.
+          <a href="https://github.com/antonycc/submit.diyaccounting.co.uk" target="_blank" rel="noopener"
+            >github.com/antonycc/submit.diyaccounting.co.uk</a
+          >
+          under the AGPL-3.0 license. Contributions and issue reports are welcome.
         </p>
       </section>
     </main>

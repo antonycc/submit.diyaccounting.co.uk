@@ -4,7 +4,7 @@
 **URL**: https://submit.diyaccounting.co.uk
 **Repository**: https://github.com/antonycc/submit.diyaccounting.co.uk
 **Document Date**: 11 January 2026
-**Version**: 0.1.1
+**Version**: 1.0.0
 
 ---
 
@@ -43,9 +43,9 @@
 ```
 Product Name: Submit DIY Accounting
 Product URL: https://submit.diyaccounting.co.uk
-Version: 0.1.1
+Version: 1.0.0
 Developer: DIY Accounting Ltd
-Contact Email: [your-email@diyaccounting.co.uk]
+Contact Email: admin@diyaccounting.co.uk
 
 Description:
 A web application for UK sole traders and small businesses to submit
@@ -239,7 +239,7 @@ Terms of Service: https://submit.diyaccounting.co.uk/terms.html
 
 ```bash
 # Local with proxy (creates test user, runs against HMRC sandbox)
-npm run test:submitVatBehaviour-proxy
+npm run test:submitVatBehaviour-proxy-report
 
 # Generate evidence files
 # Outputs to: target/behaviour-test-results/
@@ -369,7 +369,7 @@ Each header is traced from collection to transmission.
 - **Test Assertion**: Timestamp format verified
 
 ### Gov-Vendor-Version
-- **Value**: `web-submit-diyaccounting-co-uk=0.1.1`
+- **Value**: `web-submit-diyaccounting-co-uk=1.0.0`
 - **Collection**: From package.json version
 - **Implementation**: `web/public/submit.js:getGovClientHeaders()`
 - **Test Assertion**: Version format verified

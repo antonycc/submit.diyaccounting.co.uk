@@ -183,7 +183,7 @@ npm run server
 Webserver output:
 ```log
 
-> web-submit-diyaccounting-co-uk@0.1.1 start
+> web-submit-diyaccounting-co-uk@1.0.0 start
 > node app/bin/server.js
 
 Listening at http://127.0.0.1:3000 for https://test-api.service.hmrc.gov.uk
