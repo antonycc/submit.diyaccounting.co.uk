@@ -146,7 +146,7 @@
     "prettier": "^3.7.4",
     "supertest": "^7.2.2",
     "toml": "^3.0.0",
-    "vitest": "^3.2.4",
+    "vitest": "^4.0.17",
     "wiremock": "^3.13.2"
   },
   "engines": {
