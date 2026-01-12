@@ -4,7 +4,7 @@
 **URL**: https://submit.diyaccounting.co.uk
 **Repository**: https://github.com/antonycc/submit.diyaccounting.co.uk
 **Document Date**: 11 January 2026
-**Version**: 0.1.1
+**Version**: 1.0.0
 
 ---
 
@@ -31,9 +31,8 @@
 
 1. [Copy-Paste Sections for HMRC Submission](#part-1-copy-paste-sections-for-hmrc-submission)
 2. [Recently Completed Items](#part-2-recently-completed-items-checklist)
-3. [TODO Before Submission](#part-3-todo-before-submission-checklist)
-4. [Submission Preparation Details](#part-4-submission-preparation-details)
-5. [Appendices](#appendices)
+3. [Submission Preparation Details](#part-4-submission-preparation-details)
+4. [Appendices](#appendices)
 
 ---
 
@@ -44,9 +43,9 @@
 ```
 Product Name: Submit DIY Accounting
 Product URL: https://submit.diyaccounting.co.uk
-Version: 0.1.1
+Version: 1.0.0
 Developer: DIY Accounting Ltd
-Contact Email: [your-email@diyaccounting.co.uk]
+Contact Email: admin@diyaccounting.co.uk
 
 Description:
 A web application for UK sole traders and small businesses to submit
@@ -148,8 +147,8 @@ Transient errors (429, 503, 504) are automatically retried via SQS.
 
 ```
 Company: DIY Accounting Ltd
-Technical Contact: [contact-name]
-Email: [contact@diyaccounting.co.uk]
+Technical Contact: Antony Cartwright
+Email: admin@diyaccounting.co.uk
 Privacy Policy: https://submit.diyaccounting.co.uk/privacy.html
 Terms of Service: https://submit.diyaccounting.co.uk/terms.html
 ```
@@ -240,7 +239,7 @@ Terms of Service: https://submit.diyaccounting.co.uk/terms.html
 
 ```bash
 # Local with proxy (creates test user, runs against HMRC sandbox)
-npm run test:submitVatBehaviour-proxy
+npm run test:submitVatBehaviour-proxy-report
 
 # Generate evidence files
 # Outputs to: target/behaviour-test-results/
@@ -370,7 +369,7 @@ Each header is traced from collection to transmission.
 - **Test Assertion**: Timestamp format verified
 
 ### Gov-Vendor-Version
-- **Value**: `web-submit-diyaccounting-co-uk=0.1.1`
+- **Value**: `web-submit-diyaccounting-co-uk=1.0.0`
 - **Collection**: From package.json version
 - **Implementation**: `web/public/submit.js:getGovClientHeaders()`
 - **Test Assertion**: Version format verified

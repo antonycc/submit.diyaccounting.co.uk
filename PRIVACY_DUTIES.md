@@ -59,7 +59,83 @@ This document outlines the specific privacy and data protection duties required 
 
 ---
 
-## 3. Data Retention Management
+## 3. Current Security Detections (What We Can Detect Now)
+
+### 3.1 Detections That Alert Automatically
+
+These trigger CloudWatch Alarms and send notifications to the configured SNS topic:
+
+| Detection | What It Catches | Where to Check | Response |
+|-----------|-----------------|----------------|----------|
+| **Lambda Error Alarm** | Unhandled exceptions, code failures | CloudWatch Alarms > `{env}-submit-*-errors` | Check Lambda logs for stack trace |
+| **Lambda Log Error Alarm** | ERROR/Exception/FATAL in logs | CloudWatch Alarms > `{env}-submit-*-log-errors` | Search logs for error pattern |
+| **API Gateway 5xx Alarm** | Backend failures | CloudWatch Alarms > `{env}-submit-api-5xx` | Check API Gateway + Lambda logs |
+| **Lambda Throttle Alarm** | Request volume exceeding capacity | CloudWatch Alarms > `{env}-submit-*-throttles` | Potential abuse - check source |
+| **Health Check Canary** | Site down / unresponsive | CloudWatch Alarms > `{env}-ops-health-check` | Check CloudFront, API Gateway, Lambda |
+| **API Check Canary** | API endpoints unresponsive | CloudWatch Alarms > `{env}-ops-api-check` | Check API Gateway, authorizer |
+
+### 3.2 Detections Logged But Not Alerting
+
+These require manual log analysis to discover:
+
+| Detection | Where to Find | Search Pattern | What It Indicates |
+|-----------|---------------|----------------|-------------------|
+| **Auth Failures** | CloudWatch Logs > `/aws/lambda/{env}-submit-custom-authorizer` | `level = "WARN" OR level = "ERROR"` | Brute force, invalid tokens |
+| **WAF Blocks** | CloudWatch Metrics > `AWS/WAFV2` | Metrics: `BlockedRequests` by rule | Active attacks (SQLi, XSS, rate limit) |
+| **Unusual AWS API Calls** | CloudTrail > Event History | Filter by `errorCode` or unusual `sourceIPAddress` | Credential compromise |
+| **HMRC API Failures** | CloudWatch Logs > `/aws/lambda/{env}-submit-hmrc-*` | `httpResponse.statusCode = 401` or `403` | Token theft, unauthorized access |
+
+### 3.3 How to Investigate Security Events
+
+#### Check Authentication Failures
+```bash
+# CloudWatch Logs Insights query
+fields @timestamp, @message
+| filter @logStream like /custom-authorizer/
+| filter level = "WARN" or level = "ERROR"
+| sort @timestamp desc
+| limit 100
+```
+
+#### Check WAF Activity
+1. Go to AWS Console > WAF & Shield > Web ACLs
+2. Select `{env}-submit-waf`
+3. View "Sampled requests" tab for blocked requests
+4. Check CloudWatch Metrics for `BlockedRequests` by rule name
+
+#### Check CloudTrail for AWS API Activity
+1. Go to AWS Console > CloudTrail > Event history
+2. Filter by:
+   - Time range of suspected incident
+   - Event source (e.g., `dynamodb.amazonaws.com`)
+   - Error codes (e.g., `AccessDenied`)
+3. Look for unusual patterns:
+   - API calls from unexpected IP addresses
+   - Unusual IAM principals
+   - Failed access attempts
+
+#### Check HMRC API Audit Trail
+```bash
+# Query DynamoDB hmrc-api-requests table
+aws dynamodb scan \
+  --table-name {env}-submit-hmrc-api-requests \
+  --filter-expression "contains(httpResponse.statusCode, :code)" \
+  --expression-attribute-values '{":code":{"N":"401"}}'
+```
+
+### 3.4 Gaps in Current Detection (See SECURITY_DETECTION_UPLIFT_PLAN.md)
+
+**Not Currently Alerting**:
+- Authentication failure spikes (brute force detection)
+- WAF block rate spikes (active attack detection)
+- Unusual DynamoDB access patterns (data exfiltration)
+- GuardDuty threat detection (not enabled)
+
+**Planned Improvements**: See `SECURITY_DETECTION_UPLIFT_PLAN.md` for phased implementation plan.
+
+---
+
+## 4. Data Retention Management
 
 ### Regular Tasks
 
@@ -78,26 +154,29 @@ This document outlines the specific privacy and data protection duties required 
 
 ---
 
-## 4. Monitoring and Auditing
+## 5. Monitoring and Auditing
 
 ### Weekly
 - Check CloudWatch alarms for unusual access patterns
-- Review GuardDuty findings (if enabled)
-- Monitor failed authentication attempts
+- Review GuardDuty findings (if enabled - see SECURITY_DETECTION_UPLIFT_PLAN.md)
+- Review authentication failures in custom authorizer logs
+- Check WAF sampled requests for attack patterns
 
 ### Monthly
 - Review DynamoDB table sizes and growth
 - Audit IAM access logs for admin actions
 - Check for expired OAuth tokens in need of cleanup
+- Review CloudTrail for unusual API activity
 
 ### Quarterly
 - Review and update privacy policy if services/data processing changes
 - Test data export and deletion scripts
 - Verify encryption at rest for all DynamoDB tables
+- Review and update this document
 
 ---
 
-## 5. HMRC Compliance
+## 6. HMRC Compliance
 
 ### Ongoing
 - **Fraud Prevention Headers**: Ensure all API calls include required Gov-Client-* headers
@@ -115,7 +194,7 @@ This document outlines the specific privacy and data protection duties required 
 
 ---
 
-## 6. User Communications
+## 7. User Communications
 
 ### Privacy Policy Updates
 - When changing data processing practices:
@@ -131,7 +210,7 @@ This document outlines the specific privacy and data protection duties required 
 
 ---
 
-## 7. Scripts and Tools
+## 8. Scripts and Tools
 
 ### Required Admin Scripts (to be created/maintained)
 
@@ -155,12 +234,15 @@ node scripts/audit-user-access.js <userId> --days 90
 ### AWS Console Access
 - **DynamoDB**: Direct access for data inspection and manual corrections
 - **CloudWatch**: Log review and monitoring
+- **CloudWatch Alarms**: Security alert configuration
 - **Cognito**: User management and token revocation
 - **Secrets Manager**: OAuth client secrets (never expose in logs)
+- **CloudTrail**: AWS API audit trail
+- **WAF**: Attack monitoring and IP blocking
 
 ---
 
-## 8. Contact and Escalation
+## 9. Contact and Escalation
 
 ### Primary Contact
 - **Email**: admin@diyaccounting.co.uk
@@ -173,12 +255,13 @@ node scripts/audit-user-access.js <userId> --days 90
 
 ---
 
-## 9. Documentation to Maintain
+## 10. Documentation to Maintain
 
 ### Keep Updated
 - This document (PRIVACY_DUTIES.md)
 - web/public/privacy.html
 - web/public/terms.html
+- SECURITY_DETECTION_UPLIFT_PLAN.md
 - _developers/REVIEW_TO_MTD.md (HMRC readiness checklist)
 
 ### Keep Accessible
@@ -186,23 +269,6 @@ node scripts/audit-user-access.js <userId> --days 90
 - Penetration test reports
 - Security incident logs
 - Data subject request logs (who requested what, when responded)
-
----
-
-## 10. Checklist for HMRC Production Approval
-
-Before submitting for HMRC production credentials:
-
-- [ ] Privacy policy URL live and linked from all pages
-- [ ] Terms of use URL live and linked from all pages
-- [ ] Data export script tested and working
-- [ ] Data deletion script tested and working
-- [ ] 72-hour breach notification procedures documented
-- [ ] Penetration testing completed and reported
-- [ ] Fraud prevention headers validated via HMRC Test API
-- [ ] Server location disclosed (AWS eu-west-2 London)
-- [ ] Encryption verified (TLS 1.2+ in transit, AES-256 at rest)
-- [ ] Admin contact email functional: admin@diyaccounting.co.uk
 
 ---
 
@@ -214,6 +280,7 @@ Before submitting for HMRC production credentials:
 3. Delete closed accounts within **30 days**
 4. Retain HMRC receipts for **7 years**
 5. Keep privacy/terms documentation current and accessible
+6. Monitor security alerts and investigate promptly
 
 **Tools Needed**:
 - scripts/export-user-data.js
@@ -221,8 +288,17 @@ Before submitting for HMRC production credentials:
 - scripts/cleanup-deleted-accounts.js
 - scripts/anonymize-old-receipts.js
 
+**Security Monitoring**:
+- CloudWatch Alarms (Lambda errors, API 5xx, health checks)
+- CloudWatch Logs (auth failures, HMRC API errors)
+- WAF metrics and sampled requests
+- CloudTrail (AWS API activity)
+
+**Planned Improvements**:
+- See SECURITY_DETECTION_UPLIFT_PLAN.md for detection enhancements
+
 **Regular Reviews**:
-- Weekly: Security monitoring
-- Monthly: Data growth and access audits
-- Quarterly: Policy reviews and script testing
-- Annual: Disaster recovery and penetration testing
+- Weekly: Security monitoring, auth failures, WAF activity
+- Monthly: Data growth, IAM audits, CloudTrail review
+- Quarterly: Policy reviews, script testing, documentation updates
+- Annual: Disaster recovery, penetration testing

@@ -33,6 +33,29 @@
         background: #f5f5f5;
         padding: 0 0.25rem;
       }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        text-align: left;
+      }
+      th {
+        background: #f5f5f5;
+      }
+      .ico-disclosure {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 1.5rem;
+        margin: 1rem 0;
+      }
+      .ico-disclosure h3 {
+        margin-top: 0;
+      }
     </style>
   </head>
   <body>
@@ -55,19 +78,47 @@
         </div>
       </div>
       <h1 style="text-align: center">Privacy Policy</h1>
-      <p class="muted" style="text-align: center">Last updated: December 13, 2024</p>
+      <p class="muted" style="text-align: center">Last updated: January 12, 2026</p>
     </header>
 
     <main>
       <section>
         <p>
-          DIY Accounting Submit is a lightweight web application that helps you submit UK VAT returns. We aim to collect the minimum data
-          necessary to operate the service and monitor performance.
+          DIY Accounting Submit is a lightweight web application that helps you submit UK VAT returns via HMRC's Making Tax Digital (MTD)
+          service. We aim to collect the minimum data necessary to operate the service, comply with legal requirements, and monitor
+          performance.
         </p>
       </section>
 
       <section>
         <h2>What we collect</h2>
+
+        <h3>Account and Authentication Data</h3>
+        <ul>
+          <li><strong>Cognito user profile</strong>: Email address, name, and unique user identifier (sub) from Google OAuth sign-in</li>
+          <li>
+            <strong>Authentication tokens</strong>: JWT access, identity, and refresh tokens stored in your browser's localStorage for
+            session management
+          </li>
+          <li><strong>HMRC OAuth tokens</strong>: Temporary access tokens obtained when you authorize HMRC access (not stored long-term)</li>
+        </ul>
+
+        <h3>VAT Submission Data</h3>
+        <ul>
+          <li><strong>VAT return data</strong>: The figures you enter for submission (processed but not stored beyond the request)</li>
+          <li>
+            <strong>HMRC submission receipts</strong>: Confirmation receipts from HMRC including form bundle number, processing date, and
+            timestamp
+          </li>
+          <li><strong>Subscription bundles</strong>: Records of your service entitlements and expiry dates</li>
+        </ul>
+
+        <h3>HMRC Fraud Prevention Data</h3>
+        <p>
+          When you submit a VAT return, we are legally required to collect and transmit fraud prevention data to HMRC. See the
+          <a href="#hmrc-fraud-prevention">HMRC Fraud Prevention Headers</a> section below for full details.
+        </p>
+
         <h3>Real User Monitoring (RUM)</h3>
         <p>
           We use Amazon CloudWatch RUM to collect performance and error data from your browser. This helps us improve the application's
@@ -92,25 +143,149 @@
           <li>Form input data (e.g., VAT numbers, financial figures)</li>
           <li>Passwords or authentication tokens</li>
           <li>Full URLs with query parameters or personal identifiers</li>
-          <li>IP addresses (AWS receives them for request routing but we do not store or process them)</li>
+          <li>IP addresses (AWS receives them for request routing but we do not store or process them for RUM)</li>
         </ul>
 
-        <h4>Other Data We Collect</h4>
+        <h3>Infrastructure and Operational Data</h3>
         <ul>
           <li>
-            Operational logs from our infrastructure (e.g., CloudFront/WAF request logs, API Gateway access logs), which contain request
-            metadata such as timestamps, paths, response codes, and IP addresses as seen by our edge or origin services. These are collected
-            automatically by AWS for security and operational reasons.
+            <strong>API Gateway access logs</strong>: Request metadata including timestamps, paths, response codes, and request IDs
+          </li>
+          <li>
+            <strong>CloudFront/WAF logs</strong>: Edge request logs including IP addresses for security monitoring and rate limiting
+          </li>
+          <li>
+            <strong>Lambda execution logs</strong>: Structured operational logs with correlation IDs for debugging (sensitive data excluded)
+          </li>
+          <li>
+            <strong>HMRC API audit trail</strong>: Masked records of API requests and responses for compliance and troubleshooting (sensitive
+            data redacted)
           </li>
         </ul>
+      </section>
+
+      <section id="hmrc-fraud-prevention">
+        <h2>HMRC Fraud Prevention Headers</h2>
+        <p>
+          Under Making Tax Digital (MTD) regulations, HMRC requires all software providers to collect and transmit fraud prevention data
+          with each VAT return submission. This is a <strong>legal requirement</strong> that we cannot opt out of.
+        </p>
+
+        <h3>Legal Basis</h3>
+        <p>
+          The collection and transmission of fraud prevention data is mandated by HMRC under the
+          <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/fraud-prevention" target="_blank" rel="noopener"
+            >HMRC Fraud Prevention Specification</a
+          >. HMRC uses this data to:
+        </p>
+        <ul>
+          <li>Identify and prevent fraudulent VAT submissions</li>
+          <li>Support criminal prosecutions for tax fraud</li>
+          <li>Verify the authenticity of submissions</li>
+          <li>Monitor for suspicious patterns across the MTD ecosystem</li>
+        </ul>
+
+        <h3>Data Points Collected</h3>
+        <p>The following data is collected and transmitted to HMRC with each VAT return submission:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Data Point</th>
+              <th>Description</th>
+              <th>How Collected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Public IP Address</td>
+              <td>Your internet-facing IP address</td>
+              <td>Detected via WebRTC or external IP services, or extracted from request headers</td>
+            </tr>
+            <tr>
+              <td>Device ID</td>
+              <td>A unique identifier for your browser session</td>
+              <td>Generated fresh for each submission using <code>crypto.randomUUID()</code>; not stored persistently</td>
+            </tr>
+            <tr>
+              <td>Browser User Agent</td>
+              <td>Your browser type, version, and operating system</td>
+              <td>From <code>navigator.userAgent</code></td>
+            </tr>
+            <tr>
+              <td>Timezone</td>
+              <td>Your local timezone offset (e.g., UTC+00:00)</td>
+              <td>Calculated from JavaScript Date API</td>
+            </tr>
+            <tr>
+              <td>Screen Information</td>
+              <td>Screen resolution, color depth, and device pixel ratio</td>
+              <td>From <code>window.screen</code> properties</td>
+            </tr>
+            <tr>
+              <td>Window Size</td>
+              <td>Browser window dimensions</td>
+              <td>From <code>window.innerWidth</code> and <code>window.innerHeight</code></td>
+            </tr>
+            <tr>
+              <td>User Identifier</td>
+              <td>Your Cognito user ID (or "anonymous" if not logged in)</td>
+              <td>From authentication token claims</td>
+            </tr>
+            <tr>
+              <td>Vendor Information</td>
+              <td>Our application name and version</td>
+              <td>From application configuration</td>
+            </tr>
+            <tr>
+              <td>Connection Method</td>
+              <td>How you connect to HMRC (WEB_APP_VIA_SERVER)</td>
+              <td>Fixed value for this application type</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>How Device ID Works</h3>
+        <p>
+          The device ID is <strong>not stored persistently</strong>. A new UUID is generated for each VAT return submission using your
+          browser's cryptographic random number generator. This means:
+        </p>
+        <ul>
+          <li>No cookies are used for device tracking</li>
+          <li>No localStorage is used for device ID storage</li>
+          <li>Each submission generates a fresh, unique device identifier</li>
+        </ul>
+
+        <h3>HMRC Consent</h3>
+        <p>
+          When you authorize this application to submit VAT returns on your behalf, you do so through HMRC's own OAuth authorization flow.
+          HMRC's authorization screen explains that fraud prevention data will be collected. By completing the authorization, you consent to
+          this data collection as required by HMRC.
+        </p>
+        <p>
+          For more information about HMRC's fraud prevention requirements, see the
+          <a href="https://developer.service.hmrc.gov.uk/api-documentation/docs/fraud-prevention" target="_blank" rel="noopener"
+            >HMRC Fraud Prevention Documentation</a
+          >.
+        </p>
       </section>
 
       <section>
         <h2>How and when we collect it</h2>
         <ul>
-          <li>RUM only starts after you click “Accept” in the consent banner. Until then, no RUM data is sent.</li>
           <li>
-            Infrastructure logs are collected automatically by AWS services when you use the site, for security and operational reasons.
+            <strong>Account data</strong>: Collected when you sign in with Google OAuth and stored in AWS Cognito and browser localStorage.
+          </li>
+          <li>
+            <strong>VAT submission data</strong>: Collected when you submit a VAT return; receipts are stored in DynamoDB for 7 years.
+          </li>
+          <li>
+            <strong>Fraud prevention data</strong>: Collected at the moment of VAT return submission and transmitted immediately to HMRC.
+          </li>
+          <li><strong>RUM data</strong>: Only collected after you click "Accept" in the consent banner.</li>
+          <li>
+            <strong>Infrastructure logs</strong>: Collected automatically by AWS services when you use the site, for security and operational
+            reasons.
           </li>
         </ul>
       </section>
@@ -118,61 +293,144 @@
       <section>
         <h2>What we use it for</h2>
         <ul>
-          <li>To monitor and improve site performance and reliability.</li>
-          <li>To detect errors and troubleshoot issues.</li>
-          <li>To protect the service and our users from abuse and attacks.</li>
+          <li><strong>VAT submissions</strong>: To submit your VAT returns to HMRC and provide you with confirmation receipts.</li>
+          <li><strong>Authentication</strong>: To verify your identity and manage your session.</li>
+          <li><strong>Entitlements</strong>: To track your subscription bundles and service access.</li>
+          <li>
+            <strong>Fraud prevention compliance</strong>: To fulfill our legal obligations under Making Tax Digital regulations.
+          </li>
+          <li><strong>Performance monitoring</strong>: To improve site speed, reliability, and user experience.</li>
+          <li><strong>Error detection</strong>: To identify and fix bugs and issues.</li>
+          <li><strong>Security</strong>: To protect the service and users from abuse, attacks, and unauthorized access.</li>
+          <li><strong>Compliance auditing</strong>: To maintain audit trails for regulatory compliance.</li>
         </ul>
       </section>
 
       <section>
         <h2>Data retention</h2>
         <h3>Application Data</h3>
-        <ul>
-          <li>
-            <strong>User bundles (entitlements)</strong>: Retained while your account is active. Deleted within 30 days of account closure
-            or deletion request.
-          </li>
-          <li>
-            <strong>HMRC submission receipts</strong>: Retained for 7 years in line with UK tax record-keeping requirements. This includes
-            submission metadata, timestamps, and HMRC receipt confirmations.
-          </li>
-          <li>
-            <strong>Authentication data</strong>: OAuth access tokens from HMRC expire per HMRC policy (typically 4 hours). Refresh tokens
-            are deleted on logout or authorization revocation. Cognito user profile data is retained while your account is active; deleted
-            within 30 days of account closure.
-          </li>
-        </ul>
+        <table>
+          <thead>
+            <tr>
+              <th>Data Category</th>
+              <th>Retention Period</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>HMRC submission receipts</td>
+              <td>7 years</td>
+              <td>UK tax record-keeping requirements</td>
+            </tr>
+            <tr>
+              <td>User bundles (entitlements)</td>
+              <td>1 month after expiry</td>
+              <td>Service access management</td>
+            </tr>
+            <tr>
+              <td>HMRC API audit logs (masked)</td>
+              <td>30 days</td>
+              <td>Compliance and troubleshooting</td>
+            </tr>
+            <tr>
+              <td>Async request tracking</td>
+              <td>1 hour</td>
+              <td>Request processing</td>
+            </tr>
+            <tr>
+              <td>Cognito user profile</td>
+              <td>While account active</td>
+              <td>Authentication</td>
+            </tr>
+            <tr>
+              <td>Browser tokens (localStorage)</td>
+              <td>Until logout or expiry</td>
+              <td>Session management</td>
+            </tr>
+          </tbody>
+        </table>
 
         <h3>Monitoring and Infrastructure Data</h3>
-        <ul>
-          <li>
-            <strong>CloudWatch RUM</strong>: Raw RUM events are stored by AWS for 30 days. Aggregated metrics are retained longer for trend
-            analysis, but contain no personally identifiable information.
-          </li>
-          <li>
-            <strong>Infrastructure logs</strong> (e.g., CloudFront, API Gateway, Lambda logs): Retained for 30-90 days for security and
-            operational purposes unless required for security investigations or compliance.
-          </li>
-        </ul>
+        <table>
+          <thead>
+            <tr>
+              <th>Data Category</th>
+              <th>Retention Period</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>CloudWatch RUM events</td>
+              <td>30 days (raw), longer for aggregated metrics</td>
+            </tr>
+            <tr>
+              <td>API Gateway access logs</td>
+              <td>30-90 days (configurable per environment)</td>
+            </tr>
+            <tr>
+              <td>CloudFront/WAF logs</td>
+              <td>30 days</td>
+            </tr>
+            <tr>
+              <td>Lambda execution logs</td>
+              <td>30-90 days</td>
+            </tr>
+            <tr>
+              <td>CloudTrail audit logs</td>
+              <td>90 days (configurable)</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
       <section>
-        <h2>Cookies and storage</h2>
+        <h2>Cookies and browser storage</h2>
+        <p><strong>This application does not use cookies.</strong></p>
+        <p>We use browser localStorage and sessionStorage instead:</p>
+
+        <h3>localStorage (persistent until cleared)</h3>
         <ul>
-          <li>RUM may use cookies/local storage to establish session information when you have consented.</li>
-          <li>We store access tokens and minimal user info in your browser storage to enable login and API access.</li>
+          <li><strong>Authentication tokens</strong>: Cognito access, identity, and refresh tokens for session management</li>
+          <li><strong>User info</strong>: Parsed user profile from Cognito (sub, name, email)</li>
+          <li><strong>Consent preferences</strong>: Your RUM and analytics consent choices</li>
+          <li><strong>Auth state</strong>: OAuth state parameter for CSRF protection during login</li>
         </ul>
+
+        <h3>sessionStorage (cleared when browser tab closes)</h3>
+        <ul>
+          <li><strong>MFA metadata</strong>: Multi-factor authentication information for fraud prevention headers (if applicable)</li>
+        </ul>
+
+        <p>
+          RUM may use cookies or localStorage to establish session information, but only after you consent via the banner. You can clear all
+          stored data using your browser's "Clear site data" function.
+        </p>
       </section>
 
       <section>
         <h2>Your choices</h2>
         <ul>
           <li>
-            You can decline analytics in the consent banner. You can later change your choice by clearing site data in your browser and
-            revisiting.
+            <strong>RUM consent</strong>: You can decline analytics in the consent banner. You can change your choice by clearing site data
+            in your browser and revisiting.
           </li>
-          <li>If you revoke consent, RUM will not be initialized on future visits unless you consent again.</li>
+          <li>
+            <strong>HMRC authorization</strong>: You can revoke HMRC access at any time through your
+            <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener"
+              >HMRC authorized applications</a
+            >
+            page.
+          </li>
+          <li>
+            <strong>Account deletion</strong>: Contact us to request deletion of your account and associated data (subject to legal
+            retention requirements).
+          </li>
         </ul>
+        <p>
+          <strong>Note:</strong> You cannot opt out of fraud prevention data collection for VAT submissions. This is a legal requirement
+          mandated by HMRC for all MTD-compliant software.
+        </p>
       </section>
 
       <section>
@@ -198,34 +456,236 @@
           <li>Any additional details to help us process your request</li>
         </ul>
         <p>
-          We will respond to your request within <strong>30 days</strong>. For data deletion, we will delete your bundles and authentication
-          data within 30 days. HMRC submission receipts will be retained for 7 years per UK tax record-keeping requirements, but will be
-          anonymized where possible.
+          We will respond to your request within <strong>30 days</strong>. For data deletion, we will delete your bundles, authentication
+          data, and audit logs within 30 days. HMRC submission receipts will be retained for 7 years per UK tax record-keeping requirements,
+          but will be anonymized where possible.
         </p>
       </section>
 
       <section>
-        <h2>Data processors</h2>
+        <h2>Data recipients</h2>
+
+        <h3>HMRC (Data Controller)</h3>
         <p>
-          We use Amazon Web Services (AWS) to host and operate the website, API, and monitoring services. RUM data is processed by AWS in
-          the EU West (London) region. AWS is GDPR-compliant and acts as a data processor on our behalf.
+          When you submit a VAT return, your VAT figures and fraud prevention data are transmitted directly to HMRC. HMRC is an independent
+          data controller for this data and processes it according to their own privacy policy. We do not control how HMRC uses this data
+          after transmission.
+        </p>
+        <ul>
+          <li><strong>Data shared</strong>: VAT return figures, fraud prevention headers (see above)</li>
+          <li><strong>Purpose</strong>: VAT return processing and fraud prevention</li>
+          <li><strong>Legal basis</strong>: Legal obligation (Making Tax Digital regulations)</li>
+          <li>
+            <strong>HMRC Privacy Notice</strong>:
+            <a href="https://www.gov.uk/government/publications/data-protection-act-dpa-information-hm-revenue-and-customs-hold-about-you"
+              >HMRC Data Protection Information</a
+            >
+          </li>
+        </ul>
+
+        <h3>Amazon Web Services (Data Processor)</h3>
+        <p>
+          We use Amazon Web Services (AWS) to host and operate the website, API, and monitoring services. AWS acts as a data processor on
+          our behalf under a Data Processing Agreement. All data is processed in the <strong>EU West (London) region</strong> unless
+          otherwise noted.
         </p>
         <p>AWS services we use include:</p>
         <ul>
-          <li><strong>Amazon CloudWatch RUM</strong>: Real user monitoring and performance analytics</li>
-          <li><strong>Amazon CloudFront</strong>: Content delivery and edge caching</li>
+          <li><strong>Amazon Cognito</strong>: User authentication and identity management</li>
+          <li><strong>Amazon DynamoDB</strong>: Data storage for receipts, bundles, and audit logs</li>
           <li><strong>AWS Lambda</strong>: Serverless API functions</li>
-          <li><strong>Amazon DynamoDB</strong>: Data storage for receipts and user bundles</li>
-          <li><strong>Amazon Cognito</strong>: User authentication</li>
+          <li><strong>Amazon CloudFront</strong>: Content delivery and edge caching (global edge locations)</li>
+          <li><strong>Amazon CloudWatch</strong>: Logging, monitoring, and RUM</li>
+          <li><strong>AWS WAF</strong>: Web application firewall and rate limiting</li>
+          <li><strong>AWS Secrets Manager</strong>: Secure storage of API credentials</li>
+        </ul>
+        <p>
+          AWS is GDPR-compliant. See
+          <a href="https://aws.amazon.com/compliance/gdpr-center/" target="_blank" rel="noopener">AWS GDPR Center</a> for details.
+        </p>
+
+        <h3>Google (Authentication Provider)</h3>
+        <p>
+          If you sign in with Google, Google processes your authentication data according to their privacy policy. We receive only your
+          name, email address, and a unique identifier from Google.
+        </p>
+      </section>
+
+      <section>
+        <h2>International data transfers</h2>
+        <p>
+          The majority of your data is processed in the <strong>EU West (London) region</strong>. However, the following transfers may
+          occur:
+        </p>
+        <ul>
+          <li>
+            <strong>CloudFront edge caching</strong>: Static assets may be cached at global edge locations for performance. No personal data
+            is cached.
+          </li>
+          <li>
+            <strong>IP detection services</strong>: For fraud prevention, we may use external services (ipify.org, ipapi.co) to detect your
+            public IP if WebRTC detection fails. Only your IP address is sent to these services.
+          </li>
+        </ul>
+        <p>
+          All AWS data processing is covered by AWS's Standard Contractual Clauses for international transfers where applicable.
+        </p>
+      </section>
+
+      <section id="ico-disclosure">
+        <h2>ICO Registration Disclosure</h2>
+        <div class="ico-disclosure">
+          <p>
+            <em
+              >This section provides a structured summary suitable for ICO (Information Commissioner's Office) registration and public
+              disclosure.</em
+            >
+          </p>
+
+          <h3>Data Controller</h3>
+          <ul>
+            <li><strong>Organization</strong>: DIY Accounting Limited</li>
+            <li><strong>Contact Email</strong>: admin@diyaccounting.co.uk</li>
+            <li><strong>Website</strong>: https://submit.diyaccounting.co.uk</li>
+          </ul>
+
+          <h3>Categories of Data Subjects</h3>
+          <ul>
+            <li>UK VAT-registered businesses and individuals using Making Tax Digital services</li>
+            <li>Website visitors</li>
+          </ul>
+
+          <h3>Categories of Personal Data Processed</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Examples</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Identity data</td>
+                <td>Name, email address, user identifier</td>
+              </tr>
+              <tr>
+                <td>Technical data</td>
+                <td>IP address, browser type, device information, timezone</td>
+              </tr>
+              <tr>
+                <td>Financial data</td>
+                <td>VAT return figures (processed, not stored)</td>
+              </tr>
+              <tr>
+                <td>Transaction data</td>
+                <td>HMRC submission receipts, subscription records</td>
+              </tr>
+              <tr>
+                <td>Usage data</td>
+                <td>Page views, performance metrics, error logs</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Purposes of Processing</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Purpose</th>
+                <th>Legal Basis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>VAT return submission to HMRC</td>
+                <td>Contract performance; Legal obligation</td>
+              </tr>
+              <tr>
+                <td>Fraud prevention data transmission</td>
+                <td>Legal obligation (MTD regulations)</td>
+              </tr>
+              <tr>
+                <td>User authentication</td>
+                <td>Contract performance</td>
+              </tr>
+              <tr>
+                <td>Subscription management</td>
+                <td>Contract performance</td>
+              </tr>
+              <tr>
+                <td>Receipt storage (7 years)</td>
+                <td>Legal obligation (tax records)</td>
+              </tr>
+              <tr>
+                <td>Performance monitoring (RUM)</td>
+                <td>Consent</td>
+              </tr>
+              <tr>
+                <td>Security and fraud prevention</td>
+                <td>Legitimate interests</td>
+              </tr>
+              <tr>
+                <td>Compliance auditing</td>
+                <td>Legal obligation</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>Categories of Recipients</h3>
+          <ul>
+            <li><strong>HMRC</strong>: VAT return data and fraud prevention headers (data controller)</li>
+            <li><strong>Amazon Web Services</strong>: All processing and storage (data processor, EU-West London region)</li>
+            <li><strong>Google</strong>: Authentication provider (data controller for auth data)</li>
+          </ul>
+
+          <h3>International Transfers</h3>
+          <p>
+            Primary processing in EU West (London). CloudFront edge caching at global locations (no personal data cached). AWS Standard
+            Contractual Clauses apply where required.
+          </p>
+
+          <h3>Retention Periods</h3>
+          <ul>
+            <li><strong>HMRC submission receipts</strong>: 7 years (legal requirement)</li>
+            <li><strong>User account data</strong>: Duration of account plus 30 days</li>
+            <li><strong>Subscription records</strong>: 1 month after expiry</li>
+            <li><strong>Audit logs</strong>: 30-90 days</li>
+            <li><strong>RUM data</strong>: 30 days (raw)</li>
+          </ul>
+
+          <h3>Data Subject Rights</h3>
+          <p>
+            Data subjects may exercise rights of access, rectification, erasure, portability, objection, and restriction by contacting
+            admin@diyaccounting.co.uk. Requests are processed within 30 days.
+          </p>
+
+          <h3>Security Measures</h3>
+          <ul>
+            <li>Encryption at rest and in transit (TLS 1.2+, AES-256)</li>
+            <li>AWS WAF rate limiting and attack protection</li>
+            <li>JWT-based authentication with token expiry</li>
+            <li>Hashed user identifiers in database storage</li>
+            <li>Masked sensitive data in audit logs</li>
+            <li>Point-in-time recovery for critical data</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>Security measures</h2>
+        <p>We implement industry-standard security measures including:</p>
+        <ul>
+          <li><strong>Encryption</strong>: TLS 1.2+ for data in transit, AES-256 for data at rest</li>
+          <li><strong>Access controls</strong>: JWT-based authentication with automatic token expiry</li>
+          <li><strong>Rate limiting</strong>: AWS WAF protection against abuse (2000 requests per 5 minutes per IP)</li>
+          <li><strong>Data minimization</strong>: Hashed user identifiers in database, masked sensitive data in logs</li>
+          <li><strong>Monitoring</strong>: Real-time security monitoring and alerting</li>
+          <li><strong>Backup and recovery</strong>: Point-in-time recovery enabled for critical data</li>
         </ul>
       </section>
 
       <section>
         <h2>Security incidents</h2>
-        <p>
-          We implement industry-standard security measures including encryption at rest and in transit (TLS 1.2+, AES-256), access controls,
-          and regular security monitoring.
-        </p>
         <p>
           In the event of a data breach affecting your personal data, we will notify you and the Information Commissioner's Office (ICO)
           within
@@ -251,6 +711,10 @@
           <strong>Company:</strong> DIY Accounting Limited
         </p>
         <p>For issue reports, please include your browser, approximate time, and the page you were on.</p>
+        <p>
+          You also have the right to lodge a complaint with the Information Commissioner's Office (ICO) at
+          <a href="https://ico.org.uk/make-a-complaint/" target="_blank" rel="noopener">ico.org.uk</a>.
+        </p>
       </section>
     </main>
 
