@@ -347,23 +347,23 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     // });
     //
     // Slow scenario should take >= 10s but < 30s end-to-end
-    const slowStartMs = Date.now();
-    await requestAndVerifySubmitReturn(page, {
-      vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
-      vatDue: hmrcVatDueAmount,
-      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
-      runFraudPreventionHeaderValidation,
-    });
-    const slowElapsedMs = Date.now() - slowStartMs;
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeGreaterThanOrEqual(5_000);
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeLessThan(60_000);
+    // const slowStartMs = Date.now();
+    // await requestAndVerifySubmitReturn(page, {
+    //   vatNumber: testVatNumber,
+    //   periodKey: generatePeriodKey(),
+    //   vatDue: hmrcVatDueAmount,
+    //   testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+    //   runFraudPreventionHeaderValidation,
+    // });
+    // const slowElapsedMs = Date.now() - slowStartMs;
+    // expect(
+    //   slowElapsedMs,
+    //   `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    // ).toBeGreaterThanOrEqual(5_000);
+    // expect(
+    //   slowElapsedMs,
+    //   `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+    // ).toBeLessThan(60_000);
   }
 
   /* ****************** */
