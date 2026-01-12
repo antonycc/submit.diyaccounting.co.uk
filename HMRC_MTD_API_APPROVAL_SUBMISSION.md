@@ -31,9 +31,8 @@
 
 1. [Copy-Paste Sections for HMRC Submission](#part-1-copy-paste-sections-for-hmrc-submission)
 2. [Recently Completed Items](#part-2-recently-completed-items-checklist)
-3. [TODO Before Submission](#part-3-todo-before-submission-checklist)
-4. [Submission Preparation Details](#part-4-submission-preparation-details)
-5. [Appendices](#appendices)
+3. [Submission Preparation Details](#part-4-submission-preparation-details)
+4. [Appendices](#appendices)
 
 ---
 
@@ -148,8 +147,8 @@ Transient errors (429, 503, 504) are automatically retried via SQS.
 
 ```
 Company: DIY Accounting Ltd
-Technical Contact: [contact-name]
-Email: [contact@diyaccounting.co.uk]
+Technical Contact: Antony Cartwright
+Email: admin@diyaccounting.co.uk
 Privacy Policy: https://submit.diyaccounting.co.uk/privacy.html
 Terms of Service: https://submit.diyaccounting.co.uk/terms.html
 ```
