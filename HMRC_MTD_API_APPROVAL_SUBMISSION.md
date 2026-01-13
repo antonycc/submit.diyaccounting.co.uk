@@ -44,8 +44,17 @@
 Product Name: Submit DIY Accounting
 Product URL: https://submit.diyaccounting.co.uk
 Version: 1.0.0
-Developer: DIY Accounting Ltd
-Contact Email: admin@diyaccounting.co.uk
+
+Organisation Details:
+  Company Name: DIY Accounting Limited
+  Registered Office: 43 Dunnock Place, Newcastle upon Tyne, NE13 6LE
+  Company Number: 06846849
+  Registered in: England and Wales
+  Contact Email: admin@diyaccounting.co.uk
+
+Responsible Individual: [Director Name]
+Title: Director
+Email: admin@diyaccounting.co.uk
 
 Description:
 A web application for UK sole traders and small businesses to submit
@@ -55,6 +64,10 @@ submitting VAT returns, and retrieving previously submitted returns.
 
 Target Users: UK VAT-registered businesses (sole traders, partnerships, limited companies)
 Connection Method: WEB_APP_VIA_SERVER
+
+Organisation Evidence:
+  - Companies House Registration: 06846849
+  - VAT Registration: [Available on request]
 ```
 
 ## 1.2 API Endpoints Implemented
@@ -553,6 +566,18 @@ Each header is traced from collection to transmission.
 ```
 
 **Note**: The `gov-client-public-port` error and `gov-vendor-license-ids` warning are expected and documented. These headers cannot be reliably collected in our architecture (CloudFront edge network) and we do not issue license keys (open source).
+
+---
+
+## Appendix E: HMRC Docs
+
+https://www.gov.uk/service-manual/service-standard
+https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use
+https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use/what-you-can-expect-from-us
+https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use/not-meeting-terms-of-use
+https://developer.service.hmrc.gov.uk/api-documentation/docs/development-practices
+https://developer.service.hmrc.gov.uk/api-documentation/docs/reference-guide#errors
+
 
 ---
 

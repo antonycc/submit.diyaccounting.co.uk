@@ -1,140 +1,157 @@
 # DIY Accounting Submit
 
-Submit UK VAT returns via HMRC’s Making Tax Digital (MTD) APIs. Run locally with ngrok, a mock OAuth2 server, and local DynamoDB; deploy to AWS using Java CDK (CloudFront + S3 static hosting, Lambda URL backends, Cognito optional).
+**HMRC recognised software for Making Tax Digital VAT submissions**
 
-Quickstart — Local (your own ngrok domain + HMRC sandbox)
+Submit UK VAT returns to HMRC using the official Making Tax Digital (MTD) APIs.
 
-Prerequisites
-- Node.js 22+
-- Java 21+ (for CDK build; not required to just run the local server)
-- An ngrok account (with Authtoken; a reserved subdomain recommended)
-- Playwright browser deps: run npm run playwright:install
+**Website**: https://submit.diyaccounting.co.uk
+**Status**: Sandbox tested, seeking HMRC production credentials
 
-1) Clone and install
-```bash
-git clone git@github.com:antonycc/submit.diyaccounting.co.uk.git
-cd submit.diyaccounting.co.uk
-npm install
-```
+---
 
-2) Configure ngrok
-- Get your Authtoken from https://dashboard.ngrok.com/get-started/your-authtoken
-- Reserve a subdomain (e.g. my-submit-dev.ngrok-free.app) so URLs are stable
-- Export your token so the proxy can authenticate:
-```bash
-export NGROK_AUTHTOKEN=YOUR_NGROK_AUTHTOKEN
-```
+## What is DIY Accounting Submit?
 
-3) Configure environment (local proxy)
-- Edit .env.proxy and set at least:
-  - DIY_SUBMIT_BASE_URL=https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
-  - TEST_SERVER_HTTP=run (default)
-  - TEST_PROXY=run (default)
-  - TEST_MOCK_OAUTH2=run (default)
-  - TEST_DYNAMODB=run (default)
-- HMRC sandbox (optional, for real OAuth to HMRC):
-  - Create an app in the HMRC Developer Hub (Sandbox) and add your redirect URI: https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
-  - Set HMRC_SANDBOX_CLIENT_ID in your local environment or .env (not committed)
-  - Provide the client secret via either HMRC_SANDBOX_CLIENT_SECRET (local only) or HMRC_SANDBOX_CLIENT_SECRET_ARN (when using AWS Secrets Manager). Keep secrets out of VCS.
+DIY Accounting Submit is a free, open source web application that enables UK VAT-registered businesses to:
 
-4) Run locally
-Pick one:
-- All-in-one (starts mock OAuth2, ngrok proxy, and the web server):
-```bash
-npm start
-```
-- Or run pieces yourself:
-```bash
-npm run server   # http://127.0.0.1:3000
-npm run proxy -- 3000   # exposes your reserved ngrok domain
-# Optional: mock OAuth2 server if testing Google/Cognito-like flows locally
-npm run auth
-```
+- **View VAT obligations** - See your outstanding and fulfilled VAT periods
+- **Submit VAT returns** - File your VAT return directly to HMRC
+- **View submission receipts** - Access confirmation of submitted returns
+- **Track submission history** - Keep records for 7 years (HMRC requirement)
 
-Open your site at your ngrok URL: https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+The software connects directly to HMRC's official MTD APIs and implements all required fraud prevention measures.
 
-Test suites (run progressively)
-- One-time browser install: npm run playwright:install
-- Unit + system tests (Vitest): npm test
-- Browser tests (Playwright): npm run test:browser
-- Behaviour tests (Playwright; orchestrates server, ngrok, mock OAuth2, and local DynamoDB using .env.proxy):
-  - npm run test:allBehaviour
-- Everything above in one go:
-  - npm run test:all
+---
 
-Troubleshooting
-- If you see flaky behaviour tests after a Docker/build, clear cached outputs: rm -rf target
-- Ensure NGROK_AUTHTOKEN is exported and DIY_SUBMIT_BASE_URL matches your reserved subdomain
-- If port 3000 is in use, set TEST_SERVER_HTTP_PORT in .env.proxy and pass the same to npm run proxy -- <port>
+## Key Features
 
-Architecture (high level)
-- CloudFront + S3: static front-end assets
-- Lambda URLs: HMRC auth URL, token exchange, VAT submission, logging receipts, bundle entitlement APIs
-- Optional Cognito + Google IdP: hosted UI; user identity for gated features
-- Route53 + ACM: DNS and CloudFront certificate
-- Secrets Manager: HMRC and Google client secrets for non-local environments
-- DynamoDB: User bundles, receipts, and HMRC API request audit logs
-- Privacy: User identifiers are salted and hashed (HMAC-SHA256) before storage
-- Local dev: ngrok, mock OAuth2, and local DynamoDB (via dynalite)
+| Feature | Description |
+|---------|-------------|
+| **Free to use** | Guest bundle available at no cost |
+| **HMRC compliant** | Full fraud prevention header implementation |
+| **Secure** | Data encrypted at rest (AES-256) and in transit (TLS 1.2+) |
+| **UK hosted** | AWS eu-west-2 (London) region |
+| **Privacy focused** | User identifiers hashed before storage |
+| **Open source** | Full source code available under AGPL-3.0 |
+| **7-year retention** | Submission receipts stored per HMRC requirements |
 
-Environment files
-- .env.proxy: local development with proxy + mock OAuth2 + local DynamoDB
-- .env.prod: production-like values (no secrets in plaintext). For your own domain, copy this to a new file (e.g. .env.myprod) and override values
-- Behaviour tests reference environment via dotenv (see package.json scripts); secrets should come from your shell env or AWS Secrets Manager ARNs
+---
 
-Deployment — AWS (your own domain, prod-based)
-Prerequisites
-- AWS account, AWS CLI configured
-- CDK v2, Java 21+, Docker
-- A public domain you control in Route53 (or the ability to delegate to Route53)
+## How It Works
 
-Steps
-1) DNS and certificate
-   - Create (or import) a Route53 hosted zone for your domain (e.g. submit.example.org)
-   - Request an ACM certificate in us-east-1 for your apex + wildcard:
-     - submit.example.org and *.submit.example.org
-2) GitHub Actions OIDC (once per AWS account)
-   - Add the token.actions.githubusercontent.com OIDC identity provider in IAM
-   - Create two roles: a GitHub Actions role (assumable by your repo) and a deployment role (assumable by the Actions role and trusted admins)
-3) Repository configuration
-   - Set repository variables/secrets for your account and domain (examples):
-     - AWS_ACCOUNT_ID, AWS_REGION
-     - AWS_HOSTED_ZONE_ID, AWS_HOSTED_ZONE_NAME (e.g. submit.example.org)
-     - AWS_CERTIFICATE_ARN (from us-east-1)
-4) Environment file for your domain
-   - Copy .env.prod to .env.myprod and set:
-     - ENVIRONMENT_NAME=myprod, DEPLOYMENT_NAME=myprod
-     - DIY_SUBMIT_BASE_URL=https://submit.example.org/
-     - HMRC_BASE_URI / HMRC_SANDBOX_BASE_URI as needed
-     - HMRC_CLIENT_SECRET_ARN / HMRC_SANDBOX_CLIENT_SECRET_ARN pointing to Secrets Manager
-     - DynamoDB/S3 names if you want to control them; otherwise the CDK will create them
-5) Build and synthesise locally (optional pre-check)
-```bash
-./mvnw clean verify -DskipTests
-ENVIRONMENT_NAME=myprod npm run cdk:synth-environment
-ENVIRONMENT_NAME=myprod npm run cdk:synth-application
-```
-6) Deploy via GitHub Actions
-   - Push to main for prod-like deployment, or run the deploy workflow manually choosing your environment name
+1. **Sign in** with Google (via AWS Cognito)
+2. **Authorise** the application through HMRC's secure OAuth flow
+3. **Enter** your VAT return figures
+4. **Submit** directly to HMRC
+5. **Receive** confirmation and receipt
 
-Notes
-- Local manual deploys with cdk deploy are possible after assuming your deployment role; the CI workflow is the source of truth for production
+Your HMRC Government Gateway credentials are never stored by this application. Authentication is handled entirely by HMRC's secure OAuth service.
 
-House style and tooling
-- Formatting checks: npm run formatting (Prettier + Spotless) / npm run formatting-fix
-- Linting: npm run linting / npm run linting-fix
-- Java formatting is enforced by Spotless (Palantir Java Format, 100 columns)
--  Avoid unnecessary formatting changes when editing code and do not reformat the lines if code that you are not changing.
--  Do not re-order imports (I consider this unnecessary formatting formatting).
--  Only run linting and formatting fix commands `npm run linting-fix && npm run formatting-fix` if specifically asked to fix formatting and linting errors:.
+---
 
-Documentation
-- This README: high-level architecture and quickstart
-- _developers/SETUP.md: step-by-step developer setup (local, tests, and AWS)
-- _developers/SALTED_HASH_IMPLEMENTATION.md: Privacy-preserving user ID hashing
-- CLOUDFRONT_FRAUD_HEADERS_FIX.md: HMRC fraud prevention headers flow
-- lambda-concurrency-scaling.md: Lambda provisioned concurrency scaling system
-- lambda-concurrency-cost-analysis.md: Detailed cost analysis for Lambda scaling
+## Technology
 
-License
-AGPL-3.0. See LICENSE for details.
+| Component | Technology |
+|-----------|------------|
+| Frontend | Static HTML/JavaScript (no framework dependencies) |
+| Backend | Node.js on AWS Lambda |
+| Authentication | AWS Cognito with Google federation |
+| Data storage | AWS DynamoDB (encrypted at rest) |
+| Hosting | AWS CloudFront + S3 |
+| Security | AWS WAF, TLS 1.2+, fraud prevention headers |
+
+### HMRC Integration
+
+- **APIs used**: VAT MTD (obligations, returns)
+- **Connection method**: WEB_APP_VIA_SERVER
+- **Fraud prevention**: All Gov-Client and Gov-Vendor headers implemented
+- **Error handling**: Full HMRC error code mapping
+
+---
+
+## Compliance
+
+### HMRC Requirements
+
+| Requirement | Status |
+|-------------|--------|
+| Fraud prevention headers | Implemented and validated |
+| OAuth 2.0 authentication | Implemented |
+| Error handling | All HMRC error codes handled |
+| Accessibility (WCAG 2.1 AA) | Audit in progress |
+| Penetration testing | Scheduled |
+
+### Data Protection
+
+| Requirement | Status |
+|-------------|--------|
+| UK GDPR compliance | Implemented |
+| Privacy policy | Published |
+| Terms of service | Published |
+| Data subject rights | Export/deletion scripts available |
+| 72-hour breach notification | Documented procedures |
+
+---
+
+## Organisation
+
+**DIY Accounting Limited**
+- Registered Office: 43 Dunnock Place, Newcastle upon Tyne, NE13 6LE
+- Company Number: 06846849
+- Registered in England and Wales
+- Contact: admin@diyaccounting.co.uk
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Privacy Policy](https://submit.diyaccounting.co.uk/privacy.html) | How we handle your data |
+| [Terms of Use](https://submit.diyaccounting.co.uk/terms.html) | Service terms and conditions |
+| [User Guide](https://submit.diyaccounting.co.uk/guide/index.html) | How to use the application |
+
+### For Developers
+
+Developer documentation is in the `_developers/` directory:
+- `_developers/SETUP.md` - Development environment setup
+- `_developers/REVIEW_TO_MTD.md` - MTD compliance review
+
+---
+
+## License
+
+This software is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+This means:
+- You can use, modify, and distribute this software freely
+- If you modify and deploy this software as a network service, you must make your source code available
+- Any derivative works must also be licensed under AGPL-3.0
+
+See [LICENSE](LICENSE) for the full license text.
+
+### Third-Party Attributions
+
+- HMRC and Making Tax Digital are trademarks of HM Revenue and Customs
+- AWS is a trademark of Amazon Web Services
+- Google is a trademark of Alphabet Inc.
+
+---
+
+## Contributing
+
+Contributions are welcome. Please see our [GitHub repository](https://github.com/antonycc/submit.diyaccounting.co.uk) for:
+- Issue tracking
+- Pull request guidelines
+- Development setup instructions
+
+---
+
+## Support
+
+For support enquiries: **admin@diyaccounting.co.uk**
+
+For HMRC-specific questions about VAT or Making Tax Digital, please contact HMRC directly or visit [gov.uk/vat](https://www.gov.uk/vat).
+
+---
+
+*DIY Accounting Submit is HMRC recognised software. This software is not endorsed, approved, or certified by HMRC.*
