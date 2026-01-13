@@ -134,9 +134,133 @@ jobs:
       apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
 
-  compliance:
-    name: Run Compliance Tests
-    needs: [params, names]
+  # Accessibility checks (run in parallel)
+  accessibility-pa11y:
+    name: Pa11y (WCAG AA)
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  accessibility-axe:
+    name: axe-core (WCAG 2.1 AA)
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:axe-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:axe-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  accessibility-axe-wcag22:
+    name: axe-core (WCAG 2.2 AA)
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  accessibility-lighthouse:
+    name: Lighthouse
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:lighthouse-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:lighthouse-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  # Penetration checks (run in parallel)
+  penetration-eslint:
+    name: ESLint Security
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:eslint
+        run: npm run penetration:eslint
+        continue-on-error: true
+
+  penetration-audit:
+    name: npm audit
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:audit
+        run: npm run penetration:audit
+        continue-on-error: true
+
+  penetration-retire:
+    name: retire.js
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:retire
+        run: npm run penetration:retire
+        continue-on-error: true
+
+  penetration-zap:
+    name: OWASP ZAP
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:zap-${{ needs.names.outputs.environment-name }}
+        run: npm run penetration:zap-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  # Final compliance report (runs after all checks complete)
+  compliance-report:
+    name: Generate Compliance Report
+    needs: [names, accessibility-pa11y, accessibility-axe, accessibility-axe-wcag22, accessibility-lighthouse, penetration-eslint, penetration-audit, penetration-retire, penetration-zap]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -211,6 +335,6 @@ jobs:
 
           echo "## Reports Generated" >> $GITHUB_STEP_SUMMARY
           echo "- ESLint security, npm audit, retire.js" >> $GITHUB_STEP_SUMMARY
-          echo "- Pa11y, axe-core accessibility" >> $GITHUB_STEP_SUMMARY
+          echo "- Pa11y, axe-core (WCAG 2.1 + 2.2), Lighthouse accessibility" >> $GITHUB_STEP_SUMMARY
           echo "- OWASP ZAP baseline scan" >> $GITHUB_STEP_SUMMARY
           echo "- Consolidated COMPLIANCE_REPORT.md" >> $GITHUB_STEP_SUMMARY
