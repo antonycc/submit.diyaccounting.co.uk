@@ -12,14 +12,6 @@ on:
         description: 'Target URL for accessibility/ZAP scans'
         required: false
         default: 'https://submit.diyaccounting.co.uk'
-  push:
-    branches:
-      - '**'
-      - '!gh_pages'
-      - '!dependabot/**'
-    paths:
-      - 'behaviour-tests/compliance.behaviour.test.js'
-      - '.github/workflows/compliance.yml'
 
 concurrency:
   group: compliance-${{ github.ref }}
