@@ -1,7 +1,7 @@
+name: compliance-test
+run-name: "compliance test of ${{ github.ref_name }}"
 # SPDX-FileCopyrightText: 2025 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
-
-name: Compliance Scans
 
 on:
   schedule:
@@ -14,8 +14,12 @@ on:
         default: 'https://submit.diyaccounting.co.uk'
   push:
     branches:
-      - pentest
-      - main
+      - '**'
+      - '!gh_pages'
+      - '!dependabot/**'
+    paths:
+      - 'behaviour-tests/compliance.behaviour.test.js'
+      - '.github/workflows/compliance.yml'
 
 concurrency:
   group: compliance-${{ github.ref }}
