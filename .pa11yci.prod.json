@@ -1,0 +1,24 @@
+{
+  "defaults": {
+    "standard": "WCAG2AA",
+    "timeout": 30000,
+    "wait": 2000,
+    "chromeLaunchConfig": {
+      "args": ["--no-sandbox"]
+    }
+  },
+  "urls": [
+    "https://submit.diyaccounting.co.uk/",
+    "https://submit.diyaccounting.co.uk/index.html",
+    "https://submit.diyaccounting.co.uk/privacy.html",
+    "https://submit.diyaccounting.co.uk/terms.html",
+    "https://submit.diyaccounting.co.uk/about.html",
+    "https://submit.diyaccounting.co.uk/auth/login.html",
+    "https://submit.diyaccounting.co.uk/account/bundles.html",
+    "https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html",
+    "https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html",
+    "https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html",
+    "https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html",
+    "https://submit.diyaccounting.co.uk/guide/index.html"
+  ]
+}

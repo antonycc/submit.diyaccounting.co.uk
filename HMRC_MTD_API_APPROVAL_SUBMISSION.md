@@ -31,7 +31,7 @@
 
 1. [Copy-Paste Sections for HMRC Submission](#part-1-copy-paste-sections-for-hmrc-submission)
 2. [Recently Completed Items](#part-2-recently-completed-items-checklist)
-3. [Submission Preparation Details](#part-4-submission-preparation-details)
+3. [Submission Preparation Details](#part-3-submission-preparation-details)
 4. [Appendices](#appendices)
 
 ---
@@ -44,8 +44,17 @@
 Product Name: Submit DIY Accounting
 Product URL: https://submit.diyaccounting.co.uk
 Version: 1.0.0
-Developer: DIY Accounting Ltd
-Contact Email: admin@diyaccounting.co.uk
+
+Organisation Details:
+  Company Name: DIY Accounting Limited
+  Registered Office: 43 Dunnock Place, Newcastle upon Tyne, NE13 6LE
+  Company Number: 06846849
+  Registered in: England and Wales
+  Contact Email: admin@diyaccounting.co.uk
+
+Responsible Individual: [Director Name]
+Title: Director
+Email: admin@diyaccounting.co.uk
 
 Description:
 A web application for UK sole traders and small businesses to submit
@@ -55,6 +64,10 @@ submitting VAT returns, and retrieving previously submitted returns.
 
 Target Users: UK VAT-registered businesses (sole traders, partnerships, limited companies)
 Connection Method: WEB_APP_VIA_SERVER
+
+Organisation Evidence:
+  - Companies House Registration: 06846849
+  - VAT Registration: [Available on request]
 ```
 
 ## 1.2 API Endpoints Implemented
@@ -198,30 +211,9 @@ Terms of Service: https://submit.diyaccounting.co.uk/terms.html
 
 ---
 
-# Part 3: TODO Before Submission (Checklist)
+# Part 3: Submission Preparation Details
 
-## Critical (Blocking HMRC Application)
-
-- [ ] **Request HMRC production credentials** (#402)
-  - Email: SDSTeam@hmrc.gov.uk
-  - Include: Application name, Developer Hub ID, sandbox testing confirmation
-
-- [ ] **Complete HMRC production questionnaires**
-  - Technical compliance questionnaire
-  - Business information questionnaire
-
-- [ ] **Sign HMRC Terms of Use**
-  - Via Developer Hub
-
-- [ ] **Make one live VAT submission** (Required by HMRC)
-  - Use real VRN (own business or willing participant)
-  - Document submission reference
-
----
-
-# Part 4: Submission Preparation Details
-
-## 4.1 Test Evidence Collection
+## 3.1 Test Evidence Collection
 
 ### Where to Find Evidence
 
@@ -255,7 +247,7 @@ npm run test:submitVatBehaviour-proxy-report
 3. **Screenshots** - Visual evidence of each flow step
 4. **Video** - Full test execution recording (optional)
 
-## 4.2 Test Report Interpretation
+## 3.2 Test Report Interpretation
 
 ### Latest Test Run: 10 January 2026
 
@@ -275,7 +267,7 @@ npm run test:submitVatBehaviour-proxy-report
 - MFA header: `type=TOTP&timestamp=2026-01-08T00:09:01Z&unique-reference=test-mfa-*`
 - Known omissions documented (license IDs, public port)
 
-## 4.3 Questionnaire Response Preparation
+## 3.3 Questionnaire Response Preparation
 
 ### Technical Compliance Questions
 
@@ -553,6 +545,41 @@ Each header is traced from collection to transmission.
 ```
 
 **Note**: The `gov-client-public-port` error and `gov-vendor-license-ids` warning are expected and documented. These headers cannot be reliably collected in our architecture (CloudFront edge network) and we do not issue license keys (open source).
+
+---
+
+## Appendix E: HMRC Docs
+
+https://www.gov.uk/service-manual/service-standard
+https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use
+https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use/what-you-can-expect-from-us
+https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use/not-meeting-terms-of-use
+https://developer.service.hmrc.gov.uk/api-documentation/docs/development-practices
+https://developer.service.hmrc.gov.uk/api-documentation/docs/reference-guide#errors
+
+---
+
+## Appendix F: Accessibility Statement
+
+pa11y-report.txt:
+```
+Running Pa11y on 12 URLs:
+ > https://wanted-finally-anteater.ngrok-free.app/ - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/index.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/privacy.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/terms.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/about.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/auth/login.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/account/bundles.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/submitVat.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/vatObligations.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/viewVatReturn.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/hmrc/receipt/receipts.html - 0 errors
+ > https://wanted-finally-anteater.ngrok-free.app/guide/index.html - 0 errors
+
+✔ 12/12 URLs passed
+```
+
 
 ---
 

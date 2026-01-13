@@ -98,7 +98,19 @@
     "mock": "wiremock --port 9090 --root-dir wiremock-recordings --verbose --preserve-host-header",
     "cloudfront:set-origins": "node ./app/actions/set-apex-origins.mjs",
     "set-apex-origins": "node ./app/actions/set-apex-origins.mjs",
-    "wiremock:server": "wiremock --port 9090 --root-dir wiremock-recordings --disable-banner"
+    "wiremock:server": "wiremock --port 9090 --root-dir wiremock-recordings --disable-banner",
+    "accessibility": "mkdir -p target/accessibility && pa11y-ci --config .pa11yci.json",
+    "accessibility:report": "mkdir -p target/accessibility && pa11y-ci --config .pa11yci.json --reporter cli > target/accessibility/pa11y-report.txt 2>&1 || true && echo 'Report: target/accessibility/pa11y-report.txt'",
+    "accessibility:axe": "mkdir -p target/accessibility && axe https://wanted-finally-anteater.ngrok-free.app --save target/accessibility/axe-results.json || true",
+    "accessibility:prod": "mkdir -p target/accessibility && pa11y-ci --config .pa11yci.prod.json",
+    "penetration": "mkdir -p target/penetration && npm audit --audit-level=moderate 2>&1 | tee target/penetration/npm-audit.txt && npm run penetration:static",
+    "penetration:static": "mkdir -p target/penetration && eslint --config eslint.security.config.js . --format stylish 2>&1 | tee target/penetration/eslint-security.txt || true",
+    "penetration:deps": "mkdir -p target/penetration && npm audit --json > target/penetration/npm-audit.json 2>&1 || true",
+    "penetration:retire": "mkdir -p target/penetration && retire --path . --outputformat json --outputpath target/penetration/retire.json 2>&1 || true",
+    "penetration:zap": "mkdir -p target/penetration && docker run --rm -v $(pwd)/target/penetration:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t ${DIY_SUBMIT_BASE_URL:-https://wanted-finally-anteater.ngrok-free.app} -r zap-report.html -J zap-report.json || true",
+    "penetration:report": "npm run penetration:deps && npm run penetration:static && echo 'Reports in target/penetration/'",
+    "compliance": "npm run accessibility && npm run penetration",
+    "compliance:report": "npm run accessibility:report && npm run penetration:report"
   },
   "keywords": [],
   "author": "",
@@ -147,7 +159,11 @@
     "supertest": "^7.2.2",
     "toml": "^3.0.0",
     "vitest": "^3.2.4",
-    "wiremock": "^3.13.2"
+    "wiremock": "^3.13.2",
+    "pa11y": "^8.0.0",
+    "pa11y-ci": "^4.0.0",
+    "@axe-core/cli": "^4.10.0",
+    "retire": "^5.2.4"
   },
   "engines": {
     "node": ">=22.0.0"

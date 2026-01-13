@@ -34,6 +34,29 @@ This plan addresses gaps in security detection capabilities to support the 72-ho
 
 ---
 
+## HMRC Terms of Use Compliance Status
+
+Per https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use:
+
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Privacy policy URL | Met | `/privacy.html` |
+| Terms and conditions URL | Met | `/terms.html` |
+| Server location disclosed | Met | EU West (London) in privacy policy |
+| Fraud prevention headers | Met | All headers implemented |
+| OAuth 2.0 (no credential storage) | Met | HMRC Gateway credentials never stored |
+| Encrypt tokens at rest/transit | Met | DynamoDB KMS, TLS 1.2+ |
+| Customer data export/deletion | Met | `scripts/export-user-data.js`, `scripts/delete-user-data.js` |
+| 72-hour breach notification | Documented | PRIVACY_DUTIES.md |
+| Use "HMRC recognised" only | Met | No "accredited/approved" claims |
+| **Penetration testing** | **Not done** | Required for SaaS - see Phase 4 |
+| **WCAG Level AA** | **Not verified** | Required - see Phase 4 |
+| **ICO security checklist** | **Not done** | Required - see Phase 4 |
+| **Designated responsible individual** | **Not named** | Add to HMRC submission docs |
+| **RBAC for employee access** | **N/A** | Single-operator model currently |
+
+---
+
 ## Operational Monitoring Schedule
 
 These ongoing tasks should be performed regardless of uplift phase progress:
@@ -416,10 +439,34 @@ Options:
 
 **Risk Addressed**: Unknown vulnerabilities
 **Effort**: High (external engagement)
+**HMRC Requirement**: SaaS vendors must conduct penetration testing
 
 - Annual third-party penetration test
 - Bug bounty program consideration
 - Document findings and remediation
+- Required for HMRC production approval
+
+### 4.4 WCAG Accessibility Audit
+
+**Risk Addressed**: Accessibility compliance, HMRC requirement
+**Effort**: Medium-High
+**HMRC Requirement**: Web-based software must achieve WCAG Level AA
+
+- Audit all pages against WCAG 2.1 Level AA
+- Fix identified accessibility issues
+- Document compliance in HMRC submission
+- Consider automated testing (axe-core, Lighthouse)
+
+### 4.5 ICO Security Checklist Audit
+
+**Risk Addressed**: Data protection compliance gaps
+**Effort**: Medium
+**HMRC Requirement**: Audit security controls using ICO checklist
+
+- Obtain ICO security checklist
+- Audit current controls against checklist
+- Document gaps and remediation
+- Include in HMRC submission evidence
 
 ### 4.3 Incident Response Automation
 
@@ -454,10 +501,12 @@ Options:
 - [ ] Automated IP blocking
 - [ ] Automated secret rotation
 
-### Phase 4 (Future)
+### Phase 4 (Future / HMRC Required)
 - [ ] SIEM integration
-- [ ] Penetration testing program
+- [ ] Penetration testing program (HMRC requirement for SaaS)
 - [ ] Incident response automation
+- [ ] WCAG Level AA accessibility audit (HMRC requirement)
+- [ ] ICO security checklist audit (HMRC requirement)
 
 ---
 
@@ -510,3 +559,4 @@ After implementing Phases 1-2, you should:
 |------|---------|---------|
 | 2026-01-12 | 1.0 | Initial version |
 | 2026-01-12 | 1.1 | Added operational monitoring schedule, OAuth nonce, secret rotation, log sanitization audit, CORS review |
+| 2026-01-12 | 1.2 | Added HMRC Terms of Use compliance status table, WCAG/ICO/penetration testing requirements to Phase 4 |

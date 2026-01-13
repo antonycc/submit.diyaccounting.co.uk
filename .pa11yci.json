@@ -1,0 +1,24 @@
+{
+  "defaults": {
+    "standard": "WCAG2AA",
+    "timeout": 30000,
+    "wait": 2000,
+    "chromeLaunchConfig": {
+      "args": ["--no-sandbox"]
+    }
+  },
+  "urls": [
+    "https://wanted-finally-anteater.ngrok-free.app/",
+    "https://wanted-finally-anteater.ngrok-free.app/index.html",
+    "https://wanted-finally-anteater.ngrok-free.app/privacy.html",
+    "https://wanted-finally-anteater.ngrok-free.app/terms.html",
+    "https://wanted-finally-anteater.ngrok-free.app/about.html",
+    "https://wanted-finally-anteater.ngrok-free.app/auth/login.html",
+    "https://wanted-finally-anteater.ngrok-free.app/account/bundles.html",
+    "https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/submitVat.html",
+    "https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/vatObligations.html",
+    "https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/viewVatReturn.html",
+    "https://wanted-finally-anteater.ngrok-free.app/hmrc/receipt/receipts.html",
+    "https://wanted-finally-anteater.ngrok-free.app/guide/index.html"
+  ]
+}
