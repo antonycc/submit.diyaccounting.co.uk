@@ -28,6 +28,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
+// Disable X-Powered-By header (security: prevents server fingerprinting)
+app.disable("x-powered-by");
+
 // parse bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -60,6 +63,26 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Private-Network", "true");
   }
   if (req.method === "OPTIONS") return res.status(200).end();
+  next();
+});
+
+// Security headers middleware (fixes ZAP findings)
+app.use((req, res, next) => {
+  // X-Frame-Options: Prevents clickjacking attacks
+  res.setHeader("X-Frame-Options", "DENY");
+  // X-Content-Type-Options: Prevents MIME type sniffing
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  // Strict-Transport-Security: Enforces HTTPS (1 year, include subdomains)
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  // Content-Security-Policy: Basic CSP for security
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-ancestors 'none'"
+  );
+  // Referrer-Policy: Controls how much referrer info is sent
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Permissions-Policy: Restricts browser features
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
   next();
 });
 
