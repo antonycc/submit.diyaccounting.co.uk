@@ -82,7 +82,7 @@ npm run penetration:report     # HTML report in target/penetration/
 ```json
 {
   "penetration": "npm audit --audit-level=moderate && npm run penetration:static",
-  "penetration:static": "eslint --no-eslintrc -c .eslintrc.security.json . --format json -o target/penetration/eslint-security.json || true",
+  "penetration:static": "eslint --config eslint.security.config.js . --format stylish | tee target/penetration/eslint-security.txt || true",
   "penetration:deps": "npm audit --json > target/penetration/npm-audit.json || true",
   "penetration:retire": "retire --path . --outputformat json --outputpath target/penetration/retire.json || true",
   "penetration:zap": "docker run --rm -v $(pwd)/target/penetration:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t ${DIY_SUBMIT_BASE_URL:-https://wanted-finally-anteater.ngrok-free.app} -r zap-report.html -J zap-report.json",
@@ -90,21 +90,30 @@ npm run penetration:report     # HTML report in target/penetration/
 }
 ```
 
-**Security ESLint config** (`.eslintrc.security.json`):
-```json
-{
-  "plugins": ["security"],
-  "extends": ["plugin:security/recommended-legacy"],
-  "parserOptions": {
-    "ecmaVersion": 2022,
-    "sourceType": "module"
+**Security ESLint config** (`eslint.security.config.js`):
+```javascript
+import security from "eslint-plugin-security";
+import globals from "globals";
+
+export default [
+  {
+    plugins: { security },
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      ...security.configs.recommended.rules,
+      "security/detect-eval-with-expression": "error",
+      "security/detect-unsafe-regex": "error",
+      // Additional security rules configured
+    },
   },
-  "env": {
-    "node": true,
-    "browser": true,
-    "es2022": true
-  }
-}
+  {
+    ignores: ["node_modules/", "target/", "cdk.out/", "*.min.js", "web/public/tests/"],
+  },
+];
 ```
 
 ---
@@ -332,7 +341,7 @@ Note: `eslint-plugin-security` is already installed.
 
 1. `.pa11yci.json` - Accessibility test configuration
 2. `.pa11yci.prod.json` - Production URLs for accessibility
-3. `.eslintrc.security.json` - Security-focused ESLint rules
+3. `eslint.security.config.js` - Security-focused ESLint rules (flat config format)
 4. `.zap-rules.tsv` - ZAP rule configuration
 5. `.github/workflows/compliance.yml` - Daily compliance workflow
 6. `.github/workflows/scan-production.yml` - Production scan workflow

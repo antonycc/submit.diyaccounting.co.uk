@@ -199,7 +199,7 @@ function showConsentBannerIfNeeded() {
   banner.style.cssText =
     "position:fixed;bottom:0;left:0;right:0;background:#ddd;color:#111;padding:12px 16px;z-index:9999;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px";
   banner.innerHTML = `
-    <span>We use minimal analytics to improve performance (CloudWatch RUM). We'll only start after you consent. See our <a href="/privacy.html" style="color:#369">privacy policy</a>.</span>
+    <span>We use minimal analytics to improve performance (CloudWatch RUM). We'll only start after you consent. See our <a href="/privacy.html" style="color:#316497">privacy policy</a>.</span>
     <div style="display:flex;gap:8px">
       <button id="consent-accept" class="btn" style="padding:6px 10px">Accept</button>
       <button id="consent-decline" class="btn" style="padding:6px 10px;background:#555;border-color:#555">Decline</button>
