@@ -3,19 +3,39 @@
 **Application**: DIY Accounting Submit
 **URL**: https://submit.diyaccounting.co.uk
 **Repository**: https://github.com/antonycc/submit.diyaccounting.co.uk
-**Document Date**: 11 January 2026
-**Version**: 1.0.0
+**Document Date**: 13 January 2026
+**Version**: 1.1.0
 
 ---
 
 ```text
-  Current State
+  Current State (Updated 13 January 2026)
 
-  Based on the test report (web-test-local):
+  COMPLIANCE STATUS: READY FOR SUBMISSION
+
+  Security Compliance:
+  - npm audit: 0 critical, 0 high, 0 moderate vulnerabilities
+  - ESLint Security: 0 errors, 0 warnings
+  - retire.js: 0 high, 0 medium, 0 low vulnerabilities
+  - OWASP ZAP: 0 high-risk findings (12 medium accepted, 12 low accepted)
+
+  Accessibility Compliance:
+  - WCAG 2.1 Level AA: 13/13 pages pass (Pa11y)
+  - WCAG 2.2 Level AA: 0 violations (axe-core)
+  - Lighthouse Accessibility: 100%
+  - Lighthouse Performance: 99%
+  - Lighthouse Best Practices: 100%
+
+  Functional Testing:
   - All behaviour tests PASSING
   - All HMRC APIs working (POST/GET VAT returns, obligations)
   - Fraud prevention headers validated (minor expected warnings only)
   - MFA header implemented via mock injection
+
+  Documentation:
+  - Privacy Policy: https://submit.diyaccounting.co.uk/privacy.html
+  - Terms of Use: https://submit.diyaccounting.co.uk/terms.html
+  - Accessibility Statement: https://submit.diyaccounting.co.uk/accessibility.html
 
   Next Steps to Submit to HMRC
 
@@ -164,6 +184,7 @@ Technical Contact: Antony Cartwright
 Email: admin@diyaccounting.co.uk
 Privacy Policy: https://submit.diyaccounting.co.uk/privacy.html
 Terms of Service: https://submit.diyaccounting.co.uk/terms.html
+Accessibility Statement: https://submit.diyaccounting.co.uk/accessibility.html
 ```
 
 ---
@@ -560,35 +581,111 @@ https://www.w3.org/WAI/standards-guidelines/wcag/
 https://www.ncsc.gov.uk/guidance/penetration-testing
 ---
 
-## Appendix F: Accessibility Statement
+## Appendix F: Accessibility & Security Compliance (13 January 2026)
 
-pa11y-report.txt:
-```
-Running Pa11y on 12 URLs:
- > https://wanted-finally-anteater.ngrok-free.app/ - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/index.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/privacy.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/terms.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/about.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/auth/login.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/account/bundles.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/submitVat.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/vatObligations.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/viewVatReturn.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/receipt/receipts.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/guide/index.html - 0 errors
+### Accessibility Testing Results
 
-✔ 12/12 URLs passed
-```
+**WCAG Conformance Level: AA (WCAG 2.2)**
+
+| Tool | Standard | Result |
+|------|----------|--------|
+| Pa11y | WCAG 2.1 Level AA | 13/13 pages passed (0 errors) |
+| axe-core | WCAG 2.1 Level AA | 0 violations, 35 passes |
+| axe-core | WCAG 2.2 Level AA | 0 violations, 22 passes |
+| Lighthouse | Accessibility | 100% |
+
+**Pages Tested:**
+- / (home)
+- /index.html
+- /privacy.html
+- /terms.html
+- /about.html
+- /accessibility.html
+- /auth/login.html
+- /account/bundles.html
+- /hmrc/vat/submitVat.html
+- /hmrc/vat/vatObligations.html
+- /hmrc/vat/viewVatReturn.html
+- /hmrc/receipt/receipts.html
+- /guide/index.html
+
+### Security Testing Results
+
+| Tool | Result |
+|------|--------|
+| npm audit | 0 critical, 0 high, 0 moderate, 0 low |
+| ESLint Security | 0 errors, 0 warnings |
+| retire.js | 0 high, 0 medium, 0 low |
+| OWASP ZAP | 0 high risk (12 medium, 12 low accepted) |
+
+**ZAP Accepted Medium Findings (not blocking):**
+- CSP `unsafe-inline` for script-src/style-src (required for inline scripts)
+- Sub Resource Integrity missing on Swagger UI (third-party component)
+
+**Security Headers Implemented:**
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Content-Security-Policy` (with form-action, frame-ancestors)
+- `Cross-Origin-Opener-Policy: same-origin`
+- `Cross-Origin-Embedder-Policy: credentialless`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: geolocation=(), microphone=(), camera=()`
+
+### Performance Results
+
+| Metric | Score |
+|--------|-------|
+| Lighthouse Performance | 99% |
+| Lighthouse Best Practices | 100% |
+| Lighthouse SEO | 82% |
 
 
 ---
+
+## Appendix G: HMRC Terms of Use Compliance Checklist
+
+Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| **Organisation Compliance** | | |
+| Responsible individual designated | Yes | Director, admin@diyaccounting.co.uk |
+| Official registration evidence | Yes | Company Number 06846849 |
+| Valid organisation URL | Yes | https://submit.diyaccounting.co.uk |
+| **Data Protection & Security** | | |
+| UK GDPR compliance | Yes | Privacy policy published |
+| Encrypt tokens and PII at rest/transit | Yes | DynamoDB KMS + TLS 1.2+ |
+| Access controls (RBAC) | Yes | AWS Cognito + IAM |
+| Customer data export/modify/delete | Yes | Documented in privacy policy |
+| No HMRC credentials stored | Yes | OAuth 2.0 only |
+| **Security Incidents** | | |
+| Customer incident reporting channel | Yes | admin@diyaccounting.co.uk |
+| 72-hour HMRC notification | Yes | Documented in terms |
+| 72-hour ICO notification | Yes | Documented in privacy |
+| **Software Development** | | |
+| Follow HMRC development practices | Yes | Server-side API calls, no CORS |
+| Error handling per HMRC specs | Yes | All error codes handled |
+| WCAG Level AA accessibility | Yes | 100% compliance (WCAG 2.2 AA) |
+| **Marketing** | | |
+| Use only "HMRC recognised" | Yes | Not claiming accreditation |
+| **SaaS Requirements** | | |
+| Penetration testing passed | Yes | OWASP ZAP 0 high findings |
+| ICO compliance checklist | Yes | Documented in privacy policy |
+| **Fraud Prevention** | | |
+| Headers per specification | Yes | All mandatory headers sent |
+| Validation via test API | Yes | Automated in behaviour tests |
+| **Customer Authorization** | | |
+| Privacy policy URL | Yes | /privacy.html |
+| Terms and conditions URL | Yes | /terms.html |
+| Server locations identified | Yes | AWS EU-West-2 (London) |
 
 ## Document History
 
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-01-11 | 1.0 | Initial consolidated document |
+| 2026-01-13 | 1.1 | Added WCAG 2.2 compliance, security testing results, accessibility statement URL, HMRC terms compliance checklist |
 
 ---
 

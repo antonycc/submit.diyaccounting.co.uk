@@ -3,7 +3,7 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://wanted-finally-anteater.ngrok-free.app
-**Generated**: 2026-01-13T22:38:59.533Z
+**Generated**: 2026-01-13T22:53:29.264Z
 **Overall Status**: ✅ PASS
 
 ---
@@ -16,7 +16,7 @@
 | ESLint Security | ✅ | 0 errors, 0 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
 | OWASP ZAP | ✅ | 0 high, 13 medium, 2 low |
-| Pa11y (WCAG AA) | ✅ | 12/12 pages passed |
+| Pa11y (WCAG AA) | ✅ | 13/13 pages passed |
 | axe-core | ✅ | 0 violations, 35 passes |
 | axe-core (WCAG 2.2) | ✅ | 0 violations, 22 passes |
 | Lighthouse | ✅ | A11y: 100%, Perf: 99%, BP: 100% |
@@ -89,8 +89,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 12 |
-| Pages Passed | 12 |
+| Pages Tested | 13 |
+| Pages Passed | 13 |
 | Pages Failed | 0 |
 
 **Status**: ✅ All pages comply with WCAG AA
@@ -111,6 +111,7 @@
 | /hmrc/vat/viewVatReturn.html | 0 |
 | /hmrc/receipt/receipts.html | 0 |
 | /guide/index.html | 0 |
+| /accessibility.html | 0 |
 
 ### 2.2 axe-core (Automated Accessibility)
 
