@@ -216,7 +216,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     expect(privacyContent).toContain("72 hours");
     console.log("✅ Security incident notification process documented");
 
-    expect(privacyContent).toContain("Data processors");
+    expect(privacyContent).toContain("ICO Registration Disclosure");
     expect(privacyContent).toContain("Amazon Web Services");
     console.log("✅ Data processors disclosed");
 
