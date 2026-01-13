@@ -230,7 +230,7 @@ jobs:
           ; RESULT=${exit_code:-0} \
           ; echo "RESULT=$RESULT" | tee -a "$GITHUB_OUTPUT" \
           ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; cp ./hmrc-test-user.json ./target/behaviour-test-results/ || true \
+          ; [ -f ./hmrc-test-user.json ] && cp ./hmrc-test-user.json ./target/behaviour-test-results || : \
           ; exit ${exit_code:-0} \
           ;
         env:
