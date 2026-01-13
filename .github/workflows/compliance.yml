@@ -1,0 +1,200 @@
+# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Compliance Scans
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6am UTC
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target URL for accessibility/ZAP scans'
+        required: false
+        default: 'https://submit.diyaccounting.co.uk'
+  push:
+    branches:
+      - pentest
+      - main
+
+concurrency:
+  group: compliance-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_URL: ${{ github.event.inputs.target_url || 'https://submit.diyaccounting.co.uk' }}
+  NODE_VERSION: '22'
+
+jobs:
+  # Static security analysis - runs on code, no deployment needed
+  penetration-static:
+    name: Static Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          mkdir -p target/penetration
+          npm audit --json > target/penetration/npm-audit.json 2>&1 || true
+          npm audit --audit-level=moderate 2>&1 | tee target/penetration/npm-audit.txt || true
+
+      - name: Run ESLint security scan
+        run: |
+          mkdir -p target/penetration
+          npm run penetration:static 2>&1 || true
+
+      - name: Run retire.js
+        run: |
+          mkdir -p target/penetration
+          npx retire --path . --outputformat json --outputpath target/penetration/retire.json 2>&1 || true
+
+      - name: Upload penetration reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: penetration-static-reports
+          path: target/penetration/
+          retention-days: 90
+
+      - name: Check for critical vulnerabilities
+        run: |
+          # Fail if any high or critical npm vulnerabilities
+          AUDIT_RESULT=$(cat target/penetration/npm-audit.json)
+          HIGH=$(echo "$AUDIT_RESULT" | jq -r '.metadata.vulnerabilities.high // 0')
+          CRITICAL=$(echo "$AUDIT_RESULT" | jq -r '.metadata.vulnerabilities.critical // 0')
+          echo "High vulnerabilities: $HIGH"
+          echo "Critical vulnerabilities: $CRITICAL"
+          if [ "$HIGH" -gt 0 ] || [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Found $HIGH high and $CRITICAL critical vulnerabilities"
+            exit 1
+          fi
+          echo "No high or critical vulnerabilities found"
+
+  # Accessibility testing against deployed site
+  accessibility:
+    name: WCAG Level AA Accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Pa11y accessibility tests
+        run: |
+          mkdir -p target/accessibility
+          npx pa11y-ci --config .pa11yci.prod.json 2>&1 | tee target/accessibility/pa11y-report.txt || true
+
+      - name: Upload accessibility reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-reports
+          path: target/accessibility/
+          retention-days: 90
+
+      - name: Check accessibility results
+        run: |
+          if grep -q "✘" target/accessibility/pa11y-report.txt 2>/dev/null; then
+            echo "::warning::Some pages have accessibility issues - review the report"
+          else
+            echo "All pages passed accessibility checks"
+          fi
+
+  # OWASP ZAP baseline scan against deployed site
+  zap-scan:
+    name: OWASP ZAP Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ env.TARGET_URL }}
+          rules_file_name: '.zap-rules.tsv'
+          allow_issue_writing: false
+          fail_action: false
+          cmd_options: '-a'
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report
+          path: report_html.html
+          retention-days: 90
+
+  # Generate compliance summary
+  compliance-summary:
+    name: Generate Compliance Summary
+    runs-on: ubuntu-latest
+    needs: [penetration-static, accessibility, zap-scan]
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate summary
+        run: |
+          echo "# Compliance Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Target**: ${{ env.TARGET_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Security Analysis | ${{ needs.penetration-static.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| WCAG Level AA Accessibility | ${{ needs.accessibility.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP ZAP Security Scan | ${{ needs.zap-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## npm Audit Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f artifacts/penetration-static-reports/npm-audit.json ]; then
+            AUDIT=$(cat artifacts/penetration-static-reports/npm-audit.json)
+            echo "- Critical: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.critical // 0')" >> $GITHUB_STEP_SUMMARY
+            echo "- High: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.high // 0')" >> $GITHUB_STEP_SUMMARY
+            echo "- Moderate: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.moderate // 0')" >> $GITHUB_STEP_SUMMARY
+            echo "- Low: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.low // 0')" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Audit report not available" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- penetration-static-reports: ESLint security, npm audit, retire.js" >> $GITHUB_STEP_SUMMARY
+          echo "- accessibility-reports: Pa11y WCAG Level AA" >> $GITHUB_STEP_SUMMARY
+          echo "- zap-report: OWASP ZAP baseline scan" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload combined artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-all-reports
+          path: artifacts/
+          retention-days: 90
