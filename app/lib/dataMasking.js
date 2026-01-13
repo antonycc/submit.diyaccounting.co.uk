@@ -127,6 +127,7 @@ export function maskSensitiveData(data, visited = new Set()) {
 
     // Handle objects
     const masked = {};
+    /* eslint-disable security/detect-object-injection -- key comes from Object.entries iteration over own properties */
     for (const [key, value] of Object.entries(data)) {
       if (isSensitiveField(key)) {
         // Mask sensitive field - only if value exists and is not empty
@@ -146,6 +147,7 @@ export function maskSensitiveData(data, visited = new Set()) {
         masked[key] = value;
       }
     }
+    /* eslint-enable security/detect-object-injection */
     return masked;
   } finally {
     visited.delete(data);

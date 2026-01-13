@@ -168,6 +168,7 @@ export function installCorrelationInterceptor() {
       if (typeof Headers !== "undefined" && existingHeaders instanceof Headers) {
         headerObject = {};
         existingHeaders.forEach((value, key) => {
+          // eslint-disable-next-line security/detect-object-injection -- key comes from Headers.forEach iteration
           headerObject[key] = value;
         });
       } else if (Array.isArray(existingHeaders)) {
