@@ -18,9 +18,12 @@
  * Expected report files in target/:
  *   - accessibility/pa11y-report.txt
  *   - accessibility/axe-results.json
+ *   - accessibility/axe-wcag22-results.json
+ *   - accessibility/lighthouse-results.json
  *   - penetration/eslint-security.txt
  *   - penetration/npm-audit.json
  *   - penetration/retire.json
+ *   - penetration/zap-report.json
  */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -209,6 +212,21 @@ function parseRetireResults(retireJson) {
   return { total: high + medium + low, high, medium, low, found: true };
 }
 
+function parseLighthouseResults(lighthouseJson) {
+  if (!lighthouseJson || !lighthouseJson.categories) {
+    return { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, found: false };
+  }
+
+  const categories = lighthouseJson.categories;
+  return {
+    performance: Math.round((categories.performance?.score || 0) * 100),
+    accessibility: Math.round((categories.accessibility?.score || 0) * 100),
+    bestPractices: Math.round((categories["best-practices"]?.score || 0) * 100),
+    seo: Math.round((categories.seo?.score || 0) * 100),
+    found: true,
+  };
+}
+
 function parseZapResults(zapJson) {
   if (!zapJson || !zapJson.site) {
     return { high: 0, medium: 0, low: 0, info: 0, alerts: [], found: false };
@@ -264,6 +282,8 @@ function generateReport() {
   const eslintText = readTextFile(join(penetrationDir, "eslint-security.txt"));
   const pa11yText = readTextFile(join(accessibilityDir, "pa11y-report.txt"));
   const axeJson = readJsonFile(join(accessibilityDir, "axe-results.json"));
+  const axeWcag22Json = readJsonFile(join(accessibilityDir, "axe-wcag22-results.json"));
+  const lighthouseJson = readJsonFile(join(accessibilityDir, "lighthouse-results.json"));
   const retireJson = readJsonFile(join(penetrationDir, "retire.json"));
   const zapJson = readJsonFile(join(penetrationDir, "zap-report.json"));
 
@@ -272,6 +292,8 @@ function generateReport() {
   const eslint = parseEslintSecurity(eslintText);
   const pa11y = parsePa11yReport(pa11yText);
   const axe = parseAxeResults(axeJson);
+  const axeWcag22 = parseAxeResults(axeWcag22Json);
+  const lighthouse = parseLighthouseResults(lighthouseJson);
   const retire = parseRetireResults(retireJson);
   const zap = parseZapResults(zapJson);
 
@@ -304,6 +326,8 @@ function generateReport() {
 | OWASP ZAP | ${statusIcon(zap.high === 0)} | ${zap.found ? `${zap.high} high, ${zap.medium} medium, ${zap.low} low` : "Report not found"} |
 | Pa11y (WCAG AA) | ${statusIcon(pa11y.failed === 0)} | ${pa11y.found ? `${pa11y.passed}/${pa11y.total} pages passed` : "Report not found"} |
 | axe-core | ${statusIcon(axe.violations === 0)} | ${axe.found ? `${axe.violations} violations, ${axe.passes} passes` : "Report not found"} |
+| axe-core (WCAG 2.2) | ${statusIcon(axeWcag22.violations === 0)} | ${axeWcag22.found ? `${axeWcag22.violations} violations, ${axeWcag22.passes} passes` : "Report not found"} |
+| Lighthouse | ${statusIcon(lighthouse.accessibility >= 90)} | ${lighthouse.found ? `A11y: ${lighthouse.accessibility}%, Perf: ${lighthouse.performance}%, BP: ${lighthouse.bestPractices}%` : "Report not found"} |
 
 ---
 
@@ -429,6 +453,45 @@ ${axe.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | 
     : "⚠️ Report not found: `target/accessibility/axe-results.json`"
 }
 
+### 2.3 axe-core (WCAG 2.2 Level AA)
+
+${
+  axeWcag22.found
+    ? `| Metric | Count |
+|--------|-------|
+| Violations | ${axeWcag22.violations} |
+| Passes | ${axeWcag22.passes} |
+| Incomplete | ${axeWcag22.incomplete} |
+
+**Status**: ${statusIcon(axeWcag22.violations === 0)} ${axeWcag22.violations === 0 ? "No WCAG 2.2 violations" : "WCAG 2.2 violations detected"}
+${
+  axeWcag22.violationDetails.length > 0
+    ? `
+#### Violations
+
+| Rule | Impact | Description | Nodes |
+|------|--------|-------------|-------|
+${axeWcag22.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | ${v.nodes} |`).join("\n")}`
+    : ""
+}`
+    : "⚠️ Report not found: `target/accessibility/axe-wcag22-results.json`"
+}
+
+### 2.4 Lighthouse
+
+${
+  lighthouse.found
+    ? `| Category | Score |
+|----------|-------|
+| Accessibility | ${lighthouse.accessibility}% |
+| Performance | ${lighthouse.performance}% |
+| Best Practices | ${lighthouse.bestPractices}% |
+| SEO | ${lighthouse.seo}% |
+
+**Status**: ${statusIcon(lighthouse.accessibility >= 90)} ${lighthouse.accessibility >= 90 ? "Accessibility score meets threshold (90%+)" : "Accessibility score below 90% threshold"}`
+    : "⚠️ Report not found: `target/accessibility/lighthouse-results.json`"
+}
+
 ---
 
 ## 3. Report Files
@@ -441,6 +504,8 @@ ${axe.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | 
 | OWASP ZAP | target/penetration/zap-report.json | ${zap.found ? "✅ Found" : "❌ Missing"} |
 | Pa11y | target/accessibility/pa11y-report.txt | ${pa11y.found ? "✅ Found" : "❌ Missing"} |
 | axe-core | target/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
+| axe-core (WCAG 2.2) | target/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
+| Lighthouse | target/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
 
 ---
 
@@ -467,6 +532,8 @@ function main() {
     join(penetrationDir, "zap-report.json"),
     join(accessibilityDir, "pa11y-report.txt"),
     join(accessibilityDir, "axe-results.json"),
+    join(accessibilityDir, "axe-wcag22-results.json"),
+    join(accessibilityDir, "lighthouse-results.json"),
   ];
 
   let foundCount = 0;

@@ -3,7 +3,7 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://wanted-finally-anteater.ngrok-free.app
-**Generated**: 2026-01-13T22:03:06.715Z
+**Generated**: 2026-01-13T22:38:59.533Z
 **Overall Status**: ✅ PASS
 
 ---
@@ -15,9 +15,11 @@
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
 | ESLint Security | ✅ | 0 errors, 0 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 12 medium, 12 low |
+| OWASP ZAP | ✅ | 0 high, 13 medium, 2 low |
 | Pa11y (WCAG AA) | ✅ | 12/12 pages passed |
 | axe-core | ✅ | 0 violations, 35 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 22 passes |
+| Lighthouse | ✅ | A11y: 100%, Perf: 99%, BP: 100% |
 
 ---
 
@@ -59,8 +61,8 @@
 | Risk Level | Count |
 |------------|-------|
 | High | 0 |
-| Medium | 12 |
-| Low | 12 |
+| Medium | 13 |
+| Low | 2 |
 | Informational | 26 |
 
 **Status**: ✅ No high risk vulnerabilities
@@ -69,12 +71,10 @@
 
 | Alert | Risk | Count |
 |-------|------|-------|
-| CSP: Failure to Define Directive with No Fallback | Medium (High) | 3 |
-| CSP: script-src unsafe-inline | Medium (High) | 3 |
-| CSP: style-src unsafe-inline | Medium (High) | 3 |
+| CSP: script-src unsafe-inline | Medium (High) | 5 |
+| CSP: style-src unsafe-inline | Medium (High) | 5 |
 | Sub Resource Integrity Attribute Missing | Medium (High) | 3 |
 | Cross-Domain JavaScript Source File Inclusion | Low (Medium) | 2 |
-| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 10 |
 | Information Disclosure - Suspicious Comments | Informational (Low) | 11 |
 | Modern Web Application | Informational (Medium) | 5 |
 | Re-examine Cache-control Directives | Informational (Low) | 4 |
@@ -99,18 +99,18 @@
 
 | Page | Errors |
 |------|--------|
-| https://submit.diyaccounting.co.uk/ | 0 |
-| https://submit.diyaccounting.co.uk/index.html | 0 |
-| https://submit.diyaccounting.co.uk/privacy.html | 0 |
-| https://submit.diyaccounting.co.uk/terms.html | 0 |
-| https://submit.diyaccounting.co.uk/about.html | 0 |
-| https://submit.diyaccounting.co.uk/auth/login.html | 0 |
-| https://submit.diyaccounting.co.uk/account/bundles.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html | 0 |
-| https://submit.diyaccounting.co.uk/guide/index.html | 0 |
+| / | 0 |
+| /index.html | 0 |
+| /privacy.html | 0 |
+| /terms.html | 0 |
+| /about.html | 0 |
+| /auth/login.html | 0 |
+| /account/bundles.html | 0 |
+| /hmrc/vat/submitVat.html | 0 |
+| /hmrc/vat/vatObligations.html | 0 |
+| /hmrc/vat/viewVatReturn.html | 0 |
+| /hmrc/receipt/receipts.html | 0 |
+| /guide/index.html | 0 |
 
 ### 2.2 axe-core (Automated Accessibility)
 
@@ -122,6 +122,28 @@
 
 **Status**: ✅ No accessibility violations
 
+
+### 2.3 axe-core (WCAG 2.2 Level AA)
+
+| Metric | Count |
+|--------|-------|
+| Violations | 0 |
+| Passes | 22 |
+| Incomplete | 1 |
+
+**Status**: ✅ No WCAG 2.2 violations
+
+
+### 2.4 Lighthouse
+
+| Category | Score |
+|----------|-------|
+| Accessibility | 100% |
+| Performance | 99% |
+| Best Practices | 100% |
+| SEO | 82% |
+
+**Status**: ✅ Accessibility score meets threshold (90%+)
 
 ---
 
@@ -135,6 +157,8 @@
 | OWASP ZAP | target/penetration/zap-report.json | ✅ Found |
 | Pa11y | target/accessibility/pa11y-report.txt | ✅ Found |
 | axe-core | target/accessibility/axe-results.json | ✅ Found |
+| axe-core (WCAG 2.2) | target/accessibility/axe-wcag22-results.json | ✅ Found |
+| Lighthouse | target/accessibility/lighthouse-results.json | ✅ Found |
 
 ---
 

@@ -77,8 +77,12 @@ app.use((req, res, next) => {
   // Content-Security-Policy: Basic CSP for security
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-ancestors 'none'"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-ancestors 'none'; form-action 'self'"
   );
+  // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  // Cross-Origin-Embedder-Policy: Requires CORS/CORP for cross-origin resources
+  res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
   // Referrer-Policy: Controls how much referrer info is sent
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   // Permissions-Policy: Restricts browser features
