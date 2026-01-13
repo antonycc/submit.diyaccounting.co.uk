@@ -234,6 +234,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
+  # TODO: Switch to deploy-cdk-stack.yml
   deploy-observability-us-east-1:
     name: 'deploy observability us-east-1'
     needs:
@@ -312,6 +313,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
+  # TODO: Switch to deploy-cdk-stack.yml
   deploy-data:
     name: 'deploy data'
     needs:
@@ -471,6 +473,7 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 
+  # TODO: Switch to deploy-cdk-stack.yml
   deploy-apex:
     name: deploy apex
     needs:
@@ -543,6 +546,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
+  # TODO: Switch to deploy-cdk-stack.yml
   deploy-identity:
     name: 'deploy identity'
     needs:
