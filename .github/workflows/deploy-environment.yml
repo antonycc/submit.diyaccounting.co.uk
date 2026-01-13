@@ -383,6 +383,26 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
+  deploy-backup:
+    name: 'deploy backup'
+    needs:
+      - names
+      - create-secrets
+      - deploy-data
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-BackupStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
   provision-bundles:
     name: 'provision bundles'
     needs:
