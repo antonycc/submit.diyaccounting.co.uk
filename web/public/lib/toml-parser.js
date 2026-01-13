@@ -10,6 +10,7 @@
       let currentSection = res;
       const lines = src.split(/\r?\n/);
 
+      /* eslint-disable security/detect-object-injection -- building parsed result from trusted TOML file */
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line || line.startsWith("#")) continue;
@@ -32,6 +33,7 @@
           currentSection[key] = parseValue(value);
         }
       }
+      /* eslint-enable security/detect-object-injection */
       return res;
     },
   };

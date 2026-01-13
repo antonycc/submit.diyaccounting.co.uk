@@ -231,6 +231,7 @@ public class PublishStack extends Stack {
                         "/tests/*",
                         "/widgets/*",
                         "/about.html",
+                        "/accessibility.html",
                         "/favicon.ico",
                         "/index.html",
                         "/privacy.html",

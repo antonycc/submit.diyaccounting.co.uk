@@ -1,5 +1,7 @@
 name: synthetic-test
 run-name: "synthetic test of ${{ github.ref_name }}"
+# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
 #concurrency:
 #  group: synthetic-test-${{ github.ref_name }}
 #  cancel-in-progress: false
@@ -64,14 +66,6 @@ on:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: true
-  push:
-    branches:
-      - '**'
-      - '!gh_pages'
-      - '!dependabot/**'
-    paths:
-      - 'behaviour-tests/submitVat.behaviour.test.js'
-      - '.github/workflows/synthetic-test.yml'
   schedule:
     # Check for cold starts over the hour using CloudWatch Logs Insights query:
     #   fields @timestamp, @message

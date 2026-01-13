@@ -35,7 +35,7 @@ npm run penetration:report     # HTML report in target/penetration/
   "accessibility": "pa11y-ci --config .pa11yci.json",
   "accessibility:report": "pa11y-ci --config .pa11yci.json --reporter html > target/accessibility/report.html",
   "accessibility:lighthouse": "lighthouse https://wanted-finally-anteater.ngrok-free.app --output html --output-path target/accessibility/lighthouse.html --chrome-flags='--headless'",
-  "accessibility:axe": "axe https://wanted-finally-anteater.ngrok-free.app --save target/accessibility/axe-results.json"
+  "accessibility:axe-proxy-report": "axe https://wanted-finally-anteater.ngrok-free.app --save target/accessibility/axe-results.json"
 }
 ```
 
@@ -169,78 +169,42 @@ Create GitHub issues for each finding, tagged:
 
 ## Phase 4: GitHub Actions Integration
 
-### Daily Compliance Workflow (`.github/workflows/compliance.yml`):
-```yaml
-name: Compliance Scans
+### Weekly Compliance Workflow (`.github/workflows/compliance.yml`):
 
-on:
-  schedule:
-    - cron: '0 6 * * *'  # Daily at 6am UTC
-  workflow_dispatch:
+The workflow runs individual compliance checks in parallel, then generates a combined report.
 
-jobs:
-  accessibility:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm ci
-      - run: npm run accessibility:prod
-      - uses: actions/upload-artifact@v4
-        with:
-          name: accessibility-report
-          path: target/accessibility/
+**Parallel Accessibility Jobs:**
 
-  penetration:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm ci
-      - run: npm run penetration:report
-      - uses: actions/upload-artifact@v4
-        with:
-          name: penetration-report
-          path: target/penetration/
+| Job | Script | Purpose |
+|-----|--------|---------|
+| `accessibility-pa11y` | `accessibility:pa11y-<env>` | WCAG 2.1 Level AA multi-page testing |
+| `accessibility-axe` | `accessibility:axe-<env>` | axe-core WCAG 2.1 AA |
+| `accessibility-axe-wcag22` | `accessibility:axe-wcag22-<env>` | axe-core WCAG 2.2 AA |
+| `accessibility-lighthouse` | `accessibility:lighthouse-<env>` | Google Lighthouse accessibility |
 
-  zap-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
-        with:
-          target: 'https://submit.diyaccounting.co.uk'
-          rules_file_name: '.zap-rules.tsv'
-          allow_issue_writing: false
-      - uses: actions/upload-artifact@v4
-        with:
-          name: zap-report
-          path: report_html.html
-```
+**Parallel Penetration Jobs:**
 
-### Production Scan Workflow (`.github/workflows/scan-production.yml`):
-```yaml
-name: Production Security Scan
+| Job | Script | Purpose |
+|-----|--------|---------|
+| `penetration-eslint` | `penetration:eslint` | ESLint security plugin |
+| `penetration-audit` | `penetration:audit` | npm dependency vulnerabilities |
+| `penetration-retire` | `penetration:retire` | Known vulnerable JS libraries |
+| `penetration-zap` | `penetration:zap-<env>` | OWASP ZAP baseline scan |
 
-on:
-  schedule:
-    - cron: '0 2 * * *'  # Daily at 2am UTC
-  workflow_dispatch:
+**Final Report Job (runs after all above complete):**
 
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: zaproxy/action-baseline@v0.14.0
-        with:
-          target: 'https://submit.diyaccounting.co.uk'
-          allow_issue_writing: true
-```
+| Job | Script | Purpose |
+|-----|--------|---------|
+| `compliance-report` | `compliance:<env>-report-md` | Generate combined COMPLIANCE_REPORT.md |
+
+**Triggers:**
+- Weekly on Monday at 6am UTC (scheduled)
+- Manual via workflow_dispatch
+- Called from other workflows via workflow_call
+
+**Environment Detection:**
+- Reads last-known-good deployment from SSM Parameter Store
+- Uses `get-names` action to compute environment URLs (ci or prod)
 
 ---
 

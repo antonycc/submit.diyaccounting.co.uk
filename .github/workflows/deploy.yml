@@ -1,5 +1,8 @@
 name: deploy
 run-name: "deploy from ${{ github.ref_name }}"
+# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
@@ -106,18 +109,87 @@ env:
 
 jobs:
 
+  params:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+      deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+
   names:
+    needs:
+      - params
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: If main, read back last known good prod deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
+        run: |
+          PARAMETER_NAME="/submit/prod/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+
+      - name: If not main, read back last known good ci deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref != 'refs/heads/main' }}
+        run: |
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+
+      - name: If last-known-good-deployment set use that otherwise use current deployment name
+        id: last-known-good-deployment
+        run: |
+          if [ -s /tmp/last_known_good_deployment.txt ]; then
+              echo "Using last known good deployment from SSM Parameter Store"
+              echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
+          else
+              echo "No last known good deployment found, using current deployment name"
+              echo "deployment-name=${{ needs.params.outputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
+          fi
+
       - name: Compute deployment name and environment
         id: deployment-config
         uses: './.github/actions/get-names'
         with:
-          environment-name: ${{ github.event.inputs.environment-name || '' }}
-          deployment-name: ${{ github.event.inputs.deployment-name || '' }}
+          environment-name: ${{ needs.params.outputs.environment-name || '' }}
+          deployment-name: ${{ (inputs.skipDeploy != 'true') && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'skip:')) && steps.last-known-good-deployment.outputs.deployment-name || needs.params.outputs.deployment-name || '' }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}

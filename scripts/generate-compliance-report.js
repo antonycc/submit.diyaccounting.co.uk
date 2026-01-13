@@ -5,20 +5,28 @@
 /**
  * Generate Compliance Report
  *
- * This script runs accessibility and penetration tests and generates
- * a markdown compliance report suitable for HMRC production approval.
+ * Generates a markdown compliance report from existing test reports.
+ * Does NOT run tests - expects reports to already exist in target/.
  *
  * Usage:
- *   node scripts/generate-compliance-report.js [--target URL] [--output FILE]
+ *   node scripts/generate-compliance-report.js --target URL [--output FILE]
  *
  * Options:
- *   --target URL    Target URL for tests (default: https://submit.diyaccounting.co.uk)
+ *   --target URL    Target URL that was tested (required)
  *   --output FILE   Output file (default: COMPLIANCE_REPORT.md)
- *   --skip-tests    Skip running tests, just generate report from existing data
+ *
+ * Expected report files in target/:
+ *   - accessibility/pa11y-report.txt
+ *   - accessibility/axe-results.json
+ *   - accessibility/axe-wcag22-results.json
+ *   - accessibility/lighthouse-results.json
+ *   - penetration/eslint-security.txt
+ *   - penetration/npm-audit.json
+ *   - penetration/retire.json
+ *   - penetration/zap-report.json
  */
 
-import { execSync, spawnSync } from "node:child_process";
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -35,40 +43,21 @@ const getArg = (name, defaultValue) => {
   }
   return defaultValue;
 };
-const hasFlag = (name) => args.includes(name);
 
-const targetUrl = getArg("--target", "https://submit.diyaccounting.co.uk");
+const targetUrl = getArg("--target", null);
 const outputFile = getArg("--output", "COMPLIANCE_REPORT.md");
-const skipTests = hasFlag("--skip-tests");
+
+if (!targetUrl) {
+  console.error("Error: --target URL is required");
+  console.error("Usage: node scripts/generate-compliance-report.js --target URL [--output FILE]");
+  process.exit(1);
+}
 
 const targetDir = join(projectRoot, "target");
 const accessibilityDir = join(targetDir, "accessibility");
 const penetrationDir = join(targetDir, "penetration");
 
-function ensureDir(dir) {
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-}
-
-function runCommand(cmd, description) {
-  console.log(`Running: ${description}...`);
-  try {
-    const result = spawnSync("sh", ["-c", cmd], {
-      cwd: projectRoot,
-      encoding: "utf8",
-      timeout: 300000, // 5 minutes
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    return {
-      success: result.status === 0,
-      stdout: result.stdout || "",
-      stderr: result.stderr || "",
-    };
-  } catch (error) {
-    return { success: false, stdout: "", stderr: error.message };
-  }
-}
+// --- File reading helpers ---
 
 function readJsonFile(path) {
   try {
@@ -76,7 +65,7 @@ function readJsonFile(path) {
       return JSON.parse(readFileSync(path, "utf8"));
     }
   } catch (error) {
-    console.warn(`Warning: Could not read ${path}: ${error.message}`);
+    console.warn(`Warning: Could not parse ${path}: ${error.message}`);
   }
   return null;
 }
@@ -97,9 +86,11 @@ function getPackageVersion() {
   return pkg?.version || "unknown";
 }
 
+// --- Report parsing using grep-style pattern matching ---
+
 function parseNpmAudit(auditJson) {
   if (!auditJson) {
-    return { critical: 0, high: 0, moderate: 0, low: 0, info: 0, total: 0 };
+    return { critical: 0, high: 0, moderate: 0, low: 0, info: 0, total: 0, found: false };
   }
   const vuln = auditJson.metadata?.vulnerabilities || {};
   return {
@@ -109,255 +100,454 @@ function parseNpmAudit(auditJson) {
     low: vuln.low || 0,
     info: vuln.info || 0,
     total: vuln.total || 0,
+    found: true,
   };
 }
 
 function parseEslintSecurity(eslintText) {
-  if (!eslintText) {
-    return { errors: 0, warnings: 0 };
+  if (eslintText === null || eslintText === undefined) {
+    return { errors: 0, warnings: 0, found: false };
   }
-  const errorMatch = eslintText.match(/(\d+)\s+error/);
-  const warningMatch = eslintText.match(/(\d+)\s+warning/);
-  return {
-    errors: errorMatch ? parseInt(errorMatch[1], 10) : 0,
-    warnings: warningMatch ? parseInt(warningMatch[1], 10) : 0,
-  };
+  // grep pattern: "X problems (Y errors, Z warnings)"
+  const summaryMatch = eslintText.match(/(\d+)\s+problems?\s+\((\d+)\s+errors?,\s*(\d+)\s+warnings?\)/);
+  if (summaryMatch) {
+    return {
+      errors: parseInt(summaryMatch[2], 10),
+      warnings: parseInt(summaryMatch[3], 10),
+      found: true,
+    };
+  }
+  // Empty file or no problems = clean pass
+  return { errors: 0, warnings: 0, found: true };
 }
 
 function parsePa11yReport(pa11yText) {
   if (!pa11yText) {
-    return { passed: 0, failed: 0, total: 0, errors: [] };
+    return { passed: 0, failed: 0, total: 0, results: [], found: false };
   }
 
-  const lines = pa11yText.split("\n");
-  const urlResults = [];
-  let currentUrl = null;
-  let currentErrors = [];
+  const results = [];
+  // grep pattern: "> URL - N errors"
+  const urlPattern = />\s+(https?:\/\/[^\s]+)\s+-\s+(\d+)\s+errors?/g;
+  let match;
+  while ((match = urlPattern.exec(pa11yText)) !== null) {
+    results.push({
+      url: match[1],
+      errorCount: parseInt(match[2], 10),
+    });
+  }
 
-  for (const line of lines) {
-    const urlMatch = line.match(/> (https?:\/\/[^\s]+)\s+-\s+(\d+)\s+error/);
-    if (urlMatch) {
-      if (currentUrl) {
-        urlResults.push({ url: currentUrl, errors: currentErrors });
-      }
-      currentUrl = urlMatch[1];
-      currentErrors = [];
-    } else if (line.startsWith(" • ") && currentUrl) {
-      currentErrors.push(line.replace(" • ", "").trim());
+  // grep pattern: "X of Y URLs passed"
+  const summaryMatch = pa11yText.match(/(\d+)\s+of\s+(\d+)\s+URLs?\s+passed/);
+
+  const passed = summaryMatch ? parseInt(summaryMatch[1], 10) : results.filter((r) => r.errorCount === 0).length;
+  const total = summaryMatch ? parseInt(summaryMatch[2], 10) : results.length;
+  const failed = total - passed;
+
+  return { passed, failed, total, results, found: true };
+}
+
+function parseAxeResults(axeJson) {
+  if (!axeJson || !Array.isArray(axeJson)) {
+    return { violations: 0, passes: 0, incomplete: 0, found: false };
+  }
+
+  let totalViolations = 0;
+  let totalPasses = 0;
+  let totalIncomplete = 0;
+  const violationDetails = [];
+
+  for (const result of axeJson) {
+    const violations = result.violations || [];
+    const passes = result.passes || [];
+    const incomplete = result.incomplete || [];
+
+    totalViolations += violations.length;
+    totalPasses += passes.length;
+    totalIncomplete += incomplete.length;
+
+    for (const v of violations) {
+      violationDetails.push({
+        id: v.id,
+        impact: v.impact,
+        description: v.description,
+        nodes: v.nodes?.length || 0,
+      });
     }
   }
-  if (currentUrl) {
-    urlResults.push({ url: currentUrl, errors: currentErrors });
-  }
-
-  const passed = urlResults.filter((r) => r.errors.length === 0).length;
-  const failed = urlResults.filter((r) => r.errors.length > 0).length;
 
   return {
-    passed,
-    failed,
-    total: urlResults.length,
-    results: urlResults,
+    violations: totalViolations,
+    passes: totalPasses,
+    incomplete: totalIncomplete,
+    violationDetails,
+    found: true,
   };
 }
+
+function parseRetireResults(retireJson) {
+  if (!retireJson) {
+    return { total: 0, high: 0, medium: 0, low: 0, found: false };
+  }
+
+  // retire.js format: array of results with vulnerabilities
+  let high = 0;
+  let medium = 0;
+  let low = 0;
+
+  const results = Array.isArray(retireJson) ? retireJson : retireJson.data || [];
+  for (const result of results) {
+    const vulns = result.results || [];
+    for (const vuln of vulns) {
+      const vulnerabilities = vuln.vulnerabilities || [];
+      for (const v of vulnerabilities) {
+        const severity = (v.severity || "").toLowerCase();
+        if (severity === "high" || severity === "critical") high++;
+        else if (severity === "medium" || severity === "moderate") medium++;
+        else low++;
+      }
+    }
+  }
+
+  return { total: high + medium + low, high, medium, low, found: true };
+}
+
+function parseLighthouseResults(lighthouseJson) {
+  if (!lighthouseJson || !lighthouseJson.categories) {
+    return { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, found: false };
+  }
+
+  const categories = lighthouseJson.categories;
+  return {
+    performance: Math.round((categories.performance?.score || 0) * 100),
+    accessibility: Math.round((categories.accessibility?.score || 0) * 100),
+    bestPractices: Math.round((categories["best-practices"]?.score || 0) * 100),
+    seo: Math.round((categories.seo?.score || 0) * 100),
+    found: true,
+  };
+}
+
+function parseZapResults(zapJson) {
+  if (!zapJson || !zapJson.site) {
+    return { high: 0, medium: 0, low: 0, info: 0, alerts: [], found: false };
+  }
+
+  let high = 0;
+  let medium = 0;
+  let low = 0;
+  let info = 0;
+  const alertDetails = [];
+
+  const sites = Array.isArray(zapJson.site) ? zapJson.site : [zapJson.site];
+  for (const site of sites) {
+    const alerts = site.alerts || [];
+    for (const alert of alerts) {
+      // riskcode: 0=Info, 1=Low, 2=Medium, 3=High
+      const riskcode = parseInt(alert.riskcode, 10);
+      const count = parseInt(alert.count, 10) || 1;
+
+      if (riskcode === 3) high += count;
+      else if (riskcode === 2) medium += count;
+      else if (riskcode === 1) low += count;
+      else info += count;
+
+      alertDetails.push({
+        name: alert.name || alert.alert,
+        risk: alert.riskdesc || ["Info", "Low", "Medium", "High"][riskcode] || "Unknown",
+        count: count,
+        confidence: alert.confidence,
+      });
+    }
+  }
+
+  return {
+    high,
+    medium,
+    low,
+    info,
+    total: high + medium + low + info,
+    alerts: alertDetails,
+    found: true,
+  };
+}
+
+// --- Report generation ---
 
 function generateReport() {
   const timestamp = new Date().toISOString();
   const version = getPackageVersion();
 
-  // Read test results
+  // Read all report files
   const npmAuditJson = readJsonFile(join(penetrationDir, "npm-audit.json"));
-  const eslintSecurityText = readTextFile(join(penetrationDir, "eslint-security.txt"));
+  const eslintText = readTextFile(join(penetrationDir, "eslint-security.txt"));
   const pa11yText = readTextFile(join(accessibilityDir, "pa11y-report.txt"));
+  const axeJson = readJsonFile(join(accessibilityDir, "axe-results.json"));
+  const axeWcag22Json = readJsonFile(join(accessibilityDir, "axe-wcag22-results.json"));
+  const lighthouseJson = readJsonFile(join(accessibilityDir, "lighthouse-results.json"));
+  const retireJson = readJsonFile(join(penetrationDir, "retire.json"));
+  const zapJson = readJsonFile(join(penetrationDir, "zap-report.json"));
 
-  // Parse results
+  // Parse all results
   const npmAudit = parseNpmAudit(npmAuditJson);
-  const eslintSecurity = parseEslintSecurity(eslintSecurityText);
+  const eslint = parseEslintSecurity(eslintText);
   const pa11y = parsePa11yReport(pa11yText);
+  const axe = parseAxeResults(axeJson);
+  const axeWcag22 = parseAxeResults(axeWcag22Json);
+  const lighthouse = parseLighthouseResults(lighthouseJson);
+  const retire = parseRetireResults(retireJson);
+  const zap = parseZapResults(zapJson);
 
-  // Determine overall status
-  const hasSecurityIssues = npmAudit.critical > 0 || npmAudit.high > 0 || eslintSecurity.errors > 0;
-  const hasAccessibilityIssues = pa11y.failed > 0;
-  const overallStatus = !hasSecurityIssues && !hasAccessibilityIssues ? "PASS" : "NEEDS ATTENTION";
+  // Determine status
+  const securityPass = npmAudit.critical === 0 && npmAudit.high === 0 && eslint.errors === 0 && zap.high === 0;
+  const accessibilityPass = pa11y.failed === 0 && axe.violations === 0;
+  const overallPass = securityPass && accessibilityPass;
+
+  const statusIcon = (pass) => (pass ? "✅" : "❌");
+  const statusText = (pass) => (pass ? "PASS" : "FAIL");
 
   // Generate markdown
-  let report = `# HMRC MTD Compliance Report
+  let report = `# Compliance Report
 
 **Application**: DIY Accounting Submit
 **Version**: ${version}
 **Target URL**: ${targetUrl}
 **Generated**: ${timestamp}
-**Overall Status**: ${overallStatus === "PASS" ? "PASS" : "NEEDS ATTENTION"}
+**Overall Status**: ${statusIcon(overallPass)} ${statusText(overallPass)}
 
 ---
 
-## Executive Summary
+## Summary
 
-| Category | Status | Details |
-|----------|--------|---------|
-| npm Vulnerabilities | ${npmAudit.critical === 0 && npmAudit.high === 0 ? "PASS" : "FAIL"} | ${npmAudit.critical} critical, ${npmAudit.high} high, ${npmAudit.moderate} moderate |
-| ESLint Security | ${eslintSecurity.errors === 0 ? "PASS" : "FAIL"} | ${eslintSecurity.errors} errors, ${eslintSecurity.warnings} warnings |
-| WCAG Level AA | ${pa11y.failed === 0 ? "PASS" : "FAIL"} | ${pa11y.passed}/${pa11y.total} pages passed |
+| Check | Status | Summary |
+|-------|--------|---------|
+| npm audit | ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} | ${npmAudit.found ? `${npmAudit.critical} critical, ${npmAudit.high} high, ${npmAudit.moderate} moderate` : "Report not found"} |
+| ESLint Security | ${statusIcon(eslint.errors === 0)} | ${eslint.found ? `${eslint.errors} errors, ${eslint.warnings} warnings` : "Report not found"} |
+| retire.js | ${statusIcon(retire.high === 0)} | ${retire.found ? `${retire.high} high, ${retire.medium} medium, ${retire.low} low` : "Report not found"} |
+| OWASP ZAP | ${statusIcon(zap.high === 0)} | ${zap.found ? `${zap.high} high, ${zap.medium} medium, ${zap.low} low` : "Report not found"} |
+| Pa11y (WCAG AA) | ${statusIcon(pa11y.failed === 0)} | ${pa11y.found ? `${pa11y.passed}/${pa11y.total} pages passed` : "Report not found"} |
+| axe-core | ${statusIcon(axe.violations === 0)} | ${axe.found ? `${axe.violations} violations, ${axe.passes} passes` : "Report not found"} |
+| axe-core (WCAG 2.2) | ${statusIcon(axeWcag22.violations === 0)} | ${axeWcag22.found ? `${axeWcag22.violations} violations, ${axeWcag22.passes} passes` : "Report not found"} |
+| Lighthouse | ${statusIcon(lighthouse.accessibility >= 90)} | ${lighthouse.found ? `A11y: ${lighthouse.accessibility}%, Perf: ${lighthouse.performance}%, BP: ${lighthouse.bestPractices}%` : "Report not found"} |
 
 ---
 
-## 1. Dependency Vulnerability Scan (npm audit)
+## 1. Security Checks
 
-**Tool**: npm audit
-**Standard**: OWASP Dependency-Check
+### 1.1 npm audit (Dependency Vulnerabilities)
 
-### Results
-
-| Severity | Count |
+${
+  npmAudit.found
+    ? `| Severity | Count |
 |----------|-------|
 | Critical | ${npmAudit.critical} |
 | High | ${npmAudit.high} |
 | Moderate | ${npmAudit.moderate} |
 | Low | ${npmAudit.low} |
-| Info | ${npmAudit.info} |
 | **Total** | **${npmAudit.total}** |
 
-${npmAudit.critical === 0 && npmAudit.high === 0 ? "**Status: PASS** - No high or critical vulnerabilities detected." : "**Status: FAIL** - High or critical vulnerabilities require remediation."}
+**Status**: ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} ${npmAudit.critical === 0 && npmAudit.high === 0 ? "No critical/high vulnerabilities" : "Critical/high vulnerabilities require attention"}`
+    : "⚠️ Report not found: `target/penetration/npm-audit.json`"
+}
 
----
+### 1.2 ESLint Security Analysis
 
-## 2. Static Security Analysis (ESLint)
-
-**Tool**: ESLint with eslint-plugin-security
-**Configuration**: eslint.security.config.js
-
-### Results
-
-| Metric | Count |
+${
+  eslint.found
+    ? `| Metric | Count |
 |--------|-------|
-| Errors | ${eslintSecurity.errors} |
-| Warnings | ${eslintSecurity.warnings} |
+| Errors | ${eslint.errors} |
+| Warnings | ${eslint.warnings} |
 
-${eslintSecurity.errors === 0 ? "**Status: PASS** - No security errors in production code." : "**Status: FAIL** - Security errors require remediation."}
+**Status**: ${statusIcon(eslint.errors === 0)} ${eslint.errors === 0 ? "No security errors" : "Security errors require attention"}`
+    : "⚠️ Report not found: `target/penetration/eslint-security.txt`"
+}
 
-${eslintSecurity.warnings > 0 ? `\n**Note**: ${eslintSecurity.warnings} warnings are informational and relate to common JavaScript patterns. Production code has been reviewed for security best practices.\n` : ""}
+### 1.3 retire.js (Known Vulnerabilities)
+
+${
+  retire.found
+    ? `| Severity | Count |
+|----------|-------|
+| High | ${retire.high} |
+| Medium | ${retire.medium} |
+| Low | ${retire.low} |
+
+**Status**: ${statusIcon(retire.high === 0)} ${retire.high === 0 ? "No high severity vulnerabilities" : "High severity vulnerabilities require attention"}`
+    : "⚠️ Report not found: `target/penetration/retire.json`"
+}
+
+### 1.4 OWASP ZAP (Dynamic Security Scan)
+
+${
+  zap.found
+    ? `| Risk Level | Count |
+|------------|-------|
+| High | ${zap.high} |
+| Medium | ${zap.medium} |
+| Low | ${zap.low} |
+| Informational | ${zap.info} |
+
+**Status**: ${statusIcon(zap.high === 0)} ${zap.high === 0 ? "No high risk vulnerabilities" : "High risk vulnerabilities require attention"}
+${
+  zap.alerts.length > 0
+    ? `
+#### Alerts
+
+| Alert | Risk | Count |
+|-------|------|-------|
+${zap.alerts.map((a) => `| ${a.name} | ${a.risk} | ${a.count} |`).join("\n")}`
+    : ""
+}`
+    : "⚠️ Report not found: `target/penetration/zap-report.json`"
+}
 
 ---
 
-## 3. WCAG Level AA Accessibility Audit
+## 2. Accessibility Checks
 
-**Tool**: Pa11y CI
-**Standard**: WCAG 2.1 Level AA
-**Configuration**: .pa11yci.prod.json
+### 2.1 Pa11y (WCAG 2.1 Level AA)
 
-### Summary
-
-| Metric | Value |
+${
+  pa11y.found
+    ? `| Metric | Value |
 |--------|-------|
 | Pages Tested | ${pa11y.total} |
 | Pages Passed | ${pa11y.passed} |
-| Pages with Issues | ${pa11y.failed} |
+| Pages Failed | ${pa11y.failed} |
 
-${pa11y.failed === 0 ? "**Status: PASS** - All pages comply with WCAG Level AA.\n" : "**Status: FAIL** - Some pages have accessibility issues.\n"}
-`;
-
-  if (pa11y.results && pa11y.results.length > 0) {
-    report += `### Page Results
+**Status**: ${statusIcon(pa11y.failed === 0)} ${pa11y.failed === 0 ? "All pages comply with WCAG AA" : "Some pages have accessibility issues"}
+${
+  pa11y.results.length > 0
+    ? `
+#### Page Results
 
 | Page | Errors |
 |------|--------|
-`;
-    for (const result of pa11y.results) {
-      const pagePath = result.url.replace(targetUrl, "");
-      report += `| ${pagePath || "/"} | ${result.errors.length} |\n`;
-    }
-  }
+${pa11y.results.map((r) => `| ${r.url.replace(targetUrl, "") || "/"} | ${r.errorCount} |`).join("\n")}`
+    : ""
+}`
+    : "⚠️ Report not found: `target/accessibility/pa11y-report.txt`"
+}
 
-  report += `
+### 2.2 axe-core (Automated Accessibility)
+
+${
+  axe.found
+    ? `| Metric | Count |
+|--------|-------|
+| Violations | ${axe.violations} |
+| Passes | ${axe.passes} |
+| Incomplete | ${axe.incomplete} |
+
+**Status**: ${statusIcon(axe.violations === 0)} ${axe.violations === 0 ? "No accessibility violations" : "Accessibility violations require attention"}
+${
+  axe.violationDetails.length > 0
+    ? `
+#### Violations
+
+| Rule | Impact | Description | Nodes |
+|------|--------|-------------|-------|
+${axe.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | ${v.nodes} |`).join("\n")}`
+    : ""
+}`
+    : "⚠️ Report not found: `target/accessibility/axe-results.json`"
+}
+
+### 2.3 axe-core (WCAG 2.2 Level AA)
+
+${
+  axeWcag22.found
+    ? `| Metric | Count |
+|--------|-------|
+| Violations | ${axeWcag22.violations} |
+| Passes | ${axeWcag22.passes} |
+| Incomplete | ${axeWcag22.incomplete} |
+
+**Status**: ${statusIcon(axeWcag22.violations === 0)} ${axeWcag22.violations === 0 ? "No WCAG 2.2 violations" : "WCAG 2.2 violations detected"}
+${
+  axeWcag22.violationDetails.length > 0
+    ? `
+#### Violations
+
+| Rule | Impact | Description | Nodes |
+|------|--------|-------------|-------|
+${axeWcag22.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | ${v.nodes} |`).join("\n")}`
+    : ""
+}`
+    : "⚠️ Report not found: `target/accessibility/axe-wcag22-results.json`"
+}
+
+### 2.4 Lighthouse
+
+${
+  lighthouse.found
+    ? `| Category | Score |
+|----------|-------|
+| Accessibility | ${lighthouse.accessibility}% |
+| Performance | ${lighthouse.performance}% |
+| Best Practices | ${lighthouse.bestPractices}% |
+| SEO | ${lighthouse.seo}% |
+
+**Status**: ${statusIcon(lighthouse.accessibility >= 90)} ${lighthouse.accessibility >= 90 ? "Accessibility score meets threshold (90%+)" : "Accessibility score below 90% threshold"}`
+    : "⚠️ Report not found: `target/accessibility/lighthouse-results.json`"
+}
+
 ---
 
-## 4. HMRC Compliance Checklist
+## 3. Report Files
 
-| Requirement | Status | Evidence |
-|-------------|--------|----------|
-| WCAG Level AA Accessibility | ${pa11y.failed === 0 ? "COMPLIANT" : "IN PROGRESS"} | Pa11y CI report |
-| No High/Critical Vulnerabilities | ${npmAudit.critical === 0 && npmAudit.high === 0 ? "COMPLIANT" : "IN PROGRESS"} | npm audit report |
-| Security Best Practices | ${eslintSecurity.errors === 0 ? "COMPLIANT" : "IN PROGRESS"} | ESLint security scan |
-| Fraud Prevention Headers | COMPLIANT | Validated in sandbox testing |
-| OAuth 2.0 Implementation | COMPLIANT | HMRC sandbox tested |
-| Data Encryption at Rest | COMPLIANT | AWS KMS (AES-256) |
-| Data Encryption in Transit | COMPLIANT | TLS 1.2+ via CloudFront |
-| Privacy Policy Published | COMPLIANT | ${targetUrl}/privacy.html |
-| Terms of Use Published | COMPLIANT | ${targetUrl}/terms.html |
-
----
-
-## 5. Testing Evidence
-
-### Automated Tests
-- **Unit Tests**: Jest-based unit tests for business logic
-- **System Tests**: Docker-based integration tests
-- **Behaviour Tests**: Playwright end-to-end tests
-- **Accessibility Tests**: Pa11y WCAG Level AA scans
-
-### Security Testing
-- **Dependency Scanning**: npm audit (automated)
-- **Static Analysis**: ESLint security plugin
-- **Dynamic Analysis**: OWASP ZAP baseline scans (GitHub Actions)
+| Report | Path | Status |
+|--------|------|--------|
+| npm audit | target/penetration/npm-audit.json | ${npmAudit.found ? "✅ Found" : "❌ Missing"} |
+| ESLint Security | target/penetration/eslint-security.txt | ${eslint.found ? "✅ Found" : "❌ Missing"} |
+| retire.js | target/penetration/retire.json | ${retire.found ? "✅ Found" : "❌ Missing"} |
+| OWASP ZAP | target/penetration/zap-report.json | ${zap.found ? "✅ Found" : "❌ Missing"} |
+| Pa11y | target/accessibility/pa11y-report.txt | ${pa11y.found ? "✅ Found" : "❌ Missing"} |
+| axe-core | target/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
+| axe-core (WCAG 2.2) | target/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
+| Lighthouse | target/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
 
 ---
 
-## 6. Report Files
-
-The following detailed reports are available in the \`target/\` directory:
-
-| Report | Path |
-|--------|------|
-| npm Audit (JSON) | target/penetration/npm-audit.json |
-| npm Audit (Text) | target/penetration/npm-audit.txt |
-| ESLint Security | target/penetration/eslint-security.txt |
-| Pa11y Accessibility | target/accessibility/pa11y-report.txt |
-
----
-
-## 7. Contact
-
-**Organisation**: DIY Accounting Limited
-**Company Number**: 06846849
-**Contact**: admin@diyaccounting.co.uk
-**Website**: https://submit.diyaccounting.co.uk
-
----
-
-*This report was automatically generated by the compliance report script.*
-*For the latest results, run: \`node scripts/generate-compliance-report.js\`*
+*Generated by \`node scripts/generate-compliance-report.js --target ${targetUrl}\`*
 `;
 
   return report;
 }
 
-async function main() {
-  console.log("HMRC MTD Compliance Report Generator");
-  console.log("====================================");
+// --- Main ---
+
+function main() {
+  console.log("Compliance Report Generator");
+  console.log("===========================");
   console.log(`Target: ${targetUrl}`);
   console.log(`Output: ${outputFile}`);
   console.log("");
 
-  ensureDir(accessibilityDir);
-  ensureDir(penetrationDir);
+  // Check for report files
+  const reportFiles = [
+    join(penetrationDir, "npm-audit.json"),
+    join(penetrationDir, "eslint-security.txt"),
+    join(penetrationDir, "retire.json"),
+    join(penetrationDir, "zap-report.json"),
+    join(accessibilityDir, "pa11y-report.txt"),
+    join(accessibilityDir, "axe-results.json"),
+    join(accessibilityDir, "axe-wcag22-results.json"),
+    join(accessibilityDir, "lighthouse-results.json"),
+  ];
 
-  if (!skipTests) {
-    // Run npm audit
-    runCommand("npm audit --json > target/penetration/npm-audit.json 2>&1 || true", "npm audit");
-    runCommand("npm audit --audit-level=moderate > target/penetration/npm-audit.txt 2>&1 || true", "npm audit (text)");
+  let foundCount = 0;
+  for (const file of reportFiles) {
+    const exists = existsSync(file);
+    console.log(`  ${exists ? "✅" : "❌"} ${file.replace(projectRoot + "/", "")}`);
+    if (exists) foundCount++;
+  }
+  console.log(`\nFound ${foundCount}/${reportFiles.length} report files.`);
 
-    // Run ESLint security
-    runCommand("npm run penetration:static", "ESLint security scan");
-
-    // Run Pa11y (only if we can reach the target)
-    console.log(`Running Pa11y against ${targetUrl}...`);
-    if (targetUrl.includes("submit.diyaccounting.co.uk")) {
-      runCommand("npx pa11y-ci --config .pa11yci.prod.json 2>&1 | tee target/accessibility/pa11y-report.txt || true", "Pa11y accessibility");
-    } else {
-      runCommand("npx pa11y-ci --config .pa11yci.json 2>&1 | tee target/accessibility/pa11y-report.txt || true", "Pa11y accessibility");
-    }
-  } else {
-    console.log("Skipping tests, generating report from existing data...");
+  if (foundCount === 0) {
+    console.error("\nError: No report files found. Run compliance tests first:");
+    console.error("  npm run compliance:proxy-report");
+    process.exit(1);
   }
 
   // Generate report
@@ -368,13 +558,6 @@ async function main() {
   const outputPath = join(projectRoot, outputFile);
   writeFileSync(outputPath, report);
   console.log(`\nReport written to: ${outputPath}`);
-
-  // Summary
-  console.log("\n====================================");
-  console.log("Report generation complete!");
 }
 
-main().catch((error) => {
-  console.error("Error generating report:", error);
-  process.exit(1);
-});
+main();

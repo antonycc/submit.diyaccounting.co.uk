@@ -243,6 +243,7 @@ export function getHmrcErrorMessage(code) {
   };
 
   return (
+    // eslint-disable-next-line security/detect-object-injection -- code is from HMRC API response, lookup has safe default
     errorMap[code] || {
       userMessage: "An unexpected error occurred",
       actionAdvice: "Please try again or contact support if the problem persists",

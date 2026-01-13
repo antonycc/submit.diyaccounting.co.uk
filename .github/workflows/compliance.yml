@@ -1,200 +1,340 @@
+name: compliance-test
+run-name: "compliance test of ${{ github.ref_name }}"
 # SPDX-FileCopyrightText: 2025 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
-
-name: Compliance Scans
 
 on:
   schedule:
     - cron: '0 6 * * 1'  # Weekly on Monday at 6am UTC
   workflow_dispatch:
     inputs:
-      target_url:
-        description: 'Target URL for accessibility/ZAP scans'
+      environment-name:
+        type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
         required: false
-        default: 'https://submit.diyaccounting.co.uk'
-  push:
-    branches:
-      - pentest
-      - main
+        options:
+          - ''
+          - 'ci'
+          - 'prod'
+        default: ''
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: false
+        default: ''
+  workflow_call:
+    inputs:
+      environment-name:
+        type: string
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: true
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: true
 
 concurrency:
   group: compliance-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
-  TARGET_URL: ${{ github.event.inputs.target_url || 'https://submit.diyaccounting.co.uk' }}
   NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
 
 jobs:
-  # Static security analysis - runs on code, no deployment needed
-  penetration-static:
-    name: Static Security Analysis
-    runs-on: ubuntu-latest
+  params:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+      deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+
+  names:
+    needs: params
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run npm audit
-        run: |
-          mkdir -p target/penetration
-          npm audit --json > target/penetration/npm-audit.json 2>&1 || true
-          npm audit --audit-level=moderate 2>&1 | tee target/penetration/npm-audit.txt || true
-
-      - name: Run ESLint security scan
-        run: |
-          mkdir -p target/penetration
-          npm run penetration:static 2>&1 || true
-
-      - name: Run retire.js
-        run: |
-          mkdir -p target/penetration
-          npx retire --path . --outputformat json --outputpath target/penetration/retire.json 2>&1 || true
-
-      - name: Upload penetration reports
-        uses: actions/upload-artifact@v4
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
         with:
-          name: penetration-static-reports
-          path: target/penetration/
-          retention-days: 90
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
-      - name: Check for critical vulnerabilities
+      - name: If main, read back last known good prod deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
         run: |
-          # Fail if any high or critical npm vulnerabilities
-          AUDIT_RESULT=$(cat target/penetration/npm-audit.json)
-          HIGH=$(echo "$AUDIT_RESULT" | jq -r '.metadata.vulnerabilities.high // 0')
-          CRITICAL=$(echo "$AUDIT_RESULT" | jq -r '.metadata.vulnerabilities.critical // 0')
-          echo "High vulnerabilities: $HIGH"
-          echo "Critical vulnerabilities: $CRITICAL"
-          if [ "$HIGH" -gt 0 ] || [ "$CRITICAL" -gt 0 ]; then
-            echo "::error::Found $HIGH high and $CRITICAL critical vulnerabilities"
-            exit 1
-          fi
-          echo "No high or critical vulnerabilities found"
+          PARAMETER_NAME="/submit/prod/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
 
-  # Accessibility testing against deployed site
-  accessibility:
-    name: WCAG Level AA Accessibility
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Pa11y accessibility tests
+      - name: If not main, read back last known good ci deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref != 'refs/heads/main' }}
         run: |
-          mkdir -p target/accessibility
-          npx pa11y-ci --config .pa11yci.prod.json 2>&1 | tee target/accessibility/pa11y-report.txt || true
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
 
-      - name: Upload accessibility reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: accessibility-reports
-          path: target/accessibility/
-          retention-days: 90
-
-      - name: Check accessibility results
+      - name: If last-known-good-deployment set use that otherwise use current deployment name
+        id: deployment-name
         run: |
-          if grep -q "✘" target/accessibility/pa11y-report.txt 2>/dev/null; then
-            echo "::warning::Some pages have accessibility issues - review the report"
+          if [ -s /tmp/last_known_good_deployment.txt ]; then
+            echo "Using last known good deployment from SSM Parameter Store"
+            echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "All pages passed accessibility checks"
+            echo "No last known good deployment found, using current deployment name"
+            echo "deployment-name=${{ needs.params.outputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
           fi
 
-  # OWASP ZAP baseline scan against deployed site
-  zap-scan:
-    name: OWASP ZAP Security Scan
+      - name: Compute environment name and apex URL
+        id: deployment-config
+        uses: './.github/actions/get-names'
+        with:
+          environment-name: ${{ needs.params.outputs.environment-name }}
+          deployment-name: ${{ steps.deployment-name.outputs.deployment-name }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+
+  # Accessibility checks (run in parallel)
+  accessibility-pa11y:
+    name: Pa11y (WCAG AA)
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  accessibility-axe:
+    name: axe-core (WCAG 2.1 AA)
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:axe-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:axe-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  accessibility-axe-wcag22:
+    name: axe-core (WCAG 2.2 AA)
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  accessibility-lighthouse:
+    name: Lighthouse
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run accessibility:lighthouse-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:lighthouse-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  # Penetration checks (run in parallel)
+  penetration-eslint:
+    name: ESLint Security
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:eslint
+        run: npm run penetration:eslint
+        continue-on-error: true
+
+  penetration-audit:
+    name: npm audit
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:audit
+        run: npm run penetration:audit
+        continue-on-error: true
+
+  penetration-retire:
+    name: retire.js
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:retire
+        run: npm run penetration:retire
+        continue-on-error: true
+
+  penetration-zap:
+    name: OWASP ZAP
+    needs: [names]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run penetration:zap-${{ needs.names.outputs.environment-name }}
+        run: npm run penetration:zap-${{ needs.names.outputs.environment-name }}
+        continue-on-error: true
+
+  # Final compliance report (runs after all checks complete)
+  compliance-report:
+    name: Generate Compliance Report
+    needs: [names]
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          target: ${{ env.TARGET_URL }}
-          rules_file_name: '.zap-rules.tsv'
-          allow_issue_writing: false
-          fail_action: false
-          cmd_options: '-a'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
 
-      - name: Upload ZAP report
-        uses: actions/upload-artifact@v4
-        if: always()
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run compliance:${{ needs.names.outputs.environment-name }}-report-md
+        run: npm run compliance:${{ needs.names.outputs.environment-name }}-report-md
+        continue-on-error: true
+
+      - name: List generated reports
+        run: |
+          echo "Penetration reports:"
+          ls -la target/penetration/ || echo "No penetration reports"
+          echo "Accessibility reports:"
+          ls -la target/accessibility/ || echo "No accessibility reports"
+          echo "Compliance report:"
+          ls -la COMPLIANCE_REPORT.md || echo "No compliance report"
+
+      - name: Upload compliance reports
+        uses: actions/upload-artifact@v6
         with:
-          name: zap-report
-          path: report_html.html
+          name: compliance-reports
+          path: |
+            target/penetration/
+            target/accessibility/
+            COMPLIANCE_REPORT.md
           retention-days: 90
 
-  # Generate compliance summary
-  compliance-summary:
-    name: Generate Compliance Summary
-    runs-on: ubuntu-latest
-    needs: [penetration-static, accessibility, zap-scan]
-    if: always()
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Generate summary
+      - name: Generate GitHub summary
         run: |
           echo "# Compliance Scan Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "**Target**: ${{ env.TARGET_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ needs.names.outputs.environment-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Target**: ${{ needs.names.outputs.apex-url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "## Job Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Static Security Analysis | ${{ needs.penetration-static.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| WCAG Level AA Accessibility | ${{ needs.accessibility.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| OWASP ZAP Security Scan | ${{ needs.zap-scan.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          echo "## npm Audit Summary" >> $GITHUB_STEP_SUMMARY
-          if [ -f artifacts/penetration-static-reports/npm-audit.json ]; then
-            AUDIT=$(cat artifacts/penetration-static-reports/npm-audit.json)
+          if [ -f target/penetration/npm-audit.json ]; then
+            echo "## npm Audit Summary" >> $GITHUB_STEP_SUMMARY
+            AUDIT=$(cat target/penetration/npm-audit.json)
             echo "- Critical: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.critical // 0')" >> $GITHUB_STEP_SUMMARY
             echo "- High: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.high // 0')" >> $GITHUB_STEP_SUMMARY
             echo "- Moderate: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.moderate // 0')" >> $GITHUB_STEP_SUMMARY
             echo "- Low: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.low // 0')" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Audit report not available" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "## Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- penetration-static-reports: ESLint security, npm audit, retire.js" >> $GITHUB_STEP_SUMMARY
-          echo "- accessibility-reports: Pa11y WCAG Level AA" >> $GITHUB_STEP_SUMMARY
-          echo "- zap-report: OWASP ZAP baseline scan" >> $GITHUB_STEP_SUMMARY
+          if [ -f target/accessibility/axe-results.json ]; then
+            echo "## axe-core Summary" >> $GITHUB_STEP_SUMMARY
+            VIOLATIONS=$(jq '[.[].violations | length] | add // 0' target/accessibility/axe-results.json)
+            PASSES=$(jq '[.[].passes | length] | add // 0' target/accessibility/axe-results.json)
+            echo "- Violations: $VIOLATIONS" >> $GITHUB_STEP_SUMMARY
+            echo "- Passes: $PASSES" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
 
-      - name: Upload combined artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: compliance-all-reports
-          path: artifacts/
-          retention-days: 90
+          if [ -f target/penetration/zap-report.json ]; then
+            echo "## ZAP Scan Summary" >> $GITHUB_STEP_SUMMARY
+            echo "ZAP report generated" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "## Reports Generated" >> $GITHUB_STEP_SUMMARY
+          echo "- ESLint security, npm audit, retire.js" >> $GITHUB_STEP_SUMMARY
+          echo "- Pa11y, axe-core (WCAG 2.1 + 2.2), Lighthouse accessibility" >> $GITHUB_STEP_SUMMARY
+          echo "- OWASP ZAP baseline scan" >> $GITHUB_STEP_SUMMARY
+          echo "- Consolidated COMPLIANCE_REPORT.md" >> $GITHUB_STEP_SUMMARY

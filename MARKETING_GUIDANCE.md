@@ -148,7 +148,7 @@ The following must be clearly visible:
 1. **Company details** (Companies Act 2006):
    - Company name: DIY Accounting Limited
    - Registered number: 06846849
-   - Registered address: 43 Dunnock Place, Newcastle upon Tyne, NE13 6LE
+   - Registered address: 37 Sutherland Avenue, Leeds, LS8 1BY
 
 2. **Legal links** (footer of every page):
    - Privacy Policy

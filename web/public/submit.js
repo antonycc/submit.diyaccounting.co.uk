@@ -196,6 +196,8 @@ function showConsentBannerIfNeeded() {
   if (document.getElementById("consent-banner")) return;
   const banner = document.createElement("div");
   banner.id = "consent-banner";
+  banner.setAttribute("role", "region");
+  banner.setAttribute("aria-label", "Cookie consent");
   banner.style.cssText =
     "position:fixed;bottom:0;left:0;right:0;background:#ddd;color:#111;padding:12px 16px;z-index:9999;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px";
   banner.innerHTML = `

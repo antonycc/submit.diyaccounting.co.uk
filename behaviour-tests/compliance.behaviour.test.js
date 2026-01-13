@@ -336,7 +336,57 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("✅ Terms link visible in About page footer");
 
     // ============================================================
-    // STEP 5: Final summary
+    // STEP 5: Navigate to Accessibility Statement page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 5: Navigate to Accessibility Statement page");
+    console.log("=".repeat(60));
+
+    const accessibilityUrl = `${baseUrl}/accessibility.html`;
+    console.log(`📖 Navigating to accessibility page: ${accessibilityUrl}`);
+    await page.goto(accessibilityUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.screenshot({ path: `${screenshotPath}/05-accessibility-page.png` });
+
+    const accessibilityTitle = await page.title();
+    console.log(`📄 Accessibility page title: "${accessibilityTitle}"`);
+    expect(accessibilityTitle).toMatch(/Accessibility/i);
+    console.log("✅ Accessibility Statement page loaded successfully");
+
+    // Check Accessibility Statement content
+    console.log("\n📋 Checking Accessibility Statement requirements...");
+    const accessibilityContent = await page.content();
+
+    expect(accessibilityContent).toContain("WCAG 2.2 Level AA");
+    console.log("✅ WCAG 2.2 Level AA conformance declared");
+
+    expect(accessibilityContent).toContain("Conformance Status");
+    expect(accessibilityContent).toContain("fully conformant");
+    console.log("✅ Conformance status documented");
+
+    expect(accessibilityContent).toContain("Assessment Methods");
+    expect(accessibilityContent).toContain("Pa11y");
+    expect(accessibilityContent).toContain("axe-core");
+    expect(accessibilityContent).toContain("Lighthouse");
+    console.log("✅ Assessment methods documented");
+
+    expect(accessibilityContent).toContain("Accessibility Features");
+    expect(accessibilityContent).toContain("Keyboard navigation");
+    console.log("✅ Accessibility features listed");
+
+    expect(accessibilityContent).toContain("admin@diyaccounting.co.uk");
+    console.log("✅ Contact information present");
+
+    expect(accessibilityContent).toContain("Enforcement Procedure");
+    console.log("✅ Enforcement procedure documented");
+
+    // Check Last Updated date
+    const accessibilityText = await page.textContent("body");
+    expect(accessibilityText).toContain("Last updated:");
+    expect(accessibilityText).toMatch(/Last updated:.*202[4-9]/);
+    console.log("✅ Accessibility Statement has recent last updated date");
+
+    // ============================================================
+    // STEP 6: Final summary
     // ============================================================
     console.log("\n" + "=".repeat(60));
     console.log("TEST COMPLETE - All HMRC compliance requirements verified");
@@ -347,6 +397,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("  ✅ Privacy Policy page accessible with all GDPR elements");
     console.log("  ✅ Terms of Use page accessible with all HMRC elements");
     console.log("  ✅ About page accessible with footer links");
+    console.log("  ✅ Accessibility Statement with WCAG 2.2 AA conformance");
     console.log("  ✅ Cross-navigation between pages works");
     console.log("  ✅ All 'Last updated' dates are recent\n");
 

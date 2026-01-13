@@ -125,13 +125,16 @@ function generateAllowPolicy(routeArn, jwtPayload) {
       case "string":
       case "number":
       case "boolean":
+        // eslint-disable-next-line security/detect-object-injection -- k comes from Object.entries iteration
         flatContext[k] = String(v);
         break;
       default:
         try {
+          // eslint-disable-next-line security/detect-object-injection -- k comes from Object.entries iteration
           flatContext[k] = JSON.stringify(v);
         } catch (error) {
           logger.warn({ message: `Failed to stringify claim ${k}, storing as empty string`, error: error.message });
+          // eslint-disable-next-line security/detect-object-injection -- k comes from Object.entries iteration
           flatContext[k] = String(v);
         }
     }

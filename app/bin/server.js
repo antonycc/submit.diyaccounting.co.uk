@@ -28,6 +28,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
+// Disable X-Powered-By header (security: prevents server fingerprinting)
+app.disable("x-powered-by");
+
 // parse bodies
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -63,6 +66,30 @@ app.use((req, res, next) => {
   next();
 });
 
+// Security headers middleware (fixes ZAP findings)
+app.use((req, res, next) => {
+  // X-Frame-Options: Prevents clickjacking attacks
+  res.setHeader("X-Frame-Options", "DENY");
+  // X-Content-Type-Options: Prevents MIME type sniffing
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  // Strict-Transport-Security: Enforces HTTPS (1 year, include subdomains)
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  // Content-Security-Policy: Basic CSP for security
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-ancestors 'none'; form-action 'self'"
+  );
+  // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  // Cross-Origin-Embedder-Policy: Requires CORS/CORP for cross-origin resources
+  res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
+  // Referrer-Policy: Controls how much referrer info is sent
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Permissions-Policy: Restricts browser features
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  next();
+});
+
 // Serve a virtual submit.env file for the client, using the server's own environment variables.
 // This ensures that behaviour tests (using ngrok) get the correct BASE_URL.
 app.get("/submit.env", (req, res) => {
@@ -75,6 +102,7 @@ app.get("/submit.env", (req, res) => {
     "HMRC_SANDBOX_BASE_URI",
     "DIY_SUBMIT_BASE_URL",
   ];
+  // eslint-disable-next-line security/detect-object-injection -- publicVars is a hardcoded array of trusted env var names
   const lines = publicVars.map((v) => `${v}=${process.env[v] || ""}`);
 
   res.setHeader("Content-Type", "text/plain");

@@ -1,29 +1,31 @@
-# HMRC MTD Compliance Report
+# Compliance Report
 
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
-**Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-01-13T01:27:40.461Z
-**Overall Status**: PASS
+**Target URL**: https://ci.submit.diyaccounting.co.uk
+**Generated**: 2026-01-13T23:27:11.906Z
+**Overall Status**: ❌ FAIL
 
 ---
 
-## Executive Summary
+## Summary
 
-| Category | Status | Details |
-|----------|--------|---------|
-| npm Vulnerabilities | PASS | 0 critical, 0 high, 0 moderate |
-| ESLint Security | PASS | 0 errors, 47 warnings |
-| WCAG Level AA | PASS | 12/12 pages passed |
+| Check | Status | Summary |
+|-------|--------|---------|
+| npm audit | ✅ | 0 critical, 0 high, 0 moderate |
+| ESLint Security | ✅ | 0 errors, 0 warnings |
+| retire.js | ✅ | 0 high, 0 medium, 0 low |
+| OWASP ZAP | ✅ | 0 high, 10 medium, 11 low |
+| Pa11y (WCAG AA) | ❌ | 12/13 pages passed |
+| axe-core | ✅ | 0 violations, 35 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 22 passes |
+| Lighthouse | ✅ | A11y: 100%, Perf: 98%, BP: 100% |
 
 ---
 
-## 1. Dependency Vulnerability Scan (npm audit)
+## 1. Security Checks
 
-**Tool**: npm audit
-**Standard**: OWASP Dependency-Check
-
-### Results
+### 1.1 npm audit (Dependency Vulnerabilities)
 
 | Severity | Count |
 |----------|-------|
@@ -31,120 +33,139 @@
 | High | 0 |
 | Moderate | 0 |
 | Low | 0 |
-| Info | 0 |
 | **Total** | **0** |
 
-**Status: PASS** - No high or critical vulnerabilities detected.
+**Status**: ✅ No critical/high vulnerabilities
 
----
-
-## 2. Static Security Analysis (ESLint)
-
-**Tool**: ESLint with eslint-plugin-security
-**Configuration**: eslint.security.config.js
-
-### Results
+### 1.2 ESLint Security Analysis
 
 | Metric | Count |
 |--------|-------|
 | Errors | 0 |
-| Warnings | 47 |
+| Warnings | 0 |
 
-**Status: PASS** - No security errors in production code.
+**Status**: ✅ No security errors
 
+### 1.3 retire.js (Known Vulnerabilities)
 
-**Note**: 47 warnings are informational and relate to common JavaScript patterns. Production code has been reviewed for security best practices.
+| Severity | Count |
+|----------|-------|
+| High | 0 |
+| Medium | 0 |
+| Low | 0 |
 
+**Status**: ✅ No high severity vulnerabilities
+
+### 1.4 OWASP ZAP (Dynamic Security Scan)
+
+| Risk Level | Count |
+|------------|-------|
+| High | 0 |
+| Medium | 10 |
+| Low | 11 |
+| Informational | 7 |
+
+**Status**: ✅ No high risk vulnerabilities
+
+#### Alerts
+
+| Alert | Risk | Count |
+|-------|------|-------|
+| CSP: Failure to Define Directive with No Fallback | Medium (High) | 3 |
+| CSP: script-src unsafe-inline | Medium (High) | 3 |
+| CSP: style-src unsafe-inline | Medium (High) | 3 |
+| Missing Anti-clickjacking Header | Medium (Medium) | 1 |
+| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 3 |
+| Permissions Policy Header Not Set | Low (Medium) | 3 |
+| Server Leaks Version Information via "Server" HTTP Response Header Field | Low (High) | 1 |
+| Strict-Transport-Security Header Not Set | Low (High) | 3 |
+| X-Content-Type-Options Header Missing | Low (Medium) | 1 |
+| Information Disclosure - Suspicious Comments | Informational (Low) | 1 |
+| Modern Web Application | Informational (Medium) | 1 |
+| Non-Storable Content | Informational (Medium) | 3 |
+| Re-examine Cache-control Directives | Informational (Low) | 1 |
+| Storable and Cacheable Content | Informational (Medium) | 1 |
 
 ---
 
-## 3. WCAG Level AA Accessibility Audit
+## 2. Accessibility Checks
 
-**Tool**: Pa11y CI
-**Standard**: WCAG 2.1 Level AA
-**Configuration**: .pa11yci.prod.json
-
-### Summary
+### 2.1 Pa11y (WCAG 2.1 Level AA)
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 12 |
+| Pages Tested | 13 |
 | Pages Passed | 12 |
-| Pages with Issues | 0 |
+| Pages Failed | 1 |
 
-**Status: PASS** - All pages comply with WCAG Level AA.
+**Status**: ❌ Some pages have accessibility issues
 
-### Page Results
+#### Page Results
 
 | Page | Errors |
 |------|--------|
-| https://wanted-finally-anteater.ngrok-free.app/ | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/index.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/privacy.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/terms.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/about.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/auth/login.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/account/bundles.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/submitVat.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/vatObligations.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/viewVatReturn.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/hmrc/receipt/receipts.html | 0 |
-| https://wanted-finally-anteater.ngrok-free.app/guide/index.html | 0 |
+| / | 0 |
+| /index.html | 0 |
+| /privacy.html | 0 |
+| /terms.html | 0 |
+| /about.html | 0 |
+| /auth/login.html | 0 |
+| /account/bundles.html | 0 |
+| /hmrc/vat/submitVat.html | 0 |
+| /hmrc/vat/vatObligations.html | 0 |
+| /hmrc/vat/viewVatReturn.html | 0 |
+| /hmrc/receipt/receipts.html | 0 |
+| /guide/index.html | 0 |
+| /accessibility.html | 1 |
+
+### 2.2 axe-core (Automated Accessibility)
+
+| Metric | Count |
+|--------|-------|
+| Violations | 0 |
+| Passes | 35 |
+| Incomplete | 1 |
+
+**Status**: ✅ No accessibility violations
+
+
+### 2.3 axe-core (WCAG 2.2 Level AA)
+
+| Metric | Count |
+|--------|-------|
+| Violations | 0 |
+| Passes | 22 |
+| Incomplete | 1 |
+
+**Status**: ✅ No WCAG 2.2 violations
+
+
+### 2.4 Lighthouse
+
+| Category | Score |
+|----------|-------|
+| Accessibility | 100% |
+| Performance | 98% |
+| Best Practices | 100% |
+| SEO | 90% |
+
+**Status**: ✅ Accessibility score meets threshold (90%+)
 
 ---
 
-## 4. HMRC Compliance Checklist
+## 3. Report Files
 
-| Requirement | Status | Evidence |
-|-------------|--------|----------|
-| WCAG Level AA Accessibility | COMPLIANT | Pa11y CI report |
-| No High/Critical Vulnerabilities | COMPLIANT | npm audit report |
-| Security Best Practices | COMPLIANT | ESLint security scan |
-| Fraud Prevention Headers | COMPLIANT | Validated in sandbox testing |
-| OAuth 2.0 Implementation | COMPLIANT | HMRC sandbox tested |
-| Data Encryption at Rest | COMPLIANT | AWS KMS (AES-256) |
-| Data Encryption in Transit | COMPLIANT | TLS 1.2+ via CloudFront |
-| Privacy Policy Published | COMPLIANT | https://submit.diyaccounting.co.uk/privacy.html |
-| Terms of Use Published | COMPLIANT | https://submit.diyaccounting.co.uk/terms.html |
-
----
-
-## 5. Testing Evidence
-
-### Automated Tests
-- **Unit Tests**: Jest-based unit tests for business logic
-- **System Tests**: Docker-based integration tests
-- **Behaviour Tests**: Playwright end-to-end tests
-- **Accessibility Tests**: Pa11y WCAG Level AA scans
-
-### Security Testing
-- **Dependency Scanning**: npm audit (automated)
-- **Static Analysis**: ESLint security plugin
-- **Dynamic Analysis**: OWASP ZAP baseline scans (GitHub Actions)
+| Report | Path | Status |
+|--------|------|--------|
+| npm audit | target/penetration/npm-audit.json | ✅ Found |
+| ESLint Security | target/penetration/eslint-security.txt | ✅ Found |
+| retire.js | target/penetration/retire.json | ✅ Found |
+| OWASP ZAP | target/penetration/zap-report.json | ✅ Found |
+| Pa11y | target/accessibility/pa11y-report.txt | ✅ Found |
+| axe-core | target/accessibility/axe-results.json | ✅ Found |
+| axe-core (WCAG 2.2) | target/accessibility/axe-wcag22-results.json | ✅ Found |
+| Lighthouse | target/accessibility/lighthouse-results.json | ✅ Found |
 
 ---
 
-## 6. Report Files
-
-The following detailed reports are available in the `target/` directory:
-
-| Report | Path |
-|--------|------|
-| npm Audit (JSON) | target/penetration/npm-audit.json |
-| npm Audit (Text) | target/penetration/npm-audit.txt |
-| ESLint Security | target/penetration/eslint-security.txt |
-| Pa11y Accessibility | target/accessibility/pa11y-report.txt |
-
----
-
-## 7. Contact
-
-**Organisation**: DIY Accounting Limited
-**Company Number**: 06846849
-**Contact**: admin@diyaccounting.co.uk
-**Website**: https://submit.diyaccounting.co.uk
-
----
-
-*This report was automatically generated by the compliance report script.*
-*For the latest results, run: `node scripts/generate-compliance-report.js`*
+*Generated by `node scripts/generate-compliance-report.js --target https://ci.submit.diyaccounting.co.uk`*
