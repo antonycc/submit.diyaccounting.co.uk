@@ -95,7 +95,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 ## Organisation
 
 **DIY Accounting Limited**
-- Registered Office: 43 Dunnock Place, Newcastle upon Tyne, NE13 6LE
+- Registered Office: 37 Sutherland Avenue, Leeds, LS8 1BY.
 - Company Number: 06846849
 - Registered in England and Wales
 - Contact: admin@diyaccounting.co.uk
@@ -109,12 +109,6 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | [Privacy Policy](https://submit.diyaccounting.co.uk/privacy.html) | How we handle your data |
 | [Terms of Use](https://submit.diyaccounting.co.uk/terms.html) | Service terms and conditions |
 | [User Guide](https://submit.diyaccounting.co.uk/guide/index.html) | How to use the application |
-
-### For Developers
-
-Developer documentation is in the `_developers/` directory:
-- `_developers/SETUP.md` - Development environment setup
-- `_developers/REVIEW_TO_MTD.md` - MTD compliance review
 
 ---
 
