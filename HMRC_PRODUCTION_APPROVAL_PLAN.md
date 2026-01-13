@@ -35,7 +35,7 @@ npm run penetration:report     # HTML report in target/penetration/
   "accessibility": "pa11y-ci --config .pa11yci.json",
   "accessibility:report": "pa11y-ci --config .pa11yci.json --reporter html > target/accessibility/report.html",
   "accessibility:lighthouse": "lighthouse https://wanted-finally-anteater.ngrok-free.app --output html --output-path target/accessibility/lighthouse.html --chrome-flags='--headless'",
-  "accessibility:axe": "axe https://wanted-finally-anteater.ngrok-free.app --save target/accessibility/axe-results.json"
+  "accessibility:axe-proxy-report": "axe https://wanted-finally-anteater.ngrok-free.app --save target/accessibility/axe-results.json"
 }
 ```
 
