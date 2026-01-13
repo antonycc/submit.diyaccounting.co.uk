@@ -1,0 +1,343 @@
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/bin/server.js
+  78:47  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/functions/auth/customAuthorizer.js
+  128:9   warning  Generic Object Injection Sink  security/detect-object-injection
+  132:11  warning  Generic Object Injection Sink  security/detect-object-injection
+  135:11  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/functions/hmrc/hmrcVatReturnPost.js
+  259:67  warning  Generic Object Injection Sink  security/detect-object-injection
+  417:65  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/buildFraudHeaders.js
+    9:70  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  120:7   warning  Generic Object Injection Sink                                              security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/dataMasking.js
+  134:11  warning  Generic Object Injection Sink  security/detect-object-injection
+  136:11  warning  Generic Object Injection Sink  security/detect-object-injection
+  140:9   warning  Generic Object Injection Sink  security/detect-object-injection
+  143:9   warning  Generic Object Injection Sink  security/detect-object-injection
+  146:9   warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/env.js
+  10:8   warning  Found existsSync from package "fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+  17:31  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  19:21  warning  Variable Assigned to Object Injection Sink                                 security/detect-object-injection
+  21:7   warning  Generic Object Injection Sink                                              security/detect-object-injection
+  27:49  warning  Generic Object Injection Sink                                              security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/hmrcValidation.js
+  246:5  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/httpResponseHelper.js
+  203:44  warning  Function Call Object Injection Sink  security/detect-object-injection
+  380:9   warning  Generic Object Injection Sink        security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/logger.js
+  37:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  55:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/services/bundleManagement.js
+  214:19  warning  Found non-literal argument to RegExp Constructor                   security/detect-non-literal-regexp
+  250:11  error    Definition for rule 'sonarjs/no-nested-conditional' was not found  sonarjs/no-nested-conditional
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/services/hmrcApi.js
+  173:11  warning  Generic Object Injection Sink                                            security/detect-object-injection
+  319:11  warning  Generic Object Injection Sink                                            security/detect-object-injection
+  405:3   error    Definition for rule 'sonarjs/no-nested-template-literals' was not found  sonarjs/no-nested-template-literals
+  455:9   warning  Generic Object Injection Sink                                            security/detect-object-injection
+  543:9   warning  Generic Object Injection Sink                                            security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/system-tests/dynamoDbReceiptStore.system.test.js
+  283:16  warning  Function Call Object Injection Sink  security/detect-object-injection
+  284:16  warning  Function Call Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/system-tests/hmrcVatJourney.system.test.js
+  78:3  warning  Unused eslint-disable directive (no problems were reported from 'no-constant-condition')
+  84:5  warning  Unused eslint-disable directive (no problems were reported from 'no-await-in-loop')
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/system-tests/rum-placeholders.system.test.js
+  17:21  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/test-helpers/dynamodbExporter.js
+  133:5  warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/test-helpers/httpTestServers.js
+  83:15  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  84:16  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/unit-tests/lib/buildFraudHeaders.test.js
+  11:70  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  27:11  warning  Generic Object Injection Sink                                              security/detect-object-injection
+  28:16  warning  Generic Object Injection Sink                                              security/detect-object-injection
+  30:9   warning  Generic Object Injection Sink                                              security/detect-object-injection
+  30:28  warning  Generic Object Injection Sink                                              security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/auth.behaviour.test.js
+  114:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  144:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  162:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  259:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/bundles.behaviour.test.js
+  113:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  143:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  161:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  260:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/getVatObligations.behaviour.test.js
+  132:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  186:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  212:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  631:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/getVatReturn.behaviour.test.js
+  102:1  error    Definition for rule 'sonarjs/pseudo-random' was not found                        sonarjs/pseudo-random
+  150:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  170:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  380:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/helpers/behaviour-helpers.js
+   27:7   warning  Generic Object Injection Sink                                                    security/detect-object-injection
+   27:30  warning  Generic Object Injection Sink                                                    security/detect-object-injection
+   28:13  warning  Generic Object Injection Sink                                                    security/detect-object-injection
+  123:5   error    Definition for rule 'sonarjs/no-os-command-from-path' was not found              sonarjs/no-os-command-from-path
+  185:5   error    Definition for rule 'sonarjs/no-os-command-from-path' was not found              sonarjs/no-os-command-from-path
+  246:10  warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  247:7   warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  711:7   warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  713:7   warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  731:7   warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/helpers/dynamodb-assertions.js
+   18:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+   23:19  warning  Found readFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  133:15  warning  Generic Object Injection Sink                                                   security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/helpers/dynamodb-export.js
+   38:3   warning  Found mkdirSync from package "node:fs" with non literal argument at index 0          security/detect-non-literal-fs-filename
+   44:23  warning  Found createWriteStream from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+   79:19  warning  Found readFileSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  100:7   warning  Found writeFileSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/helpers/figures-helper.js
+   20:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+   25:26  warning  Found readdirSync from package "node:fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+   31:45  warning  Found non-literal argument to RegExp Constructor                                 security/detect-non-literal-regexp
+   76:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+   77:5   warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   85:9   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  109:11  warning  Found non-literal argument to RegExp Constructor                                 security/detect-non-literal-regexp
+  159:3   warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/helpers/fileHelper.js
+   36:9  warning  Found existsSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   37:7  warning  Found unlinkSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   49:9  warning  Found existsSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   50:7  warning  Found unlinkSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   62:9  warning  Found existsSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   63:7  warning  Found unlinkSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+   79:5  warning  Found appendFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+   88:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  113:5  warning  Found appendFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/helpers/wiremock-helper.js
+  32:26  warning  Found stat from package "node:fs/promises" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  34:23  warning  Found readdir from package "node:fs/promises" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  51:31  warning  Found readdir from package "node:fs/promises" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/postVatReturn.behaviour.test.js
+   92:1  error    Definition for rule 'sonarjs/pseudo-random' was not found                        sonarjs/pseudo-random
+  137:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  157:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  421:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/postVatReturnFraudPreventionHeaders.behaviour.test.js
+   85:1  error    Definition for rule 'sonarjs/pseudo-random' was not found                         sonarjs/pseudo-random
+  139:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  169:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  204:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  406:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  495:7  warning  Found appendFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/steps/behaviour-hmrc-vat-steps.js
+  812:23  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/steps/behaviour-login-steps.js
+  89:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+/Users/antony/projects/submit.diyaccounting.co.uk/behaviour-tests/submitVat.behaviour.test.js
+  116:1  error    Definition for rule 'sonarjs/pseudo-random' was not found                        sonarjs/pseudo-random
+  171:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  201:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  219:3  warning  Found mkdirSync from package "node:fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  481:5  warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/add-spdx-headers.js
+  31:21  warning  Found readdirSync from package "fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+  40:20  warning  Found statSync from package "fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  54:19  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  73:3   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/bundle-for-tests.js
+  44:14  error    Unsafe Regular Expression                                                  security/detect-unsafe-regex
+  72:10  warning  Found existsSync from package "fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+  77:16  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/delete-user-data.js
+  73:30  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/export-dynamodb-for-test-users.js
+  135:3   warning  Found mkdirSync from package "fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  147:49  warning  Function Call Object Injection Sink                                         security/detect-object-injection
+  154:9   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  157:9   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  164:21  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  176:9   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/export-user-data.js
+  113:8  warning  Found existsSync from package "fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  114:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
+  117:3  warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/generate-test-reports.js
+   50:53  warning  Generic Object Injection Sink                                                    security/detect-object-injection
+   81:15  warning  Variable Assigned to Object Injection Sink                                       security/detect-object-injection
+  112:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  117:18  warning  Found statSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  120:38  warning  Found readFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  131:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  138:18  warning  Found statSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  140:15  warning  Found readFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  199:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  217:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  235:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  254:7   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  254:31  warning  Found statSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  259:21  warning  Found readdirSync from package "node:fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+  266:21  warning  Found statSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  357:22  warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  359:38  warning  Found readFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  385:23  warning  Found readdirSync from package "node:fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+  439:26  warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  441:20  warning  Found statSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  442:32  warning  Found readFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  456:30  warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  514:3   warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  516:18  warning  Found statSync from package "node:fs" with non literal argument at index 0       security/detect-non-literal-fs-filename
+  537:7   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/inject-dynamodb-into-test-report.js
+   54:17  warning  Variable Assigned to Object Injection Sink                                       security/detect-object-injection
+   74:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+   80:21  warning  Found readFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  145:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  150:8   warning  Found existsSync from package "node:fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
+  160:21  warning  Found readFileSync from package "node:fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
+  190:5   warning  Found writeFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/scripts/playwright-video-reporter.js
+  69:23  warning  Found readdirSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/browser-tests/bundles.filtering.browser.test.js
+  21:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  25:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/lib/env-loader.js
+  24:7  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/lib/services/hmrc-service.js
+  16:46  warning  Generic Object Injection Sink               security/detect-object-injection
+  27:18  warning  Variable Assigned to Object Injection Sink  security/detect-object-injection
+  46:16  warning  Variable Assigned to Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/lib/test-data-generator.js
+  22:3  error  Definition for rule 'sonarjs/pseudo-random' was not found  sonarjs/pseudo-random
+  24:3  error  Definition for rule 'sonarjs/pseudo-random' was not found  sonarjs/pseudo-random
+  26:3  error  Definition for rule 'sonarjs/pseudo-random' was not found  sonarjs/pseudo-random
+  38:3  error  Definition for rule 'sonarjs/pseudo-random' was not found  sonarjs/pseudo-random
+  40:3  error  Definition for rule 'sonarjs/pseudo-random' was not found  sonarjs/pseudo-random
+  51:3  error  Definition for rule 'sonarjs/pseudo-random' was not found  sonarjs/pseudo-random
+  53:3  error  Definition for rule 'sonarjs/pseudo-random' was not found  sonarjs/pseudo-random
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/lib/toml-parser.js
+  14:22  warning  Generic Object Injection Sink  security/detect-object-injection
+  19:16  warning  Generic Object Injection Sink  security/detect-object-injection
+  19:34  warning  Generic Object Injection Sink  security/detect-object-injection
+  21:11  warning  Generic Object Injection Sink  security/detect-object-injection
+  25:11  warning  Generic Object Injection Sink  security/detect-object-injection
+  26:28  warning  Generic Object Injection Sink  security/detect-object-injection
+  32:11  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/lib/utils/correlation-utils.js
+  171:11  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/submit.bundle.js
+   557:11  warning  Generic Object Injection Sink                                          security/detect-object-injection
+  1193:46  warning  Generic Object Injection Sink                                          security/detect-object-injection
+  1204:18  warning  Variable Assigned to Object Injection Sink                             security/detect-object-injection
+  1223:16  warning  Variable Assigned to Object Injection Sink                             security/detect-object-injection
+  1745:5   error    Definition for rule 'sonarjs/no-parameter-reassignment' was not found  sonarjs/no-parameter-reassignment
+  1748:7   warning  Generic Object Injection Sink                                          security/detect-object-injection
+  1771:5   error    Definition for rule 'sonarjs/no-parameter-reassignment' was not found  sonarjs/no-parameter-reassignment
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/submit.js
+  254:5  error    Definition for rule 'sonarjs/no-parameter-reassignment' was not found  sonarjs/no-parameter-reassignment
+  257:7  warning  Generic Object Injection Sink                                          security/detect-object-injection
+  280:5  error    Definition for rule 'sonarjs/no-parameter-reassignment' was not found  sonarjs/no-parameter-reassignment
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/widgets/auth-status.js
+  5:11  warning  Generic Object Injection Sink  security/detect-object-injection
+  6:16  warning  Generic Object Injection Sink  security/detect-object-injection
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/widgets/entitlement-status.js
+  123:21  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/auth-url-generation.test.js
+  7:19  warning  Found readFileSync from package "node:fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/bundle-cache.test.js
+  55:5  error  eval with argument of type Identifier  security/detect-eval-with-expression
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/fetch-polling.test.js
+   32:13  warning  Generic Object Injection Sink          security/detect-object-injection
+  107:5   error    eval with argument of type Identifier  security/detect-eval-with-expression
+  299:5   error    eval with argument of type Identifier  security/detect-eval-with-expression
+  496:5   error    eval with argument of type Identifier  security/detect-eval-with-expression
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/rum-config.test.js
+   25:31  warning  Generic Object Injection Sink          security/detect-object-injection
+   27:9   warning  Generic Object Injection Sink          security/detect-object-injection
+   30:16  warning  Generic Object Injection Sink          security/detect-object-injection
+   88:13  warning  Generic Object Injection Sink          security/detect-object-injection
+  109:7   error    eval with argument of type Identifier  security/detect-eval-with-expression
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/rum-consent.test.js
+   20:31  warning  Generic Object Injection Sink          security/detect-object-injection
+   22:9   warning  Generic Object Injection Sink          security/detect-object-injection
+   25:16  warning  Generic Object Injection Sink          security/detect-object-injection
+   54:37  warning  Generic Object Injection Sink          security/detect-object-injection
+   95:13  warning  Generic Object Injection Sink          security/detect-object-injection
+  116:7   error    eval with argument of type Identifier  security/detect-eval-with-expression
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/submit.helpers.test.js
+  16:5  error  eval with argument of type Identifier  security/detect-eval-with-expression
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/token-refresh.test.js
+   38:13  warning  Generic Object Injection Sink          security/detect-object-injection
+   54:31  warning  Generic Object Injection Sink          security/detect-object-injection
+   56:9   warning  Generic Object Injection Sink          security/detect-object-injection
+   59:16  warning  Generic Object Injection Sink          security/detect-object-injection
+  105:5   error    eval with argument of type Identifier  security/detect-eval-with-expression
+
+/Users/antony/projects/submit.diyaccounting.co.uk/web/unit-tests/vatFlow.frontend.test.js
+  100:5  error  eval with argument of type Identifier  security/detect-eval-with-expression
+  104:5  error  eval with argument of type Identifier  security/detect-eval-with-expression
+  165:7  error  eval with argument of type Identifier  security/detect-eval-with-expression
+
+✖ 223 problems (31 errors, 192 warnings)
+  0 errors and 5 warnings potentially fixable with the `--fix` option.
+
