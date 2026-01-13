@@ -110,7 +110,9 @@
     "penetration:zap": "mkdir -p target/penetration && docker run --rm -v $(pwd)/target/penetration:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t ${DIY_SUBMIT_BASE_URL:-https://wanted-finally-anteater.ngrok-free.app} -r zap-report.html -J zap-report.json || true",
     "penetration:report": "npm run penetration:deps && npm run penetration:static && echo 'Reports in target/penetration/'",
     "compliance": "npm run accessibility && npm run penetration",
-    "compliance:report": "npm run accessibility:report && npm run penetration:report"
+    "compliance:report": "npm run accessibility:report && npm run penetration:report",
+    "compliance:md": "node scripts/generate-compliance-report.js",
+    "compliance:md:prod": "node scripts/generate-compliance-report.js --target https://submit.diyaccounting.co.uk"
   },
   "keywords": [],
   "author": "",
