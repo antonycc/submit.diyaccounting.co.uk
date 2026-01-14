@@ -66,8 +66,46 @@ env:
 
 jobs:
 
+  params:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
+        run: ":"
+      - name: "inputs.sweep-for-stacks=[${{ inputs.sweep-for-stacks }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          # Compute isSweeping: true if sweep-for-stacks=true OR schedule trigger
+          SWEEP_FOR_STACKS='${{ inputs.sweep-for-stacks }}'
+          EVENT_NAME='${{ github.event_name }}'
+          if [ "${SWEEP_FOR_STACKS:-false}" = "true" ]; then
+            echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" = "schedule" ]; then
+            echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "isSweeping=false" | tee -a "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+      deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+      sweep-for-stacks: ${{ steps.normalise.outputs.sweep-for-stacks }}
+      isSweeping: ${{ steps.normalise.outputs.isSweeping }}
+
   sweep-for-stacks:
-    if: ${{ inputs.sweep-for-stacks || github.event.inputs.sweep-for-stacks == true || github.event_name == 'schedule' }}
+    needs:
+      - params
+    if: ${{ needs.params.outputs.isSweeping == 'true' }}
     name: 'sweep for stacks'
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -437,6 +475,7 @@ jobs:
   names:
     if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}
     needs:
+      - params
       - sweep-for-stacks
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -447,8 +486,8 @@ jobs:
         id: deployment-config
         uses: ./.github/actions/get-names
         with:
-          environment-name: ${{ needs.sweep-for-stacks.outputs.environment-name || inputs.environment-name || '' }}
-          deployment-name: ${{ needs.sweep-for-stacks.outputs.deployment-name || inputs.deployment-name || '' }}
+          environment-name: ${{ needs.sweep-for-stacks.outputs.environment-name || needs.params.outputs.environment-name }}
+          deployment-name: ${{ needs.sweep-for-stacks.outputs.deployment-name || needs.params.outputs.deployment-name }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
