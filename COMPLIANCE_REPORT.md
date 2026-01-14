@@ -3,8 +3,8 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-01-14T21:13:24.127Z
-**Overall Status**: ✅ PASS
+**Generated**: 2026-01-14T22:07:52.290Z
+**Overall Status**: ❌ FAIL
 
 ---
 
@@ -15,10 +15,10 @@
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
 | ESLint Security | ✅ | 0 errors, 0 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 10 medium, 11 low |
-| Pa11y (WCAG AA) | ✅ | 13/13 pages passed |
-| axe-core | ✅ | 0 violations, 35 passes |
-| axe-core (WCAG 2.2) | ✅ | 0 violations, 22 passes |
+| OWASP ZAP | ✅ | 0 high, 14 medium, 29 low |
+| Pa11y (WCAG AA) | ✅ | 17/17 pages passed |
+| axe-core | ❌ | 8 violations, 242 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 150 passes |
 | Lighthouse | ✅ | A11y: 95%, Perf: 99%, BP: 100% |
 
 ---
@@ -61,9 +61,9 @@
 | Risk Level | Count |
 |------------|-------|
 | High | 0 |
-| Medium | 10 |
-| Low | 11 |
-| Informational | 7 |
+| Medium | 14 |
+| Low | 29 |
+| Informational | 35 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -74,17 +74,18 @@
 | CSP: Failure to Define Directive with No Fallback | Medium (High) | 3 |
 | CSP: script-src unsafe-inline | Medium (High) | 3 |
 | CSP: style-src unsafe-inline | Medium (High) | 3 |
-| Missing Anti-clickjacking Header | Medium (Medium) | 1 |
-| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 3 |
-| Permissions Policy Header Not Set | Low (Medium) | 3 |
-| Server Leaks Version Information via "Server" HTTP Response Header Field | Low (High) | 1 |
-| Strict-Transport-Security Header Not Set | Low (High) | 3 |
-| X-Content-Type-Options Header Missing | Low (Medium) | 1 |
-| Information Disclosure - Suspicious Comments | Informational (Low) | 1 |
-| Modern Web Application | Informational (Medium) | 1 |
+| Missing Anti-clickjacking Header | Medium (Medium) | 5 |
+| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 9 |
+| Permissions Policy Header Not Set | Low (Medium) | 5 |
+| Server Leaks Version Information via "Server" HTTP Response Header Field | Low (High) | 5 |
+| Strict-Transport-Security Header Not Set | Low (High) | 5 |
+| X-Content-Type-Options Header Missing | Low (Medium) | 5 |
+| Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
+| Modern Web Application | Informational (Medium) | 5 |
 | Non-Storable Content | Informational (Medium) | 3 |
-| Re-examine Cache-control Directives | Informational (Low) | 1 |
-| Storable and Cacheable Content | Informational (Medium) | 1 |
+| Re-examine Cache-control Directives | Informational (Low) | 5 |
+| Retrieved from Cache | Informational (Medium) | 5 |
+| Storable and Cacheable Content | Informational (Medium) | 5 |
 
 ---
 
@@ -94,8 +95,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 13 |
-| Pages Passed | 13 |
+| Pages Tested | 17 |
+| Pages Passed | 17 |
 | Pages Failed | 0 |
 
 **Status**: ✅ All pages comply with WCAG AA
@@ -109,6 +110,7 @@
 | /privacy.html | 0 |
 | /terms.html | 0 |
 | /about.html | 0 |
+| /accessibility.html | 0 |
 | /auth/login.html | 0 |
 | /account/bundles.html | 0 |
 | /hmrc/vat/submitVat.html | 0 |
@@ -116,26 +118,41 @@
 | /hmrc/vat/viewVatReturn.html | 0 |
 | /hmrc/receipt/receipts.html | 0 |
 | /guide/index.html | 0 |
-| /accessibility.html | 0 |
+| /docs/index.html | 0 |
+| /errors/404-error-distribution.html | 0 |
+| /errors/404-error-origin.html | 0 |
+| /tests/index.html | 0 |
 
 ### 2.2 axe-core (Automated Accessibility)
 
 | Metric | Count |
 |--------|-------|
-| Violations | 0 |
-| Passes | 35 |
-| Incomplete | 1 |
+| Violations | 8 |
+| Passes | 242 |
+| Incomplete | 7 |
 
-**Status**: ✅ No accessibility violations
+**Status**: ❌ Accessibility violations require attention
 
+#### Violations
+
+| Rule | Impact | Description | Nodes |
+|------|--------|-------------|-------|
+| landmark-one-main | moderate | Ensure the document has a main landmark | 1 |
+| region | moderate | Ensure all page content is contained by landmarks | 4 |
+| landmark-one-main | moderate | Ensure the document has a main landmark | 1 |
+| region | moderate | Ensure all page content is contained by landmarks | 2 |
+| landmark-one-main | moderate | Ensure the document has a main landmark | 1 |
+| region | moderate | Ensure all page content is contained by landmarks | 5 |
+| landmark-one-main | moderate | Ensure the document has a main landmark | 1 |
+| page-has-heading-one | moderate | Ensure that the page, or at least one of its frames contains a level-one heading | 1 |
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
 
 | Metric | Count |
 |--------|-------|
 | Violations | 0 |
-| Passes | 22 |
-| Incomplete | 1 |
+| Passes | 150 |
+| Incomplete | 7 |
 
 **Status**: ✅ No WCAG 2.2 violations
 

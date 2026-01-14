@@ -1,0 +1,25 @@
+# robots.txt for DIY Accounting Submit
+# https://submit.diyaccounting.co.uk
+
+User-agent: *
+
+# Public pages - allow indexing
+Allow: /
+Allow: /index.html
+Allow: /about.html
+Allow: /privacy.html
+Allow: /terms.html
+Allow: /accessibility.html
+Allow: /guide/
+
+# Block authenticated/functional areas
+Disallow: /account/
+Disallow: /hmrc/
+Disallow: /auth/
+Disallow: /activities/
+Disallow: /errors/
+Disallow: /tests/
+Disallow: /docs/
+
+# Sitemap location
+Sitemap: https://submit.diyaccounting.co.uk/sitemap.xml
