@@ -102,13 +102,16 @@ export async function grantPermissionHmrcAuth(page, screenshotPath = defaultScre
   await test.step("The user grants permission to HMRC and returns to the application", async () => {
     //  Submit the give permission form
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-give-permission-hmrc-auth.png` });
-    await loggedClick(page, "#givePermission", "Give permission");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-give-permission-hmrc-auth-clicked.png` });
+    // Click triggers redirect back to app - wait for navigation to complete
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 30000 }),
+      loggedClick(page, "#givePermission", "Give permission"),
+    ]);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-give-permission-hmrc-auth.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-give-permission-redirected.png` });
     await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-give-permission-hmrc-auth.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-give-permission-hmrc-auth.png` });
   });
 }
