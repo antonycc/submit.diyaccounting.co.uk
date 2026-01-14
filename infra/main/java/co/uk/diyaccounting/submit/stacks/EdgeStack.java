@@ -32,9 +32,15 @@ import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeader;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeadersBehavior;
+import software.amazon.awscdk.services.cloudfront.HeadersFrameOption;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersReferrerPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentSecurityPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersCorsBehavior;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersFrameOptions;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersStrictTransportSecurity;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentTypeOptions;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersXSSProtection;
 import software.amazon.awscdk.services.cloudfront.ResponseSecurityHeadersBehavior;
 import software.amazon.awscdk.services.cloudfront.S3OriginAccessControl;
 import software.amazon.awscdk.services.cloudfront.SSLMethod;
@@ -301,7 +307,30 @@ public class EdgeStack extends Stack {
                                         + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com; "
                                         + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com; "
                                         + "img-src 'self' data: https://avatars.githubusercontent.com; "
-                                        + "style-src 'self' 'unsafe-inline';")
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "frame-ancestors 'none'; "
+                                        + "form-action 'self';")
+                                .override(true)
+                                .build())
+                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                                .includeSubdomains(true)
+                                .override(true)
+                                .build())
+                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                                .override(true)
+                                .build())
+                        .frameOptions(ResponseHeadersFrameOptions.builder()
+                                .frameOption(HeadersFrameOption.DENY)
+                                .override(true)
+                                .build())
+                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                                .referrerPolicy(software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .override(true)
+                                .build())
+                        .xssProtection(ResponseHeadersXSSProtection.builder()
+                                .protection(true)
+                                .modeBlock(true)
                                 .override(true)
                                 .build())
                         .build())

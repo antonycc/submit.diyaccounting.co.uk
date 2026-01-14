@@ -13,6 +13,7 @@
     "https://submit.diyaccounting.co.uk/privacy.html",
     "https://submit.diyaccounting.co.uk/terms.html",
     "https://submit.diyaccounting.co.uk/about.html",
+    "https://submit.diyaccounting.co.uk/accessibility.html",
     "https://submit.diyaccounting.co.uk/auth/login.html",
     "https://submit.diyaccounting.co.uk/account/bundles.html",
     "https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html",
@@ -20,6 +21,9 @@
     "https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html",
     "https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html",
     "https://submit.diyaccounting.co.uk/guide/index.html",
-    "https://submit.diyaccounting.co.uk/accessibility.html"
+    "https://submit.diyaccounting.co.uk/docs/index.html",
+    "https://submit.diyaccounting.co.uk/errors/404-error-distribution.html",
+    "https://submit.diyaccounting.co.uk/errors/404-error-origin.html",
+    "https://submit.diyaccounting.co.uk/tests/index.html"
   ]
 }

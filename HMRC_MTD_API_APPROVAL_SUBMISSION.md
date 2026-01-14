@@ -72,7 +72,7 @@ Organisation Details:
   Registered in: England and Wales
   Contact Email: admin@diyaccounting.co.uk
 
-Responsible Individual: [Director Name]
+Responsible Individual: [Antony Cartwright]
 Title: Director
 Email: admin@diyaccounting.co.uk
 

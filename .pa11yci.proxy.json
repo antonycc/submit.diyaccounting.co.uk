@@ -13,6 +13,7 @@
     "https://wanted-finally-anteater.ngrok-free.app/privacy.html",
     "https://wanted-finally-anteater.ngrok-free.app/terms.html",
     "https://wanted-finally-anteater.ngrok-free.app/about.html",
+    "https://wanted-finally-anteater.ngrok-free.app/accessibility.html",
     "https://wanted-finally-anteater.ngrok-free.app/auth/login.html",
     "https://wanted-finally-anteater.ngrok-free.app/account/bundles.html",
     "https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/submitVat.html",
@@ -20,6 +21,9 @@
     "https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/viewVatReturn.html",
     "https://wanted-finally-anteater.ngrok-free.app/hmrc/receipt/receipts.html",
     "https://wanted-finally-anteater.ngrok-free.app/guide/index.html",
-    "https://wanted-finally-anteater.ngrok-free.app/accessibility.html"
+    "https://wanted-finally-anteater.ngrok-free.app/docs/index.html",
+    "https://wanted-finally-anteater.ngrok-free.app/errors/404-error-distribution.html",
+    "https://wanted-finally-anteater.ngrok-free.app/errors/404-error-origin.html",
+    "https://wanted-finally-anteater.ngrok-free.app/tests/index.html"
   ]
 }
