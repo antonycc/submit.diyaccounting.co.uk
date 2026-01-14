@@ -79,7 +79,12 @@ jobs:
         run: |
           ENV_NAME="${{ needs.params.outputs.environment-name }}"
           echo "ENV_NAME=$ENV_NAME" >> $GITHUB_ENV
-          echo "ENV_PREFIX=$ENV_NAME-submit-diyaccounting-co-uk" >> $GITHUB_ENV
+          # prod tables have no prefix, ci tables have ci- prefix
+          if [ "$ENV_NAME" = "prod" ]; then
+            echo "ENV_PREFIX=submit-diyaccounting-co-uk" >> $GITHUB_ENV
+          else
+            echo "ENV_PREFIX=$ENV_NAME-submit-diyaccounting-co-uk" >> $GITHUB_ENV
+          fi
 
       - name: Check DynamoDB PITR status
         id: pitr-check
