@@ -579,6 +579,8 @@ https://developer.service.hmrc.gov.uk/api-documentation/docs/development-practic
 https://developer.service.hmrc.gov.uk/api-documentation/docs/reference-guide#errors
 https://www.w3.org/WAI/standards-guidelines/wcag/
 https://www.ncsc.gov.uk/guidance/penetration-testing
+https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-started-with-gdpr/data-protection-self-assessment-medium-businesses/information-security-checklist/
+
 ---
 
 ## Appendix F: Accessibility & Security Compliance (13 January 2026)
@@ -680,12 +682,78 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 | Terms and conditions URL | Yes | /terms.html |
 | Server locations identified | Yes | AWS EU-West-2 (London) |
 
+---
+
+## Appendix H: HMRC Production Application Questionnaire Responses
+
+### Business Model Questions
+
+**Q: Do you sell, resell or distribute your software?**
+
+> **Yes** - We distribute and sell subscriptions.
+>
+> We distribute the software via a public website (https://submit.diyaccounting.co.uk). The service operates on a freemium model:
+>
+> - **Guest tier**: Free, time-limited (24 hours), limited API calls (e.g., 3 obligations queries, submit, view)
+> - **Pro tier**: £12.99/month subscription, unlimited access
+>
+> The software source code is open source (AGPL-3.0) and available on GitHub, but the hosted service operates as a commercial SaaS offering.
+
+### Branding Questions
+
+**Q: Do you use HMRC logos in your software, marketing or website?**
+
+> **No** - We do not use HMRC logos in our branding or marketing.
+>
+> Our user guide contains screenshots of HMRC OAuth authorization pages which incidentally show HMRC branding. These are documentary/instructional screenshots showing users what to expect during the authorization flow, not promotional use of HMRC logos.
+>
+> We do not:
+> - Display the HMRC crown logo on our website
+> - Claim "HMRC approved" or "HMRC certified" status
+> - Use HMRC branding to imply official partnership
+
+### Security & Compliance Questions
+
+**Q: Do you audit security controls to ensure you comply with data protection law?**
+
+> **Yes** - We conduct regular automated security audits.
+>
+> **Automated Security Testing (run on every deployment):**
+> - OWASP ZAP dynamic security scanning
+> - npm audit for dependency vulnerabilities
+> - retire.js for known vulnerable libraries
+> - ESLint security rules for static analysis
+>
+> **Security Controls Implemented:**
+>
+> | ICO Checklist Item | Implementation |
+> |---|---|
+> | Regular security testing | OWASP ZAP, npm audit, retire.js, ESLint (automated in CI) |
+> | Encryption in transit | HTTPS enforced via CloudFront + ACM certificates |
+> | Encryption at rest | AWS DynamoDB with KMS encryption |
+> | Access controls | AWS Cognito authentication + IAM least-privilege roles |
+> | Password/credential security | OAuth 2.0 only; no HMRC passwords stored |
+> | Software updates | Automated dependency scanning, GitHub Dependabot alerts |
+> | Backup & recovery | DynamoDB Point-in-Time Recovery, AWS Backup with 7-year retention |
+> | Incident response | Documented 72-hour notification procedure (privacy policy) |
+>
+> **Evidence:**
+> - Compliance reports generated automatically: `COMPLIANCE_REPORT.md`
+> - Security scan results in `target/penetration/`
+> - GitHub Actions workflows run security scans on each deployment
+> - Documentation: `PII_AND_SENSITIVE_DATA.md`, `PRIVACY_DUTIES.md`
+>
+> **Reference:** ICO Information Security Checklist: https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-started-with-gdpr/data-protection-self-assessment-medium-businesses/information-security-checklist/
+
+---
+
 ## Document History
 
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-01-11 | 1.0 | Initial consolidated document |
 | 2026-01-13 | 1.1 | Added WCAG 2.2 compliance, security testing results, accessibility statement URL, HMRC terms compliance checklist |
+| 2026-01-15 | 1.2 | Added Appendix H with HMRC application questionnaire responses (business model, branding, security audits) |
 
 ---
 
