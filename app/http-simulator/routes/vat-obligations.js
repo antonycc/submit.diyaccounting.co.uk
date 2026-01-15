@@ -23,6 +23,23 @@ function isValidDate(dateStr) {
   return /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
 }
 
+/**
+ * Send obligations response (extracted for reuse with delayed scenarios)
+ */
+function sendObligationsResponse(res, result, statusFilter) {
+  // Filter by status if provided
+  let obligations = result.obligations;
+  if (statusFilter) {
+    obligations = obligations.filter((o) => o.status === statusFilter);
+  }
+
+  // Set HMRC-like response headers
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("x-correlationid", randomUUID());
+
+  res.json({ obligations });
+}
+
 export function apiEndpoint(app) {
   // GET /organisations/vat/{vrn}/obligations
   app.get("/organisations/vat/:vrn/obligations", (req, res) => {
@@ -64,16 +81,16 @@ export function apiEndpoint(app) {
       return res.status(result.status).json(result.body);
     }
 
-    // Filter by status if provided
-    let obligations = result.obligations;
-    if (status) {
-      obligations = obligations.filter((o) => o.status === status);
+    // If it's a slow scenario with delay
+    if (result.delayMs) {
+      console.log(`[http-simulator:vat-obligations] Applying delay of ${result.delayMs}ms`);
+      setTimeout(() => {
+        sendObligationsResponse(res, result, status);
+      }, result.delayMs);
+      return;
     }
 
-    // Set HMRC-like response headers
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("x-correlationid", randomUUID());
-
-    res.json({ obligations });
+    // Send response immediately
+    sendObligationsResponse(res, result, status);
   });
 }
