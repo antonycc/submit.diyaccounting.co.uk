@@ -563,7 +563,8 @@ export function timestamp() {
  */
 export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) {
   const serviceNames = options.serviceNames || ["mtd-vat"];
-  const baseUrl = "https://test-api.service.hmrc.gov.uk";
+  // Use HMRC_SANDBOX_BASE_URI if set (e.g., in simulator mode), otherwise fall back to real HMRC
+  const baseUrl = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const endpoint = "/create-test-user/organisations";
   const url = `${baseUrl}${endpoint}`;
   const tokenUrl = `${baseUrl}/oauth/token`;
