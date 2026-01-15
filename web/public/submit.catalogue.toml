@@ -25,6 +25,7 @@ listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 # TODO: Link active subscriptions to a bundle entitlement and continually re-set expiry to now+timeout if there is an active subscription
 # Access to business tier activities including VAT submission for subscribers
+# TODO: rename "Pro"
 [[bundles]]
 id = "business"
 name = "Business"

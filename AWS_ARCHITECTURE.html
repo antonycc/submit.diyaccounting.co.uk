@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIY Accounting Submit - AWS Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #5f6368;
+            --background: #ffffff;
+            --surface: #f8f9fa;
+            --border: #dadce0;
+            --text: #202124;
+            --text-light: #5f6368;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: var(--background);
+        }
+
+        h1 {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        h3 {
+            color: var(--secondary);
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: var(--surface);
+        }
+
+        .mermaid {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .header-meta {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .header-meta div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-meta label {
+            font-size: 0.85em;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-meta span {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .summary-box h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .account-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .account-card h4 {
+            margin: 0 0 10px 0;
+            color: var(--primary);
+        }
+
+        .account-card.prod {
+            border-left: 4px solid #4caf50;
+        }
+
+        .account-card.ci {
+            border-left: 4px solid #ff9800;
+        }
+
+        .account-card.backup {
+            border-left: 4px solid #e91e63;
+        }
+
+        .account-card.mgmt {
+            border-left: 4px solid #2196f3;
+        }
+
+        .ascii-diagram {
+            background: #263238;
+            color: #80cbc4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.4;
+        }
+
+        code {
+            background: var(--surface);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .toc {
+            background: var(--surface);
+            padding: 20px 30px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+        }
+
+        .toc ol {
+            columns: 2;
+            column-gap: 40px;
+        }
+
+        .toc li {
+            margin: 5px 0;
+        }
+
+        .toc a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                font-size: 11pt;
+            }
+
+            h1 {
+                font-size: 24pt;
+            }
+
+            h2 {
+                page-break-before: always;
+                font-size: 18pt;
+            }
+
+            h2:first-of-type {
+                page-break-before: avoid;
+            }
+
+            .mermaid {
+                page-break-inside: avoid;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+
+            .toc {
+                page-break-after: always;
+            }
+        }
+
+        .logo {
+            float: right;
+            width: 100px;
+            height: auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-prod {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .badge-ci {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .badge-backup {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+    </style>
+</head>
+<body>
+    <h1>DIY Accounting Submit<br>AWS Architecture</h1>
+
+    <div class="header-meta">
+        <div>
+            <label>Version</label>
+            <span>2.0</span>
+        </div>
+        <div>
+            <label>Date</label>
+            <span>January 2026</span>
+        </div>
+        <div>
+            <label>Status</label>
+            <span>Production</span>
+        </div>
+        <div>
+            <label>Region</label>
+            <span>eu-west-2 (London)</span>
+        </div>
+    </div>
+
+    <div class="summary-box">
+        <h3>Executive Summary</h3>
+        <p>DIY Accounting Submit is a serverless web application enabling UK businesses to submit VAT returns directly to HMRC via the Making Tax Digital (MTD) API.</p>
+        <p><strong>Key Characteristics:</strong></p>
+        <ul>
+            <li>Fully serverless (no EC2 instances)</li>
+            <li>Multi-account AWS Organization for security isolation</li>
+            <li>Infrastructure as Code (AWS CDK)</li>
+            <li>CI/CD via GitHub Actions with OIDC authentication</li>
+        </ul>
+    </div>
+
+    <div class="toc">
+        <h3>Contents</h3>
+        <ol>
+            <li><a href="#accounts">Multi-Account Structure</a></li>
+            <li><a href="#architecture">Application Architecture</a></li>
+            <li><a href="#services">Service Components</a></li>
+            <li><a href="#security">Security Architecture</a></li>
+            <li><a href="#backup">Backup & Disaster Recovery</a></li>
+            <li><a href="#cicd">CI/CD Pipeline</a></li>
+            <li><a href="#monitoring">Monitoring & Observability</a></li>
+            <li><a href="#cost">Cost Optimization</a></li>
+            <li><a href="#compliance">Compliance</a></li>
+            <li><a href="#iac">Infrastructure as Code</a></li>
+        </ol>
+    </div>
+
+    <h2 id="accounts">1. Multi-Account Structure</h2>
+
+    <h3>1.1 Account Overview</h3>
+
+    <div class="mermaid">
+graph TB
+    subgraph org["AWS Organization"]
+        mgmt["submit-management<br/>Organization Admin"]
+
+        subgraph workloads["Workloads OU"]
+            prod["submit-prod<br/>887764105431<br/>Production"]
+            ci["submit-ci<br/>CI/CD Testing"]
+        end
+
+        subgraph backup_ou["Backup OU"]
+            backup["submit-backup<br/>Disaster Recovery"]
+        end
+    end
+
+    mgmt --> workloads
+    mgmt --> backup_ou
+
+    style mgmt fill:#e1f5fe
+    style prod fill:#c8e6c9
+    style ci fill:#fff3e0
+    style backup fill:#fce4ec
+    </div>
+
+    <h3>1.2 Account Details</h3>
+
+    <div class="account-card mgmt">
+        <h4>submit-management</h4>
+        <p><strong>Purpose:</strong> Organization administration only - no workloads</p>
+        <p><strong>Contains:</strong> AWS Organizations, IAM Identity Center, Consolidated Billing</p>
+    </div>
+
+    <div class="account-card prod">
+        <h4>submit-prod <span class="badge badge-prod">Production</span></h4>
+        <p><strong>Account ID:</strong> 887764105431</p>
+        <p><strong>Purpose:</strong> Production workloads - live application</p>
+        <p><strong>Contains:</strong> All Lambda functions, DynamoDB tables, API Gateway, CloudFront, Route 53</p>
+    </div>
+
+    <div class="account-card ci">
+        <h4>submit-ci <span class="badge badge-ci">Testing</span></h4>
+        <p><strong>Purpose:</strong> CI/CD testing - feature branch deployments</p>
+        <p><strong>Contains:</strong> Identical stack with test data, HMRC sandbox integration</p>
+    </div>
+
+    <div class="account-card backup">
+        <h4>submit-backup <span class="badge badge-backup">DR</span></h4>
+        <p><strong>Purpose:</strong> Isolated backup storage - ransomware protection</p>
+        <p><strong>Contains:</strong> Cross-account backup vault only (90-day retention)</p>
+    </div>
+
+    <h3>1.3 Security Rationale</h3>
+
+    <div class="mermaid">
+graph LR
+    subgraph threat["Threat Scenario"]
+        attacker["Attacker"]
+    end
+
+    subgraph multi["Multi-Account Architecture"]
+        app2["submit-prod<br/>Application"]
+        backup2["submit-backup<br/>Isolated Backups"]
+        attacker -.->|"Compromises"| app2
+        attacker -.-x|"Cannot Access"| backup2
+    end
+
+    style backup2 fill:#c8e6c9
+    </div>
+
+    <p>If an attacker compromises the production account, they <strong>cannot delete backups</strong> because they reside in a separate account with different credentials.</p>
+
+    <h2 id="architecture">2. Application Architecture</h2>
+
+    <h3>2.1 High-Level Overview</h3>
+
+    <div class="mermaid">
+graph TB
+    subgraph users["Users"]
+        browser["Web Browser"]
+    end
+
+    subgraph edge["Edge Layer"]
+        cf["CloudFront CDN"]
+        waf["WAF"]
+    end
+
+    subgraph api["API Layer"]
+        apigw["API Gateway"]
+        auth["Custom Authorizer<br/>Lambda"]
+    end
+
+    subgraph compute["Compute Layer"]
+        vatGet["VAT Obligations<br/>Lambda"]
+        vatPost["VAT Submit<br/>Lambda"]
+        vatView["VAT View<br/>Lambda"]
+    end
+
+    subgraph data["Data Layer"]
+        dynamo["DynamoDB"]
+        secrets["Secrets Manager"]
+    end
+
+    subgraph external["External Services"]
+        hmrc["HMRC MTD API"]
+        cognito["Cognito"]
+    end
+
+    browser --> cf
+    cf --> waf
+    waf --> apigw
+    apigw --> auth
+    auth --> cognito
+    apigw --> vatGet
+    apigw --> vatPost
+    apigw --> vatView
+    vatGet --> dynamo
+    vatPost --> dynamo
+    vatGet --> hmrc
+    vatPost --> hmrc
+
+    style cf fill:#ff9800
+    style apigw fill:#7b1fa2,color:#fff
+    style dynamo fill:#2196f3,color:#fff
+    style hmrc fill:#00695c,color:#fff
+    </div>
+
+    <h3>2.2 Request Flow</h3>
+
+    <div class="mermaid">
+sequenceDiagram
+    participant U as User Browser
+    participant CF as CloudFront
+    participant AG as API Gateway
+    participant AU as Authorizer
+    participant L as Lambda
+    participant DB as DynamoDB
+    participant H as HMRC API
+
+    U->>CF: GET /api/vat/obligations
+    CF->>AG: Forward Request
+    AG->>AU: Validate JWT
+    AU->>AG: Allow
+    AG->>L: Invoke Function
+    L->>DB: Get User Tokens
+    L->>H: Fetch Obligations
+    H->>L: Return Data
+    L->>AG: JSON Response
+    AG->>CF: Response
+    CF->>U: Display Obligations
+    </div>
+
+    <h2 id="services">3. Service Components</h2>
+
+    <h3>3.1 Edge Layer (Global/us-east-1)</h3>
+
+    <table>
+        <tr>
+            <th>Service</th>
+            <th>Purpose</th>
+            <th>Configuration</th>
+        </tr>
+        <tr>
+            <td>Route 53</td>
+            <td>DNS management</td>
+            <td>submit.diyaccounting.co.uk</td>
+        </tr>
+        <tr>
+            <td>CloudFront</td>
+            <td>Content delivery</td>
+            <td>Origin: S3 + API Gateway</td>
+        </tr>
+        <tr>
+            <td>WAF</td>
+            <td>Web firewall</td>
+            <td>Rate limiting, SQL injection protection</td>
+        </tr>
+        <tr>
+            <td>Lambda@Edge</td>
+            <td>Security headers</td>
+            <td>CSP, HSTS, X-Frame-Options</td>
+        </tr>
+        <tr>
+            <td>ACM</td>
+            <td>SSL/TLS</td>
+            <td>Wildcard certificate</td>
+        </tr>
+    </table>
+
+    <h3>3.2 Compute Layer (Lambda Functions)</h3>
+
+    <table>
+        <tr>
+            <th>Function</th>
+            <th>Purpose</th>
+            <th>Trigger</th>
+            <th>Memory</th>
+        </tr>
+        <tr>
+            <td><code>customAuthorizer</code></td>
+            <td>JWT validation</td>
+            <td>API Gateway</td>
+            <td>256 MB</td>
+        </tr>
+        <tr>
+            <td><code>hmrcVatObligationsGet</code></td>
+            <td>Fetch VAT obligations</td>
+            <td>API Gateway</td>
+            <td>512 MB</td>
+        </tr>
+        <tr>
+            <td><code>hmrcVatReturnPost</code></td>
+            <td>Submit VAT return</td>
+            <td>API Gateway</td>
+            <td>512 MB</td>
+        </tr>
+        <tr>
+            <td><code>hmrcVatReturnGet</code></td>
+            <td>View submitted returns</td>
+            <td>API Gateway</td>
+            <td>512 MB</td>
+        </tr>
+        <tr>
+            <td><code>hmrcTokenRefresh</code></td>
+            <td>OAuth token refresh</td>
+            <td>EventBridge</td>
+            <td>256 MB</td>
+        </tr>
+        <tr>
+            <td><code>securityHeaders</code></td>
+            <td>Add security headers</td>
+            <td>CloudFront</td>
+            <td>128 MB</td>
+        </tr>
+    </table>
+
+    <h3>3.3 Data Layer (eu-west-2)</h3>
+
+    <div class="mermaid">
+graph TB
+    subgraph data["Data Services"]
+        subgraph dynamo["DynamoDB Tables"]
+            tokens["submit-tokens<br/>OAuth Tokens"]
+            bundles["submit-bundles<br/>User Subscriptions"]
+            audit["submit-audit<br/>Action Logs"]
+        end
+
+        subgraph secrets["Secrets Manager"]
+            hmrc_creds["HMRC Credentials"]
+            oauth_secrets["OAuth Secrets"]
+        end
+    end
+
+    style tokens fill:#2196f3,color:#fff
+    style bundles fill:#2196f3,color:#fff
+    </div>
+
+    <h2 id="security">4. Security Architecture</h2>
+
+    <h3>4.1 Authentication Flow</h3>
+
+    <div class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant A as App
+    participant C as Cognito
+    participant H as HMRC OAuth
+
+    U->>A: Click "Connect to HMRC"
+    A->>H: Redirect to HMRC Login
+    U->>H: Enter Credentials
+    H->>A: Authorization Code
+    A->>H: Exchange for Tokens
+    H->>A: Access + Refresh Tokens
+    A->>C: Create Session
+    C->>A: JWT Token
+    A->>U: Logged In
+    </div>
+
+    <h3>4.2 Security Controls</h3>
+
+    <table>
+        <tr>
+            <th>Control</th>
+            <th>Implementation</th>
+        </tr>
+        <tr>
+            <td>Encryption in Transit</td>
+            <td>TLS 1.2+ enforced everywhere</td>
+        </tr>
+        <tr>
+            <td>Encryption at Rest</td>
+            <td>DynamoDB encryption, S3 SSE</td>
+        </tr>
+        <tr>
+            <td>WAF Rules</td>
+            <td>Rate limiting, SQL injection, XSS protection</td>
+        </tr>
+        <tr>
+            <td>Security Headers</td>
+            <td>CSP, HSTS, X-Content-Type-Options</td>
+        </tr>
+        <tr>
+            <td>API Authentication</td>
+            <td>JWT tokens via Cognito</td>
+        </tr>
+        <tr>
+            <td>Secrets</td>
+            <td>AWS Secrets Manager (no hardcoded credentials)</td>
+        </tr>
+    </table>
+
+    <h2 id="backup">5. Backup & Disaster Recovery</h2>
+
+    <h3>5.1 Backup Architecture</h3>
+
+    <div class="mermaid">
+graph TB
+    subgraph prod["submit-prod"]
+        prod_db["DynamoDB Tables"]
+        prod_vault["Local Vault<br/>35-day retention"]
+    end
+
+    subgraph backup_acc["submit-backup"]
+        cross_vault["Cross-Account Vault<br/>90-day retention"]
+    end
+
+    prod_db -->|"Daily Backup"| prod_vault
+    prod_vault -->|"Cross-Account Copy"| cross_vault
+
+    style cross_vault fill:#c8e6c9
+    style prod_vault fill:#fff3e0
+    </div>
+
+    <h3>5.2 Recovery Objectives</h3>
+
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Target</th>
+            <th>Implementation</th>
+        </tr>
+        <tr>
+            <td>RPO (Recovery Point Objective)</td>
+            <td>&lt; 24 hours</td>
+            <td>Daily backups + PITR</td>
+        </tr>
+        <tr>
+            <td>RTO (Recovery Time Objective)</td>
+            <td>&lt; 4 hours</td>
+            <td>Automated restore scripts</td>
+        </tr>
+        <tr>
+            <td>Backup Retention</td>
+            <td>90 days</td>
+            <td>Cross-account vault</td>
+        </tr>
+    </table>
+
+    <h2 id="cicd">6. CI/CD Pipeline</h2>
+
+    <h3>6.1 Deployment Flow</h3>
+
+    <div class="mermaid">
+graph LR
+    subgraph dev["Development"]
+        code["Code Change"]
+        pr["Pull Request"]
+    end
+
+    subgraph ci["CI Pipeline"]
+        test["Unit Tests"]
+        build["CDK Synth"]
+    end
+
+    subgraph deploy_ci["CI Account"]
+        ci_stack["submit-ci"]
+        e2e["E2E Tests"]
+    end
+
+    subgraph deploy_prod["Production"]
+        approval["Approval"]
+        prod_stack["submit-prod"]
+    end
+
+    code --> pr
+    pr --> test
+    test --> build
+    build --> ci_stack
+    ci_stack --> e2e
+    e2e --> approval
+    approval --> prod_stack
+
+    style ci_stack fill:#fff3e0
+    style prod_stack fill:#c8e6c9
+    style approval fill:#ffcdd2
+    </div>
+
+    <h3>6.2 Environment Mapping</h3>
+
+    <table>
+        <tr>
+            <th>Git Branch</th>
+            <th>Target Account</th>
+            <th>Environment</th>
+        </tr>
+        <tr>
+            <td><code>feature/*</code>, <code>claude/*</code></td>
+            <td>submit-ci</td>
+            <td>Development/Testing</td>
+        </tr>
+        <tr>
+            <td><code>main</code></td>
+            <td>submit-prod</td>
+            <td>Production</td>
+        </tr>
+    </table>
+
+    <h2 id="monitoring">7. Monitoring & Observability</h2>
+
+    <h3>7.1 Key Metrics</h3>
+
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Threshold</th>
+            <th>Action</th>
+        </tr>
+        <tr>
+            <td>Lambda Errors</td>
+            <td>&gt; 5%</td>
+            <td>Alert</td>
+        </tr>
+        <tr>
+            <td>API Latency (p99)</td>
+            <td>&gt; 3s</td>
+            <td>Alert</td>
+        </tr>
+        <tr>
+            <td>DynamoDB Throttling</td>
+            <td>Any</td>
+            <td>Alert</td>
+        </tr>
+        <tr>
+            <td>4xx Error Rate</td>
+            <td>&gt; 10%</td>
+            <td>Alert</td>
+        </tr>
+        <tr>
+            <td>5xx Error Rate</td>
+            <td>&gt; 1%</td>
+            <td>Alert + Page</td>
+        </tr>
+    </table>
+
+    <h2 id="cost">8. Cost Optimization</h2>
+
+    <div class="mermaid">
+pie title Monthly Cost Distribution
+    "CloudFront" : 25
+    "Lambda" : 20
+    "DynamoDB" : 20
+    "API Gateway" : 15
+    "S3" : 5
+    "Other" : 15
+    </div>
+
+    <h2 id="compliance">9. Compliance</h2>
+
+    <table>
+        <tr>
+            <th>Requirement</th>
+            <th>Implementation</th>
+        </tr>
+        <tr>
+            <td>GDPR</td>
+            <td>Data in eu-west-2, encryption, audit logs</td>
+        </tr>
+        <tr>
+            <td>HMRC MTD</td>
+            <td>Fraud prevention headers, secure token storage</td>
+        </tr>
+        <tr>
+            <td>WCAG 2.2 AA</td>
+            <td>Accessible UI, tested with axe-core</td>
+        </tr>
+        <tr>
+            <td>OWASP Top 10</td>
+            <td>WAF rules, security headers, input validation</td>
+        </tr>
+    </table>
+
+    <h2 id="iac">10. Infrastructure as Code</h2>
+
+    <h3>10.1 CDK Stack Structure</h3>
+
+    <div class="mermaid">
+graph TB
+    subgraph cdk["CDK Application"]
+        app["App"]
+
+        subgraph stacks["Stacks"]
+            auth["AuthStack"]
+            hmrc["HmrcStack"]
+            account["AccountStack"]
+            api["ApiStack"]
+            edge["EdgeStack"]
+            backup["BackupStack"]
+        end
+    end
+
+    app --> auth
+    app --> hmrc
+    app --> account
+    app --> api
+    app --> edge
+    app --> backup
+
+    auth --> api
+    hmrc --> api
+    account --> api
+    api --> edge
+    </div>
+
+    <h2>Network Diagram</h2>
+
+    <div class="ascii-diagram">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              INTERNET                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Route 53 (DNS)                                       │
+│                    submit.diyaccounting.co.uk                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    CloudFront (CDN + WAF)                                    │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                      │
+│  │ WAF Rules   │    │ SSL/TLS     │    │ Lambda@Edge │                      │
+│  │ Rate Limit  │    │ TLS 1.2+    │    │ Sec Headers │                      │
+│  └─────────────┘    └─────────────┘    └─────────────┘                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                          │                    │
+              ┌───────────┘                    └───────────┐
+              ▼                                            ▼
+┌──────────────────────────┐              ┌──────────────────────────┐
+│     S3 (Static Assets)   │              │     API Gateway          │
+│                          │              │     /api/vat/*           │
+│     HTML, CSS, JS        │              │     /api/auth/*          │
+│                          │              │     /api/account/*       │
+└──────────────────────────┘              └──────────────────────────┘
+                                                       │
+                                                       ▼
+                                          ┌──────────────────────────┐
+                                          │   Custom Authorizer      │
+                                          │   (JWT Validation)       │
+                                          └──────────────────────────┘
+                                                       │
+                                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Lambda Functions                                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │ VAT Get     │  │ VAT Post    │  │ VAT View    │  │ Token Mgr   │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────────────────────┘
+              │                    │                    │
+              ▼                    ▼                    ▼
+┌──────────────────────────┐  ┌─────────────┐  ┌──────────────────────────┐
+│       DynamoDB           │  │  Secrets    │  │      HMRC MTD API        │
+│  submit-tokens           │  │  Manager    │  │  api.service.hmrc.gov.uk │
+│  submit-bundles          │  └─────────────┘  └──────────────────────────┘
+└──────────────────────────┘
+    </div>
+
+    <hr>
+
+    <p style="text-align: center; color: var(--text-light); margin-top: 40px;">
+        <em>Document generated: January 2026 | Architecture version: 2.0 (Multi-Account)</em>
+    </p>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+    </script>
+</body>
+</html>

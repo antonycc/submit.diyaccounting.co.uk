@@ -1,0 +1,38 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowCrossAccountCopy",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": [
+          "arn:aws:iam::${PROD_ACCOUNT_ID}:root",
+          "arn:aws:iam::${CI_ACCOUNT_ID}:root"
+        ]
+      },
+      "Action": [
+        "backup:CopyIntoBackupVault"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowBackupServiceAccess",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "backup.amazonaws.com"
+      },
+      "Action": [
+        "backup:CopyIntoBackupVault"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:SourceAccount": [
+            "${PROD_ACCOUNT_ID}",
+            "${CI_ACCOUNT_ID}"
+          ]
+        }
+      }
+    }
+  ]
+}
