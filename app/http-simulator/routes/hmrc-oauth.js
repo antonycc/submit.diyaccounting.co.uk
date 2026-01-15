@@ -192,11 +192,37 @@ function generateGrantPermissionPage(clientId, redirectUri, scope, state) {
 </html>`;
 }
 
+/**
+ * Auto-grant helper for system tests
+ * Generates code and redirects immediately without multi-step flow
+ */
+function autoGrantRedirect(res, clientId, redirectUri, scope, state) {
+  const code = randomUUID().replace(/-/g, "");
+
+  storeAuthorizationCode(code, {
+    type: "hmrc",
+    clientId: clientId,
+    redirectUri: redirectUri,
+    scope: scope,
+    state,
+  });
+
+  const redirectUrl = new URL(redirectUri);
+  redirectUrl.searchParams.set("code", code);
+  if (state) {
+    redirectUrl.searchParams.set("state", state);
+  }
+
+  console.log(`[http-simulator:hmrc-oauth] Auto-granting, redirecting to ${redirectUrl.toString()}`);
+  res.redirect(302, redirectUrl.toString());
+}
+
 export function apiEndpoint(app) {
   // GET /oauth/authorize - Show permission page for HMRC OAuth
   // This shows a grant authorization page like HMRC does
+  // Use autoGrant=true query param to skip multi-step flow (for system tests)
   app.get("/oauth/authorize", (req, res, next) => {
-    const { response_type, client_id, redirect_uri, scope, state } = req.query;
+    const { response_type, client_id, redirect_uri, scope, state, autoGrant } = req.query;
 
     // Only handle HMRC OAuth (client_id starts with uqMHA or is HMRC-like)
     // Local OAuth (client_id=debugger) is handled by local-oauth.js
@@ -204,13 +230,18 @@ export function apiEndpoint(app) {
       return next();
     }
 
-    console.log(`[http-simulator:hmrc-oauth] GET /oauth/authorize for client_id=${client_id}`);
+    console.log(`[http-simulator:hmrc-oauth] GET /oauth/authorize for client_id=${client_id}, autoGrant=${autoGrant}`);
 
     if (response_type !== "code") {
       return res.status(400).json({
         error: "unsupported_response_type",
         error_description: "Only response_type=code is supported",
       });
+    }
+
+    // Auto-grant mode for system tests - skip multi-step flow
+    if (autoGrant === "true") {
+      return autoGrantRedirect(res, client_id, redirect_uri, scope, state);
     }
 
     // Show permission page instead of auto-granting

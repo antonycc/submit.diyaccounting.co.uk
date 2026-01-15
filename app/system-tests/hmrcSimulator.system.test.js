@@ -117,13 +117,14 @@ describe("HTTP Simulator", () => {
   });
 
   describe("HMRC OAuth", () => {
-    it("should auto-redirect for GET /oauth/authorize with HMRC client_id", async () => {
+    it("should auto-redirect for GET /oauth/authorize with HMRC client_id and autoGrant=true", async () => {
       const url = new URL(`${baseUrl}/oauth/authorize`);
       url.searchParams.set("response_type", "code");
       url.searchParams.set("client_id", "uqMHA6RsDGGa7h8EG2VqfqAmv4tV");
       url.searchParams.set("redirect_uri", "http://localhost:3000/hmrc-callback");
       url.searchParams.set("scope", "read:vat write:vat");
       url.searchParams.set("state", "hmrc-state");
+      url.searchParams.set("autoGrant", "true");
 
       const response = await fetch(url.toString(), { redirect: "manual" });
       expect(response.status).toBe(302);
@@ -135,13 +136,14 @@ describe("HTTP Simulator", () => {
     });
 
     it("should exchange HMRC auth code for tokens at POST /oauth/token", async () => {
-      // First get a code
+      // First get a code using autoGrant mode
       const url = new URL(`${baseUrl}/oauth/authorize`);
       url.searchParams.set("response_type", "code");
       url.searchParams.set("client_id", "uqMHA6RsDGGa7h8EG2VqfqAmv4tV");
       url.searchParams.set("redirect_uri", "http://localhost:3000/hmrc-callback");
       url.searchParams.set("scope", "read:vat write:vat");
       url.searchParams.set("state", "hmrc-state");
+      url.searchParams.set("autoGrant", "true");
 
       const authResponse = await fetch(url.toString(), { redirect: "manual" });
       const redirectUrl = new URL(authResponse.headers.get("location"));
