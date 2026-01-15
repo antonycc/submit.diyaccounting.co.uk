@@ -180,6 +180,8 @@ export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
 export async function runLocalOAuth2Server(runMockOAuth2) {
   logger.info(`[auth]: runMockOAuth2=${runMockOAuth2}`);
   let serverProcess;
+  let simulatorResult = null;
+
   if (runMockOAuth2 === "run") {
     logger.info("[auth]: Starting mock-oauth2-server process...");
     // eslint-disable-next-line sonarjs/no-os-command-from-path
@@ -192,8 +194,60 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
     await checkIfServerIsRunning("http://localhost:8080/default/debugger", 2000, undefined, "auth");
   } else {
     logger.info("[auth]: Skipping mock-oauth2-server process as runMockOAuth2 is not set to 'run'");
+
+    // When mock-oauth2-server is off, check if HTTP simulator should run instead
+    const runHttpSimulator = process.env.TEST_HTTP_SIMULATOR;
+    if (runHttpSimulator === "run") {
+      logger.info("[auth]: Starting HTTP simulator (replaces mock-oauth2-server and HMRC API)...");
+      simulatorResult = await runLocalHttpSimulator(runHttpSimulator);
+    }
   }
-  return serverProcess;
+
+  // Return an object that can stop both the mock-oauth2 process and simulator
+  return {
+    process: serverProcess,
+    simulator: simulatorResult,
+    kill: () => {
+      if (serverProcess) serverProcess.kill();
+      if (simulatorResult?.stop) simulatorResult.stop();
+    },
+  };
+}
+
+/**
+ * Start the HTTP simulator that replaces both Docker mock-oauth2-server and HMRC API
+ * @param {string} runSimulator - 'run' to start, any other value to skip
+ * @param {number} port - Port to listen on (default from TEST_HTTP_SIMULATOR_PORT or 9000)
+ * @returns {Promise<{stop: Function, endpoint: string}|null>}
+ */
+export async function runLocalHttpSimulator(runSimulator, port) {
+  const simulatorPort = port || process.env.TEST_HTTP_SIMULATOR_PORT || 9000;
+  logger.info(`[http-simulator]: runSimulator=${runSimulator}, port=${simulatorPort}`);
+
+  if (runSimulator === "run") {
+    logger.info("[http-simulator]: Starting HTTP simulator...");
+    try {
+      const { startSimulator } = await import("@app/http-simulator/index.js");
+      const result = await startSimulator({ port: Number(simulatorPort) });
+      logger.info(`[http-simulator]: Started at ${result.baseUrl}`);
+
+      // Update environment variables to point to the simulator
+      process.env.TEST_MOCK_OAUTH2_BASE = result.baseUrl;
+      process.env.HMRC_BASE_URI = result.baseUrl;
+      process.env.HMRC_SANDBOX_BASE_URI = result.baseUrl;
+
+      return {
+        stop: result.stop,
+        endpoint: result.baseUrl,
+      };
+    } catch (error) {
+      logger.error(`[http-simulator]: Failed to start: ${error.message}`);
+      throw error;
+    }
+  } else {
+    logger.info("[http-simulator]: Skipping HTTP simulator as TEST_HTTP_SIMULATOR is not set to 'run'");
+    return null;
+  }
 }
 
 export function addOnPageLogging(page) {

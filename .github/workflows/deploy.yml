@@ -58,6 +58,14 @@ on:
           - 'false'
         required: false
         default: 'true'
+      runProxyBehaviourTests:
+        description: 'Run proxy behaviour tests (uses ngrok and Docker)'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   push:
     branches:
       - '**'
@@ -132,6 +140,8 @@ jobs:
         run: ":"
       - name: "inputs.skipTestScenarios=[${{ inputs.skipTestScenarios }}]"
         run: ":"
+      - name: "inputs.runProxyBehaviourTests=[${{ inputs.runProxyBehaviourTests }}]"
+        run: ":"
       - name: "github.event.head_commit.message=[${{ github.event.head_commit.message }}]"
         run: ":"
       - name: Normalise Params
@@ -145,6 +155,7 @@ jobs:
           X='${{ inputs.loadTestDuration }}' ; echo "loadTestDuration=${X:-30s}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSkippingDeploy: true if skipDeploy=true OR (push event with skip: in commit message)
           SKIP_DEPLOY='${{ inputs.skipDeploy }}'
           EVENT_NAME='${{ github.event_name }}'
@@ -164,6 +175,7 @@ jobs:
       loadTestDuration: ${{ steps.normalise.outputs.loadTestDuration }}
       selfDestructDelayHours: ${{ steps.normalise.outputs.selfDestructDelayHours }}
       skipTestScenarios: ${{ steps.normalise.outputs.skipTestScenarios }}
+      runProxyBehaviourTests: ${{ steps.normalise.outputs.runProxyBehaviourTests }}
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
 
   names:
@@ -323,9 +335,10 @@ jobs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   behaviour-test-submit-vat:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' }}
     name: 'behaviour test - submit vat (proxy)'
     needs:
+      - params
       - names
       #- behaviour-test-bundle
     runs-on: ubuntu-24.04

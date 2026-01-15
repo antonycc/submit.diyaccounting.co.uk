@@ -20,7 +20,9 @@ export function apiEndpoint(app) {
         }
       }
 
-      const resp = await fetch("http://localhost:8080/default/token", {
+      // Support configurable mock OAuth2 base URL (default: Docker mock-oauth2-server)
+      const mockBase = process.env.TEST_MOCK_OAUTH2_BASE || "http://localhost:8080";
+      const resp = await fetch(`${mockBase}/default/token`, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body: params.toString(),

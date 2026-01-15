@@ -372,3 +372,209 @@ jobs:
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+  # Simulator behaviour tests - run in parallel without ngrok/Docker/HMRC
+  # Uses Playwright official container for faster builds (browsers pre-installed)
+  behaviour-test-simulator-submit-vat:
+    name: 'simulator - submitVatBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:submitVatBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-submit-vat
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-post-vat-return:
+    name: 'simulator - postVatReturnBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:postVatReturnBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-post-vat-return
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-get-vat-return:
+    name: 'simulator - getVatReturnBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:getVatReturnBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-get-vat-return
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-get-vat-obligations:
+    name: 'simulator - getVatObligationsBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:getVatObligationsBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-get-vat-obligations
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-fraud-prevention-headers:
+    name: 'simulator - fraudPreventionHeadersBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:postVatReturnFraudPreventionHeadersBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-fraud-prevention-headers
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-compliance:
+    name: 'simulator - complianceBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:complianceBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-compliance
+          retention-days: 7
+          path: target/behaviour-test-results/
