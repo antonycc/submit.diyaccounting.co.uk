@@ -45,14 +45,10 @@
     "test:allBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npx dotenv -e .env.proxy -- npm run test:allBehaviour",
     "test:authBehaviour": "playwright test --project=authBehaviour",
     "test:authBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:authBehaviour",
-    "test:authBehaviour-proxy-record": "TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:authBehaviour",
-    "test:authBehaviour-proxy-mock": "TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:authBehaviour",
     "test:authBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:authBehaviour",
     "test:authBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:authBehaviour",
     "test:bundleBehaviour": "playwright test --project=bundleBehaviour",
     "test:bundleBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:bundleBehaviour",
-    "test:bundleBehaviour-proxy-record": "TEST_WIREMOCK=record npx dotenv -e .env.proxy -- npm run test:bundleBehaviour",
-    "test:bundleBehaviour-proxy-mock": "TEST_WIREMOCK=mock npx dotenv -e .env.proxy -- npm run test:bundleBehaviour",
     "test:bundleBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:bundleBehaviour",
     "test:bundleBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:bundleBehaviour",
     "test:submitVatBehaviour": "playwright test --project=submitVatBehaviour",
@@ -95,10 +91,8 @@
     "proxy": "npx dotenv -e .env.proxy -- node app/bin/ngrok.js",
     "auth": "npx dotenv -e .env.proxy -- docker run -p 8080:8080 -e JSON_CONFIG_PATH=/config/mock-oauth2-config.json -e LOG_LEVEL=DEBUG -v $(pwd)/mock-oauth2-config.json:/config/mock-oauth2-config.json:ro ghcr.io/navikt/mock-oauth2-server:3.0.1",
     "data": "npx dotenv -e .env.proxy -- node app/bin/dynamodb.js",
-    "mock": "wiremock --port 9090 --root-dir wiremock-recordings --verbose --preserve-host-header",
     "cloudfront:set-origins": "node ./app/actions/set-apex-origins.mjs",
     "set-apex-origins": "node ./app/actions/set-apex-origins.mjs",
-    "wiremock:server": "wiremock --port 9090 --root-dir wiremock-recordings --disable-banner",
     "accessibility:proxy": "npm run accessibility:pa11y-prod && npm run accessibility:axe-proxy",
     "accessibility:ci": "npm run accessibility:pa11y-prod && npm run accessibility:axe-ci",
     "accessibility:prod": "npm run accessibility:pa11y-prod && npm run accessibility:axe-prod",
@@ -208,8 +202,7 @@
     "retire": "^5.2.4",
     "supertest": "^7.2.2",
     "toml": "^3.0.0",
-    "vitest": "^3.2.4",
-    "wiremock": "^3.13.2"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=22.0.0"

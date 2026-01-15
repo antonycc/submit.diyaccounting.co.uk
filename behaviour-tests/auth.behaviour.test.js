@@ -34,13 +34,9 @@ import {
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
-import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
 import { clearBundles, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
-
-let wiremockMode;
-let wiremockPort;
 
 const screenshotPath = "target/behaviour-test-results/screenshots/submitVat-behaviour-test";
 
@@ -85,25 +81,7 @@ test.beforeAll(async ({ page }, testInfo) => {
     ...originalEnv,
   };
 
-  wiremockMode = process.env.TEST_WIREMOCK || "off";
-  wiremockPort = process.env.WIREMOCK_PORT || 9090;
-
-  if (wiremockMode === "record" || wiremockMode === "mock") {
-    const targets = [];
-    if (process.env.HMRC_BASE_URI) targets.push(process.env.HMRC_BASE_URI);
-    if (process.env.HMRC_SANDBOX_BASE_URI) targets.push(process.env.HMRC_SANDBOX_BASE_URI);
-    await startWiremock({
-      mode: wiremockMode,
-      port: wiremockPort,
-      outputDir: process.env.WIREMOCK_RECORD_OUTPUT_DIR || "",
-      targets,
-    });
-    // override HMRC endpoints so the app uses WireMock
-    process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
-    process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
-  }
-
-  // Run servers needed for the test (after env overrides so child sees them)
+  // Run servers needed for the test
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
@@ -133,10 +111,6 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
-  // stop local servers...
-  if (wiremockMode && wiremockMode !== "off") {
-    await stopWiremock({ mode: wiremockMode, port: wiremockPort });
-  }
 });
 
 test.afterEach(async ({ page }, testInfo) => {
