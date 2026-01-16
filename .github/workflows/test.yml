@@ -638,7 +638,8 @@ jobs:
         env:
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+          # workflow_call receives NGROK_AUTHTOKEN from caller; direct triggers use repository secret NGROK_AUTH_TOKEN
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN || secrets.NGROK_AUTH_TOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
