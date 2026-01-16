@@ -29,6 +29,13 @@ const scenarios = {
       message: "The provided period key is invalid",
     },
   },
+  INVALID_PAYLOAD: {
+    status: 400,
+    body: {
+      code: "INVALID_PAYLOAD",
+      message: "Submission has not passed validation. Invalid PAYLOAD.",
+    },
+  },
   DUPLICATE_SUBMISSION: {
     status: 403,
     body: {
@@ -48,6 +55,13 @@ const scenarios = {
     body: {
       code: "TAX_PERIOD_NOT_ENDED",
       message: "A VAT return cannot be submitted for a tax period that has not ended.",
+    },
+  },
+  INSOLVENT_TRADER: {
+    status: 403,
+    body: {
+      code: "INSOLVENT_TRADER",
+      message: "Client is an insolvent trader.",
     },
   },
   INVALID_ARN: {
@@ -76,6 +90,28 @@ const scenarios = {
     body: {
       code: "DATE_RANGE_TOO_LARGE",
       message: "The date range is too large",
+    },
+  },
+  // Custom error scenarios for testing
+  SUBMIT_API_HTTP_500: {
+    status: 500,
+    body: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Internal server error",
+    },
+  },
+  SUBMIT_HMRC_API_HTTP_500: {
+    status: 500,
+    body: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Internal server error",
+    },
+  },
+  SUBMIT_HMRC_API_HTTP_503: {
+    status: 503,
+    body: {
+      code: "SERVICE_UNAVAILABLE",
+      message: "Service temporarily unavailable",
     },
   },
 };
