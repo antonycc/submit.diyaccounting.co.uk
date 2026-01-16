@@ -239,9 +239,10 @@ export async function getGovClientHeaders() {
  * @param {object} vatDue - VAT due amounts
  * @param {string} accessToken - HMRC access token
  * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @returns {Promise<object>} Submission response
  */
-export async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}) {
+export async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}, runFraudPreventionHeaderValidation = false) {
   const url = "/api/v1/hmrc/vat/return";
 
   // Get Cognito JWT token for custom authorizer
@@ -257,7 +258,7 @@ export async function submitVat(vatNumber, periodKey, vatDue, accessToken, govCl
   const response = await authorizedFetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify({ vatNumber, periodKey, vatDue, accessToken }),
+    body: JSON.stringify({ vatNumber, periodKey, vatDue, accessToken, runFraudPreventionHeaderValidation }),
   });
   const responseJson = await response.json();
   if (!response.ok) {

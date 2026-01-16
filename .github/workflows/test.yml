@@ -18,6 +18,14 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
+      runProxyBehaviourTests:
+        description: 'Run proxy behaviour tests (uses ngrok and Docker)'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   workflow_call:
     inputs:
       environment-name:
@@ -28,6 +36,16 @@ on:
         type: string
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: true
+      runProxyBehaviourTests:
+        type: string
+        description: 'Run proxy behaviour tests (uses ngrok and Docker)'
+        required: false
+        default: 'false'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET:
+        required: false
+      NGROK_AUTHTOKEN:
+        required: false
 
   push:
     branches:
@@ -96,15 +114,19 @@ jobs:
         run: ":"
       - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
         run: ":"
+      - name: "inputs.runProxyBehaviourTests=[${{ inputs.runProxyBehaviourTests }}]"
+        run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
         run: |
           echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+      runProxyBehaviourTests: ${{ steps.normalise.outputs.runProxyBehaviourTests }}
 
   names:
     needs:
@@ -372,3 +394,276 @@ jobs:
           # Set by deploy-environment.yml after the environment's AuthStack is deployed
           COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
           COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+
+  # Simulator behaviour tests - run in parallel without ngrok/Docker/HMRC
+  # Uses Playwright official container for faster builds (browsers pre-installed)
+  behaviour-test-simulator-submit-vat:
+    name: 'simulator - submitVatBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:submitVatBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-submit-vat
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-post-vat-return:
+    name: 'simulator - postVatReturnBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:postVatReturnBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-post-vat-return
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-get-vat-return:
+    name: 'simulator - getVatReturnBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:getVatReturnBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-get-vat-return
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-get-vat-obligations:
+    name: 'simulator - getVatObligationsBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:getVatObligationsBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-get-vat-obligations
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-fraud-prevention-headers:
+    name: 'simulator - fraudPreventionHeadersBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:postVatReturnFraudPreventionHeadersBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-fraud-prevention-headers
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-compliance:
+    name: 'simulator - complianceBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:complianceBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-compliance
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  # Proxy behaviour test - requires Docker, ngrok, and HMRC sandbox secrets
+  # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
+  behaviour-test-proxy-submit-vat:
+    if: ${{ !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' }}
+    name: 'proxy - submitVatBehaviour'
+    needs:
+      - params
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npx playwright install chromium --with-deps
+
+      - name: Run behaviour tests - submit vat
+        run: |
+          npm run test:submitVatBehaviour-proxy || exit_code=$? \
+          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
+          ; exit ${exit_code:-0} \
+          ;
+        env:
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          # workflow_call receives NGROK_AUTHTOKEN from caller; direct triggers use repository secret NGROK_AUTH_TOKEN
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN || secrets.NGROK_AUTH_TOKEN }}
+
+      - name: Upload artifacts (results)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-proxy-submit-vat-results
+          retention-days: 7
+          path: |
+            target/behaviour-test-results/
+
+      - name: Upload artifacts (reports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-proxy-submit-vat-reports
+          retention-days: 7
+          path: |
+            target/test-reports/
+
+      - name: Upload artifacts (dynamodb exports)
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-proxy-submit-vat-dynamodb
+          retention-days: 7
+          path: |
+            target/behaviour-test-results/**/*.jsonl

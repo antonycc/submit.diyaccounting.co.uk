@@ -58,6 +58,14 @@ on:
           - 'false'
         required: false
         default: 'true'
+      runProxyBehaviourTests:
+        description: 'Run proxy behaviour tests (uses ngrok and Docker)'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   push:
     branches:
       - '**'
@@ -132,6 +140,8 @@ jobs:
         run: ":"
       - name: "inputs.skipTestScenarios=[${{ inputs.skipTestScenarios }}]"
         run: ":"
+      - name: "inputs.runProxyBehaviourTests=[${{ inputs.runProxyBehaviourTests }}]"
+        run: ":"
       - name: "github.event.head_commit.message=[${{ github.event.head_commit.message }}]"
         run: ":"
       - name: Normalise Params
@@ -145,6 +155,7 @@ jobs:
           X='${{ inputs.loadTestDuration }}' ; echo "loadTestDuration=${X:-30s}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSkippingDeploy: true if skipDeploy=true OR (push event with skip: in commit message)
           SKIP_DEPLOY='${{ inputs.skipDeploy }}'
           EVENT_NAME='${{ github.event_name }}'
@@ -164,6 +175,7 @@ jobs:
       loadTestDuration: ${{ steps.normalise.outputs.loadTestDuration }}
       selfDestructDelayHours: ${{ steps.normalise.outputs.selfDestructDelayHours }}
       skipTestScenarios: ${{ steps.normalise.outputs.skipTestScenarios }}
+      runProxyBehaviourTests: ${{ steps.normalise.outputs.runProxyBehaviourTests }}
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
 
   names:
@@ -249,6 +261,7 @@ jobs:
   test:
     name: 'delegate to test workflow'
     needs:
+      - params
       - names
     uses: ./.github/workflows/test.yml
     permissions:
@@ -258,6 +271,10 @@ jobs:
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
+      runProxyBehaviourTests: ${{ needs.params.outputs.runProxyBehaviourTests }}
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+      NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
   npm-unit-test-coverage:
     name: 'npm unit test with coverage'
@@ -322,69 +339,8 @@ jobs:
     outputs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
-  behaviour-test-submit-vat:
-    if: ${{ !cancelled() }}
-    name: 'behaviour test - submit vat (proxy)'
-    needs:
-      - names
-      #- behaviour-test-bundle
-    runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
-    steps:
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm install
-          npx playwright install chromium --with-deps
-
-      - name: Run behaviour tests - submit vat
-        run: |
-          npm run test:submitVatBehaviour-proxy || exit_code=$? \
-          ; cp ./target/submit*.log ./target/behaviour-test-results/ || true \
-          ; exit ${exit_code:-0} \
-          ;
-        env:
-          HMRC_ACCOUNT: sandbox
-          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-
-      - name: Upload artifacts (results)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-artifacts-submit-vat
-          retention-days: 7
-          path: |
-            target/behaviour-test-results/
-
-      - name: Upload artifacts (reports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-reports-submit-vat
-          retention-days: 7
-          path: |
-            target/test-reports/
-
-      - name: Upload artifacts (dynamodb exports)
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: behaviour-test-dynamodb-submit-vat
-          retention-days: 7
-          path: |
-            target/behaviour-test-results/**/*.jsonl
+  # NOTE: behaviour-test-submit-vat has been moved to test.yml as behaviour-test-proxy-submit-vat
+  # It runs when runProxyBehaviourTests=true is passed to the test workflow
 
   test-aws-credentials:
     name: 'test aws credentials'

@@ -33,8 +33,6 @@ import {
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
-import { startWiremock, stopWiremock } from "./helpers/wiremock-helper.js";
-
 // if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
 //   dotenvConfigIfNotBlank({ path: ".env.test" });
 // } else {
@@ -59,9 +57,6 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-const wiremockMode = getEnvVarAndLog("wiremockMode", "TEST_WIREMOCK", "off");
-const wiremockPort = getEnvVarAndLog("wiremockPort", "WIREMOCK_PORT", 9090);
-const wiremockOutputDir = getEnvVarAndLog("wiremockOutputDir", "WIREMOCK_RECORD_OUTPUT_DIR", "target/wiremock-recordings");
 
 let mockOAuth2Process;
 let serverProcess;
@@ -87,22 +82,7 @@ test.beforeAll(async ({ page }, testInfo) => {
     ...originalEnv,
   };
 
-  if (wiremockMode === "record" || wiremockMode === "mock") {
-    const targets = [];
-    if (process.env.HMRC_BASE_URI) targets.push(process.env.HMRC_BASE_URI);
-    if (process.env.HMRC_SANDBOX_BASE_URI) targets.push(process.env.HMRC_SANDBOX_BASE_URI);
-    await startWiremock({
-      mode: wiremockMode,
-      port: wiremockPort,
-      outputDir: wiremockOutputDir,
-      targets,
-    });
-    // override HMRC endpoints so the app uses WireMock
-    process.env.HMRC_BASE_URI = `http://localhost:${wiremockPort}`;
-    process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${wiremockPort}`;
-  }
-
-  // Run local servers after env overrides
+  // Run local servers
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
@@ -132,10 +112,6 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
-  // stop local servers...
-  if (wiremockMode && wiremockMode !== "off") {
-    await stopWiremock({ mode: wiremockMode, port: wiremockPort });
-  }
 });
 
 test.afterEach(async ({ page }, testInfo) => {

@@ -71,7 +71,8 @@ export async function ingestHandler(event) {
 export function buildAuthUrl(state) {
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}auth/loginWithMockCallback.html`;
-  const mockBase = "http://localhost:8080";
+  // Support configurable mock OAuth2 base URL (default: Docker mock-oauth2-server)
+  const mockBase = process.env.TEST_MOCK_OAUTH2_BASE || "http://localhost:8080";
   const scope = "openid somescope";
 
   const authUrl =
