@@ -25,7 +25,7 @@ jobs:
     steps:
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-github-actions-role
           role-chaining: false
@@ -36,7 +36,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::887764105431:role/submit-deployment-role
           role-chaining: true
