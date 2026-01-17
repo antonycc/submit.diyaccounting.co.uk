@@ -103,7 +103,7 @@ app.get("/submit.env", (req, res) => {
     "HMRC_SANDBOX_BASE_URI",
     "DIY_SUBMIT_BASE_URL",
   ];
-  // eslint-disable-next-line security/detect-object-injection -- publicVars is a hardcoded array of trusted env var names
+
   const lines = publicVars.map((v) => `${v}=${process.env[v] || ""}`);
 
   res.setHeader("Content-Type", "text/plain");

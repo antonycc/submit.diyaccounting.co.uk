@@ -56,6 +56,7 @@ export default [
       "**/*.test.js",
       "**/*.spec.js",
       "behaviour-tests/",
+      "app/http-simulator/routes/",
       "app/test-helpers/",
       // Exclude build scripts - not production code
       "scripts/",

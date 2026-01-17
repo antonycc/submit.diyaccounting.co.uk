@@ -200,7 +200,6 @@ export function extractRequest(event) {
       request = new URL(`${baseRequestUrl}${path}?${queryString}`);
       if (event.queryStringParameters) {
         Object.keys(event.queryStringParameters).forEach((key) => {
-          // eslint-disable-next-line security/detect-object-injection -- key comes from Object.keys iteration
           request.searchParams.append(key, event.queryStringParameters[key]);
         });
       }
@@ -378,7 +377,6 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   try {
     if (response && typeof response.headers?.forEach === "function") {
       response.headers.forEach((value, key) => {
-        // eslint-disable-next-line security/detect-object-injection -- key comes from headers.forEach iteration
         responseHeadersObj[key] = value;
       });
     } else if (response?.headers && typeof response.headers === "object") {

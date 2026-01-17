@@ -1,13 +1,13 @@
 (function () {
   function pickDisplayName(user) {
     const candidates = ["given_name", "name", "email", "sub"];
-    /* eslint-disable security/detect-object-injection -- key comes from hardcoded candidates array */
+
     for (const key of candidates) {
       if (user[key]) {
         return user[key];
       }
     }
-    /* eslint-enable security/detect-object-injection */
+
     return "Unidentified User";
   }
   // Update login status display

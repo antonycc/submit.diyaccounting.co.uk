@@ -21,7 +21,7 @@
       if (idx === -1) continue;
       const key = trimmed.slice(0, idx).trim();
       const value = trimmed.slice(idx + 1).trim();
-      // eslint-disable-next-line security/detect-object-injection -- key comes from parsing trusted env file
+
       env[key] = value;
     }
 

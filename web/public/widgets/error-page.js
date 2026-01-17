@@ -32,7 +32,8 @@
         localStorage.removeItem("userInfo");
         window.location.reload();
       };
-    } catch (e) {
+    } catch (error) {
+      console.error("Failed to parse user info:", error);
       // Parse error, keep default state
     }
   }

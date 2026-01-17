@@ -34,7 +34,6 @@ if (logToConsole && logToFile) {
   // Ensure directory exists
   const dir = path.dirname(logFilePath);
   try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- dir derived from LOG_FILE_PATH env var or default
     fs.mkdirSync(dir, { recursive: true });
   } catch {
     // ignore mkdir errors; pino will throw on write if truly unusable
@@ -53,7 +52,6 @@ if (logToConsole && logToFile) {
 
   const dir = path.dirname(logFilePath);
   try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- dir derived from LOG_FILE_PATH env var or default
     fs.mkdirSync(dir, { recursive: true });
   } catch (error) {
     console.error(`Failed to create log directory ${dir}:`, error);
