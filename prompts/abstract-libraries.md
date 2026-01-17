@@ -40,5 +40,4 @@ Provide recommendations that:
 - Follow established patterns in the Node.js/AWS ecosystem
 - Consider bundle size and performance implications
 
-> Formatting and style: Follow the repository configuration — ESLint (flat config) + Prettier for JavaScript (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See the README section “Code style, formatting, and IDE setup.”
 > Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.

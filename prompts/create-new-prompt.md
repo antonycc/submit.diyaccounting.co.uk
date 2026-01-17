@@ -110,5 +110,5 @@ The new prompt must meet these mandatory requirements:
 
 Focus on creating something that would be genuinely useful and that represents the most impactful improvement opportunity currently missing from the prompt collection.
 
-> Formatting and style: Follow the repo’s formatters — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use `npm run formatting` / `npm run formatting-fix`. See README for IDE setup and links.
-> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where heavy reformatting would be jarring.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.
+

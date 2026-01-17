@@ -66,3 +66,4 @@ The main coverage already includes system tests, so it will naturally report
 higher overall coverage. For this command, the focus is on **high-level
 behaviours**, not on proving the robustness of underlying libraries.
 
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

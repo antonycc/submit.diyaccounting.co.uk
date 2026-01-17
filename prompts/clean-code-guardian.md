@@ -50,4 +50,5 @@ Purpose: Enforce the project's high standards for code quality, maintainability,
 - Reliable error handling and no "hidden" bugs.
 - Minimal and focused git diffs.
 
-> Formatting and style: Rely on `npm run formatting` / `npm run formatting-fix` ONLY when broad fixes are requested. Otherwise, match local style.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.
+

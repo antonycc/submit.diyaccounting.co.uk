@@ -71,4 +71,4 @@ grep -i -n -A 20 -E 'fail|error' target/behaviour.txt
 - High consistency in resource naming and configuration.
 - Secure, least-privilege access for all services.
 
-> Formatting and style: Use Spotless (Palantir Java Format) for Java. Run `npm run formatting:java-fix`.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

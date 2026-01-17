@@ -28,4 +28,4 @@ Purpose: Generate a hierarchical, information-dense summary of the repository to
 - Accurate mapping of files to their functional roles.
 - Clear explanation of build and deployment processes.
 
-> Formatting and style: Match the repository's documentation style. Use `npm run formatting-fix` for any generated MD files.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

@@ -46,4 +46,4 @@ Provide recommendations that:
 - Support automated tooling and linting
 - Maintain existing functionality while improving consistency
 
-> Formatting and style: Defer to repo configs — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for details.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

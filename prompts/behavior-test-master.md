@@ -48,4 +48,5 @@ Purpose: Master the end-to-end behavioral testing of the VAT submission flow. Th
 - Fast and reliable behavioral test suite.
 - Clear documentation of test results and coverage.
 
-> Formatting and style: Use ESLint (flat) + Prettier. Run `npm run formatting:js-fix`.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.
+
