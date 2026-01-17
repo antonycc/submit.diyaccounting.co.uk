@@ -83,6 +83,13 @@
         }
       }
     },
+    "/support/ticket" : {
+      "post" : {
+        "summary" : "Submit a support ticket",
+        "description" : "Creates a GitHub issue for the authenticated user's support request",
+        "operationId" : "submitSupportTicket"
+      }
+    },
     "/bundle/{id}" : {
       "delete" : {
         "summary" : "Delete bundle by id",

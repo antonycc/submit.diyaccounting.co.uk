@@ -9,11 +9,9 @@ import {
   extractRequest,
   http200OkResponse,
   http400BadRequestResponse,
-  http401UnauthorizedResponse,
   http500ServerErrorResponse,
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
-import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 
 const logger = createLogger({ source: "app/functions/support/supportTicketPost.js" });
@@ -115,21 +113,9 @@ export async function ingestHandler(event) {
 
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
-  // Decode JWT token to get user info
-  let decodedToken;
-  try {
-    decodedToken = decodeJwtToken(event.headers);
-  } catch (error) {
-    return http401UnauthorizedResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Authentication required",
-      error: error.message,
-    });
-  }
-
-  const userId = decodedToken.sub;
-  const userEmail = decodedToken.email || "unknown";
+  // Get client info from headers (for logging/tracking, not authentication)
+  const clientIp = event.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() || "unknown";
+  const userAgent = event.headers?.["user-agent"] || "unknown";
 
   // Parse and validate request body
   const requestBody = parseRequestBody(event);
@@ -190,7 +176,6 @@ export async function ingestHandler(event) {
   const issueBody = `## Support Request
 
 **Category:** ${category}
-**User:** ${userEmail} (${userId})
 **Submitted:** ${new Date().toISOString()}
 **Request ID:** ${requestId}
 
@@ -204,7 +189,7 @@ ${description}
   const labels = ["support", categoryLabels[category]];
 
   try {
-    logger.info({ message: "Creating GitHub issue", subject, category, userId });
+    logger.info({ message: "Creating GitHub issue", subject, category, clientIp });
 
     const issue = await createGitHubIssue({
       title: issueTitle,

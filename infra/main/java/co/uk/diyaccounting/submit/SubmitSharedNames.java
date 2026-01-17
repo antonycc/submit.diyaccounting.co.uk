@@ -724,7 +724,7 @@ public class SubmitSharedNames {
 
         this.supportTicketPostLambdaHttpMethod = HttpMethod.POST;
         this.supportTicketPostLambdaUrlPath = "/api/v1/support/ticket";
-        this.supportTicketPostLambdaJwtAuthorizer = true;
+        this.supportTicketPostLambdaJwtAuthorizer = false;
         this.supportTicketPostLambdaCustomAuthorizer = false;
         var supportTicketPostLambdaHandlerName = "supportTicketPost.ingestHandler";
         var supportTicketPostLambdaHandlerDashed =
