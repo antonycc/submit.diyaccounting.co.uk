@@ -5,26 +5,10 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
+import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { calculateOneMonthTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
-
-let __dynamoDbModule;
-let __dynamoDbDocClient;
-
-async function getDynamoDbDocClient() {
-  if (!__dynamoDbDocClient) {
-    __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    // Honour local dynalite endpoint if provided by tests or dev env
-    const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION || "eu-west-2",
-      ...(endpoint ? { endpoint } : {}),
-    });
-    __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client);
-  }
-  return __dynamoDbDocClient;
-}
 
 function getTableName() {
   const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
@@ -38,7 +22,7 @@ export async function putBundle(userId, bundle) {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Storing bundle", hashedSub, userId, bundle });
 
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
@@ -53,10 +37,9 @@ export async function putBundle(userId, bundle) {
     item.expiry = expiryDate.toISOString();
 
     // Calculate TTL as 1 month after expiry
-    const ttlDate = new Date(expiryDate.getTime());
-    ttlDate.setMonth(ttlDate.getMonth() + 1);
-    item.ttl = Math.floor(ttlDate.getTime() / 1000);
-    item.ttl_datestamp = ttlDate.toISOString();
+    const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
+    item.ttl = ttl;
+    item.ttl_datestamp = ttl_datestamp;
 
     logger.info({
       message: "Storing bundle in DynamoDB as item",
@@ -64,7 +47,7 @@ export async function putBundle(userId, bundle) {
       item,
     });
     await docClient.send(
-      new __dynamoDbModule.PutCommand({
+      new module.PutCommand({
         TableName: tableName,
         Item: item,
       }),
@@ -92,7 +75,7 @@ export async function deleteBundle(userId, bundleId) {
   try {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Deleting bundle", hashedSub, userId, bundleId });
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     logger.info({
@@ -101,7 +84,7 @@ export async function deleteBundle(userId, bundleId) {
       bundleId,
     });
     await docClient.send(
-      new __dynamoDbModule.DeleteCommand({
+      new module.DeleteCommand({
         TableName: tableName,
         Key: {
           hashedSub,
@@ -179,11 +162,11 @@ export async function getUserBundles(userId) {
   try {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Retrieving bundles from DynamoDB", userId, hashedSub });
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const response = await docClient.send(
-      new __dynamoDbModule.QueryCommand({
+      new module.QueryCommand({
         TableName: tableName,
         KeyConditionExpression: "hashedSub = :hashedSub",
         ExpressionAttributeValues: {

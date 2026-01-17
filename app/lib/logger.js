@@ -15,9 +15,15 @@ dotenvConfigIfNotBlank({ path: ".env" });
 // - LOG_TO_CONSOLE: enable console logging when not set to "false" (default on)
 // - LOG_TO_FILE: enable file logging only when set to "true" (default off)
 // - LOG_FILE_PATH: optional explicit file path; otherwise default to ./target/submit-<ISO>.log
+// - LOG_LEVEL: set minimum log level (trace, debug, info, warn, error, fatal) (default: info)
 
 const logToConsole = process.env.LOG_TO_CONSOLE !== "false"; // default on
 const logToFile = process.env.LOG_TO_FILE === "true"; // default off
+
+// Validate and get log level from environment
+const VALID_LOG_LEVELS = ["trace", "debug", "info", "warn", "error", "fatal"];
+const envLogLevel = (process.env.LOG_LEVEL || "info").toLowerCase();
+const logLevel = VALID_LOG_LEVELS.includes(envLogLevel) ? envLogLevel : "info";
 
 let destinationStream;
 
@@ -63,7 +69,7 @@ if (logToConsole && logToFile) {
 // If neither console nor file are enabled, produce a disabled logger (no output)
 export const logger = pino(
   {
-    level: "info",
+    level: logLevel,
     // timestamp: pino.stdTimeFunctions.isoTime,
     enabled: Boolean(destinationStream),
     base: null, // removes pid and hostname

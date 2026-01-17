@@ -7,28 +7,10 @@ import { createLogger, context } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
 import { maskHttpData } from "../lib/dataMasking.js";
 import { v4 as uuidv4 } from "uuid";
+import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { calculateOneMonthTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbHmrcApiRequestRepository.js" });
-
-let __dynamoDbModule;
-let __dynamoDbDocClient;
-let __dynamoEndpointUsed;
-
-async function getDynamoDbDocClient() {
-  // Recreate client if endpoint changes after first import (common in tests)
-  const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
-  if (!__dynamoDbDocClient || __dynamoEndpointUsed !== (endpoint || "")) {
-    __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION || "eu-west-2",
-      ...(endpoint ? { endpoint } : {}),
-    });
-    __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client);
-    __dynamoEndpointUsed = endpoint || "";
-  }
-  return __dynamoDbDocClient;
-}
 
 function getTableName() {
   const tableName = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
@@ -65,7 +47,7 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
   const id = `hmrcreq-${uuidv4()}`; // Unique ID for this specific call
 
   try {
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
@@ -90,13 +72,12 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
     };
 
     // Calculate TTL as 1 month
-    const ttlDate = new Date();
-    ttlDate.setMonth(now.getMonth() + 1);
-    item.ttl = Math.floor(ttlDate.getTime() / 1000);
-    item.ttl_datestamp = ttlDate.toISOString();
+    const { ttl, ttl_datestamp } = calculateOneMonthTtl(now);
+    item.ttl = ttl;
+    item.ttl_datestamp = ttl_datestamp;
 
     await docClient.send(
-      new __dynamoDbModule.PutCommand({
+      new module.PutCommand({
         TableName: tableName,
         Item: item,
       }),

@@ -5,32 +5,10 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
+import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { calculateOneHourTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbAsyncRequestRepository.js" });
-
-let __dynamoDbModule;
-let __dynamoDbDocClient;
-let __dynamoEndpointUsed;
-
-async function getDynamoDbDocClient() {
-  // Recreate client if endpoint changes after first import (common in tests)
-  const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
-  if (!__dynamoDbDocClient || __dynamoEndpointUsed !== (endpoint || "")) {
-    __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION || "eu-west-2",
-      ...(endpoint ? { endpoint } : {}),
-    });
-    __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client, {
-      marshallOptions: {
-        removeUndefinedValues: true,
-      },
-    });
-    __dynamoEndpointUsed = endpoint || "";
-  }
-  return __dynamoDbDocClient;
-}
 
 /**
  * Store an async request state in DynamoDB
@@ -54,16 +32,13 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
 
   try {
     const hashedSub = hashSub(userId);
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
 
     const now = new Date();
     const isoNow = now.toISOString();
 
     // Calculate TTL as 1 hour from now
-    const ttlDate = new Date();
-    ttlDate.setHours(now.getHours() + 1);
-    const ttl = Math.floor(ttlDate.getTime() / 1000);
-    const ttlDatestamp = ttlDate.toISOString();
+    const { ttl, ttl_datestamp: ttlDatestamp } = calculateOneHourTtl(now);
 
     const expressionAttributeNames = {
       "#status": "status",
@@ -94,7 +69,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
     }
 
     await docClient.send(
-      new __dynamoDbModule.UpdateCommand({
+      new module.UpdateCommand({
         TableName: actualTableName,
         Key: {
           hashedSub,
@@ -145,10 +120,10 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
 
   try {
     const hashedSub = hashSub(userId);
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
 
     const result = await docClient.send(
-      new __dynamoDbModule.GetCommand({
+      new module.GetCommand({
         TableName: actualTableName,
         Key: {
           hashedSub,
