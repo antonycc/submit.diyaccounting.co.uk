@@ -1,0 +1,42 @@
+# CodeQL configuration file
+# Excludes test code and non-production infrastructure from security scanning
+#
+# This configuration is referenced by the codeql workflow to exclude:
+# - Unit tests, system tests, browser tests, behaviour tests
+# - Test helpers and mock servers (http-simulator)
+# - Build scripts and configuration files
+
+name: "DIY Accounting Submit CodeQL Config"
+
+paths-ignore:
+  # Test directories - not deployed to production
+  - "app/unit-tests/**"
+  - "app/system-tests/**"
+  - "web/unit-tests/**"
+  - "web/browser-tests/**"
+  - "behaviour-tests/**"
+
+  # Test helpers and mock infrastructure - never deployed
+  - "app/test-helpers/**"
+  - "app/http-simulator/**"
+
+  # Test files by pattern
+  - "**/*.test.js"
+  - "**/*.spec.js"
+
+  # Build and configuration scripts
+  - "scripts/**"
+
+  # CDK output directories
+  - "cdk.out/**"
+  - "cdk-environment/cdk.out/**"
+  - "cdk-application/cdk.out/**"
+  - "target/**"
+
+  # Third-party and generated code
+  - "node_modules/**"
+  - "**/*.min.js"
+  - "**/*.bundle.js"
+
+  # Java/Maven build artifacts
+  - "**/target/**"

@@ -45,6 +45,10 @@ public class AccountStack extends Stack {
     public Function bundleDeleteLambda;
     public ILogGroup bundleDeleteLambdaLogGroup;
 
+    public AbstractApiLambdaProps supportTicketPostLambdaProps;
+    public Function supportTicketPostLambda;
+    public ILogGroup supportTicketPostLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -77,6 +81,16 @@ public class AccountStack extends Stack {
         String baseImageTag();
 
         String cognitoUserPoolArn();
+
+        @Value.Default
+        default String githubTokenSecretArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubRepo() {
+            return "antonycc/submit.diyaccounting.co.uk";
+        }
 
         static ImmutableAccountStackProps.Builder builder() {
             return ImmutableAccountStackProps.builder();
@@ -351,6 +365,55 @@ public class AccountStack extends Stack {
         infof(
                 "Granted Cognito, DynamoDB, and Secrets Manager salt permissions to %s and its worker",
                 this.bundleDeleteLambda.getFunctionName());
+
+        // Support Ticket POST Lambda - only create if GitHub token secret ARN is provided
+        if (props.githubTokenSecretArn() != null && !props.githubTokenSecretArn().isEmpty()) {
+            var supportTicketPostLambdaEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("GITHUB_TOKEN_SECRET_ARN", props.githubTokenSecretArn())
+                    .with("GITHUB_REPO", props.githubRepo());
+            var supportTicketPostApiLambda = new ApiLambda(
+                    this,
+                    ApiLambdaProps.builder()
+                            .idPrefix(props.sharedNames().supportTicketPostIngestLambdaFunctionName)
+                            .baseImageTag(props.baseImageTag())
+                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().supportTicketPostIngestLambdaFunctionName)
+                            .ingestHandler(props.sharedNames().supportTicketPostIngestLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().supportTicketPostIngestLambdaArn)
+                            .ingestProvisionedConcurrencyAliasArn(
+                                    props.sharedNames().supportTicketPostIngestProvisionedConcurrencyLambdaAliasArn)
+                            .ingestProvisionedConcurrency(0)
+                            .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                            .httpMethod(props.sharedNames().supportTicketPostLambdaHttpMethod)
+                            .urlPath(props.sharedNames().supportTicketPostLambdaUrlPath)
+                            .jwtAuthorizer(props.sharedNames().supportTicketPostLambdaJwtAuthorizer)
+                            .customAuthorizer(props.sharedNames().supportTicketPostLambdaCustomAuthorizer)
+                            .environment(supportTicketPostLambdaEnv)
+                            .build());
+
+            this.supportTicketPostLambdaProps = supportTicketPostApiLambda.apiProps;
+            this.supportTicketPostLambda = supportTicketPostApiLambda.ingestLambda;
+            this.supportTicketPostLambdaLogGroup = supportTicketPostApiLambda.logGroup;
+            this.lambdaFunctionProps.add(this.supportTicketPostLambdaProps);
+
+            // Grant permission to read the GitHub token secret
+            this.supportTicketPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(props.githubTokenSecretArn()))
+                    .build());
+
+            infof(
+                    "Created Support Ticket POST Lambda %s with handler %s",
+                    this.supportTicketPostLambda.getNode().getId(),
+                    props.sharedNames().supportTicketPostIngestLambdaHandler);
+
+            cfnOutput(this, "SupportTicketPostLambdaArn", this.supportTicketPostLambda.getFunctionArn());
+        } else {
+            infof("Skipping Support Ticket Lambda - no GitHub token secret ARN provided");
+        }
 
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());

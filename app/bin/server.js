@@ -17,6 +17,7 @@ import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/h
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
+import { apiEndpoint as cognitoNativeAuthPostApiEndpoint } from "../functions/auth/cognitoNativeAuthPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 
@@ -121,10 +122,44 @@ app.use("/docs", (req, res, next) => {
   next();
 });
 
+// Conditionally serve mock auth addon script based on environment
+// In mock environments, serve the actual addon file; otherwise return empty script
+app.get("/auth/login-mock-addon.js", (req, res) => {
+  const authProvider = process.env.TEST_AUTH_PROVIDER;
+
+  if (authProvider === "mock") {
+    // Serve the actual addon file in mock environments
+    res.sendFile(path.join(__dirname, "../../web/public/auth/login-mock-addon.js"));
+  } else {
+    // Return empty script for non-mock environments (ci, prod)
+    res.setHeader("Content-Type", "application/javascript");
+    res.send("// Mock auth not available in this environment\n");
+  }
+});
+
+// Conditionally serve native Cognito auth addon script based on environment
+// Only serve in cognito-native environments for behavior tests
+app.get("/auth/login-native-addon.js", (req, res) => {
+  const authProvider = process.env.TEST_AUTH_PROVIDER;
+
+  if (authProvider === "cognito-native") {
+    // Serve the actual addon file in cognito-native environments
+    res.sendFile(path.join(__dirname, "../../web/public/auth/login-native-addon.js"));
+  } else {
+    // Return empty script for other environments
+    res.setHeader("Content-Type", "application/javascript");
+    res.send("// Native Cognito auth not available in this environment\n");
+  }
+});
+
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 
-mockAuthUrlGetApiEndpoint(app);
-mockTokenPostApiEndpoint(app);
+// Only register mock OAuth routes in mock auth environments
+if (process.env.TEST_AUTH_PROVIDER === "mock") {
+  mockAuthUrlGetApiEndpoint(app);
+  mockTokenPostApiEndpoint(app);
+  console.log("Mock OAuth routes registered (TEST_AUTH_PROVIDER=mock)");
+}
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
@@ -133,6 +168,12 @@ hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
+
+// Register native Cognito auth endpoint for TEST_AUTH_PROVIDER=cognito-native
+if (process.env.TEST_AUTH_PROVIDER === "cognito-native") {
+  cognitoNativeAuthPostApiEndpoint(app);
+  console.log("Native Cognito auth route registered (TEST_AUTH_PROVIDER=cognito-native)");
+}
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {

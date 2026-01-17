@@ -27,7 +27,7 @@ export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
   });
 }
 
-export async function loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath = defaultScreenshotPath) {
+export async function loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath = defaultScreenshotPath, testAuthPassword = null) {
   if (testAuthProvider === "mock") {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-or-mock-auth.png` });
     await initMockAuth(page, screenshotPath);
@@ -36,6 +36,13 @@ export async function loginWithCognitoOrMockAuth(page, testAuthProvider, testAut
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-or-mock-auth.png` });
     await submitMockAuth(page, screenshotPath);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-or-mock-auth.png` });
+  } else if (testAuthProvider === "cognito-native") {
+    // Native Cognito user authentication (username/password)
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-native.png` });
+    await fillInNativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-native-filled.png` });
+    await submitNativeAuth(page, screenshotPath);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-native-submitted.png` });
   } else if (testAuthProvider === "cognito") {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-login-with-cognito-or-mock-auth.png` });
     await initCognitoAuth(page, screenshotPath);
@@ -183,5 +190,36 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-mock-signed-in.png` });
+  });
+}
+
+// Native Cognito authentication (username/password)
+export async function fillInNativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters their native Cognito credentials", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-native-auth.png` });
+
+    // Wait for the native auth form to be visible
+    await expect(page.locator("#nativeLoginForm")).toBeVisible({ timeout: 10000 });
+
+    // Fill in username (email)
+    await loggedFill(page, "#nativeUsername", testAuthUsername, "Entering username", { screenshotPath });
+    await page.waitForTimeout(100);
+
+    // Fill in password
+    if (testAuthPassword) {
+      await loggedFill(page, "#nativePassword", testAuthPassword, "Entering password", { screenshotPath });
+    }
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-native-auth-filled.png` });
+  });
+}
+
+export async function submitNativeAuth(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the native Cognito login form", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-native.png` });
+    await loggedClick(page, "#loginWithNativeCognito", "Sign in with Test Account", { screenshotPath });
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-native-signed-in.png` });
   });
 }

@@ -41,6 +41,7 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "SELF_DESTRUCT_DELAY_HOURS", value = "1"),
     @SetEnvironmentVariable(key = "HTTP_API_URL", value = "https://test-api.example.com/"),
     @SetEnvironmentVariable(key = "DOC_ROOT_PATH", value = "web/public"),
+    @SetEnvironmentVariable(key = "EDGE_FUNCTION_ASSET_PATH", value = "app/functions/edge"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
 })

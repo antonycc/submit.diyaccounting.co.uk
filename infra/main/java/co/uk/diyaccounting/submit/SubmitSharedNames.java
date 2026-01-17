@@ -240,6 +240,15 @@ public class SubmitSharedNames {
     public boolean receiptGetLambdaJwtAuthorizer;
     public boolean receiptGetLambdaCustomAuthorizer;
 
+    public String supportTicketPostIngestLambdaHandler;
+    public String supportTicketPostIngestLambdaFunctionName;
+    public String supportTicketPostIngestLambdaArn;
+    public String supportTicketPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod supportTicketPostLambdaHttpMethod;
+    public String supportTicketPostLambdaUrlPath;
+    public boolean supportTicketPostLambdaJwtAuthorizer;
+    public boolean supportTicketPostLambdaCustomAuthorizer;
+
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
     public String selfDestructLambdaArn;
@@ -712,6 +721,28 @@ public class SubmitSharedNames {
                 "Retrieves a specific stored receipt for the authenticated user by file name",
                 "getReceiptByName",
                 List.of(new ApiParameter("name", "path", true, "The receipt file name including .json"))));
+
+        this.supportTicketPostLambdaHttpMethod = HttpMethod.POST;
+        this.supportTicketPostLambdaUrlPath = "/api/v1/support/ticket";
+        this.supportTicketPostLambdaJwtAuthorizer = false;
+        this.supportTicketPostLambdaCustomAuthorizer = false;
+        var supportTicketPostLambdaHandlerName = "supportTicketPost.ingestHandler";
+        var supportTicketPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(supportTicketPostLambdaHandlerName);
+        this.supportTicketPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, supportTicketPostLambdaHandlerDashed);
+        this.supportTicketPostIngestLambdaHandler =
+                "%s/support/%s".formatted(appLambdaHandlerPrefix, supportTicketPostLambdaHandlerName);
+        this.supportTicketPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, supportTicketPostLambdaHandlerDashed);
+        this.supportTicketPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.supportTicketPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.supportTicketPostLambdaHttpMethod,
+                this.supportTicketPostLambdaUrlPath,
+                "Submit a support ticket",
+                "Creates a GitHub issue for the authenticated user's support request",
+                "submitSupportTicket"));
 
         var appSelfDestructLambdaHandlerName = "selfDestruct.ingestHandler";
         var appSelfDestructLambdaHandlerDashed =

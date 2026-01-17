@@ -211,7 +211,15 @@ public class PublishStack extends Stack {
         infof("Using public doc root: %s".formatted(publicDir));
         var webDocRootSource = Source.asset(
                 publicDir.toString(),
-                AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
+                AssetOptions.builder()
+                        .assetHashType(AssetHashType.SOURCE)
+                        // Exclude test-only auth files from production deployment
+                        // These are only needed for local development or behavior tests
+                        .exclude(List.of(
+                                "auth/loginWithMockCallback.html",
+                                "auth/login-mock-addon.js",
+                                "auth/login-native-addon.js"))
+                        .build());
         this.webDeployment = BucketDeployment.Builder.create(
                         this, props.resourceNamePrefix() + "-DocRootToWebOriginDeployment")
                 .sources(List.of(webDocRootSource))

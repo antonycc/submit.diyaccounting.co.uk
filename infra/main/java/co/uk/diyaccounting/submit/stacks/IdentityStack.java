@@ -19,6 +19,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
+import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
@@ -199,10 +200,18 @@ public class IdentityStack extends Stack {
         this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 
         // User Pool Client
+        // Include COGNITO (native users) alongside federated identity providers
+        var allProviders = new java.util.ArrayList<>(this.identityProviders.keySet());
+        allProviders.add(UserPoolClientIdentityProvider.COGNITO); // Enable native Cognito users
         this.userPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-UserPoolClient")
                 .userPool(userPool)
                 .userPoolClientName(props.resourceNamePrefix() + "-client")
                 .generateSecret(false)
+                // Enable USER_PASSWORD_AUTH for native Cognito user authentication (used by behavior tests)
+                .authFlows(AuthFlow.builder()
+                        .userPassword(true) // ALLOW_USER_PASSWORD_AUTH for native users
+                        .userSrp(true) // ALLOW_USER_SRP_AUTH for more secure native auth
+                        .build())
                 .oAuth(OAuthSettings.builder()
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
                         .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
@@ -211,8 +220,7 @@ public class IdentityStack extends Stack {
                                 "https://" + props.sharedNames().envDomainName + "/auth/loginWithCognitoCallback.html"))
                         .logoutUrls(List.of("https://" + props.sharedNames().envDomainName + "/"))
                         .build())
-                .supportedIdentityProviders(
-                        this.identityProviders.keySet().stream().toList())
+                .supportedIdentityProviders(allProviders)
                 .build();
         this.identityProviders
                 .values()

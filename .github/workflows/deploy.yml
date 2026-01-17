@@ -147,6 +147,8 @@ jobs:
       - name: Normalise Params
         id: normalise
         shell: bash
+        env:
+          RAW_COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           X='${{ inputs.forceAllStackDeployment }}' ; echo "forceAllStackDeployment=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipDeploy }}' ; echo "skipDeploy=${X:-false}" | tee -a "$GITHUB_OUTPUT"
@@ -159,7 +161,8 @@ jobs:
           # Compute isSkippingDeploy: true if skipDeploy=true OR (push event with skip: in commit message)
           SKIP_DEPLOY='${{ inputs.skipDeploy }}'
           EVENT_NAME='${{ github.event_name }}'
-          COMMIT_MSG='${{ github.event.head_commit.message }}'
+          # Sanitize commit message: replace chars outside [a-zA-Z0-9 :-] with -, dedupe spaces and dashes
+          COMMIT_MSG=$(printf '%s' "$RAW_COMMIT_MSG" | tr -c 'a-zA-Z0-9 :-' '-' | sed 's/--*/-/g; s/  */ /g')
           if [ "${SKIP_DEPLOY:-false}" = "true" ]; then
             echo "isSkippingDeploy=true" | tee -a "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" = "push" ] && echo "$COMMIT_MSG" | grep -q "skip:"; then
