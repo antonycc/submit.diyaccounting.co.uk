@@ -32,9 +32,7 @@ export async function getDynamoDbDocClient(options = {}) {
 
     // Always use removeUndefinedValues to prevent "Cannot convert undefined" errors
     const defaultMarshallOptions = { removeUndefinedValues: true };
-    const marshallOptions = options.marshallOptions
-      ? { ...defaultMarshallOptions, ...options.marshallOptions }
-      : defaultMarshallOptions;
+    const marshallOptions = options.marshallOptions ? { ...defaultMarshallOptions, ...options.marshallOptions } : defaultMarshallOptions;
 
     __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client, { marshallOptions });
     __dynamoEndpointUsed = currentEndpoint;
