@@ -65,6 +65,7 @@ public class SubmitApplication {
         public String docRootPath;
         public String edgeFunctionAssetPath;
         public String httpApiUrl;
+        public String githubTokenSecretArn;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -245,6 +246,8 @@ public class SubmitApplication {
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.accountStackId, deploymentName, envName);
+        var githubTokenSecretArn = envOr(
+                "GITHUB_TOKEN_SECRET_ARN", appProps.githubTokenSecretArn, "(from githubTokenSecretArn in cdk.json)");
         this.accountStack = new AccountStack(
                 app,
                 sharedNames.accountStackId,
@@ -258,6 +261,7 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
+                        .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
                         .build());
         // this.accountStack.addDependency(devStack);
 
