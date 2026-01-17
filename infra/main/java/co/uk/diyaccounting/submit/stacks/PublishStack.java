@@ -213,11 +213,12 @@ public class PublishStack extends Stack {
                 publicDir.toString(),
                 AssetOptions.builder()
                         .assetHashType(AssetHashType.SOURCE)
-                        // Exclude mock OAuth files from production deployment
-                        // These are only needed for local development with mock-oauth2-server
+                        // Exclude test-only auth files from production deployment
+                        // These are only needed for local development or behavior tests
                         .exclude(List.of(
                                 "auth/loginWithMockCallback.html",
-                                "auth/login-mock-addon.js"))
+                                "auth/login-mock-addon.js",
+                                "auth/login-native-addon.js"))
                         .build());
         this.webDeployment = BucketDeployment.Builder.create(
                         this, props.resourceNamePrefix() + "-DocRootToWebOriginDeployment")
