@@ -39,6 +39,26 @@ const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnGet.js" }
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
 
+/**
+ * Serialize response headers to a plain object with lowercase keys
+ * Handles both Headers objects (with forEach) and plain objects
+ * @param {Headers|Object|null} headers - Response headers
+ * @returns {Array<[string, string]>} Array of [key, value] pairs for Object.fromEntries
+ */
+function serializeResponseHeaders(headers) {
+  if (!headers) {
+    return [];
+  }
+  if (typeof headers.forEach === "function") {
+    const headerEntries = {};
+    headers.forEach((value, key) => {
+      headerEntries[key.toLowerCase()] = value;
+    });
+    return Object.entries(headerEntries);
+  }
+  return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
+}
+
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -229,17 +249,7 @@ export async function ingestHandler(event) {
           ok: hmrcResponse.ok,
           status: hmrcResponse.status,
           statusText: hmrcResponse.statusText,
-          headers: Object.fromEntries(
-            hmrcResponse.headers
-              ? typeof hmrcResponse.headers.forEach === "function"
-                ? (() => {
-                    const h = {};
-                    hmrcResponse.headers.forEach((v, k) => (h[k.toLowerCase()] = v));
-                    return Object.entries(h);
-                  })()
-                : Object.entries(hmrcResponse.headers).map(([k, v]) => [k.toLowerCase(), v])
-              : [],
-          ),
+          headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
         return { vatReturn, hmrcResponse: serializableHmrcResponse };
       };
@@ -358,17 +368,7 @@ export async function workerHandler(event) {
         ok: hmrcResponse.ok,
         status: hmrcResponse.status,
         statusText: hmrcResponse.statusText,
-        headers: Object.fromEntries(
-          hmrcResponse.headers
-            ? typeof hmrcResponse.headers.forEach === "function"
-              ? (() => {
-                  const h = {};
-                  hmrcResponse.headers.forEach((v, k) => (h[k.toLowerCase()] = v));
-                  return Object.entries(h);
-                })()
-              : Object.entries(hmrcResponse.headers).map(([k, v]) => [k.toLowerCase(), v])
-            : [],
-        ),
+        headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
       const result = { vatReturn, hmrcResponse: serializableHmrcResponse };

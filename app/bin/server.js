@@ -78,7 +78,7 @@ app.use((req, res, next) => {
   // Content-Security-Policy: Basic CSP for security
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-ancestors 'none'; form-action 'self'"
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-ancestors 'none'; form-action 'self'",
   );
   // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
@@ -103,7 +103,7 @@ app.get("/submit.env", (req, res) => {
     "HMRC_SANDBOX_BASE_URI",
     "DIY_SUBMIT_BASE_URL",
   ];
-  // eslint-disable-next-line security/detect-object-injection -- publicVars is a hardcoded array of trusted env var names
+
   const lines = publicVars.map((v) => `${v}=${process.env[v] || ""}`);
 
   res.setHeader("Content-Type", "text/plain");

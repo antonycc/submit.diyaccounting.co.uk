@@ -5,28 +5,10 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
+import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { calculateHmrcTaxRecordTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" });
-
-let __dynamoDbModule;
-let __dynamoDbDocClient;
-let __dynamoEndpointUsed;
-
-async function getDynamoDbDocClient() {
-  // Recreate client if endpoint changes after first import (common in tests)
-  const endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || process.env.AWS_ENDPOINT_URL;
-  if (!__dynamoDbDocClient || __dynamoEndpointUsed !== (endpoint || "")) {
-    __dynamoDbModule = await import("@aws-sdk/lib-dynamodb");
-    const { DynamoDBClient } = await import("@aws-sdk/client-dynamodb");
-    const client = new DynamoDBClient({
-      region: process.env.AWS_REGION || "eu-west-2",
-      ...(endpoint ? { endpoint } : {}),
-    });
-    __dynamoDbDocClient = __dynamoDbModule.DynamoDBDocumentClient.from(client);
-    __dynamoEndpointUsed = endpoint || "";
-  }
-  return __dynamoDbDocClient;
-}
 
 function getTableName() {
   const tableName = process.env.RECEIPTS_DYNAMODB_TABLE_NAME;
@@ -46,7 +28,7 @@ export async function putReceipt(userSub, receiptId, receipt) {
     const hashedSub = hashSub(userSub);
     logger.info({ message: "Storing receipt", hashedSub, userSub, receiptId });
 
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
@@ -58,10 +40,9 @@ export async function putReceipt(userSub, receiptId, receipt) {
     };
 
     // Calculate TTL as 7 years (2555 days) after creation for HMRC tax record requirements
-    const ttlDate = new Date(now.getTime());
-    ttlDate.setDate(ttlDate.getDate() + 2555);
-    item.ttl = Math.floor(ttlDate.getTime() / 1000);
-    item.ttl_datestamp = ttlDate.toISOString();
+    const { ttl, ttl_datestamp } = calculateHmrcTaxRecordTtl(now);
+    item.ttl = ttl;
+    item.ttl_datestamp = ttl_datestamp;
 
     logger.info({
       message: "Storing receipt in DynamoDB as item",
@@ -70,7 +51,7 @@ export async function putReceipt(userSub, receiptId, receipt) {
       ttl_datestamp: item.ttl_datestamp,
     });
     await docClient.send(
-      new __dynamoDbModule.PutCommand({
+      new module.PutCommand({
         TableName: tableName,
         Item: item,
       }),
@@ -108,11 +89,11 @@ export async function getReceipt(userSub, receiptId) {
   try {
     const hashedSub = hashSub(userSub);
     logger.info({ message: "Retrieving receipt from DynamoDB", userSub, hashedSub, receiptId });
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const response = await docClient.send(
-      new __dynamoDbModule.GetCommand({
+      new module.GetCommand({
         TableName: tableName,
         Key: {
           hashedSub,
@@ -158,11 +139,11 @@ export async function listUserReceipts(userSub) {
   try {
     const hashedSub = hashSub(userSub);
     logger.info({ message: "Retrieving receipts from DynamoDB", userSub, hashedSub });
-    const docClient = await getDynamoDbDocClient();
+    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const response = await docClient.send(
-      new __dynamoDbModule.QueryCommand({
+      new module.QueryCommand({
         TableName: tableName,
         KeyConditionExpression: "hashedSub = :hashedSub",
         ExpressionAttributeValues: {

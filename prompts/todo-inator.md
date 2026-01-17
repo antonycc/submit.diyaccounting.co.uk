@@ -89,5 +89,4 @@ Use these as inspiration; do not attempt to fix everything at once. Choose ONE c
 - Code style and formatting pass via repository scripts.
 - The PR description clearly documents rationale, scope, and verification steps.
 
-> Formatting and style: Use the repo’s formatters — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Run `npm run formatting` / `npm run formatting-fix`. See README for details.
 > Prefer not to reformat code you are not otherwise changing; match local style where heavy reformatting would be jarring.

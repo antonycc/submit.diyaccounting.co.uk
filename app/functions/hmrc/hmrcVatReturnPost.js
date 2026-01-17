@@ -256,7 +256,6 @@ export async function ingestHandler(event) {
             });
           } else {
             Object.keys(hmrcResponse.headers).forEach((k) => {
-              // eslint-disable-next-line security/detect-object-injection -- k comes from Object.keys iteration
               serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
             });
           }
@@ -415,7 +414,6 @@ export async function workerHandler(event) {
           });
         } else {
           Object.keys(hmrcResponse.headers).forEach((k) => {
-            // eslint-disable-next-line security/detect-object-injection -- k comes from Object.keys iteration
             serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
           });
         }

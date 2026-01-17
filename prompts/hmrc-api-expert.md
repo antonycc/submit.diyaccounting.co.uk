@@ -52,4 +52,4 @@ Purpose: Provide deep expertise in integrating with HMRC's Making Tax Digital (M
 - Full compliance with HMRC's fraud prevention header requirements.
 - Robust error handling and token management.
 
-> Formatting and style: Use the repo’s formatters — ESLint (flat) + Prettier for JS (ESM). Run `npm run formatting:js-fix`.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

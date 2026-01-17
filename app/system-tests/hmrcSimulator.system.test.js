@@ -242,8 +242,8 @@ describe("HTTP Simulator", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/vnd.hmrc.1.0+json",
-          Authorization: "Bearer test-token",
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "Bearer test-token",
         },
         body: JSON.stringify(returnData),
       });
@@ -311,7 +311,7 @@ describe("HTTP Simulator", () => {
     it("should return VALID when all required headers present", async () => {
       const response = await fetch(`${baseUrl}/test/fraud-prevention-headers/validate`, {
         headers: {
-          Authorization: "Bearer test-token",
+          "Authorization": "Bearer test-token",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
           "Gov-Client-Device-ID": "test-device-id",
           "Gov-Client-User-IDs": "server=anonymous",

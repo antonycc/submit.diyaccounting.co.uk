@@ -138,8 +138,8 @@
 
       console.log("Native Cognito login successful", { email: userInfo.email });
 
-      if (typeof showStatus === "function") {
-        showStatus("Login successful", "success");
+      if (typeof window.showStatus === "function") {
+        window.showStatus("Login successful", "success");
       }
 
       // Redirect to home page
@@ -149,8 +149,8 @@
       submitBtn.disabled = false;
       submitBtn.textContent = "Sign in with Test Account";
 
-      if (typeof showStatus === "function") {
-        showStatus(error.message || "Login failed. Please check your credentials.", "error");
+      if (typeof window.showStatus === "function") {
+        window.showStatus(error.message || "Login failed. Please check your credentials.", "error");
       } else {
         alert(error.message || "Login failed. Please check your credentials.");
       }

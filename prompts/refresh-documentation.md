@@ -25,5 +25,4 @@ Provide recommendations that:
 - Keep documentation synchronized with code changes.
 - Maintain stability by giving the automated tools documents consistent with code.
 
-> Formatting and style: Keep prose brief and defer to the repo’s formatting configs — ESLint (flat) + Prettier for JS (ESM) and Spotless (Palantir Java Format) for Java. Use npm run formatting / npm run formatting-fix. See README for IDE setup.
-> Do not apply styles changes to code that you are not otherwise changes and prefer to match the existing local style when applying the style guides would be jarring.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

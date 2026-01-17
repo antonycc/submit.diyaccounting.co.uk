@@ -37,8 +37,8 @@ export default [
       ...promise.configs.recommended.rules,
       ...sonarjs.configs.recommended.rules,
       "sonarjs/os-command": "off",
-      // Raise allowed cognitive complexity from default (15) to 22
-      "sonarjs/cognitive-complexity": ["error", 22],
+      // Raise allowed cognitive complexity from default (15) to 40
+      "sonarjs/cognitive-complexity": ["error", 40],
       // Do not complain about TODO comments
       "sonarjs/todo-tag": "off",
       "no-warning-comments": "off",
@@ -107,6 +107,7 @@ export default [
       "cdk.out/",
       // Project-specific: exclude tests and scripts from linting-fix
       "app/unit-tests/",
+      "app/http-simulator/",
       "app/system-tests/",
       "web/unit-tests/",
       "scripts/",

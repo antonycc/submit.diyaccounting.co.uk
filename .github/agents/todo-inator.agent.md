@@ -75,4 +75,4 @@ grep -i -n -A 20 -E 'fail|error' target/behaviour.txt
 - All tests pass locally and in CI; no regressions.
 - The PR description clearly documents rationale, scope, and verification steps.
 
-> Formatting and style: Use the repo’s formatters. Run `npm run formatting-fix`.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

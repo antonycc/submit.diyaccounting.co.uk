@@ -69,4 +69,4 @@ grep -i -n -A 20 -E 'fail|error' target/behaviour.txt
 - The product catalogue is easy to maintain and accurately reflects the project's features.
 - Subscription-to-bundle mapping is robust and reliable.
 
-> Formatting and style: Ensure TOML files are cleanly formatted. Follow repo standards for any related JS changes.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

@@ -25,6 +25,7 @@ import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.ErrorResponse;
+import software.amazon.awscdk.services.cloudfront.HeadersFrameOption;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
@@ -33,14 +34,13 @@ import software.amazon.awscdk.services.cloudfront.OriginRequestPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestQueryStringBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeader;
 import software.amazon.awscdk.services.cloudfront.ResponseCustomHeadersBehavior;
-import software.amazon.awscdk.services.cloudfront.HeadersFrameOption;
-import software.amazon.awscdk.services.cloudfront.ResponseHeadersReferrerPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentSecurityPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentTypeOptions;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersCorsBehavior;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersFrameOptions;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersPolicy;
+import software.amazon.awscdk.services.cloudfront.ResponseHeadersReferrerPolicy;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersStrictTransportSecurity;
-import software.amazon.awscdk.services.cloudfront.ResponseHeadersContentTypeOptions;
 import software.amazon.awscdk.services.cloudfront.ResponseHeadersXSSProtection;
 import software.amazon.awscdk.services.cloudfront.ResponseSecurityHeadersBehavior;
 import software.amazon.awscdk.services.cloudfront.S3OriginAccessControl;
@@ -326,7 +326,9 @@ public class EdgeStack extends Stack {
                                 .override(true)
                                 .build())
                         .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
-                                .referrerPolicy(software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .referrerPolicy(
+                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
                                 .override(true)
                                 .build())
                         .xssProtection(ResponseHeadersXSSProtection.builder()

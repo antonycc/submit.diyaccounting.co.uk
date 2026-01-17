@@ -13,7 +13,7 @@ import { authorizedFetch } from "./api-client.js";
 export function isValidIPv4(token) {
   // Quick pre-check: must have exactly 3 dots
   let dotCount = 0;
-  // eslint-disable-next-line security/detect-object-injection -- i is a controlled loop index
+
   for (let i = 0; i < token.length; i++) if (token[i] === ".") dotCount++;
   if (dotCount !== 3) return false;
 
@@ -24,13 +24,13 @@ export function isValidIPv4(token) {
     // no leading zeros like "01" unless the number is exactly 0
     if (p.length > 1 && p[0] === "0") return false;
     let num = 0;
-    /* eslint-disable security/detect-object-injection -- i is a controlled loop index */
+
     for (let i = 0; i < p.length; i++) {
       const ch = p[i];
       if (ch < "0" || ch > "9") return false;
       num = num * 10 + (ch.charCodeAt(0) - 48);
     }
-    /* eslint-enable security/detect-object-injection */
+
     if (num < 0 || num > 255) return false;
   }
   return true;
@@ -45,7 +45,7 @@ export function extractIPv4FromCandidate(candidate) {
   if (!candidate || typeof candidate !== "string") return "";
   const tokens = [];
   let buf = "";
-  /* eslint-disable security/detect-object-injection -- i is a controlled loop index */
+
   for (let i = 0; i < candidate.length; i++) {
     const ch = candidate[i];
     const isDigit = ch >= "0" && ch <= "9";
@@ -56,7 +56,7 @@ export function extractIPv4FromCandidate(candidate) {
       buf = "";
     }
   }
-  /* eslint-enable security/detect-object-injection */
+
   if (buf) tokens.push(buf);
 
   for (const t of tokens) {
@@ -242,7 +242,14 @@ export async function getGovClientHeaders() {
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @returns {Promise<object>} Submission response
  */
-export async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}, runFraudPreventionHeaderValidation = false) {
+export async function submitVat(
+  vatNumber,
+  periodKey,
+  vatDue,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+) {
   const url = "/api/v1/hmrc/vat/return";
 
   // Get Cognito JWT token for custom authorizer

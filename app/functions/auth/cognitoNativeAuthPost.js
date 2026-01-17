@@ -113,9 +113,12 @@ export async function ingestHandler(event) {
     logger.error({ message: "Native Cognito authentication failed", error: error.message, username });
 
     // Return appropriate error based on Cognito exception
-    const statusCode = error.name === "NotAuthorizedException" ? 401 :
-                       error.name === "UserNotFoundException" ? 401 :
-                       error.name === "UserNotConfirmedException" ? 403 : 500;
+    const cognitoErrorStatusCodes = {
+      NotAuthorizedException: 401,
+      UserNotFoundException: 401,
+      UserNotConfirmedException: 403,
+    };
+    const statusCode = cognitoErrorStatusCodes[error.name] || 500;
 
     return {
       statusCode,

@@ -65,8 +65,8 @@ async function createGitHubIssue({ title, body, labels }) {
   const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${githubToken}`,
-      Accept: "application/vnd.github+json",
+      "Authorization": `Bearer ${githubToken}`,
+      "Accept": "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
       "Content-Type": "application/json",
     },
@@ -115,7 +115,6 @@ export async function ingestHandler(event) {
 
   // Get client info from headers (for logging/tracking, not authentication)
   const clientIp = event.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() || "unknown";
-  const userAgent = event.headers?.["user-agent"] || "unknown";
 
   // Parse and validate request body
   const requestBody = parseRequestBody(event);

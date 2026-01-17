@@ -410,19 +410,18 @@ public class ObservabilityStack extends Stack {
                         .build()));
 
         // Row 6: Lambda Performance across all deployments
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Lambda p95 Duration (all functions, all deployments)")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Duration\"', 'p95', 300)",
-                                        lambdaSearchPrefix))
-                                .label("p95 Duration by function")
-                                .period(Duration.minutes(5))
-                                .build()))
-                        .width(24)
-                        .height(6)
-                        .build()));
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("Lambda p95 Duration (all functions, all deployments)")
+                .left(List.of(MathExpression.Builder.create()
+                        .expression(String.format(
+                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Duration\"', 'p95', 300)",
+                                lambdaSearchPrefix))
+                        .label("p95 Duration by function")
+                        .period(Duration.minutes(5))
+                        .build()))
+                .width(24)
+                .height(6)
+                .build()));
 
         // Row 7: Help text for deployment annotations
         dashboardRows.add(List.of(TextWidget.Builder.create()
@@ -448,7 +447,8 @@ public class ObservabilityStack extends Stack {
                 .height(4)
                 .build()));
 
-        Dashboard operationsDashboard = Dashboard.Builder.create(this, props.resourceNamePrefix() + "-OperationsDashboard")
+        Dashboard operationsDashboard = Dashboard.Builder.create(
+                        this, props.resourceNamePrefix() + "-OperationsDashboard")
                 .dashboardName(props.resourceNamePrefix() + "-operations")
                 .widgets(dashboardRows)
                 .build();

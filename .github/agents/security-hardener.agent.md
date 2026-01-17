@@ -40,4 +40,4 @@ Purpose: Analyze and enhance the application’s security posture across AWS Cog
 - Documented security controls for compliance.
 - 100% visibility into authentication events.
 
-> Formatting and style: Use `npm run formatting-fix`. Match existing local style.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.

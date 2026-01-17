@@ -56,4 +56,4 @@ grep -i -n -A 20 -E 'fail|error' target/behaviour.txt
 - Identification of all major blockers for HMRC approval.
 - High confidence in the system's ability to handle real VAT data securely.
 
-> Formatting and style: Follow the repository’s style guides. Use `npm run formatting` / `npm run formatting-fix`.
+> Avoid reformatting files you are not otherwise changing; prefer to match the existing local style where strict formatting updates would be jarring.
