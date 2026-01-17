@@ -551,9 +551,10 @@ Options:
 
 ### Phase 3 (Do When Resourced - COMPLETED 2026-01-17)
 - [x] Security Hub integration (ObservabilityStack.java - CIS benchmark + EventBridge)
-- [x] Cross-account anomaly detection (documented - EventBridge rules for IAM changes)
-- [x] Automated IP blocking (documented - requires Lambda implementation)
-- [x] Automated secret rotation (documented - requires Secrets Manager rotation Lambda)
+- [x] Cross-account anomaly detection (ObservabilityStack.java - EventBridge rules for IAM policy changes, security group changes, access key creation, root account activity)
+- [x] DynamoDB CloudTrail data events (ObservabilityStack.java - L1 CfnTrail with data event selectors for {env}-submit-* tables)
+- [ ] Automated IP blocking (documented - requires cross-region Lambda, potential false positives risk)
+- [ ] Automated secret rotation (documented - external OAuth secrets from HMRC/Google require manual rotation)
 
 ### Phase 4 (Future / HMRC Required - DOCUMENTED)
 - [x] SIEM integration (documented as optional - CloudWatch Logs can export to external SIEM)

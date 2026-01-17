@@ -127,13 +127,29 @@ public class ObservabilityStack extends Stack {
                     .isMultiRegionTrail(false)
                     .build();
 
-            // Phase 2.2: DynamoDB Data Event Logging
-            // NOTE: DynamoDB data event logging must be enabled manually in the AWS Console:
-            // CloudTrail > Trails > {trail} > Data events > Add data event
-            // Select: DynamoDB > All tables, or specific tables matching: {env}-submit-*
-            // This enables detection of bulk data access patterns (Scan operations)
-            //
-            // Once enabled, create a CloudWatch Logs Insights query:
+            // Phase 2.2: DynamoDB Data Event Logging via L1 construct
+            // Add event selectors for DynamoDB data plane operations (GetItem, PutItem, DeleteItem, Query, Scan)
+            // This enables detection of bulk data access patterns indicating potential data breach
+            software.amazon.awscdk.services.cloudtrail.CfnTrail cfnTrail =
+                    (software.amazon.awscdk.services.cloudtrail.CfnTrail) this.trail.getNode().getDefaultChild();
+
+            cfnTrail.setEventSelectors(List.of(
+                    software.amazon.awscdk.services.cloudtrail.CfnTrail.EventSelectorProperty.builder()
+                            .readWriteType("All")
+                            .includeManagementEvents(true)
+                            .dataResources(List.of(
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.DataResourceProperty.builder()
+                                            .type("AWS::DynamoDB::Table")
+                                            // Log all DynamoDB tables in this account matching the env prefix
+                                            .values(List.of(
+                                                    "arn:aws:dynamodb:" + this.getRegion() + ":" + this.getAccount()
+                                                            + ":table/" + props.envName() + "-submit-*"))
+                                            .build()))
+                            .build()));
+
+            infof("Configured CloudTrail DynamoDB data event logging for tables: %s-submit-*", props.envName());
+
+            // CloudWatch Logs Insights query for detecting bulk data access:
             // filter eventSource = "dynamodb.amazonaws.com" and eventName = "Scan"
             // | stats count(*) by bin(5m)
 
@@ -320,6 +336,82 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "SecurityHubArn", securityHub.getAttrArn());
 
         infof("Created Security Hub with EventBridge rule for security findings");
+
+        // ============================================================================
+        // Phase 3.2: Cross-Account/Region Anomaly Detection
+        // ============================================================================
+        // EventBridge rules to detect suspicious AWS API activity that may indicate
+        // credential compromise or lateral movement attacks.
+
+        // Rule 1: IAM Policy Changes - detect unauthorized permission escalation
+        Rule iamPolicyChangeRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-IamPolicyChangeRule")
+                .ruleName(props.resourceNamePrefix() + "-iam-policy-changes")
+                .description("Alert on IAM policy changes that may indicate privilege escalation")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.iam"))
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("eventName", List.of(
+                                "CreatePolicy",
+                                "CreatePolicyVersion",
+                                "DeletePolicy",
+                                "DeletePolicyVersion",
+                                "AttachUserPolicy",
+                                "AttachRolePolicy",
+                                "AttachGroupPolicy",
+                                "DetachUserPolicy",
+                                "DetachRolePolicy",
+                                "DetachGroupPolicy",
+                                "PutUserPolicy",
+                                "PutRolePolicy",
+                                "PutGroupPolicy")))
+                        .build())
+                .build();
+        iamPolicyChangeRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        // Rule 2: Security Group Changes - detect network security modifications
+        Rule securityGroupChangeRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SgChangeRule")
+                .ruleName(props.resourceNamePrefix() + "-security-group-changes")
+                .description("Alert on security group changes that may expose resources")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.ec2"))
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("eventName", List.of(
+                                "AuthorizeSecurityGroupIngress",
+                                "AuthorizeSecurityGroupEgress",
+                                "RevokeSecurityGroupIngress",
+                                "RevokeSecurityGroupEgress",
+                                "CreateSecurityGroup",
+                                "DeleteSecurityGroup")))
+                        .build())
+                .build();
+        securityGroupChangeRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        // Rule 3: Access Key Creation - detect potential credential theft preparation
+        Rule accessKeyCreationRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-AccessKeyRule")
+                .ruleName(props.resourceNamePrefix() + "-access-key-creation")
+                .description("Alert on new IAM access key creation that may indicate credential theft")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.iam"))
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("eventName", List.of(
+                                "CreateAccessKey",
+                                "UpdateAccessKey")))
+                        .build())
+                .build();
+        accessKeyCreationRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        // Rule 4: Root Account Activity - detect any root account usage
+        Rule rootActivityRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-RootActivityRule")
+                .ruleName(props.resourceNamePrefix() + "-root-account-activity")
+                .description("Alert on any AWS root account activity - should never be used in normal operations")
+                .eventPattern(EventPattern.builder()
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("userIdentity", Map.of("type", List.of("Root"))))
+                        .build())
+                .build();
+        rootActivityRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        infof("Created anomaly detection rules: IAM policy changes, security groups, access keys, root activity");
 
         // ============================================================================
         // Consolidated Operations Dashboard
