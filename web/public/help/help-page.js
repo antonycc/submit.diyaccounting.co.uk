@@ -185,12 +185,12 @@ class HelpPage {
    */
   formatCategory(cat) {
     const labels = {
-      connection: "Connection",
-      submission: "Submission",
-      bundles: "Bundles",
-      receipts: "Receipts",
+      "connection": "Connection",
+      "submission": "Submission",
+      "bundles": "Bundles",
+      "receipts": "Receipts",
       "vat-basics": "VAT Basics",
-      errors: "Errors",
+      "errors": "Errors",
     };
     return labels[cat] || cat;
   }

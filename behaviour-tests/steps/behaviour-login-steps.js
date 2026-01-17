@@ -27,7 +27,13 @@ export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
   });
 }
 
-export async function loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath = defaultScreenshotPath, testAuthPassword = null) {
+export async function loginWithCognitoOrMockAuth(
+  page,
+  testAuthProvider,
+  testAuthUsername,
+  screenshotPath = defaultScreenshotPath,
+  testAuthPassword = null,
+) {
   if (testAuthProvider === "mock") {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-or-mock-auth.png` });
     await initMockAuth(page, screenshotPath);

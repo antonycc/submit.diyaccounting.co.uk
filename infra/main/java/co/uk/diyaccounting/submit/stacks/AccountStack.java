@@ -367,7 +367,8 @@ public class AccountStack extends Stack {
                 this.bundleDeleteLambda.getFunctionName());
 
         // Support Ticket POST Lambda - only create if GitHub token secret ARN is provided
-        if (props.githubTokenSecretArn() != null && !props.githubTokenSecretArn().isEmpty()) {
+        if (props.githubTokenSecretArn() != null
+                && !props.githubTokenSecretArn().isEmpty()) {
             var supportTicketPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
                     .with("GITHUB_TOKEN_SECRET_ARN", props.githubTokenSecretArn())

@@ -98,9 +98,7 @@ public class DataStack extends Stack {
                 .build();
         infof(
                 "Created receipts DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
-                this.receiptsTable.getTableName(),
-                this.receiptsTable.getNode().getId(),
-                criticalTableRemovalPolicy);
+                this.receiptsTable.getTableName(), this.receiptsTable.getNode().getId(), criticalTableRemovalPolicy);
 
         // Create DynamoDB table for bundle storage
         // HIGH priority - contains user subscription data - PITR enabled for backup
@@ -123,9 +121,7 @@ public class DataStack extends Stack {
                 .build();
         infof(
                 "Created bundles DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
-                this.bundlesTable.getTableName(),
-                this.bundlesTable.getNode().getId(),
-                criticalTableRemovalPolicy);
+                this.bundlesTable.getTableName(), this.bundlesTable.getNode().getId(), criticalTableRemovalPolicy);
 
         // Create DynamoDB table for bundle POST async request storage
         this.bundlePostAsyncRequestsTable = createAsyncRequestsTable(

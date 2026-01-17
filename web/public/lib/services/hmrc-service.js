@@ -242,7 +242,14 @@ export async function getGovClientHeaders() {
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @returns {Promise<object>} Submission response
  */
-export async function submitVat(vatNumber, periodKey, vatDue, accessToken, govClientHeaders = {}, runFraudPreventionHeaderValidation = false) {
+export async function submitVat(
+  vatNumber,
+  periodKey,
+  vatDue,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+) {
   const url = "/api/v1/hmrc/vat/return";
 
   // Get Cognito JWT token for custom authorizer

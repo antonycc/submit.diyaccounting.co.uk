@@ -41,8 +41,8 @@ public class EdgeLambdaConstruct {
         // Must allow both lambda.amazonaws.com and edgelambda.amazonaws.com
         Role edgeLambdaRole = Role.Builder.create(scope, props.idPrefix() + "-Role")
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
-                .managedPolicies(List.of(
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
+                .managedPolicies(
+                        List.of(ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
                 .build();
 
         // Allow Lambda@Edge to assume the role

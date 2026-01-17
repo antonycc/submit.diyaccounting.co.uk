@@ -97,7 +97,6 @@ public class ApiStack extends Stack {
         }
     }
 
-
     public ApiStack(final Construct scope, final String id, final ApiStackProps props) {
         super(scope, id, props);
 
@@ -215,7 +214,8 @@ public class ApiStack extends Stack {
             }
             createdRouteKeys.add(routeKeyStr);
             firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.ingestFunctionName());
-            createRouteForLambda(apiLambdaProps, jwtAuthorizer, customAuthorizer, createdRouteKeys, firstCreatorByRoute);
+            createRouteForLambda(
+                    apiLambdaProps, jwtAuthorizer, customAuthorizer, createdRouteKeys, firstCreatorByRoute);
         }
 
         // Synthesis-time diagnostics: list all created routes

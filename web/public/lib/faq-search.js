@@ -86,7 +86,10 @@ export class FAQSearch {
 
     // No query = return top by priority
     if (!trimmed) {
-      return this.faqs.slice().sort((a, b) => a.priority - b.priority).slice(0, this.defaultCount);
+      return this.faqs
+        .slice()
+        .sort((a, b) => a.priority - b.priority)
+        .slice(0, this.defaultCount);
     }
 
     const queryBigrams = this.getBigrams(trimmed);

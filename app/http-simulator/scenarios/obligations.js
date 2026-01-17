@@ -238,9 +238,7 @@ const errorScenarios = {
 const slowScenarios = {
   SUBMIT_HMRC_API_HTTP_SLOW_10S: {
     delayMs: 10000,
-    obligations: [
-      { periodKey: "18A1", start: "2017-01-01", end: "2017-03-31", due: "2017-05-07", status: "F", received: "2017-05-06" },
-    ],
+    obligations: [{ periodKey: "18A1", start: "2017-01-01", end: "2017-03-31", due: "2017-05-07", status: "F", received: "2017-05-06" }],
   },
 };
 

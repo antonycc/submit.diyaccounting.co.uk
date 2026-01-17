@@ -152,19 +152,18 @@ public class BackupStack extends Stack {
                 .versioned(true)
                 .removalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
                 .autoDeleteObjects(!isProd)
-                .lifecycleRules(List.of(
-                        LifecycleRule.builder()
-                                .id("TransitionToIA")
-                                .transitions(List.of(
-                                        Transition.builder()
-                                                .storageClass(StorageClass.INFREQUENT_ACCESS)
-                                                .transitionAfter(Duration.days(30))
-                                                .build(),
-                                        Transition.builder()
-                                                .storageClass(StorageClass.GLACIER)
-                                                .transitionAfter(Duration.days(90))
-                                                .build()))
-                                .build()))
+                .lifecycleRules(List.of(LifecycleRule.builder()
+                        .id("TransitionToIA")
+                        .transitions(List.of(
+                                Transition.builder()
+                                        .storageClass(StorageClass.INFREQUENT_ACCESS)
+                                        .transitionAfter(Duration.days(30))
+                                        .build(),
+                                Transition.builder()
+                                        .storageClass(StorageClass.GLACIER)
+                                        .transitionAfter(Duration.days(90))
+                                        .build()))
+                        .build()))
                 .build();
 
         // ============================================================================

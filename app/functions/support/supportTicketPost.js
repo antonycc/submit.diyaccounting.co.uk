@@ -65,8 +65,8 @@ async function createGitHubIssue({ title, body, labels }) {
   const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${githubToken}`,
-      Accept: "application/vnd.github+json",
+      "Authorization": `Bearer ${githubToken}`,
+      "Accept": "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
       "Content-Type": "application/json",
     },

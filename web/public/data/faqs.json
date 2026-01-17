@@ -5,18 +5,7 @@
       "category": "connection",
       "question": "Why won't my app connect to HMRC?",
       "answer": "The most common causes are:\n1. **Pop-up blocker** - HMRC authentication opens in a new window. Allow pop-ups for submit.diyaccounting.co.uk\n2. **Browser cookies** - HMRC requires cookies. Ensure third-party cookies aren't blocked for tax.service.gov.uk\n3. **Session expired** - If you've been on the page a while, refresh and try again\n4. **HMRC service down** - Check https://www.gov.uk/government/collections/hm-revenue-and-customs-service-availability-and-issues for outages\n",
-      "keywords": [
-        "connect",
-        "hmrc",
-        "login",
-        "authorise",
-        "authorize",
-        "popup",
-        "blocked",
-        "won't connect",
-        "can't connect",
-        "failed"
-      ],
+      "keywords": ["connect", "hmrc", "login", "authorise", "authorize", "popup", "blocked", "won't connect", "can't connect", "failed"],
       "priority": 1
     },
     {
@@ -24,15 +13,7 @@
       "category": "connection",
       "question": "The sandbox works but production doesn't - what's wrong?",
       "answer": "Sandbox and production use different HMRC environments with separate credentials:\n- **Sandbox** uses test credentials (any VRN works)\n- **Production** requires your real HMRC Government Gateway login\n\nIf sandbox works but production doesn't:\n1. Ensure you're using your actual Government Gateway credentials (not test ones)\n2. Check your VRN is registered for MTD VAT with HMRC\n3. You may need to re-authorise if your HMRC permissions changed\n",
-      "keywords": [
-        "sandbox",
-        "production",
-        "test",
-        "live",
-        "real",
-        "works in sandbox",
-        "doesn't work"
-      ],
+      "keywords": ["sandbox", "production", "test", "live", "real", "works in sandbox", "doesn't work"],
       "priority": 2
     },
     {
@@ -40,14 +21,7 @@
       "category": "bundles",
       "question": "What is a bundle?",
       "answer": "A bundle is a saved configuration for a VAT submission. It stores:\n- Your VAT Registration Number (VRN)\n- Whether to use sandbox or production HMRC\n- Your HMRC authorisation\n\nYou can have multiple bundles if you submit VAT for multiple businesses. Each bundle is independent - authorising one doesn't affect others.\n",
-      "keywords": [
-        "bundle",
-        "what is",
-        "bundles",
-        "configuration",
-        "setup",
-        "vrn"
-      ],
+      "keywords": ["bundle", "what is", "bundles", "configuration", "setup", "vrn"],
       "priority": 3
     },
     {
@@ -55,14 +29,7 @@
       "category": "bundles",
       "question": "I added the wrong VRN - how do I fix it?",
       "answer": "You cannot edit a bundle's VRN after creation. Instead:\n1. Go to **View and edit your bundles**\n2. Click **Remove All Bundles** or remove the incorrect one\n3. Click **Add Bundle** and enter the correct VRN\n\nYour submission history (receipts) is stored separately and won't be lost.\n",
-      "keywords": [
-        "wrong vrn",
-        "incorrect vrn",
-        "change vrn",
-        "edit bundle",
-        "fix vrn",
-        "mistake"
-      ],
+      "keywords": ["wrong vrn", "incorrect vrn", "change vrn", "edit bundle", "fix vrn", "mistake"],
       "priority": 4
     },
     {
@@ -70,14 +37,7 @@
       "category": "bundles",
       "question": "Can I submit VAT for multiple businesses?",
       "answer": "Yes. Create a separate bundle for each VAT registration:\n1. Click **Add Bundle**\n2. Enter the VRN for the business\n3. Authorise with HMRC using that business's Government Gateway\n\nEach bundle maintains its own HMRC connection. Switch between them from the home screen.\n",
-      "keywords": [
-        "multiple",
-        "businesses",
-        "companies",
-        "more than one",
-        "several",
-        "different vrn"
-      ],
+      "keywords": ["multiple", "businesses", "companies", "more than one", "several", "different vrn"],
       "priority": 5
     },
     {
@@ -85,15 +45,7 @@
       "category": "submission",
       "question": "My VAT obligations aren't showing",
       "answer": "If no obligations appear:\n1. **Date range** - Expand the date range in the search. Obligations only show for periods HMRC expects a return\n2. **Already submitted** - Fulfilled obligations don't show by default. Change status filter to 'F' (Fulfilled) or 'A' (All)\n3. **New registration** - HMRC may take 24-48 hours to create your first obligation after MTD registration\n4. **Wrong VRN** - Check you're using the correct bundle/VRN\n",
-      "keywords": [
-        "obligations",
-        "not showing",
-        "no obligations",
-        "empty",
-        "can't see",
-        "missing",
-        "periods"
-      ],
+      "keywords": ["obligations", "not showing", "no obligations", "empty", "can't see", "missing", "periods"],
       "priority": 6
     },
     {
@@ -101,15 +53,7 @@
       "category": "submission",
       "question": "What does the period key like '24A1' mean?",
       "answer": "The period key identifies your VAT period:\n- First two digits = year (24 = 2024)\n- Letter = quarter (A=Q1 Jan-Mar, B=Q2 Apr-Jun, C=Q3 Jul-Sep, D=Q4 Oct-Dec)\n- Last digit = month within quarter (1, 2, or 3)\n\nExamples:\n- **24A1** = January 2024\n- **24B3** = June 2024\n- **24C2** = August 2024\n\nAnnual/non-standard periods use different formats. Check your HMRC obligation for the exact key.\n",
-      "keywords": [
-        "period key",
-        "period",
-        "24a1",
-        "what does",
-        "mean",
-        "quarter",
-        "month"
-      ],
+      "keywords": ["period key", "period", "24a1", "what does", "mean", "quarter", "month"],
       "priority": 7
     },
     {
@@ -140,16 +84,7 @@
       "category": "submission",
       "question": "My figures don't match my spreadsheet",
       "answer": "Common causes of mismatches:\n1. **Rounding** - HMRC accepts figures to 2 decimal places. Check your spreadsheet rounds correctly\n2. **Box 3 and 5** - These are calculated (3 = 1+2, 5 = 3-4). Don't enter them manually\n3. **VAT vs Net** - Boxes 1-5 are VAT amounts. Boxes 6-9 are net values excluding VAT\n4. **Period mismatch** - Ensure your spreadsheet covers exactly the same dates as the obligation\n",
-      "keywords": [
-        "figures",
-        "don't match",
-        "doesn't match",
-        "wrong",
-        "different",
-        "spreadsheet",
-        "mismatch",
-        "numbers"
-      ],
+      "keywords": ["figures", "don't match", "doesn't match", "wrong", "different", "spreadsheet", "mismatch", "numbers"],
       "priority": 9
     },
     {
@@ -157,16 +92,7 @@
       "category": "submission",
       "question": "I submitted the wrong figures - what do I do?",
       "answer": "**You cannot amend a submitted VAT return through this app.**\n\nTo correct errors:\n- **Small errors (under 10,000 GBP or 1% of box 6, max 50,000 GBP)** - Adjust in your next VAT return\n- **Larger errors** - Submit an error correction form to HMRC (VAT652) or write to them\n\nSee HMRC guidance: https://www.gov.uk/vat-corrections\n\nKeep your receipt from DIY Accounting Submit as a record of what was submitted.\n",
-      "keywords": [
-        "wrong figures",
-        "mistake",
-        "error",
-        "submitted wrong",
-        "amend",
-        "correct",
-        "change",
-        "fix submission"
-      ],
+      "keywords": ["wrong figures", "mistake", "error", "submitted wrong", "amend", "correct", "change", "fix submission"],
       "priority": 10
     },
     {
@@ -174,15 +100,7 @@
       "category": "receipts",
       "question": "Where's my submission receipt?",
       "answer": "After successful submission:\n1. A receipt appears immediately - **save or print this**\n2. Click **View previously submitted receipts** from the home screen\n3. Receipts are stored locally in your browser\n\n**Important:** Receipts are stored in browser local storage. If you clear browser data or use a different device, historical receipts won't appear. Always save/print receipts after submission.\n",
-      "keywords": [
-        "receipt",
-        "receipts",
-        "where",
-        "find",
-        "confirmation",
-        "proof",
-        "submitted"
-      ],
+      "keywords": ["receipt", "receipts", "where", "find", "confirmation", "proof", "submitted"],
       "priority": 11
     },
     {
@@ -190,14 +108,7 @@
       "category": "receipts",
       "question": "HMRC says they haven't received it but your app says success",
       "answer": "If DIY Accounting Submit showed a success message with a bundle reference, HMRC received it. Discrepancies usually mean:\n\n1. **Timing** - HMRC's portal can take a few hours to update. Check again later\n2. **Wrong period** - You may have submitted for a different period than you're checking\n3. **Different VRN** - Ensure you're checking the same business in HMRC's portal\n\nYour receipt includes the HMRC bundle reference (format: 1234567890). Quote this to HMRC if needed.\n",
-      "keywords": [
-        "hmrc",
-        "not received",
-        "haven't received",
-        "didn't get",
-        "missing submission",
-        "success but"
-      ],
+      "keywords": ["hmrc", "not received", "haven't received", "didn't get", "missing submission", "success but"],
       "priority": 12
     },
     {
@@ -205,12 +116,7 @@
       "category": "vat-basics",
       "question": "I'm on the Flat Rate Scheme - can I use this app?",
       "answer": "Yes. The Flat Rate Scheme changes how you calculate VAT, not how you submit it.\n\nWhen using DIY Accounting Submit with Flat Rate:\n- Box 1 = Your flat rate VAT (turnover x your flat rate %)\n- Box 6 = Your gross turnover including VAT\n- Boxes 2, 4, 7, 8, 9 are typically 0 (check HMRC guidance for exceptions)\n\nCalculate your figures using your flat rate, then submit as normal.\n",
-      "keywords": [
-        "flat rate",
-        "flat rate scheme",
-        "frs",
-        "simplified"
-      ],
+      "keywords": ["flat rate", "flat rate scheme", "frs", "simplified"],
       "priority": 13
     },
     {
@@ -218,12 +124,7 @@
       "category": "vat-basics",
       "question": "I'm on Annual Accounting - how does this work?",
       "answer": "Annual Accounting means you submit one VAT return per year instead of quarterly.\n\nIn DIY Accounting Submit:\n1. You'll see one obligation covering your annual period\n2. The period key will reflect your year-end month\n3. Submit as normal - the process is identical to quarterly returns\n\nYour interim payments to HMRC are separate from your return submission.\n",
-      "keywords": [
-        "annual",
-        "annual accounting",
-        "yearly",
-        "once a year"
-      ],
+      "keywords": ["annual", "annual accounting", "yearly", "once a year"],
       "priority": 14
     },
     {
@@ -231,16 +132,7 @@
       "category": "connection",
       "question": "I've never submitted digitally before - where do I start?",
       "answer": "First-time MTD setup:\n1. **Sign up for MTD** - Register at https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat if you haven't\n2. **Wait 24-48 hours** - HMRC needs time to activate your MTD access\n3. **Create a bundle** - Click Add Bundle and enter your 9-digit VRN\n4. **Authorise** - You'll be redirected to HMRC to grant permission\n5. **Check obligations** - See what periods HMRC expects returns for\n6. **Submit** - Enter your figures and submit\n\nKeep your Government Gateway login details handy.\n",
-      "keywords": [
-        "first time",
-        "never",
-        "new",
-        "start",
-        "begin",
-        "how do i",
-        "getting started",
-        "setup"
-      ],
+      "keywords": ["first time", "never", "new", "start", "begin", "how do i", "getting started", "setup"],
       "priority": 15
     },
     {
@@ -248,15 +140,7 @@
       "category": "connection",
       "question": "My HMRC authorisation has expired",
       "answer": "HMRC authorisations expire after 18 months or if you revoke access.\n\nTo re-authorise:\n1. Go to **View and edit your bundles**\n2. You'll see a prompt to re-authorise, or remove and recreate the bundle\n3. Follow the HMRC login flow to grant fresh permission\n\nYou can also check/revoke authorisations at https://www.tax.service.gov.uk/agent-services-account (even for non-agents).\n",
-      "keywords": [
-        "expired",
-        "authorisation",
-        "authorization",
-        "renew",
-        "re-authorise",
-        "token",
-        "18 months"
-      ],
+      "keywords": ["expired", "authorisation", "authorization", "renew", "re-authorise", "token", "18 months"],
       "priority": 16
     },
     {
@@ -264,13 +148,7 @@
       "category": "errors",
       "question": "Error: Invalid VRN",
       "answer": "This means the VAT Registration Number format is wrong:\n- VRN must be exactly 9 digits\n- No spaces, letters, or GB prefix\n- Example: 123456789 not GB123456789 or 123 456 789\n\nIf your VRN is correct but still rejected:\n- Check the business is registered for MTD VAT (not just VAT)\n- New registrations can take 24-48 hours to propagate\n",
-      "keywords": [
-        "invalid vrn",
-        "vrn error",
-        "wrong format",
-        "9 digits",
-        "gb"
-      ],
+      "keywords": ["invalid vrn", "vrn error", "wrong format", "9 digits", "gb"],
       "priority": 17
     },
     {
@@ -278,12 +156,7 @@
       "category": "errors",
       "question": "Error: Duplicate submission",
       "answer": "HMRC rejected the submission because a return for this period already exists.\n\nThis happens if:\n- You already submitted for this period (check your receipts)\n- Someone else submitted for this VRN (e.g., an accountant)\n\nCheck the period status in **VAT Obligations** - it should show as Fulfilled with a received date.\n",
-      "keywords": [
-        "duplicate",
-        "already submitted",
-        "exists",
-        "period already"
-      ],
+      "keywords": ["duplicate", "already submitted", "exists", "period already"],
       "priority": 18
     },
     {
@@ -291,12 +164,7 @@
       "category": "errors",
       "question": "Error: Obligation not found for this period",
       "answer": "You're trying to submit for a period HMRC isn't expecting a return for.\n\nCheck:\n1. The period key matches an Open obligation exactly\n2. You haven't already submitted for this period\n3. The VRN is correct\n\nUse **VAT Obligations** to see which periods are open and get the exact period key.\n",
-      "keywords": [
-        "obligation not found",
-        "period not found",
-        "no obligation",
-        "can't submit"
-      ],
+      "keywords": ["obligation not found", "period not found", "no obligation", "can't submit"],
       "priority": 19
     },
     {
@@ -304,16 +172,7 @@
       "category": "errors",
       "question": "Something's not working - should I clear my browser data?",
       "answer": "Clearing browser data can help with some issues but **will delete your saved receipts**.\n\nBefore clearing:\n1. Go to **View previously submitted receipts**\n2. Save/print any receipts you need\n\nSafer alternatives:\n- Try a private/incognito window first\n- Try a different browser\n- Just clear cookies for submit.diyaccounting.co.uk specifically\n\nIf issues persist after clearing data, contact support.\n",
-      "keywords": [
-        "clear",
-        "browser",
-        "cache",
-        "cookies",
-        "not working",
-        "stuck",
-        "frozen",
-        "reset"
-      ],
+      "keywords": ["clear", "browser", "cache", "cookies", "not working", "stuck", "frozen", "reset"],
       "priority": 20
     }
   ]
