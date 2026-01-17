@@ -63,7 +63,6 @@ public class SubmitApplication {
         public String hostedZoneId;
         public String certificateArn;
         public String docRootPath;
-        public String edgeFunctionAssetPath;
         public String httpApiUrl;
         public String githubTokenSecretArn;
 
@@ -157,8 +156,6 @@ public class SubmitApplication {
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
-        var edgeFunctionAssetPath = envOr(
-                "EDGE_FUNCTION_ASSET_PATH", appProps.edgeFunctionAssetPath, "(from edgeFunctionAssetPath in cdk.json)");
 
         // Create DevStack with resources only used during development or deployment (e.g. ECR)
         infof(
@@ -336,7 +333,6 @@ public class SubmitApplication {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(appProps.certificateArn)
                         .apiGatewayUrl(httpApiUrl)
-                        .edgeFunctionAssetPath(edgeFunctionAssetPath)
                         .build());
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
