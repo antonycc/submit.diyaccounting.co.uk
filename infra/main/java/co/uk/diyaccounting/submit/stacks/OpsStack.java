@@ -38,6 +38,9 @@ import software.amazon.awscdk.services.synthetics.CustomTestOptions;
 import software.amazon.awscdk.services.synthetics.Runtime;
 import software.amazon.awscdk.services.synthetics.Schedule;
 import software.amazon.awscdk.services.synthetics.Test;
+import software.amazon.awscdk.services.logs.FilterPattern;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.MetricFilter;
 import software.constructs.Construct;
 
 public class OpsStack extends Stack {
@@ -173,10 +176,104 @@ public class OpsStack extends Stack {
         this.githubSyntheticAlarm.addOkAction(new SnsAction(this.alertTopic));
 
         // ============================================================================
+        // Security Detection Alarms - Phase 1.1 Authentication Failure Alerting
+        // ============================================================================
+        // Create log group reference for the custom authorizer Lambda function
+        // The actual log group is created by Lambda; we reference it here for metric filters
+        // Log group naming pattern: /aws/lambda/{env}-{hash}-submit-{domain}-app-custom-authorizer
+        String authorizerLogGroupName = "/aws/lambda/" + props.envName() + "-" + props.deploymentName()
+                + "-submit-" + props.sharedNames().dashedDeploymentDomainName + "-app-custom-authorizer";
+
+        software.amazon.awscdk.services.logs.ILogGroup authorizerLogGroup = LogGroup.fromLogGroupName(
+                this, props.resourceNamePrefix() + "-AuthLogGroupRef", authorizerLogGroupName);
+
+        // Metric filter for authentication failures (WARN and ERROR levels in Pino JSON logs)
+        // The custom authorizer logs authentication failures as WARN (missing header, invalid format)
+        // and ERROR (JWT verification failure, token validation error)
+        MetricFilter authFailureFilter = MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-AuthFailure")
+                .logGroup(authorizerLogGroup)
+                .filterPattern(FilterPattern.any(
+                        FilterPattern.stringValue("$.level", "=", "warn"),
+                        FilterPattern.stringValue("$.level", "=", "error")))
+                .metricNamespace("Submit/Security")
+                .metricName("AuthFailures")
+                .metricValue("1")
+                .defaultValue(0)
+                .build();
+
+        // Alarm: 10+ auth failures in 5 minutes indicates possible credential stuffing attack
+        Alarm authFailureAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-AuthFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-auth-failures")
+                .alarmDescription(
+                        "10+ authentication failures in 5 minutes - possible credential stuffing or brute force attack")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Security")
+                        .metricName("AuthFailures")
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(10)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        authFailureAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+        authFailureAlarm.addOkAction(new SnsAction(this.alertTopic));
+        infof("Created auth failure alarm with SNS notifications");
+
+        // ============================================================================
+        // Security Detection Alarms - Phase 2.3 HMRC API Failure Alerting
+        // ============================================================================
+        // Monitor for 401/403 responses from HMRC API which may indicate:
+        // - Token compromise or revocation
+        // - Account takeover attempts
+        // - Scope/permission issues requiring attention
+        String hmrcTokenLogGroupName = "/aws/lambda/" + props.envName() + "-" + props.deploymentName()
+                + "-submit-" + props.sharedNames().dashedDeploymentDomainName + "-app-hmrc-token-post-ingest-handler";
+
+        software.amazon.awscdk.services.logs.ILogGroup hmrcTokenLogGroup = LogGroup.fromLogGroupName(
+                this, props.resourceNamePrefix() + "-HmrcTokenLogGroupRef", hmrcTokenLogGroupName);
+
+        // Metric filter for HMRC authentication failures (401 Unauthorized responses)
+        MetricFilter hmrcAuthFailureFilter =
+                MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-HmrcAuthFailure")
+                        .logGroup(hmrcTokenLogGroup)
+                        .filterPattern(FilterPattern.literal("\"statusCode\":401"))
+                        .metricNamespace("Submit/Security")
+                        .metricName("HmrcAuthFailures")
+                        .metricValue("1")
+                        .defaultValue(0)
+                        .build();
+
+        // Alarm: 5+ HMRC auth failures in 15 minutes indicates token issues
+        Alarm hmrcAuthFailureAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-HmrcAuthFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-hmrc-auth-failures")
+                .alarmDescription(
+                        "5+ HMRC API 401 responses in 15 minutes - possible token compromise or revocation")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Security")
+                        .metricName("HmrcAuthFailures")
+                        .statistic("Sum")
+                        .period(Duration.minutes(15))
+                        .build())
+                .threshold(5)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        hmrcAuthFailureAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+        hmrcAuthFailureAlarm.addOkAction(new SnsAction(this.alertTopic));
+        infof("Created HMRC auth failure alarm with SNS notifications");
+
+        // ============================================================================
         // Outputs
         // ============================================================================
         cfnOutput(this, "AlertTopicArn", this.alertTopic.getTopicArn());
         cfnOutput(this, "GithubSyntheticAlarmArn", this.githubSyntheticAlarm.getAlarmArn());
+        cfnOutput(this, "AuthFailureAlarmArn", authFailureAlarm.getAlarmArn());
+        cfnOutput(this, "HmrcAuthFailureAlarmArn", hmrcAuthFailureAlarm.getAlarmArn());
 
         if (this.healthCanary != null) {
             cfnOutput(this, "HealthCanaryName", this.healthCanary.getCanaryName());

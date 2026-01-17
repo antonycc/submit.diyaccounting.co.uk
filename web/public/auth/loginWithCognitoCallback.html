@@ -105,6 +105,24 @@
       async function handleAuthCallback(code, state) {
         try {
           showLoading();
+
+          // CRITICAL: Validate state parameter to prevent CSRF attacks
+          // State must match what was stored in sessionStorage before redirect
+          const storedState = sessionStorage.getItem("cognito_oauth_state");
+          if (!state || state !== storedState) {
+            console.error("OAuth state mismatch - possible CSRF attack", {
+              receivedState: state ? state.substring(0, 8) + "..." : "none",
+              hasStoredState: !!storedState,
+            });
+            showStatus("Security validation failed. Please try logging in again.", "error");
+            sessionStorage.removeItem("cognito_oauth_state");
+            hideLoading();
+            return;
+          }
+
+          // Clear state immediately after validation (single use)
+          sessionStorage.removeItem("cognito_oauth_state");
+
           showStatus("Exchanging authorization code for access token...", "info");
 
           const url = `/api/v1/cognito/token`;
@@ -153,6 +171,24 @@
           const idTokenPayload = JSON.parse(jsonPayload);
 
           console.log("Received id_token from Cognito " + JSON.stringify(idTokenPayload));
+
+          // Validate nonce to prevent replay attacks
+          // The nonce in the ID token must match the one we stored before the redirect
+          const storedNonce = sessionStorage.getItem("cognito_oauth_nonce");
+          if (storedNonce) {
+            if (!idTokenPayload.nonce || idTokenPayload.nonce !== storedNonce) {
+              console.error("OAuth nonce mismatch - possible replay attack", {
+                hasTokenNonce: !!idTokenPayload.nonce,
+                hasStoredNonce: !!storedNonce,
+              });
+              showStatus("Security validation failed (nonce mismatch). Please try logging in again.", "error");
+              sessionStorage.removeItem("cognito_oauth_nonce");
+              hideLoading();
+              return;
+            }
+            // Clear nonce after successful validation (single use)
+            sessionStorage.removeItem("cognito_oauth_nonce");
+          }
 
           // Handle optional email gracefully
           const userEmail = idTokenPayload.email;

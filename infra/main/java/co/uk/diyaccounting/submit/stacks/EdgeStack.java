@@ -61,6 +61,10 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
+import software.amazon.awscdk.services.cloudwatch.Alarm;
+import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.Metric;
+import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.constructs.Construct;
 
 public class EdgeStack extends Stack {
@@ -252,6 +256,75 @@ public class EdgeStack extends Stack {
                         .sampledRequestsEnabled(true)
                         .build())
                 .build();
+
+        // ============================================================================
+        // WAF Security Alarms - Phase 1.2
+        // ============================================================================
+        // Note: These alarms are created in us-east-1 (CloudFront region).
+        // To receive SNS notifications, manually configure alarm actions in the AWS Console
+        // or use cross-region SNS topic subscription.
+
+        // Rate Limit Rule alarm - indicates potential DDoS or automated abuse
+        Alarm rateLimitAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-RateLimitAlarm")
+                .alarmName(props.resourceNamePrefix() + "-waf-rate-limit")
+                .alarmDescription("WAF rate limiting triggered (50+ blocks in 5min) - possible DDoS or automated abuse")
+                .metric(Metric.Builder.create()
+                        .namespace("AWS/WAFV2")
+                        .metricName("BlockedRequests")
+                        .dimensionsMap(Map.of(
+                                "WebACL", props.resourceNamePrefix() + "-waf",
+                                "Region", "Global",
+                                "Rule", "RateLimitRule"))
+                        .statistic("Sum")
+                        .period(software.amazon.awscdk.Duration.minutes(5))
+                        .build())
+                .threshold(50)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // Common Rule Set alarm - SQL injection, XSS attacks
+        Alarm commonRuleAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CommonRuleAlarm")
+                .alarmName(props.resourceNamePrefix() + "-waf-attack-signatures")
+                .alarmDescription("WAF detected attack patterns (SQLi/XSS) - 5+ blocks in 5min - review sampled requests")
+                .metric(Metric.Builder.create()
+                        .namespace("AWS/WAFV2")
+                        .metricName("BlockedRequests")
+                        .dimensionsMap(Map.of(
+                                "WebACL", props.resourceNamePrefix() + "-waf",
+                                "Region", "Global",
+                                "Rule", "AWSManagedRulesCommonRuleSet"))
+                        .statistic("Sum")
+                        .period(software.amazon.awscdk.Duration.minutes(5))
+                        .build())
+                .threshold(5)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // Known Bad Inputs alarm
+        Alarm badInputsAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-BadInputsAlarm")
+                .alarmName(props.resourceNamePrefix() + "-waf-known-bad-inputs")
+                .alarmDescription("WAF blocked known bad inputs (5+ in 5min) - review sampled requests in WAF console")
+                .metric(Metric.Builder.create()
+                        .namespace("AWS/WAFV2")
+                        .metricName("BlockedRequests")
+                        .dimensionsMap(Map.of(
+                                "WebACL", props.resourceNamePrefix() + "-waf",
+                                "Region", "Global",
+                                "Rule", "AWSManagedRulesKnownBadInputsRuleSet"))
+                        .statistic("Sum")
+                        .period(software.amazon.awscdk.Duration.minutes(5))
+                        .build())
+                .threshold(5)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        infof("Created WAF security alarms: rate-limit, attack-signatures, known-bad-inputs");
 
         // Create the origin bucket
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
@@ -500,6 +573,9 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
         cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);
         cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
+        cfnOutput(this, "WafRateLimitAlarmArn", rateLimitAlarm.getAlarmArn());
+        cfnOutput(this, "WafAttackSignaturesAlarmArn", commonRuleAlarm.getAlarmArn());
+        cfnOutput(this, "WafBadInputsAlarmArn", badInputsAlarm.getAlarmArn());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }

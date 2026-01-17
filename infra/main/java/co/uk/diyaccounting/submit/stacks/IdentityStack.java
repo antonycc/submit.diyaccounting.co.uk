@@ -19,6 +19,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
+import software.amazon.awscdk.services.cognito.AdvancedSecurityMode;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
@@ -157,6 +158,11 @@ public class IdentityStack extends Stack {
                                 .maxLen(2048)
                                 .mutable(true)
                                 .build()))
+                // Phase 2.1: Enable Cognito Advanced Security (risk-based adaptive authentication)
+                // ENFORCED mode blocks suspicious sign-ins and requires MFA for risky attempts
+                // Provides: compromised credential detection, account takeover protection,
+                // suspicious IP detection, and device fingerprinting
+                .advancedSecurityMode(AdvancedSecurityMode.ENFORCED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 

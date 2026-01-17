@@ -36,13 +36,13 @@
     localStorage.removeItem("cognitoIdToken");
     localStorage.removeItem("cognitoRefreshToken");
     localStorage.removeItem("userInfo");
-    localStorage.removeItem("authState");
+    sessionStorage.removeItem("cognito_oauth_state");
 
     // Generate state parameter for security using cryptographically secure random values
     const randomBytes = new Uint8Array(16);
     crypto.getRandomValues(randomBytes);
     const state = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-    localStorage.setItem("authState", state);
+    sessionStorage.setItem("cognito_oauth_state", state);
 
     try {
       // Get OAuth URL from the mock auth endpoint
