@@ -234,6 +234,9 @@
           return false;
         }
 
+        // Show status immediately before making the request
+        showStatus(`Requesting bundle "${bundleName}"...`, "info");
+
         try {
           const r = await window.fetchWithIdToken("/api/v1/bundle", {
             method: "POST",
@@ -449,6 +452,9 @@
           return;
         }
 
+        // Show status immediately before making the request
+        showStatus(`Removing bundle "${bundleId}"...`, "info");
+
         try {
           const response = await window.fetchWithIdToken("/api/v1/bundle", {
             method: "DELETE",
@@ -494,6 +500,9 @@
           window.location.href = "../auth/login.html";
           return;
         }
+
+        // Show status immediately before making the request
+        showStatus("Removing all bundles...", "info");
 
         try {
           const response = await window.fetchWithIdToken("/api/v1/bundle", {
