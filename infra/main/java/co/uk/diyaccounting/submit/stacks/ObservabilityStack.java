@@ -140,14 +140,14 @@ public class ObservabilityStack extends Stack {
                             .dataResources(List.of(
                                     software.amazon.awscdk.services.cloudtrail.CfnTrail.DataResourceProperty.builder()
                                             .type("AWS::DynamoDB::Table")
-                                            // Log all DynamoDB tables in this account matching the env prefix
-                                            .values(List.of(
-                                                    "arn:aws:dynamodb:" + this.getRegion() + ":" + this.getAccount()
-                                                            + ":table/" + props.envName() + "-submit-*"))
+                                            // Log all DynamoDB tables in this account
+                                            // Note: CloudTrail doesn't support wildcards in table ARNs,
+                                            // so we use "arn:aws:dynamodb" to match all tables
+                                            .values(List.of("arn:aws:dynamodb"))
                                             .build()))
                             .build()));
 
-            infof("Configured CloudTrail DynamoDB data event logging for tables: %s-submit-*", props.envName());
+            infof("Configured CloudTrail DynamoDB data event logging for all tables in account");
 
             // CloudWatch Logs Insights query for detecting bulk data access:
             // filter eventSource = "dynamodb.amazonaws.com" and eventName = "Scan"
