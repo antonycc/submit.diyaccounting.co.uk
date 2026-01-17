@@ -53,17 +53,9 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const {
-    vatNumber,
-    periodKey,
-    vatDue,
-    accessToken,
-    hmrcAccessToken: hmrcAccessTokenInBody,
-    runFraudPreventionHeaderValidation,
-  } = parsedBody || {};
-  // TODO: Remove the alternate paths at source, then remove this compatibility code
-  // accessToken takes precedence over hmrcAccessToken for backward compatibility and ergonomics
-  const hmrcAccessToken = accessToken || hmrcAccessTokenInBody;
+  const { vatNumber, periodKey, vatDue, accessToken, runFraudPreventionHeaderValidation } = parsedBody || {};
+  // Use 'hmrcAccessToken' internally for clarity when interacting with HMRC APIs
+  const hmrcAccessToken = accessToken;
 
   // Collect validation errors for required fields
   if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
