@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
+// web/public/auth/login-mock-addon.js
+// Mock OAuth login addon - only served in proxy/simulator environments
+// In production, server.js returns an empty script for this file
+
+(function () {
+  "use strict";
+
+  const container = document.getElementById("mock-auth-container");
+  if (!container) return;
+
+  // Inject the mock login button
+  container.innerHTML = `
+    <div class="auth-provider" id="mockOAuth2Provider">
+      <button type="button" class="btn auth-btn" id="loginWithMockOAuth2">
+        <img src="https://avatars.githubusercontent.com/u/11848947?s=48&v=4" alt="navikt/mock-oauth2-server" class="provider-logo" />
+        Continue with mock-oauth2-server
+      </button>
+    </div>
+  `;
+
+  // Add click handler
+  const mockButton = document.getElementById("loginWithMockOAuth2");
+  if (mockButton) {
+    mockButton.addEventListener("click", loginWithMockOAuth2);
+  }
+
+  // Login with Mock OAuth2 Server (and stubbed cognito)
+  async function loginWithMockOAuth2() {
+    console.log("Initiating navikt/mock-oauth2-server login");
+
+    console.log("Clear stored tokens and user info");
+    localStorage.removeItem("cognitoAccessToken");
+    localStorage.removeItem("cognitoIdToken");
+    localStorage.removeItem("cognitoRefreshToken");
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("authState");
+
+    // Generate state parameter for security
+    const state = Math.random().toString(36).substring(2, 15);
+    localStorage.setItem("authState", state);
+
+    try {
+      // Get OAuth URL from the mock auth endpoint
+      const response = await fetch(`/api/v1/mock/authUrl?state=${state}`);
+      if (!response.ok) {
+        throw new Error(`Failed to get auth URL: ${response.status}`);
+      }
+      const authResponse = await response.json();
+      const authUrl = authResponse.authUrl;
+
+      if (typeof showStatus === "function") {
+        showStatus(`Handing off to ${authUrl}`, "info");
+      }
+      console.log("Redirecting to navikt/mock-oauth2-server");
+
+      try {
+        window.__correlation?.prepareRedirect?.();
+      } catch (e) {
+        // Ignore correlation errors
+      }
+
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error("Mock OAuth2 login failed:", error);
+      if (typeof showStatus === "function") {
+        showStatus("Mock OAuth2 server not available. Ensure npm run auth or npm run simulator is running.", "error");
+      } else {
+        alert("Mock OAuth2 server not available. Ensure npm run auth or npm run simulator is running.");
+      }
+    }
+  }
+})();

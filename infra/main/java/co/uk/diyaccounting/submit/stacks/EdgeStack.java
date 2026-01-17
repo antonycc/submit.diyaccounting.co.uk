@@ -9,6 +9,8 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.EdgeLambdaConstruct;
+import co.uk.diyaccounting.submit.constructs.ImmutableEdgeLambdaProps;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,9 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
+import software.amazon.awscdk.services.cloudfront.EdgeLambda;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
+import software.amazon.awscdk.services.cloudfront.LambdaEdgeEventType;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.OriginRequestCookieBehavior;
 import software.amazon.awscdk.services.cloudfront.OriginRequestHeaderBehavior;
@@ -108,6 +112,8 @@ public class EdgeStack extends Stack {
         String certificateArn();
 
         String apiGatewayUrl();
+
+        String edgeFunctionAssetPath();
 
         static ImmutableEdgeStackProps.Builder builder() {
             return ImmutableEdgeStackProps.builder();
@@ -342,6 +348,20 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
+        // Create Lambda@Edge function for custom error pages
+        // This intercepts 4xx/5xx errors from S3 and returns custom HTML pages
+        // API routes (/api/*) are excluded to preserve JSON error responses
+        var errorPageLambda = new EdgeLambdaConstruct(
+                this,
+                ImmutableEdgeLambdaProps.builder()
+                        .idPrefix(props.resourceNamePrefix() + "-ErrorPage")
+                        .functionName(props.resourceNamePrefix() + "-error-page-handler")
+                        .handler("errorPageHandler.handler")
+                        .assetPath(props.edgeFunctionAssetPath())
+                        .description("Custom error pages for static files - excludes API routes")
+                        .build());
+        infof("Created Lambda@Edge function for custom error pages");
+
         BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
                 .origin(localOrigin)
                 .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
@@ -349,6 +369,11 @@ public class EdgeStack extends Stack {
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(webResponseHeadersPolicy)
                 .compress(true)
+                .edgeLambdas(List.of(EdgeLambda.builder()
+                        .functionVersion(errorPageLambda.currentVersion)
+                        .eventType(LambdaEdgeEventType.ORIGIN_RESPONSE)
+                        .includeBody(false)
+                        .build()))
                 .build();
 
         // Create a custom cache policy for test reports and docs with short TTL
