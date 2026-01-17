@@ -3,42 +3,12 @@
 version: 2
 updates:
 
-  - package-ecosystem: "npm"
-    directories:
-      - "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - dependencies
-      - automated
-      - automerge
-
-  - package-ecosystem: maven
-    directories:
-      - "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - dependencies
-      - automated
-      - automerge
-
   - package-ecosystem: github-actions
     directories:
       - "/.github/workflows"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     labels:
       - dependencies
       - automated
       - automerge
-
-  - package-ecosystem: "docker"
-    directories:
-      - "/infra/runtimes"
-    schedule:
-      interval: "weekly"
-      labels:
-        - dependencies
-        - automated
-        - automerge
