@@ -38,23 +38,33 @@
     return `bundles:${userId}`;
   }
 
+  /**
+   * Handle the result of a store.get request
+   * @param {IDBRequest} request - The IndexedDB request
+   * @returns {Promise<any|null>} The cached value or null
+   */
+  function handleGetRequest(request) {
+    return new Promise((resolve) => {
+      request.onsuccess = (event) => {
+        const record = event.target.result;
+        if (!record) {
+          resolve(null);
+          return;
+        }
+        // expire stale records
+        if (record.expires && record.expires <= Date.now()) {
+          resolve(null);
+          return;
+        }
+        resolve(record.value);
+      };
+      request.onerror = () => resolve(null);
+    });
+  }
+
   async function getBundles(userId) {
     const key = buildKey(userId);
-    return withStore("readonly", (store) => {
-      return new Promise((resolve) => {
-        const req = store.get(key);
-        req.onsuccess = (event) => {
-          const record = event.target.result;
-          if (!record) return resolve(null);
-          // expire stale records
-          if (record.expires && record.expires <= Date.now()) {
-            return resolve(null);
-          }
-          resolve(record.value);
-        };
-        req.onerror = () => resolve(null);
-      });
-    });
+    return withStore("readonly", (store) => handleGetRequest(store.get(key)));
   }
 
   async function setBundles(userId, value, ttlMs) {

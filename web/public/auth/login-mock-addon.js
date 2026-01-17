@@ -38,8 +38,10 @@
     localStorage.removeItem("userInfo");
     localStorage.removeItem("authState");
 
-    // Generate state parameter for security
-    const state = Math.random().toString(36).substring(2, 15);
+    // Generate state parameter for security using cryptographically secure random values
+    const randomBytes = new Uint8Array(16);
+    crypto.getRandomValues(randomBytes);
+    const state = Array.from(randomBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
     localStorage.setItem("authState", state);
 
     try {
@@ -51,22 +53,23 @@
       const authResponse = await response.json();
       const authUrl = authResponse.authUrl;
 
-      if (typeof showStatus === "function") {
-        showStatus(`Handing off to ${authUrl}`, "info");
+      if (typeof window.showStatus === "function") {
+        window.showStatus(`Handing off to ${authUrl}`, "info");
       }
       console.log("Redirecting to navikt/mock-oauth2-server");
 
       try {
         window.__correlation?.prepareRedirect?.();
-      } catch (e) {
+      } catch (error) {
+        console.error("Correlation preparation failed:", error);
         // Ignore correlation errors
       }
 
       window.location.href = authUrl;
     } catch (error) {
       console.error("Mock OAuth2 login failed:", error);
-      if (typeof showStatus === "function") {
-        showStatus("Mock OAuth2 server not available. Ensure npm run auth or npm run simulator is running.", "error");
+      if (typeof window.showStatus === "function") {
+        window.showStatus("Mock OAuth2 server not available. Ensure npm run auth or npm run simulator is running.", "error");
       } else {
         alert("Mock OAuth2 server not available. Ensure npm run auth or npm run simulator is running.");
       }

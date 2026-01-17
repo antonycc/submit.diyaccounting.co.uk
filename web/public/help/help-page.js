@@ -220,7 +220,7 @@ class HelpPage {
     let tableRows = [];
 
     for (let i = 0; i < lines.length; i++) {
-      let line = lines[i];
+      const line = lines[i];
 
       // Check for table row
       if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
@@ -296,9 +296,33 @@ class HelpPage {
    * @returns {string} HTML string
    */
   renderInline(text) {
-    return text
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // Bold text: **text**
+    const result = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+    // Markdown links: [text](url)
+    // Process character by character to avoid regex backtracking issues
+    let output = "";
+    let i = 0;
+    while (i < result.length) {
+      if (result[i] === "[") {
+        // Look for closing bracket
+        const closeBracket = result.indexOf("]", i + 1);
+        if (closeBracket !== -1 && result[closeBracket + 1] === "(") {
+          // Look for closing parenthesis
+          const closeParen = result.indexOf(")", closeBracket + 2);
+          if (closeParen !== -1) {
+            const linkText = result.slice(i + 1, closeBracket);
+            const url = result.slice(closeBracket + 2, closeParen);
+            output += `<a href="${url}" target="_blank" rel="noopener">${linkText}</a>`;
+            i = closeParen + 1;
+            continue;
+          }
+        }
+      }
+      output += result[i];
+      i++;
+    }
+    return output;
   }
 
   /**
@@ -394,5 +418,7 @@ class HelpPage {
 
 // Initialise on page load
 if (document.getElementById("faq-list")) {
-  new HelpPage();
+  const helpPageInstance = new HelpPage();
+  // Expose instance for debugging if needed
+  window.helpPageInstance = helpPageInstance;
 }

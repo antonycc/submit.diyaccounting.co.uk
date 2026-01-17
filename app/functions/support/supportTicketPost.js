@@ -115,7 +115,6 @@ export async function ingestHandler(event) {
 
   // Get client info from headers (for logging/tracking, not authentication)
   const clientIp = event.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() || "unknown";
-  const userAgent = event.headers?.["user-agent"] || "unknown";
 
   // Parse and validate request body
   const requestBody = parseRequestBody(event);
