@@ -50,6 +50,7 @@ jobs:
 
   params:
     runs-on: ubuntu-24.04
+    permissions: {}
     steps:
       - name: "github.event_name=[${{ github.event_name }}]"
         run: ":"
@@ -70,6 +71,8 @@ jobs:
       - params
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6

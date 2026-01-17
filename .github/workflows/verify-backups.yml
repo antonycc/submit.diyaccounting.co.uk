@@ -29,6 +29,7 @@ env:
 jobs:
   params:
     runs-on: ubuntu-24.04
+    permissions: {}
     steps:
       - name: "github.event_name=[${{ github.event_name }}]"
         run: ":"
