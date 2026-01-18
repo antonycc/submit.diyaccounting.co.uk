@@ -136,7 +136,8 @@ public class ObservabilityStack extends Stack {
 
             // Use AwsCustomResource to idempotently create the LogGroup and set retention.
             // Then import it with fromLogGroupName (not create, which would fail if it exists).
-            AwsCustomResource.Builder.create(this, props.resourceNamePrefix() + "-EnsureCloudTrailLogGroup")
+            AwsCustomResource ensureLogGroup = AwsCustomResource.Builder.create(
+                            this, props.resourceNamePrefix() + "-EnsureCloudTrailLogGroup")
                     .onCreate(AwsSdkCall.builder()
                             .service("CloudWatchLogs")
                             .action("createLogGroup")
@@ -185,6 +186,9 @@ public class ObservabilityStack extends Stack {
                     .includeGlobalServiceEvents(false)
                     .isMultiRegionTrail(false)
                     .build();
+
+            // Ensure the LogGroup is created before the Trail tries to use it
+            this.trail.getNode().addDependency(ensureLogGroup);
 
             // Phase 2.2: DynamoDB Data Event Logging via L1 construct
             // Add event selectors for DynamoDB data plane operations (GetItem, PutItem, DeleteItem, Query, Scan)
