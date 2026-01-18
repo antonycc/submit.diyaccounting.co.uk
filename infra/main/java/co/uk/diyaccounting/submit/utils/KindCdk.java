@@ -19,8 +19,14 @@ import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.dynamodb.Attribute;
+import software.amazon.awscdk.services.dynamodb.AttributeType;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -98,5 +104,106 @@ public class KindCdk {
                 .build();
 
         return LogGroup.fromLogGroupName(stack, id + "-LogGroup", logGroupName);
+    }
+
+    /**
+     * Creates an S3 bucket idempotently using AwsCustomResource.
+     * Uses CreateBucket API with ignoreErrorCodesMatching("BucketAlreadyOwnedByYou")
+     * so deployments succeed whether the bucket exists (owned by us) or not.
+     *
+     * Note: "BucketAlreadyExists" (owned by someone else) is NOT ignored - that's a real error.
+     *
+     * @param stack The stack to create the bucket in
+     * @param id The construct ID prefix
+     * @param bucketName The name of the bucket
+     * @param region The region for the bucket (use stack.getRegion() for same-region)
+     * @return IBucket reference to the bucket
+     */
+    public static IBucket ensureBucket(Stack stack, String id, String bucketName, String region) {
+        // CreateBucket requires LocationConstraint for non-us-east-1 regions
+        Map<String, Object> createBucketParams;
+        if ("us-east-1".equals(region)) {
+            createBucketParams = Map.of("Bucket", bucketName);
+        } else {
+            createBucketParams = Map.of(
+                    "Bucket", bucketName,
+                    "CreateBucketConfiguration", Map.of("LocationConstraint", region));
+        }
+
+        AwsSdkCall createBucketCall = AwsSdkCall.builder()
+                .service("S3")
+                .action("createBucket")
+                .parameters(createBucketParams)
+                .physicalResourceId(PhysicalResourceId.of(bucketName))
+                // BucketAlreadyOwnedByYou means we own it - that's fine
+                // BucketAlreadyExists means someone else owns it - that's a real error (not ignored)
+                .ignoreErrorCodesMatching("BucketAlreadyOwnedByYou")
+                .build();
+
+        AwsCustomResource.Builder.create(stack, id + "-EnsureBucket")
+                .onCreate(createBucketCall)
+                .onUpdate(createBucketCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("s3:CreateBucket"))
+                        .resources(List.of("arn:aws:s3:::" + bucketName))
+                        .build())))
+                .build();
+
+        return Bucket.fromBucketName(stack, id + "-Bucket", bucketName);
+    }
+
+    /**
+     * Creates a DynamoDB table idempotently using AwsCustomResource.
+     * Uses CreateTable API with ignoreErrorCodesMatching("ResourceInUseException")
+     * so deployments succeed whether the table exists or not.
+     *
+     * @param stack The stack to create the table in
+     * @param id The construct ID prefix
+     * @param tableName The name of the table
+     * @param partitionKeyName The partition key attribute name
+     * @param sortKeyName The sort key attribute name (can be null for tables without sort key)
+     * @return ITable reference to the table
+     */
+    public static ITable ensureTable(
+            Stack stack, String id, String tableName, String partitionKeyName, String sortKeyName) {
+        // Build attribute definitions
+        List<Map<String, String>> attributeDefinitions = new java.util.ArrayList<>();
+        attributeDefinitions.add(Map.of("AttributeName", partitionKeyName, "AttributeType", "S"));
+
+        // Build key schema
+        List<Map<String, String>> keySchema = new java.util.ArrayList<>();
+        keySchema.add(Map.of("AttributeName", partitionKeyName, "KeyType", "HASH"));
+
+        if (sortKeyName != null) {
+            attributeDefinitions.add(Map.of("AttributeName", sortKeyName, "AttributeType", "S"));
+            keySchema.add(Map.of("AttributeName", sortKeyName, "KeyType", "RANGE"));
+        }
+
+        Map<String, Object> createTableParams = Map.of(
+                "TableName", tableName,
+                "AttributeDefinitions", attributeDefinitions,
+                "KeySchema", keySchema,
+                "BillingMode", "PAY_PER_REQUEST");
+
+        AwsSdkCall createTableCall = AwsSdkCall.builder()
+                .service("DynamoDB")
+                .action("createTable")
+                .parameters(createTableParams)
+                .physicalResourceId(PhysicalResourceId.of(tableName))
+                // ResourceInUseException means table already exists - that's fine
+                .ignoreErrorCodesMatching("ResourceInUseException")
+                .build();
+
+        AwsCustomResource.Builder.create(stack, id + "-EnsureTable")
+                .onCreate(createTableCall)
+                .onUpdate(createTableCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:CreateTable", "dynamodb:DescribeTable"))
+                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
+                                + ":table/" + tableName))
+                        .build())))
+                .build();
+
+        return Table.fromTableName(stack, id + "-Table", tableName);
     }
 }
