@@ -152,6 +152,40 @@ When implementing features that require infrastructure validation:
 - DynamoDB tables: `{env}-submit-{purpose}`
 - npm scripts: colon separator for variants (e.g., `test:unit`)
 
+## Infrastructure Teardown Philosophy
+
+**Core principle**: Stacks must be cleanly destroyable. Data protection comes from backups (PITR, cross-account copies), NOT from CloudFormation `RemovalPolicy.RETAIN`.
+
+### RemovalPolicy Guidelines
+
+**Use `DESTROY` for everything except:**
+- Lambda Versions with provisioned concurrency (RETAIN prevents CloudFormation deadlocks - this is an AWS bug workaround, not data protection)
+
+**Why not RETAIN?**
+- Blocks stack teardown and redeployment (name conflicts)
+- Creates manual cleanup burden
+- Causes CloudFormation drift when resources are manually deleted
+- AWS log groups with RETAIN block deployments if deleted externally
+
+**Customer data protection strategy:**
+- DynamoDB: PITR enabled (35-day recovery window)
+- Backups: Cross-account copying (planned)
+- HMRC receipts: 7-year TTL with PITR backup
+- If you need the data, back it up properly - don't rely on CloudFormation refusing to delete it
+
+### Stack Architecture for Teardown
+
+- **App stacks** (per-deployment): Fully teardown-able, no persistent state
+- **Env stacks** (per-environment): Teardown-able except customer data tables which have PITR backups
+- **Logs**: Operational logs in env stacks (not app stacks) to allow app teardown without losing debugging info
+
+### Idempotent Deployments
+
+When CloudFormation references resources that might not exist (e.g., log groups deleted externally):
+- Use `AwsCustomResource` with `ignoreErrorCodesMatching` to create resources idempotently before they're referenced
+- Never assume CloudFormation state matches AWS reality
+- See `ObservabilityStack.java` CloudTrail LogGroup pattern for example
+
 ## Security Checklist
 
 - Never commit secrets - use AWS Secrets Manager ARNs

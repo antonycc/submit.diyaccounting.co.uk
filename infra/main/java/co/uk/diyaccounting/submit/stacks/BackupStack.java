@@ -121,8 +121,6 @@ public class BackupStack extends Stack {
     public BackupStack(Construct scope, String id, StackProps stackProps, BackupStackProps props) {
         super(scope, id, stackProps);
 
-        boolean isProd = "prod".equals(props.envName());
-
         // Apply cost allocation tags
         Tags.of(this).add("Environment", props.envName());
         Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
@@ -137,7 +135,8 @@ public class BackupStack extends Stack {
         this.backupKmsKey = Key.Builder.create(this, props.resourceNamePrefix() + "-BackupKey")
                 .alias("alias/" + props.resourceNamePrefix() + "-backup")
                 .enableKeyRotation(true)
-                .removalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .pendingWindow(Duration.days(7)) // Minimum window before key deletion
                 .description("KMS key for backup encryption - " + props.resourceNamePrefix())
                 .build();
 
@@ -150,8 +149,8 @@ public class BackupStack extends Stack {
                 .encryption(BucketEncryption.KMS)
                 .encryptionKey(backupKmsKey)
                 .versioned(true)
-                .removalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY)
-                .autoDeleteObjects(!isProd)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .autoDeleteObjects(true)
                 .lifecycleRules(List.of(LifecycleRule.builder()
                         .id("TransitionToIA")
                         .transitions(List.of(
@@ -174,7 +173,7 @@ public class BackupStack extends Stack {
                         this, props.resourceNamePrefix() + "-PrimaryVault")
                 .backupVaultName(props.resourceNamePrefix() + "-primary-vault")
                 .encryptionKey(backupKmsKey)
-                .removalPolicy(isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY);
+                .removalPolicy(RemovalPolicy.DESTROY);
 
         // Add notification topic if provided
         props.alertTopic().ifPresent(topic -> vaultBuilder
