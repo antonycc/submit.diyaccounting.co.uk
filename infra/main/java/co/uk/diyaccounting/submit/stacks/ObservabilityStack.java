@@ -93,6 +93,14 @@ public class ObservabilityStack extends Stack {
             return "";
         }
 
+        // Whether to create account-singleton security services (Security Hub, GuardDuty)
+        // Set to true for the primary environment (prod) and false for secondary environments (ci)
+        // to avoid conflicts when multiple environments share the same AWS account.
+        @Value.Default
+        default boolean securityServicesEnabled() {
+            return true;
+        }
+
         static ImmutableObservabilityStackProps.Builder builder() {
             return ImmutableObservabilityStackProps.builder();
         }
@@ -278,64 +286,70 @@ public class ObservabilityStack extends Stack {
                 .alarmDescription("RUM JavaScript errors >= 5 in 5 minutes")
                 .build();
 
-        // ============================================================================
-        // AWS GuardDuty - Phase 1.3 Threat Detection
-        // ============================================================================
-        // GuardDuty provides intelligent threat detection for compromised credentials,
-        // unusual API patterns, cryptocurrency mining, and other security threats.
-        CfnDetector guardDutyDetector = CfnDetector.Builder.create(this, props.resourceNamePrefix() + "-GuardDuty")
-                .enable(true)
-                .findingPublishingFrequency("FIFTEEN_MINUTES")
+        // SNS topic for security findings (used by GuardDuty, Security Hub, and anomaly detection rules)
+        Topic securityFindingsTopic = Topic.Builder.create(this, props.resourceNamePrefix() + "-SecurityFindingsTopic")
+                .topicName(props.resourceNamePrefix() + "-security-findings")
+                .displayName("DIY Accounting Submit - Security Findings")
                 .build();
 
-        // SNS topic for GuardDuty findings
-        Topic guardDutyTopic = Topic.Builder.create(this, props.resourceNamePrefix() + "-GuardDutyTopic")
-                .topicName(props.resourceNamePrefix() + "-guardduty-findings")
-                .displayName("DIY Accounting Submit - GuardDuty Security Findings")
-                .build();
-
-        // EventBridge rule to route HIGH and MEDIUM severity GuardDuty findings to SNS
-        // Severity levels: 0.0-3.9 = LOW, 4.0-6.9 = MEDIUM, 7.0-8.9 = HIGH, 9.0 and above = CRITICAL
-        Rule guardDutyRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-GuardDutyRule")
-                .ruleName(props.resourceNamePrefix() + "-guardduty-findings")
-                .description("Route MEDIUM+ severity GuardDuty findings to SNS for alerting")
-                .eventPattern(EventPattern.builder()
-                        .source(List.of("aws.guardduty"))
-                        .detailType(List.of("GuardDuty Finding"))
-                        .build())
-                .build();
-
-        guardDutyRule.addTarget(new SnsTopic(guardDutyTopic));
-
-        cfnOutput(this, "GuardDutyDetectorId", guardDutyDetector.getAttrId());
-        cfnOutput(this, "GuardDutyTopicArn", guardDutyTopic.getTopicArn());
-
-        infof("Created GuardDuty detector with EventBridge rule for security findings");
+        cfnOutput(this, "SecurityFindingsTopicArn", securityFindingsTopic.getTopicArn());
 
         // ============================================================================
-        // AWS Security Hub - Phase 3.1 Centralized Security Findings
+        // AWS GuardDuty & Security Hub - Account-Singleton Services
         // ============================================================================
-        // Security Hub aggregates findings from GuardDuty, IAM Access Analyzer, and other
-        // AWS services. It provides compliance checks against CIS AWS Foundations Benchmark.
-        CfnHub securityHub = CfnHub.Builder.create(this, props.resourceNamePrefix() + "-SecurityHub")
-                .enableDefaultStandards(true) // Enable CIS AWS Foundations Benchmark
-                .build();
+        // These services can only have one instance per AWS account per region.
+        // Only create them for the primary environment (prod) to avoid conflicts
+        // when multiple environments share the same AWS account.
+        if (props.securityServicesEnabled()) {
+            // GuardDuty provides intelligent threat detection for compromised credentials,
+            // unusual API patterns, cryptocurrency mining, and other security threats.
+            CfnDetector guardDutyDetector =
+                    CfnDetector.Builder.create(this, props.resourceNamePrefix() + "-GuardDuty")
+                            .enable(true)
+                            .findingPublishingFrequency("FIFTEEN_MINUTES")
+                            .build();
 
-        // EventBridge rule to route CRITICAL and HIGH severity Security Hub findings to SNS
-        Rule securityHubRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SecurityHubRule")
-                .ruleName(props.resourceNamePrefix() + "-securityhub-findings")
-                .description("Route HIGH+ severity Security Hub findings to SNS for alerting")
-                .eventPattern(EventPattern.builder()
-                        .source(List.of("aws.securityhub"))
-                        .detailType(List.of("Security Hub Findings - Imported"))
-                        .build())
-                .build();
+            // EventBridge rule to route HIGH and MEDIUM severity GuardDuty findings to SNS
+            // Severity levels: 0.0-3.9 = LOW, 4.0-6.9 = MEDIUM, 7.0-8.9 = HIGH, 9.0+ = CRITICAL
+            Rule guardDutyRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-GuardDutyRule")
+                    .ruleName(props.resourceNamePrefix() + "-guardduty-findings")
+                    .description("Route MEDIUM+ severity GuardDuty findings to SNS for alerting")
+                    .eventPattern(EventPattern.builder()
+                            .source(List.of("aws.guardduty"))
+                            .detailType(List.of("GuardDuty Finding"))
+                            .build())
+                    .build();
 
-        securityHubRule.addTarget(new SnsTopic(guardDutyTopic)); // Reuse GuardDuty topic
+            guardDutyRule.addTarget(new SnsTopic(securityFindingsTopic));
 
-        cfnOutput(this, "SecurityHubArn", securityHub.getAttrArn());
+            cfnOutput(this, "GuardDutyDetectorId", guardDutyDetector.getAttrId());
 
-        infof("Created Security Hub with EventBridge rule for security findings");
+            infof("Created GuardDuty detector with EventBridge rule for security findings");
+
+            // Security Hub aggregates findings from GuardDuty, IAM Access Analyzer, and other
+            // AWS services. It provides compliance checks against CIS AWS Foundations Benchmark.
+            CfnHub securityHub = CfnHub.Builder.create(this, props.resourceNamePrefix() + "-SecurityHub")
+                    .enableDefaultStandards(true) // Enable CIS AWS Foundations Benchmark
+                    .build();
+
+            // EventBridge rule to route CRITICAL and HIGH severity Security Hub findings to SNS
+            Rule securityHubRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SecurityHubRule")
+                    .ruleName(props.resourceNamePrefix() + "-securityhub-findings")
+                    .description("Route HIGH+ severity Security Hub findings to SNS for alerting")
+                    .eventPattern(EventPattern.builder()
+                            .source(List.of("aws.securityhub"))
+                            .detailType(List.of("Security Hub Findings - Imported"))
+                            .build())
+                    .build();
+
+            securityHubRule.addTarget(new SnsTopic(securityFindingsTopic));
+
+            cfnOutput(this, "SecurityHubArn", securityHub.getAttrArn());
+
+            infof("Created Security Hub with EventBridge rule for security findings");
+        } else {
+            infof("Security services (GuardDuty, Security Hub) disabled - using existing account-level services");
+        }
 
         // ============================================================================
         // Phase 3.2: Cross-Account/Region Anomaly Detection
@@ -366,7 +380,7 @@ public class ObservabilityStack extends Stack {
                                 "PutGroupPolicy")))
                         .build())
                 .build();
-        iamPolicyChangeRule.addTarget(new SnsTopic(guardDutyTopic));
+        iamPolicyChangeRule.addTarget(new SnsTopic(securityFindingsTopic));
 
         // Rule 2: Security Group Changes - detect network security modifications
         Rule securityGroupChangeRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SgChangeRule")
@@ -384,7 +398,7 @@ public class ObservabilityStack extends Stack {
                                 "DeleteSecurityGroup")))
                         .build())
                 .build();
-        securityGroupChangeRule.addTarget(new SnsTopic(guardDutyTopic));
+        securityGroupChangeRule.addTarget(new SnsTopic(securityFindingsTopic));
 
         // Rule 3: Access Key Creation - detect potential credential theft preparation
         Rule accessKeyCreationRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-AccessKeyRule")
@@ -398,7 +412,7 @@ public class ObservabilityStack extends Stack {
                                 "UpdateAccessKey")))
                         .build())
                 .build();
-        accessKeyCreationRule.addTarget(new SnsTopic(guardDutyTopic));
+        accessKeyCreationRule.addTarget(new SnsTopic(securityFindingsTopic));
 
         // Rule 4: Root Account Activity - detect any root account usage
         Rule rootActivityRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-RootActivityRule")
@@ -409,7 +423,7 @@ public class ObservabilityStack extends Stack {
                         .detail(Map.of("userIdentity", Map.of("type", List.of("Root"))))
                         .build())
                 .build();
-        rootActivityRule.addTarget(new SnsTopic(guardDutyTopic));
+        rootActivityRule.addTarget(new SnsTopic(securityFindingsTopic));
 
         infof("Created anomaly detection rules: IAM policy changes, security groups, access keys, root activity");
 

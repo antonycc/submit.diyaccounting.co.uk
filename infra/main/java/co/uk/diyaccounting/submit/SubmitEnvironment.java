@@ -49,6 +49,7 @@ public class SubmitEnvironment {
         public String googleClientSecretArn;
         public String antonyccClientId;
         public String antonyccBaseUri;
+        public String securityServicesEnabled;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -112,6 +113,8 @@ public class SubmitEnvironment {
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
+        var securityServicesEnabled = Boolean.parseBoolean(
+                envOr("SECURITY_SERVICES_ENABLED", appProps.securityServicesEnabled, "true"));
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -132,6 +135,7 @@ public class SubmitEnvironment {
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .apexDomain(sharedNames.hostedZoneName)
+                        .securityServicesEnabled(securityServicesEnabled)
                         .build());
 
         // Create ObservabilityUE1Stack with resources used in monitoring the application us-east-1
