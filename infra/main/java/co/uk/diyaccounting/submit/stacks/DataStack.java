@@ -72,10 +72,9 @@ public class DataStack extends Stack {
     public DataStack(Construct scope, String id, StackProps stackProps, DataStackProps props) {
         super(scope, id, stackProps);
 
-        // Determine removal policy based on environment
-        // RETAIN for prod to prevent accidental data loss, DESTROY for non-prod
-        boolean isProd = "prod".equals(props.envName());
-        RemovalPolicy criticalTableRemovalPolicy = isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
+        // Use DESTROY for all environments - data protection comes from PITR backups, not CloudFormation RETAIN.
+        // RETAIN blocks stack teardown and creates manual cleanup burden.
+        RemovalPolicy criticalTableRemovalPolicy = RemovalPolicy.DESTROY;
 
         // Create receipts DynamoDB table for storing VAT submission receipts
         // CRITICAL: 7-year HMRC retention requirement - PITR enabled for backup

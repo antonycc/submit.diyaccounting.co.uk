@@ -44,6 +44,10 @@ import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.securityhub.CfnHub;
+import software.amazon.awscdk.customresources.AwsCustomResource;
+import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
+import software.amazon.awscdk.customresources.AwsSdkCall;
+import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.constructs.Construct;
 
 public class ObservabilityStack extends Stack {
@@ -120,12 +124,46 @@ public class ObservabilityStack extends Stack {
         RetentionDays cloudTrailLogGroupRetentionPeriod =
                 RetentionDaysConverter.daysToRetentionDays(cloudTrailLogGroupRetentionPeriodDays);
         if (cloudTrailEnabled) {
+            // Use AwsCustomResource to idempotently ensure the LogGroup exists before creating the Trail.
+            // This prevents CloudFormation drift failures when the LogGroup is deleted externally.
+            // The createLogGroup API is idempotent when ignoring ResourceAlreadyExistsException.
+            String cloudTrailLogGroupName =
+                    "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.resourceNamePrefix());
+
+            AwsCustomResource ensureLogGroup = AwsCustomResource.Builder.create(
+                            this, props.resourceNamePrefix() + "-EnsureCloudTrailLogGroup")
+                    .onCreate(AwsSdkCall.builder()
+                            .service("CloudWatchLogs")
+                            .action("createLogGroup")
+                            .parameters(Map.of("logGroupName", cloudTrailLogGroupName))
+                            .physicalResourceId(PhysicalResourceId.of(cloudTrailLogGroupName))
+                            .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
+                            .build())
+                    .onUpdate(AwsSdkCall.builder()
+                            .service("CloudWatchLogs")
+                            .action("createLogGroup")
+                            .parameters(Map.of("logGroupName", cloudTrailLogGroupName))
+                            .physicalResourceId(PhysicalResourceId.of(cloudTrailLogGroupName))
+                            .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
+                            .build())
+                    .policy(AwsCustomResourcePolicy.fromStatements(List.of(
+                            PolicyStatement.Builder.create()
+                                    .actions(List.of("logs:CreateLogGroup"))
+                                    .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
+                                            + ":log-group:" + cloudTrailLogGroupName))
+                                    .build())))
+                    .build();
+
+            // Now create the LogGroup resource. CDK will adopt the existing LogGroup created by the Custom Resource.
             this.cloudTrailLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailGroup")
-                    .logGroupName(
-                            "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.resourceNamePrefix()))
+                    .logGroupName(cloudTrailLogGroupName)
                     .retention(cloudTrailLogGroupRetentionPeriod)
                     .removalPolicy(RemovalPolicy.DESTROY)
                     .build();
+
+            // Ensure the Custom Resource runs before the LogGroup resource
+            this.cloudTrailLogGroup.getNode().addDependency(ensureLogGroup);
+
             this.trail = Trail.Builder.create(this, props.resourceNamePrefix() + "-Trail")
                     .trailName(props.sharedNames().trailName)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
