@@ -32,6 +32,18 @@ on:
       - '.github/actions/get-names'
       - '.github/actions/set-origins'
       - '.github/workflows/deploy-environment.yml'
+      # Environment stacks
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityUE1Stack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ApexStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
+      # Shared utilities and entry point
+      - 'infra/main/java/co/uk/diyaccounting/submit/utils/**'
+      - 'infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/SubmitStackProps.java'
   schedule:
     - cron: '51 3 * * *'
 
