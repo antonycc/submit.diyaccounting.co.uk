@@ -157,7 +157,7 @@ public class ObservabilityStack extends Stack {
                             PolicyStatement.Builder.create()
                                     .actions(List.of("logs:CreateLogGroup", "logs:PutRetentionPolicy"))
                                     .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
-                                            + ":log-group:" + cloudTrailLogGroupName))
+                                            + ":log-group:" + cloudTrailLogGroupName + ":*"))
                                     .build())))
                     .build();
 
