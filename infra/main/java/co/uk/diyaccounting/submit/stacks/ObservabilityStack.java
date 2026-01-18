@@ -35,6 +35,7 @@ import software.amazon.awscdk.services.iam.FederatedPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
@@ -57,7 +58,7 @@ public class ObservabilityStack extends Stack {
 
     // public Bucket trailBucket;
     public Trail trail;
-    public LogGroup cloudTrailLogGroup;
+    public ILogGroup cloudTrailLogGroup;
     public LogGroup selfDestructLogGroup;
     public LogGroup apiAccessLogGroup;
 
@@ -133,8 +134,9 @@ public class ObservabilityStack extends Stack {
             String cloudTrailLogGroupName =
                     "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.resourceNamePrefix());
 
-            AwsCustomResource ensureLogGroup = AwsCustomResource.Builder.create(
-                            this, props.resourceNamePrefix() + "-EnsureCloudTrailLogGroup")
+            // Use AwsCustomResource to idempotently create the LogGroup and set retention.
+            // Then import it with fromLogGroupName (not create, which would fail if it exists).
+            AwsCustomResource.Builder.create(this, props.resourceNamePrefix() + "-EnsureCloudTrailLogGroup")
                     .onCreate(AwsSdkCall.builder()
                             .service("CloudWatchLogs")
                             .action("createLogGroup")
@@ -144,28 +146,23 @@ public class ObservabilityStack extends Stack {
                             .build())
                     .onUpdate(AwsSdkCall.builder()
                             .service("CloudWatchLogs")
-                            .action("createLogGroup")
-                            .parameters(Map.of("logGroupName", cloudTrailLogGroupName))
+                            .action("putRetentionPolicy")
+                            .parameters(Map.of(
+                                    "logGroupName", cloudTrailLogGroupName,
+                                    "retentionInDays", cloudTrailLogGroupRetentionPeriodDays))
                             .physicalResourceId(PhysicalResourceId.of(cloudTrailLogGroupName))
-                            .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
                             .build())
                     .policy(AwsCustomResourcePolicy.fromStatements(List.of(
                             PolicyStatement.Builder.create()
-                                    .actions(List.of("logs:CreateLogGroup"))
+                                    .actions(List.of("logs:CreateLogGroup", "logs:PutRetentionPolicy"))
                                     .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
                                             + ":log-group:" + cloudTrailLogGroupName))
                                     .build())))
                     .build();
 
-            // Now create the LogGroup resource. CDK will adopt the existing LogGroup created by the Custom Resource.
-            this.cloudTrailLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-CloudTrailGroup")
-                    .logGroupName(cloudTrailLogGroupName)
-                    .retention(cloudTrailLogGroupRetentionPeriod)
-                    .removalPolicy(RemovalPolicy.DESTROY)
-                    .build();
-
-            // Ensure the Custom Resource runs before the LogGroup resource
-            this.cloudTrailLogGroup.getNode().addDependency(ensureLogGroup);
+            // Import the LogGroup created by AwsCustomResource (don't use Builder.create which fails if it exists)
+            this.cloudTrailLogGroup = LogGroup.fromLogGroupName(
+                    this, props.resourceNamePrefix() + "-CloudTrailGroup", cloudTrailLogGroupName);
 
             // Explicitly create S3 bucket for CloudTrail logs with a deterministic name.
             // Without this, CDK auto-generates a bucket with a random suffix that causes
@@ -184,7 +181,7 @@ public class ObservabilityStack extends Stack {
                     .bucket(trailBucket)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)
-                    .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
+                    // Retention is set via AwsCustomResource above, not here
                     .includeGlobalServiceEvents(false)
                     .isMultiRegionTrail(false)
                     .build();
