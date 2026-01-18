@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.nio.file.Paths;
@@ -59,7 +60,6 @@ import software.amazon.awscdk.services.logs.CfnDeliveryProps;
 import software.amazon.awscdk.services.logs.CfnDeliverySource;
 import software.amazon.awscdk.services.logs.CfnDeliverySourceProps;
 import software.amazon.awscdk.services.logs.ILogGroup;
-import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -280,10 +280,10 @@ public class ApexStack extends Stack {
                 .compress(true)
                 .build();
 
-        // Lookup log group
-        ILogGroup distributionAccessLogGroup = LogGroup.fromLogGroupName(
+        // Ensure distribution access log group exists (idempotent creation)
+        ILogGroup distributionAccessLogGroup = ensureLogGroup(
                 this,
-                props.resourceNamePrefix() + "-ImportedDistributionLogGroup",
+                props.resourceNamePrefix() + "-DistributionAccessLogGroup",
                 props.sharedNames().distributionAccessLogGroupName);
 
         // CloudFront distribution for the web origin and all the URL Lambdas.

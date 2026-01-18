@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -36,7 +37,6 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
-import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
 
 public class SelfDestructStack extends Stack {
@@ -116,15 +116,11 @@ public class SelfDestructStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        // Log group for self-destruct function
-        ILogGroup logGroup = LogGroup.fromLogGroupArn(
+        // Log group for self-destruct function (idempotent creation)
+        ILogGroup logGroup = ensureLogGroup(
                 this,
-                props.resourceNamePrefix() + "-ISelfDestructLogGroup",
-                "arn:aws:logs:%s:%s:log-group:%s:*"
-                        .formatted(
-                                Objects.requireNonNull(props.getEnv()).getRegion(),
-                                props.getEnv().getAccount(),
-                                props.selfDestructLogGroupName()));
+                props.resourceNamePrefix() + "-SelfDestructLogGroup",
+                props.selfDestructLogGroupName());
 
         // IAM role for the self-destruct Lambda function
         String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");

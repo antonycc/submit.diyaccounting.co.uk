@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
@@ -37,7 +38,6 @@ import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.ILogGroup;
-import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
 
 public class ApiStack extends Stack {
@@ -124,11 +124,11 @@ public class ApiStack extends Stack {
                 .description("API Gateway v2 for " + props.resourceNamePrefix())
                 .build();
 
-        // Enable access logging for the default stage to a pre-created CloudWatch Log Group
+        // Enable access logging for the default stage - ensure log group exists (idempotent creation)
         // The resource policy for API Gateway to write to this log group is managed centrally
         // in the ObservabilityStack to avoid hitting the 10 resource policy limit per account
-        ILogGroup apiAccessLogs = LogGroup.fromLogGroupName(
-                this, props.resourceNamePrefix() + "-ImportedApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
+        ILogGroup apiAccessLogs = ensureLogGroup(
+                this, props.resourceNamePrefix() + "-ApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
 
         // Configure default stage access logs and logging level/metrics
         assert this.httpApi.getDefaultStage() != null;
