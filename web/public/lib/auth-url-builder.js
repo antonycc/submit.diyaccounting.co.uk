@@ -5,20 +5,27 @@
 (function () {
   "use strict";
 
-  function buildCognitoAuthUrl(state, scope = "openid profile email") {
+  function buildCognitoAuthUrl(state, nonce, scope = "openid profile email") {
     const env = window.__env;
     if (!env) throw new Error("Environment not loaded");
 
     const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/auth/loginWithCognitoCallback.html";
 
-    return (
+    // Build authorization URL with state (CSRF protection) and nonce (replay attack protection)
+    let url =
       `${env.COGNITO_BASE_URI.replace(/\/$/, "")}/oauth2/authorize` +
       `?response_type=code` +
       `&client_id=${encodeURIComponent(env.COGNITO_CLIENT_ID)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scope)}` +
-      `&state=${encodeURIComponent(state)}`
-    );
+      `&state=${encodeURIComponent(state)}`;
+
+    // Include nonce for OpenID Connect - returned in ID token for validation
+    if (nonce) {
+      url += `&nonce=${encodeURIComponent(nonce)}`;
+    }
+
+    return url;
   }
 
   function buildHmrcAuthUrl(state, scope = "write:vat read:vat", account = "live") {

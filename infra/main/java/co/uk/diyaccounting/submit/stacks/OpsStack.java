@@ -173,6 +173,20 @@ public class OpsStack extends Stack {
         this.githubSyntheticAlarm.addOkAction(new SnsAction(this.alertTopic));
 
         // ============================================================================
+        // Security Detection Alarms - Phase 1.1 & 2.3 (Deferred)
+        // ============================================================================
+        // NOTE: Authentication failure metric filters for Lambda log groups are NOT created here
+        // because the log groups don't exist until the Lambdas are deployed and invoked.
+        // These metric filters should be created in the respective Lambda stacks (AuthStack, HmrcStack)
+        // or added manually after deployment via CloudWatch console.
+        //
+        // Required metric filters for security monitoring:
+        // 1. Auth failure filter on custom-authorizer log group (WARN/ERROR levels)
+        // 2. HMRC auth failure filter on hmrc-token-post log group (statusCode:401)
+        //
+        // See SECURITY_DETECTION_UPLIFT_PLAN.md for manual setup instructions.
+
+        // ============================================================================
         // Outputs
         // ============================================================================
         cfnOutput(this, "AlertTopicArn", this.alertTopic.getTopicArn());

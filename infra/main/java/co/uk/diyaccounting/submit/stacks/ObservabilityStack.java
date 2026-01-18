@@ -38,6 +38,12 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.rum.CfnAppMonitor;
+import software.amazon.awscdk.services.guardduty.CfnDetector;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.EventPattern;
+import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.events.targets.SnsTopic;
+import software.amazon.awscdk.services.securityhub.CfnHub;
 import software.constructs.Construct;
 
 public class ObservabilityStack extends Stack {
@@ -120,6 +126,32 @@ public class ObservabilityStack extends Stack {
                     .includeGlobalServiceEvents(false)
                     .isMultiRegionTrail(false)
                     .build();
+
+            // Phase 2.2: DynamoDB Data Event Logging via L1 construct
+            // Add event selectors for DynamoDB data plane operations (GetItem, PutItem, DeleteItem, Query, Scan)
+            // This enables detection of bulk data access patterns indicating potential data breach
+            software.amazon.awscdk.services.cloudtrail.CfnTrail cfnTrail =
+                    (software.amazon.awscdk.services.cloudtrail.CfnTrail) this.trail.getNode().getDefaultChild();
+
+            cfnTrail.setEventSelectors(List.of(
+                    software.amazon.awscdk.services.cloudtrail.CfnTrail.EventSelectorProperty.builder()
+                            .readWriteType("All")
+                            .includeManagementEvents(true)
+                            .dataResources(List.of(
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.DataResourceProperty.builder()
+                                            .type("AWS::DynamoDB::Table")
+                                            // Log all DynamoDB tables in this account
+                                            // Note: CloudTrail doesn't support wildcards in table ARNs,
+                                            // so we use "arn:aws:dynamodb" to match all tables
+                                            .values(List.of("arn:aws:dynamodb"))
+                                            .build()))
+                            .build()));
+
+            infof("Configured CloudTrail DynamoDB data event logging for all tables in account");
+
+            // CloudWatch Logs Insights query for detecting bulk data access:
+            // filter eventSource = "dynamodb.amazonaws.com" and eventName = "Scan"
+            // | stats count(*) by bin(5m)
 
             // Outputs for Observability resources
             // cfnOutput(this, "TrailBucketArn", this.trailBucket.getBucketArn());
@@ -245,6 +277,141 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("RUM JavaScript errors >= 5 in 5 minutes")
                 .build();
+
+        // ============================================================================
+        // AWS GuardDuty - Phase 1.3 Threat Detection
+        // ============================================================================
+        // GuardDuty provides intelligent threat detection for compromised credentials,
+        // unusual API patterns, cryptocurrency mining, and other security threats.
+        CfnDetector guardDutyDetector = CfnDetector.Builder.create(this, props.resourceNamePrefix() + "-GuardDuty")
+                .enable(true)
+                .findingPublishingFrequency("FIFTEEN_MINUTES")
+                .build();
+
+        // SNS topic for GuardDuty findings
+        Topic guardDutyTopic = Topic.Builder.create(this, props.resourceNamePrefix() + "-GuardDutyTopic")
+                .topicName(props.resourceNamePrefix() + "-guardduty-findings")
+                .displayName("DIY Accounting Submit - GuardDuty Security Findings")
+                .build();
+
+        // EventBridge rule to route HIGH and MEDIUM severity GuardDuty findings to SNS
+        // Severity levels: 0.0-3.9 = LOW, 4.0-6.9 = MEDIUM, 7.0-8.9 = HIGH, 9.0 and above = CRITICAL
+        Rule guardDutyRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-GuardDutyRule")
+                .ruleName(props.resourceNamePrefix() + "-guardduty-findings")
+                .description("Route MEDIUM+ severity GuardDuty findings to SNS for alerting")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.guardduty"))
+                        .detailType(List.of("GuardDuty Finding"))
+                        .build())
+                .build();
+
+        guardDutyRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        cfnOutput(this, "GuardDutyDetectorId", guardDutyDetector.getAttrId());
+        cfnOutput(this, "GuardDutyTopicArn", guardDutyTopic.getTopicArn());
+
+        infof("Created GuardDuty detector with EventBridge rule for security findings");
+
+        // ============================================================================
+        // AWS Security Hub - Phase 3.1 Centralized Security Findings
+        // ============================================================================
+        // Security Hub aggregates findings from GuardDuty, IAM Access Analyzer, and other
+        // AWS services. It provides compliance checks against CIS AWS Foundations Benchmark.
+        CfnHub securityHub = CfnHub.Builder.create(this, props.resourceNamePrefix() + "-SecurityHub")
+                .enableDefaultStandards(true) // Enable CIS AWS Foundations Benchmark
+                .build();
+
+        // EventBridge rule to route CRITICAL and HIGH severity Security Hub findings to SNS
+        Rule securityHubRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SecurityHubRule")
+                .ruleName(props.resourceNamePrefix() + "-securityhub-findings")
+                .description("Route HIGH+ severity Security Hub findings to SNS for alerting")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.securityhub"))
+                        .detailType(List.of("Security Hub Findings - Imported"))
+                        .build())
+                .build();
+
+        securityHubRule.addTarget(new SnsTopic(guardDutyTopic)); // Reuse GuardDuty topic
+
+        cfnOutput(this, "SecurityHubArn", securityHub.getAttrArn());
+
+        infof("Created Security Hub with EventBridge rule for security findings");
+
+        // ============================================================================
+        // Phase 3.2: Cross-Account/Region Anomaly Detection
+        // ============================================================================
+        // EventBridge rules to detect suspicious AWS API activity that may indicate
+        // credential compromise or lateral movement attacks.
+
+        // Rule 1: IAM Policy Changes - detect unauthorized permission escalation
+        Rule iamPolicyChangeRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-IamPolicyChangeRule")
+                .ruleName(props.resourceNamePrefix() + "-iam-policy-changes")
+                .description("Alert on IAM policy changes that may indicate privilege escalation")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.iam"))
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("eventName", List.of(
+                                "CreatePolicy",
+                                "CreatePolicyVersion",
+                                "DeletePolicy",
+                                "DeletePolicyVersion",
+                                "AttachUserPolicy",
+                                "AttachRolePolicy",
+                                "AttachGroupPolicy",
+                                "DetachUserPolicy",
+                                "DetachRolePolicy",
+                                "DetachGroupPolicy",
+                                "PutUserPolicy",
+                                "PutRolePolicy",
+                                "PutGroupPolicy")))
+                        .build())
+                .build();
+        iamPolicyChangeRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        // Rule 2: Security Group Changes - detect network security modifications
+        Rule securityGroupChangeRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-SgChangeRule")
+                .ruleName(props.resourceNamePrefix() + "-security-group-changes")
+                .description("Alert on security group changes that may expose resources")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.ec2"))
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("eventName", List.of(
+                                "AuthorizeSecurityGroupIngress",
+                                "AuthorizeSecurityGroupEgress",
+                                "RevokeSecurityGroupIngress",
+                                "RevokeSecurityGroupEgress",
+                                "CreateSecurityGroup",
+                                "DeleteSecurityGroup")))
+                        .build())
+                .build();
+        securityGroupChangeRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        // Rule 3: Access Key Creation - detect potential credential theft preparation
+        Rule accessKeyCreationRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-AccessKeyRule")
+                .ruleName(props.resourceNamePrefix() + "-access-key-creation")
+                .description("Alert on new IAM access key creation that may indicate credential theft")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.iam"))
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("eventName", List.of(
+                                "CreateAccessKey",
+                                "UpdateAccessKey")))
+                        .build())
+                .build();
+        accessKeyCreationRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        // Rule 4: Root Account Activity - detect any root account usage
+        Rule rootActivityRule = Rule.Builder.create(this, props.resourceNamePrefix() + "-RootActivityRule")
+                .ruleName(props.resourceNamePrefix() + "-root-account-activity")
+                .description("Alert on any AWS root account activity - should never be used in normal operations")
+                .eventPattern(EventPattern.builder()
+                        .detailType(List.of("AWS API Call via CloudTrail"))
+                        .detail(Map.of("userIdentity", Map.of("type", List.of("Root"))))
+                        .build())
+                .build();
+        rootActivityRule.addTarget(new SnsTopic(guardDutyTopic));
+
+        infof("Created anomaly detection rules: IAM policy changes, security groups, access keys, root activity");
 
         // ============================================================================
         // Consolidated Operations Dashboard

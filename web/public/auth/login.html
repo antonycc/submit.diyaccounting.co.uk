@@ -79,6 +79,7 @@
 
     <script src="../lib/env-loader.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../lib/utils/crypto-utils.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
@@ -102,20 +103,26 @@
         console.log("Initiating login with Google or Antonycc OIDC via Cognito");
 
         console.log("Clear stored tokens and user info");
-        localStorage.removeItem("authState");
         localStorage.removeItem("cognitoAccessToken");
         localStorage.removeItem("cognitoIdToken");
         localStorage.removeItem("cognitoRefreshToken");
         localStorage.removeItem("userInfo");
-        localStorage.removeItem("authState");
+        sessionStorage.removeItem("cognito_oauth_state");
+        sessionStorage.removeItem("cognito_oauth_nonce");
 
-        // Generate state parameter for security
-        const state = Math.random().toString(36).substring(2, 15);
-        localStorage.setItem("authState", state);
+        // Generate cryptographically secure state parameter for CSRF protection
+        // Uses crypto.randomUUID() or crypto.getRandomValues() via crypto-utils.js
+        const state = window.generateRandomState ? window.generateRandomState() : crypto.randomUUID().replace(/-/g, "");
+        sessionStorage.setItem("cognito_oauth_state", state);
+
+        // Generate cryptographically secure nonce for replay attack protection
+        // The nonce is returned in the ID token and must match the original value
+        const nonce = window.generateRandomState ? window.generateRandomState() : crypto.randomUUID().replace(/-/g, "");
+        sessionStorage.setItem("cognito_oauth_nonce", nonce);
 
         let authResponseUrl;
         if (window.__env && window.authUrlBuilder) {
-          authResponseUrl = window.authUrlBuilder.buildCognitoAuthUrl(state);
+          authResponseUrl = window.authUrlBuilder.buildCognitoAuthUrl(state, nonce);
           console.log("Using client-side generated Cognito Auth URL:", authResponseUrl);
         } else {
           // Get OAuth URL from API (fallback)

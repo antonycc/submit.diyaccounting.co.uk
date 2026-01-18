@@ -194,7 +194,52 @@ aws dynamodb scan \
 
 ---
 
-## 7. User Communications
+## 7. OAuth Secret Rotation
+
+OAuth client secrets should be rotated regularly (at least annually) to minimize the impact of potential compromise.
+
+### HMRC Client Secret Rotation
+
+1. **Log into HMRC Developer Hub**: https://developer.service.hmrc.gov.uk/
+2. **Navigate to your application** and regenerate the client secret
+3. **Update AWS Secrets Manager**:
+   ```bash
+   aws secretsmanager put-secret-value \
+     --secret-id arn:aws:secretsmanager:eu-west-2:ACCOUNT:secret:ENV/submit/hmrc/client_secret \
+     --secret-string "NEW_SECRET_VALUE"
+   ```
+4. **Lambda picks up the new secret** on next cold start
+   - Force a cold start by redeploying, or wait for natural instance rotation
+   - Verify by checking a test OAuth flow
+
+### Google OAuth Secret Rotation
+
+1. **Log into Google Cloud Console**: https://console.cloud.google.com/
+2. **Navigate to**: APIs & Services > Credentials > OAuth 2.0 Client IDs
+3. **Create a new client secret** (you can have multiple active)
+4. **Update AWS Secrets Manager**:
+   ```bash
+   aws secretsmanager put-secret-value \
+     --secret-id arn:aws:secretsmanager:eu-west-2:ACCOUNT:secret:ENV/submit/google/client_secret \
+     --secret-string "NEW_SECRET_VALUE"
+   ```
+5. **Redeploy** the IdentityStack to pick up the new secret
+6. **Delete the old secret** in Google Cloud Console after verifying new one works
+
+### Rotation Schedule
+
+| Secret | Location | Rotation Frequency | Last Rotated |
+|--------|----------|-------------------|--------------|
+| HMRC Client Secret | AWS Secrets Manager | Annually | Document here |
+| Google Client Secret | AWS Secrets Manager | Annually | Document here |
+
+### Automated Rotation (Future)
+
+See `SECURITY_DETECTION_UPLIFT_PLAN.md` Phase 3.4 for planned AWS Secrets Manager automatic rotation implementation.
+
+---
+
+## 8. User Communications
 
 ### Privacy Policy Updates
 - When changing data processing practices:
@@ -210,7 +255,7 @@ aws dynamodb scan \
 
 ---
 
-## 8. Scripts and Tools
+## 9. Scripts and Tools
 
 ### Required Admin Scripts (to be created/maintained)
 
