@@ -536,23 +536,23 @@ Options:
 - [x] State storage in sessionStorage (not localStorage)
 
 ### Phase 1 (Do First - COMPLETED 2026-01-17)
-- [x] Auth failure alerting (OpsStack.java - metric filter + alarm + SNS)
+- [ ] Auth failure alerting (DEFERRED - metric filter requires Lambda log group to exist first; add to AuthStack or create manually)
 - [x] WAF block alerting (EdgeStack.java - 3 alarms for rate limit, common rules, bad inputs)
 - [x] Enable GuardDuty (ObservabilityStack.java - detector + EventBridge rule + SNS)
 - [x] Log sanitization audit (verified via unit tests)
 - [x] CORS policy review (documented - credentials disabled mitigates wildcard origin risk)
 
 ### Phase 2 (Do Next - COMPLETED 2026-01-17)
-- [x] Cognito advanced security (IdentityStack.java - AdvancedSecurityMode.ENFORCED)
-- [x] DynamoDB access alerting (documented manual CloudTrail configuration step)
-- [x] HMRC API failure alerting (OpsStack.java - 401 response metric filter + alarm)
+- [x] Cognito advanced security (IdentityStack.java - StandardThreatProtectionMode.FULL_FUNCTION with FeaturePlan.PLUS)
+- [x] DynamoDB access alerting (ObservabilityStack.java - CloudTrail data events for all DynamoDB tables)
+- [ ] HMRC API failure alerting (DEFERRED - metric filter requires Lambda log group to exist first; add to HmrcStack or create manually)
 - [x] OAuth nonce parameter (login.html, auth-url-builder.js, callback validation)
 - [x] OAuth secret rotation procedure (documented in PRIVACY_DUTIES.md section 7)
 
 ### Phase 3 (Do When Resourced - COMPLETED 2026-01-17)
 - [x] Security Hub integration (ObservabilityStack.java - CIS benchmark + EventBridge)
 - [x] Cross-account anomaly detection (ObservabilityStack.java - EventBridge rules for IAM policy changes, security group changes, access key creation, root account activity)
-- [x] DynamoDB CloudTrail data events (ObservabilityStack.java - L1 CfnTrail with data event selectors for {env}-submit-* tables)
+- [x] DynamoDB CloudTrail data events (ObservabilityStack.java - L1 CfnTrail with data event selectors for all DynamoDB tables)
 - [ ] Automated IP blocking (documented - requires cross-region Lambda, potential false positives risk)
 - [ ] Automated secret rotation (documented - external OAuth secrets from HMRC/Google require manual rotation)
 
