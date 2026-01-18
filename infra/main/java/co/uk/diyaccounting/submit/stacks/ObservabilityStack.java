@@ -37,6 +37,9 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.s3.BlockPublicAccess;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.rum.CfnAppMonitor;
 import software.amazon.awscdk.services.guardduty.CfnDetector;
 import software.amazon.awscdk.services.events.Rule;
@@ -164,8 +167,21 @@ public class ObservabilityStack extends Stack {
             // Ensure the Custom Resource runs before the LogGroup resource
             this.cloudTrailLogGroup.getNode().addDependency(ensureLogGroup);
 
+            // Explicitly create S3 bucket for CloudTrail logs with a deterministic name.
+            // Without this, CDK auto-generates a bucket with a random suffix that causes
+            // drift failures if deleted externally.
+            String trailBucketName = props.resourceNamePrefix() + "-cloudtrail-logs";
+            Bucket trailBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-TrailBucket")
+                    .bucketName(trailBucketName)
+                    .encryption(BucketEncryption.S3_MANAGED)
+                    .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .autoDeleteObjects(true)
+                    .build();
+
             this.trail = Trail.Builder.create(this, props.resourceNamePrefix() + "-Trail")
                     .trailName(props.sharedNames().trailName)
+                    .bucket(trailBucket)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)
                     .cloudWatchLogsRetention(cloudTrailLogGroupRetentionPeriod)
