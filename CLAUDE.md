@@ -186,6 +186,20 @@ When CloudFormation references resources that might not exist (e.g., log groups 
 - Never assume CloudFormation state matches AWS reality
 - See `ObservabilityStack.java` CloudTrail LogGroup pattern for example
 
+## Before Making Infrastructure Changes
+
+1. **Trace all dependencies**: When modifying a CDK construct, read its documentation to understand ALL resources it creates, not just the ones you're directly changing. For example, `Trail` auto-creates an S3 bucket and IAM role.
+
+2. **Check existing patterns**: Search the codebase for similar constructs (e.g., other S3 buckets, other LogGroups) and follow the same configuration approach. Don't invent new patterns.
+
+3. **Propose before implementing**: For infrastructure changes, describe the change in plain text and wait for approval before editing files.
+
+4. **No manual interventions**: Never suggest AWS CLI commands, console actions, or workflow hacks. Everything goes through code changes → git push → GitHub Actions.
+
+5. **Understand the full error**: When a deployment fails, don't just fix the immediate error. Ask: "What other resources does this construct depend on? What else could be in a bad state?"
+
+6. **Verify compilation locally**: Run `./mvnw clean verify` before considering any infrastructure change complete.
+
 ## Security Checklist
 
 - Never commit secrets - use AWS Secrets Manager ARNs
