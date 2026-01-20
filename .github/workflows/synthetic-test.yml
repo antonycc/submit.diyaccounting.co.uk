@@ -525,8 +525,23 @@ jobs:
 #            aws s3 cp "screenshots" "s3://${BUCKET_NAME?}/tests/behaviour-test-results/" --recursive
 #          fi
 
-      - name: Run ./scripts/publish-web-test-local.sh to publish test results to the local directory, before copying to S3
+      - name: Check if origin bucket exists
         if: ${{ !cancelled() }}
+        id: check-bucket
+        env:
+          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
+        shell: bash
+        run: |
+          if aws s3api head-bucket --bucket "${BUCKET_NAME}" 2>/dev/null; then
+            echo "Bucket ${BUCKET_NAME} exists"
+            echo "bucket-exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Bucket ${BUCKET_NAME} does not exist (deployment may have failed before EdgeStack)"
+            echo "bucket-exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run ./scripts/publish-web-test-local.sh to publish test results to the local directory, before copying to S3
+        if: ${{ !cancelled() && steps.check-bucket.outputs.bucket-exists == 'true' }}
         env:
           BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1
         shell: bash
@@ -550,6 +565,14 @@ jobs:
           echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
           find web/public/tests/behaviour-test-results/web-test/ -type f
           aws s3 cp web/public/tests/behaviour-test-results/web-test/ s3://${BUCKET_NAME?}/tests/behaviour-test-results/web-test/ --recursive
+
+      - name: Skip S3 upload (bucket does not exist)
+        if: ${{ !cancelled() && steps.check-bucket.outputs.bucket-exists != 'true' }}
+        shell: bash
+        run: |
+          echo "⚠️ Skipping S3 upload because origin bucket does not exist"
+          echo "This typically happens when the deployment failed before EdgeStack was deployed"
+          echo "Test results are still available as GitHub artifacts"
 #
 #      - name: Copy screenshots to S3 origin bucket
 #        if: ${{ !cancelled() }}
