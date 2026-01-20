@@ -59,6 +59,108 @@ From eslint-security scan - all warnings, no errors:
 
 ---
 
+## Test Infrastructure Overview
+
+### Test Command: `npm run test:all`
+
+This command executes the following test suites in sequence:
+
+```bash
+# 1. Unit tests (vitest)
+npx vitest --run app/unit-tests/*.test.js app/unit-tests/*/*.test.js app/system-tests/*.test.js web/unit-tests/*.test.js
+
+# 2. Browser tests (vitest with JSDOM)
+npm run test:browser
+
+# 3. Behaviour tests (Playwright E2E)
+npm run test:submitVatBehaviour-proxy
+```
+
+### Code Path Tracing
+
+The following diagram shows the code path for VAT submission through all test layers:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BEHAVIOUR TEST: submitVat.behaviour.test.js                                 │
+│   └── fillInVat() → submitFormVat() → completeVat() → verifyVatSubmission() │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FRONTEND: web/public/hmrc/vat/submitVat.html                                │
+│   └── Form validation (HTML5 + JavaScript) → POST /api/v1/hmrc/vat/return   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ API HANDLER: app/functions/hmrc/hmrcVatReturnPost.js                        │
+│   └── ingestHandler → validateInput → submitVat() → HMRC API                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ HTTP SIMULATOR (test mode): app/http-simulator/routes/vat-returns.js        │
+│   └── POST /organisations/vat/:vrn/returns → storeReturn() → 201 receipt    │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Tests Requiring Updates
+
+| Test File | Current Fields | Required Updates |
+|-----------|---------------|------------------|
+| `app/unit-tests/lib/hmrcValidation.test.js` | VRN, periodKey, dates | Add 9-box field validation tests |
+| `app/unit-tests/functions/hmrcVatReturnPost.test.js` | vatNumber, periodKey, vatDue | Add all 9 boxes, declaration |
+| `app/http-simulator/routes/vat-returns.js` | Accepts all fields, no strict validation | Add field validation, calculation verification |
+| `app/http-simulator/scenarios/returns.js` | Basic error scenarios | Add 9-box validation errors |
+| `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | fillInVat() with 3 fields | Update for 9 boxes + declaration |
+| `behaviour-tests/submitVat.behaviour.test.js` | Single vatDue assertion | Assert all 9 boxes in receipt |
+| `web/public/lib/test-data-generator.js` | generateTestVatAmount() | Add all 9 box generators |
+
+---
+
+## Validation Strategy: Frontend + API Enforcement
+
+### Validation Layers
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Layer 1: HTML5 Form Validation (submitVat.html)                            │
+│   - required attributes on all mandatory fields                            │
+│   - type="number" with step, min, max for numeric fields                   │
+│   - pattern attributes for format validation                               │
+│   - Immediate feedback, no server roundtrip                                │
+└────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Layer 2: JavaScript Validation (submitVat.html script)                     │
+│   - Real-time calculation of Box 3 and Box 5                               │
+│   - Cross-field validation (Box 3 = Box 1 + Box 2)                         │
+│   - Declaration checkbox required                                          │
+│   - Disable submit until all validation passes                             │
+└────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Layer 3: API Enforcement (hmrcVatReturnPost.js)                            │
+│   - Server-side validation of ALL fields (never trust client)             │
+│   - Recalculate Box 3 and Box 5 (ignore client values)                    │
+│   - Enforce ranges per HMRC spec                                           │
+│   - Return 400 with specific error codes for validation failures          │
+└────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Layer 4: HTTP Simulator Validation (for test mode)                         │
+│   - Mirror HMRC API validation exactly                                     │
+│   - Support Gov-Test-Scenario for error testing                            │
+│   - Validate calculated fields match expected values                       │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Component 1: VAT Data Types & Validation Library
 
 **New file**: `app/lib/vatReturnTypes.js`
@@ -1453,6 +1555,621 @@ For any external resources found, add integrity and crossorigin attributes:
 
 ---
 
+## Component 15: HTTP Simulator Updates
+
+The HTTP simulator (`app/http-simulator/`) provides a mock HMRC API for local and CI testing. It must be updated to validate 9-box submissions.
+
+### 15.1 Update vat-returns.js Route
+
+**Modify**: `app/http-simulator/routes/vat-returns.js`
+
+```javascript
+// app/http-simulator/routes/vat-returns.js
+
+import { validateVatReturnBody, calculateTotalVatDue, calculateNetVatDue } from "../../lib/vatReturnTypes.js";
+
+// POST /organisations/vat/:vrn/returns - Submit VAT return
+app.post("/organisations/vat/:vrn/returns", (req, res) => {
+  const { vrn } = req.params;
+  const govTestScenario = req.headers["gov-test-scenario"];
+
+  // Validate VRN
+  if (!isValidVrn(vrn)) {
+    return res.status(400).json({
+      code: "VRN_INVALID",
+      message: "The provided VRN is invalid",
+    });
+  }
+
+  // Check for Gov-Test-Scenario error responses
+  const scenarioResponse = getScenarioResponse(govTestScenario, "POST", vrn, req.body?.periodKey);
+  if (scenarioResponse) {
+    return res.status(scenarioResponse.status).json(scenarioResponse.body);
+  }
+
+  // Validate request body - ALL 9 boxes required
+  const validation = validateVatReturnBody(req.body);
+  if (!validation.valid) {
+    return res.status(400).json({
+      code: validation.code,
+      message: validation.message,
+    });
+  }
+
+  const {
+    periodKey,
+    vatDueSales,           // Box 1
+    vatDueAcquisitions,    // Box 2
+    totalVatDue,           // Box 3 (calculated)
+    vatReclaimedCurrPeriod,// Box 4
+    netVatDue,             // Box 5 (calculated)
+    totalValueSalesExVAT,  // Box 6 (integer)
+    totalValuePurchasesExVAT, // Box 7 (integer)
+    totalValueGoodsSuppliedExVAT, // Box 8 (integer)
+    totalAcquisitionsExVAT, // Box 9 (integer)
+  } = req.body;
+
+  // Verify calculated fields
+  const expectedTotalVatDue = calculateTotalVatDue(vatDueSales, vatDueAcquisitions);
+  const expectedNetVatDue = calculateNetVatDue(expectedTotalVatDue, vatReclaimedCurrPeriod);
+
+  if (Math.abs(totalVatDue - expectedTotalVatDue) > 0.01) {
+    return res.status(400).json({
+      code: "INVALID_TOTAL_VAT_DUE",
+      message: `totalVatDue (${totalVatDue}) does not equal vatDueSales + vatDueAcquisitions (${expectedTotalVatDue})`,
+    });
+  }
+
+  if (Math.abs(netVatDue - expectedNetVatDue) > 0.01) {
+    return res.status(400).json({
+      code: "INVALID_NET_VAT_DUE",
+      message: `netVatDue (${netVatDue}) does not equal |totalVatDue - vatReclaimedCurrPeriod| (${expectedNetVatDue})`,
+    });
+  }
+
+  // Store and return receipt...
+});
+```
+
+### 15.2 Add Validation Error Scenarios
+
+**Modify**: `app/http-simulator/scenarios/returns.js`
+
+```javascript
+// Add new scenarios for 9-box validation
+const scenarios = {
+  // ... existing scenarios ...
+
+  // New 9-box validation scenarios
+  INVALID_BOX_1: {
+    status: 400,
+    body: {
+      code: "INVALID_MONETARY_AMOUNT",
+      message: "vatDueSales must be a valid monetary amount with max 2 decimal places",
+    },
+  },
+  INVALID_BOX_3_CALCULATION: {
+    status: 400,
+    body: {
+      code: "INVALID_TOTAL_VAT_DUE",
+      message: "totalVatDue must equal vatDueSales + vatDueAcquisitions",
+    },
+  },
+  INVALID_BOX_5_CALCULATION: {
+    status: 400,
+    body: {
+      code: "INVALID_NET_VAT_DUE",
+      message: "netVatDue must equal absolute value of totalVatDue - vatReclaimedCurrPeriod",
+    },
+  },
+  INVALID_BOX_5_NEGATIVE: {
+    status: 400,
+    body: {
+      code: "INVALID_NET_VAT_DUE",
+      message: "netVatDue cannot be negative",
+    },
+  },
+  INVALID_BOX_6_DECIMAL: {
+    status: 400,
+    body: {
+      code: "INVALID_WHOLE_AMOUNT",
+      message: "totalValueSalesExVAT must be a whole number (integer)",
+    },
+  },
+};
+```
+
+---
+
+## Component 16: Unit Test Updates
+
+### 16.1 VAT Types Unit Tests
+
+**New file**: `app/unit-tests/lib/vatReturnTypes.test.js`
+
+```javascript
+// app/unit-tests/lib/vatReturnTypes.test.js
+
+import { describe, test, expect } from "vitest";
+import {
+  VAT_BOX_CONFIG,
+  calculateTotalVatDue,
+  calculateNetVatDue,
+  validateVatReturnBody,
+  isValidMonetaryAmount,
+  isValidWholeAmount,
+} from "@app/lib/vatReturnTypes.js";
+
+describe("vatReturnTypes", () => {
+  describe("calculateTotalVatDue (Box 3)", () => {
+    test("calculates sum of Box 1 and Box 2", () => {
+      expect(calculateTotalVatDue(1000.00, 200.00)).toBe(1200.00);
+      expect(calculateTotalVatDue(0, 0)).toBe(0);
+      expect(calculateTotalVatDue(1234.56, 789.12)).toBe(2023.68);
+    });
+
+    test("handles negative values", () => {
+      expect(calculateTotalVatDue(-100, 500)).toBe(400);
+      expect(calculateTotalVatDue(100, -500)).toBe(-400);
+    });
+
+    test("rounds to 2 decimal places", () => {
+      expect(calculateTotalVatDue(1.111, 2.222)).toBe(3.33);
+      expect(calculateTotalVatDue(1.115, 2.225)).toBe(3.34); // Banker's rounding
+    });
+  });
+
+  describe("calculateNetVatDue (Box 5)", () => {
+    test("calculates absolute difference of Box 3 and Box 4", () => {
+      expect(calculateNetVatDue(1000.00, 200.00)).toBe(800.00);
+      expect(calculateNetVatDue(200.00, 1000.00)).toBe(800.00); // Absolute value
+      expect(calculateNetVatDue(500.00, 500.00)).toBe(0);
+    });
+
+    test("always returns positive value", () => {
+      expect(calculateNetVatDue(-1000, 500)).toBeGreaterThanOrEqual(0);
+      expect(calculateNetVatDue(500, -1000)).toBeGreaterThanOrEqual(0);
+    });
+
+    test("rounds to 2 decimal places", () => {
+      expect(calculateNetVatDue(1000.115, 100.005)).toBe(900.11);
+    });
+  });
+
+  describe("isValidMonetaryAmount", () => {
+    test("accepts valid monetary amounts (2 decimals)", () => {
+      expect(isValidMonetaryAmount(1000.00)).toBe(true);
+      expect(isValidMonetaryAmount(0)).toBe(true);
+      expect(isValidMonetaryAmount(-500.50)).toBe(true);
+      expect(isValidMonetaryAmount(9999999999999.99)).toBe(true);
+    });
+
+    test("rejects amounts with more than 2 decimals", () => {
+      expect(isValidMonetaryAmount(1000.001)).toBe(false);
+      expect(isValidMonetaryAmount(100.123)).toBe(false);
+    });
+
+    test("rejects amounts outside HMRC range", () => {
+      expect(isValidMonetaryAmount(99999999999999.99)).toBe(false);
+      expect(isValidMonetaryAmount(-99999999999999.99)).toBe(false);
+    });
+  });
+
+  describe("isValidWholeAmount (Boxes 6-9)", () => {
+    test("accepts valid integers", () => {
+      expect(isValidWholeAmount(1000)).toBe(true);
+      expect(isValidWholeAmount(0)).toBe(true);
+      expect(isValidWholeAmount(-500)).toBe(true);
+    });
+
+    test("rejects decimal values", () => {
+      expect(isValidWholeAmount(1000.50)).toBe(false);
+      expect(isValidWholeAmount(100.01)).toBe(false);
+    });
+  });
+
+  describe("validateVatReturnBody", () => {
+    const validBody = {
+      periodKey: "24A1",
+      vatDueSales: 1000.00,
+      vatDueAcquisitions: 200.00,
+      totalVatDue: 1200.00,
+      vatReclaimedCurrPeriod: 300.00,
+      netVatDue: 900.00,
+      totalValueSalesExVAT: 5000,
+      totalValuePurchasesExVAT: 1500,
+      totalValueGoodsSuppliedExVAT: 0,
+      totalAcquisitionsExVAT: 0,
+    };
+
+    test("accepts valid 9-box submission", () => {
+      const result = validateVatReturnBody(validBody);
+      expect(result.valid).toBe(true);
+    });
+
+    test("rejects missing required fields", () => {
+      const { vatDueSales, ...withoutBox1 } = validBody;
+      const result = validateVatReturnBody(withoutBox1);
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe("MISSING_FIELD");
+    });
+
+    test("rejects invalid monetary amounts", () => {
+      const result = validateVatReturnBody({ ...validBody, vatDueSales: 1000.001 });
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe("INVALID_MONETARY_AMOUNT");
+    });
+
+    test("rejects decimal values in integer-only fields (Boxes 6-9)", () => {
+      const result = validateVatReturnBody({ ...validBody, totalValueSalesExVAT: 5000.50 });
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe("INVALID_WHOLE_AMOUNT");
+    });
+  });
+});
+```
+
+### 16.2 Update hmrcVatReturnPost.test.js
+
+**Modify**: `app/unit-tests/functions/hmrcVatReturnPost.test.js`
+
+Add the following tests:
+
+```javascript
+describe("9-box VAT submission", () => {
+  const valid9BoxBody = {
+    vatNumber: "111222333",
+    periodKey: "24A1",
+    vatDueSales: 1000.00,           // Box 1
+    vatDueAcquisitions: 200.00,     // Box 2
+    totalVatDue: 1200.00,           // Box 3 (calculated)
+    vatReclaimedCurrPeriod: 300.00, // Box 4
+    netVatDue: 900.00,              // Box 5 (calculated)
+    totalValueSalesExVAT: 5000,     // Box 6 (integer)
+    totalValuePurchasesExVAT: 1500, // Box 7 (integer)
+    totalValueGoodsSuppliedExVAT: 0,// Box 8 (integer)
+    totalAcquisitionsExVAT: 0,      // Box 9 (integer)
+    accessToken: "test-token",
+    declarationConfirmed: true,     // Legal declaration checkbox
+  };
+
+  test("accepts valid 9-box submission", async () => {
+    mockHmrcSuccess(mockFetch, {
+      formBundleNumber: "123456789012",
+      chargeRefNumber: "XM002610011594",
+      processingDate: "2023-01-01T12:00:00.000Z",
+    });
+
+    const event = buildHmrcEvent({ body: valid9BoxBody });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(200);
+  });
+
+  test("returns 400 when declarationConfirmed is false", async () => {
+    const event = buildHmrcEvent({
+      body: { ...valid9BoxBody, declarationConfirmed: false },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("declaration");
+  });
+
+  test("returns 400 when declarationConfirmed is missing", async () => {
+    const { declarationConfirmed, ...withoutDeclaration } = valid9BoxBody;
+    const event = buildHmrcEvent({ body: withoutDeclaration });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("returns 400 when Box 3 calculation is wrong", async () => {
+    const event = buildHmrcEvent({
+      body: { ...valid9BoxBody, totalVatDue: 999.00 }, // Should be 1200
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("totalVatDue");
+  });
+
+  test("returns 400 when Box 5 calculation is wrong", async () => {
+    const event = buildHmrcEvent({
+      body: { ...valid9BoxBody, netVatDue: 100.00 }, // Should be 900
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("returns 400 when Box 5 is negative", async () => {
+    const event = buildHmrcEvent({
+      body: { ...valid9BoxBody, netVatDue: -100.00 },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("returns 400 when Boxes 6-9 have decimals", async () => {
+    const event = buildHmrcEvent({
+      body: { ...valid9BoxBody, totalValueSalesExVAT: 5000.50 },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("whole");
+  });
+
+  test("server recalculates Box 3 and Box 5 (ignores client values)", async () => {
+    mockHmrcSuccess(mockFetch, {
+      formBundleNumber: "123456789012",
+      chargeRefNumber: "XM002610011594",
+      processingDate: "2023-01-01T12:00:00.000Z",
+    });
+
+    // Client sends wrong calculated values, but correct input values
+    const event = buildHmrcEvent({
+      body: {
+        ...valid9BoxBody,
+        totalVatDue: 0,  // Wrong - server should calculate 1200
+        netVatDue: 0,    // Wrong - server should calculate 900
+      },
+    });
+
+    // The handler should either:
+    // 1. Recalculate and proceed (permissive) - returns 200
+    // 2. Reject the mismatch (strict) - returns 400
+    // We implement strict validation - return 400
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+  });
+});
+```
+
+### 16.3 Update hmrcValidation.test.js
+
+**Modify**: `app/unit-tests/lib/hmrcValidation.test.js`
+
+Add the following tests:
+
+```javascript
+describe("9-box validation helpers", () => {
+  describe("isValidVatBoxDecimal", () => {
+    test("accepts valid decimal amounts for Boxes 1-5", () => {
+      expect(isValidVatBoxDecimal(1000.00)).toBe(true);
+      expect(isValidVatBoxDecimal(0.01)).toBe(true);
+      expect(isValidVatBoxDecimal(-999.99)).toBe(true);
+    });
+
+    test("rejects more than 2 decimal places", () => {
+      expect(isValidVatBoxDecimal(100.001)).toBe(false);
+    });
+  });
+
+  describe("isValidVatBoxInteger", () => {
+    test("accepts integers for Boxes 6-9", () => {
+      expect(isValidVatBoxInteger(1000)).toBe(true);
+      expect(isValidVatBoxInteger(0)).toBe(true);
+      expect(isValidVatBoxInteger(-500)).toBe(true);
+    });
+
+    test("rejects decimals for Boxes 6-9", () => {
+      expect(isValidVatBoxInteger(1000.50)).toBe(false);
+      expect(isValidVatBoxInteger(0.01)).toBe(false);
+    });
+  });
+});
+```
+
+---
+
+## Component 17: Behaviour Test Updates
+
+### 17.1 Update fillInVat Function
+
+**Modify**: `behaviour-tests/steps/behaviour-hmrc-vat-steps.js`
+
+```javascript
+/**
+ * Fill in the 9-box VAT submission form
+ * @param {Page} page - Playwright page
+ * @param {object} vatData - VAT submission data
+ * @param {string} vatData.vatNumber - VRN
+ * @param {number} vatData.vatDueSales - Box 1
+ * @param {number} vatData.vatDueAcquisitions - Box 2
+ * @param {number} vatData.vatReclaimedCurrPeriod - Box 4
+ * @param {number} vatData.totalValueSalesExVAT - Box 6
+ * @param {number} vatData.totalValuePurchasesExVAT - Box 7
+ * @param {number} vatData.totalValueGoodsSuppliedExVAT - Box 8
+ * @param {number} vatData.totalAcquisitionsExVAT - Box 9
+ */
+export async function fillInVat9Box(
+  page,
+  vatData,
+  testScenario = null,
+  runFraudPreventionHeaderValidation = false,
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user completes the 9-box VAT form with valid values", async () => {
+    const {
+      vatNumber,
+      vatDueSales,
+      vatDueAcquisitions,
+      vatReclaimedCurrPeriod,
+      totalValueSalesExVAT,
+      totalValuePurchasesExVAT,
+      totalValueGoodsSuppliedExVAT,
+      totalAcquisitionsExVAT,
+    } = vatData;
+
+    // Fill VRN
+    await loggedFill(page, "#vatNumber", vatNumber, "Entering VAT number", { screenshotPath });
+
+    // Fill Box 1 - VAT due on sales
+    await loggedFill(page, "#vatDueSales", String(vatDueSales), "Entering VAT due on sales (Box 1)", { screenshotPath });
+
+    // Fill Box 2 - VAT due on acquisitions
+    await loggedFill(page, "#vatDueAcquisitions", String(vatDueAcquisitions), "Entering VAT due on acquisitions (Box 2)", { screenshotPath });
+
+    // Box 3 is auto-calculated, verify it updated
+    const box3Value = await page.locator("#totalVatDue").inputValue();
+    const expectedBox3 = (vatDueSales + vatDueAcquisitions).toFixed(2);
+    expect(box3Value).toBe(expectedBox3);
+
+    // Fill Box 4 - VAT reclaimed
+    await loggedFill(page, "#vatReclaimedCurrPeriod", String(vatReclaimedCurrPeriod), "Entering VAT reclaimed (Box 4)", { screenshotPath });
+
+    // Box 5 is auto-calculated, verify it updated
+    const box5Value = await page.locator("#netVatDue").inputValue();
+    const expectedBox5 = Math.abs(parseFloat(expectedBox3) - vatReclaimedCurrPeriod).toFixed(2);
+    expect(box5Value).toBe(expectedBox5);
+
+    // Fill Boxes 6-9 (integers)
+    await loggedFill(page, "#totalValueSalesExVAT", String(totalValueSalesExVAT), "Entering total sales ex VAT (Box 6)", { screenshotPath });
+    await loggedFill(page, "#totalValuePurchasesExVAT", String(totalValuePurchasesExVAT), "Entering total purchases ex VAT (Box 7)", { screenshotPath });
+    await loggedFill(page, "#totalValueGoodsSuppliedExVAT", String(totalValueGoodsSuppliedExVAT), "Entering goods supplied ex VAT (Box 8)", { screenshotPath });
+    await loggedFill(page, "#totalAcquisitionsExVAT", String(totalAcquisitionsExVAT), "Entering acquisitions ex VAT (Box 9)", { screenshotPath });
+
+    // Check legal declaration checkbox
+    await page.locator("#declarationCheckbox").check();
+    console.log("Checked legal declaration checkbox");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-9box-form-filled.png` });
+
+    // Verify submit button is now enabled
+    await expect(page.locator("#submitBtn")).toBeEnabled();
+  });
+}
+```
+
+### 17.2 Update submitVat.behaviour.test.js
+
+**Modify**: `behaviour-tests/submitVat.behaviour.test.js`
+
+```javascript
+// Replace single vatDue with full 9-box test data
+const hmrcVat9BoxData = {
+  vatNumber: testVatNumber,
+  vatDueSales: 1000.00,           // Box 1
+  vatDueAcquisitions: 200.00,     // Box 2
+  // Box 3 calculated: 1200.00
+  vatReclaimedCurrPeriod: 300.00, // Box 4
+  // Box 5 calculated: 900.00
+  totalValueSalesExVAT: 5000,     // Box 6
+  totalValuePurchasesExVAT: 1500, // Box 7
+  totalValueGoodsSuppliedExVAT: 0,// Box 8
+  totalAcquisitionsExVAT: 0,      // Box 9
+};
+
+// Update test to use 9-box form
+await initSubmitVat(page, screenshotPath);
+await fillInVat9Box(page, hmrcVat9BoxData, null, runFraudPreventionHeaderValidation, screenshotPath);
+await submitFormVat(page, screenshotPath);
+
+// Update DynamoDB assertions to verify all 9 boxes
+vatPostRequests.forEach((vatPostRequest) => {
+  const thisRequestHttp201CreatedResults = countHmrcApiRequestValues(vatPostRequest, {
+    "httpRequest.method": "POST",
+    "httpResponse.statusCode": 201,
+  });
+  if (thisRequestHttp201CreatedResults === 1) {
+    const requestBody = JSON.parse(vatPostRequest.httpRequest.body);
+    // Verify all 9 boxes
+    expect(requestBody.vatDueSales).toBe(hmrcVat9BoxData.vatDueSales);
+    expect(requestBody.vatDueAcquisitions).toBe(hmrcVat9BoxData.vatDueAcquisitions);
+    expect(requestBody.totalVatDue).toBe(1200.00); // Calculated
+    expect(requestBody.vatReclaimedCurrPeriod).toBe(hmrcVat9BoxData.vatReclaimedCurrPeriod);
+    expect(requestBody.netVatDue).toBe(900.00); // Calculated
+    expect(requestBody.totalValueSalesExVAT).toBe(hmrcVat9BoxData.totalValueSalesExVAT);
+    expect(requestBody.totalValuePurchasesExVAT).toBe(hmrcVat9BoxData.totalValuePurchasesExVAT);
+    expect(requestBody.totalValueGoodsSuppliedExVAT).toBe(hmrcVat9BoxData.totalValueGoodsSuppliedExVAT);
+    expect(requestBody.totalAcquisitionsExVAT).toBe(hmrcVat9BoxData.totalAcquisitionsExVAT);
+    console.log("[DynamoDB Assertions]: All 9 VAT boxes validated successfully");
+  }
+});
+```
+
+### 17.3 Update Test Data Generator
+
+**Modify**: `web/public/lib/test-data-generator.js`
+
+```javascript
+/**
+ * Generate test data for all 9 VAT boxes
+ * @returns {object} Object with all 9 box values
+ */
+function generateTest9BoxData() {
+  // Generate realistic test values
+  const vatDueSales = generateTestDecimalAmount(100, 5000);        // Box 1
+  const vatDueAcquisitions = generateTestDecimalAmount(0, 500);   // Box 2
+  const totalVatDue = roundToDecimals(vatDueSales + vatDueAcquisitions, 2); // Box 3 (calculated)
+  const vatReclaimedCurrPeriod = generateTestDecimalAmount(0, totalVatDue * 0.8); // Box 4
+  const netVatDue = roundToDecimals(Math.abs(totalVatDue - vatReclaimedCurrPeriod), 2); // Box 5 (calculated)
+  const totalValueSalesExVAT = generateTestInteger(500, 25000);   // Box 6
+  const totalValuePurchasesExVAT = generateTestInteger(100, 7500);// Box 7
+  const totalValueGoodsSuppliedExVAT = generateTestInteger(0, 1000); // Box 8
+  const totalAcquisitionsExVAT = generateTestInteger(0, 500);     // Box 9
+
+  return {
+    vatDueSales,
+    vatDueAcquisitions,
+    totalVatDue,
+    vatReclaimedCurrPeriod,
+    netVatDue,
+    totalValueSalesExVAT,
+    totalValuePurchasesExVAT,
+    totalValueGoodsSuppliedExVAT,
+    totalAcquisitionsExVAT,
+  };
+}
+
+function generateTestDecimalAmount(min, max) {
+  const amount = min + Math.random() * (max - min);
+  return roundToDecimals(amount, 2);
+}
+
+function generateTestInteger(min, max) {
+  return Math.floor(min + Math.random() * (max - min));
+}
+
+function roundToDecimals(value, decimals) {
+  const factor = Math.pow(10, decimals);
+  return Math.round(value * factor) / factor;
+}
+
+/**
+ * Populate the 9-box VAT submission form with test data
+ */
+function populateSubmitVatForm9Box() {
+  const vrnInput = document.getElementById("vatNumber");
+  const testData = generateTest9BoxData();
+
+  if (vrnInput) vrnInput.value = generateTestVrn();
+
+  // Fill all 9 boxes
+  document.getElementById("vatDueSales").value = testData.vatDueSales;
+  document.getElementById("vatDueAcquisitions").value = testData.vatDueAcquisitions;
+  document.getElementById("totalVatDue").value = testData.totalVatDue;
+  document.getElementById("vatReclaimedCurrPeriod").value = testData.vatReclaimedCurrPeriod;
+  document.getElementById("netVatDue").value = testData.netVatDue;
+  document.getElementById("totalValueSalesExVAT").value = testData.totalValueSalesExVAT;
+  document.getElementById("totalValuePurchasesExVAT").value = testData.totalValuePurchasesExVAT;
+  document.getElementById("totalValueGoodsSuppliedExVAT").value = testData.totalValueGoodsSuppliedExVAT;
+  document.getElementById("totalAcquisitionsExVAT").value = testData.totalAcquisitionsExVAT;
+
+  console.log("[Test Data] Populated 9-box VAT submission form with test data", testData);
+}
+
+// Export new functions
+if (typeof window !== "undefined") {
+  window.testDataGenerator = {
+    ...window.testDataGenerator,
+    generateTest9BoxData,
+    populateSubmitVatForm9Box,
+  };
+}
+```
+
+---
+
 ## Implementation Order (Inside-Out)
 
 ### Phase 1: Data Layer (Components 1-4)
@@ -1494,13 +2211,22 @@ For any external resources found, add integrity and crossorigin attributes:
 | 13 | Security Headers | `cdk/lib/stacks/*.java` | `curl -I` after deploy |
 | 14 | SRI Attributes | `web/public/**/*.html` | Manual audit |
 
-### Phase 6: Testing & Validation (Component 15)
+### Phase 6: Test Infrastructure (Components 15-17)
 
 | Step | Component | Files | Test Command |
 |------|-----------|-------|--------------|
-| 15 | Test Data Generator | `web/public/lib/test-data-generator.js` | Manual test |
-| 16 | Behaviour Tests | `behaviour-tests/steps/*.js` | `npm run test:submitVatBehaviour-proxy` |
-| 17 | Re-run Compliance Scans | N/A | `npm run test:accessibility && npm run test:security` |
+| 15 | HTTP Simulator Updates | `app/http-simulator/routes/vat-returns.js`, `scenarios/returns.js` | `npm run test:system` |
+| 16 | Unit Test Updates | `app/unit-tests/lib/vatReturnTypes.test.js`, `hmrcVatReturnPost.test.js` | `npm run test:unit` |
+| 17 | Behaviour Test Updates | `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | `npm run test:submitVatBehaviour-proxy` |
+| 18 | Test Data Generator | `web/public/lib/test-data-generator.js` | Manual test |
+
+### Phase 7: Final Validation
+
+| Step | Component | Files | Test Command |
+|------|-----------|-------|--------------|
+| 19 | Run Full Test Suite | N/A | `npm run test:all` |
+| 20 | Re-run Compliance Scans | N/A | `npm run test:accessibility && npm run test:security` |
+| 21 | Update Questionnaires to v2.0 | `_developers/hmrc/*.md` | Manual review |
 
 ---
 
@@ -1536,8 +2262,20 @@ For any external resources found, add integrity and crossorigin attributes:
 
 | File | Action | Component |
 |------|--------|-----------|
-| `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | MODIFY | 9 |
+| `app/unit-tests/lib/vatReturnTypes.test.js` | **CREATE** | 16 |
+| `app/unit-tests/functions/hmrcVatReturnPost.test.js` | MODIFY | 16 |
+| `app/unit-tests/lib/hmrcValidation.test.js` | MODIFY | 16 |
+| `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | MODIFY | 17 |
+| `behaviour-tests/submitVat.behaviour.test.js` | MODIFY | 17 |
 | `web/browser-tests/html-structure.test.js` | **CREATE** | 12 |
+| `web/public/lib/test-data-generator.js` | MODIFY | 18 |
+
+### HTTP Simulator
+
+| File | Action | Component |
+|------|--------|-----------|
+| `app/http-simulator/routes/vat-returns.js` | MODIFY | 15 |
+| `app/http-simulator/scenarios/returns.js` | MODIFY | 15 |
 
 ### Infrastructure
 
