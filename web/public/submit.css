@@ -5,6 +5,31 @@
   padding: 0;
 }
 
+/* WCAG 2.1 AA: Links in text blocks must be distinguishable by more than color */
+/* Fix for axe-core "link-in-text-block" violation */
+p a,
+li a,
+td a,
+.help-text a,
+.footer-content a,
+article a {
+  text-decoration: underline;
+}
+
+/* Remove underline only for clearly navigational links (menus, buttons) */
+nav a,
+.menu-dropdown a,
+.btn,
+button {
+  text-decoration: none;
+}
+
+/* Ensure focus states are visible */
+a:focus {
+  outline: 2px solid #005fcc;
+  outline-offset: 2px;
+}
+
 html,
 body {
   height: 100%;
