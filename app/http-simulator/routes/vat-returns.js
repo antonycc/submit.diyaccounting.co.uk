@@ -9,6 +9,7 @@
 import { randomUUID } from "crypto";
 import { storeReturn, getReturn } from "../state/store.js";
 import { getScenarioResponse } from "../scenarios/returns.js";
+import { validateVatReturnBody, calculateTotalVatDue, calculateNetVatDue } from "../../lib/vatReturnTypes.js";
 
 /**
  * Validate VRN format (9 digits)
@@ -58,7 +59,15 @@ export function apiEndpoint(app) {
       return res.status(scenarioResponse.status).json(scenarioResponse.body);
     }
 
-    // Validate request body
+    // Validate request body - ALL 9 boxes required
+    const validation = validateVatReturnBody(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({
+        code: validation.code,
+        message: validation.message,
+      });
+    }
+
     const {
       periodKey,
       vatDueSales,
@@ -73,10 +82,21 @@ export function apiEndpoint(app) {
       finalised,
     } = req.body || {};
 
-    if (!periodKey) {
+    // Verify calculated fields (Box 3 and Box 5)
+    const expectedTotalVatDue = calculateTotalVatDue(vatDueSales, vatDueAcquisitions);
+    const expectedNetVatDue = calculateNetVatDue(expectedTotalVatDue, vatReclaimedCurrPeriod);
+
+    if (Math.abs(totalVatDue - expectedTotalVatDue) > 0.01) {
       return res.status(400).json({
-        code: "INVALID_REQUEST",
-        message: "periodKey is required",
+        code: "INVALID_TOTAL_VAT_DUE",
+        message: `totalVatDue (${totalVatDue}) does not equal vatDueSales + vatDueAcquisitions (${expectedTotalVatDue})`,
+      });
+    }
+
+    if (Math.abs(netVatDue - expectedNetVatDue) > 0.01) {
+      return res.status(400).json({
+        code: "INVALID_NET_VAT_DUE",
+        message: `netVatDue (${netVatDue}) does not equal |totalVatDue - vatReclaimedCurrPeriod| (${expectedNetVatDue})`,
       });
     }
 

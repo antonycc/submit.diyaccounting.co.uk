@@ -132,9 +132,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
   test.describe("Page Loading and Initial State", () => {
     test("should load the HTML page successfully", async ({ page }) => {
       const timestamp = getTimestamp();
-      // Check that the page title is correct
+      // Check that the page title is correct (WCAG 2.1 AA: descriptive page titles)
       const title = await page.title();
-      expect(title).toBe("DIY Accounting Submit");
+      expect(title).toBe("Submit VAT Return - DIY Accounting");
 
       // Check that main elements are present
       const heading = await page.locator("h1").textContent();

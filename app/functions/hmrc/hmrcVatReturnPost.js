@@ -28,6 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
+import { detectRequestFormat, buildVatReturnBody, buildVatReturnBodyFromLegacy, isValidMonetaryAmount, isValidWholeAmount } from "../../lib/vatReturnTypes.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -53,20 +54,100 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { vatNumber, periodKey, vatDue, accessToken, runFraudPreventionHeaderValidation } = parsedBody || {};
+  const {
+    vatNumber,
+    periodKey,
+    accessToken,
+    runFraudPreventionHeaderValidation,
+    // Legacy single-field format
+    vatDue,
+    // New 9-box format fields
+    vatDueSales,
+    vatDueAcquisitions,
+    vatReclaimedCurrPeriod,
+    totalValueSalesExVAT,
+    totalValuePurchasesExVAT,
+    totalValueGoodsSuppliedExVAT,
+    totalAcquisitionsExVAT,
+    // Optional: declaration confirmation (required for new format in Phase 4)
+    declarationConfirmed,
+  } = parsedBody || {};
+
   // Use 'hmrcAccessToken' internally for clarity when interacting with HMRC APIs
   const hmrcAccessToken = accessToken;
+
+  // Detect request format (9-box or legacy)
+  const requestFormat = detectRequestFormat(parsedBody);
 
   // Collect validation errors for required fields
   if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
   if (!periodKey) errorMessages.push("Missing periodKey parameter from body");
-  if (vatDue !== 0 && !vatDue) errorMessages.push("Missing vatDue parameter from body");
 
-  // Additional numeric/format validations
-  const numVatDue = typeof vatDue === "number" ? vatDue : Number(vatDue);
-  if (vatDue !== undefined && vatDue !== null && Number.isNaN(numVatDue)) {
-    errorMessages.push("Invalid vatDue - must be a number");
+  // Format-specific validation
+  let vatReturnData = null;
+  if (requestFormat === "nine-box") {
+    // New 9-box format validation
+    if (vatDueSales === undefined) errorMessages.push("Missing vatDueSales (Box 1)");
+    if (vatDueAcquisitions === undefined) errorMessages.push("Missing vatDueAcquisitions (Box 2)");
+    if (vatReclaimedCurrPeriod === undefined) errorMessages.push("Missing vatReclaimedCurrPeriod (Box 4)");
+    if (totalValueSalesExVAT === undefined) errorMessages.push("Missing totalValueSalesExVAT (Box 6)");
+    if (totalValuePurchasesExVAT === undefined) errorMessages.push("Missing totalValuePurchasesExVAT (Box 7)");
+    if (totalValueGoodsSuppliedExVAT === undefined) errorMessages.push("Missing totalValueGoodsSuppliedExVAT (Box 8)");
+    if (totalAcquisitionsExVAT === undefined) errorMessages.push("Missing totalAcquisitionsExVAT (Box 9)");
+
+    // Validate decimal fields (Boxes 1, 2, 4)
+    if (vatDueSales !== undefined && !isValidMonetaryAmount(Number(vatDueSales))) {
+      errorMessages.push("Invalid vatDueSales (Box 1) - must be a valid monetary amount with max 2 decimal places");
+    }
+    if (vatDueAcquisitions !== undefined && !isValidMonetaryAmount(Number(vatDueAcquisitions))) {
+      errorMessages.push("Invalid vatDueAcquisitions (Box 2) - must be a valid monetary amount with max 2 decimal places");
+    }
+    if (vatReclaimedCurrPeriod !== undefined && !isValidMonetaryAmount(Number(vatReclaimedCurrPeriod))) {
+      errorMessages.push("Invalid vatReclaimedCurrPeriod (Box 4) - must be a valid monetary amount with max 2 decimal places");
+    }
+
+    // Validate integer fields (Boxes 6-9)
+    if (totalValueSalesExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalValueSalesExVAT)))) {
+      errorMessages.push("Invalid totalValueSalesExVAT (Box 6) - must be a whole number");
+    }
+    if (totalValuePurchasesExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalValuePurchasesExVAT)))) {
+      errorMessages.push("Invalid totalValuePurchasesExVAT (Box 7) - must be a whole number");
+    }
+    if (totalValueGoodsSuppliedExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalValueGoodsSuppliedExVAT)))) {
+      errorMessages.push("Invalid totalValueGoodsSuppliedExVAT (Box 8) - must be a whole number");
+    }
+    if (totalAcquisitionsExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalAcquisitionsExVAT)))) {
+      errorMessages.push("Invalid totalAcquisitionsExVAT (Box 9) - must be a whole number");
+    }
+
+    // Build VAT return data if no errors
+    if (errorMessages.length === 0 || (errorMessages.length === 1 && !hmrcAccessToken)) {
+      vatReturnData = buildVatReturnBody({
+        periodKey,
+        vatDueSales: Number(vatDueSales),
+        vatDueAcquisitions: Number(vatDueAcquisitions),
+        vatReclaimedCurrPeriod: Number(vatReclaimedCurrPeriod),
+        totalValueSalesExVAT: Number(totalValueSalesExVAT),
+        totalValuePurchasesExVAT: Number(totalValuePurchasesExVAT),
+        totalValueGoodsSuppliedExVAT: Number(totalValueGoodsSuppliedExVAT),
+        totalAcquisitionsExVAT: Number(totalAcquisitionsExVAT),
+      });
+    }
+  } else {
+    // Legacy single-field format validation
+    if (vatDue !== 0 && !vatDue) errorMessages.push("Missing vatDue parameter from body");
+
+    const numVatDue = typeof vatDue === "number" ? vatDue : Number(vatDue);
+    if (vatDue !== undefined && vatDue !== null && Number.isNaN(numVatDue)) {
+      errorMessages.push("Invalid vatDue - must be a number");
+    }
+
+    // Build VAT return data from legacy format
+    if (errorMessages.length === 0 || (errorMessages.length === 1 && !hmrcAccessToken)) {
+      vatReturnData = buildVatReturnBodyFromLegacy({ periodKey, vatDue: numVatDue });
+    }
   }
+
   if (vatNumber && !isValidVrn(vatNumber)) {
     errorMessages.push("Invalid vatNumber format - must be 9 digits");
   }
@@ -88,9 +169,11 @@ export function extractAndValidateParameters(event, errorMessages) {
     vatNumber,
     periodKey,
     hmrcAccessToken,
-    numVatDue,
+    vatReturnData,
+    requestFormat,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
+    declarationConfirmed,
   };
 }
 
@@ -136,7 +219,7 @@ export async function ingestHandler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, hmrcAccessToken, numVatDue, hmrcAccount, runFraudPreventionHeaderValidation } =
+  const { vatNumber, periodKey, hmrcAccessToken, vatReturnData, requestFormat, hmrcAccount, runFraudPreventionHeaderValidation, declarationConfirmed } =
     extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
@@ -186,7 +269,8 @@ export async function ingestHandler(event) {
   const payload = {
     vatNumber,
     periodKey: normalizedPeriodKey,
-    numVatDue,
+    vatReturnData,
+    requestFormat,
     hmrcAccount,
     hmrcAccessToken,
     govClientHeaders,
@@ -222,7 +306,7 @@ export async function ingestHandler(event) {
       const processor = async (payload) => {
         const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
           payload.periodKey,
-          payload.numVatDue,
+          payload.vatReturnData,
           payload.vatNumber,
           payload.hmrcAccount,
           payload.hmrcAccessToken,
@@ -380,7 +464,7 @@ export async function workerHandler(event) {
       // trace: 8
       const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
         payload.periodKey,
-        payload.numVatDue,
+        payload.vatReturnData,
         payload.vatNumber,
         payload.hmrcAccount,
         payload.hmrcAccessToken,
@@ -505,7 +589,7 @@ function isRetryableError(error) {
 // trace: 9
 export async function submitVat(
   periodKey,
-  vatDue,
+  vatReturnData,
   vatNumber,
   hmrcAccount,
   hmrcAccessToken,
@@ -533,18 +617,10 @@ export async function submitVat(
     });
   }
 
+  // Use the pre-built VAT return data (supports both legacy and 9-box formats)
   const hmrcRequestBody = {
-    periodKey,
-    vatDueSales: parseFloat(vatDue),
-    vatDueAcquisitions: 0,
-    totalVatDue: parseFloat(vatDue),
-    vatReclaimedCurrPeriod: 0,
-    netVatDue: parseFloat(vatDue),
-    totalValueSalesExVAT: 0,
-    totalValuePurchasesExVAT: 0,
-    totalValueGoodsSuppliedExVAT: 0,
-    totalAcquisitionsExVAT: 0,
-    finalised: true,
+    ...vatReturnData,
+    periodKey, // Ensure normalized period key is used
   };
   let hmrcResponseBody;
   let hmrcResponse = {};
