@@ -240,9 +240,16 @@ jobs:
 
       - name: Create Cognito test user
         id: cognito-test-user
+        shell: bash
         run: |
-          chmod +x scripts/create-cognito-test-user.sh
-          scripts/create-cognito-test-user.sh ${{ needs.names.outputs.environment-name }}
+          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
+          if [ "$PROVIDER" = "cognito-native" ]; then
+            chmod +x 'scripts/create-cognito-test-user.sh'
+            'scripts/create-cognito-test-user.sh' "${{ needs.names.outputs.environment-name }}"
+          else
+            echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+          fi
 
       - name: Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}
         id: behaviour-test
