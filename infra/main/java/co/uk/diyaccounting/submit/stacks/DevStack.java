@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
@@ -27,14 +28,13 @@ import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
 
 public class DevStack extends Stack {
 
     public final IRepository ecrRepository;
-    public final LogGroup ecrLogGroup;
+    public final ILogGroup ecrLogGroup;
     public final Role ecrPublishRole;
 
     @Value.Immutable
@@ -121,12 +121,8 @@ public class DevStack extends Stack {
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
-        // CloudWatch Log Group for ECR operations with 7-day retention
-        this.ecrLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-EcrLogGroup")
-                .logGroupName(ecrLogGroupName)
-                .retention(RetentionDays.ONE_WEEK) // 7-day retention as requested
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // CloudWatch Log Group for ECR operations (idempotent creation)
+        this.ecrLogGroup = ensureLogGroup(this, props.resourceNamePrefix() + "-EcrLogGroup", ecrLogGroupName);
 
         // IAM Role for ECR publishing with comprehensive permissions
         this.ecrPublishRole = Role.Builder.create(this, props.resourceNamePrefix() + "-EcrPublishRole")

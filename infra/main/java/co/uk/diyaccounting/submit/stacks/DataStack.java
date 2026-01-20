@@ -7,19 +7,14 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTable;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.dynamodb.Attribute;
-import software.amazon.awscdk.services.dynamodb.AttributeType;
-import software.amazon.awscdk.services.dynamodb.BillingMode;
 import software.amazon.awscdk.services.dynamodb.ITable;
-import software.amazon.awscdk.services.dynamodb.PointInTimeRecoverySpecification;
-import software.amazon.awscdk.services.dynamodb.Table;
 import software.constructs.Construct;
 
 public class DataStack extends Stack {
@@ -72,119 +67,93 @@ public class DataStack extends Stack {
     public DataStack(Construct scope, String id, StackProps stackProps, DataStackProps props) {
         super(scope, id, stackProps);
 
-        // Use DESTROY for all environments - data protection comes from PITR backups, not CloudFormation RETAIN.
-        // RETAIN blocks stack teardown and creates manual cleanup burden.
-        RemovalPolicy criticalTableRemovalPolicy = RemovalPolicy.DESTROY;
+        // Tables use ensureTable() for idempotent creation - deployments succeed whether table exists or not.
+        // Note: PITR/TTL must be enabled manually on pre-existing tables if not already configured.
+        // Data protection comes from PITR backups, not CloudFormation RETAIN.
 
-        // Create receipts DynamoDB table for storing VAT submission receipts
-        // CRITICAL: 7-year HMRC retention requirement - PITR enabled for backup
-        this.receiptsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-ReceiptsTable")
-                .tableName(props.sharedNames().receiptsTableName)
-                .partitionKey(Attribute.builder()
-                        .name("hashedSub")
-                        .type(AttributeType.STRING)
-                        .build())
-                .sortKey(Attribute.builder()
-                        .name("receiptId")
-                        .type(AttributeType.STRING)
-                        .build())
-                .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
-                .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling (7 years)
-                .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
-                        .pointInTimeRecoveryEnabled(true)
-                        .build()) // Enable PITR for 35-day recovery window
-                .removalPolicy(criticalTableRemovalPolicy)
-                .build();
-        infof(
-                "Created receipts DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
-                this.receiptsTable.getTableName(), this.receiptsTable.getNode().getId(), criticalTableRemovalPolicy);
+        // Receipts table for storing VAT submission receipts
+        // CRITICAL: 7-year HMRC retention requirement - enable PITR manually if table pre-exists
+        this.receiptsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-ReceiptsTable",
+                props.sharedNames().receiptsTableName,
+                "hashedSub",
+                "receiptId");
+        infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().receiptsTableName);
 
-        // Create DynamoDB table for bundle storage
-        // HIGH priority - contains user subscription data - PITR enabled for backup
-        this.bundlesTable = Table.Builder.create(this, props.resourceNamePrefix() + "-BundlesTable")
-                .tableName(props.sharedNames().bundlesTableName)
-                .partitionKey(Attribute.builder()
-                        .name("hashedSub")
-                        .type(AttributeType.STRING)
-                        .build())
-                .sortKey(Attribute.builder()
-                        .name("bundleId")
-                        .type(AttributeType.STRING)
-                        .build())
-                .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
-                .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
-                .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
-                        .pointInTimeRecoveryEnabled(true)
-                        .build()) // Enable PITR for 35-day recovery window
-                .removalPolicy(criticalTableRemovalPolicy)
-                .build();
-        infof(
-                "Created bundles DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
-                this.bundlesTable.getTableName(), this.bundlesTable.getNode().getId(), criticalTableRemovalPolicy);
+        // Bundles table for bundle storage
+        // HIGH priority - contains user subscription data - enable PITR manually if table pre-exists
+        this.bundlesTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-BundlesTable",
+                props.sharedNames().bundlesTableName,
+                "hashedSub",
+                "bundleId");
+        infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().bundlesTableName);
 
-        // Create DynamoDB table for bundle POST async request storage
-        this.bundlePostAsyncRequestsTable = createAsyncRequestsTable(
+        // Async request tables use ensureTable() for idempotent creation - deployments succeed whether table exists or not.
+        // Note: TTL must be enabled manually on pre-existing tables if not already configured.
+
+        // Bundle POST async request storage
+        this.bundlePostAsyncRequestsTable = ensureTable(
+                this,
                 props.resourceNamePrefix() + "-BundlePostAsyncRequestsTable",
+                props.sharedNames().bundlePostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        infof("Ensured bundle POST async requests DynamoDB table with name %s",
                 props.sharedNames().bundlePostAsyncRequestsTableName);
-        infof(
-                "Created bundle POST async requests DynamoDB table with name %s",
-                this.bundlePostAsyncRequestsTable.getTableName());
 
-        // Create DynamoDB table for bundle DELETE async request storage
-        this.bundleDeleteAsyncRequestsTable = createAsyncRequestsTable(
+        // Bundle DELETE async request storage
+        this.bundleDeleteAsyncRequestsTable = ensureTable(
+                this,
                 props.resourceNamePrefix() + "-BundleDeleteAsyncRequestsTable",
+                props.sharedNames().bundleDeleteAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        infof("Ensured bundle DELETE async requests DynamoDB table with name %s",
                 props.sharedNames().bundleDeleteAsyncRequestsTableName);
-        infof(
-                "Created bundle DELETE async requests DynamoDB table with name %s",
-                this.bundleDeleteAsyncRequestsTable.getTableName());
-        // Create DynamoDB table for HMRC VAT Return POST async request storage
-        this.hmrcVatReturnPostAsyncRequestsTable = createAsyncRequestsTable(
+
+        // HMRC VAT Return POST async request storage
+        this.hmrcVatReturnPostAsyncRequestsTable = ensureTable(
+                this,
                 props.resourceNamePrefix() + "-HmrcVatReturnPostAsyncRequestsTable",
+                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        infof("Ensured HMRC VAT Return POST async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName);
-        infof(
-                "Created HMRC VAT Return POST async requests DynamoDB table with name %s",
-                this.hmrcVatReturnPostAsyncRequestsTable.getTableName());
 
-        // Create DynamoDB table for HMRC VAT Return GET async request storage
-        this.hmrcVatReturnGetAsyncRequestsTable = createAsyncRequestsTable(
+        // HMRC VAT Return GET async request storage
+        this.hmrcVatReturnGetAsyncRequestsTable = ensureTable(
+                this,
                 props.resourceNamePrefix() + "-HmrcVatReturnGetAsyncRequestsTable",
+                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        infof("Ensured HMRC VAT Return GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName);
-        infof(
-                "Created HMRC VAT Return GET async requests DynamoDB table with name %s",
-                this.hmrcVatReturnGetAsyncRequestsTable.getTableName());
 
-        // Create DynamoDB table for HMRC VAT Obligation GET async request storage
-        this.hmrcVatObligationGetAsyncRequestsTable = createAsyncRequestsTable(
+        // HMRC VAT Obligation GET async request storage
+        this.hmrcVatObligationGetAsyncRequestsTable = ensureTable(
+                this,
                 props.resourceNamePrefix() + "-HmrcVatObligationGetAsyncRequestsTable",
+                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        infof("Ensured HMRC VAT Obligation GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
-        infof(
-                "Created HMRC VAT Obligation GET async requests DynamoDB table with name %s",
-                this.hmrcVatObligationGetAsyncRequestsTable.getTableName());
 
-        // Create DynamoDB table for HMRC API requests storage
-        // MEDIUM priority - 90-day retention, PITR enabled for audit trail
-        this.hmrcApiRequestsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-HmrcApiRequestsTable")
-                .tableName(props.sharedNames().hmrcApiRequestsTableName)
-                .partitionKey(Attribute.builder()
-                        .name("hashedSub")
-                        .type(AttributeType.STRING)
-                        .build())
-                .sortKey(Attribute.builder()
-                        .name("id")
-                        .type(AttributeType.STRING)
-                        .build())
-                .billingMode(BillingMode.PAY_PER_REQUEST) // Serverless, near-zero cost at rest
-                .timeToLiveAttribute("ttl") // Enable TTL for automatic expiry handling
-                .pointInTimeRecoverySpecification(PointInTimeRecoverySpecification.builder()
-                        .pointInTimeRecoveryEnabled(true)
-                        .build()) // Enable PITR for 35-day recovery window
-                .removalPolicy(criticalTableRemovalPolicy)
-                .build();
-        infof(
-                "Created HMRC API Requests DynamoDB table with name %s, id %s, PITR=true, removalPolicy=%s",
-                this.hmrcApiRequestsTable.getTableName(),
-                this.hmrcApiRequestsTable.getNode().getId(),
-                criticalTableRemovalPolicy);
+        // HMRC API requests storage - audit trail for HMRC interactions
+        // MEDIUM priority - 90-day retention. PITR/TTL must be enabled manually if table pre-exists.
+        this.hmrcApiRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcApiRequestsTable",
+                props.sharedNames().hmrcApiRequestsTableName,
+                "hashedSub",
+                "id");
+        infof("Ensured HMRC API Requests DynamoDB table with name %s",
+                props.sharedNames().hmrcApiRequestsTableName);
 
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
@@ -217,22 +186,5 @@ public class DataStack extends Stack {
         infof(
                 "DataStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
-    }
-
-    private ITable createAsyncRequestsTable(String id, String tableName) {
-        return Table.Builder.create(this, id)
-                .tableName(tableName)
-                .partitionKey(Attribute.builder()
-                        .name("hashedSub")
-                        .type(AttributeType.STRING)
-                        .build())
-                .sortKey(Attribute.builder()
-                        .name("requestId")
-                        .type(AttributeType.STRING)
-                        .build())
-                .billingMode(BillingMode.PAY_PER_REQUEST)
-                .timeToLiveAttribute("ttl")
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
     }
 }

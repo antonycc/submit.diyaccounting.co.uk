@@ -1,8 +1,135 @@
 # Implementation Plan: Full 9-Box VAT Return & HMRC Compliance
 
 **Date**: 20 January 2026 (Updated)
-**Approach**: Inside-out by testable component (data layer → service → API → UI)
+**Approach**: 4 deployment phases, each independently deployable
 **Backward Compatibility**: Not required (no live users)
+
+---
+
+## Deployment Phases Overview
+
+This plan is organized into 4 deployment phases. Each phase can be deployed independently, and each deployment should pass all existing tests plus any new tests added in that phase.
+
+### Phase 1: Infrastructure & Security Headers
+**Deploy after completing: Components 13, 14**
+
+| What Changes | Files |
+|--------------|-------|
+| CloudFront security headers policy | `cdk/lib/stacks/CloudFrontStack.java` |
+| Subresource integrity audit | `web/public/**/*.html` |
+
+**Achievement at completion:**
+- ✅ OWASP ZAP security findings resolved (CSP, HSTS, Permissions-Policy)
+- ✅ All existing tests continue to pass
+- ✅ `curl -I https://submit.diyaccounting.co.uk/` shows security headers
+
+**Verification:**
+```bash
+./mvnw clean verify                    # CDK builds
+npm run test:all                       # All existing tests pass
+# After deploy:
+curl -I https://submit.diyaccounting.co.uk/ | grep -i "content-security-policy\|strict-transport"
+```
+
+---
+
+### Phase 2: Accessibility & HTML Structure Fixes
+**Deploy after completing: Components 11, 12**
+
+| What Changes | Files |
+|--------------|-------|
+| CSS link underline fix | `web/public/submit.css` |
+| Add `<main>` landmark to all pages | `web/public/**/*.html` |
+| Add `<h1>` to all pages | `web/public/**/*.html` |
+| Fix page `<title>` elements | `web/public/**/*.html` |
+| HTML structure browser tests | `web/browser-tests/html-structure.test.js` |
+
+**Achievement at completion:**
+- ✅ axe-core: 0 violations (down from 13)
+- ✅ Pa11y: All pages pass WCAG 2.1 AA
+- ✅ WCAG questionnaire criteria can be marked "Supports"
+- ✅ Existing functionality unchanged
+
+**Verification:**
+```bash
+npm run test:all                       # All tests pass
+npm run test:accessibility             # axe-core shows 0 violations
+```
+
+---
+
+### Phase 3: Backend API & Simulator Changes
+**Deploy after completing: Components 1, 2, 3, 4, 5, 15, 16**
+
+| What Changes | Files |
+|--------------|-------|
+| VAT types library | `app/lib/vatReturnTypes.js` |
+| VAT types unit tests | `app/unit-tests/lib/vatReturnTypes.test.js` |
+| HMRC validation updates | `app/lib/hmrcValidation.js` |
+| Obligation formatter | `app/lib/obligationFormatter.js` |
+| Backend POST handler (9-box + declaration) | `app/functions/hmrc/hmrcVatReturnPost.js` |
+| Backend POST unit tests | `app/unit-tests/functions/hmrcVatReturnPost.test.js` |
+| HTTP simulator validation | `app/http-simulator/routes/vat-returns.js` |
+| HTTP simulator scenarios | `app/http-simulator/scenarios/returns.js` |
+
+**Achievement at completion:**
+- ✅ API accepts full 9-box VAT submissions
+- ✅ API enforces declaration requirement (returns 400 if missing)
+- ✅ API validates Box 3 and Box 5 calculations
+- ✅ API returns 400 with specific error codes for validation failures
+- ✅ HTTP simulator mirrors HMRC API validation
+- ✅ All unit tests pass
+- ✅ **Frontend still works** with old single-field form (backward compatible during transition)
+
+**Verification:**
+```bash
+npm run test:unit                      # All unit tests pass
+npm run test:system                    # System tests with simulator pass
+```
+
+**Note:** The API in this phase accepts BOTH the old single-field format (for backward compatibility during Phase 4 development) AND the new 9-box format. The old format will be deprecated after Phase 4.
+
+---
+
+### Phase 4: Frontend & Behaviour Tests
+**Deploy after completing: Components 6, 7, 8, 9, 10, 17, 18**
+
+| What Changes | Files |
+|--------------|-------|
+| Submit form UI (9-box + declaration) | `web/public/hmrc/vat/submitVat.html` |
+| Obligation selector (hide period key) | `web/public/hmrc/vat/submitVat.html` |
+| Obligations UI | `web/public/hmrc/vat/vatObligations.html` |
+| View Return UI (9-box display) | `web/public/hmrc/vat/viewVatReturn.html` |
+| Test data generator (9-box) | `web/public/lib/test-data-generator.js` |
+| Behaviour test steps | `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` |
+| Behaviour test assertions | `behaviour-tests/submitVat.behaviour.test.js` |
+
+**Achievement at completion:**
+- ✅ Users enter all 9 VAT boxes in the form
+- ✅ Box 3 and Box 5 auto-calculate in real-time
+- ✅ Legal declaration checkbox required before submission
+- ✅ Period key hidden from users (obligation dropdown instead)
+- ✅ All behaviour tests pass with 9-box assertions
+- ✅ **Full HMRC MTD compliance achieved**
+- ✅ Questionnaires can be updated to Version 2.0 with all "Yes"/"Supports"
+
+**Verification:**
+```bash
+npm run test:all                       # Full test suite passes
+npm run test:submitVatBehaviour-proxy  # E2E tests verify 9-box flow
+npm run test:compliance                # Compliance report shows PASS
+```
+
+---
+
+## Phase-to-Component Mapping
+
+| Phase | Components | Focus Area |
+|-------|------------|------------|
+| **Phase 1** | 13, 14 | Infrastructure (CDK, security headers) |
+| **Phase 2** | 11, 12 | Accessibility (CSS, HTML structure) |
+| **Phase 3** | 1, 2, 3, 4, 5, 15, 16 | Backend (validation, API, simulator, unit tests) |
+| **Phase 4** | 6, 7, 8, 9, 10, 17, 18 | Frontend (UI, behaviour tests) |
 
 ---
 
@@ -2170,162 +2297,193 @@ if (typeof window !== "undefined") {
 
 ---
 
-## Implementation Order (Inside-Out)
+## Implementation Order by Deployment Phase
 
-### Phase 1: Data Layer (Components 1-4)
-
-| Step | Component | Files | Test Command |
-|------|-----------|-------|--------------|
-| 1 | VAT Types Library | `app/lib/vatReturnTypes.js` | `npm run test:unit -- vatReturnTypes` |
-| 2 | VAT Types Tests | `app/unit-tests/lib/vatReturnTypes.test.js` | `npm run test:unit -- vatReturnTypes` |
-| 3 | HMRC Validation Update | `app/lib/hmrcValidation.js` | `npm run test:unit -- hmrcValidation` |
-| 4 | Obligation Formatter | `app/lib/obligationFormatter.js` | `npm run test:unit -- obligationFormatter` |
-
-### Phase 2: Backend API (Components 5-7)
+### Deployment Phase 1: Infrastructure & Security Headers
 
 | Step | Component | Files | Test Command |
 |------|-----------|-------|--------------|
-| 5 | Backend POST Handler | `app/functions/hmrc/hmrcVatReturnPost.js` | `npm run test:unit -- hmrcVatReturnPost` |
-| 6 | Backend POST Tests | `app/unit-tests/functions/hmrcVatReturnPost.test.js` | `npm run test:unit -- hmrcVatReturnPost` |
-| 7 | Obligations API Update | `app/functions/hmrc/hmrcVatObligationGet.js` | `npm run test:unit -- hmrcVatObligationGet` |
+| 1.1 | Security Headers Policy | `cdk/lib/stacks/CloudFrontStack.java` | `./mvnw clean verify` |
+| 1.2 | SRI Attributes Audit | `web/public/**/*.html` | Manual audit |
 
-### Phase 3: Frontend (Components 8-11)
-
-| Step | Component | Files | Test Command |
-|------|-----------|-------|--------------|
-| 8 | CSS Styles + Link Fix | `web/public/submit.css` | `npm run test:accessibility` |
-| 9 | Submit Form UI | `web/public/hmrc/vat/submitVat.html` | Browser test |
-| 10 | Obligations UI | `web/public/hmrc/vat/vatObligations.html` | Browser test |
-| 11 | View Return UI | `web/public/hmrc/vat/viewVatReturn.html` | Browser test |
-
-### Phase 4: WCAG Structure Fixes (Component 12)
-
-| Step | Component | Files | Test Command |
-|------|-----------|-------|--------------|
-| 12 | HTML Structure (main, h1, title) | All `web/public/**/*.html` | `npm run test:browser -- html-structure` |
-
-### Phase 5: Infrastructure Security (Components 13-14)
-
-| Step | Component | Files | Test Command |
-|------|-----------|-------|--------------|
-| 13 | Security Headers | `cdk/lib/stacks/*.java` | `curl -I` after deploy |
-| 14 | SRI Attributes | `web/public/**/*.html` | Manual audit |
-
-### Phase 6: Test Infrastructure (Components 15-17)
-
-| Step | Component | Files | Test Command |
-|------|-----------|-------|--------------|
-| 15 | HTTP Simulator Updates | `app/http-simulator/routes/vat-returns.js`, `scenarios/returns.js` | `npm run test:system` |
-| 16 | Unit Test Updates | `app/unit-tests/lib/vatReturnTypes.test.js`, `hmrcVatReturnPost.test.js` | `npm run test:unit` |
-| 17 | Behaviour Test Updates | `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | `npm run test:submitVatBehaviour-proxy` |
-| 18 | Test Data Generator | `web/public/lib/test-data-generator.js` | Manual test |
-
-### Phase 7: Final Validation
-
-| Step | Component | Files | Test Command |
-|------|-----------|-------|--------------|
-| 19 | Run Full Test Suite | N/A | `npm run test:all` |
-| 20 | Re-run Compliance Scans | N/A | `npm run test:accessibility && npm run test:security` |
-| 21 | Update Questionnaires to v2.0 | `_developers/hmrc/*.md` | Manual review |
+**Deploy checkpoint:** `./mvnw clean verify && npm run test:all`
 
 ---
 
-## Files Summary
+### Deployment Phase 2: Accessibility & HTML Structure
 
-### Application Code
+| Step | Component | Files | Test Command |
+|------|-----------|-------|--------------|
+| 2.1 | CSS Link Underline Fix | `web/public/submit.css` | `npm run test:accessibility` |
+| 2.2 | Add `<main>` Landmark | All `web/public/**/*.html` | `npm run test:browser` |
+| 2.3 | Add `<h1>` Headings | All `web/public/**/*.html` | `npm run test:browser` |
+| 2.4 | Fix Page Titles | All `web/public/**/*.html` | `npm run test:browser` |
+| 2.5 | HTML Structure Tests | `web/browser-tests/html-structure.test.js` | `npm run test:browser` |
 
-| File | Action | Component |
-|------|--------|-----------|
-| `app/lib/vatReturnTypes.js` | **CREATE** | 1 |
-| `app/unit-tests/lib/vatReturnTypes.test.js` | **CREATE** | 2 |
-| `app/lib/hmrcValidation.js` | MODIFY | 3 |
-| `app/unit-tests/lib/hmrcValidation.test.js` | MODIFY | 3 |
-| `app/lib/obligationFormatter.js` | **CREATE** | 4 |
-| `app/unit-tests/lib/obligationFormatter.test.js` | **CREATE** | 4 |
-| `app/functions/hmrc/hmrcVatReturnPost.js` | MODIFY | 5 |
-| `app/unit-tests/functions/hmrcVatReturnPost.test.js` | MODIFY | 6 |
-| `app/functions/hmrc/hmrcVatObligationGet.js` | MODIFY | 7 |
-
-### Frontend
-
-| File | Action | Component |
-|------|--------|-----------|
-| `web/public/submit.css` | MODIFY | 11 (link-in-text-block fix) |
-| `web/public/hmrc/vat/submitVat.html` | MODIFY | 6, 12 (form + structure) |
-| `web/public/hmrc/vat/vatObligations.html` | MODIFY | 8, 12 |
-| `web/public/hmrc/vat/viewVatReturn.html` | MODIFY | 7, 12 |
-| `web/public/index.html` | MODIFY | 12 (structure fixes) |
-| `web/public/**/*.html` | MODIFY | 12 (main landmark, h1, title) |
-| `web/public/lib/test-data-generator.js` | MODIFY | 10 |
-
-### Tests
-
-| File | Action | Component |
-|------|--------|-----------|
-| `app/unit-tests/lib/vatReturnTypes.test.js` | **CREATE** | 16 |
-| `app/unit-tests/functions/hmrcVatReturnPost.test.js` | MODIFY | 16 |
-| `app/unit-tests/lib/hmrcValidation.test.js` | MODIFY | 16 |
-| `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | MODIFY | 17 |
-| `behaviour-tests/submitVat.behaviour.test.js` | MODIFY | 17 |
-| `web/browser-tests/html-structure.test.js` | **CREATE** | 12 |
-| `web/public/lib/test-data-generator.js` | MODIFY | 18 |
-
-### HTTP Simulator
-
-| File | Action | Component |
-|------|--------|-----------|
-| `app/http-simulator/routes/vat-returns.js` | MODIFY | 15 |
-| `app/http-simulator/scenarios/returns.js` | MODIFY | 15 |
-
-### Infrastructure
-
-| File | Action | Component |
-|------|--------|-----------|
-| `cdk/lib/stacks/CloudFrontStack.java` | MODIFY | 13 (security headers) |
-| `app/functions/edge/securityHeaders.js` | **CREATE** (optional) | 13 |
+**Deploy checkpoint:** `npm run test:all && npm run test:accessibility`
 
 ---
 
-## Success Criteria
+### Deployment Phase 3: Backend API & Simulator
 
-### HMRC MTD Compliance
+| Step | Component | Files | Test Command |
+|------|-----------|-------|--------------|
+| 3.1 | VAT Types Library | `app/lib/vatReturnTypes.js` | `npm run test:unit -- vatReturnTypes` |
+| 3.2 | VAT Types Unit Tests | `app/unit-tests/lib/vatReturnTypes.test.js` | `npm run test:unit -- vatReturnTypes` |
+| 3.3 | HMRC Validation Update | `app/lib/hmrcValidation.js` | `npm run test:unit -- hmrcValidation` |
+| 3.4 | Validation Unit Tests | `app/unit-tests/lib/hmrcValidation.test.js` | `npm run test:unit -- hmrcValidation` |
+| 3.5 | Obligation Formatter | `app/lib/obligationFormatter.js` | `npm run test:unit -- obligationFormatter` |
+| 3.6 | Backend POST Handler | `app/functions/hmrc/hmrcVatReturnPost.js` | `npm run test:unit -- hmrcVatReturnPost` |
+| 3.7 | Backend POST Tests | `app/unit-tests/functions/hmrcVatReturnPost.test.js` | `npm run test:unit -- hmrcVatReturnPost` |
+| 3.8 | HTTP Simulator Routes | `app/http-simulator/routes/vat-returns.js` | `npm run test:system` |
+| 3.9 | HTTP Simulator Scenarios | `app/http-simulator/scenarios/returns.js` | `npm run test:system` |
 
-- [ ] Period key never visible to users in any UI (Q9)
-- [ ] Legal declaration required before submission (Q10)
-- [ ] All 9 VAT boxes can be entered
-- [ ] Box 3 and Box 5 auto-calculated correctly
-- [ ] Box 5 always non-negative (absolute value)
-- [ ] Boxes 6-9 accept integers only (whole pounds)
+**Deploy checkpoint:** `npm run test:unit && npm run test:system`
 
-### WCAG 2.1 AA Accessibility
+**Note:** API remains backward compatible with old single-field format until Phase 4 completes.
 
-- [ ] axe-core: 0 violations (currently 13)
-- [ ] All pages have descriptive `<title>` elements (document-title)
-- [ ] All pages have `<main>` landmark (landmark-one-main)
-- [ ] All pages have `<h1>` heading (page-has-heading-one)
-- [ ] Links in text blocks are underlined (link-in-text-block)
-- [ ] Pa11y: All pages pass WCAG 2.1 AA (currently ✅)
+---
 
-### Security Headers (OWASP ZAP)
+### Deployment Phase 4: Frontend & Behaviour Tests
 
-- [ ] Content-Security-Policy header configured
-- [ ] Strict-Transport-Security header with max-age
-- [ ] Permissions-Policy header set
-- [ ] No high-severity ZAP findings (currently ✅)
+| Step | Component | Files | Test Command |
+|------|-----------|-------|--------------|
+| 4.1 | Submit Form UI (9-box) | `web/public/hmrc/vat/submitVat.html` | Browser test |
+| 4.2 | Declaration Checkbox | `web/public/hmrc/vat/submitVat.html` | Browser test |
+| 4.3 | Obligation Selector | `web/public/hmrc/vat/submitVat.html` | Browser test |
+| 4.4 | Box 3/5 Auto-Calculate | `web/public/hmrc/vat/submitVat.html` | Browser test |
+| 4.5 | Obligations UI Update | `web/public/hmrc/vat/vatObligations.html` | Browser test |
+| 4.6 | View Return UI (9-box) | `web/public/hmrc/vat/viewVatReturn.html` | Browser test |
+| 4.7 | Test Data Generator | `web/public/lib/test-data-generator.js` | Manual test |
+| 4.8 | Behaviour Test Steps | `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | `npm run test:submitVatBehaviour-proxy` |
+| 4.9 | Behaviour Test Assertions | `behaviour-tests/submitVat.behaviour.test.js` | `npm run test:submitVatBehaviour-proxy` |
 
-### Test Suite
+**Deploy checkpoint:** `npm run test:all && npm run test:submitVatBehaviour-proxy`
+
+---
+
+### Post-Deployment: Final Validation
+
+| Step | Task | Command |
+|------|------|---------|
+| 5.1 | Run Full Test Suite | `npm run test:all` |
+| 5.2 | Run Compliance Scans | `npm run test:compliance` |
+| 5.3 | Update Questionnaire 1 to v2.0 | Manual update |
+| 5.4 | Update Questionnaire 2 to v2.0 | Manual update |
+| 5.5 | Generate final COMPLIANCE_REPORT.md | `npm run test:compliance` |
+
+---
+
+## Files Summary by Deployment Phase
+
+### Phase 1: Infrastructure & Security Headers
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `cdk/lib/stacks/CloudFrontStack.java` | MODIFY | Add ResponseHeadersPolicy for CSP, HSTS, Permissions-Policy |
+| `app/functions/edge/securityHeaders.js` | **CREATE** (optional) | Lambda@Edge fallback if ResponseHeadersPolicy unavailable |
+| `web/public/**/*.html` | AUDIT | Check for external resources requiring SRI |
+
+### Phase 2: Accessibility & HTML Structure
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `web/public/submit.css` | MODIFY | Add link underlines for WCAG link-in-text-block |
+| `web/public/index.html` | MODIFY | Add `<main>`, `<h1>`, fix `<title>` |
+| `web/public/hmrc/vat/submitVat.html` | MODIFY | Add `<main>`, `<h1>`, fix `<title>` |
+| `web/public/hmrc/vat/vatObligations.html` | MODIFY | Add `<main>`, `<h1>`, fix `<title>` |
+| `web/public/hmrc/vat/viewVatReturn.html` | MODIFY | Add `<main>`, `<h1>`, fix `<title>` |
+| `web/public/**/*.html` | MODIFY | All other pages: structure fixes |
+| `web/browser-tests/html-structure.test.js` | **CREATE** | Browser tests for WCAG structure requirements |
+
+### Phase 3: Backend API & Simulator
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `app/lib/vatReturnTypes.js` | **CREATE** | VAT 9-box data types, calculations, validation |
+| `app/unit-tests/lib/vatReturnTypes.test.js` | **CREATE** | Unit tests for VAT types |
+| `app/lib/hmrcValidation.js` | MODIFY | Add 9-box validation helpers |
+| `app/unit-tests/lib/hmrcValidation.test.js` | MODIFY | Add 9-box validation tests |
+| `app/lib/obligationFormatter.js` | **CREATE** | Format obligations hiding period key |
+| `app/unit-tests/lib/obligationFormatter.test.js` | **CREATE** | Unit tests for obligation formatter |
+| `app/functions/hmrc/hmrcVatReturnPost.js` | MODIFY | Accept 9-box input, enforce declaration |
+| `app/unit-tests/functions/hmrcVatReturnPost.test.js` | MODIFY | Add 9-box submission tests |
+| `app/http-simulator/routes/vat-returns.js` | MODIFY | Add 9-box validation to simulator |
+| `app/http-simulator/scenarios/returns.js` | MODIFY | Add 9-box error scenarios |
+
+### Phase 4: Frontend & Behaviour Tests
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `web/public/hmrc/vat/submitVat.html` | MODIFY | 9-box form, declaration checkbox, obligation selector |
+| `web/public/hmrc/vat/vatObligations.html` | MODIFY | Display formatted obligations |
+| `web/public/hmrc/vat/viewVatReturn.html` | MODIFY | Display all 9 boxes |
+| `web/public/lib/test-data-generator.js` | MODIFY | Generate 9-box test data |
+| `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` | MODIFY | Add `fillInVat9Box()` function |
+| `behaviour-tests/submitVat.behaviour.test.js` | MODIFY | Assert all 9 boxes in DynamoDB |
+
+### Post-Deployment: Questionnaire Updates
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `_developers/hmrc/hmrc_questionnaire_1_*.md` | MODIFY | Update to v2.0 with all compliant answers |
+| `_developers/hmrc/hmrc_questionnaire_2_*.md` | MODIFY | Update to v2.0 with all "Supports" |
+| `COMPLIANCE_REPORT.md` | REGENERATE | Final compliance scan results |
+
+---
+
+## Success Criteria by Deployment Phase
+
+### Phase 1 Success Criteria (Infrastructure)
+
+- [ ] CDK synth succeeds: `./mvnw clean verify`
+- [ ] All existing tests pass: `npm run test:all`
+- [ ] After deploy: `curl -I` shows Content-Security-Policy header
+- [ ] After deploy: `curl -I` shows Strict-Transport-Security header
+- [ ] After deploy: `curl -I` shows Permissions-Policy header
+- [ ] No new OWASP ZAP medium/high findings
+
+### Phase 2 Success Criteria (Accessibility)
+
+- [ ] All tests pass: `npm run test:all`
+- [ ] axe-core: 0 violations (down from 13)
+- [ ] All pages have descriptive `<title>` elements
+- [ ] All pages have `<main>` landmark
+- [ ] All pages have `<h1>` heading
+- [ ] Links in text blocks are underlined
+- [ ] Pa11y: All pages pass WCAG 2.1 AA
+- [ ] WCAG questionnaire criteria can be marked "Supports"
+
+### Phase 3 Success Criteria (Backend)
 
 - [ ] All unit tests pass: `npm run test:unit`
-- [ ] All browser tests pass: `npm run test:browser`
+- [ ] All system tests pass: `npm run test:system`
+- [ ] API accepts full 9-box VAT submissions
+- [ ] API enforces declaration requirement (returns 400 if missing)
+- [ ] API validates Box 3 = Box 1 + Box 2
+- [ ] API validates Box 5 = |Box 3 - Box 4| (non-negative)
+- [ ] API validates Boxes 6-9 are integers
+- [ ] HTTP simulator validates all 9 boxes
+- [ ] **Existing frontend still works** (backward compatibility)
+
+### Phase 4 Success Criteria (Frontend)
+
+- [ ] All tests pass: `npm run test:all`
 - [ ] Behaviour tests pass: `npm run test:submitVatBehaviour-proxy`
-- [ ] CDK synth succeeds: `./mvnw clean verify`
+- [ ] Users enter all 9 VAT boxes in the form
+- [ ] Box 3 and Box 5 auto-calculate in real-time
+- [ ] Legal declaration checkbox required before submission
+- [ ] Period key hidden from users (obligation dropdown instead)
+- [ ] View Return page displays all 9 boxes
+- [ ] DynamoDB assertions verify all 9 boxes
 
-### Compliance Report
+### Final Success Criteria (Post All Phases)
 
-- [ ] Re-run `npm run test:compliance` after all changes
-- [ ] Update questionnaires to Version 2.0 with passing status
-- [ ] All criteria in Questionnaire 1 answered "Yes" or "Supports"
-- [ ] All criteria in Questionnaire 2 show "Supports"
+- [ ] `npm run test:compliance` shows PASS for all categories
+- [ ] Questionnaire 1 v2.0: All answers "Yes" or compliant
+- [ ] Questionnaire 2 v2.0: All criteria "Supports"
+- [ ] COMPLIANCE_REPORT.md shows overall PASS
+- [ ] Ready for HMRC production approval submission
 
 ---
 

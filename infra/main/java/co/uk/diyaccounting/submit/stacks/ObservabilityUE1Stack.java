@@ -7,21 +7,20 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
 
 public class ObservabilityUE1Stack extends Stack {
 
-    public final LogGroup selfDestructLogGroup;
-    public final LogGroup distributionAccessLogGroup;
+    public final ILogGroup selfDestructLogGroup;
+    public final ILogGroup distributionAccessLogGroup;
 
     @Value.Immutable
     public interface ObservabilityUE1StackProps extends StackProps, SubmitStackProps {
@@ -75,43 +74,17 @@ public class ObservabilityUE1Stack extends Stack {
                         .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
                         .build());
 
-        // Log group for web deployment operations with 1-day retention
-        // this.webDeploymentLogGroup = LogGroup.Builder.create(
-        //                this, props.resourceNamePrefix() + "-WebDeploymentLogGroup")
-        //        .logGroupName(props.sharedNames().webDeploymentLogGroupName)
-        //        .retention(RetentionDays.ONE_DAY)
-        //        .removalPolicy(RemovalPolicy.DESTROY)
-        //        .build();
+        // Log Group for CloudFront access logs (idempotent creation)
+        this.distributionAccessLogGroup = ensureLogGroup(
+                this,
+                props.resourceNamePrefix() + "-DistributionAccessLogGroup",
+                props.sharedNames().distributionAccessLogGroupName);
 
-        // Log Group for CloudFront access logs
-        this.distributionAccessLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix() + "-DistributionAccessLogGroup")
-                .logGroupName(props.sharedNames().distributionAccessLogGroupName)
-                .retention(RetentionDays.ONE_MONTH)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
-        //        this.distributionLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-LogsBucket")
-        //                .bucketName(props.sharedNames().distributionAccessLogBucketName)
-        //                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-        //                .versioned(false)
-        //                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-        //                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-        //                .encryption(BucketEncryption.S3_MANAGED)
-        //                .removalPolicy(RemovalPolicy.DESTROY)
-        //                .autoDeleteObjects(true)
-        //                .lifecycleRules(List.of(LifecycleRule.builder()
-        //                        .id(props.resourceNamePrefix() + "-LogsLifecycleRule")
-        //                        .enabled(true)
-        //                        .expiration(Duration.days(props.logGroupRetentionPeriodDays()))
-        //                        .build()))
-        //                .build();
-
-        // Log group for self-destruct operations with 1-week retention
-        this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName(props.sharedNames().ue1SelfDestructLogGroupName)
-                .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // Log group for self-destruct operations (idempotent creation)
+        this.selfDestructLogGroup = ensureLogGroup(
+                this,
+                props.resourceNamePrefix() + "-SelfDestructLogGroup",
+                props.sharedNames().ue1SelfDestructLogGroupName);
         infof(
                 "ObservabilityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);

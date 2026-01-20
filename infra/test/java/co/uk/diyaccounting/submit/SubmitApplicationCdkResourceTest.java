@@ -119,7 +119,8 @@ class SubmitApplicationCdkResourceTest {
 
         if (submitApplication.selfDestructStack != null) {
             infof("Created stack:", submitApplication.selfDestructStack.getStackName());
-            Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 1);
+            // 2 Lambdas: self-destruct function + AwsCustomResource backing Lambda for ensureLogGroup
+            Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 2);
         }
     }
 

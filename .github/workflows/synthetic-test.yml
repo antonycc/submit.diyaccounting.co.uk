@@ -216,6 +216,41 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
+      - name: Configure AWS role via GitHub OIDC (for test user creation)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role (for test user creation)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Create Cognito test user
+        id: cognito-test-user
+        shell: bash
+        run: |
+          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
+          if [ "$PROVIDER" = "cognito-native" ]; then
+            chmod +x 'scripts/create-cognito-test-user.sh'
+            'scripts/create-cognito-test-user.sh' "${{ needs.names.outputs.environment-name }}"
+          else
+            echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+          fi
+
       - name: Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}
         id: behaviour-test
         if: ${{ !cancelled() }}
@@ -231,6 +266,8 @@ jobs:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.apex-url }}
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
+          TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5

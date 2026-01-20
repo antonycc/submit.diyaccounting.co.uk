@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
@@ -59,8 +60,8 @@ public class ObservabilityStack extends Stack {
     // public Bucket trailBucket;
     public Trail trail;
     public ILogGroup cloudTrailLogGroup;
-    public LogGroup selfDestructLogGroup;
-    public LogGroup apiAccessLogGroup;
+    public ILogGroup selfDestructLogGroup;
+    public ILogGroup apiAccessLogGroup;
 
     @Value.Immutable
     public interface ObservabilityStackProps extends StackProps, SubmitStackProps {
@@ -134,7 +135,9 @@ public class ObservabilityStack extends Stack {
             String cloudTrailLogGroupName =
                     "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.resourceNamePrefix());
 
-            // Use AwsCustomResource to idempotently create the LogGroup and set retention.
+            // Use AwsCustomResource to idempotently ensure the LogGroup exists.
+            // Both onCreate and onUpdate call createLogGroup with ignoreErrorCodesMatching
+            // so deployments work whether the log group exists or was deleted externally.
             // Then import it with fromLogGroupName (not create, which would fail if it exists).
             AwsCustomResource ensureLogGroup = AwsCustomResource.Builder.create(
                             this, props.resourceNamePrefix() + "-EnsureCloudTrailLogGroup")
@@ -147,15 +150,14 @@ public class ObservabilityStack extends Stack {
                             .build())
                     .onUpdate(AwsSdkCall.builder()
                             .service("CloudWatchLogs")
-                            .action("putRetentionPolicy")
-                            .parameters(Map.of(
-                                    "logGroupName", cloudTrailLogGroupName,
-                                    "retentionInDays", cloudTrailLogGroupRetentionPeriodDays))
+                            .action("createLogGroup")
+                            .parameters(Map.of("logGroupName", cloudTrailLogGroupName))
                             .physicalResourceId(PhysicalResourceId.of(cloudTrailLogGroupName))
+                            .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
                             .build())
                     .policy(AwsCustomResourcePolicy.fromStatements(List.of(
                             PolicyStatement.Builder.create()
-                                    .actions(List.of("logs:CreateLogGroup", "logs:PutRetentionPolicy"))
+                                    .actions(List.of("logs:CreateLogGroup"))
                                     .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
                                             + ":log-group:" + cloudTrailLogGroupName + ":*"))
                                     .build())))
@@ -221,19 +223,13 @@ public class ObservabilityStack extends Stack {
             cfnOutput(this, "TrailArn", this.trail.getTrailArn());
         }
 
-        // Log group for self-destruct operations with 1-week retention
-        this.selfDestructLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-SelfDestructLogGroup")
-                .logGroupName(props.sharedNames().ew2SelfDestructLogGroupName)
-                .retention(RetentionDays.ONE_WEEK) // Longer retention for operations
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // Log group for self-destruct operations (idempotent creation)
+        this.selfDestructLogGroup = ensureLogGroup(
+                this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.sharedNames().ew2SelfDestructLogGroupName);
 
-        // API Gateway access log group with env-stable name and configurable retention
-        this.apiAccessLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-ApiAccessLogGroup")
-                .logGroupName(props.sharedNames().apiAccessLogGroupName)
-                .retention(RetentionDaysConverter.daysToRetentionDays(props.accessLogGroupRetentionPeriodDays()))
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // API Gateway access log group with env-stable name (idempotent creation)
+        this.apiAccessLogGroup = ensureLogGroup(
+                this, props.resourceNamePrefix() + "-ApiAccessLogGroup", props.sharedNames().apiAccessLogGroupName);
 
         // Add a single shared resource policy to allow all API Gateway APIs in this environment to write logs
         // This prevents hitting the 10 resource policy limit when multiple ApiStacks try to add their own policies
