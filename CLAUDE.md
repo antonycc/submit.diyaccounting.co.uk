@@ -49,6 +49,33 @@ The `./target` directory is always accessible - you do not need to ask about acc
 
 Use this directory freely for capturing test output, reading results, and debugging. Do not ask for permission to access files in `./target`.
 
+## Bash Command Construction (Permission System)
+
+The permission system matches from the **start of the command string**. When you chain commands with `;` or `&&`, only the first command's pattern is matched.
+
+**Do NOT** construct compound commands like:
+```bash
+# Bad - permission matches "pkill" not "npm run"
+pkill -f "playwright"; sleep 2; npm run test:foo > target/output.txt 2>&1
+```
+
+**Instead**, run commands separately:
+```bash
+# Step 1: Clean up
+pkill -f "playwright|ngrok|server.js"
+
+# Step 2: Wait
+sleep 2
+
+# Step 3: Run test with output capture (use tee, not redirect)
+npm run test:submitVatBehaviour-proxy 2>&1 | tee target/behaviour.txt
+```
+
+**For output capture**, use `| tee target/filename.txt` instead of `> target/filename.txt` because:
+- `npm run:*` is already in the allow list
+- `tee` is already in the allow list
+- Redirects with `>` create a new command pattern that may not be allowed
+
 ## Deployment & Infrastructure Workflow
 
 **Hybrid Orchestration Approach**: You can autonomously handle the commit/push/monitor cycle for infrastructure deployments.
