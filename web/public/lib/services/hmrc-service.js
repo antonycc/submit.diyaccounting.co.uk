@@ -262,10 +262,11 @@ export async function submitVat(
     headers["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
   }
 
+  // Spread vatDue object to include all 9-box fields at top level
   const response = await authorizedFetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify({ vatNumber, periodKey, vatDue, accessToken, runFraudPreventionHeaderValidation }),
+    body: JSON.stringify({ vatNumber, periodKey, ...vatDue, accessToken, runFraudPreventionHeaderValidation }),
   });
   const responseJson = await response.json();
   if (!response.ok) {
