@@ -87,11 +87,17 @@ test.describe("Test Data Link Browser Tests", () => {
       // Verify fields are populated
       const vrnValue = await page.locator("#vatNumber").inputValue();
       const periodKeyValue = await page.locator("#periodKey").inputValue();
-      const vatDueValue = await page.locator("#vatDue").inputValue();
 
       expect(vrnValue).toBe("176540158");
       expect(periodKeyValue).toMatch(/^\d{2}[A-Z]\d$/); // YYXN format
-      expect(vatDueValue).toMatch(/^\d+\.\d{2}$/); // Decimal with 2 places
+
+      // Check 9-box fields are populated
+      const vatDueSalesValue = await page.locator("#vatDueSales").inputValue();
+      expect(vatDueSalesValue).toMatch(/^\d+\.\d{2}$/); // Decimal with 2 places
+
+      // Check declaration is checked
+      const declarationChecked = await page.locator("#declaration").isChecked();
+      expect(declarationChecked).toBe(true);
     });
   });
 

@@ -3,7 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit</title>
+    <title>Submit VAT Return - DIY Accounting</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -40,7 +40,7 @@
       <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
     </header>
 
-    <div id="mainContent">
+    <main id="mainContent">
       <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
 
       <div id="testDataLink" class="test-data-link">
@@ -83,10 +83,81 @@
             <div class="help-text">The identifier for the VAT period you're submitting for</div>
           </div>
 
-          <div class="form-group">
-            <label for="vatDue">Total VAT Due (£)</label>
-            <input type="number" id="vatDue" name="vatDue" required value="" placeholder="e.g., 2400.00" step="0.01" min="0" />
-            <div class="help-text">Enter the total VAT amount due in pounds</div>
+          <!-- 9-Box VAT Return Entry -->
+          <fieldset class="vat-boxes">
+            <legend>VAT Return Details</legend>
+
+            <!-- Box 1: VAT due on sales -->
+            <div class="form-group">
+              <label for="vatDueSales">Box 1: VAT due on sales and other outputs (£)</label>
+              <input type="number" id="vatDueSales" name="vatDueSales" required value="" placeholder="0.00" step="0.01" />
+              <div class="help-text">VAT due in this period on sales and other outputs</div>
+            </div>
+
+            <!-- Box 2: VAT due on acquisitions -->
+            <div class="form-group">
+              <label for="vatDueAcquisitions">Box 2: VAT due on acquisitions from EU (£)</label>
+              <input type="number" id="vatDueAcquisitions" name="vatDueAcquisitions" required value="0" placeholder="0.00" step="0.01" />
+              <div class="help-text">VAT due in this period on acquisitions from other EU Member States</div>
+            </div>
+
+            <!-- Box 3: Total VAT due (calculated) -->
+            <div class="form-group calculated-field">
+              <label for="totalVatDue">Box 3: Total VAT due (Box 1 + Box 2) (£)</label>
+              <input type="number" id="totalVatDue" name="totalVatDue" required value="" placeholder="0.00" step="0.01" readonly />
+              <div class="help-text">Auto-calculated: Sum of boxes 1 and 2</div>
+            </div>
+
+            <!-- Box 4: VAT reclaimed -->
+            <div class="form-group">
+              <label for="vatReclaimedCurrPeriod">Box 4: VAT reclaimed on purchases (£)</label>
+              <input type="number" id="vatReclaimedCurrPeriod" name="vatReclaimedCurrPeriod" required value="" placeholder="0.00" step="0.01" />
+              <div class="help-text">VAT reclaimed in this period on purchases and other inputs</div>
+            </div>
+
+            <!-- Box 5: Net VAT due (calculated) -->
+            <div class="form-group calculated-field">
+              <label for="netVatDue">Box 5: Net VAT due or to be reclaimed (£)</label>
+              <input type="number" id="netVatDue" name="netVatDue" required value="" placeholder="0.00" step="0.01" readonly />
+              <div class="help-text">Auto-calculated: Difference between boxes 3 and 4 (always positive)</div>
+            </div>
+
+            <!-- Box 6: Total value of sales -->
+            <div class="form-group">
+              <label for="totalValueSalesExVAT">Box 6: Total value of sales excluding VAT (£)</label>
+              <input type="number" id="totalValueSalesExVAT" name="totalValueSalesExVAT" required value="" placeholder="0" step="1" />
+              <div class="help-text">Total value of sales and all other outputs excluding VAT (whole pounds only)</div>
+            </div>
+
+            <!-- Box 7: Total value of purchases -->
+            <div class="form-group">
+              <label for="totalValuePurchasesExVAT">Box 7: Total value of purchases excluding VAT (£)</label>
+              <input type="number" id="totalValuePurchasesExVAT" name="totalValuePurchasesExVAT" required value="" placeholder="0" step="1" />
+              <div class="help-text">Total value of purchases and all other inputs excluding VAT (whole pounds only)</div>
+            </div>
+
+            <!-- Box 8: Total value of goods supplied to EU -->
+            <div class="form-group">
+              <label for="totalValueGoodsSuppliedExVAT">Box 8: Total value of goods supplied to EU (£)</label>
+              <input type="number" id="totalValueGoodsSuppliedExVAT" name="totalValueGoodsSuppliedExVAT" required value="0" placeholder="0" step="1" />
+              <div class="help-text">Total value of all supplies of goods to other EU Member States (whole pounds only)</div>
+            </div>
+
+            <!-- Box 9: Total acquisitions from EU -->
+            <div class="form-group">
+              <label for="totalAcquisitionsExVAT">Box 9: Total value of acquisitions from EU (£)</label>
+              <input type="number" id="totalAcquisitionsExVAT" name="totalAcquisitionsExVAT" required value="0" placeholder="0" step="1" />
+              <div class="help-text">Total value of all acquisitions of goods from other EU Member States (whole pounds only)</div>
+            </div>
+          </fieldset>
+
+          <!-- Legal Declaration -->
+          <div class="declaration-box">
+            <input type="checkbox" id="declaration" name="declaration" required />
+            <label for="declaration">
+              I confirm that the information I have given on this VAT return is correct and complete to the best of my knowledge and belief.
+              I understand that giving false information may result in penalties.
+            </label>
           </div>
 
           <!-- Developer Test Scenario Section -->
@@ -151,7 +222,7 @@
           Return to the home page
         </button>
       </div>
-    </div>
+    </main>
 
     <footer>
       <div class="footer-left">
@@ -185,6 +256,38 @@
         }
       })();
 
+      // Auto-calculation functions for 9-box VAT return
+      function calculateTotalVatDue() {
+        const box1 = parseFloat(document.getElementById("vatDueSales").value) || 0;
+        const box2 = parseFloat(document.getElementById("vatDueAcquisitions").value) || 0;
+        const total = Math.round((box1 + box2) * 100) / 100;
+        document.getElementById("totalVatDue").value = total.toFixed(2);
+        calculateNetVatDue();
+      }
+
+      function calculateNetVatDue() {
+        const box3 = parseFloat(document.getElementById("totalVatDue").value) || 0;
+        const box4 = parseFloat(document.getElementById("vatReclaimedCurrPeriod").value) || 0;
+        const net = Math.round(Math.abs(box3 - box4) * 100) / 100;
+        document.getElementById("netVatDue").value = net.toFixed(2);
+      }
+
+      // Collect 9-box VAT data from form
+      function collect9BoxData() {
+        return {
+          vatDueSales: parseFloat(document.getElementById("vatDueSales").value) || 0,
+          vatDueAcquisitions: parseFloat(document.getElementById("vatDueAcquisitions").value) || 0,
+          totalVatDue: parseFloat(document.getElementById("totalVatDue").value) || 0,
+          vatReclaimedCurrPeriod: parseFloat(document.getElementById("vatReclaimedCurrPeriod").value) || 0,
+          netVatDue: parseFloat(document.getElementById("netVatDue").value) || 0,
+          totalValueSalesExVAT: Math.round(parseFloat(document.getElementById("totalValueSalesExVAT").value) || 0),
+          totalValuePurchasesExVAT: Math.round(parseFloat(document.getElementById("totalValuePurchasesExVAT").value) || 0),
+          totalValueGoodsSuppliedExVAT: Math.round(parseFloat(document.getElementById("totalValueGoodsSuppliedExVAT").value) || 0),
+          totalAcquisitionsExVAT: Math.round(parseFloat(document.getElementById("totalAcquisitionsExVAT").value) || 0),
+          finalised: true
+        };
+      }
+
       // Form submission handler
       async function handleFormSubmission(event) {
         event.preventDefault();
@@ -192,12 +295,15 @@
         const formData = new FormData(form);
         const vatNumber = formData.get("vatNumber").trim();
         const periodKey = formData.get("periodKey").trim();
-        const vatDue = formData.get("vatDue");
+        const declaration = document.getElementById("declaration").checked;
         const testScenario = (document.getElementById("testScenario")?.value || "").trim();
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
+        // Collect 9-box data
+        const vatBoxData = collect9BoxData();
+
         // Basic validation
-        if (!vatNumber || !periodKey || !vatDue) {
+        if (!vatNumber || !periodKey) {
           showStatus("Please fill in all required fields.", "error");
           return;
         }
@@ -207,8 +313,22 @@
           return;
         }
 
-        if (parseFloat(vatDue) < 0) {
-          showStatus("VAT due cannot be negative.", "error");
+        // Validate 9-box fields
+        if (vatBoxData.vatDueSales === "" || vatBoxData.vatReclaimedCurrPeriod === "" ||
+            vatBoxData.totalValueSalesExVAT === "" || vatBoxData.totalValuePurchasesExVAT === "") {
+          showStatus("Please fill in all required VAT box fields.", "error");
+          return;
+        }
+
+        // Validate declaration checkbox
+        if (!declaration) {
+          showStatus("You must confirm the declaration before submitting.", "error");
+          return;
+        }
+
+        // Validate netVatDue is not negative (should always be positive per HMRC rules)
+        if (vatBoxData.netVatDue < 0) {
+          showStatus("Net VAT due must be a positive value.", "error");
           return;
         }
 
@@ -221,7 +341,7 @@
           submissionData = {
             vatNumber,
             periodKey,
-            vatDue,
+            ...vatBoxData,
             testScenario,
             runFraudPreventionHeaderValidation,
           };
@@ -301,11 +421,11 @@
 
           showStatus("Submitting VAT return to HMRC...", "info");
 
-          // Submit VAT return
+          // Submit VAT return with 9-box data
           const submitResponse = await submitVatWithCalculatedHeaders(
             submissionData.vatNumber,
             submissionData.periodKey,
-            submissionData.vatDue,
+            submissionData,
             accessToken,
           );
 
@@ -328,7 +448,7 @@
         }
       }
 
-      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatDue, accessToken) {
+      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatData, accessToken) {
         const storedData = JSON.parse(sessionStorage.getItem("submission_data") || "null");
         const testScenario = (document.getElementById("testScenario")?.value || storedData?.testScenario || "").trim();
         const runFraudPreventionHeaderValidation =
@@ -345,15 +465,25 @@
         if (testScenario) {
           requestHeaders["Gov-Test-Scenario"] = testScenario;
         }
-        return await submitVat(vatNumber, periodKey, vatDue, accessToken, requestHeaders, runFraudPreventionHeaderValidation);
+        return await submitVat(vatNumber, periodKey, vatData, accessToken, requestHeaders, runFraudPreventionHeaderValidation);
       }
 
-      async function submitVat(vatNumber, periodKey, vatDue, accessToken, headers, runFraudPreventionHeaderValidation) {
+      async function submitVat(vatNumber, periodKey, vatData, accessToken, headers, runFraudPreventionHeaderValidation) {
         const url = "/api/v1/hmrc/vat/return";
         const body = JSON.stringify({
           vatNumber,
           periodKey,
-          vatDue,
+          // Include all 9-box fields
+          vatDueSales: vatData.vatDueSales,
+          vatDueAcquisitions: vatData.vatDueAcquisitions,
+          totalVatDue: vatData.totalVatDue,
+          vatReclaimedCurrPeriod: vatData.vatReclaimedCurrPeriod,
+          netVatDue: vatData.netVatDue,
+          totalValueSalesExVAT: vatData.totalValueSalesExVAT,
+          totalValuePurchasesExVAT: vatData.totalValuePurchasesExVAT,
+          totalValueGoodsSuppliedExVAT: vatData.totalValueGoodsSuppliedExVAT,
+          totalAcquisitionsExVAT: vatData.totalAcquisitionsExVAT,
+          finalised: vatData.finalised,
           accessToken,
           runFraudPreventionHeaderValidation,
         });
@@ -477,12 +607,20 @@
         e.target.value = e.target.value.toUpperCase();
       });
 
+      // Auto-calculation event listeners for 9-box VAT return
+      document.getElementById("vatDueSales").addEventListener("input", calculateTotalVatDue);
+      document.getElementById("vatDueAcquisitions").addEventListener("input", calculateTotalVatDue);
+      document.getElementById("vatReclaimedCurrPeriod").addEventListener("input", calculateNetVatDue);
+
       // Expose page-specific functions to window for testing
       window.submitVat = submitVat;
       window.handleOAuthCallback = handleOAuthCallback;
       window.continueSubmission = continueVatSubmission;
       window.displayReceipt = displayReceipt;
       window.handleFormSubmission = handleFormSubmission;
+      window.calculateTotalVatDue = calculateTotalVatDue;
+      window.calculateNetVatDue = calculateNetVatDue;
+      window.collect9BoxData = collect9BoxData;
 
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {

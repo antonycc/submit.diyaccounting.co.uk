@@ -52,10 +52,17 @@ export async function fillInVat(
       await page.waitForTimeout(200);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-test-data-added.png` });
 
-      // Verify fields are populated
+      // Verify fields are populated - check for 9-box form first
       await expect(page.locator("#vatNumber")).not.toHaveValue("");
       await expect(page.locator("#periodKey")).not.toHaveValue("");
-      await expect(page.locator("#vatDue")).not.toHaveValue("");
+      // Check if 9-box form is present
+      const has9BoxForm = await page.locator("#vatDueSales").count() > 0;
+      if (has9BoxForm) {
+        await expect(page.locator("#vatDueSales")).not.toHaveValue("");
+        await expect(page.locator("#declaration")).toBeChecked();
+      } else {
+        await expect(page.locator("#vatDue")).not.toHaveValue("");
+      }
     }
 
     // Fill out the VAT form manually using the correct field IDs from submitVat.html
@@ -67,7 +74,39 @@ export async function fillInVat(
     await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key", { screenshotPath });
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-filled.png` });
-    await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount", { screenshotPath });
+
+    // Check if 9-box form is present and fill accordingly
+    const has9BoxForm = await page.locator("#vatDueSales").count() > 0;
+    if (has9BoxForm) {
+      // Fill 9-box form with derived values from the single vatDueAmount (for backward compatibility)
+      const vatDue = parseFloat(hmrcVatDueAmount) || 1000;
+      await loggedFill(page, "#vatDueSales", String(vatDue.toFixed(2)), "Entering VAT due on sales (Box 1)", { screenshotPath });
+      await page.waitForTimeout(50);
+      await loggedFill(page, "#vatDueAcquisitions", "0.00", "Entering VAT due on acquisitions (Box 2)", { screenshotPath });
+      await page.waitForTimeout(50);
+      // Box 3 (totalVatDue) auto-calculates
+      await loggedFill(page, "#vatReclaimedCurrPeriod", "0.00", "Entering VAT reclaimed (Box 4)", { screenshotPath });
+      await page.waitForTimeout(50);
+      // Box 5 (netVatDue) auto-calculates
+      await loggedFill(page, "#totalValueSalesExVAT", String(Math.round(vatDue * 5)), "Entering total sales ex VAT (Box 6)", { screenshotPath });
+      await page.waitForTimeout(50);
+      await loggedFill(page, "#totalValuePurchasesExVAT", "0", "Entering total purchases ex VAT (Box 7)", { screenshotPath });
+      await page.waitForTimeout(50);
+      await loggedFill(page, "#totalValueGoodsSuppliedExVAT", "0", "Entering goods supplied to EU (Box 8)", { screenshotPath });
+      await page.waitForTimeout(50);
+      await loggedFill(page, "#totalAcquisitionsExVAT", "0", "Entering acquisitions from EU (Box 9)", { screenshotPath });
+      await page.waitForTimeout(50);
+
+      // Check the declaration checkbox
+      const declarationCheckbox = page.locator("#declaration");
+      if (!(await declarationCheckbox.isChecked())) {
+        await declarationCheckbox.check();
+        console.log("Checked declaration checkbox");
+      }
+    } else {
+      // Legacy single-field form
+      await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount", { screenshotPath });
+    }
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
@@ -92,6 +131,94 @@ export async function fillInVat(
     await expect(page.locator("#submitBtn")).toBeVisible();
     await page.waitForTimeout(200);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-fill-in-submission-pagedown.png` });
+  });
+}
+
+/**
+ * Fill in the 9-box VAT form with specific values
+ * @param {object} page - Playwright page object
+ * @param {string} hmrcVatNumber - VAT Registration Number
+ * @param {string} hmrcVatPeriodKey - Period Key
+ * @param {object} vatBoxData - Object containing all 9 box values
+ * @param {string|null} testScenario - Optional test scenario
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers
+ * @param {string} screenshotPath - Path for screenshots
+ */
+export async function fillInVat9Box(
+  page,
+  hmrcVatNumber,
+  hmrcVatPeriodKey,
+  vatBoxData,
+  testScenario = null,
+  runFraudPreventionHeaderValidation = false,
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user completes the 9-box VAT form with valid values and sees the Submit button", async () => {
+    // Fill out the VAT form manually
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-9box.png` });
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#periodKey", hmrcVatPeriodKey, "Entering period key", { screenshotPath });
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-9box-vrn.png` });
+
+    // Fill all 9 boxes
+    await loggedFill(page, "#vatDueSales", String(vatBoxData.vatDueSales), "Entering VAT due on sales (Box 1)", { screenshotPath });
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#vatDueAcquisitions", String(vatBoxData.vatDueAcquisitions), "Entering VAT due on acquisitions (Box 2)", { screenshotPath });
+    await page.waitForTimeout(50);
+    // Box 3 (totalVatDue) auto-calculates, but we can verify or set it
+    if (vatBoxData.totalVatDue !== undefined) {
+      const box3Value = await page.locator("#totalVatDue").inputValue();
+      console.log(`Box 3 (totalVatDue) auto-calculated to: ${box3Value}, expected: ${vatBoxData.totalVatDue}`);
+    }
+    await loggedFill(page, "#vatReclaimedCurrPeriod", String(vatBoxData.vatReclaimedCurrPeriod), "Entering VAT reclaimed (Box 4)", { screenshotPath });
+    await page.waitForTimeout(50);
+    // Box 5 (netVatDue) auto-calculates
+    if (vatBoxData.netVatDue !== undefined) {
+      const box5Value = await page.locator("#netVatDue").inputValue();
+      console.log(`Box 5 (netVatDue) auto-calculated to: ${box5Value}, expected: ${vatBoxData.netVatDue}`);
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-9box-monetary.png` });
+
+    await loggedFill(page, "#totalValueSalesExVAT", String(vatBoxData.totalValueSalesExVAT), "Entering total sales ex VAT (Box 6)", { screenshotPath });
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#totalValuePurchasesExVAT", String(vatBoxData.totalValuePurchasesExVAT), "Entering total purchases ex VAT (Box 7)", { screenshotPath });
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#totalValueGoodsSuppliedExVAT", String(vatBoxData.totalValueGoodsSuppliedExVAT), "Entering goods supplied to EU (Box 8)", { screenshotPath });
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#totalAcquisitionsExVAT", String(vatBoxData.totalAcquisitionsExVAT), "Entering acquisitions from EU (Box 9)", { screenshotPath });
+    await page.waitForTimeout(50);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-9box-whole.png` });
+
+    // Check the declaration checkbox
+    const declarationCheckbox = page.locator("#declaration");
+    if (!(await declarationCheckbox.isChecked())) {
+      await declarationCheckbox.check();
+      console.log("Checked declaration checkbox");
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png` });
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
+        screenshotPath,
+      });
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-9box-options.png` });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
+          screenshotPath,
+        });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-9box-scenario.png` });
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-9box-complete.png` });
+    await expect(page.locator("#submitBtn")).toBeVisible();
+    await page.waitForTimeout(200);
   });
 }
 

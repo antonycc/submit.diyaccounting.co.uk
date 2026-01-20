@@ -316,7 +316,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       );
     });
 
-    test("submitVat should make correct API call", async () => {
+    test("submitVat should make correct API call with 9-box data", async () => {
       const govHeaders = buildGovClientTestHeaders();
 
       const mockResponse = {
@@ -329,21 +329,43 @@ describe("VAT Flow Frontend JavaScript", () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      const result = await window.submitVat("111222333", "24A1", "1000.00", "test-token", govHeaders);
+      // 9-box VAT data
+      const vatData = {
+        vatDueSales: 1000.00,
+        vatDueAcquisitions: 0,
+        totalVatDue: 1000.00,
+        vatReclaimedCurrPeriod: 0,
+        netVatDue: 1000.00,
+        totalValueSalesExVAT: 5000,
+        totalValuePurchasesExVAT: 0,
+        totalValueGoodsSuppliedExVAT: 0,
+        totalAcquisitionsExVAT: 0,
+        finalised: true,
+      };
+
+      const result = await window.submitVat("111222333", "24A1", vatData, "test-token", govHeaders);
 
       // Verify the fetch was called
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, init] = fetchMock.mock.calls[0];
       expect(url).toBe("/api/v1/hmrc/vat/return");
       expect(init.method).toBe("POST");
-      expect(init.body).toBe(
-        JSON.stringify({
-          vatNumber: "111222333",
-          periodKey: "24A1",
-          vatDue: "1000.00",
-          accessToken: "test-token",
-        }),
-      );
+
+      // Parse and verify the body contains all 9-box fields
+      const body = JSON.parse(init.body);
+      expect(body.vatNumber).toBe("111222333");
+      expect(body.periodKey).toBe("24A1");
+      expect(body.vatDueSales).toBe(1000.00);
+      expect(body.vatDueAcquisitions).toBe(0);
+      expect(body.totalVatDue).toBe(1000.00);
+      expect(body.vatReclaimedCurrPeriod).toBe(0);
+      expect(body.netVatDue).toBe(1000.00);
+      expect(body.totalValueSalesExVAT).toBe(5000);
+      expect(body.totalValuePurchasesExVAT).toBe(0);
+      expect(body.totalValueGoodsSuppliedExVAT).toBe(0);
+      expect(body.totalAcquisitionsExVAT).toBe(0);
+      expect(body.finalised).toBe(true);
+      expect(body.accessToken).toBe("test-token");
 
       // Verify headers - authorizedFetch converts to Headers object
       const headers = init.headers;
@@ -391,15 +413,41 @@ describe("VAT Flow Frontend JavaScript", () => {
   });
 
   describe("Form Validation", () => {
+    // Helper function to fill 9-box form with default values
+    function fill9BoxForm(overrides = {}) {
+      const defaults = {
+        vatDueSales: "1000.00",
+        vatDueAcquisitions: "0.00",
+        vatReclaimedCurrPeriod: "0.00",
+        totalValueSalesExVAT: "5000",
+        totalValuePurchasesExVAT: "0",
+        totalValueGoodsSuppliedExVAT: "0",
+        totalAcquisitionsExVAT: "0",
+      };
+      const values = { ...defaults, ...overrides };
+
+      document.getElementById("vatDueSales").value = values.vatDueSales;
+      document.getElementById("vatDueAcquisitions").value = values.vatDueAcquisitions;
+      document.getElementById("vatReclaimedCurrPeriod").value = values.vatReclaimedCurrPeriod;
+      document.getElementById("totalValueSalesExVAT").value = values.totalValueSalesExVAT;
+      document.getElementById("totalValuePurchasesExVAT").value = values.totalValuePurchasesExVAT;
+      document.getElementById("totalValueGoodsSuppliedExVAT").value = values.totalValueGoodsSuppliedExVAT;
+      document.getElementById("totalAcquisitionsExVAT").value = values.totalAcquisitionsExVAT;
+      // Trigger auto-calculation
+      if (window.calculateTotalVatDue) {
+        window.calculateTotalVatDue();
+      }
+    }
+
     test("form validation should reject empty VAT number", async () => {
-      const form = document.getElementById("vatSubmissionForm");
       const vatNumberInput = document.getElementById("vatNumber");
       const periodKeyInput = document.getElementById("periodKey");
-      const vatDueInput = document.getElementById("vatDue");
+      const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "";
       periodKeyInput.value = "24A1";
-      vatDueInput.value = "1000.00";
+      fill9BoxForm();
+      declarationCheckbox.checked = true;
 
       window.showStatus = vi.fn();
       window.showLoading = vi.fn();
@@ -415,11 +463,12 @@ describe("VAT Flow Frontend JavaScript", () => {
     test("form validation should reject invalid VAT number format", async () => {
       const vatNumberInput = document.getElementById("vatNumber");
       const periodKeyInput = document.getElementById("periodKey");
-      const vatDueInput = document.getElementById("vatDue");
+      const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "12345678"; // Only 8 digits
       periodKeyInput.value = "24A1";
-      vatDueInput.value = "1000.00";
+      fill9BoxForm();
+      declarationCheckbox.checked = true;
 
       window.showStatus = vi.fn();
 
@@ -431,14 +480,15 @@ describe("VAT Flow Frontend JavaScript", () => {
       expect(window.showStatus).toHaveBeenCalledWith("VAT number must be exactly 9 digits.", "error");
     });
 
-    test("form validation should reject negative VAT due", async () => {
+    test("form validation should reject unchecked declaration", async () => {
       const vatNumberInput = document.getElementById("vatNumber");
       const periodKeyInput = document.getElementById("periodKey");
-      const vatDueInput = document.getElementById("vatDue");
+      const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "111222333";
       periodKeyInput.value = "24A1";
-      vatDueInput.value = "-100.00";
+      fill9BoxForm();
+      declarationCheckbox.checked = false; // Declaration not checked
 
       window.showStatus = vi.fn();
 
@@ -447,7 +497,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("VAT due cannot be negative.", "error");
+      expect(window.showStatus).toHaveBeenCalledWith("You must confirm the declaration before submitting.", "error");
     });
   });
 
