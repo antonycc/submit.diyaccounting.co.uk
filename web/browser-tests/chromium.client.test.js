@@ -154,8 +154,9 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const periodKey = await page.locator("#periodKey").inputValue();
       expect(periodKey).toBe("");
 
-      const vatDue = await page.locator("#vatDue").inputValue();
-      expect(vatDue).toBe("");
+      // Check 9-box form fields have default values
+      const vatDueSales = await page.locator("#vatDueSales").inputValue();
+      expect(vatDueSales).toBe("");
     });
 
     test("should have receipt display hidden initially", async ({ page }) => {
@@ -223,13 +224,28 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
   test.describe("Loading States", () => {
     test("should show loading spinner during form submission", async ({ page }) => {
       const timestamp = getTimestamp();
-      // Fill in valid form data
+      // Fill in valid form data for 9-box VAT form
       await page.locator("#vatNumber").fill("111222333");
       await setTimeout(100);
       await page.locator("#periodKey").fill("24A1");
       await setTimeout(100);
-      await page.locator("#vatDue").fill("1000.00");
+      // Fill 9-box fields
+      await page.locator("#vatDueSales").fill("1000.00");
+      await setTimeout(50);
+      await page.locator("#vatDueAcquisitions").fill("0.00");
+      await setTimeout(50);
+      await page.locator("#vatReclaimedCurrPeriod").fill("0.00");
+      await setTimeout(50);
+      await page.locator("#totalValueSalesExVAT").fill("5000");
+      await setTimeout(50);
+      await page.locator("#totalValuePurchasesExVAT").fill("0");
+      await setTimeout(50);
+      await page.locator("#totalValueGoodsSuppliedExVAT").fill("0");
+      await setTimeout(50);
+      await page.locator("#totalAcquisitionsExVAT").fill("0");
       await setTimeout(100);
+      // Check the declaration
+      await page.locator("#declaration").check();
 
       // Trigger loading state directly to test the functionality
       await page.evaluate(() => {

@@ -39,6 +39,16 @@ grep -i -n -A 20 -E 'fail|error' target/test.txt
 
 **Important**: Behaviour tests generate too much output to read directly - always pipe to file.
 
+## Target Directory Access
+
+The `./target` directory is always accessible - you do not need to ask about accessing it. This directory contains:
+- Test output files (e.g., `target/test.txt`, `target/behaviour.txt`)
+- Build artifacts from Maven CDK builds
+- Browser test results and screenshots
+- Playwright reports and traces
+
+Use this directory freely for capturing test output, reading results, and debugging. Do not ask for permission to access files in `./target`.
+
 ## Deployment & Infrastructure Workflow
 
 **Hybrid Orchestration Approach**: You can autonomously handle the commit/push/monitor cycle for infrastructure deployments.

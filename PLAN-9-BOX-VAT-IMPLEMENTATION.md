@@ -1,14 +1,14 @@
 # Implementation Plan: Full 9-Box VAT Return & HMRC Compliance
 
 **Date**: 20 January 2026 (Updated)
-**Approach**: 4 deployment phases, each independently deployable
+**Approach**: 5 deployment phases, each independently deployable
 **Backward Compatibility**: Not required (no live users)
 
 ---
 
 ## Deployment Phases Overview
 
-This plan is organized into 4 deployment phases. Each phase can be deployed independently, and each deployment should pass all existing tests plus any new tests added in that phase.
+This plan is organized into 5 deployment phases. Each phase can be deployed independently, and each deployment should pass all existing tests plus any new tests added in that phase.
 
 ### Phase 1: Infrastructure & Security Headers
 **Deploy after completing: Components 13, 14**
@@ -122,6 +122,43 @@ npm run test:compliance                # Compliance report shows PASS
 
 ---
 
+### Phase 5: Extended Validation & VAT Scheme Testing
+**Deploy after completing: Components 19, 20, 21**
+
+| What Changes | Files |
+|--------------|-------|
+| 9-box validation error behaviour tests | `behaviour-tests/vatValidation.behaviour.test.js` |
+| VAT scheme behaviour tests | `behaviour-tests/vatSchemes.behaviour.test.js` |
+| HTTP simulator VAT scheme scenarios | `app/http-simulator/scenarios/vat-schemes.js` |
+| System tests for validation errors | `app/system-tests/vatValidation.test.js` |
+| Browser tests for viewing submitted returns | `web/browser-tests/view-vat-return.browser.test.js` |
+
+**VAT Schemes to Test:**
+- Cash Accounting Scheme - Supported ✅
+- Annual Accounting Scheme - Supported ✅
+- Flat Rate Scheme - Supported ✅
+- Retail Scheme - Supported ✅
+- Margin Scheme - Supported ✅
+- VAT Exemption - Not supported ❌ (app is for VAT-registered businesses)
+
+**Achievement at completion:**
+- ✅ Comprehensive behaviour tests for all 9-box validation errors
+- ✅ Tests verify correct error codes for each validation failure
+- ✅ Tests cover all supported VAT schemes
+- ✅ System tests exercise API-level validation
+- ✅ Browser tests verify viewing of various submitted returns
+- ✅ Full test coverage for HMRC compliance scenarios
+
+**Verification:**
+```bash
+npm run test:all                         # Full test suite passes
+npm run test:vatValidation-proxy         # Validation error behaviour tests
+npm run test:vatSchemes-proxy            # VAT scheme behaviour tests
+npm run test:browser                     # Browser tests for view returns
+```
+
+---
+
 ## Phase-to-Component Mapping
 
 | Phase | Components | Focus Area |
@@ -130,6 +167,7 @@ npm run test:compliance                # Compliance report shows PASS
 | **Phase 2** | 11, 12 | Accessibility (CSS, HTML structure) |
 | **Phase 3** | 1, 2, 3, 4, 5, 15, 16 | Backend (validation, API, simulator, unit tests) |
 | **Phase 4** | 6, 7, 8, 9, 10, 17, 18 | Frontend (UI, behaviour tests) |
+| **Phase 5** | 19, 20, 21 | Extended validation & VAT scheme testing |
 
 ---
 
@@ -2477,6 +2515,15 @@ if (typeof window !== "undefined") {
 - [ ] View Return page displays all 9 boxes
 - [ ] DynamoDB assertions verify all 9 boxes
 
+### Phase 5 Success Criteria (Extended Validation & VAT Schemes)
+
+- [ ] All tests pass: `npm run test:all`
+- [ ] Validation error behaviour tests pass with correct error codes
+- [ ] VAT scheme behaviour tests pass for all 5 supported schemes
+- [ ] System tests verify API-level validation errors
+- [ ] Browser tests verify viewing submitted returns with all 9 boxes
+- [ ] Tests demonstrate VAT Exemption is not applicable (app for VAT-registered only)
+
 ### Final Success Criteria (Post All Phases)
 
 - [ ] `npm run test:compliance` shows PASS for all categories
@@ -2484,6 +2531,315 @@ if (typeof window !== "undefined") {
 - [ ] Questionnaire 2 v2.0: All criteria "Supports"
 - [ ] COMPLIANCE_REPORT.md shows overall PASS
 - [ ] Ready for HMRC production approval submission
+
+---
+
+## Component 19: 9-Box Validation Error Behaviour Tests
+
+**New file**: `behaviour-tests/vatValidation.behaviour.test.js`
+
+### 19.1 Test Scenarios
+
+Test all validation error responses for 9-box VAT submission:
+
+| Error Code | Scenario | Expected Response |
+|------------|----------|-------------------|
+| `INVALID_REQUEST` | Missing required fields (periodKey, any box value) | 400 |
+| `INVALID_MONETARY_AMOUNT` | Box 1-5 values with more than 2 decimal places | 400 |
+| `INVALID_WHOLE_AMOUNT` | Box 6-9 values with decimal places | 400 |
+| `INVALID_TOTAL_VAT_DUE` | Box 3 ≠ Box 1 + Box 2 | 400 |
+| `INVALID_NET_VAT_DUE` | Box 5 ≠ |Box 3 - Box 4| | 400 |
+| `INVALID_NET_VAT_DUE` | Box 5 is negative | 400 |
+| `VRN_INVALID` | VRN format incorrect | 400 |
+| `PERIOD_KEY_INVALID` | Period key format incorrect | 400 |
+
+### 19.2 Behaviour Test Steps
+
+```javascript
+// behaviour-tests/steps/vatValidation-steps.js
+
+Given('the user has valid 9-box VAT data except {string}', async function(field) {
+  this.vatData = generateValid9BoxData();
+  switch(field) {
+    case 'missing periodKey':
+      delete this.vatData.periodKey;
+      break;
+    case 'invalid decimal in Box 6':
+      this.vatData.totalValueSalesExVAT = 1000.50;
+      break;
+    case 'wrong Box 3 calculation':
+      this.vatData.totalVatDue = this.vatData.vatDueSales + this.vatData.vatDueAcquisitions + 100;
+      break;
+    // ... other scenarios
+  }
+});
+
+When('the user submits the VAT return', async function() {
+  this.response = await submitVatReturn(this.vatData);
+});
+
+Then('the API returns error code {string}', async function(errorCode) {
+  expect(this.response.status).toBe(400);
+  expect(this.response.body.code).toBe(errorCode);
+});
+```
+
+---
+
+## Component 20: VAT Scheme Behaviour Tests
+
+**New file**: `behaviour-tests/vatSchemes.behaviour.test.js`
+
+### 20.1 Supported VAT Schemes
+
+| Scheme | Description | Test Approach |
+|--------|-------------|---------------|
+| **Standard VAT** | Default scheme, full 9-box entry | Normal submission |
+| **Cash Accounting** | VAT on cash received/paid | Box values represent cash basis |
+| **Annual Accounting** | Quarterly/monthly payments, annual return | Special period key handling |
+| **Flat Rate** | Simplified VAT calculation | Different Box 1 calculation |
+| **Retail Scheme** | VAT on retail sales | Standard 9-box with retail-specific values |
+| **Margin Scheme** | Second-hand goods | VAT only on profit margin |
+
+### 20.2 Test Scenarios
+
+```gherkin
+# vatSchemes.behaviour.test.feature
+
+Feature: VAT Scheme Support
+  As a VAT-registered business
+  I want to submit returns under different VAT schemes
+  So that my VAT accounting is correctly processed
+
+  Scenario: Submit return under Cash Accounting Scheme
+    Given the business uses Cash Accounting Scheme
+    And the user has valid 9-box VAT data
+    When the user submits the VAT return
+    Then the return is accepted successfully
+    And the receipt shows processing date
+
+  Scenario: Submit return under Flat Rate Scheme
+    Given the business uses Flat Rate Scheme
+    And the user has valid 9-box VAT data with flat rate calculations
+    When the user submits the VAT return
+    Then the return is accepted successfully
+
+  Scenario: Submit return under Retail Scheme
+    Given the business uses Retail Scheme
+    And the user has valid 9-box VAT data with retail values
+    When the user submits the VAT return
+    Then the return is accepted successfully
+
+  Scenario: Submit return under Margin Scheme
+    Given the business uses Margin Scheme
+    And the user has valid 9-box VAT data with margin values
+    When the user submits the VAT return
+    Then the return is accepted successfully
+
+  Scenario: VAT Exemption is not applicable
+    Given the business is VAT exempt
+    Then the submit VAT page shows "VAT submission requires VAT registration"
+    And the user cannot submit a return
+```
+
+### 20.3 HTTP Simulator Scenarios
+
+**New file**: `app/http-simulator/scenarios/vat-schemes.js`
+
+```javascript
+// app/http-simulator/scenarios/vat-schemes.js
+
+/**
+ * VAT scheme test scenarios
+ * These scenarios test that the system correctly handles submissions
+ * from businesses using different VAT schemes
+ */
+
+export const vatSchemeScenarios = {
+  // Cash Accounting - VAT calculated on cash basis
+  CASH_ACCOUNTING: {
+    description: 'VAT return under Cash Accounting Scheme',
+    request: {
+      periodKey: '24A1',
+      vatDueSales: 1500.00,        // VAT on cash received
+      vatDueAcquisitions: 0,
+      totalVatDue: 1500.00,
+      vatReclaimedCurrPeriod: 300.00,  // VAT on cash paid
+      netVatDue: 1200.00,
+      totalValueSalesExVAT: 7500,
+      totalValuePurchasesExVAT: 1500,
+      totalValueGoodsSuppliedExVAT: 0,
+      totalAcquisitionsExVAT: 0,
+      finalised: true
+    },
+    expectedStatus: 201
+  },
+
+  // Flat Rate Scheme - simplified VAT at fixed percentage
+  FLAT_RATE: {
+    description: 'VAT return under Flat Rate Scheme',
+    request: {
+      periodKey: '24A1',
+      vatDueSales: 1250.00,        // 12.5% flat rate on gross turnover
+      vatDueAcquisitions: 0,
+      totalVatDue: 1250.00,
+      vatReclaimedCurrPeriod: 0,  // No input VAT reclaim in FRS
+      netVatDue: 1250.00,
+      totalValueSalesExVAT: 10000,
+      totalValuePurchasesExVAT: 0,  // Not tracked in FRS
+      totalValueGoodsSuppliedExVAT: 0,
+      totalAcquisitionsExVAT: 0,
+      finalised: true
+    },
+    expectedStatus: 201
+  },
+
+  // Retail Scheme - various retail methods
+  RETAIL: {
+    description: 'VAT return under Retail Scheme',
+    request: {
+      periodKey: '24A1',
+      vatDueSales: 2000.00,
+      vatDueAcquisitions: 0,
+      totalVatDue: 2000.00,
+      vatReclaimedCurrPeriod: 800.00,
+      netVatDue: 1200.00,
+      totalValueSalesExVAT: 10000,
+      totalValuePurchasesExVAT: 4000,
+      totalValueGoodsSuppliedExVAT: 0,
+      totalAcquisitionsExVAT: 0,
+      finalised: true
+    },
+    expectedStatus: 201
+  },
+
+  // Margin Scheme - second-hand goods
+  MARGIN: {
+    description: 'VAT return under Margin Scheme',
+    request: {
+      periodKey: '24A1',
+      vatDueSales: 166.67,         // VAT only on profit margin
+      vatDueAcquisitions: 0,
+      totalVatDue: 166.67,
+      vatReclaimedCurrPeriod: 0,  // No input VAT on margin scheme purchases
+      netVatDue: 166.67,
+      totalValueSalesExVAT: 5000,
+      totalValuePurchasesExVAT: 4000,  // Purchase price of goods
+      totalValueGoodsSuppliedExVAT: 0,
+      totalAcquisitionsExVAT: 0,
+      finalised: true
+    },
+    expectedStatus: 201
+  },
+
+  // Annual Accounting - annual return
+  ANNUAL_ACCOUNTING: {
+    description: 'VAT return under Annual Accounting Scheme',
+    request: {
+      periodKey: '24A1',  // Annual period
+      vatDueSales: 12000.00,
+      vatDueAcquisitions: 0,
+      totalVatDue: 12000.00,
+      vatReclaimedCurrPeriod: 3000.00,
+      netVatDue: 9000.00,
+      totalValueSalesExVAT: 60000,
+      totalValuePurchasesExVAT: 15000,
+      totalValueGoodsSuppliedExVAT: 0,
+      totalAcquisitionsExVAT: 0,
+      finalised: true
+    },
+    expectedStatus: 201
+  }
+};
+```
+
+---
+
+## Component 21: Browser Tests for Viewing Submitted Returns
+
+**New file**: `web/browser-tests/view-vat-return.browser.test.js`
+
+### 21.1 Test Scenarios
+
+```javascript
+// web/browser-tests/view-vat-return.browser.test.js
+
+import { test, expect } from '@playwright/test';
+
+test.describe('View VAT Return - 9-Box Display', () => {
+  test('displays all 9 boxes with correct labels', async ({ page }) => {
+    // Navigate to view return page with test data
+    await page.goto('/hmrc/vat/viewVatReturn.html?periodKey=24A1');
+
+    // Fill in VRN and fetch return
+    await page.fill('#vatNumber', '123456789');
+    await page.click('#fetchReturn');
+
+    // Verify all 9 boxes are displayed
+    await expect(page.locator('#box1')).toBeVisible();
+    await expect(page.locator('#box2')).toBeVisible();
+    await expect(page.locator('#box3')).toBeVisible();
+    await expect(page.locator('#box4')).toBeVisible();
+    await expect(page.locator('#box5')).toBeVisible();
+    await expect(page.locator('#box6')).toBeVisible();
+    await expect(page.locator('#box7')).toBeVisible();
+    await expect(page.locator('#box8')).toBeVisible();
+    await expect(page.locator('#box9')).toBeVisible();
+
+    // Verify box labels
+    await expect(page.locator('label[for="box1"]')).toContainText('VAT due on sales');
+    await expect(page.locator('label[for="box5"]')).toContainText('Net VAT due');
+    await expect(page.locator('label[for="box6"]')).toContainText('Total value of sales');
+  });
+
+  test('displays monetary values with 2 decimal places', async ({ page }) => {
+    await page.goto('/hmrc/vat/viewVatReturn.html?periodKey=24A1');
+    await page.fill('#vatNumber', '123456789');
+    await page.click('#fetchReturn');
+
+    // Box 1-5 should show decimal values
+    const box1Value = await page.locator('#box1Value').textContent();
+    expect(box1Value).toMatch(/^\d+\.\d{2}$/);
+  });
+
+  test('displays whole amounts without decimal places', async ({ page }) => {
+    await page.goto('/hmrc/vat/viewVatReturn.html?periodKey=24A1');
+    await page.fill('#vatNumber', '123456789');
+    await page.click('#fetchReturn');
+
+    // Box 6-9 should show whole numbers
+    const box6Value = await page.locator('#box6Value').textContent();
+    expect(box6Value).toMatch(/^\d+$/);
+  });
+
+  test('shows period date range not period key', async ({ page }) => {
+    await page.goto('/hmrc/vat/viewVatReturn.html?periodKey=24A1');
+    await page.fill('#vatNumber', '123456789');
+    await page.click('#fetchReturn');
+
+    // Period should be shown as date range
+    const periodDisplay = await page.locator('#periodDisplay').textContent();
+    expect(periodDisplay).not.toContain('24A1');
+    expect(periodDisplay).toMatch(/\d+ \w+ \d{4} to \d+ \w+ \d{4}/);
+  });
+});
+```
+
+---
+
+## Phase 5 File Changes Summary
+
+### Phase 5: Extended Validation & VAT Scheme Testing
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `behaviour-tests/vatValidation.behaviour.test.js` | **CREATE** | 9-box validation error behaviour tests |
+| `behaviour-tests/steps/vatValidation-steps.js` | **CREATE** | Validation test step definitions |
+| `behaviour-tests/vatSchemes.behaviour.test.js` | **CREATE** | VAT scheme behaviour tests |
+| `behaviour-tests/steps/vatSchemes-steps.js` | **CREATE** | VAT scheme test step definitions |
+| `app/http-simulator/scenarios/vat-schemes.js` | **CREATE** | VAT scheme simulator scenarios |
+| `app/system-tests/vatValidation.test.js` | **CREATE** | System tests for validation errors |
+| `web/browser-tests/view-vat-return.browser.test.js` | **CREATE** | Browser tests for viewing returns |
 
 ---
 

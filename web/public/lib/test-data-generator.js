@@ -43,6 +43,45 @@ function generateTestVatAmount() {
 }
 
 /**
+ * Generate a complete 9-box VAT return test data
+ * Box 3 = Box 1 + Box 2 (calculated)
+ * Box 5 = |Box 3 - Box 4| (calculated, always positive)
+ * @returns {object} Object with all 9 VAT box values
+ */
+function generateTest9BoxData() {
+  // Generate realistic values for a small business
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const vatDueSales = Math.floor(Math.random() * 5000) + 500; // £500 - £5500
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const vatDueAcquisitions = Math.random() < 0.3 ? Math.floor(Math.random() * 200) : 0; // 30% chance of EU acquisitions
+  const totalVatDue = vatDueSales + vatDueAcquisitions;
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const vatReclaimedCurrPeriod = Math.floor(Math.random() * Math.min(totalVatDue * 0.8, 3000)); // Up to 80% of total or £3000
+  const netVatDue = Math.abs(totalVatDue - vatReclaimedCurrPeriod);
+
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const totalValueSalesExVAT = Math.floor(vatDueSales / 0.2 * (1 + Math.random() * 0.2)); // Approximate sales value
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const totalValuePurchasesExVAT = Math.floor(vatReclaimedCurrPeriod / 0.2 * (1 + Math.random() * 0.2)); // Approximate purchase value
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const totalValueGoodsSuppliedExVAT = Math.random() < 0.2 ? Math.floor(Math.random() * 1000) : 0; // 20% chance
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const totalAcquisitionsExVAT = vatDueAcquisitions > 0 ? Math.floor(vatDueAcquisitions / 0.2) : 0;
+
+  return {
+    vatDueSales: vatDueSales.toFixed(2),
+    vatDueAcquisitions: vatDueAcquisitions.toFixed(2),
+    totalVatDue: totalVatDue.toFixed(2),
+    vatReclaimedCurrPeriod: vatReclaimedCurrPeriod.toFixed(2),
+    netVatDue: netVatDue.toFixed(2),
+    totalValueSalesExVAT: String(totalValueSalesExVAT),
+    totalValuePurchasesExVAT: String(totalValuePurchasesExVAT),
+    totalValueGoodsSuppliedExVAT: String(totalValueGoodsSuppliedExVAT),
+    totalAcquisitionsExVAT: String(totalAcquisitionsExVAT),
+  };
+}
+
+/**
  * Generate a valid ISO date string for a date within the current calendar year
  * @returns {string} Date in YYYY-MM-DD format
  */
@@ -70,18 +109,43 @@ function generateTestDateRange() {
 
 /**
  * Populate the VAT submission form with test data
- * Used in submitVat.html
+ * Used in submitVat.html - now supports 9-box VAT return
  */
 function populateSubmitVatForm() {
   const vrnInput = document.getElementById("vatNumber");
   const periodKeyInput = document.getElementById("periodKey");
-  const vatDueInput = document.getElementById("vatDue");
 
   if (vrnInput) vrnInput.value = generateTestVrn();
   if (periodKeyInput) periodKeyInput.value = generateTestPeriodKey();
-  if (vatDueInput) vatDueInput.value = generateTestVatAmount();
 
-  console.log("[Test Data] Populated VAT submission form with test data");
+  // Check if we're using the new 9-box form or legacy single-field form
+  const vatDueSalesInput = document.getElementById("vatDueSales");
+
+  if (vatDueSalesInput) {
+    // New 9-box form
+    const boxData = generateTest9BoxData();
+
+    document.getElementById("vatDueSales").value = boxData.vatDueSales;
+    document.getElementById("vatDueAcquisitions").value = boxData.vatDueAcquisitions;
+    document.getElementById("totalVatDue").value = boxData.totalVatDue;
+    document.getElementById("vatReclaimedCurrPeriod").value = boxData.vatReclaimedCurrPeriod;
+    document.getElementById("netVatDue").value = boxData.netVatDue;
+    document.getElementById("totalValueSalesExVAT").value = boxData.totalValueSalesExVAT;
+    document.getElementById("totalValuePurchasesExVAT").value = boxData.totalValuePurchasesExVAT;
+    document.getElementById("totalValueGoodsSuppliedExVAT").value = boxData.totalValueGoodsSuppliedExVAT;
+    document.getElementById("totalAcquisitionsExVAT").value = boxData.totalAcquisitionsExVAT;
+
+    // Check the declaration checkbox
+    const declarationCheckbox = document.getElementById("declaration");
+    if (declarationCheckbox) declarationCheckbox.checked = true;
+
+    console.log("[Test Data] Populated 9-box VAT submission form with test data:", boxData);
+  } else {
+    // Legacy single-field form (backward compatibility)
+    const vatDueInput = document.getElementById("vatDue");
+    if (vatDueInput) vatDueInput.value = generateTestVatAmount();
+    console.log("[Test Data] Populated legacy VAT submission form with test data");
+  }
 }
 
 /**
@@ -122,6 +186,7 @@ if (typeof window !== "undefined") {
     generateTestVrn,
     generateTestPeriodKey,
     generateTestVatAmount,
+    generateTest9BoxData,
     generateTestDate,
     generateTestDateRange,
     populateSubmitVatForm,
