@@ -11,12 +11,12 @@ I am writing to request production credentials for our VAT (MTD) software applic
 
 ## Application Details
 
-| Field | Value |
-|-------|-------|
-| Product Name | Submit DIY Accounting |
+| Field | Value                              |
+|-------|------------------------------------|
+| Product Name | DIY Accounting Submit              |
 | Product URL | https://submit.diyaccounting.co.uk |
-| Version | 1.0.0 |
-| Connection Method | WEB_APP_VIA_SERVER |
+| Version | 1.0.0                              |
+| Connection Method | WEB_APP_VIA_SERVER                 |
 
 ## Organisation Details
 
