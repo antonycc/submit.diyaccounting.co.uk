@@ -2876,4 +2876,220 @@ test.describe('View VAT Return - 9-Box Display', () => {
 
 ---
 
+## Section 6: HMRC Production Approval Compliance Gap Analysis
+
+**Date**: 20 January 2026
+**Purpose**: Identify gaps between current implementation and HMRC production approval requirements
+
+This section analyzes compliance gaps based on:
+- `_developers/reference/hmrc_questionnaire_1_software_developer_checklist.md`
+- `_developers/reference/hmrc_questionnaire_2_WCAG_2.1_AA.md`
+- `_developers/reference/HMRC_MTD_API_Production_Approval_Guide.pdf`
+
+### 6.1 Software Developer Checklist Compliance
+
+| Question | Requirement | Current Status | Gap | Fix Effort |
+|----------|-------------|----------------|-----|------------|
+| **Q4** | No manual keying in boxes 1-9 | ✅ Compliant | None - Form fields populate from calculations | N/A |
+| **Q7** | Box 5 cannot be negative | ✅ Compliant | UI uses `Math.abs()` for Box 5 | N/A |
+| **Q8** | Boxes 6-9 whole pounds only | ✅ Compliant | `step="1"` on integer fields | N/A |
+| **Q9** | Period Key not visible to user | ⚠️ Partial | Period key shown in view/submit forms | Easy |
+| **Q10** | Legal Declaration before submission | ✅ Compliant | Declaration checkbox required | N/A |
+| **Q13** | UK standards (dates, currency) | ✅ Compliant | UK date formats, £ symbol | N/A |
+| **Q15** | GDPR compliant | ✅ Compliant | Privacy policy in footer | N/A |
+| **Q16** | WCAG 2.1 AA compliant | ⚠️ Partial | Phase 2 addressed major issues | Medium |
+
+### 6.2 Period Key Visibility Gap (Q9)
+
+**HMRC Requirement** (from Software Developer Checklist Q9):
+> "Period Keys should not be shown to the customer, these are for software use to ensure the return is recorded against the correct obligation."
+
+**Current State**:
+- `submitVat.html`: Period key shown as text input field
+- `viewVatReturn.html`: Period key shown as input field
+- `vatObligations.html`: Period key shown in table column
+
+**Recommended Fix**:
+1. Replace period key input with obligation dropdown (shows date ranges)
+2. Store period key in hidden field
+3. Remove period key column from obligations table (keep in data for API calls)
+4. Show date range (e.g., "1 Jan 2024 to 31 Mar 2024") instead of "24A1"
+
+**Implementation** (already planned in Phase 4):
+- Component 6: Obligation selector in submit form
+- Component 7: Hide period key in view return
+- Component 8: Remove period key from obligations table display
+
+**Effort**: Easy - UI changes only, backend already supports this
+
+### 6.3 WCAG 2.1 AA Compliance Gaps
+
+Based on WCAG 2.1 Level AA Checklist analysis:
+
+| Criterion | Status | Gap | Fix Effort |
+|-----------|--------|-----|------------|
+| **1.1.1** Non-text Content | ✅ Supports | Images have alt text | N/A |
+| **1.3.1** Info and Relationships | ⚠️ Partial | Form labels need `for` attributes | Easy |
+| **1.3.5** Identify Input Purpose | ⚠️ Partial | Add `autocomplete` attributes | Easy |
+| **1.4.3** Contrast (Minimum) | ✅ Supports | Tested with axe-core | N/A |
+| **2.4.1** Bypass Blocks | ⚠️ Partial | Add skip link to main content | Easy |
+| **2.4.2** Page Titled | ✅ Supports | Fixed in Phase 2 | N/A |
+| **2.4.4** Link Purpose | ✅ Supports | Links have descriptive text | N/A |
+| **2.4.6** Headings and Labels | ✅ Supports | Fixed in Phase 2 | N/A |
+| **2.4.7** Focus Visible | ⚠️ Partial | Add visible focus styles | Easy |
+| **3.3.1** Error Identification | ✅ Supports | Form errors shown in text | N/A |
+| **3.3.2** Labels or Instructions | ✅ Supports | Form fields have labels | N/A |
+| **3.3.4** Error Prevention | ✅ Supports | Declaration confirms submission | N/A |
+| **4.1.1** Parsing | ✅ Supports | Valid HTML | N/A |
+| **4.1.2** Name, Role, Value | ⚠️ Partial | Add ARIA labels where needed | Easy |
+
+### 6.4 Easy Fix Recommendations
+
+These items can be fixed with minimal effort:
+
+#### 6.4.1 Add Skip Link for Keyboard Navigation
+```html
+<!-- Add to all pages at start of <body> -->
+<a href="#mainContent" class="skip-link">Skip to main content</a>
+```
+
+```css
+/* submit.css */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  z-index: 100;
+}
+.skip-link:focus {
+  top: 0;
+}
+```
+
+#### 6.4.2 Add Autocomplete Attributes
+```html
+<!-- submitVat.html -->
+<input type="text" id="vatNumber" name="vatNumber"
+       autocomplete="off" <!-- VRN shouldn't autocomplete -->
+       required pattern="[0-9]{9}" />
+
+<!-- For user identification forms -->
+<input type="email" autocomplete="email" />
+<input type="text" autocomplete="organization" />
+```
+
+#### 6.4.3 Enhance Focus Visibility
+```css
+/* submit.css */
+*:focus {
+  outline: 3px solid #005EA5;
+  outline-offset: 2px;
+}
+
+input:focus,
+button:focus,
+select:focus,
+a:focus {
+  outline: 3px solid #005EA5;
+  outline-offset: 2px;
+}
+```
+
+#### 6.4.4 Add ARIA Labels Where Needed
+```html
+<!-- Hamburger menu -->
+<button id="hamburgerBtn" aria-label="Open navigation menu" aria-expanded="false">
+  ☰
+</button>
+
+<!-- Status messages -->
+<div id="statusMessagesContainer" role="alert" aria-live="polite">
+</div>
+
+<!-- Loading states -->
+<div id="loadingIndicator" role="status" aria-label="Loading">
+  Loading...
+</div>
+```
+
+### 6.5 Fraud Prevention Headers Compliance
+
+**HMRC Requirement**: All API calls must include fraud prevention headers.
+
+**Current Status**: ✅ Compliant
+- `getGovClientHeaders()` in `hmrc-service.js` generates all required headers
+- Server-side `Gov-Vendor-*` headers added in Lambda functions
+- Validation available via sandbox `runFraudPreventionHeaderValidation` option
+
+**Headers Implemented**:
+- `Gov-Client-Browser-JS-User-Agent`
+- `Gov-Client-Device-ID`
+- `Gov-Client-Public-IP`
+- `Gov-Client-Public-IP-Timestamp`
+- `Gov-Client-Screens`
+- `Gov-Client-Timezone`
+- `Gov-Client-User-IDs`
+- `Gov-Client-Window-Size`
+- `Gov-Client-Multi-Factor` (optional, from MFA metadata)
+- `Gov-Vendor-*` headers (server-side)
+
+### 6.6 OAuth 2.0 Implementation Compliance
+
+**HMRC Requirement**: Proper OAuth 2.0 flow with authorization code grant.
+
+**Current Status**: ✅ Compliant
+- Authorization code flow implemented
+- State parameter for CSRF protection
+- Token refresh handling
+- Scopes correctly requested (`read:vat`, `write:vat`)
+
+### 6.7 Terms of Use Compliance
+
+**HMRC Requirement**: Link to terms of use and privacy policy.
+
+**Current Status**: ✅ Compliant
+- Privacy link in footer: `web/public/privacy.html`
+- Terms link in footer: `web/public/terms.html`
+- Links verified in behaviour tests
+
+### 6.8 Compliance Checklist Summary
+
+| Category | Status | Notes |
+|----------|--------|-------|
+| **9-Box VAT Format** | ✅ Complete | All 9 boxes validated and submitted |
+| **Legal Declaration** | ✅ Complete | Required checkbox before submission |
+| **Period Key Hidden** | ⚠️ In Progress | Planned for Phase 4 |
+| **Fraud Prevention Headers** | ✅ Complete | All required headers implemented |
+| **OAuth 2.0** | ✅ Complete | Authorization code flow |
+| **WCAG 2.1 AA** | ⚠️ In Progress | Major issues fixed, minor items remain |
+| **Security Headers** | ✅ Complete | CSP, HSTS, Permissions-Policy |
+| **GDPR/Privacy** | ✅ Complete | Privacy policy linked |
+| **UK Standards** | ✅ Complete | UK dates, £ currency |
+
+### 6.9 Production Approval Readiness
+
+**Ready for Submission**: After completing these items:
+
+1. **Phase 4 Completion** (required):
+   - Period key hidden from user display
+   - Obligation selector shows date ranges
+
+2. **Easy Accessibility Fixes** (recommended):
+   - Add skip link for keyboard navigation
+   - Add `autocomplete` attributes to form fields
+   - Enhance focus visibility CSS
+   - Add ARIA labels to interactive elements
+
+3. **Questionnaire Updates** (required):
+   - Update Questionnaire 1 with all "Yes" answers
+   - Update Questionnaire 2 with all "Supports" entries
+   - Include screenshots of declaration and form
+
+**Estimated Time to Production Ready**: After Phase 4 + Easy Fixes
+
+---
+
 **End of Plan**
