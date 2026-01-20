@@ -75,6 +75,12 @@ public class KindCdk {
     }
 
     /**
+     * Record class to hold both the ILogGroup and the AwsCustomResource that creates it.
+     * This allows callers to add explicit dependencies when needed.
+     */
+    public record EnsuredLogGroup(ILogGroup logGroup, AwsCustomResource ensureResource) {}
+
+    /**
      * Creates a LogGroup idempotently using AwsCustomResource.
      * Uses createLogGroup API with ignoreErrorCodesMatching("ResourceAlreadyExistsException")
      * so deployments succeed whether the log group exists or not.
@@ -82,9 +88,9 @@ public class KindCdk {
      * @param stack The stack to create the log group in
      * @param id The construct ID prefix
      * @param logGroupName The name of the log group
-     * @return ILogGroup reference to the log group
+     * @return EnsuredLogGroup containing both the ILogGroup and the AwsCustomResource
      */
-    public static ILogGroup ensureLogGroup(Stack stack, String id, String logGroupName) {
+    public static EnsuredLogGroup ensureLogGroupWithDependency(Stack stack, String id, String logGroupName) {
         AwsSdkCall createLogGroupCall = AwsSdkCall.builder()
                 .service("CloudWatchLogs")
                 .action("createLogGroup")
@@ -93,7 +99,7 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
                 .build();
 
-        AwsCustomResource.Builder.create(stack, id + "-EnsureLogGroup")
+        AwsCustomResource ensureResource = AwsCustomResource.Builder.create(stack, id + "-EnsureLogGroup")
                 .onCreate(createLogGroupCall)
                 .onUpdate(createLogGroupCall)
                 .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
@@ -103,7 +109,24 @@ public class KindCdk {
                         .build())))
                 .build();
 
-        return LogGroup.fromLogGroupName(stack, id + "-LogGroup", logGroupName);
+        ILogGroup logGroup = LogGroup.fromLogGroupName(stack, id + "-LogGroup", logGroupName);
+
+        return new EnsuredLogGroup(logGroup, ensureResource);
+    }
+
+    /**
+     * Creates a LogGroup idempotently using AwsCustomResource.
+     * Uses createLogGroup API with ignoreErrorCodesMatching("ResourceAlreadyExistsException")
+     * so deployments succeed whether the log group exists or not.
+     *
+     * @param stack The stack to create the log group in
+     * @param id The construct ID prefix
+     * @param logGroupName The name of the log group
+     * @return ILogGroup reference to the log group
+     * @deprecated Use ensureLogGroupWithDependency when you need to add dependencies on the log group creation
+     */
+    public static ILogGroup ensureLogGroup(Stack stack, String id, String logGroupName) {
+        return ensureLogGroupWithDependency(stack, id, logGroupName).logGroup();
     }
 
     /**

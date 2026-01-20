@@ -38,6 +38,9 @@ on:
           - 'submitVatBehaviour'
           - 'authBehaviour'
           - 'complianceBehaviour'
+          - 'helpBehaviour'
+          - 'vatValidationBehaviour'
+          - 'vatSchemesBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:

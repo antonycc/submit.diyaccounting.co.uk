@@ -13,10 +13,11 @@
     <link rel="stylesheet" href="help.css" />
   </head>
   <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <div class="header-nav">
         <div class="hamburger-menu">
-          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <button class="hamburger-btn" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../index.html">Home</a>
             <a href="../account/bundles.html">Bundles</a>
@@ -37,7 +38,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="statusMessagesContainer"></div>
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
       <div class="help-page">
         <!-- Search box -->

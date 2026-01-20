@@ -7,7 +7,9 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
+
+import co.uk.diyaccounting.submit.utils.KindCdk.EnsuredLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
@@ -127,15 +129,19 @@ public class ApiStack extends Stack {
         // Enable access logging for the default stage - ensure log group exists (idempotent creation)
         // The resource policy for API Gateway to write to this log group is managed centrally
         // in the ObservabilityStack to avoid hitting the 10 resource policy limit per account
-        ILogGroup apiAccessLogs = ensureLogGroup(
+        EnsuredLogGroup ensuredApiAccessLogs = ensureLogGroupWithDependency(
                 this, props.resourceNamePrefix() + "-ApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
 
         // Configure default stage access logs and logging level/metrics
         assert this.httpApi.getDefaultStage() != null;
         var defaultStage = (CfnStage) this.httpApi.getDefaultStage().getNode().getDefaultChild();
         assert defaultStage != null;
+
+        // Add explicit dependency to ensure log group is created before API Gateway stage configures logging
+        defaultStage.getNode().addDependency(ensuredApiAccessLogs.ensureResource());
+
         defaultStage.setAccessLogSettings(CfnStage.AccessLogSettingsProperty.builder()
-                .destinationArn(apiAccessLogs.getLogGroupArn())
+                .destinationArn(ensuredApiAccessLogs.logGroup().getLogGroupArn())
                 .format("{" + "\"requestId\":\"$context.requestId\","
                         + "\"path\":\"$context.path\","
                         + "\"routeKey\":\"$context.routeKey\","
