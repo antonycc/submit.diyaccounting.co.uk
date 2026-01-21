@@ -247,8 +247,9 @@ test.describe("9-Box VAT Validation Error Tests", () => {
     console.log(`Box 3 auto-calculated as: ${box3Value} (expected 1200.00)`);
 
     // Box 3 is read-only, so user cannot manually enter wrong value
+    // Note: getAttribute returns "" for boolean attributes like readonly, so check not null
     const isReadOnly = await page.locator("#totalVatDue").getAttribute("readonly");
-    expect(isReadOnly).toBeTruthy();
+    expect(isReadOnly).not.toBeNull();
     console.log("Box 3 is read-only - user cannot enter incorrect calculation");
 
     await page.screenshot({ path: `${screenshotPath}/validation-box3-calculation.png` });
