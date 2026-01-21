@@ -375,9 +375,42 @@ export async function fillInVat9Box(
 
 export async function submitFormVat(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
+    // In sandbox mode, preserve periodKey across focus/blur events
+    // The blur event on VRN field triggers loadObligations() which can clear the periodKey
+    let savedPeriodKey = null;
+    if (isSandboxMode()) {
+      savedPeriodKey = await page.evaluate(() => {
+        return document.getElementById("periodKey")?.value || null;
+      });
+      console.log(`Saved periodKey before focus: ${savedPeriodKey}`);
+    }
+
     // Focus change before submit
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submission-submit.png` });
     await loggedFocus(page, "#submitBtn", "the Submit button", { screenshotPath });
+
+    // In sandbox mode, re-inject the saved periodKey after focus event settles
+    // This prevents the blur-triggered loadObligations() from clearing our value
+    if (isSandboxMode() && savedPeriodKey) {
+      await page.waitForTimeout(100); // Let blur event settle
+      await page.evaluate((periodKey) => {
+        const dropdown = document.getElementById("obligationSelect");
+        const periodKeyInput = document.getElementById("periodKey");
+
+        // Set hidden field
+        periodKeyInput.value = periodKey;
+
+        // Update dropdown to show we have a value
+        dropdown.innerHTML = "";
+        const option = document.createElement("option");
+        option.value = periodKey;
+        option.textContent = `Test Period ${periodKey}`;
+        option.selected = true;
+        dropdown.appendChild(option);
+      }, savedPeriodKey);
+      console.log(`Re-injected periodKey after focus: ${savedPeriodKey}`);
+    }
+
     // Expect the HMRC permission page to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
     await loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath });
