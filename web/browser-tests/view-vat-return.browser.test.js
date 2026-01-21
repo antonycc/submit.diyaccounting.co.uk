@@ -81,9 +81,15 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     const vrnInput = page.locator("#vrn");
     await expect(vrnInput).toBeVisible();
 
-    // Check for period key input
+    // Check for period key hidden input (populated by obligation dropdown)
     const periodKeyInput = page.locator("#periodKey");
-    await expect(periodKeyInput).toBeVisible();
+    await expect(periodKeyInput).toHaveCount(1);
+    const fieldType = await periodKeyInput.getAttribute("type");
+    expect(fieldType).toBe("hidden");
+
+    // Check for obligation dropdown (which populates periodKey)
+    const obligationSelect = page.locator("#obligationSelect");
+    await expect(obligationSelect).toBeVisible();
 
     // Check for retrieve button
     const retrieveBtn = page.locator("#retrieveBtn");

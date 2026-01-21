@@ -62,24 +62,39 @@
         <h2>Retrieve VAT Return</h2>
         <form id="vatReturnForm">
           <div class="form-group">
-            <label for="vrn">VAT Registration Number (VRN)</label>
-            <input type="text" id="vrn" name="vrn" required value="" placeholder="e.g., 176540158" maxlength="9" pattern="[0-9]{9}" />
-            <div class="help-text">Enter your 9-digit VAT registration number</div>
+            <label for="vrn">VAT registration number</label>
+            <p id="vrn-hint" class="hint">
+              This is 9 numbers, sometimes with 'GB' at the start, for example
+              123456789 or GB123456789. You can find it on your VAT registration certificate.
+            </p>
+            <input
+              type="text"
+              id="vrn"
+              name="vrn"
+              required
+              value=""
+              placeholder="e.g., 176540158"
+              maxlength="9"
+              pattern="[0-9]{9}"
+              aria-describedby="vrn-hint"
+              spellcheck="false"
+            />
           </div>
 
           <div class="form-group">
-            <label for="obligationSelect">VAT Period</label>
-            <select id="obligationSelect" name="obligationSelect" required>
+            <label for="obligationSelect">VAT period</label>
+            <p id="obligationSelect-hint" class="hint">Select the VAT period you want to view</p>
+            <select id="obligationSelect" name="obligationSelect" required aria-describedby="obligationSelect-hint">
               <option value="">-- Enter VRN to load periods --</option>
             </select>
             <input type="hidden" id="periodKey" name="periodKey" value="" />
-            <div class="help-text">Select the VAT period you want to view</div>
           </div>
 
           <!-- Developer Test Scenario Section -->
           <div id="developerSection" class="form-group" style="display: none">
-            <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
-            <select id="testScenario" name="testScenario">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
               <option value="">Default</option>
               <!-- Values aligned with _developers/reference/hmrc-mtd-vat-api-1.0.yaml (GET /organisations/vat/{vrn}/returns/{periodKey}) -->
               <option value="DATE_RANGE_TOO_LARGE">Date Range Too Large</option>
@@ -89,7 +104,6 @@
               <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
               <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
             </select>
-            <div class="help-text">Test different HMRC sandbox scenarios</div>
             <div style="margin-top: 10px">
               <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
               <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
