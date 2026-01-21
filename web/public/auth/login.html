@@ -162,9 +162,9 @@
     </script>
     <!-- Mock auth addon - only loaded in local development environments -->
     <script>
-      // Only load mock auth addon in local development (localhost/ngrok)
+      // Only load mock auth addon in local development (localhost/127.0.0.1/ngrok)
       // In production, this script is excluded from deployment and not needed
-      if (window.location.hostname === 'localhost' || window.location.hostname.includes('ngrok')) {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('ngrok')) {
         const script = document.createElement('script');
         script.src = './login-mock-addon.js';
         document.body.appendChild(script);
