@@ -601,6 +601,74 @@ jobs:
           retention-days: 7
           path: target/behaviour-test-results/
 
+  behaviour-test-simulator-vat-validation:
+    name: 'simulator - vatValidationBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:vatValidationBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-vat-validation
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-vat-schemes:
+    name: 'simulator - vatSchemesBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:vatSchemesBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-vat-schemes
+          retention-days: 7
+          path: target/behaviour-test-results/
+
   # Proxy behaviour test - requires Docker, ngrok, and HMRC sandbox secrets
   # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
   behaviour-test-proxy-submit-vat:

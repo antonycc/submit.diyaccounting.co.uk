@@ -5,6 +5,21 @@
   padding: 0;
 }
 
+/* WCAG 2.1 AA: Skip link for keyboard navigation (2.4.1 Bypass Blocks) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  z-index: 100;
+  text-decoration: underline;
+}
+.skip-link:focus {
+  top: 0;
+}
+
 /* WCAG 2.1 AA: Links in text blocks must be distinguishable by more than color */
 /* Fix for axe-core "link-in-text-block" violation */
 p a,
@@ -24,10 +39,24 @@ button {
   text-decoration: none;
 }
 
-/* Ensure focus states are visible */
-a:focus {
-  outline: 2px solid #005fcc;
+/* WCAG 2.1 AA: Enhanced focus visibility (2.4.7 Focus Visible) */
+/* All interactive elements need visible focus indicator */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+[tabindex]:focus {
+  outline: 3px solid #005EA5;
   outline-offset: 2px;
+}
+
+/* High contrast focus for buttons */
+.btn:focus,
+button:focus {
+  outline: 3px solid #005EA5;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(0, 94, 165, 0.3);
 }
 
 html,

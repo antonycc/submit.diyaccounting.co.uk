@@ -17,10 +17,11 @@
     <!--script async src="../../prefetch/prefetch-hmrc-receipt-head.js"></script-->
   </head>
   <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <div class="header-nav">
         <div class="hamburger-menu">
-          <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
+          <button class="hamburger-btn" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false">☰</button>
           <div class="menu-dropdown" id="menuDropdown">
             <a href="../../index.html">Home</a>
             <a href="../../account/bundles.html">Bundles</a>
@@ -54,7 +55,7 @@
         >
       </div>
 
-      <div id="statusMessagesContainer"></div>
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
@@ -73,6 +74,7 @@
               placeholder="e.g., 176540158"
               maxlength="9"
               pattern="[0-9]{9}"
+              autocomplete="off"
             />
             <div class="help-text">Enter your 9-digit VAT registration number</div>
           </div>
