@@ -229,10 +229,8 @@ function parseLighthouseResults(lighthouseJson) {
 
 // Suppressed ZAP alerts - accepted risks documented in privacy.html
 const SUPPRESSED_ZAP_ALERTS = {
-  "CSP: script-src unsafe-inline":
-    "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
-  "CSP: style-src unsafe-inline":
-    "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
+  "CSP: script-src unsafe-inline": "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
+  "CSP: style-src unsafe-inline": "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
 };
 
 function parseZapResults(zapJson) {
@@ -320,7 +318,9 @@ function generateReport(sourceFiles) {
   const zap = parseZapResults(zapJson);
 
   // Build source files section
-  const sourceFilesSection = sourceFiles.map((sf) => `  ${sf.exists ? "✅" : "❌"} ${sf.path}`).join("\n");
+  const sourceFilesSection = sourceFiles
+    .map((sf) => `  ${sf.exists ? "✅" : "❌"} ${sf.path}`)
+    .join("\n");
 
   // Determine status
   const securityPass = npmAudit.critical === 0 && npmAudit.high === 0 && eslint.errors === 0 && zap.high === 0;

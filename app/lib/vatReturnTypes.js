@@ -105,35 +105,14 @@ export function validateVatReturnBody(body) {
     return { valid: false, code: "INVALID_REQUEST", message: "Request body is required" };
   }
 
-  const {
-    periodKey,
-    vatDueSales,
-    vatDueAcquisitions,
-    totalVatDue,
-    vatReclaimedCurrPeriod,
-    netVatDue,
-    totalValueSalesExVAT,
-    totalValuePurchasesExVAT,
-    totalValueGoodsSuppliedExVAT,
-    totalAcquisitionsExVAT,
-  } = body;
+  const { periodKey, vatDueSales, vatDueAcquisitions, totalVatDue, vatReclaimedCurrPeriod, netVatDue, totalValueSalesExVAT, totalValuePurchasesExVAT, totalValueGoodsSuppliedExVAT, totalAcquisitionsExVAT } = body;
 
   // Check required fields are present
   if (!periodKey) {
     return { valid: false, code: "INVALID_REQUEST", message: "periodKey is required" };
   }
 
-  const requiredFields = [
-    "vatDueSales",
-    "vatDueAcquisitions",
-    "totalVatDue",
-    "vatReclaimedCurrPeriod",
-    "netVatDue",
-    "totalValueSalesExVAT",
-    "totalValuePurchasesExVAT",
-    "totalValueGoodsSuppliedExVAT",
-    "totalAcquisitionsExVAT",
-  ];
+  const requiredFields = ["vatDueSales", "vatDueAcquisitions", "totalVatDue", "vatReclaimedCurrPeriod", "netVatDue", "totalValueSalesExVAT", "totalValuePurchasesExVAT", "totalValueGoodsSuppliedExVAT", "totalAcquisitionsExVAT"];
 
   for (const field of requiredFields) {
     if (body[field] === undefined || body[field] === null) {
@@ -189,16 +168,7 @@ export function validateVatReturnBody(body) {
  * @returns {Object} HMRC-formatted request body
  */
 export function buildVatReturnBody(params) {
-  const {
-    periodKey,
-    vatDueSales,
-    vatDueAcquisitions,
-    vatReclaimedCurrPeriod,
-    totalValueSalesExVAT,
-    totalValuePurchasesExVAT,
-    totalValueGoodsSuppliedExVAT,
-    totalAcquisitionsExVAT,
-  } = params;
+  const { periodKey, vatDueSales, vatDueAcquisitions, vatReclaimedCurrPeriod, totalValueSalesExVAT, totalValuePurchasesExVAT, totalValueGoodsSuppliedExVAT, totalAcquisitionsExVAT } = params;
 
   // Calculate derived fields
   const totalVatDue = calculateTotalVatDue(vatDueSales, vatDueAcquisitions);
