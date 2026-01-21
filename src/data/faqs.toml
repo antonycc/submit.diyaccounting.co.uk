@@ -41,7 +41,7 @@ category = "bundles"
 question = "What is a bundle?"
 answer = """
 A bundle is a saved configuration for a VAT submission. It stores:
-- Your VAT Registration Number (VRN)
+- Your VAT registration number (VRN)
 - Whether to use sandbox or production HMRC
 - Your HMRC authorisation
 
@@ -273,7 +273,7 @@ id = "error-invalid-vrn"
 category = "errors"
 question = "Error: Invalid VRN"
 answer = """
-This means the VAT Registration Number format is wrong:
+This means the VAT registration number format is wrong:
 - VRN must be exactly 9 digits
 - No spaces, letters, or GB prefix
 - Example: 123456789 not GB123456789 or 123 456 789

@@ -114,7 +114,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     expect([200, 400, 401]).toContain(response.statusCode);
   });
 
-  test("returns 400 when vrn is missing", async () => {
+  test("returns 400 when VAT registration number is missing", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: {},
       headers: { authorization: "Bearer test-token" },
@@ -156,7 +156,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     expect([400, 500]).toContain(response.statusCode);
   });
 
-  test("returns 400 for invalid VRN format", async () => {
+  test("returns 400 for invalid VAT registration number format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "12345678" }, // 8 digits instead of 9
       headers: { authorization: "Bearer test-token" },

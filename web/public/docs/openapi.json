@@ -366,7 +366,7 @@
           "name" : "vrn",
           "in" : "query",
           "required" : true,
-          "description" : "VAT Registration Number (9 digits)",
+          "description" : "VAT registration number (9 digits)",
           "schema" : {
             "type" : "string",
             "example" : "176540158",
@@ -447,7 +447,7 @@
           "name" : "vrn",
           "in" : "query",
           "required" : true,
-          "description" : "VAT Registration Number (9 digits)",
+          "description" : "VAT registration number (9 digits)",
           "schema" : {
             "type" : "string",
             "example" : "176540158",

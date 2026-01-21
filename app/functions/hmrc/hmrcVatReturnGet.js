@@ -82,7 +82,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   // Collect validation errors for required fields and formats
   if (!vrn) errorMessages.push("Missing vrn parameter");
   if (!periodKey) errorMessages.push("Missing periodKey parameter");
-  if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
+  if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid VAT registration number format - must be 9 digits");
   if (periodKey && !isValidPeriodKey(periodKey))
     errorMessages.push("Invalid periodKey format - must be YYXN (e.g., 24A1) or #NNN (e.g., #001)");
 

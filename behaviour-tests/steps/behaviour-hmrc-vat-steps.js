@@ -59,7 +59,7 @@ export async function fillInVat(
       const selectedObligation = await page.locator("#obligationSelect").inputValue();
       expect(selectedObligation, "An obligation should be selected from dropdown").toBeTruthy();
       // Check if 9-box form is present
-      const has9BoxForm = await page.locator("#vatDueSales").count() > 0;
+      const has9BoxForm = (await page.locator("#vatDueSales").count()) > 0;
       if (has9BoxForm) {
         await expect(page.locator("#vatDueSales")).not.toHaveValue("");
         await expect(page.locator("#declaration")).toBeChecked();
@@ -109,8 +109,8 @@ export async function fillInVat(
       }, hmrcVatPeriodKey);
       console.log(`Set periodKey to ${hmrcVatPeriodKey} directly (sandbox mode)`);
     } else {
-      // Wait for obligations dropdown to be populated after VRN entry
-      // The dropdown is populated via API call when VRN changes
+      // Wait for obligations dropdown to be populated after VAT registration number entry
+      // The dropdown is populated via API call when VAT registration number changes
       await page.waitForFunction(
         () => {
           const dropdown = document.querySelector("#obligationSelect");
@@ -127,7 +127,7 @@ export async function fillInVat(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-filled.png` });
 
     // Check if 9-box form is present and fill accordingly
-    const has9BoxForm = await page.locator("#vatDueSales").count() > 0;
+    const has9BoxForm = (await page.locator("#vatDueSales").count()) > 0;
     if (has9BoxForm) {
       // Fill 9-box form with derived values from the single vatDueAmount (for backward compatibility)
       const vatDue = parseFloat(hmrcVatDueAmount) || 1000;
@@ -139,7 +139,9 @@ export async function fillInVat(
       await loggedFill(page, "#vatReclaimedCurrPeriod", "0.00", "Entering VAT reclaimed (Box 4)", { screenshotPath });
       await page.waitForTimeout(50);
       // Box 5 (netVatDue) auto-calculates
-      await loggedFill(page, "#totalValueSalesExVAT", String(Math.round(vatDue * 5)), "Entering total sales ex VAT (Box 6)", { screenshotPath });
+      await loggedFill(page, "#totalValueSalesExVAT", String(Math.round(vatDue * 5)), "Entering total sales ex VAT (Box 6)", {
+        screenshotPath,
+      });
       await page.waitForTimeout(50);
       await loggedFill(page, "#totalValuePurchasesExVAT", "0", "Entering total purchases ex VAT (Box 7)", { screenshotPath });
       await page.waitForTimeout(50);
@@ -215,7 +217,7 @@ export async function fillInVat(
 /**
  * Fill in the 9-box VAT form with specific values
  * @param {object} page - Playwright page object
- * @param {string} hmrcVatNumber - VAT Registration Number
+ * @param {string} hmrcVatNumber - VAT registration number
  * @param {string} hmrcVatPeriodKey - Period Key
  * @param {object} vatBoxData - Object containing all 9 box values
  * @param {string|null} testScenario - Optional test scenario
@@ -271,7 +273,7 @@ export async function fillInVat9Box(
       }, hmrcVatPeriodKey);
       console.log(`Set periodKey to ${hmrcVatPeriodKey} directly (sandbox mode)`);
     } else {
-      // Wait for obligations dropdown to be populated after VRN entry
+      // Wait for obligations dropdown to be populated after VAT registration number entry
       await page.waitForFunction(
         () => {
           const dropdown = document.querySelector("#obligationSelect");
@@ -290,14 +292,18 @@ export async function fillInVat9Box(
     // Fill all 9 boxes
     await loggedFill(page, "#vatDueSales", String(vatBoxData.vatDueSales), "Entering VAT due on sales (Box 1)", { screenshotPath });
     await page.waitForTimeout(50);
-    await loggedFill(page, "#vatDueAcquisitions", String(vatBoxData.vatDueAcquisitions), "Entering VAT due on acquisitions (Box 2)", { screenshotPath });
+    await loggedFill(page, "#vatDueAcquisitions", String(vatBoxData.vatDueAcquisitions), "Entering VAT due on acquisitions (Box 2)", {
+      screenshotPath,
+    });
     await page.waitForTimeout(50);
     // Box 3 (totalVatDue) auto-calculates, but we can verify or set it
     if (vatBoxData.totalVatDue !== undefined) {
       const box3Value = await page.locator("#totalVatDue").inputValue();
       console.log(`Box 3 (totalVatDue) auto-calculated to: ${box3Value}, expected: ${vatBoxData.totalVatDue}`);
     }
-    await loggedFill(page, "#vatReclaimedCurrPeriod", String(vatBoxData.vatReclaimedCurrPeriod), "Entering VAT reclaimed (Box 4)", { screenshotPath });
+    await loggedFill(page, "#vatReclaimedCurrPeriod", String(vatBoxData.vatReclaimedCurrPeriod), "Entering VAT reclaimed (Box 4)", {
+      screenshotPath,
+    });
     await page.waitForTimeout(50);
     // Box 5 (netVatDue) auto-calculates
     if (vatBoxData.netVatDue !== undefined) {
@@ -306,13 +312,29 @@ export async function fillInVat9Box(
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-9box-monetary.png` });
 
-    await loggedFill(page, "#totalValueSalesExVAT", String(vatBoxData.totalValueSalesExVAT), "Entering total sales ex VAT (Box 6)", { screenshotPath });
+    await loggedFill(page, "#totalValueSalesExVAT", String(vatBoxData.totalValueSalesExVAT), "Entering total sales ex VAT (Box 6)", {
+      screenshotPath,
+    });
     await page.waitForTimeout(50);
-    await loggedFill(page, "#totalValuePurchasesExVAT", String(vatBoxData.totalValuePurchasesExVAT), "Entering total purchases ex VAT (Box 7)", { screenshotPath });
+    await loggedFill(
+      page,
+      "#totalValuePurchasesExVAT",
+      String(vatBoxData.totalValuePurchasesExVAT),
+      "Entering total purchases ex VAT (Box 7)",
+      { screenshotPath },
+    );
     await page.waitForTimeout(50);
-    await loggedFill(page, "#totalValueGoodsSuppliedExVAT", String(vatBoxData.totalValueGoodsSuppliedExVAT), "Entering goods supplied to EU (Box 8)", { screenshotPath });
+    await loggedFill(
+      page,
+      "#totalValueGoodsSuppliedExVAT",
+      String(vatBoxData.totalValueGoodsSuppliedExVAT),
+      "Entering goods supplied to EU (Box 8)",
+      { screenshotPath },
+    );
     await page.waitForTimeout(50);
-    await loggedFill(page, "#totalAcquisitionsExVAT", String(vatBoxData.totalAcquisitionsExVAT), "Entering acquisitions from EU (Box 9)", { screenshotPath });
+    await loggedFill(page, "#totalAcquisitionsExVAT", String(vatBoxData.totalAcquisitionsExVAT), "Entering acquisitions from EU (Box 9)", {
+      screenshotPath,
+    });
     await page.waitForTimeout(50);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-9box-whole.png` });
 
@@ -376,7 +398,7 @@ export async function fillInVat9Box(
 export async function submitFormVat(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
     // In sandbox mode, preserve periodKey across focus/blur events
-    // The blur event on VRN field triggers loadObligations() which can clear the periodKey
+    // The blur event on VAT registration number field triggers loadObligations() which can clear the periodKey
     let savedPeriodKey = null;
     if (isSandboxMode()) {
       savedPeriodKey = await page.evaluate(() => {
@@ -614,7 +636,7 @@ export async function initVatObligations(page, screenshotPath = defaultScreensho
 }
 
 export async function fillInVatObligations(page, obligationsQuery = {}, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user fills in the VAT obligations form with VRN and date range", async () => {
+  await test.step("The user fills in the VAT obligations form with VAT registration number and date range", async () => {
     const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario, runFraudPreventionHeaderValidation } =
       obligationsQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png` });
@@ -1007,7 +1029,7 @@ export async function fillInViewVatReturn(
   runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
 ) {
-  await test.step("The user fills in the view VAT return form with VRN and period key", async () => {
+  await test.step("The user fills in the view VAT return form with VAT registration number and period key", async () => {
     // Check if we're in sandbox mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
@@ -1070,7 +1092,7 @@ export async function fillInViewVatReturn(
       }, periodKey);
       console.log(`Set periodKey to ${periodKey} directly (sandbox mode viewVatReturn)`);
     } else {
-      // Wait for obligations dropdown to be populated after VRN entry
+      // Wait for obligations dropdown to be populated after VAT registration number entry
       await page.waitForFunction(
         () => {
           const dropdown = document.querySelector("#obligationSelect");
@@ -1125,7 +1147,7 @@ export async function submitViewVatReturnForm(page, periodKey = null, screenshot
     });
 
     // In sandbox mode, ensure the periodKey is set right before click (AFTER blur events)
-    // This handles the case where blur events on VRN field reset the dropdown
+    // This handles the case where blur events on VAT registration number field reset the dropdown
     if (periodKey && isSandboxMode()) {
       await page.evaluate((pk) => {
         const periodKeyInput = document.getElementById("periodKey");

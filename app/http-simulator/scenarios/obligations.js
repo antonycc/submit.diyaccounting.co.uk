@@ -191,7 +191,7 @@ const errorScenarios = {
     status: 400,
     body: {
       code: "VRN_INVALID",
-      message: "The provided VRN is invalid",
+      message: "The provided VAT registration number is invalid",
     },
   },
   INVALID_DATE_FROM: {

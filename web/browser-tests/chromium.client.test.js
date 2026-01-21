@@ -180,7 +180,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       await expect(statusMessages.first()).toBeVisible({ timeout: 2000 });
 
       const statusText = await statusMessages.first().locator(".status-message-content").textContent();
-      expect(statusText).toBe("Please enter your VRN and select a VAT period.");
+      expect(statusText).toBe("Please enter your VAT registration number and select a VAT period.");
 
       // Check that the message has error styling
       const className = await statusMessages.first().getAttribute("class");

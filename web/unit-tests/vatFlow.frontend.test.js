@@ -331,11 +331,11 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       // 9-box VAT data
       const vatData = {
-        vatDueSales: 1000.00,
+        vatDueSales: 1000.0,
         vatDueAcquisitions: 0,
-        totalVatDue: 1000.00,
+        totalVatDue: 1000.0,
         vatReclaimedCurrPeriod: 0,
-        netVatDue: 1000.00,
+        netVatDue: 1000.0,
         totalValueSalesExVAT: 5000,
         totalValuePurchasesExVAT: 0,
         totalValueGoodsSuppliedExVAT: 0,
@@ -355,11 +355,11 @@ describe("VAT Flow Frontend JavaScript", () => {
       const body = JSON.parse(init.body);
       expect(body.vatNumber).toBe("111222333");
       expect(body.periodKey).toBe("24A1");
-      expect(body.vatDueSales).toBe(1000.00);
+      expect(body.vatDueSales).toBe(1000.0);
       expect(body.vatDueAcquisitions).toBe(0);
-      expect(body.totalVatDue).toBe(1000.00);
+      expect(body.totalVatDue).toBe(1000.0);
       expect(body.vatReclaimedCurrPeriod).toBe(0);
-      expect(body.netVatDue).toBe(1000.00);
+      expect(body.netVatDue).toBe(1000.0);
       expect(body.totalValueSalesExVAT).toBe(5000);
       expect(body.totalValuePurchasesExVAT).toBe(0);
       expect(body.totalValueGoodsSuppliedExVAT).toBe(0);
@@ -458,7 +458,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VRN and select a VAT period.", "error");
+      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VAT registration number and select a VAT period.", "error");
     });
 
     test("form validation should reject invalid VAT number format", async () => {

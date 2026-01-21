@@ -87,7 +87,7 @@
             <label for="obligationSelect">VAT period</label>
             <p id="obligationSelect-hint" class="hint">Select the VAT period you're submitting for</p>
             <select id="obligationSelect" name="obligationSelect" required aria-describedby="obligationSelect-hint">
-              <option value="">-- Enter VRN to load periods --</option>
+              <option value="">-- Enter VAT registration number to load periods --</option>
             </select>
             <input type="hidden" id="periodKey" name="periodKey" value="" />
             <button type="button" id="loadObligationsBtn" class="btn-secondary" style="margin-top: 0.5em; display: none;">
@@ -289,7 +289,7 @@
             <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
               <option value="">Default</option>
               <!-- Values aligned with _developers/reference/hmrc-mtd-vat-api-1.0.yaml (POST /organisations/vat/{vrn}/returns) -->
-              <option value="INVALID_VRN">Invalid VRN</option>
+              <option value="INVALID_VRN">Invalid VAT registration number</option>
               <option value="INVALID_PERIODKEY">Invalid Period Key</option>
               <option value="INVALID_PAYLOAD">Invalid Payload</option>
               <option value="DUPLICATE_SUBMISSION">Duplicate Submission</option>
@@ -422,7 +422,7 @@
         const periodKeyInput = document.getElementById("periodKey");
 
         if (!vrn || !/^\d{9}$/.test(vrn)) {
-          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VRN --</option>';
+          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VAT registration number --</option>';
           periodKeyInput.value = "";
           return;
         }
@@ -549,7 +549,7 @@
 
         // Basic validation
         if (!vatNumber || !periodKey) {
-          showStatus("Please enter your VRN and select a VAT period.", "error");
+          showStatus("Please enter your VAT registration number and select a VAT period.", "error");
           return;
         }
 
@@ -808,7 +808,7 @@
 
         if (vrn) {
           document.getElementById("vatNumber").value = vrn;
-          // Load obligations for this VRN
+          // Load obligations for this VAT registration number
           await loadObligations(vrn);
           // If periodKey was provided via URL, select it (backward compatibility)
           if (periodKey) {
@@ -860,7 +860,7 @@
       // Handle obligation dropdown selection
       document.getElementById("obligationSelect").addEventListener("change", handleObligationChange);
 
-      // Load obligations when VRN is entered (debounced)
+      // Load obligations when VAT registration number is entered (debounced)
       let vrnDebounceTimer = null;
       document.getElementById("vatNumber").addEventListener("blur", function (e) {
         const vrn = e.target.value.trim();
@@ -871,11 +871,11 @@
       document.getElementById("vatNumber").addEventListener("input", function (e) {
         // Clear any pending load
         if (vrnDebounceTimer) clearTimeout(vrnDebounceTimer);
-        // Reset dropdown if VRN is being edited
+        // Reset dropdown if VAT registration number is being edited
         const obligationSelect = document.getElementById("obligationSelect");
         const periodKeyInput = document.getElementById("periodKey");
         if (e.target.value.length < 9) {
-          obligationSelect.innerHTML = '<option value="">-- Enter VRN to load periods --</option>';
+          obligationSelect.innerHTML = '<option value="">-- Enter VAT registration number to load periods --</option>';
           periodKeyInput.value = "";
         }
       });

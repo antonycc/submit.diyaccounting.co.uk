@@ -5,9 +5,9 @@
 // Generates test data for VAT forms in sandbox mode
 
 /**
- * Generate a standard test VRN (VAT Registration Number)
+ * Generate a standard test VAT registration number
  * Always returns the placeholder value used throughout the application
- * @returns {string} 9-digit VRN
+ * @returns {string} 9-digit VAT registration number
  */
 function generateTestVrn() {
   return "176540158";
@@ -60,12 +60,12 @@ function generateTest9BoxData() {
   const netVatDue = Math.abs(totalVatDue - vatReclaimedCurrPeriod);
 
   // eslint-disable-next-line sonarjs/pseudo-random
-  const totalValueSalesExVAT = Math.floor(vatDueSales / 0.2 * (1 + Math.random() * 0.2)); // Approximate sales value
+  const totalValueSalesExVAT = Math.floor((vatDueSales / 0.2) * (1 + Math.random() * 0.2)); // Approximate sales value
   // eslint-disable-next-line sonarjs/pseudo-random
-  const totalValuePurchasesExVAT = Math.floor(vatReclaimedCurrPeriod / 0.2 * (1 + Math.random() * 0.2)); // Approximate purchase value
+  const totalValuePurchasesExVAT = Math.floor((vatReclaimedCurrPeriod / 0.2) * (1 + Math.random() * 0.2)); // Approximate purchase value
   // eslint-disable-next-line sonarjs/pseudo-random
   const totalValueGoodsSuppliedExVAT = Math.random() < 0.2 ? Math.floor(Math.random() * 1000) : 0; // 20% chance
-  // eslint-disable-next-line sonarjs/pseudo-random
+
   const totalAcquisitionsExVAT = vatDueAcquisitions > 0 ? Math.floor(vatDueAcquisitions / 0.2) : 0;
 
   return {

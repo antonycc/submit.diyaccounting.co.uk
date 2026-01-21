@@ -5,13 +5,13 @@
 
 /**
  * Validation utilities for HMRC API input parameters.
- * Provides regex patterns and validation functions for VRN, period keys, dates, etc.
+ * Provides regex patterns and validation functions for VAT registration number, period keys, dates, etc.
  */
 
 /**
- * Validates VAT Registration Number (VRN).
+ * Validates VAT registration number.
  * Must be exactly 9 digits.
- * @param {string|number} vrn - The VRN to validate
+ * @param {string|number} vrn - The VAT registration number to validate
  * @returns {boolean} True if valid
  */
 export function isValidVrn(vrn) {
@@ -177,12 +177,12 @@ export function maskSensitiveHeaders(headers) {
 export function getHmrcErrorMessage(code) {
   const errorMap = {
     INVALID_VRN: {
-      userMessage: "The VAT registration number (VRN) is not valid",
-      actionAdvice: "Please check the VRN and try again",
+      userMessage: "The VAT registration number is not valid",
+      actionAdvice: "Please check the VAT registration number and try again",
     },
     VRN_NOT_FOUND: {
-      userMessage: "The VAT registration number (VRN) was not found",
-      actionAdvice: "Please verify the VRN is correct and registered with HMRC",
+      userMessage: "The VAT registration number was not found",
+      actionAdvice: "Please verify the VAT registration number is correct and registered with HMRC",
     },
     INVALID_PERIODKEY: {
       userMessage: "The period key is not valid",
@@ -194,7 +194,7 @@ export function getHmrcErrorMessage(code) {
     },
     NOT_FOUND: {
       userMessage: "The requested resource was not found",
-      actionAdvice: "Please check the VRN and period key are correct",
+      actionAdvice: "Please check the VAT registration number and period key are correct",
     },
     DATE_RANGE_TOO_LARGE: {
       userMessage: "The date range is too large",

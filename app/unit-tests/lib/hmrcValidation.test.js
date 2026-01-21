@@ -18,19 +18,19 @@ import {
 
 describe("hmrcValidation", () => {
   describe("isValidVrn", () => {
-    test("accepts valid 9-digit VRN", () => {
+    test("accepts valid 9-digit VAT registration number", () => {
       expect(isValidVrn("123456789")).toBe(true);
       expect(isValidVrn("111222333")).toBe(true);
       expect(isValidVrn(123456789)).toBe(true);
     });
 
-    test("rejects VRN with wrong length", () => {
+    test("rejects VAT registration number with wrong length", () => {
       expect(isValidVrn("12345678")).toBe(false); // 8 digits
       expect(isValidVrn("1234567890")).toBe(false); // 10 digits
       expect(isValidVrn("")).toBe(false); // empty
     });
 
-    test("rejects VRN with non-numeric characters", () => {
+    test("rejects VAT registration number with non-numeric characters", () => {
       expect(isValidVrn("12345678A")).toBe(false);
       expect(isValidVrn("ABC123456")).toBe(false);
       expect(isValidVrn("123-456-789")).toBe(false);

@@ -12,14 +12,14 @@ const scenarios = {
     status: 400,
     body: {
       code: "VRN_INVALID",
-      message: "The provided VRN is invalid",
+      message: "The provided VAT registration number is invalid",
     },
   },
   VRN_INVALID: {
     status: 400,
     body: {
       code: "VRN_INVALID",
-      message: "The provided VRN is invalid",
+      message: "The provided VAT registration number is invalid",
     },
   },
   INVALID_PERIODKEY: {
@@ -120,7 +120,7 @@ const scenarios = {
  * Get scenario response if Gov-Test-Scenario header matches
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @param {string} method - HTTP method (GET, POST)
- * @param {string} vrn - VRN
+ * @param {string} vrn - VAT registration number
  * @param {string} periodKey - Period key
  * @returns {Object|null} - Scenario response or null
  */

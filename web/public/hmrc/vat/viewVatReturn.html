@@ -85,7 +85,7 @@
             <label for="obligationSelect">VAT period</label>
             <p id="obligationSelect-hint" class="hint">Select the VAT period you want to view</p>
             <select id="obligationSelect" name="obligationSelect" required aria-describedby="obligationSelect-hint">
-              <option value="">-- Enter VRN to load periods --</option>
+              <option value="">-- Enter VAT registration number to load periods --</option>
             </select>
             <input type="hidden" id="periodKey" name="periodKey" value="" />
           </div>
@@ -211,7 +211,7 @@
         const periodKeyInput = document.getElementById("periodKey");
 
         if (!vrn || !/^\d{9}$/.test(vrn)) {
-          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VRN --</option>';
+          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VAT registration number --</option>';
           periodKeyInput.value = "";
           return;
         }
@@ -302,7 +302,7 @@
 
         if (vrn) {
           document.getElementById("vrn").value = vrn;
-          // Load obligations for this VRN
+          // Load obligations for this VAT registration number
           await loadObligations(vrn);
           // If periodKey was provided via URL, select it (backward compatibility)
           if (periodKey) {
@@ -453,7 +453,7 @@
 
         // Basic validation
         if (!vrn || !periodKey) {
-          showStatus("Please enter your VRN and select a VAT period.", "error");
+          showStatus("Please enter your VAT registration number and select a VAT period.", "error");
           return;
         }
 
@@ -699,16 +699,16 @@
       document.getElementById("vrn").addEventListener("input", function (e) {
         // Only allow digits
         e.target.value = e.target.value.replace(/\D/g, "");
-        // Reset dropdown if VRN is being edited
+        // Reset dropdown if VAT registration number is being edited
         if (e.target.value.length < 9) {
           const obligationSelect = document.getElementById("obligationSelect");
           const periodKeyInput = document.getElementById("periodKey");
-          obligationSelect.innerHTML = '<option value="">-- Enter VRN to load periods --</option>';
+          obligationSelect.innerHTML = '<option value="">-- Enter VAT registration number to load periods --</option>';
           periodKeyInput.value = "";
         }
       });
 
-      // Load obligations when VRN field loses focus
+      // Load obligations when VAT registration number field loses focus
       document.getElementById("vrn").addEventListener("blur", function (e) {
         const vrn = e.target.value.trim();
         if (/^\d{9}$/.test(vrn)) {

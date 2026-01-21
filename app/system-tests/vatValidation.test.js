@@ -133,13 +133,13 @@ describe("9-Box VAT Validation", () => {
     });
   });
 
-  describe("VRN Validation", () => {
-    test("accepts valid 9-digit VRN", () => {
+  describe("VAT registration number Validation", () => {
+    test("accepts valid 9-digit VAT registration number", () => {
       expect(validateVrn("123456789")).toBe(true);
       expect(validateVrn("000000001")).toBe(true);
     });
 
-    test("rejects invalid VRN formats", () => {
+    test("rejects invalid VAT registration number formats", () => {
       expect(validateVrn("12345678")).toBe(false); // Too short
       expect(validateVrn("1234567890")).toBe(false); // Too long
       expect(validateVrn("12345678a")).toBe(false); // Contains letter

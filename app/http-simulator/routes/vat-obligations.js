@@ -9,7 +9,7 @@ import { randomUUID } from "crypto";
 import { getObligationsForScenario } from "../scenarios/obligations.js";
 
 /**
- * Validate VRN format (9 digits)
+ * Validate VAT registration number format (9 digits)
  */
 function isValidVrn(vrn) {
   return /^\d{9}$/.test(vrn);
@@ -49,11 +49,11 @@ export function apiEndpoint(app) {
 
     console.log(`[http-simulator:vat-obligations] GET /organisations/vat/${vrn}/obligations from=${from} to=${to}`);
 
-    // Validate VRN
+    // Validate VAT registration number
     if (!isValidVrn(vrn)) {
       return res.status(400).json({
         code: "VRN_INVALID",
-        message: "The provided VRN is invalid",
+        message: "The provided VAT registration number is invalid",
       });
     }
 

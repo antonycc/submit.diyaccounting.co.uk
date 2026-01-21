@@ -194,7 +194,7 @@ test.describe("Test Data Link Browser Tests", () => {
   });
 
   test.describe("Test Data Generation Validation", () => {
-    test("should generate valid VRN", async ({ page }) => {
+    test("should generate valid VAT registration number", async ({ page }) => {
       await page.setContent("<html><body></body></html>");
       await page.addScriptTag({ content: testDataGeneratorContent });
 

@@ -36,7 +36,7 @@ describe("test-data-generator", () => {
   });
 
   describe("generateTestVrn", () => {
-    test("returns the standard placeholder VRN", () => {
+    test("returns the standard placeholder VAT registration number", () => {
       const vrn = testDataGenerator.generateTestVrn();
       expect(vrn).toBe("176540158");
     });
@@ -263,7 +263,7 @@ describe("test-data-generator", () => {
       localTestDataGenerator = createTestDataGenerator(mockDocument);
     });
 
-    test("populates VRN field", () => {
+    test("populates VAT registration number field", () => {
       localTestDataGenerator.populateViewVatReturnForm();
       expect(mockElements.vrn.value).toBe("176540158");
     });
@@ -304,7 +304,7 @@ describe("test-data-generator", () => {
       localTestDataGenerator = createTestDataGenerator(mockDocument);
     });
 
-    test("populates VRN field", () => {
+    test("populates VAT registration number field", () => {
       localTestDataGenerator.populateVatObligationsForm();
       expect(mockElements.vrn.value).toBe("176540158");
     });

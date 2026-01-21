@@ -20,7 +20,7 @@
       "id": "what-is-bundle",
       "category": "bundles",
       "question": "What is a bundle?",
-      "answer": "A bundle is a saved configuration for a VAT submission. It stores:\n- Your VAT Registration Number (VRN)\n- Whether to use sandbox or production HMRC\n- Your HMRC authorisation\n\nYou can have multiple bundles if you submit VAT for multiple businesses. Each bundle is independent - authorising one doesn't affect others.\n",
+      "answer": "A bundle is a saved configuration for a VAT submission. It stores:\n- Your VAT registration number (VRN)\n- Whether to use sandbox or production HMRC\n- Your HMRC authorisation\n\nYou can have multiple bundles if you submit VAT for multiple businesses. Each bundle is independent - authorising one doesn't affect others.\n",
       "keywords": ["bundle", "what is", "bundles", "configuration", "setup", "vrn"],
       "priority": 3
     },
@@ -147,7 +147,7 @@
       "id": "error-invalid-vrn",
       "category": "errors",
       "question": "Error: Invalid VRN",
-      "answer": "This means the VAT Registration Number format is wrong:\n- VRN must be exactly 9 digits\n- No spaces, letters, or GB prefix\n- Example: 123456789 not GB123456789 or 123 456 789\n\nIf your VRN is correct but still rejected:\n- Check the business is registered for MTD VAT (not just VAT)\n- New registrations can take 24-48 hours to propagate\n",
+      "answer": "This means the VAT registration number format is wrong:\n- VRN must be exactly 9 digits\n- No spaces, letters, or GB prefix\n- Example: 123456789 not GB123456789 or 123 456 789\n\nIf your VRN is correct but still rejected:\n- Check the business is registered for MTD VAT (not just VAT)\n- New registrations can take 24-48 hours to propagate\n",
       "keywords": ["invalid vrn", "vrn error", "wrong format", "9 digits", "gb"],
       "priority": 17
     },

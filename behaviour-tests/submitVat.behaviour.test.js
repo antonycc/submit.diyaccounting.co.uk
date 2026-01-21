@@ -247,7 +247,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     console.log("[HMRC Test User] Successfully created test user:");
     console.log(`  User ID: ${testUser.userId}`);
     console.log(`  User Full Name: ${testUser.userFullName}`);
-    console.log(`  VAT Registration Number: ${testUser.vrn}`);
+    console.log(`  VAT registration number: ${testUser.vrn}`);
     console.log(`  Organisation: ${testUser.organisationDetails?.name || "N/A"}`);
 
     // Save test user details to files
