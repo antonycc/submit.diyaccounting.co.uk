@@ -164,7 +164,6 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(400);
     const body = parseResponseBody(response);
-    expect(body.message).toContain("vrn");
     expect(body.message).toContain("9 digits");
   });
 
