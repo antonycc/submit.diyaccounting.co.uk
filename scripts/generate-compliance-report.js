@@ -273,7 +273,7 @@ function parseZapResults(zapJson) {
 
 // --- Report generation ---
 
-function generateReport() {
+function generateReport(sourceFiles) {
   const timestamp = new Date().toISOString();
   const version = getPackageVersion();
 
@@ -297,6 +297,11 @@ function generateReport() {
   const retire = parseRetireResults(retireJson);
   const zap = parseZapResults(zapJson);
 
+  // Build source files section
+  const sourceFilesSection = sourceFiles
+    .map((sf) => `  ${sf.exists ? "✅" : "❌"} ${sf.path}`)
+    .join("\n");
+
   // Determine status
   const securityPass = npmAudit.critical === 0 && npmAudit.high === 0 && eslint.errors === 0 && zap.high === 0;
   const accessibilityPass = pa11y.failed === 0 && axe.violations === 0;
@@ -313,6 +318,11 @@ function generateReport() {
 **Target URL**: ${targetUrl}
 **Generated**: ${timestamp}
 **Overall Status**: ${statusIcon(overallPass)} ${statusText(overallPass)}
+
+**Source Files**:
+\`\`\`
+${sourceFilesSection}
+\`\`\`
 
 ---
 
@@ -536,10 +546,13 @@ function main() {
     join(accessibilityDir, "lighthouse-results.json"),
   ];
 
+  const sourceFiles = [];
   let foundCount = 0;
   for (const file of reportFiles) {
     const exists = existsSync(file);
-    console.log(`  ${exists ? "✅" : "❌"} ${file.replace(projectRoot + "/", "")}`);
+    const relativePath = file.replace(projectRoot + "/", "");
+    console.log(`  ${exists ? "✅" : "❌"} ${relativePath}`);
+    sourceFiles.push({ path: relativePath, exists });
     if (exists) foundCount++;
   }
   console.log(`\nFound ${foundCount}/${reportFiles.length} report files.`);
@@ -552,7 +565,7 @@ function main() {
 
   // Generate report
   console.log("\nGenerating compliance report...");
-  const report = generateReport();
+  const report = generateReport(sourceFiles);
 
   // Write report
   const outputPath = join(projectRoot, outputFile);

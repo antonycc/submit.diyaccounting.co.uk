@@ -2,9 +2,21 @@
 
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
-**Target URL**: https://wanted-finally-anteater.ngrok-free.app
-**Generated**: 2026-01-19T19:38:51.197Z
+**Target URL**: https://submit.diyaccounting.co.uk
+**Generated**: 2026-01-21T20:12:07.689Z
 **Overall Status**: ❌ FAIL
+
+**Source Files**:
+```
+  ✅ target/penetration/npm-audit.json
+  ✅ target/penetration/eslint-security.txt
+  ✅ target/penetration/retire.json
+  ✅ target/penetration/zap-report.json
+  ✅ target/accessibility/pa11y-report.txt
+  ✅ target/accessibility/axe-results.json
+  ✅ target/accessibility/axe-wcag22-results.json
+  ✅ target/accessibility/lighthouse-results.json
+```
 
 ---
 
@@ -13,13 +25,13 @@
 | Check | Status | Summary |
 |-------|--------|---------|
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
-| ESLint Security | ✅ | 0 errors, 54 warnings |
+| ESLint Security | ❌ | 2 errors, 63 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 6 medium, 5 low |
-| Pa11y (WCAG AA) | ✅ | 16/16 pages passed |
-| axe-core | ❌ | 13 violations, 239 passes |
-| axe-core (WCAG 2.2) | ❌ | 10 violations, 148 passes |
-| Lighthouse | ❌ | A11y: 0%, Perf: 0%, BP: 0% |
+| OWASP ZAP | ✅ | 0 high, 10 medium, 14 low |
+| Pa11y (WCAG AA) | ✅ | 15/15 pages passed |
+| axe-core | ❌ | 7 violations, 375 passes |
+| axe-core (WCAG 2.2) | ❌ | 1 violations, 231 passes |
+| Lighthouse | ✅ | A11y: 95%, Perf: 99%, BP: 100% |
 
 ---
 
@@ -32,8 +44,8 @@
 | Critical | 0 |
 | High | 0 |
 | Moderate | 0 |
-| Low | 3 |
-| **Total** | **3** |
+| Low | 1 |
+| **Total** | **1** |
 
 **Status**: ✅ No critical/high vulnerabilities
 
@@ -41,10 +53,10 @@
 
 | Metric | Count |
 |--------|-------|
-| Errors | 0 |
-| Warnings | 54 |
+| Errors | 2 |
+| Warnings | 63 |
 
-**Status**: ✅ No security errors
+**Status**: ❌ Security errors require attention
 
 ### 1.3 retire.js (Known Vulnerabilities)
 
@@ -61,9 +73,9 @@
 | Risk Level | Count |
 |------------|-------|
 | High | 0 |
-| Medium | 6 |
-| Low | 5 |
-| Informational | 5 |
+| Medium | 10 |
+| Low | 14 |
+| Informational | 32 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -71,13 +83,15 @@
 
 | Alert | Risk | Count |
 |-------|------|-------|
-| Content Security Policy (CSP) Header Not Set | Medium (High) | 1 |
-| Sub Resource Integrity Attribute Missing | Medium (High) | 5 |
-| Cross-Domain JavaScript Source File Inclusion | Low (Medium) | 1 |
-| Permissions Policy Header Not Set | Low (Medium) | 1 |
-| Strict-Transport-Security Header Not Set | Low (High) | 3 |
-| Modern Web Application | Informational (Medium) | 1 |
-| Storable and Cacheable Content | Informational (Medium) | 4 |
+| CSP: script-src unsafe-inline | Medium (High) | 5 |
+| CSP: style-src unsafe-inline | Medium (High) | 5 |
+| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 9 |
+| Server Leaks Version Information via "Server" HTTP Response Header Field | Low (High) | 5 |
+| Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
+| Modern Web Application | Informational (Medium) | 5 |
+| Re-examine Cache-control Directives | Informational (Low) | 5 |
+| Retrieved from Cache | Informational (Medium) | 5 |
+| Storable and Cacheable Content | Informational (Medium) | 5 |
 
 ---
 
@@ -87,8 +101,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 16 |
-| Pages Passed | 16 |
+| Pages Tested | 15 |
+| Pages Passed | 15 |
 | Pages Failed | 0 |
 
 **Status**: ✅ All pages comply with WCAG AA
@@ -103,7 +117,6 @@
 | /terms.html | 0 |
 | /about.html | 0 |
 | /accessibility.html | 0 |
-| /auth/login.html | 0 |
 | /account/bundles.html | 0 |
 | /hmrc/vat/submitVat.html | 0 |
 | /hmrc/vat/vatObligations.html | 0 |
@@ -118,9 +131,9 @@
 
 | Metric | Count |
 |--------|-------|
-| Violations | 13 |
-| Passes | 239 |
-| Incomplete | 0 |
+| Violations | 7 |
+| Passes | 375 |
+| Incomplete | 10 |
 
 **Status**: ❌ Accessibility violations require attention
 
@@ -128,27 +141,21 @@
 
 | Rule | Impact | Description | Nodes |
 |------|--------|-------------|-------|
-| document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
-| landmark-one-main | moderate | Ensure the document has a main landmark | 1 |
-| page-has-heading-one | moderate | Ensure that the page, or at least one of its frames contains a level-one heading | 1 |
-| document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
+| region | moderate | Ensure all page content is contained by landmarks | 1 |
+| skip-link | moderate | Ensure all skip links have a focusable target | 1 |
+| region | moderate | Ensure all page content is contained by landmarks | 1 |
+| skip-link | moderate | Ensure all skip links have a focusable target | 1 |
+| region | moderate | Ensure all page content is contained by landmarks | 1 |
+| skip-link | moderate | Ensure all skip links have a focusable target | 1 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 1 |
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
 
 | Metric | Count |
 |--------|-------|
-| Violations | 10 |
-| Passes | 148 |
-| Incomplete | 0 |
+| Violations | 1 |
+| Passes | 231 |
+| Incomplete | 10 |
 
 **Status**: ❌ WCAG 2.2 violations detected
 
@@ -156,27 +163,18 @@
 
 | Rule | Impact | Description | Nodes |
 |------|--------|-------------|-------|
-| document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 1 |
 
 ### 2.4 Lighthouse
 
 | Category | Score |
 |----------|-------|
-| Accessibility | 0% |
-| Performance | 0% |
-| Best Practices | 0% |
-| SEO | 0% |
+| Accessibility | 95% |
+| Performance | 99% |
+| Best Practices | 100% |
+| SEO | 100% |
 
-**Status**: ❌ Accessibility score below 90% threshold
+**Status**: ✅ Accessibility score meets threshold (90%+)
 
 ---
 
@@ -195,4 +193,4 @@
 
 ---
 
-*Generated by `node scripts/generate-compliance-report.js --target https://wanted-finally-anteater.ngrok-free.app`*
+*Generated by `node scripts/generate-compliance-report.js --target https://submit.diyaccounting.co.uk`*
