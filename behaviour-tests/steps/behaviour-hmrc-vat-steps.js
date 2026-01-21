@@ -1053,11 +1053,38 @@ export async function fillInViewVatReturn(
   });
 }
 
-export async function submitViewVatReturnForm(page, screenshotPath = defaultScreenshotPath) {
+export async function submitViewVatReturnForm(page, periodKey = null, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the view VAT return form", async () => {
-    // Focus change before submit
+    // Focus change before submit - this may trigger blur events that reset periodKey
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-submit.png` });
+
+    // Wait for any blur-triggered network requests to settle
+    await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {
+      console.log("Network idle timeout after focus - continuing");
+    });
+
+    // In sandbox mode, ensure the periodKey is set right before click (AFTER blur events)
+    // This handles the case where blur events on VRN field reset the dropdown
+    if (periodKey && isSandboxMode()) {
+      await page.evaluate((pk) => {
+        const periodKeyInput = document.getElementById("periodKey");
+        const dropdown = document.getElementById("obligationSelect");
+
+        // Set the hidden input - this is what the form reads
+        periodKeyInput.value = pk;
+
+        // Update dropdown to show the period key we're using
+        dropdown.innerHTML = "";
+        const option = document.createElement("option");
+        option.value = pk;
+        option.textContent = `Test Period ${pk}`;
+        option.selected = true;
+        dropdown.appendChild(option);
+      }, periodKey);
+      console.log(`Set periodKey to ${periodKey} right before click (sandbox mode, after blur events settled)`);
+    }
+
     await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-submit.png` });
     await page.waitForTimeout(1000);

@@ -352,8 +352,8 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   // Now attempt to view the VAT return that was just submitted
   await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, testVatNumber, hmrcVatPeriodKey, null, screenshotPath);
-  await submitViewVatReturnForm(page, screenshotPath);
+  await fillInViewVatReturn(page, testVatNumber, hmrcVatPeriodKey, null, runFraudPreventionHeaderValidation, screenshotPath);
+  await submitViewVatReturnForm(page, hmrcVatPeriodKey, screenshotPath);
 
   /* ******************* */
   /*  VIEW VAT RESULTS   */
