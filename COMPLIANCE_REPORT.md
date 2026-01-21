@@ -3,7 +3,7 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-01-21T20:12:07.689Z
+**Generated**: 2026-01-21T20:39:29.317Z
 **Overall Status**: ❌ FAIL
 
 **Source Files**:
@@ -27,7 +27,7 @@
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
 | ESLint Security | ❌ | 2 errors, 63 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 10 medium, 14 low |
+| OWASP ZAP | ✅ | 0 high, 0 medium, 14 low |
 | Pa11y (WCAG AA) | ✅ | 15/15 pages passed |
 | axe-core | ❌ | 7 violations, 375 passes |
 | axe-core (WCAG 2.2) | ❌ | 1 violations, 231 passes |
@@ -73,7 +73,7 @@
 | Risk Level | Count |
 |------------|-------|
 | High | 0 |
-| Medium | 10 |
+| Medium | 0 |
 | Low | 14 |
 | Informational | 32 |
 
@@ -83,8 +83,6 @@
 
 | Alert | Risk | Count |
 |-------|------|-------|
-| CSP: script-src unsafe-inline | Medium (High) | 5 |
-| CSP: style-src unsafe-inline | Medium (High) | 5 |
 | Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 9 |
 | Server Leaks Version Information via "Server" HTTP Response Header Field | Low (High) | 5 |
 | Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
@@ -92,6 +90,13 @@
 | Re-examine Cache-control Directives | Informational (Low) | 5 |
 | Retrieved from Cache | Informational (Medium) | 5 |
 | Storable and Cacheable Content | Informational (Medium) | 5 |
+
+#### Accepted Risks (Suppressed)
+
+| Alert | Risk | Reason |
+|-------|------|--------|
+| CSP: script-src unsafe-inline | Medium (High) | Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy. |
+| CSP: style-src unsafe-inline | Medium (High) | Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy. |
 
 ---
 

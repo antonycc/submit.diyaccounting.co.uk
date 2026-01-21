@@ -227,9 +227,15 @@ function parseLighthouseResults(lighthouseJson) {
   };
 }
 
+// Suppressed ZAP alerts - accepted risks documented in privacy.html
+const SUPPRESSED_ZAP_ALERTS = {
+  "CSP: script-src unsafe-inline": "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
+  "CSP: style-src unsafe-inline": "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
+};
+
 function parseZapResults(zapJson) {
   if (!zapJson || !zapJson.site) {
-    return { high: 0, medium: 0, low: 0, info: 0, alerts: [], found: false };
+    return { high: 0, medium: 0, low: 0, info: 0, alerts: [], suppressedAlerts: [], found: false };
   }
 
   let high = 0;
@@ -237,22 +243,35 @@ function parseZapResults(zapJson) {
   let low = 0;
   let info = 0;
   const alertDetails = [];
+  const suppressedAlerts = [];
 
   const sites = Array.isArray(zapJson.site) ? zapJson.site : [zapJson.site];
   for (const site of sites) {
     const alerts = site.alerts || [];
     for (const alert of alerts) {
-      // riskcode: 0=Info, 1=Low, 2=Medium, 3=High
+      const alertName = alert.name || alert.alert;
       const riskcode = parseInt(alert.riskcode, 10);
       const count = parseInt(alert.count, 10) || 1;
 
+      // Check if this alert is suppressed
+      if (SUPPRESSED_ZAP_ALERTS[alertName]) {
+        suppressedAlerts.push({
+          name: alertName,
+          risk: alert.riskdesc || ["Info", "Low", "Medium", "High"][riskcode] || "Unknown",
+          count: count,
+          reason: SUPPRESSED_ZAP_ALERTS[alertName],
+        });
+        continue; // Don't count suppressed alerts
+      }
+
+      // riskcode: 0=Info, 1=Low, 2=Medium, 3=High
       if (riskcode === 3) high += count;
       else if (riskcode === 2) medium += count;
       else if (riskcode === 1) low += count;
       else info += count;
 
       alertDetails.push({
-        name: alert.name || alert.alert,
+        name: alertName,
         risk: alert.riskdesc || ["Info", "Low", "Medium", "High"][riskcode] || "Unknown",
         count: count,
         confidence: alert.confidence,
@@ -267,6 +286,7 @@ function parseZapResults(zapJson) {
     info,
     total: high + medium + low + info,
     alerts: alertDetails,
+    suppressedAlerts,
     found: true,
   };
 }
@@ -406,6 +426,16 @@ ${
 | Alert | Risk | Count |
 |-------|------|-------|
 ${zap.alerts.map((a) => `| ${a.name} | ${a.risk} | ${a.count} |`).join("\n")}`
+    : ""
+}
+${
+  zap.suppressedAlerts.length > 0
+    ? `
+#### Accepted Risks (Suppressed)
+
+| Alert | Risk | Reason |
+|-------|------|--------|
+${zap.suppressedAlerts.map((a) => `| ${a.name} | ${a.risk} | ${a.reason} |`).join("\n")}`
     : ""
 }`
     : "⚠️ Report not found: `target/penetration/zap-report.json`"

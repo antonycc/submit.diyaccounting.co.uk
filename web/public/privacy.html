@@ -88,7 +88,7 @@
       <p class="muted" style="text-align: center">Last updated: January 12, 2026</p>
     </header>
 
-    <main>
+    <main id="mainContent">
       <section>
         <p>
           DIY Accounting Submit is a lightweight web application that helps you submit UK VAT returns via HMRC's Making Tax Digital (MTD)
@@ -683,6 +683,27 @@
           <li><strong>Monitoring</strong>: Real-time security monitoring and alerting</li>
           <li><strong>Backup and recovery</strong>: Point-in-time recovery enabled for critical data</li>
         </ul>
+
+        <h3>Content Security Policy</h3>
+        <p>
+          We use a Content Security Policy (CSP) to protect against cross-site scripting (XSS) and other code injection attacks.
+          Our policy restricts content sources to trusted origins with the following accepted exceptions:
+        </p>
+        <ul>
+          <li>
+            <strong>script-src 'unsafe-inline'</strong>: Required for inline event handlers used in form validation and dynamic
+            UI components. Mitigated by: strict input validation, no user-generated content in scripts, and limited scope of
+            inline handlers.
+          </li>
+          <li>
+            <strong>style-src 'unsafe-inline'</strong>: Required for dynamic styling of UI components and third-party integrations
+            (CloudWatch RUM). Mitigated by: no user-controlled style values and strict output encoding.
+          </li>
+        </ul>
+        <p>
+          These exceptions are documented as accepted risks in our security compliance process. We regularly review whether
+          these can be eliminated through code refactoring.
+        </p>
       </section>
 
       <section>

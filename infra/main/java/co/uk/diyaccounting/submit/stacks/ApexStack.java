@@ -266,8 +266,11 @@ public class ApexStack extends Stack {
                         .build())
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
                         .customHeaders(List.of(
-                                // No custom headers at present
-                                new ResponseCustomHeader[] {}))
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
                         .build())
                 .build();
 
