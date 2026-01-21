@@ -247,13 +247,6 @@ export const logger = pino(
     enabled: Boolean(destinationStream),
     base: null, // removes pid and hostname
     timestamp: false, // Avoid Pino’s comma-prefixed timestamp chunk
-    
-    // Redact sensitive field paths
-    redact: {
-      paths: REDACT_PATHS,
-      censor: "[REDACTED]",
-    },
-
     // Add an ISO time field as a normal JSON property
     mixin() {
       // Pull correlation fields from shared context; ensure we never leak old values
@@ -297,18 +290,4 @@ export const context = {
   getStore: () => storage.getStore(),
   enterWith: (store) => storage.enterWith(store),
 };
-
-/**
- * Safe logging wrappers that sanitise PII before logging
- * Use these instead of raw logger methods when logging potentially sensitive data
- */
-export const safeLog = {
-  trace: (obj, msg) => logger.trace(sanitise(obj), msg),
-  debug: (obj, msg) => logger.debug(sanitise(obj), msg),
-  info: (obj, msg) => logger.info(sanitise(obj), msg),
-  warn: (obj, msg) => logger.warn(sanitise(obj), msg),
-  error: (obj, msg) => logger.error(sanitise(obj), msg),
-  fatal: (obj, msg) => logger.fatal(sanitise(obj), msg),
-};
-
 export default logger;
