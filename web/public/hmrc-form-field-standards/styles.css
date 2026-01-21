@@ -1,0 +1,469 @@
+/**
+ * UK Tax Form Field Standards Demo - Styles
+ * 
+ * IMPORTANT: These styles are deliberately different from GOV.UK Frontend.
+ * Third-party services must NOT use GOV.UK branding (crown logo, fonts, colours).
+ * This demo uses neutral styling to demonstrate form patterns without implying
+ * government affiliation.
+ */
+
+/* ============================================
+   Reset and Base Styles
+   ============================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ============================================
+   Header
+   ============================================ */
+
+.header {
+  background-color: #2c5aa0;
+  color: white;
+  padding: 30px 0;
+}
+
+.header h1 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.header .subtitle {
+  margin: 0;
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+/* ============================================
+   Notice Box
+   ============================================ */
+
+.notice {
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 20px;
+  margin: 30px 0;
+}
+
+.notice h2 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: #856404;
+}
+
+.notice p {
+  margin: 0 0 10px 0;
+  color: #856404;
+}
+
+.notice p:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   Table of Contents
+   ============================================ */
+
+.toc {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  margin: 30px 0;
+}
+
+.toc h2 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+}
+
+.toc ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  column-count: 2;
+  column-gap: 30px;
+}
+
+.toc li {
+  margin-bottom: 8px;
+}
+
+.toc a {
+  color: #2c5aa0;
+  text-decoration: none;
+}
+
+.toc a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   Field Demo Sections
+   ============================================ */
+
+.field-demo {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 30px;
+  margin: 30px 0;
+}
+
+.field-demo h2 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  color: #1a1a1a;
+  border-bottom: 2px solid #2c5aa0;
+  padding-bottom: 10px;
+}
+
+.field-demo h3 {
+  margin: 25px 0 15px 0;
+  font-size: 18px;
+}
+
+/* ============================================
+   Field Info Tables
+   ============================================ */
+
+.field-info {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.field-info table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.field-info th {
+  text-align: left;
+  padding: 8px 15px 8px 0;
+  font-weight: 600;
+  width: 140px;
+  vertical-align: top;
+}
+
+.field-info td {
+  padding: 8px 0;
+}
+
+.field-info .warning {
+  margin: 15px 0 0 0;
+  padding: 10px;
+  background-color: #fff3cd;
+  border-radius: 4px;
+  color: #856404;
+}
+
+/* ============================================
+   Form Styles
+   ============================================ */
+
+.demo-form {
+  margin: 25px 0;
+}
+
+.form-group {
+  margin-bottom: 25px;
+}
+
+.form-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 25px 0;
+}
+
+.form-legend {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.form-hint {
+  color: #505a5f;
+  margin: 0 0 10px 0;
+  font-size: 15px;
+}
+
+.form-input {
+  font-family: inherit;
+  font-size: 16px;
+  padding: 10px;
+  border: 2px solid #505a5f;
+  border-radius: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.form-input:focus {
+  outline: 3px solid #ffdd00;
+  outline-offset: 0;
+  border-color: #1a1a1a;
+}
+
+/* Input width modifiers */
+.form-input--width-2 { max-width: 2.75em; }
+.form-input--width-4 { max-width: 4.5em; }
+.form-input--width-10 { max-width: 11em; }
+.form-input--width-12 { max-width: 14em; }
+.form-input--width-13 { max-width: 15em; }
+.form-input--width-15 { max-width: 17em; }
+.form-input--width-20 { max-width: 22em; }
+
+/* Input with prefix (£ symbol) */
+.input-prefix-wrapper {
+  display: flex;
+  align-items: stretch;
+}
+
+.input-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 15px;
+  background-color: #f3f2f1;
+  border: 2px solid #505a5f;
+  border-right: none;
+  font-weight: 600;
+}
+
+.form-input--prefixed {
+  border-left: none;
+}
+
+/* ============================================
+   Error States
+   ============================================ */
+
+.form-group--error .form-input {
+  border-color: #d4351c;
+}
+
+.form-group--error .form-input:focus {
+  border-color: #d4351c;
+}
+
+.error-message {
+  color: #d4351c;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================
+   Date Input
+   ============================================ */
+
+.date-input {
+  display: flex;
+  gap: 20px;
+}
+
+.date-input__item {
+  display: flex;
+  flex-direction: column;
+}
+
+.date-input__item .form-label {
+  margin-bottom: 5px;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.button {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  margin-right: 10px;
+  margin-top: 10px;
+}
+
+.button:focus {
+  outline: 3px solid #ffdd00;
+  outline-offset: 0;
+}
+
+.button {
+  background-color: #2c5aa0;
+  color: white;
+}
+
+.button:hover {
+  background-color: #1e4080;
+}
+
+.button--secondary {
+  background-color: #f3f2f1;
+  color: #1a1a1a;
+}
+
+.button--secondary:hover {
+  background-color: #e5e4e3;
+}
+
+/* ============================================
+   Code Blocks
+   ============================================ */
+
+.code-block {
+  margin-top: 25px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.code-block h4 {
+  margin: 0;
+  padding: 10px 15px;
+  background-color: #e9ecef;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 15px;
+  overflow-x: auto;
+}
+
+.code-block code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================
+   Reference Tables
+   ============================================ */
+
+.reference-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+}
+
+.reference-table th,
+.reference-table td {
+  text-align: left;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+}
+
+.reference-table th {
+  background-color: #f3f2f1;
+  font-weight: 600;
+}
+
+.reference-table code {
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+
+.footer {
+  background-color: #2c5aa0;
+  color: white;
+  padding: 30px 0;
+  margin-top: 50px;
+}
+
+.footer p {
+  margin: 0 0 10px 0;
+  opacity: 0.9;
+}
+
+.footer p:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 640px) {
+  .toc ul {
+    column-count: 1;
+  }
+  
+  .date-input {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .field-info th {
+    display: block;
+    width: 100%;
+    padding-bottom: 0;
+  }
+  
+  .field-info td {
+    display: block;
+    padding-top: 5px;
+  }
+}
+
+/* ============================================
+   Success State (for validation feedback)
+   ============================================ */
+
+.form-group--success .form-input {
+  border-color: #00703c;
+}
+
+.success-message {
+  color: #00703c;
+  font-weight: 600;
+  margin: 10px 0 0 0;
+}

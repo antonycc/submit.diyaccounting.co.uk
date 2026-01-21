@@ -46,6 +46,7 @@
     "test:allBehaviour": "playwright test --project=allBehaviour",
     "test:allBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:allBehaviour",
     "test:allBehaviour-proxy-sandbox": "HMRC_ACCOUNT=sandbox npx dotenv -e .env.proxy -- npm run test:allBehaviour",
+    "test:allBehaviour-simulator": "npx dotenv -e .env.simulator -- npm run test:allBehaviour",
     "test:authBehaviour": "playwright test --project=authBehaviour",
     "test:authBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:authBehaviour",
     "test:authBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:authBehaviour",

@@ -66,37 +66,52 @@
           <h2>Retrieve VAT Obligations</h2>
           <form id="vatObligationsForm">
             <div class="form-group">
-              <label for="vrn">VAT Registration Number (VRN)</label>
-              <input type="text" id="vrn" name="vrn" required value="" placeholder="e.g., 176540158" maxlength="9" pattern="[0-9]{9}" />
-              <div class="help-text">Enter your 9-digit VAT registration number</div>
+              <label for="vrn">VAT registration number</label>
+              <p id="vrn-hint" class="hint">
+                This is 9 numbers, sometimes with 'GB' at the start, for example
+                123456789 or GB123456789. You can find it on your VAT registration certificate.
+              </p>
+              <input
+                type="text"
+                id="vrn"
+                name="vrn"
+                required
+                value=""
+                placeholder="e.g., 176540158"
+                maxlength="9"
+                pattern="[0-9]{9}"
+                aria-describedby="vrn-hint"
+                spellcheck="false"
+              />
             </div>
 
             <div class="form-group">
-              <label for="fromDate">From Date (optional)</label>
-              <input type="date" id="fromDate" name="fromDate" value="" />
-              <div class="help-text">Start date for obligation period filter, defaults to the start of calendar year.</div>
+              <label for="fromDate">From date (optional)</label>
+              <p id="fromDate-hint" class="hint">Start date for obligation period filter, defaults to the start of calendar year</p>
+              <input type="date" id="fromDate" name="fromDate" value="" aria-describedby="fromDate-hint" />
             </div>
 
             <div class="form-group">
-              <label for="toDate">To Date (optional)</label>
-              <input type="date" id="toDate" name="toDate" value="" />
-              <div class="help-text">End date for obligation period filter, defaults to the current date.</div>
+              <label for="toDate">To date (optional)</label>
+              <p id="toDate-hint" class="hint">End date for obligation period filter, defaults to the current date</p>
+              <input type="date" id="toDate" name="toDate" value="" aria-describedby="toDate-hint" />
             </div>
 
             <div class="form-group">
               <label for="status">Status (optional)</label>
-              <select id="status" name="status">
+              <p id="status-hint" class="hint">Filter by obligation status</p>
+              <select id="status" name="status" aria-describedby="status-hint">
                 <option value="">All statuses</option>
                 <option value="O">Open</option>
                 <option value="F">Fulfilled</option>
               </select>
-              <div class="help-text">Filter by obligation status</div>
             </div>
 
             <!-- Developer Test Scenario Section -->
             <div id="developerSection" class="form-group" style="display: none">
-              <label for="testScenario">Test Scenario (Developer/Sandbox Only)</label>
-              <select id="testScenario" name="testScenario">
+              <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+              <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
                 <option value="">Default (One Quarterly Met)</option>
                 <option value="QUARTERLY_NONE_MET">Quarterly - None Met</option>
                 <option value="QUARTERLY_ONE_MET">Quarterly - One Met</option>
@@ -135,7 +150,6 @@
                 <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
                 <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
               </select>
-              <div class="help-text">Test different HMRC sandbox scenarios</div>
               <div style="margin-top: 10px">
                 <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
                 <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
@@ -530,9 +544,7 @@
           <table class="results-table">
             <thead>
               <tr>
-                <th>Period Key</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>VAT Period</th>
                 <th>Due Date</th>
                 <th>Status</th>
                 <th>Received</th>
@@ -550,14 +562,17 @@
           const escapedVrn = escapeHtml(vrn);
           const escapedPeriodKey = escapeHtml(obligation.periodKey);
 
+          // Format date range for display (HMRC requirement: don't show period key)
+          const periodDisplay = formatDateRange(obligation.start, obligation.end);
+          const dueDateDisplay = formatDate(obligation.due);
+          const receivedDisplay = formatDate(obligation.received);
+
           tableHtml += `
             <tr>
-              <td><strong>${escapeHtml(obligation.periodKey)}</strong></td>
-              <td>${escapeHtml(obligation.start) || "-"}</td>
-              <td>${escapeHtml(obligation.end) || "-"}</td>
-              <td>${escapeHtml(obligation.due) || "-"}</td>
+              <td><strong>${escapeHtml(periodDisplay)}</strong></td>
+              <td>${escapeHtml(dueDateDisplay)}</td>
               <td><span class="${statusClass}">${statusText}</span></td>
-              <td>${escapeHtml(obligation.received) || "-"}</td>
+              <td>${escapeHtml(receivedDisplay)}</td>
               <td>
                 ${
                   obligation.status === "F"
@@ -579,6 +594,23 @@
         const div = document.createElement("div");
         div.textContent = text;
         return div.innerHTML;
+      }
+
+      // Format a single date for display
+      function formatDate(dateStr) {
+        if (!dateStr) return "-";
+        const date = new Date(dateStr);
+        const options = { day: "numeric", month: "short", year: "numeric" };
+        return date.toLocaleDateString("en-GB", options);
+      }
+
+      // Format date range for display (HMRC requirement: show dates instead of period key)
+      function formatDateRange(startStr, endStr) {
+        if (!startStr || !endStr) return "-";
+        const startDate = new Date(startStr);
+        const endDate = new Date(endStr);
+        const options = { day: "numeric", month: "short", year: "numeric" };
+        return `${startDate.toLocaleDateString("en-GB", options)} to ${endDate.toLocaleDateString("en-GB", options)}`;
       }
 
       function viewReturn(vrn, periodKey) {

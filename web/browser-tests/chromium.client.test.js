@@ -180,7 +180,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       await expect(statusMessages.first()).toBeVisible({ timeout: 2000 });
 
       const statusText = await statusMessages.first().locator(".status-message-content").textContent();
-      expect(statusText).toBe("Please fill in all required fields.");
+      expect(statusText).toBe("Please enter your VRN and select a VAT period.");
 
       // Check that the message has error styling
       const className = await statusMessages.first().getAttribute("class");
@@ -206,18 +206,18 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       expect(value).toBe("123456");
     });
 
-    test("should convert period key to uppercase", async ({ page }) => {
+    test("should have period key as hidden field populated by obligation dropdown", async ({ page }) => {
+      // Period key is now a hidden field populated by the obligation dropdown selection
       const periodKeyField = page.locator("#periodKey");
+      const obligationSelect = page.locator("#obligationSelect");
 
-      // Clear and type lowercase
-      await periodKeyField.fill("");
-      await setTimeout(100);
-      await periodKeyField.type("a1b2");
-      await setTimeout(100);
+      // Verify the hidden field exists
+      await expect(periodKeyField).toHaveCount(1);
+      const fieldType = await periodKeyField.getAttribute("type");
+      expect(fieldType).toBe("hidden");
 
-      // Check that it's converted to uppercase
-      const value = await periodKeyField.inputValue();
-      expect(value).toBe("A1B2");
+      // Verify the obligation dropdown is visible
+      await expect(obligationSelect).toBeVisible();
     });
   });
 
@@ -227,7 +227,10 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       // Fill in valid form data for 9-box VAT form
       await page.locator("#vatNumber").fill("111222333");
       await setTimeout(100);
-      await page.locator("#periodKey").fill("24A1");
+      // Set the hidden periodKey field via JavaScript since it's populated by obligation dropdown
+      await page.evaluate(() => {
+        document.getElementById("periodKey").value = "24A1";
+      });
       await setTimeout(100);
       // Fill 9-box fields
       await page.locator("#vatDueSales").fill("1000.00");

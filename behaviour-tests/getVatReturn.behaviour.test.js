@@ -157,7 +157,7 @@ test.afterEach(async ({ page }, testInfo) => {
 async function requestAndVerifyViewReturn(page, { vrn, periodKey, testScenario }) {
   await initViewVatReturn(page, screenshotPath);
   await fillInViewVatReturn(page, vrn, periodKey, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
-  await submitViewVatReturnForm(page, screenshotPath);
+  await submitViewVatReturnForm(page, periodKey, screenshotPath);
   await verifyViewVatReturnResults(page, testScenario, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 }
