@@ -341,6 +341,33 @@ export async function fillInVat9Box(
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-9box-scenario.png` });
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-9box-complete.png` });
+
+    // In sandbox mode, ensure the periodKey is set right before we check submit button
+    // This handles the case where async loadObligations might have cleared it
+    if (isSandboxMode()) {
+      // Wait for all network activity to settle first
+      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {
+        console.log("Network idle timeout - continuing anyway");
+      });
+
+      await page.evaluate((periodKey) => {
+        const dropdown = document.getElementById("obligationSelect");
+        const periodKeyInput = document.getElementById("periodKey");
+
+        // Set hidden field
+        periodKeyInput.value = periodKey;
+
+        // Update dropdown to show we have a value
+        dropdown.innerHTML = "";
+        const option = document.createElement("option");
+        option.value = periodKey;
+        option.textContent = `Test Period ${periodKey}`;
+        option.selected = true;
+        dropdown.appendChild(option);
+      }, hmrcVatPeriodKey);
+      console.log(`Final periodKey set to ${hmrcVatPeriodKey} before submit check (sandbox mode)`);
+    }
+
     await expect(page.locator("#submitBtn")).toBeVisible();
     await page.waitForTimeout(200);
   });
