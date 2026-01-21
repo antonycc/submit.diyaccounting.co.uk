@@ -66,8 +66,8 @@
           <div class="form-group">
             <label for="vatNumber">VAT registration number</label>
             <p id="vatNumber-hint" class="hint">
-              This is 9 numbers, sometimes with 'GB' at the start, for example
-              123456789 or GB123456789. You can find it on your VAT registration certificate.
+              This is 9 numbers, sometimes with 'GB' at the start, for example 123456789 or GB123456789. You can find it on your VAT
+              registration certificate.
             </p>
             <input
               type="text"
@@ -90,7 +90,7 @@
               <option value="">-- Enter VAT registration number to load periods --</option>
             </select>
             <input type="hidden" id="periodKey" name="periodKey" value="" />
-            <button type="button" id="loadObligationsBtn" class="btn-secondary" style="margin-top: 0.5em; display: none;">
+            <button type="button" id="loadObligationsBtn" class="btn-secondary" style="margin-top: 0.5em; display: none">
               Load Periods
             </button>
           </div>
@@ -410,7 +410,7 @@
             return `${formattedObligation.displayName} (Due: ${formattedObligation.dueDateFormatted})`;
           }
           return formattedObligation.displayName;
-        }
+        },
       };
 
       // Store loaded obligations for reference
@@ -445,7 +445,7 @@
           // for API Gateway Lambda authorizer (bundle enforcement)
           const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
             method: "GET",
-            headers
+            headers,
           });
 
           if (!response.ok) {
@@ -529,7 +529,7 @@
           totalValuePurchasesExVAT: Math.round(parseFloat(document.getElementById("totalValuePurchasesExVAT").value) || 0),
           totalValueGoodsSuppliedExVAT: Math.round(parseFloat(document.getElementById("totalValueGoodsSuppliedExVAT").value) || 0),
           totalAcquisitionsExVAT: Math.round(parseFloat(document.getElementById("totalAcquisitionsExVAT").value) || 0),
-          finalised: true
+          finalised: true,
         };
       }
 
@@ -559,8 +559,12 @@
         }
 
         // Validate 9-box fields
-        if (vatBoxData.vatDueSales === "" || vatBoxData.vatReclaimedCurrPeriod === "" ||
-            vatBoxData.totalValueSalesExVAT === "" || vatBoxData.totalValuePurchasesExVAT === "") {
+        if (
+          vatBoxData.vatDueSales === "" ||
+          vatBoxData.vatReclaimedCurrPeriod === "" ||
+          vatBoxData.totalValueSalesExVAT === "" ||
+          vatBoxData.totalValuePurchasesExVAT === ""
+        ) {
           showStatus("Please fill in all required VAT box fields.", "error");
           return;
         }
@@ -815,7 +819,7 @@
             const obligationSelect = document.getElementById("obligationSelect");
             const periodKeyInput = document.getElementById("periodKey");
             // Check if this periodKey exists in the dropdown
-            const optionExists = Array.from(obligationSelect.options).some(opt => opt.value === periodKey);
+            const optionExists = Array.from(obligationSelect.options).some((opt) => opt.value === periodKey);
             if (optionExists) {
               obligationSelect.value = periodKey;
               periodKeyInput.value = periodKey;

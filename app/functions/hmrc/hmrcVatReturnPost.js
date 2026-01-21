@@ -28,7 +28,13 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { isValidVrn, isValidPeriodKey } from "../../lib/hmrcValidation.js";
-import { detectRequestFormat, buildVatReturnBody, buildVatReturnBodyFromLegacy, isValidMonetaryAmount, isValidWholeAmount } from "../../lib/vatReturnTypes.js";
+import {
+  detectRequestFormat,
+  buildVatReturnBody,
+  buildVatReturnBodyFromLegacy,
+  isValidMonetaryAmount,
+  isValidWholeAmount,
+} from "../../lib/vatReturnTypes.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -219,8 +225,16 @@ export async function ingestHandler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodKey, hmrcAccessToken, vatReturnData, requestFormat, hmrcAccount, runFraudPreventionHeaderValidation, declarationConfirmed } =
-    extractAndValidateParameters(event, errorMessages);
+  const {
+    vatNumber,
+    periodKey,
+    hmrcAccessToken,
+    vatReturnData,
+    requestFormat,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation,
+    declarationConfirmed,
+  } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event);

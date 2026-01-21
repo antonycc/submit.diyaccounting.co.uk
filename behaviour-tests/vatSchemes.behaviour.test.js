@@ -35,20 +35,8 @@ import {
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import {
-  initSubmitVat,
-  fillInVat9Box,
-  submitFormVat,
-  completeVat,
-  verifyVatSubmission,
-} from "./steps/behaviour-hmrc-vat-steps.js";
-import {
-  goToHmrcAuth,
-  initHmrcAuth,
-  fillInHmrcAuth,
-  submitHmrcAuth,
-  grantPermissionHmrcAuth,
-} from "./steps/behaviour-hmrc-steps.js";
+import { initSubmitVat, fillInVat9Box, submitFormVat, completeVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import { goToHmrcAuth, initHmrcAuth, fillInHmrcAuth, submitHmrcAuth, grantPermissionHmrcAuth } from "./steps/behaviour-hmrc-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -311,15 +299,7 @@ test.describe("VAT Scheme Support Tests", () => {
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.RETAIL.description}`);
 
     await initSubmitVat(page, screenshotPath);
-    await fillInVat9Box(
-      page,
-      testVatNumber,
-      periodKey,
-      vatSchemeTestData.RETAIL,
-      null,
-      runFraudPreventionHeaderValidation,
-      screenshotPath,
-    );
+    await fillInVat9Box(page, testVatNumber, periodKey, vatSchemeTestData.RETAIL, null, runFraudPreventionHeaderValidation, screenshotPath);
     await submitFormVat(page, screenshotPath);
 
     await goToHmrcAuth(page, screenshotPath);
@@ -342,15 +322,7 @@ test.describe("VAT Scheme Support Tests", () => {
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.MARGIN.description}`);
 
     await initSubmitVat(page, screenshotPath);
-    await fillInVat9Box(
-      page,
-      testVatNumber,
-      periodKey,
-      vatSchemeTestData.MARGIN,
-      null,
-      runFraudPreventionHeaderValidation,
-      screenshotPath,
-    );
+    await fillInVat9Box(page, testVatNumber, periodKey, vatSchemeTestData.MARGIN, null, runFraudPreventionHeaderValidation, screenshotPath);
     await submitFormVat(page, screenshotPath);
 
     await goToHmrcAuth(page, screenshotPath);

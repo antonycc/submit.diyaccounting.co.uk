@@ -64,8 +64,8 @@
           <div class="form-group">
             <label for="vrn">VAT registration number</label>
             <p id="vrn-hint" class="hint">
-              This is 9 numbers, sometimes with 'GB' at the start, for example
-              123456789 or GB123456789. You can find it on your VAT registration certificate.
+              This is 9 numbers, sometimes with 'GB' at the start, for example 123456789 or GB123456789. You can find it on your VAT
+              registration certificate.
             </p>
             <input
               type="text"
@@ -199,7 +199,7 @@
           const endDate = new Date(end);
           const dateOptions = { day: "numeric", month: "short", year: "numeric" };
           return `${startDate.toLocaleDateString("en-GB", dateOptions)} to ${endDate.toLocaleDateString("en-GB", dateOptions)}`;
-        }
+        },
       };
 
       // Store loaded obligations for reference
@@ -234,7 +234,7 @@
           // for API Gateway Lambda authorizer (bundle enforcement)
           const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
             method: "GET",
-            headers
+            headers,
           });
 
           if (!response.ok) {
@@ -308,7 +308,7 @@
           if (periodKey) {
             const obligationSelect = document.getElementById("obligationSelect");
             const periodKeyInput = document.getElementById("periodKey");
-            const optionExists = Array.from(obligationSelect.options).some(opt => opt.value === periodKey);
+            const optionExists = Array.from(obligationSelect.options).some((opt) => opt.value === periodKey);
             if (optionExists) {
               obligationSelect.value = periodKey;
               periodKeyInput.value = periodKey;
@@ -602,12 +602,12 @@
         };
 
         // Find the matching obligation to get the date range
-        const matchingObligation = loadedObligations.find(o => o._periodKey === returnData.periodKey);
+        const matchingObligation = loadedObligations.find((o) => o._periodKey === returnData.periodKey);
         const periodDisplay = matchingObligation
           ? matchingObligation.displayName
-          : (returnData.start && returnData.end
+          : returnData.start && returnData.end
             ? ObligationUtils.formatDateRange(returnData.start, returnData.end)
-            : "-");
+            : "-";
 
         const detailsHtml = `
           <div class="return-details">

@@ -68,45 +68,45 @@ if (logToConsole && logToFile) {
 
 /**
  * PII (Personally Identifiable Information) Protection Patterns
- * 
+ *
  * This logger implements two layers of PII protection:
  * 1. Pino's built-in `redact` option for field-path based redaction
  * 2. Regex-based sanitisation for pattern matching in string values
- * 
+ *
  * Protected patterns and their sources in the codebase:
- * 
+ *
  * 1. VAT Registration Numbers (VRN): 9-digit format
  *    - Source: app/lib/hmrcValidation.js, HMRC API handlers
  *    - Example: "123456789"
- * 
+ *
  * 2. Email Addresses: Standard email format
  *    - Source: JWT claims, Cognito auth, test fixtures
  *    - Example: "user@example.com"
- * 
+ *
  * 3. Tokens & Secrets: OAuth tokens, API keys, client secrets
  *    - Source: app/lib/dataMasking.js, OAuth flows
  *    - Field names: access_token, refresh_token, client_secret, authorization
- * 
+ *
  * 4. Passwords: All password fields
  *    - Source: app/lib/dataMasking.js
  *    - Field names: password, hmrcTestPassword, userPassword
- * 
+ *
  * 5. User Identifiers: Cognito subject identifiers
  *    - Source: app/lib/jwtHelper.js, app/services/subHasher.js
  *    - Field names: sub, cognito:username
- * 
+ *
  * 6. IP Addresses: IPv4 and IPv6
  *    - Source: app/lib/hmrcValidation.js, fraud prevention headers
  *    - Field names: Gov-Client-Public-IP, Gov-Vendor-Public-IP
- * 
+ *
  * 7. Device IDs: Long alphanumeric device identifiers
  *    - Source: app/lib/hmrcValidation.js, fraud prevention headers
  *    - Field names: Gov-Client-Device-ID
- * 
+ *
  * 8. Authorization Headers: Bearer tokens, cookies
  *    - Source: HTTP requests
  *    - Field names: authorization, cookie, set-cookie
- * 
+ *
  * 9. OAuth Authorization Codes: 32-char hex codes
  *    - Source: app/lib/dataMasking.js, OAuth callback flows
  */
@@ -123,7 +123,7 @@ const REDACT_PATHS = [
   "*.userPassword",
   "*.hmrcTestPassword",
   "*.hmrctestpassword",
-  
+
   // Authorization headers
   "*.authorization",
   "*.Authorization",
@@ -137,7 +137,7 @@ const REDACT_PATHS = [
   "headers.cookie",
   "headers.Cookie",
   "headers['set-cookie']",
-  
+
   // User identifiers
   "*.sub",
   "*.email",
@@ -148,7 +148,7 @@ const REDACT_PATHS = [
   "jwt.claims.sub",
   "jwt.claims.email",
   "jwt.claims['cognito:username']",
-  
+
   // HMRC-specific sensitive fields
   "*.vrn",
   "*.VRN",
@@ -165,27 +165,27 @@ const REDACT_PATHS = [
 const PII_PATTERNS = [
   // VRN: 9 consecutive digits (with word boundaries to avoid false positives)
   { pattern: /\b\d{9}\b/g, replacement: "[VRN]" },
-  
+
   // Email addresses (simplified but effective pattern)
   { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: "[EMAIL]" },
-  
+
   // IPv4 addresses
   { pattern: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g, replacement: "[IP]" },
-  
+
   // IPv6 addresses (simplified pattern for common formats)
   { pattern: /\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b/g, replacement: "[IP]" },
   { pattern: /\b(?:[0-9a-fA-F]{1,4}:){1,7}:\b/g, replacement: "[IP]" },
   { pattern: /\b::(?:[0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4}\b/g, replacement: "[IP]" },
-  
+
   // Bearer tokens (JWT format: xxx.yyy.zzz)
   { pattern: /Bearer\s+[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/gi, replacement: "Bearer [TOKEN]" },
-  
+
   // UUID format (for sub, device IDs, etc.)
   { pattern: /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, replacement: "[UUID]" },
-  
+
   // OAuth authorization codes (32-char hex)
   { pattern: /\bcode=[a-f0-9]{32}\b/gi, replacement: "code=[CODE]" },
-  
+
   // Long alphanumeric tokens (40+ chars, likely sensitive)
   { pattern: /\b[A-Za-z0-9_-]{40,}\b/g, replacement: "[TOKEN]" },
 ];
@@ -201,7 +201,7 @@ function sanitise(obj, visited = new Set()) {
   if (obj === null || obj === undefined) {
     return obj;
   }
-  
+
   if (typeof obj === "string") {
     // Apply all regex patterns to the string
     let sanitised = obj;
@@ -210,24 +210,24 @@ function sanitise(obj, visited = new Set()) {
     }
     return sanitised;
   }
-  
+
   if (typeof obj !== "object") {
     return obj;
   }
-  
+
   // Detect circular references
   if (visited.has(obj)) {
     return "[Circular]";
   }
-  
+
   visited.add(obj);
-  
+
   try {
     // Handle arrays
     if (Array.isArray(obj)) {
       return obj.map((item) => sanitise(item, visited));
     }
-    
+
     // Handle objects
     const sanitised = {};
     for (const [key, value] of Object.entries(obj)) {
@@ -247,7 +247,7 @@ export const logger = pino(
     enabled: Boolean(destinationStream),
     base: null, // removes pid and hostname
     timestamp: false, // Avoid Pino’s comma-prefixed timestamp chunk
-    
+
     // Redact sensitive field paths
     redact: {
       paths: REDACT_PATHS,
