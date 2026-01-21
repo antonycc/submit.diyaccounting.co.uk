@@ -114,9 +114,24 @@ function generateTestDateRange() {
 function populateSubmitVatForm() {
   const vrnInput = document.getElementById("vatNumber");
   const periodKeyInput = document.getElementById("periodKey");
+  const obligationSelect = document.getElementById("obligationSelect");
 
-  if (vrnInput) vrnInput.value = generateTestVrn();
-  if (periodKeyInput) periodKeyInput.value = generateTestPeriodKey();
+  const testVrn = generateTestVrn();
+  const testPeriodKey = generateTestPeriodKey();
+
+  if (vrnInput) vrnInput.value = testVrn;
+  if (periodKeyInput) periodKeyInput.value = testPeriodKey;
+
+  // Also populate the obligation dropdown with a test option if it exists
+  if (obligationSelect) {
+    // Add a test option to the dropdown
+    const testOption = document.createElement("option");
+    testOption.value = testPeriodKey;
+    testOption.textContent = "Test Period (Sandbox)";
+    testOption.selected = true;
+    obligationSelect.innerHTML = ""; // Clear existing options
+    obligationSelect.appendChild(testOption);
+  }
 
   // Check if we're using the new 9-box form or legacy single-field form
   const vatDueSalesInput = document.getElementById("vatDueSales");
@@ -155,9 +170,24 @@ function populateSubmitVatForm() {
 function populateViewVatReturnForm() {
   const vrnInput = document.getElementById("vrn");
   const periodKeyInput = document.getElementById("periodKey");
+  const obligationSelect = document.getElementById("obligationSelect");
 
-  if (vrnInput) vrnInput.value = generateTestVrn();
-  if (periodKeyInput) periodKeyInput.value = generateTestPeriodKey();
+  const testVrn = generateTestVrn();
+  const testPeriodKey = generateTestPeriodKey();
+
+  if (vrnInput) vrnInput.value = testVrn;
+  if (periodKeyInput) periodKeyInput.value = testPeriodKey;
+
+  // Also populate the obligation dropdown with a test option if it exists
+  if (obligationSelect) {
+    // Add a test option to the dropdown
+    const testOption = document.createElement("option");
+    testOption.value = testPeriodKey;
+    testOption.textContent = "Test Period (Sandbox)";
+    testOption.selected = true;
+    obligationSelect.innerHTML = ""; // Clear existing options
+    obligationSelect.appendChild(testOption);
+  }
 
   console.log("[Test Data] Populated view VAT return form with test data");
 }

@@ -39,12 +39,12 @@ category = "connection"
 question = "The sandbox works but production doesn't — what's wrong?"
 answer = """
 Sandbox and production use different HMRC environments with separate credentials:
-- **Sandbox** uses test credentials (any VRN works)
+- **Sandbox** uses test credentials (any VAT registration number works)
 - **Production** requires your real HMRC Government Gateway login
 
 If sandbox works but production doesn't:
 1. Ensure you're using your actual Government Gateway credentials (not test ones)
-2. Check your VRN is registered for MTD VAT with HMRC
+2. Check your VAT registration number is registered for MTD VAT with HMRC
 3. You may need to re-authorise if your HMRC permissions changed
 """
 keywords = ["sandbox", "production", "test", "live", "real", "works in sandbox", "doesn't work"]
@@ -56,7 +56,7 @@ category = "bundles"
 question = "What is a bundle?"
 answer = """
 A bundle is a saved configuration for a VAT submission. It stores:
-- Your VAT Registration Number (VRN)
+- Your VAT registration number
 - Whether to use sandbox or production HMRC
 - Your HMRC authorisation
 
@@ -68,16 +68,16 @@ priority = 3
 [[faq]]
 id = "wrong-vrn"
 category = "bundles"
-question = "I added the wrong VRN — how do I fix it?"
+question = "I added the wrong VAT registration number — how do I fix it?"
 answer = """
-You cannot edit a bundle's VRN after creation. Instead:
+You cannot edit a bundle's VAT registration number after creation. Instead:
 1. Go to **View and edit your bundles**
 2. Click **Remove All Bundles** or remove the incorrect one
-3. Click **Add Bundle** and enter the correct VRN
+3. Click **Add Bundle** and enter the correct VAT registration number
 
 Your submission history (receipts) is stored separately and won't be lost.
 """
-keywords = ["wrong vrn", "incorrect vrn", "change vrn", "edit bundle", "fix vrn", "mistake"]
+keywords = ["wrong vrn", "incorrect vrn", "change vrn", "edit bundle", "fix vrn", "mistake", "vat registration number"]
 priority = 4
 
 [[faq]]
@@ -87,12 +87,12 @@ question = "Can I submit VAT for multiple businesses?"
 answer = """
 Yes. Create a separate bundle for each VAT registration:
 1. Click **Add Bundle**
-2. Enter the VRN for the business
+2. Enter the VAT registration number for the business
 3. Authorise with HMRC using that business's Government Gateway
 
 Each bundle maintains its own HMRC connection. Switch between them from the home screen.
 """
-keywords = ["multiple", "businesses", "companies", "more than one", "several", "different vrn"]
+keywords = ["multiple", "businesses", "companies", "more than one", "several", "different vrn", "vat registration number"]
 priority = 5
 
 [[faq]]
@@ -104,7 +104,7 @@ If no obligations appear:
 1. **Date range** — Expand the date range in the search. Obligations only show for periods HMRC expects a return
 2. **Already submitted** — Fulfilled obligations don't show by default. Change status filter to 'F' (Fulfilled) or 'A' (All)
 3. **New registration** — HMRC may take 24-48 hours to create your first obligation after MTD registration
-4. **Wrong VRN** — Check you're using the correct bundle/VRN
+4. **Wrong VAT registration number** — Check you're using the correct bundle
 """
 keywords = ["obligations", "not showing", "no obligations", "empty", "can't see", "missing", "periods"]
 priority = 6
@@ -207,7 +207,7 @@ If DIY Accounting Submit showed a success message with a bundle reference, HMRC 
 
 1. **Timing** — HMRC's portal can take a few hours to update. Check again later
 2. **Wrong period** — You may have submitted for a different period than you're checking
-3. **Different VRN** — Ensure you're checking the same business in HMRC's portal
+3. **Different VAT registration number** — Ensure you're checking the same business in HMRC's portal
 
 Your receipt includes the HMRC bundle reference (format: `1234567890`). Quote this to HMRC if needed.
 """
@@ -256,7 +256,7 @@ answer = """
 First-time MTD setup:
 1. **Sign up for MTD** — Register at https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat if you haven't
 2. **Wait 24-48 hours** — HMRC needs time to activate your MTD access
-3. **Create a bundle** — Click Add Bundle and enter your 9-digit VRN
+3. **Create a bundle** — Click Add Bundle and enter your 9-digit VAT registration number
 4. **Authorise** — You'll be redirected to HMRC to grant permission
 5. **Check obligations** — See what periods HMRC expects returns for
 6. **Submit** — Enter your figures and submit
@@ -286,18 +286,18 @@ priority = 16
 [[faq]]
 id = "error-invalid-vrn"
 category = "errors"
-question = "Error: Invalid VRN"
+question = "Error: Invalid VAT registration number"
 answer = """
-This means the VAT Registration Number format is wrong:
-- VRN must be exactly 9 digits
+This means the VAT registration number format is wrong:
+- VAT registration number must be exactly 9 digits
 - No spaces, letters, or GB prefix
 - Example: `123456789` not `GB123456789` or `123 456 789`
 
-If your VRN is correct but still rejected:
+If your VAT registration number is correct but still rejected:
 - Check the business is registered for MTD VAT (not just VAT)
 - New registrations can take 24-48 hours to propagate
 """
-keywords = ["invalid vrn", "vrn error", "wrong format", "9 digits", "gb"]
+keywords = ["invalid vrn", "vrn error", "wrong format", "9 digits", "gb", "vat registration number"]
 priority = 17
 
 [[faq]]
@@ -309,7 +309,7 @@ HMRC rejected the submission because a return for this period already exists.
 
 This happens if:
 - You already submitted for this period (check your receipts)
-- Someone else submitted for this VRN (e.g., an accountant)
+- Someone else submitted for this VAT registration number (e.g., an accountant)
 
 Check the period status in **VAT Obligations** — it should show as Fulfilled with a received date.
 """
@@ -324,11 +324,11 @@ answer = """
 You're trying to submit for a period HMRC isn't expecting a return for.
 
 Check:
-1. The period key matches an Open obligation exactly
+1. The period matches an Open obligation exactly
 2. You haven't already submitted for this period
-3. The VRN is correct
+3. The VAT registration number is correct
 
-Use **VAT Obligations** to see which periods are open and get the exact period key.
+Use **VAT Obligations** to see which periods are open.
 """
 keywords = ["obligation not found", "period not found", "no obligation", "can't submit"]
 priority = 19

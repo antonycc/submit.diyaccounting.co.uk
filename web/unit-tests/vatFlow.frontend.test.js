@@ -445,6 +445,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "";
+      // Set the hidden period key input directly (dropdown value is stored in hidden input)
       periodKeyInput.value = "24A1";
       fill9BoxForm();
       declarationCheckbox.checked = true;
@@ -457,7 +458,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("Please fill in all required fields.", "error");
+      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VRN and select a VAT period.", "error");
     });
 
     test("form validation should reject invalid VAT number format", async () => {
@@ -466,6 +467,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "12345678"; // Only 8 digits
+      // Set the hidden period key input directly (dropdown value is stored in hidden input)
       periodKeyInput.value = "24A1";
       fill9BoxForm();
       declarationCheckbox.checked = true;
@@ -486,6 +488,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "111222333";
+      // Set the hidden period key input directly (dropdown value is stored in hidden input)
       periodKeyInput.value = "24A1";
       fill9BoxForm();
       declarationCheckbox.checked = false; // Declaration not checked
@@ -537,19 +540,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       expect(vatNumberInput.value).toBe("123456");
     });
 
-    test("Period key input should convert to uppercase", () => {
-      const periodKeyInput = document.getElementById("periodKey");
-
-      // Simulate input event with lowercase
-      periodKeyInput.value = "a1b2";
-      const event = new window.Event("input");
-      Object.defineProperty(event, "target", { value: periodKeyInput });
-
-      // Trigger the input event handler
-      periodKeyInput.dispatchEvent(event);
-
-      // The event handler should convert to uppercase
-      expect(periodKeyInput.value).toBe("A1B2");
-    });
+    // Period key is now selected from a dropdown (not typed), so uppercase conversion test is removed
+    // The dropdown value is stored in a hidden input, no user input transformation needed
   });
 });

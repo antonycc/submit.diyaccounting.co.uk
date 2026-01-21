@@ -86,8 +86,8 @@ This document describes how Personally Identifiable Information (PII) and sensit
 
 **Source**: Web form submissions
 **Data Types**:
-- VAT Registration Number (VRN)
-- Period keys (e.g., "24A1")
+- VAT registration number
+- VAT period identifiers
 - VAT return figures (sales, purchases, VAT amounts)
 - Submission dates
 

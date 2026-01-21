@@ -20,6 +20,7 @@ Disallow: /activities/
 Disallow: /errors/
 Disallow: /tests/
 Disallow: /docs/
+Disallow: /hmrc-form-field-standards/
 
 # Sitemap location
 Sitemap: https://submit.diyaccounting.co.uk/sitemap.xml

@@ -530,9 +530,7 @@
           <table class="results-table">
             <thead>
               <tr>
-                <th>Period Key</th>
-                <th>Start Date</th>
-                <th>End Date</th>
+                <th>VAT Period</th>
                 <th>Due Date</th>
                 <th>Status</th>
                 <th>Received</th>
@@ -550,14 +548,17 @@
           const escapedVrn = escapeHtml(vrn);
           const escapedPeriodKey = escapeHtml(obligation.periodKey);
 
+          // Format date range for display (HMRC requirement: don't show period key)
+          const periodDisplay = formatDateRange(obligation.start, obligation.end);
+          const dueDateDisplay = formatDate(obligation.due);
+          const receivedDisplay = formatDate(obligation.received);
+
           tableHtml += `
             <tr>
-              <td><strong>${escapeHtml(obligation.periodKey)}</strong></td>
-              <td>${escapeHtml(obligation.start) || "-"}</td>
-              <td>${escapeHtml(obligation.end) || "-"}</td>
-              <td>${escapeHtml(obligation.due) || "-"}</td>
+              <td><strong>${escapeHtml(periodDisplay)}</strong></td>
+              <td>${escapeHtml(dueDateDisplay)}</td>
               <td><span class="${statusClass}">${statusText}</span></td>
-              <td>${escapeHtml(obligation.received) || "-"}</td>
+              <td>${escapeHtml(receivedDisplay)}</td>
               <td>
                 ${
                   obligation.status === "F"
@@ -579,6 +580,23 @@
         const div = document.createElement("div");
         div.textContent = text;
         return div.innerHTML;
+      }
+
+      // Format a single date for display
+      function formatDate(dateStr) {
+        if (!dateStr) return "-";
+        const date = new Date(dateStr);
+        const options = { day: "numeric", month: "short", year: "numeric" };
+        return date.toLocaleDateString("en-GB", options);
+      }
+
+      // Format date range for display (HMRC requirement: show dates instead of period key)
+      function formatDateRange(startStr, endStr) {
+        if (!startStr || !endStr) return "-";
+        const startDate = new Date(startStr);
+        const endDate = new Date(endStr);
+        const options = { day: "numeric", month: "short", year: "numeric" };
+        return `${startDate.toLocaleDateString("en-GB", options)} to ${endDate.toLocaleDateString("en-GB", options)}`;
       }
 
       function viewReturn(vrn, periodKey) {

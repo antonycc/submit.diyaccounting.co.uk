@@ -109,16 +109,20 @@ Note: These fields should contain whole pounds only. If pence is included, this 
 
 Answer: `No` - whole pounds only
 
-### Q9: Period Key Visibility ⚠️
+### Q9: Period Key Visibility ✅
 **Is the Period Key visible?**
 
 Note: Period Keys should not be shown to the customer, these are for software use to ensure the return is recorded against the correct obligation.
 
-Answer: `Yes` - **NON-COMPLIANT - REQUIRES REMEDIATION**
+Answer: `No` - **COMPLIANT**
 
-Current State: The period key is currently visible as a manual text input field on submitVat.html (line 81-83). Users must manually enter the period key (e.g., "24A1").
+Implementation: Users select VAT periods from a dropdown showing human-readable date ranges (e.g., "1 Jan 2024 to 31 Mar 2024"). The period key is stored in a hidden field and used internally for API submission. Users never see period key codes like "24A1".
 
-Remediation Required: Replace manual period key entry with an obligation selection dropdown populated from the VAT Obligations API. The period key should be hidden from users and used internally for submission. See PLAN-9-BOX-VAT-IMPLEMENTATION.md Component 5 (Obligation Selector UI).
+Files implementing this:
+- `web/public/hmrc/vat/submitVat.html` - Obligation dropdown with hidden periodKey field
+- `web/public/hmrc/vat/viewVatReturn.html` - Obligation dropdown for fulfilled periods
+- `web/public/hmrc/vat/vatObligations.html` - Table displays date ranges, not period keys
+- `web/public/lib/utils/obligation-utils.js` - Formatting utilities for obligation display
 
 ### Q10: Legal Declaration ⚠️
 **Is the Legal Declaration shown on screen prior to submission of the return?**
@@ -195,11 +199,11 @@ The following items require remediation before HMRC production approval:
 
 | Item | Question | Current State | Remediation |
 |------|----------|---------------|-------------|
-| ⚠️ Q9 | Period Key Visibility | Visible to users | Hide via obligation selector dropdown |
+| ✅ Q9 | Period Key Visibility | Hidden from users | Completed - uses obligation dropdown |
 | ⚠️ Q10 | Legal Declaration | Not shown | Add mandatory declaration checkbox |
 | ⚠️ Q16 | WCAG Compliance | 13 axe-core violations | Fix document-title, link-in-text-block |
 
-Additionally, the current implementation only collects 1 VAT field (vatDue) rather than the full 9-box return. While bridging software permits manual entry, the current form structure should be enhanced. See PLAN-9-BOX-VAT-IMPLEMENTATION.md for the complete remediation plan.
+Note: Q9 has been remediated. Users now see human-readable date ranges instead of period keys. The 9-box VAT return form has also been implemented. See PLAN-9-BOX-VAT-IMPLEMENTATION.md for remaining work.
 
 ## Sign-off
 
@@ -207,5 +211,5 @@ Additionally, the current implementation only collects 1 VAT field (vatDue) rath
 |-------|-------|
 | Drafted by | Antony Cartwright, Director |
 | Draft Date | 20 January 2026 |
-| Status | PRE-PRODUCTION - Pending remediation |
-| Any comments | This is bridging software (file-only) that allows users to submit VAT returns from their existing digital records. Current implementation requires remediation of Q9 (period key visibility), Q10 (legal declaration), and Q16 (WCAG compliance) before production approval. See PLAN-9-BOX-VAT-IMPLEMENTATION.md for the implementation roadmap. |
+| Status | PRE-PRODUCTION - Pending Q10 and Q16 remediation |
+| Any comments | This is bridging software (file-only) that allows users to submit VAT returns from their existing digital records. Q9 (period key visibility) has been remediated. Current implementation requires remediation of Q10 (legal declaration) and Q16 (WCAG compliance) before production approval. See PLAN-9-BOX-VAT-IMPLEMENTATION.md for the implementation roadmap. |

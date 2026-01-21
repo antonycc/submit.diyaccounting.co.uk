@@ -229,6 +229,7 @@ public class PublishStack extends Stack {
                         "/docs/*",
                         "/errors/*",
                         "/guide/*",
+                        "/hmrc-form-field-standards/*",
                         "/hmrc/*",
                         "/images/*",
                         "/lib/*",

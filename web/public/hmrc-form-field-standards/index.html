@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UK Tax Form Field Standards Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <h1>UK Tax Form Field Standards Demo</h1>
+      <p class="subtitle">For Third-Party HMRC Recognised Services</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="notice">
+      <h2>Important Notice</h2>
+      <p>This demo shows <strong>field naming conventions and accessibility patterns</strong> from UK government standards.
+         It does <strong>not</strong> use GOV.UK branding, which is reserved for official government services.</p>
+      <p>Third-party services should follow the <strong>terminology</strong>, <strong>validation rules</strong>, and
+         <strong>accessibility requirements</strong> demonstrated here, but apply their own visual styling.</p>
+    </section>
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ul>
+        <li><a href="#vat-section">VAT Registration Number</a></li>
+        <li><a href="#utr-section">Unique Taxpayer Reference (UTR)</a></li>
+        <li><a href="#nino-section">National Insurance Number</a></li>
+        <li><a href="#paye-section">Employer PAYE Reference</a></li>
+        <li><a href="#accounts-section">Accounts Office Reference</a></li>
+        <li><a href="#eori-section">EORI Number</a></li>
+        <li><a href="#currency-section">Currency Input</a></li>
+        <li><a href="#address-section">Address Fields</a></li>
+        <li><a href="#date-section">Date Input</a></li>
+      </ul>
+    </nav>
+
+    <!-- VAT Registration Number -->
+    <section id="vat-section" class="field-demo">
+      <h2>VAT Registration Number</h2>
+      <div class="field-info">
+        <table>
+          <tr><th>Correct label</th><td>VAT registration number</td></tr>
+          <tr><th>Do NOT use</th><td>"VAT number", "VAT identification number", "VRN"</td></tr>
+          <tr><th>Format</th><td>9 digits, optionally prefixed with "GB"</td></tr>
+          <tr><th>Example</th><td>123456789 or GB123456789</td></tr>
+        </table>
+      </div>
+
+      <form class="demo-form" onsubmit="return validateVAT(event)">
+        <div class="form-group" id="vat-form-group">
+          <label class="form-label" for="vat-registration-number">
+            VAT registration number
+          </label>
+          <p id="vat-registration-number-hint" class="form-hint">
+            This is 9 numbers, sometimes with 'GB' at the start, for example
+            123456789 or GB123456789. You can find it on your VAT registration certificate.
+          </p>
+          <input
+            type="text"
+            id="vat-registration-number"
+            name="vatRegistrationNumber"
+            class="form-input form-input--width-12"
+            aria-describedby="vat-registration-number-hint"
+          >
+        </div>
+        <button type="submit" class="button">Validate</button>
+        <button type="button" class="button button--secondary" onclick="showError('vat')">Show Error State</button>
+      </form>
+
+      <div class="code-block">
+        <h4>HTML Code</h4>
+        <pre><code>&lt;div class="form-group"&gt;
+  &lt;label for="vat-registration-number"&gt;
+    VAT registration number
+  &lt;/label&gt;
+  &lt;p id="vat-registration-number-hint" class="hint"&gt;
+    This is 9 numbers, sometimes with 'GB' at the start,
+    for example 123456789 or GB123456789.
+  &lt;/p&gt;
+  &lt;input
+    type="text"
+    id="vat-registration-number"
+    name="vatRegistrationNumber"
+    aria-describedby="vat-registration-number-hint"
+  &gt;
+&lt;/div&gt;</code></pre>
+      </div>
+    </section>
+
+    <!-- UTR -->
+    <section id="utr-section" class="field-demo">
+      <h2>Unique Taxpayer Reference (UTR)</h2>
+      <div class="field-info">
+        <table>
+          <tr><th>Correct label</th><td>Unique Taxpayer Reference (UTR)</td></tr>
+          <tr><th>Do NOT use</th><td>"UTR number", "Unique Taxpayer Reference number"</td></tr>
+          <tr><th>Format</th><td>10 or 13 digits</td></tr>
+          <tr><th>Context variants</th><td>Self Assessment UTR, Corporation Tax UTR, Partnership UTR</td></tr>
+        </table>
+      </div>
+
+      <form class="demo-form" onsubmit="return validateUTR(event)">
+        <div class="form-group" id="utr-form-group">
+          <label class="form-label" for="utr">
+            Self Assessment Unique Taxpayer Reference (UTR)
+          </label>
+          <p id="utr-hint" class="form-hint">
+            Your UTR can be 10 or 13 digits long. You can find it in your Personal
+            Tax Account, the HMRC app, or on tax returns and other documents from HMRC.
+            It might be called 'reference', 'UTR' or 'official use'.
+          </p>
+          <input
+            type="text"
+            id="utr"
+            name="utr"
+            class="form-input form-input--width-15"
+            aria-describedby="utr-hint"
+          >
+        </div>
+        <button type="submit" class="button">Validate</button>
+        <button type="button" class="button button--secondary" onclick="showError('utr')">Show Error State</button>
+      </form>
+
+      <div class="code-block">
+        <h4>HTML Code</h4>
+        <pre><code>&lt;label for="utr"&gt;
+  Self Assessment Unique Taxpayer Reference (UTR)
+&lt;/label&gt;
+&lt;p id="utr-hint" class="hint"&gt;
+  Your UTR can be 10 or 13 digits long. You can find it in your
+  Personal Tax Account, the HMRC app, or on documents from HMRC.
+&lt;/p&gt;
+&lt;input type="text" id="utr" name="utr"
+       aria-describedby="utr-hint"&gt;</code></pre>
+      </div>
+    </section>
+
+    <!-- National Insurance Number -->
+    <section id="nino-section" class="field-demo">
+      <h2>National Insurance Number</h2>
+      <div class="field-info">
+        <table>
+          <tr><th>Correct label</th><td>National Insurance number</td></tr>
+          <tr><th>Do NOT use</th><td>"NINO", "NI Number", "NI number"</td></tr>
+          <tr><th>Format</th><td>2 letters + 6 digits + 1 letter (A, B, C, or D)</td></tr>
+          <tr><th>Example</th><td>QQ 12 34 56 C (never use AB 12 34 56 C)</td></tr>
+        </table>
+        <p class="warning">⚠️ Never use "AB 12 34 56 C" as an example — this belongs to a real person.</p>
+      </div>
+
+      <form class="demo-form" onsubmit="return validateNINO(event)">
+        <div class="form-group" id="nino-form-group">
+          <label class="form-label" for="national-insurance-number">
+            National Insurance number
+          </label>
+          <p id="national-insurance-number-hint" class="form-hint">
+            It's on your National Insurance card, benefit letter, payslip or P60 —
+            for example, 'QQ 12 34 56 C'.
+          </p>
+          <input
+            type="text"
+            id="national-insurance-number"
+            name="nationalInsuranceNumber"
+            class="form-input form-input--width-13"
+            spellcheck="false"
+            aria-describedby="national-insurance-number-hint"
+          >
+        </div>
+        <button type="submit" class="button">Validate</button>
+        <button type="button" class="button button--secondary" onclick="showError('nino')">Show Error State</button>
+      </form>
+    </section>
+
+    <!-- Employer PAYE Reference -->
+    <section id="paye-section" class="field-demo">
+      <h2>Employer PAYE Reference</h2>
+      <div class="field-info">
+        <table>
+          <tr><th>Correct label</th><td>Employer PAYE reference</td></tr>
+          <tr><th>Format</th><td>3-digit tax office number + "/" + employer reference</td></tr>
+          <tr><th>Example</th><td>123/AB456</td></tr>
+        </table>
+      </div>
+
+      <form class="demo-form" onsubmit="return validatePAYE(event)">
+        <div class="form-group" id="paye-form-group">
+          <label class="form-label" for="employer-paye-reference">
+            Employer PAYE reference
+          </label>
+          <p id="employer-paye-reference-hint" class="form-hint">
+            This is a 3-digit tax office number, a forward slash, and a tax office
+            employer reference, like 123/AB456. It may be called 'Employer PAYE reference'
+            or 'PAYE reference'. You can find it on your P60.
+          </p>
+          <input
+            type="text"
+            id="employer-paye-reference"
+            name="employerPayeReference"
+            class="form-input form-input--width-12"
+            aria-describedby="employer-paye-reference-hint"
+          >
+        </div>
+        <button type="submit" class="button">Validate</button>
+      </form>
+    </section>
+
+    <!-- Accounts Office Reference -->
+    <section id="accounts-section" class="field-demo">
+      <h2>Accounts Office Reference</h2>
+      <div class="field-info">
+        <table>
+          <tr><th>Correct label</th><td>Accounts Office reference</td></tr>
+          <tr><th>Format</th><td>13 characters</td></tr>
+          <tr><th>Example</th><td>123PX00123456 or 123PX0012345X</td></tr>
+        </table>
+      </div>
+
+      <form class="demo-form" onsubmit="return validateAccountsRef(event)">
+        <div class="form-group" id="accounts-form-group">
+          <label class="form-label" for="accounts-office-reference">
+            Accounts Office reference
+          </label>
+          <p id="accounts-office-reference-hint" class="form-hint">
+            This is 13 characters, like 123PX00123456 or 123PX0012345X.
+            You can find it on letters from HMRC about PAYE and when you
+            registered as an employer.
+          </p>
+          <input
+            type="text"
+            id="accounts-office-reference"
+            name="accountsOfficeReference"
+            class="form-input form-input--width-15"
+            aria-describedby="accounts-office-reference-hint"
+          >
+        </div>
+        <button type="submit" class="button">Validate</button>
+      </form>
+    </section>
+
+    <!-- EORI Number -->
+    <section id="eori-section" class="field-demo">
+      <h2>EORI Number</h2>
+      <div class="field-info">
+        <table>
+          <tr><th>Correct label</th><td>EORI number</td></tr>
+          <tr><th>Do NOT use</th><td>"EORI" alone, "GB EORI number", "XI EORI number"</td></tr>
+          <tr><th>Format</th><td>Country code (GB or XI) + 12 or 15 digits</td></tr>
+          <tr><th>Example</th><td>GB123456123456</td></tr>
+        </table>
+      </div>
+
+      <form class="demo-form" onsubmit="return validateEORI(event)">
+        <div class="form-group" id="eori-form-group">
+          <label class="form-label" for="eori-number">
+            EORI number
+          </label>
+          <p id="eori-number-hint" class="form-hint">
+            The first 2 letters are the country code, like GB or XI.
+            This is followed by 12 or 15 digits, like GB123456123456.
+          </p>
+          <input
+            type="text"
+            id="eori-number"
+            name="eoriNumber"
+            class="form-input form-input--width-20"
+            aria-describedby="eori-number-hint"
+          >
+        </div>
+        <button type="submit" class="button">Validate</button>
+      </form>
+    </section>
+
+    <!-- Currency Input -->
+    <section id="currency-section" class="field-demo">
+      <h2>Currency Input</h2>
+      <div class="field-info">
+        <table>
+          <tr><th>Format</th><td>Pounds with optional pence (up to 2 decimal places)</td></tr>
+          <tr><th>Accept</th><td>£ symbol, commas, spaces — normalise before validation</td></tr>
+          <tr><th>Example</th><td>£600 or £193.54</td></tr>
+        </table>
+      </div>
+
+      <form class="demo-form" onsubmit="return validateCurrency(event)">
+        <div class="form-group" id="currency-form-group">
+          <label class="form-label" for="amount">
+            How much did you pay?
+          </label>
+          <p id="amount-hint" class="form-hint">
+            For example, £600 or £193.54
+          </p>
+          <div class="input-prefix-wrapper">
+            <span class="input-prefix">£</span>
+            <input
+              type="text"
+              id="amount"
+              name="amount"
+              class="form-input form-input--width-10 form-input--prefixed"
+              inputmode="decimal"
+              aria-describedby="amount-hint"
+            >
+          </div>
+        </div>
+        <button type="submit" class="button">Validate</button>
+      </form>
+    </section>
+
+    <!-- Address Fields -->
+    <section id="address-section" class="field-demo">
+      <h2>Address Fields</h2>
+      <div class="field-info">
+        <p>Use the <code>autocomplete</code> attribute for WCAG 2.2 compliance when collecting user addresses.</p>
+        <table>
+          <tr><th>Field</th><th>autocomplete value</th></tr>
+          <tr><td>Address line 1</td><td><code>address-line1</code></td></tr>
+          <tr><td>Address line 2</td><td><code>address-line2</code></td></tr>
+          <tr><td>Town or city</td><td><code>address-level2</code></td></tr>
+          <tr><td>Postcode</td><td><code>postal-code</code></td></tr>
+        </table>
+      </div>
+
+      <form class="demo-form">
+        <fieldset class="form-fieldset">
+          <legend class="form-legend">What is your address?</legend>
+
+          <div class="form-group">
+            <label class="form-label" for="address-line-1">
+              Address line 1
+            </label>
+            <input
+              type="text"
+              id="address-line-1"
+              name="addressLine1"
+              class="form-input"
+              autocomplete="address-line1"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="address-line-2">
+              Address line 2 (optional)
+            </label>
+            <input
+              type="text"
+              id="address-line-2"
+              name="addressLine2"
+              class="form-input"
+              autocomplete="address-line2"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="address-town">
+              Town or city
+            </label>
+            <input
+              type="text"
+              id="address-town"
+              name="addressTown"
+              class="form-input form-input--width-20"
+              autocomplete="address-level2"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="address-county">
+              County (optional)
+            </label>
+            <input
+              type="text"
+              id="address-county"
+              name="addressCounty"
+              class="form-input form-input--width-20"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="address-postcode">
+              Postcode
+            </label>
+            <input
+              type="text"
+              id="address-postcode"
+              name="addressPostcode"
+              class="form-input form-input--width-10"
+              autocomplete="postal-code"
+            >
+          </div>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- Date Input -->
+    <section id="date-section" class="field-demo">
+      <h2>Date Input</h2>
+      <div class="field-info">
+        <p>Use three separate fields for memorable dates. This is more accessible and works better across devices than date pickers.</p>
+      </div>
+
+      <form class="demo-form" onsubmit="return validateDate(event)">
+        <fieldset class="form-fieldset" id="date-form-group">
+          <legend class="form-legend">Date of birth</legend>
+          <p id="dob-hint" class="form-hint">For example, 31 3 1980</p>
+
+          <div class="date-input" aria-describedby="dob-hint">
+            <div class="date-input__item">
+              <label class="form-label" for="dob-day">Day</label>
+              <input
+                type="text"
+                id="dob-day"
+                name="dobDay"
+                class="form-input form-input--width-2"
+                inputmode="numeric"
+                autocomplete="bday-day"
+              >
+            </div>
+            <div class="date-input__item">
+              <label class="form-label" for="dob-month">Month</label>
+              <input
+                type="text"
+                id="dob-month"
+                name="dobMonth"
+                class="form-input form-input--width-2"
+                inputmode="numeric"
+                autocomplete="bday-month"
+              >
+            </div>
+            <div class="date-input__item">
+              <label class="form-label" for="dob-year">Year</label>
+              <input
+                type="text"
+                id="dob-year"
+                name="dobYear"
+                class="form-input form-input--width-4"
+                inputmode="numeric"
+                autocomplete="bday-year"
+              >
+            </div>
+          </div>
+        </fieldset>
+        <button type="submit" class="button">Validate</button>
+      </form>
+    </section>
+
+    <!-- Terminology Reference -->
+    <section id="terminology-section" class="field-demo">
+      <h2>HMRC Terminology Quick Reference</h2>
+
+      <h3>Capitalisation Rules</h3>
+      <table class="reference-table">
+        <thead>
+          <tr><th>Term</th><th>Correct</th><th>Incorrect</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Income Tax</td><td>Initial caps</td><td>income tax</td></tr>
+          <tr><td>VAT</td><td>All caps</td><td>Vat, vat</td></tr>
+          <tr><td>Corporation Tax</td><td>Initial caps</td><td>corporation tax</td></tr>
+          <tr><td>Self Assessment</td><td>Initial caps</td><td>self assessment</td></tr>
+          <tr><td>National Insurance</td><td>Initial caps</td><td>national insurance</td></tr>
+          <tr><td>Making Tax Digital</td><td>Initial caps</td><td>MTD, making tax digital</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Reference Number Formats</h3>
+      <table class="reference-table">
+        <thead>
+          <tr><th>Type</th><th>Format</th><th>Example</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>VAT registration number</td><td>9 digits</td><td>123456789</td></tr>
+          <tr><td>UTR</td><td>10 or 13 digits</td><td>1234567890</td></tr>
+          <tr><td>National Insurance</td><td>2L + 6N + 1L</td><td>QQ 12 34 56 C</td></tr>
+          <tr><td>EORI</td><td>2L + 12-15N</td><td>GB123456123456</td></tr>
+          <tr><td>Employer PAYE reference</td><td>3N + "/" + ref</td><td>123/AB456</td></tr>
+          <tr><td>Accounts Office reference</td><td>13 characters</td><td>123PX00123456</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>This demo is for educational purposes. It demonstrates UK government form field standards
+         for third-party services.</p>
+      <p>Sources: GOV.UK Design System, HMRC Design Patterns, HMRC Content Style Guide</p>
+    </div>
+  </footer>
+
+  <script src="validation.js"></script>
+</body>
+</html>
