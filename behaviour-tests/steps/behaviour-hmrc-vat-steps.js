@@ -147,9 +147,18 @@ export async function fillInVat(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
-      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
-        screenshotPath,
-      });
+      // Check if developer options are already visible (button shows "Hide" instead of "Show")
+      const showButton = page.locator("button:has-text('Show Developer Options')");
+      const hideButton = page.locator("button:has-text('Hide Developer Options')");
+      const isAlreadyVisible = await hideButton.isVisible().catch(() => false);
+
+      if (!isAlreadyVisible) {
+        await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
+          screenshotPath,
+        });
+      } else {
+        console.log("Developer options already visible, skipping click");
+      }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-clicked-options.png` });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
@@ -168,8 +177,13 @@ export async function fillInVat(
         });
         const checkbox = page.locator("#allowSandboxObligations");
         if (await checkbox.isVisible().catch(() => false)) {
-          await checkbox.check();
-          console.log("Checked allowSandboxObligations checkbox");
+          // Only check if not already checked (test-data-generator may have already checked it)
+          if (!(await checkbox.isChecked().catch(() => false))) {
+            await checkbox.check();
+            console.log("Checked allowSandboxObligations checkbox");
+          } else {
+            console.log("allowSandboxObligations checkbox already checked");
+          }
         }
       }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-selected-scenario.png` });
@@ -301,9 +315,17 @@ export async function fillInVat9Box(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
-      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
-        screenshotPath,
-      });
+      // Check if developer options are already visible (button shows "Hide" instead of "Show")
+      const hideButton = page.locator("button:has-text('Hide Developer Options')");
+      const isAlreadyVisible = await hideButton.isVisible().catch(() => false);
+
+      if (!isAlreadyVisible) {
+        await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
+          screenshotPath,
+        });
+      } else {
+        console.log("Developer options already visible, skipping click");
+      }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-9box-options.png` });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
@@ -321,8 +343,13 @@ export async function fillInVat9Box(
         });
         const checkbox = page.locator("#allowSandboxObligations");
         if (await checkbox.isVisible().catch(() => false)) {
-          await checkbox.check();
-          console.log("Checked allowSandboxObligations checkbox");
+          // Only check if not already checked (test-data-generator may have already checked it)
+          if (!(await checkbox.isChecked().catch(() => false))) {
+            await checkbox.check();
+            console.log("Checked allowSandboxObligations checkbox");
+          } else {
+            console.log("allowSandboxObligations checkbox already checked");
+          }
         }
       }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-9box-scenario.png` });
