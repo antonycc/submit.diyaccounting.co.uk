@@ -70,3 +70,19 @@ export function filterOpenObligations(formattedObligations) {
 export function getPeriodKeyFromSelection(formattedObligation) {
   return formattedObligation._periodKey;
 }
+
+/**
+ * Find period key by matching date range against obligations
+ * Used to resolve period key server-side when user selects by date range
+ * @param {Array} obligations - Raw obligations from HMRC API (with start, end, periodKey)
+ * @param {string} periodStart - Start date in ISO format (YYYY-MM-DD)
+ * @param {string} periodEnd - End date in ISO format (YYYY-MM-DD)
+ * @returns {string|null} The matching period key, or null if not found
+ */
+export function findPeriodKeyByDateRange(obligations, periodStart, periodEnd) {
+  if (!Array.isArray(obligations) || !periodStart || !periodEnd) {
+    return null;
+  }
+  const match = obligations.find((o) => o.start === periodStart && o.end === periodEnd);
+  return match?.periodKey || null;
+}

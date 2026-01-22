@@ -868,6 +868,19 @@ export function generatePeriodKey() {
 }
 
 /**
+ * Generate standard test period dates for VAT submission tests.
+ * Returns dates matching the default open obligation in the http-simulator.
+ * @returns {{ periodStart: string, periodEnd: string }} ISO date strings
+ */
+export function generatePeriodDates() {
+  // Use the default open obligation from http-simulator (18A2: Q2 2017)
+  return {
+    periodStart: "2017-04-01",
+    periodEnd: "2017-06-30",
+  };
+}
+
+/**
  * Inject mock MFA metadata into sessionStorage for testing Gov-Client-Multi-Factor header.
  * This simulates MFA detection from federated IdP (Google 2FA, OIDC, etc.)
  *

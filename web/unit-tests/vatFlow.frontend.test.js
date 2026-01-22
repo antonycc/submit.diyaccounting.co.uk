@@ -316,7 +316,7 @@ describe("VAT Flow Frontend JavaScript", () => {
       );
     });
 
-    test("submitVat should make correct API call with 9-box data", async () => {
+    test("submitVat should make correct API call with period dates and 9-box data", async () => {
       const govHeaders = buildGovClientTestHeaders();
 
       const mockResponse = {
@@ -329,8 +329,10 @@ describe("VAT Flow Frontend JavaScript", () => {
         json: () => Promise.resolve(mockResponse),
       });
 
-      // 9-box VAT data
+      // 9-box VAT data with period dates
       const vatData = {
+        periodStart: "2017-04-01",
+        periodEnd: "2017-06-30",
         vatDueSales: 1000.0,
         vatDueAcquisitions: 0,
         totalVatDue: 1000.0,
@@ -343,7 +345,7 @@ describe("VAT Flow Frontend JavaScript", () => {
         finalised: true,
       };
 
-      const result = await window.submitVat("111222333", "24A1", vatData, "test-token", govHeaders);
+      const result = await window.submitVat("111222333", vatData, "test-token", govHeaders);
 
       // Verify the fetch was called
       expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -351,10 +353,11 @@ describe("VAT Flow Frontend JavaScript", () => {
       expect(url).toBe("/api/v1/hmrc/vat/return");
       expect(init.method).toBe("POST");
 
-      // Parse and verify the body contains all 9-box fields
+      // Parse and verify the body contains period dates and all 9-box fields
       const body = JSON.parse(init.body);
       expect(body.vatNumber).toBe("111222333");
-      expect(body.periodKey).toBe("24A1");
+      expect(body.periodStart).toBe("2017-04-01");
+      expect(body.periodEnd).toBe("2017-06-30");
       expect(body.vatDueSales).toBe(1000.0);
       expect(body.vatDueAcquisitions).toBe(0);
       expect(body.totalVatDue).toBe(1000.0);
@@ -441,12 +444,14 @@ describe("VAT Flow Frontend JavaScript", () => {
 
     test("form validation should reject empty VAT number", async () => {
       const vatNumberInput = document.getElementById("vatNumber");
-      const periodKeyInput = document.getElementById("periodKey");
+      const periodStartInput = document.getElementById("periodStart");
+      const periodEndInput = document.getElementById("periodEnd");
       const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "";
-      // Set the hidden period key input directly (dropdown value is stored in hidden input)
-      periodKeyInput.value = "24A1";
+      // Set period dates
+      periodStartInput.value = "2017-04-01";
+      periodEndInput.value = "2017-06-30";
       fill9BoxForm();
       declarationCheckbox.checked = true;
 
@@ -458,17 +463,19 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VAT registration number and select a VAT period.", "error");
+      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VAT registration number.", "error");
     });
 
     test("form validation should reject invalid VAT number format", async () => {
       const vatNumberInput = document.getElementById("vatNumber");
-      const periodKeyInput = document.getElementById("periodKey");
+      const periodStartInput = document.getElementById("periodStart");
+      const periodEndInput = document.getElementById("periodEnd");
       const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "12345678"; // Only 8 digits
-      // Set the hidden period key input directly (dropdown value is stored in hidden input)
-      periodKeyInput.value = "24A1";
+      // Set period dates
+      periodStartInput.value = "2017-04-01";
+      periodEndInput.value = "2017-06-30";
       fill9BoxForm();
       declarationCheckbox.checked = true;
 
@@ -484,12 +491,14 @@ describe("VAT Flow Frontend JavaScript", () => {
 
     test("form validation should reject unchecked declaration", async () => {
       const vatNumberInput = document.getElementById("vatNumber");
-      const periodKeyInput = document.getElementById("periodKey");
+      const periodStartInput = document.getElementById("periodStart");
+      const periodEndInput = document.getElementById("periodEnd");
       const declarationCheckbox = document.getElementById("declaration");
 
       vatNumberInput.value = "111222333";
-      // Set the hidden period key input directly (dropdown value is stored in hidden input)
-      periodKeyInput.value = "24A1";
+      // Set period dates
+      periodStartInput.value = "2017-04-01";
+      periodEndInput.value = "2017-06-30";
       fill9BoxForm();
       declarationCheckbox.checked = false; // Declaration not checked
 
@@ -501,6 +510,29 @@ describe("VAT Flow Frontend JavaScript", () => {
       await window.handleFormSubmission(event);
 
       expect(window.showStatus).toHaveBeenCalledWith("You must confirm the declaration before submitting.", "error");
+    });
+
+    test("form validation should reject missing period dates", async () => {
+      const vatNumberInput = document.getElementById("vatNumber");
+      const periodStartInput = document.getElementById("periodStart");
+      const periodEndInput = document.getElementById("periodEnd");
+      const declarationCheckbox = document.getElementById("declaration");
+
+      vatNumberInput.value = "111222333";
+      // Leave period dates empty
+      periodStartInput.value = "";
+      periodEndInput.value = "";
+      fill9BoxForm();
+      declarationCheckbox.checked = true;
+
+      window.showStatus = vi.fn();
+
+      const event = new window.Event("submit");
+      event.preventDefault = vi.fn();
+
+      await window.handleFormSubmission(event);
+
+      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VAT period start and end dates.", "error");
     });
   });
 

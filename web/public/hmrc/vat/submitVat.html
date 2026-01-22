@@ -84,15 +84,32 @@
           </div>
 
           <div class="form-group">
-            <label for="obligationSelect">VAT period</label>
-            <p id="obligationSelect-hint" class="hint">Select the VAT period you're submitting for</p>
-            <select id="obligationSelect" name="obligationSelect" required aria-describedby="obligationSelect-hint">
-              <option value="">-- Enter VAT registration number to load periods --</option>
-            </select>
+            <label>VAT period</label>
+            <p id="periodDates-hint" class="hint">Enter the start and end dates of your VAT period</p>
+            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap;">
+              <div>
+                <label for="periodStart">Period start</label>
+                <input
+                  type="date"
+                  id="periodStart"
+                  name="periodStart"
+                  required
+                  aria-describedby="periodDates-hint"
+                />
+              </div>
+              <div>
+                <label for="periodEnd">Period end</label>
+                <input
+                  type="date"
+                  id="periodEnd"
+                  name="periodEnd"
+                  required
+                  aria-describedby="periodDates-hint"
+                />
+              </div>
+            </div>
+            <!-- Hidden fields for backwards compatibility -->
             <input type="hidden" id="periodKey" name="periodKey" value="" />
-            <button type="button" id="loadObligationsBtn" class="btn-secondary" style="margin-top: 0.5em; display: none;">
-              Load Periods
-            </button>
           </div>
 
           <!-- 9-Box VAT Return Entry -->
@@ -539,7 +556,8 @@
 
         const formData = new FormData(form);
         const vatNumber = formData.get("vatNumber").trim();
-        const periodKey = formData.get("periodKey").trim();
+        const periodStart = formData.get("periodStart") || "";
+        const periodEnd = formData.get("periodEnd") || "";
         const declaration = document.getElementById("declaration").checked;
         const testScenario = (document.getElementById("testScenario")?.value || "").trim();
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
@@ -548,8 +566,12 @@
         const vatBoxData = collect9BoxData();
 
         // Basic validation
-        if (!vatNumber || !periodKey) {
-          showStatus("Please enter your VAT registration number and select a VAT period.", "error");
+        if (!vatNumber) {
+          showStatus("Please enter your VAT registration number.", "error");
+          return;
+        }
+        if (!periodStart || !periodEnd) {
+          showStatus("Please enter your VAT period start and end dates.", "error");
           return;
         }
 
@@ -585,7 +607,8 @@
           const state = generateRandomState();
           submissionData = {
             vatNumber,
-            periodKey,
+            periodStart,
+            periodEnd,
             ...vatBoxData,
             testScenario,
             runFraudPreventionHeaderValidation,
@@ -667,9 +690,9 @@
           showStatus("Submitting VAT return to HMRC...", "info");
 
           // Submit VAT return with 9-box data
+          // Pass period info (either periodKey or periodStart/periodEnd)
           const submitResponse = await submitVatWithCalculatedHeaders(
             submissionData.vatNumber,
-            submissionData.periodKey,
             submissionData,
             accessToken,
           );
@@ -693,7 +716,7 @@
         }
       }
 
-      async function submitVatWithCalculatedHeaders(vatNumber, periodKey, vatData, accessToken) {
+      async function submitVatWithCalculatedHeaders(vatNumber, vatData, accessToken) {
         const storedData = JSON.parse(sessionStorage.getItem("submission_data") || "null");
         const testScenario = (document.getElementById("testScenario")?.value || storedData?.testScenario || "").trim();
         const runFraudPreventionHeaderValidation =
@@ -710,14 +733,15 @@
         if (testScenario) {
           requestHeaders["Gov-Test-Scenario"] = testScenario;
         }
-        return await submitVat(vatNumber, periodKey, vatData, accessToken, requestHeaders, runFraudPreventionHeaderValidation);
+        return await submitVat(vatNumber, vatData, accessToken, requestHeaders, runFraudPreventionHeaderValidation);
       }
 
-      async function submitVat(vatNumber, periodKey, vatData, accessToken, headers, runFraudPreventionHeaderValidation) {
+      async function submitVat(vatNumber, vatData, accessToken, headers, runFraudPreventionHeaderValidation) {
         const url = "/api/v1/hmrc/vat/return";
         const body = JSON.stringify({
           vatNumber,
-          periodKey,
+          periodStart: vatData.periodStart,
+          periodEnd: vatData.periodEnd,
           // Include all 9-box fields
           vatDueSales: vatData.vatDueSales,
           vatDueAcquisitions: vatData.vatDueAcquisitions,
@@ -804,23 +828,24 @@
         const urlParams = new URLSearchParams(window.location.search);
         const vrn = urlParams.get("vrn");
         const periodKey = urlParams.get("periodKey");
+        const periodStart = urlParams.get("periodStart");
+        const periodEnd = urlParams.get("periodEnd");
         const hmrcAccount = urlParams.get("hmrcAccount");
 
         if (vrn) {
           document.getElementById("vatNumber").value = vrn;
-          // Load obligations for this VAT registration number
-          await loadObligations(vrn);
-          // If periodKey was provided via URL, select it (backward compatibility)
-          if (periodKey) {
-            const obligationSelect = document.getElementById("obligationSelect");
-            const periodKeyInput = document.getElementById("periodKey");
-            // Check if this periodKey exists in the dropdown
-            const optionExists = Array.from(obligationSelect.options).some(opt => opt.value === periodKey);
-            if (optionExists) {
-              obligationSelect.value = periodKey;
-              periodKeyInput.value = periodKey;
-            }
-          }
+        }
+
+        // Support URL-based period initialization (for testing/deep linking)
+        if (periodStart) {
+          document.getElementById("periodStart").value = periodStart;
+        }
+        if (periodEnd) {
+          document.getElementById("periodEnd").value = periodEnd;
+        }
+        // Legacy periodKey support (set hidden field for backwards compatibility)
+        if (periodKey) {
+          document.getElementById("periodKey").value = periodKey;
         }
 
         // Show sandbox indicator if hmrcAccount=sandbox
@@ -857,28 +882,7 @@
         e.target.value = e.target.value.replace(/\D/g, "");
       });
 
-      // Handle obligation dropdown selection
-      document.getElementById("obligationSelect").addEventListener("change", handleObligationChange);
-
-      // Load obligations when VAT registration number is entered (debounced)
-      let vrnDebounceTimer = null;
-      document.getElementById("vatNumber").addEventListener("blur", function (e) {
-        const vrn = e.target.value.trim();
-        if (/^\d{9}$/.test(vrn)) {
-          loadObligations(vrn);
-        }
-      });
-      document.getElementById("vatNumber").addEventListener("input", function (e) {
-        // Clear any pending load
-        if (vrnDebounceTimer) clearTimeout(vrnDebounceTimer);
-        // Reset dropdown if VAT registration number is being edited
-        const obligationSelect = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-        if (e.target.value.length < 9) {
-          obligationSelect.innerHTML = '<option value="">-- Enter VAT registration number to load periods --</option>';
-          periodKeyInput.value = "";
-        }
-      });
+      // Note: Obligation dropdown replaced with date inputs - period key resolved server-side
 
       // Auto-calculation event listeners for 9-box VAT return
       document.getElementById("vatDueSales").addEventListener("input", calculateTotalVatDue);

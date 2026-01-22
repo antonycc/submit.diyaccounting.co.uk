@@ -195,6 +195,27 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
       },
     );
 
+    // 2) GET VAT obligations - needed for periodKey resolution during submission
+    hmrcMock.prime(
+      ({ method, path }) => method === "GET" && /\/organisations\/vat\/[0-9]{9}\/obligations$/.test(path),
+      () => {
+        return {
+          status: 200,
+          body: {
+            obligations: [
+              {
+                start: "2017-04-01",
+                end: "2017-06-30",
+                due: "2017-08-07",
+                status: "O",
+                periodKey: "18A2",
+              },
+            ],
+          },
+        };
+      },
+    );
+
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     await importedBundleManagement.updateUserBundles(testUserSub, [{ bundleId: "guest", expiry }]);
@@ -216,12 +237,14 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     const hmrcAccessToken = tokenBody?.accessToken || tokenBody?.hmrcAccessToken || "mock-token";
 
     // Step 3: Submit VAT return to HMRC
+    // Use period dates matching the simulator's default open obligation (18A2)
     const submitEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/vat/return",
       body: {
         vatNumber: "123456789",
-        periodKey: "25A1",
+        periodStart: "2017-04-01",
+        periodEnd: "2017-06-30",
         vatDue: 1500.5,
         accessToken: hmrcAccessToken,
       },
