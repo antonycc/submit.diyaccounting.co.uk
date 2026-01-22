@@ -55,6 +55,7 @@ on:
       - 'app/**'
       - 'infra/**'
       - 'tests/**'
+      - 'behaviour-tests/**'
       - 'web/**'
       - '.env.ci'
       - '.env.prod'
