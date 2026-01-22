@@ -76,23 +76,33 @@ export async function fillInVat(
     // Determine if we have period dates or a legacy periodKey
     const isPeriodDates = typeof hmrcVatPeriodKeyOrDates === "object" && hmrcVatPeriodKeyOrDates.periodStart;
 
+    let periodStart, periodEnd;
     if (isPeriodDates) {
       // New date-based period selection
-      const { periodStart, periodEnd } = hmrcVatPeriodKeyOrDates;
-      await loggedFill(page, "#periodStart", periodStart, "Entering period start date", { screenshotPath });
-      await page.waitForTimeout(50);
-      await loggedFill(page, "#periodEnd", periodEnd, "Entering period end date", { screenshotPath });
-      console.log(`Set period dates: ${periodStart} to ${periodEnd}`);
+      periodStart = hmrcVatPeriodKeyOrDates.periodStart;
+      periodEnd = hmrcVatPeriodKeyOrDates.periodEnd;
     } else {
       // Legacy periodKey support - set dates based on default simulator obligation
       // The server will resolve the periodKey from these dates
-      const periodStart = "2017-04-01"; // Default open obligation in simulator
-      const periodEnd = "2017-06-30";
-      await loggedFill(page, "#periodStart", periodStart, "Entering period start date", { screenshotPath });
-      await page.waitForTimeout(50);
-      await loggedFill(page, "#periodEnd", periodEnd, "Entering period end date", { screenshotPath });
-      console.log(`Set period dates: ${periodStart} to ${periodEnd} (legacy periodKey: ${hmrcVatPeriodKeyOrDates})`);
+      periodStart = "2017-04-01"; // Default open obligation in simulator
+      periodEnd = "2017-06-30";
     }
+
+    // Set date inputs using evaluate for reliability with type="date" inputs
+    await page.evaluate(
+      ({ startDate, endDate }) => {
+        const startInput = document.getElementById("periodStart");
+        const endInput = document.getElementById("periodEnd");
+        if (startInput) startInput.value = startDate;
+        if (endInput) endInput.value = endDate;
+        // Trigger change events so any listeners fire
+        startInput?.dispatchEvent(new Event("change", { bubbles: true }));
+        endInput?.dispatchEvent(new Event("change", { bubbles: true }));
+      },
+      { startDate: periodStart, endDate: periodEnd },
+    );
+    console.log(`Set period dates: ${periodStart} to ${periodEnd}${!isPeriodDates ? ` (legacy periodKey: ${hmrcVatPeriodKeyOrDates})` : ""}`);
+    await page.waitForTimeout(50);
 
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-filled.png` });
@@ -153,31 +163,8 @@ export async function fillInVat(
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png` });
 
-    // In sandbox mode, ensure the periodKey is set right before we check submit button
-    // This handles the case where async loadObligations might have cleared it
-    if (isSandboxMode()) {
-      // Wait for all network activity to settle first
-      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {
-        console.log("Network idle timeout - continuing anyway");
-      });
-
-      await page.evaluate((periodKey) => {
-        const dropdown = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        // Set hidden field
-        periodKeyInput.value = periodKey;
-
-        // Update dropdown to show we have a value
-        dropdown.innerHTML = "";
-        const option = document.createElement("option");
-        option.value = periodKey;
-        option.textContent = `Test Period ${periodKey}`;
-        option.selected = true;
-        dropdown.appendChild(option);
-      }, hmrcVatPeriodKey);
-      console.log(`Final periodKey set to ${hmrcVatPeriodKey} before submit check (sandbox mode)`);
-    }
+    // Period dates are now set via date inputs, periodKey is resolved server-side
+    // No need for sandbox-specific dropdown manipulation
 
     await expect(page.locator("#submitBtn")).toBeVisible();
     await page.waitForTimeout(200);
@@ -189,7 +176,7 @@ export async function fillInVat(
  * Fill in the 9-box VAT form with specific values
  * @param {object} page - Playwright page object
  * @param {string} hmrcVatNumber - VAT registration number
- * @param {string} hmrcVatPeriodKey - Period Key
+ * @param {string|object} hmrcVatPeriodKeyOrDates - Period Key (legacy) or { periodStart, periodEnd } dates
  * @param {object} vatBoxData - Object containing all 9 box values
  * @param {string|null} testScenario - Optional test scenario
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers
@@ -198,7 +185,7 @@ export async function fillInVat(
 export async function fillInVat9Box(
   page,
   hmrcVatNumber,
-  hmrcVatPeriodKey,
+  hmrcVatPeriodKeyOrDates,
   vatBoxData,
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
@@ -211,52 +198,32 @@ export async function fillInVat9Box(
     await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
     await page.waitForTimeout(100);
 
-    if (isSandboxMode()) {
-      // In sandbox mode, the obligations API may not work (requires HMRC auth)
-      // Wait for the async loadObligations to settle (loading -> error or loaded)
-      await page.waitForFunction(
-        () => {
-          const dropdown = document.querySelector("#obligationSelect");
-          if (!dropdown) return false;
-          const firstOption = dropdown.options[0];
-          // Wait until it's not "Loading periods..."
-          return firstOption && !firstOption.textContent.includes("Loading");
-        },
-        { timeout: 10000 },
-      );
-      await page.waitForTimeout(100);
+    // Determine if we have period dates or a legacy periodKey
+    const isPeriodDates = typeof hmrcVatPeriodKeyOrDates === "object" && hmrcVatPeriodKeyOrDates.periodStart;
 
-      // Now set the hidden periodKey field directly and add a test option to dropdown
-      await page.evaluate((periodKey) => {
-        const dropdown = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        // Clear dropdown and add test option
-        dropdown.innerHTML = "";
-        const option = document.createElement("option");
-        option.value = periodKey;
-        option.textContent = `Test Period ${periodKey}`;
-        option.selected = true;
-        dropdown.appendChild(option);
-
-        // Set hidden field
-        periodKeyInput.value = periodKey;
-      }, hmrcVatPeriodKey);
-      console.log(`Set periodKey to ${hmrcVatPeriodKey} directly (sandbox mode)`);
+    let periodStart, periodEnd;
+    if (isPeriodDates) {
+      periodStart = hmrcVatPeriodKeyOrDates.periodStart;
+      periodEnd = hmrcVatPeriodKeyOrDates.periodEnd;
     } else {
-      // Wait for obligations dropdown to be populated after VAT registration number entry
-      await page.waitForFunction(
-        () => {
-          const dropdown = document.querySelector("#obligationSelect");
-          return dropdown && dropdown.options.length > 1;
-        },
-        { timeout: 30000 },
-      );
-      await page.waitForTimeout(100);
-
-      // Select the obligation from dropdown using period key as value
-      await loggedSelectOption(page, "#obligationSelect", hmrcVatPeriodKey, "Selecting VAT period", { screenshotPath });
+      // Legacy periodKey support - set dates based on default simulator obligation
+      periodStart = "2017-04-01"; // Default open obligation in simulator
+      periodEnd = "2017-06-30";
     }
+
+    // Set date inputs using evaluate for reliability with type="date" inputs
+    await page.evaluate(
+      ({ startDate, endDate }) => {
+        const startInput = document.getElementById("periodStart");
+        const endInput = document.getElementById("periodEnd");
+        if (startInput) startInput.value = startDate;
+        if (endInput) endInput.value = endDate;
+        startInput?.dispatchEvent(new Event("change", { bubbles: true }));
+        endInput?.dispatchEvent(new Event("change", { bubbles: true }));
+      },
+      { startDate: periodStart, endDate: periodEnd },
+    );
+    console.log(`Set period dates: ${periodStart} to ${periodEnd}${!isPeriodDates ? ` (legacy periodKey: ${hmrcVatPeriodKeyOrDates})` : ""}`);
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-9box-vrn.png` });
 
@@ -335,31 +302,7 @@ export async function fillInVat9Box(
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-9box-complete.png` });
 
-    // In sandbox mode, ensure the periodKey is set right before we check submit button
-    // This handles the case where async loadObligations might have cleared it
-    if (isSandboxMode()) {
-      // Wait for all network activity to settle first
-      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {
-        console.log("Network idle timeout - continuing anyway");
-      });
-
-      await page.evaluate((periodKey) => {
-        const dropdown = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        // Set hidden field
-        periodKeyInput.value = periodKey;
-
-        // Update dropdown to show we have a value
-        dropdown.innerHTML = "";
-        const option = document.createElement("option");
-        option.value = periodKey;
-        option.textContent = `Test Period ${periodKey}`;
-        option.selected = true;
-        dropdown.appendChild(option);
-      }, hmrcVatPeriodKey);
-      console.log(`Final periodKey set to ${hmrcVatPeriodKey} before submit check (sandbox mode)`);
-    }
+    // Period dates are now set via date inputs, periodKey is resolved server-side
 
     await expect(page.locator("#submitBtn")).toBeVisible();
     await page.waitForTimeout(200);
@@ -368,41 +311,10 @@ export async function fillInVat9Box(
 
 export async function submitFormVat(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
-    // In sandbox mode, preserve periodKey across focus/blur events
-    // The blur event on VAT registration number field triggers loadObligations() which can clear the periodKey
-    let savedPeriodKey = null;
-    if (isSandboxMode()) {
-      savedPeriodKey = await page.evaluate(() => {
-        return document.getElementById("periodKey")?.value || null;
-      });
-      console.log(`Saved periodKey before focus: ${savedPeriodKey}`);
-    }
-
+    // Period dates are now set via date inputs and don't need special preservation
     // Focus change before submit
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submission-submit.png` });
     await loggedFocus(page, "#submitBtn", "the Submit button", { screenshotPath });
-
-    // In sandbox mode, re-inject the saved periodKey after focus event settles
-    // This prevents the blur-triggered loadObligations() from clearing our value
-    if (isSandboxMode() && savedPeriodKey) {
-      await page.waitForTimeout(100); // Let blur event settle
-      await page.evaluate((periodKey) => {
-        const dropdown = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        // Set hidden field
-        periodKeyInput.value = periodKey;
-
-        // Update dropdown to show we have a value
-        dropdown.innerHTML = "";
-        const option = document.createElement("option");
-        option.value = periodKey;
-        option.textContent = `Test Period ${periodKey}`;
-        option.selected = true;
-        dropdown.appendChild(option);
-      }, savedPeriodKey);
-      console.log(`Re-injected periodKey after focus: ${savedPeriodKey}`);
-    }
 
     // Expect the HMRC permission page to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
