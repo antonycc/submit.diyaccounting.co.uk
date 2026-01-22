@@ -38,12 +38,20 @@ describe("hmrcValidation", () => {
   });
 
   describe("isValidPeriodKey", () => {
-    test("accepts valid YYXN format period keys", () => {
+    test("accepts valid YYXZ format period keys (digit at end)", () => {
       expect(isValidPeriodKey("24A1")).toBe(true);
       expect(isValidPeriodKey("25A1")).toBe(true);
       expect(isValidPeriodKey("24B1")).toBe(true);
       expect(isValidPeriodKey("24A4")).toBe(true);
       expect(isValidPeriodKey("18A1")).toBe(true);
+    });
+
+    test("accepts valid YYXZ format period keys (letter at end)", () => {
+      // HMRC period keys can end with either a digit or a letter
+      expect(isValidPeriodKey("17NB")).toBe(true);
+      expect(isValidPeriodKey("24AB")).toBe(true);
+      expect(isValidPeriodKey("22I8")).toBe(true);
+      expect(isValidPeriodKey("18AC")).toBe(true);
     });
 
     test("accepts valid #NNN format period keys", () => {
@@ -55,13 +63,13 @@ describe("hmrcValidation", () => {
     test("accepts lowercase and converts to uppercase", () => {
       expect(isValidPeriodKey("24a1")).toBe(true);
       expect(isValidPeriodKey("25b2")).toBe(true);
+      expect(isValidPeriodKey("17nb")).toBe(true);
     });
 
     test("rejects invalid period key formats", () => {
       expect(isValidPeriodKey("123")).toBe(false); // just numbers
       expect(isValidPeriodKey("ABCD")).toBe(false); // just letters
-      expect(isValidPeriodKey("24AB")).toBe(false); // two letters
-      expect(isValidPeriodKey("2A11")).toBe(false); // wrong format
+      expect(isValidPeriodKey("2A11")).toBe(false); // wrong format (digit first position)
       expect(isValidPeriodKey("24A12")).toBe(false); // too long
       expect(isValidPeriodKey("#AB1")).toBe(false); // letters after #
       expect(isValidPeriodKey("")).toBe(false); // empty

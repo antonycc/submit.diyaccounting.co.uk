@@ -21,14 +21,15 @@ export function isValidVrn(vrn) {
 /**
  * Validates HMRC period key format.
  * Accepts:
- * - YYXN format: 2-digit year + letter + number (e.g., 24A1, 25A1, 24B1)
+ * - YYXZ format: 2-digit year + letter + alphanumeric (e.g., 24A1, 18A1, 17NB)
+ *   The last character can be a digit OR a letter per HMRC documentation.
  * - #NNN format: # followed by 3 digits (e.g., #001, #012)
  *
  * @param {string} periodKey - The period key to validate
  * @returns {boolean} True if valid
  */
 export function isValidPeriodKey(periodKey) {
-  return /^(\d{2}[A-Z]\d|#\d{3})$/.test(String(periodKey).toUpperCase());
+  return /^(\d{2}[A-Z][A-Z0-9]|#\d{3})$/.test(String(periodKey).toUpperCase());
 }
 
 /**
