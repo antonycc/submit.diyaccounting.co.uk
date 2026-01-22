@@ -3,7 +3,13 @@
 > **Status:** Planning
 > **Author:** Claude Code
 > **Created:** 2025-01-22
+> **Last Updated:** 2025-01-22
 > **Original Request:** Consider a test strategy for all alarms configured in this repository (CDK in ./infra). Run in CI doing chaos monkey stuff, mutation testing, threshold lowering, or AWS API manipulation. Check alarm state before/after. Focus on: code quality gate testing, secret detection, service downtime detection, throttling (WAF), and data breach detection. Run in CI (destructive) and non-destructively in prod for manual drills.
+>
+> **Scope Additions:**
+> - Ability to simulate and drill all runbook scenarios
+> - Comprehensive code review to ensure all monitoring gaps are identified
+> - Gold standard practices documentation
 
 ---
 
@@ -1346,17 +1352,554 @@ aws iam list-access-keys --user-name root
 
 ---
 
+## Level 8: Drill & Simulation Requirements
+
+Every runbook scenario must be testable. This section defines how to simulate each incident type for both CI testing and production drills.
+
+### 8.1 Simulation Methods by Category
+
+| Scenario | CI Simulation (Destructive) | Prod Drill (Non-Destructive) |
+|----------|----------------------------|------------------------------|
+| Lambda errors | Mutation testing - deploy code that throws | `SetAlarmState` to ALARM |
+| Lambda timeout | Mutation testing - deploy slow code | `SetAlarmState` to ALARM |
+| API 5xx | Break Lambda backend | `SetAlarmState` to ALARM |
+| WAF rate limit | Send 2500+ requests from CI runner | `SetAlarmState` to ALARM (us-east-1) |
+| WAF attack signatures | Send SQLi/XSS payloads | `SetAlarmState` to ALARM (us-east-1) |
+| DynamoDB Scan | Grant Scan permission, invoke | CloudTrail log injection (test account only) |
+| GuardDuty finding | `create-sample-findings` API | `SetAlarmState` equivalent via finding |
+| IAM policy change | Create/delete test policy | EventBridge test event |
+| Service downtime | Break health endpoint | `SetAlarmState` to ALARM |
+| Root activity | **Cannot simulate safely** | EventBridge test event (simulated payload) |
+| Certificate expiry | **Cannot simulate in prod** | `SetAlarmState` if alarm exists |
+| HMRC API failure | Mock HMRC returning 503 | `SetAlarmState` to ALARM |
+| SQS queue backup | Pause consumer, send messages | `SetAlarmState` to ALARM |
+| Backup failure | **Cannot simulate safely** | SNS test notification |
+
+### 8.2 Drill Checklist Template
+
+For each drill execution:
+
+```markdown
+## Drill Record: [Scenario Name]
+- **Date:** YYYY-MM-DD HH:MM UTC
+- **Environment:** ci / prod
+- **Mode:** Simulation / SetAlarmState
+- **Executed by:** [Name]
+
+### Pre-Drill
+- [ ] Confirmed current alarm state: OK
+- [ ] Notified on-call team of drill
+- [ ] SNS subscriptions verified active
+
+### Execution
+- [ ] Triggered simulation/state change at: HH:MM
+- [ ] Alarm transitioned to ALARM at: HH:MM (Δ = X min)
+- [ ] SNS notification received at: HH:MM (Δ = X min)
+- [ ] On-call acknowledged at: HH:MM (Δ = X min)
+
+### Verification
+- [ ] Correct escalation path followed
+- [ ] Investigation steps executable
+- [ ] Runbook accurate and complete
+- [ ] All referenced consoles/logs accessible
+
+### Post-Drill
+- [ ] Alarm restored to OK at: HH:MM
+- [ ] Drill documented in incident log
+- [ ] Runbook updates required: Yes/No
+- [ ] Follow-up actions: [List]
+```
+
+### 8.3 Drill Scenarios by Runbook
+
+#### Drill: Lambda Errors (7.2)
+```bash
+# CI Mode
+sed -i 's/return {/throw new Error("DRILL"); return {/' app/functions/bundleGet.js
+npm run deploy:ci
+aws lambda invoke --function-name ci-bundleGet /dev/null
+# Wait 6 minutes, verify alarm
+
+# Prod Drill Mode
+aws cloudwatch set-alarm-state \
+  --alarm-name "prod-bundleGet-errors" \
+  --state-value ALARM \
+  --state-reason "DRILL: Testing incident response"
+# Verify SNS, verify on-call response
+# Restore after drill
+```
+
+#### Drill: WAF Attack (7.5)
+```bash
+# CI Mode
+for i in {1..10}; do
+  curl -s "${CI_URL}/?id=' OR 1=1 --" || true
+  curl -s "${CI_URL}/" -d "<script>alert(1)</script>" || true
+done
+# Wait 6 minutes, verify alarm in us-east-1
+
+# Prod Drill Mode
+aws cloudwatch set-alarm-state --region us-east-1 \
+  --alarm-name "prod-waf-attack-signatures" \
+  --state-value ALARM \
+  --state-reason "DRILL: Testing security response"
+```
+
+#### Drill: DynamoDB Scan Detection (7.6)
+```bash
+# CI Mode ONLY - Never in prod
+# Temporarily grant Scan permission
+aws iam put-role-policy --role-name ci-bundleGet-lambda \
+  --policy-name "TempScanForDrill" \
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"dynamodb:Scan","Resource":"*"}]}'
+
+# Deploy Lambda that does Scan
+# Invoke Lambda
+# Wait for CloudTrail propagation (5-15 min)
+# Verify alarm triggered
+
+# CLEANUP IMMEDIATELY
+aws iam delete-role-policy --role-name ci-bundleGet-lambda --policy-name "TempScanForDrill"
+
+# Prod Drill Mode - Use SetAlarmState only
+aws cloudwatch set-alarm-state \
+  --alarm-name "prod-dynamodb-scan-detected" \
+  --state-value ALARM \
+  --state-reason "DRILL: Testing data exfiltration response"
+```
+
+#### Drill: Kill Switch (7.1)
+```bash
+# CI Mode - Actually activate kill switch
+aws wafv2 update-web-acl --region us-east-1 \
+  --name "ci-waf" --scope CLOUDFRONT --id $CI_WEB_ACL_ID \
+  --default-action Block={}
+# Verify site returns 403
+# Restore immediately
+aws wafv2 update-web-acl --region us-east-1 \
+  --name "ci-waf" --scope CLOUDFRONT --id $CI_WEB_ACL_ID \
+  --default-action Allow={}
+
+# Prod Drill Mode - TABLETOP ONLY
+# Walk through kill switch procedure without executing
+# Verify credentials and commands are documented and accessible
+# Verify rollback procedure is documented
+```
+
+#### Drill: Full Incident Response (End-to-End)
+```bash
+# Quarterly drill: Simulate breach detection through resolution
+# 1. Trigger DynamoDB Scan alarm (SetAlarmState in prod)
+# 2. Verify SNS notification received
+# 3. Security team acknowledges and investigates
+# 4. Team decides kill switch needed (tabletop)
+# 5. Document time-to-decision
+# 6. Walk through customer notification process (draft only)
+# 7. Walk through ICO notification process (draft only)
+# 8. Restore alarm state
+# 9. Document lessons learned
+```
+
+### 8.4 Drill Schedule
+
+| Drill Type | Frequency | Environment | Mode |
+|------------|-----------|-------------|------|
+| Individual alarm validation | Weekly (CI) | ci | Destructive |
+| SNS delivery verification | Monthly | prod | SetAlarmState |
+| On-call response time | Monthly | prod | SetAlarmState |
+| Security incident (tabletop) | Quarterly | N/A | Discussion |
+| Full breach simulation | Annually | ci | Destructive |
+| Kill switch verification | Quarterly | ci | Destructive |
+| Regulatory notification (tabletop) | Annually | N/A | Discussion |
+
+---
+
+## Level 9: Gap Analysis - What's Missing
+
+Based on comprehensive code review, the following monitoring gaps exist:
+
+### 9.1 Critical Gaps (Must Fix)
+
+| Gap | Risk | Current State | Recommendation |
+|-----|------|---------------|----------------|
+| DynamoDB PITR verification | Data loss, compliance failure | PITR enabled but not verified | Add alarm for PITR disabled |
+| Scan/BatchGet IAM permissions | Data exfiltration vector | Permitted via grantReadData() | Tighten to explicit GetItem/Query only |
+| HMRC API error rate | Silent third-party failures | Logged but not alarmed | Add error rate alarm (>5% = alert) |
+| Certificate expiration | Service outage | ACM auto-renews but no alarm | Add expiration warning (<30 days) |
+| SQS queue depth | Job backlog undetected | DLQ alarm only | Add queue depth and message age alarms |
+
+### 9.2 High Priority Gaps
+
+| Gap | Risk | Current State | Recommendation |
+|-----|------|---------------|----------------|
+| Network timeout errors | External dependency issues masked | Caught but not metriced | Add metric filter for ECONNRESET, ETIMEDOUT |
+| Async request stuck in processing | Orphaned jobs | State tracked but not alarmed | Add alarm for processing > 30 min |
+| JWT validation error rate | Auth service degradation | Errors logged only | Add error rate alarm |
+| API Gateway 429 (throttling) | Capacity issues masked | No alarm | Add throttling alarm |
+| Backup job duration | Recovery point objective risk | Job failures alarmed, duration not | Add duration alarm |
+| Provisioned concurrency exhaustion | Cold start spike | Throttle alarm exists, utilization not | Add utilization trend alarm |
+
+### 9.3 Medium Priority Gaps
+
+| Gap | Risk | Current State | Recommendation |
+|-----|------|---------------|----------------|
+| CloudFront cache hit ratio | Origin overload | Not monitored | Add cache hit ratio degradation alarm |
+| Secret rotation failures | Credential staleness | Not monitored | Add rotation failure alarm |
+| Cognito service availability | Auth outage | Not monitored | Add Cognito API error alarm |
+| API Gateway auth failures trend | Attack indicator | Logged only | Add 403 rate trend alarm |
+| Cross-account backup copy lag | DR capability degradation | Not monitored | Add copy completion alarm |
+| Deployment workflow failures | Release pipeline issues | Not monitored | Add GitHub Actions failure alarm |
+
+### 9.4 Low Priority Gaps
+
+| Gap | Risk | Current State | Recommendation |
+|-----|------|---------------|----------------|
+| RUM First Contentful Paint | User experience | LCP alarmed, FCP not | Add FCP alarm |
+| Self-destruct mechanism failures | Orphaned environments | Not monitored | Add execution failure alarm |
+| DNS query latency | Routing performance | Not monitored | Add Route53 health check |
+| GuardDuty detector disabled | Security blind spot | Not monitored | Add detector status alarm |
+
+### 9.5 Silent Failure Patterns Found
+
+These code patterns can fail without triggering alerts:
+
+```javascript
+// 1. Non-awaited async operations (app/services/asyncApiServices.js)
+putAsyncRequest(userId, requestId, 'processing', {}).catch(() => {});
+// FIX: Add error metric emission in catch block
+
+// 2. Secret fallback masking failures (app/functions/hmrc/hmrcTokenPost.js)
+const secret = process.env.OVERRIDE_SECRET || await getSecret();
+// FIX: Log/metric when override is used vs Secrets Manager
+
+// 3. Validation errors not metriced (app/functions/hmrc/hmrcVatReturnPost.js)
+if (!isValid) return { statusCode: 400, body: 'Invalid' };
+// FIX: Emit validation failure metric before returning
+```
+
+---
+
+## Level 10: Gold Standard Practices
+
+This section documents industry best practices for alarm validation and incident response. Use this as a benchmark for maturity assessment.
+
+### 10.1 AWS Well-Architected Framework - Operational Excellence
+
+| Practice | Current State | Gold Standard | Gap |
+|----------|---------------|---------------|-----|
+| **Alarm coverage** | ~20 alarms across 5 categories | Every failure mode has an alarm | Missing ~15 alarms (see 9.1-9.4) |
+| **Alarm testing** | Manual verification | Automated weekly validation | Need alarm-validation workflow |
+| **Runbooks** | Documented (this doc) | Tested quarterly, version controlled | Need drill schedule |
+| **Escalation paths** | Defined in matrix | Automated via PagerDuty/OpsGenie | Currently SNS to email only |
+| **Post-incident review** | Ad-hoc | Formal blameless postmortem | Need template and process |
+
+### 10.2 NIST Cybersecurity Framework Alignment
+
+| Function | Gold Standard | Current State | Recommendation |
+|----------|---------------|---------------|----------------|
+| **Identify** | Asset inventory, risk assessment | Infrastructure as code, partial | Complete data flow mapping |
+| **Protect** | Defense in depth, least privilege | WAF, IAM, but permissions too broad | Tighten DynamoDB IAM |
+| **Detect** | Continuous monitoring, anomaly detection | CloudTrail, GuardDuty, but gaps | Add missing alarms |
+| **Respond** | Tested incident response plan | Runbooks documented, not tested | Implement drill schedule |
+| **Recover** | Tested backup/restore, DR plan | PITR enabled, not tested | Add recovery drills |
+
+### 10.3 SOC 2 Type II Relevant Controls
+
+| Control | Requirement | Current State | Gap |
+|---------|-------------|---------------|-----|
+| **CC7.2** | Security event monitoring | GuardDuty, Security Hub, CloudTrail | Need alarm testing evidence |
+| **CC7.3** | Incident response procedures | Runbooks documented | Need drill evidence |
+| **CC7.4** | Incident communication | Escalation matrix defined | Need tested notification process |
+| **A1.2** | Backup and recovery | PITR, cross-account backup | Need recovery testing evidence |
+
+### 10.4 Chaos Engineering Maturity Model
+
+| Level | Description | Current State | Next Step |
+|-------|-------------|---------------|-----------|
+| **0 - Ad-hoc** | No systematic testing | Past ✓ | - |
+| **1 - Reactive** | Test after incidents | Current ➜ | - |
+| **2 - Proactive** | Scheduled chaos testing in non-prod | Target | Implement CI chaos |
+| **3 - Continuous** | Chaos in prod with safeguards | Future | After Level 2 stable |
+| **4 - Advanced** | Automated fault injection, ML anomaly detection | Future | Long-term goal |
+
+**Current state:** Level 1
+**Target state:** Level 2 with quarterly Level 3 exercises
+
+### 10.5 Industry Benchmarks
+
+| Metric | Industry Average | Best-in-Class | Target |
+|--------|------------------|---------------|--------|
+| Mean Time to Detect (MTTD) | 197 days (breaches) | <1 hour | <15 minutes |
+| Mean Time to Respond (MTTR) | 69 days (breaches) | <4 hours | <1 hour |
+| Alarm-to-acknowledgment | 15-30 minutes | <5 minutes | <10 minutes |
+| False positive rate | 40-60% | <10% | <20% |
+| Drill frequency | Annual | Monthly | Monthly (alarms), Quarterly (full) |
+| Runbook coverage | 50% of alarms | 100% of alarms | 100% |
+
+### 10.6 Gold Standard Alarm Design Principles
+
+1. **Every alarm must be actionable**
+   - If you wouldn't wake someone up for it, it's not an alarm
+   - Document the response action in the alarm description
+
+2. **Alarms should have clear ownership**
+   - Each alarm routes to a specific team/person
+   - Escalation path defined and tested
+
+3. **Thresholds based on data, not intuition**
+   - Use anomaly detection where possible
+   - Review thresholds quarterly based on actual data
+
+4. **No alarm fatigue**
+   - Target <5 alarms per on-call shift in steady state
+   - Auto-resolve transient issues with composite alarms
+
+5. **Test alarms regularly**
+   - Every alarm should trigger at least once per quarter (drill or real)
+   - Untriggered alarms may have broken metric pipelines
+
+6. **Correlate related alarms**
+   - Use composite alarms to reduce noise
+   - Group related failures into single incident
+
+7. **Include context in alarm notifications**
+   - Link to runbook
+   - Link to relevant dashboard
+   - Include recent metric values
+
+### 10.7 Gold Standard Incident Response
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Incident Response Lifecycle                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │
+│  │ Detect   │───▶│ Triage   │───▶│ Contain  │───▶│ Eradicate│      │
+│  │ (<5min)  │    │ (<15min) │    │ (<1hr)   │    │ (varies) │      │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘      │
+│       │               │               │               │              │
+│       ▼               ▼               ▼               ▼              │
+│  Alarm fires    Severity set    Threat stopped   Root cause        │
+│  SNS sent       Owner assigned  Kill switch if   fixed             │
+│  On-call paged  Comms started   needed           Systems restored   │
+│                                                                      │
+│  ┌──────────┐    ┌──────────┐                                       │
+│  │ Recover  │───▶│ Learn    │                                       │
+│  │ (varies) │    │ (<1 week)│                                       │
+│  └──────────┘    └──────────┘                                       │
+│       │               │                                              │
+│       ▼               ▼                                              │
+│  Service         Postmortem                                         │
+│  restored        conducted                                          │
+│  Customers       Improvements                                       │
+│  notified        implemented                                        │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 10.8 Regulatory Compliance Checklist
+
+| Regulation | Requirement | Implementation | Evidence Needed |
+|------------|-------------|----------------|-----------------|
+| **GDPR Art. 33** | Breach notification within 72 hours | Runbook 7.12 | Drill records showing <72hr capability |
+| **GDPR Art. 34** | Customer notification without undue delay | Runbook 7.12 | Communication templates, drill records |
+| **GDPR Art. 32** | Appropriate security measures | WAF, GuardDuty, encryption | Alarm validation reports |
+| **PCI DSS 10.6** | Review logs daily | CloudTrail, GuardDuty | Automated review evidence |
+| **PCI DSS 12.10** | Incident response plan | This document | Drill records |
+| **ISO 27001 A.16** | Information security incident management | Runbooks, escalation | Drill records, postmortems |
+
+---
+
+## Appendix D: Proposed New Alarms
+
+Based on gap analysis, add these alarms to CDK:
+
+### D.1 DynamoDB Protection (ObservabilityStack.java)
+
+```java
+// Scan detection - CRITICAL
+createCloudTrailMetricAlarm("dynamodb-scan-detected",
+    "eventSource = 'dynamodb.amazonaws.com' && eventName = 'Scan'",
+    1, ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    securityFindingsTopic);
+
+// Batch operation detection
+createCloudTrailMetricAlarm("dynamodb-batch-detected",
+    "eventSource = 'dynamodb.amazonaws.com' && eventName in ['BatchGetItem', 'BatchWriteItem']",
+    1, ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    securityFindingsTopic);
+```
+
+### D.2 HMRC Integration Health (HmrcStack.java)
+
+```java
+// HMRC API error rate
+Alarm.Builder.create(this, "HmrcApiErrorRate")
+    .alarmName(resourceNamePrefix + "-hmrc-api-errors")
+    .metric(hmrcErrorMetric.with(MetricOptions.builder()
+        .statistic("Sum")
+        .period(Duration.minutes(5))
+        .build()))
+    .threshold(5)
+    .evaluationPeriods(1)
+    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+    .build();
+
+// HMRC rate limiting (429)
+Alarm.Builder.create(this, "HmrcRateLimited")
+    .alarmName(resourceNamePrefix + "-hmrc-rate-limited")
+    .metric(hmrc429Metric)
+    .threshold(1)
+    .build();
+```
+
+### D.3 SQS Queue Health (HmrcStack.java)
+
+```java
+// Queue depth (jobs backing up)
+Alarm.Builder.create(this, "QueueDepthAlarm")
+    .alarmName(queueName + "-depth")
+    .metric(queue.metricApproximateNumberOfMessagesVisible())
+    .threshold(10)
+    .evaluationPeriods(3)
+    .build();
+
+// Message age (jobs stuck)
+Alarm.Builder.create(this, "MessageAgeAlarm")
+    .alarmName(queueName + "-age")
+    .metric(queue.metricApproximateAgeOfOldestMessage())
+    .threshold(Duration.minutes(30).toSeconds())
+    .build();
+```
+
+### D.4 Certificate Expiration (EdgeStack.java)
+
+```java
+// Certificate expiration warning
+Alarm.Builder.create(this, "CertExpirationAlarm")
+    .alarmName(resourceNamePrefix + "-cert-expiring")
+    .metric(Metric.Builder.create()
+        .namespace("AWS/CertificateManager")
+        .metricName("DaysToExpiry")
+        .dimensionsMap(Map.of("CertificateArn", certificate.getCertificateArn()))
+        .build())
+    .threshold(30)
+    .comparisonOperator(ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD)
+    .build();
+```
+
+### D.5 Authentication Health (AuthStack.java)
+
+```java
+// JWT validation error rate
+createLambdaLogMetricAlarm(customAuthorizer,
+    "jwt-validation-errors",
+    "[timestamp, requestId, level=ERROR, message=*JWT*]",
+    5, Duration.minutes(5));
+
+// Cognito API errors
+Alarm.Builder.create(this, "CognitoErrorsAlarm")
+    .alarmName(resourceNamePrefix + "-cognito-errors")
+    .metric(Metric.Builder.create()
+        .namespace("AWS/Cognito")
+        .metricName("TokenRefreshFailures")
+        .build())
+    .threshold(5)
+    .build();
+```
+
+### D.6 Network and External Dependencies
+
+```java
+// HTTP timeout/connection errors (from Lambda logs)
+createLambdaLogMetricAlarm(hmrcVatReturnPostWorker,
+    "network-errors",
+    "ECONNRESET ETIMEDOUT ENOTFOUND ECONNREFUSED",
+    5, Duration.minutes(5));
+
+// Async request stuck in processing
+Alarm.Builder.create(this, "AsyncRequestStuckAlarm")
+    .alarmName(resourceNamePrefix + "-async-stuck")
+    .metric(asyncRequestAgeMetric)
+    .threshold(Duration.minutes(30).toSeconds())
+    .build();
+```
+
+### D.7 API Gateway Health
+
+```java
+// Throttling (429 Too Many Requests)
+Alarm.Builder.create(this, "ApiThrottlingAlarm")
+    .alarmName(resourceNamePrefix + "-api-throttled")
+    .metric(api.metricCount(MetricOptions.builder()
+        .dimensionsMap(Map.of("StatusCode", "429"))
+        .build()))
+    .threshold(10)
+    .evaluationPeriods(1)
+    .build();
+
+// Authorization failures trend
+Alarm.Builder.create(this, "ApiAuthFailuresAlarm")
+    .alarmName(resourceNamePrefix + "-api-auth-failures")
+    .metric(api.metricCount(MetricOptions.builder()
+        .dimensionsMap(Map.of("StatusCode", "403"))
+        .build()))
+    .threshold(50)
+    .evaluationPeriods(2)
+    .build();
+```
+
+---
+
 ## Next Steps
 
-1. [ ] Create `.github/workflows/alarm-validation.yml` workflow
-2. [ ] Create `scripts/alarm-validation/` directory with helper scripts
-3. [ ] Add IAM permissions for alarm state manipulation
-4. [ ] Create SNS subscription for verification (e.g., SQS queue for checking)
-5. [ ] Implement mutation testing framework
-6. [ ] Add to CI pipeline (weekly schedule)
-7. [ ] Document drill procedures in runbook
-8. [ ] **Implement DynamoDB IAM tightening** (remove Scan/Batch permissions)
-9. [ ] **Add DynamoDB CloudTrail metric filters and alarms**
-10. [ ] **Create kill switch automation** (WAF block-all rule)
-11. [ ] **Set up SNS routing for currently-silent alarms**
-12. [ ] **Configure cross-region SNS for WAF alarms (us-east-1 → eu-west-2)**
+### Phase 1: Critical Security Gaps (Immediate)
+1. [ ] **Implement DynamoDB IAM tightening** - Replace grantReadData() with explicit GetItem/Query only
+2. [ ] **Add DynamoDB Scan detection alarm** - CloudTrail metric filter → securityFindingsTopic
+3. [ ] **Add DynamoDB BatchGet/Write detection alarm** - CloudTrail metric filter
+4. [ ] **Add certificate expiration alarm** - ACM DaysToExpiry < 30
+
+### Phase 2: Alarm Infrastructure
+5. [ ] Create `.github/workflows/alarm-validation.yml` workflow
+6. [ ] Create `scripts/alarm-validation/` directory with helper scripts
+7. [ ] Add IAM permissions for alarm state manipulation (SetAlarmState)
+8. [ ] Create SNS subscription for verification (SQS queue for automated checking)
+9. [ ] **Set up SNS routing for currently-silent alarms**
+10. [ ] **Configure cross-region SNS for WAF alarms (us-east-1 → eu-west-2)**
+
+### Phase 3: High Priority Alarms (see Appendix D)
+11. [ ] Add HMRC API error rate alarm
+12. [ ] Add HMRC 429 rate limit alarm
+13. [ ] Add SQS queue depth alarm
+14. [ ] Add SQS message age alarm
+15. [ ] Add JWT validation error rate alarm
+16. [ ] Add API Gateway throttling (429) alarm
+17. [ ] Add network timeout error metric filter
+
+### Phase 4: Testing Infrastructure
+18. [ ] Implement mutation testing framework
+19. [ ] Add weekly CI alarm validation schedule
+20. [ ] **Create kill switch documentation and CLI scripts** (WAF block-all)
+21. [ ] Create drill checklist templates
+22. [ ] Set up drill schedule (monthly SNS, quarterly security tabletop)
+
+### Phase 5: Medium Priority Alarms
+23. [ ] Add CloudFront cache hit ratio alarm
+24. [ ] Add secret rotation failure alarm
+25. [ ] Add Cognito API error alarm
+26. [ ] Add API Gateway 403 trend alarm
+27. [ ] Add backup job duration alarm
+28. [ ] Add async request stuck alarm (processing > 30 min)
+
+### Phase 6: Documentation & Compliance
+29. [ ] Create postmortem template
+30. [ ] Create customer notification templates
+31. [ ] Create ICO notification template
+32. [ ] Document evidence collection for SOC 2 / ISO 27001
+33. [ ] Schedule annual tabletop for regulatory notification drill
+
+### Phase 7: Code Fixes for Silent Failures
+34. [ ] Fix non-awaited async operations in asyncApiServices.js
+35. [ ] Add metric emission for validation failures in hmrcVatReturnPost.js
+36. [ ] Add logging when secret override is used vs Secrets Manager
