@@ -1,0 +1,266 @@
+# .github/workflows/security-review.yml
+
+name: security-review
+run-name: "Security Review [${{ github.ref_name }}]"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Target branch for PR'
+        required: false
+        default: 'main'
+        type: string
+      copilot_agent_login:
+        description: 'GitHub Copilot agent login'
+        required: false
+        default: 'copilot-swe-agent'
+        type: string
+      skip_if_open_security_issues:
+        description: 'Skip if security review issues already open'
+        required: false
+        default: true
+        type: boolean
+  # Uncomment for scheduled weekly security reviews
+  # schedule:
+  #   - cron: '0 6 * * 1'  # Weekly Monday 6:00 AM UTC
+
+env:
+  TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
+  COPILOT_AGENT_LOGIN: ${{ inputs.copilot_agent_login || 'copilot-swe-agent' }}
+  SKIP_IF_OPEN: ${{ inputs.skip_if_open_security_issues == null && 'true' || inputs.skip_if_open_security_issues }}
+
+jobs:
+  check-existing:
+    name: 'Check for Existing Security Issues'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      should_create: ${{ steps.check.outputs.should_create }}
+    steps:
+      - name: Check for open security review issues
+        id: check
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const skipIfOpen = '${{ env.SKIP_IF_OPEN }}' === 'true';
+
+            if (!skipIfOpen) {
+              core.setOutput('should_create', 'true');
+              console.log('Skip check disabled - will create issue');
+              return;
+            }
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security-review',
+              per_page: 1
+            });
+
+            const hasOpenIssue = issues.length > 0;
+            core.setOutput('should_create', (!hasOpenIssue).toString());
+
+            if (hasOpenIssue) {
+              console.log(`Skipping: Found existing open security review issue #${issues[0].number}`);
+            } else {
+              console.log('No open security review issues found - will create one');
+            }
+
+  create-issue:
+    name: 'Create Security Review Issue'
+    needs: [check-existing]
+    if: needs.check-existing.outputs.should_create == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      issue_number: ${{ steps.create.outputs.issue_number }}
+      issue_id: ${{ steps.create.outputs.issue_id }}
+      issue_url: ${{ steps.create.outputs.issue_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Create security review issue
+        id: create
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+
+            const promptPath = 'prompts/security-review.md';
+            if (!fs.existsSync(promptPath)) {
+              core.setFailed(`Prompt file not found: ${promptPath}`);
+              return;
+            }
+
+            const promptContent = fs.readFileSync(promptPath, 'utf8');
+            const timestamp = new Date().toISOString().split('T')[0];
+
+            const issueTitle = `Security Review: OWASP Top 10 Analysis (${timestamp})`;
+
+            const issueBody = `## Automated Security Review Request
+
+**Target Branch:** ${{ env.TARGET_BRANCH }}
+**Triggered by:** ${{ github.workflow }} workflow
+**Run ID:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+---
+
+${promptContent}
+
+---
+
+### Instructions for Copilot Agent
+
+1. Review each file pattern listed in the scope section
+2. Check for vulnerabilities in each OWASP category
+3. Document findings with file paths and line numbers
+4. Create a PR with fixes, grouped into logical commits
+5. If no vulnerabilities found, close this issue with a summary
+
+**Create a pull request targeting the \`${{ env.TARGET_BRANCH }}\` branch.**
+`;
+
+            try {
+              const repoQuery = `
+                query($owner: String!, $name: String!) {
+                  repository(owner: $owner, name: $name) {
+                    id
+                  }
+                }
+              `;
+
+              const repoResult = await github.graphql(repoQuery, {
+                owner: context.repo.owner,
+                name: context.repo.repo
+              });
+
+              const createMutation = `
+                mutation($repositoryId: ID!, $title: String!, $body: String!) {
+                  createIssue(input: {
+                    repositoryId: $repositoryId,
+                    title: $title,
+                    body: $body
+                  }) {
+                    issue {
+                      id
+                      number
+                      url
+                    }
+                  }
+                }
+              `;
+
+              const result = await github.graphql(createMutation, {
+                repositoryId: repoResult.repository.id,
+                title: issueTitle,
+                body: issueBody
+              });
+
+              const issue = result.createIssue.issue;
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['security-review', 'copilot-agent']
+              });
+
+              console.log(`Created issue #${issue.number}: ${issue.url}`);
+              core.setOutput('issue_number', issue.number.toString());
+              core.setOutput('issue_id', issue.id);
+              core.setOutput('issue_url', issue.url);
+
+            } catch (error) {
+              core.setFailed(`Failed to create issue: ${error.message}`);
+            }
+
+  assign-copilot:
+    name: 'Assign to Copilot Agent'
+    needs: [check-existing, create-issue]
+    if: needs.check-existing.outputs.should_create == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Assign issue to Copilot
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          script: |
+            const issueId = '${{ needs.create-issue.outputs.issue_id }}';
+            const issueNumber = ${{ needs.create-issue.outputs.issue_number }};
+
+            try {
+              const actorsQuery = `
+                query($owner: String!, $name: String!) {
+                  repository(owner: $owner, name: $name) {
+                    suggestedActors(capabilities: [CAN_BE_ASSIGNED], first: 100) {
+                      nodes {
+                        login
+                        __typename
+                        ... on Bot { id }
+                        ... on User { id }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const actorsResult = await github.graphql(actorsQuery, {
+                owner: context.repo.owner,
+                name: context.repo.repo
+              });
+
+              const copilotBot = actorsResult.repository.suggestedActors.nodes.find(
+                actor => actor.login === '${{ env.COPILOT_AGENT_LOGIN }}'
+              );
+
+              if (!copilotBot) {
+                console.log('Copilot agent not found in suggested actors');
+                console.log('Available:', actorsResult.repository.suggestedActors.nodes.map(n => n.login));
+                return;
+              }
+
+              const assignMutation = `
+                mutation($assignableId: ID!, $actorIds: [ID!]!) {
+                  replaceActorsForAssignable(input: {
+                    assignableId: $assignableId,
+                    actorIds: $actorIds
+                  }) {
+                    assignable {
+                      ... on Issue {
+                        assignees(first: 5) {
+                          nodes { login }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(assignMutation, {
+                assignableId: issueId,
+                actorIds: [copilotBot.id]
+              });
+
+              console.log(`Assigned issue #${issueNumber} to ${{ env.COPILOT_AGENT_LOGIN }}`);
+
+            } catch (error) {
+              console.log(`Assignment failed (non-critical): ${error.message}`);
+            }
+
+      - name: Summary
+        run: |
+          echo "## Security Review Issue Created"
+          echo ""
+          echo "**Issue:** #${{ needs.create-issue.outputs.issue_number }}"
+          echo "**URL:** ${{ needs.create-issue.outputs.issue_url }}"
+          echo "**Assigned to:** ${{ env.COPILOT_AGENT_LOGIN }}"
