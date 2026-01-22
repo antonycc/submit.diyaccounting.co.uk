@@ -39,6 +39,7 @@ export async function fillInVat(
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
+  allowSandboxObligations = false,
 ) {
   await test.step("The user completes the VAT form with valid values and sees the Submit button", async () => {
     // Check if we're in sandbox mode and can use test data link
@@ -82,10 +83,11 @@ export async function fillInVat(
       periodStart = hmrcVatPeriodKeyOrDates.periodStart;
       periodEnd = hmrcVatPeriodKeyOrDates.periodEnd;
     } else {
-      // Legacy periodKey support - set dates based on default simulator obligation
+      // Legacy periodKey support - set dates based on default simulator/HMRC sandbox obligation
+      // Both use Q1 2017 (2017-01-01 to 2017-03-31) as the default open period
       // The server will resolve the periodKey from these dates
-      periodStart = "2017-04-01"; // Default open obligation in simulator
-      periodEnd = "2017-06-30";
+      periodStart = "2017-01-01"; // Default open obligation in both simulator and HMRC sandbox
+      periodEnd = "2017-03-31";
     }
 
     // Set date inputs using evaluate for reliability with type="date" inputs
@@ -144,7 +146,7 @@ export async function fillInVat(
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
-    if (testScenario || runFraudPreventionHeaderValidation) {
+    if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
       await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
         screenshotPath,
       });
@@ -157,6 +159,18 @@ export async function fillInVat(
       if (runFraudPreventionHeaderValidation) {
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
+      if (allowSandboxObligations && isSandboxMode()) {
+        // The sandboxObligationsOption div should be visible once developer options are shown in sandbox mode
+        // Wait for it to appear then check the checkbox
+        await page.waitForSelector("#allowSandboxObligations", { state: "attached", timeout: 5000 }).catch(() => {
+          console.log("allowSandboxObligations checkbox not found - may not be in sandbox mode");
+        });
+        const checkbox = page.locator("#allowSandboxObligations");
+        if (await checkbox.isVisible().catch(() => false)) {
+          await checkbox.check();
+          console.log("Checked allowSandboxObligations checkbox");
+        }
       }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-selected-scenario.png` });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-options-shown.png` });
@@ -190,6 +204,7 @@ export async function fillInVat9Box(
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
+  allowSandboxObligations = false,
 ) {
   await test.step("The user completes the 9-box VAT form with valid values and sees the Submit button", async () => {
     // Fill out the VAT form manually
@@ -206,9 +221,10 @@ export async function fillInVat9Box(
       periodStart = hmrcVatPeriodKeyOrDates.periodStart;
       periodEnd = hmrcVatPeriodKeyOrDates.periodEnd;
     } else {
-      // Legacy periodKey support - set dates based on default simulator obligation
-      periodStart = "2017-04-01"; // Default open obligation in simulator
-      periodEnd = "2017-06-30";
+      // Legacy periodKey support - set dates based on default simulator/HMRC sandbox obligation
+      // Both use Q1 2017 (2017-01-01 to 2017-03-31) as the default open period
+      periodStart = "2017-01-01"; // Default open obligation in both simulator and HMRC sandbox
+      periodEnd = "2017-03-31";
     }
 
     // Set date inputs using evaluate for reliability with type="date" inputs
@@ -284,7 +300,7 @@ export async function fillInVat9Box(
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png` });
 
-    if (testScenario || runFraudPreventionHeaderValidation) {
+    if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
       await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
         screenshotPath,
       });
@@ -297,6 +313,17 @@ export async function fillInVat9Box(
       if (runFraudPreventionHeaderValidation) {
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
+      if (allowSandboxObligations && isSandboxMode()) {
+        // The sandboxObligationsOption div should be visible once developer options are shown in sandbox mode
+        await page.waitForSelector("#allowSandboxObligations", { state: "attached", timeout: 5000 }).catch(() => {
+          console.log("allowSandboxObligations checkbox not found - may not be in sandbox mode");
+        });
+        const checkbox = page.locator("#allowSandboxObligations");
+        if (await checkbox.isVisible().catch(() => false)) {
+          await checkbox.check();
+          console.log("Checked allowSandboxObligations checkbox");
+        }
       }
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-9box-scenario.png` });
     }

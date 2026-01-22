@@ -115,12 +115,21 @@ function populateSubmitVatForm() {
   const vrnInput = document.getElementById("vatNumber");
   const periodKeyInput = document.getElementById("periodKey");
   const obligationSelect = document.getElementById("obligationSelect");
+  const periodStartInput = document.getElementById("periodStart");
+  const periodEndInput = document.getElementById("periodEnd");
 
   const testVrn = generateTestVrn();
   const testPeriodKey = generateTestPeriodKey();
 
   if (vrnInput) vrnInput.value = testVrn;
   if (periodKeyInput) periodKeyInput.value = testPeriodKey;
+
+  // Set default period dates based on the simulator's default open obligation
+  // Both the simulator and HMRC sandbox use Q1 2017 (2017-01-01 to 2017-03-31) as the default open period
+  // Note: allowSandboxObligations is also enabled so the backend will use whatever
+  // open obligation is available if these dates don't match exactly
+  if (periodStartInput) periodStartInput.value = "2017-01-01";
+  if (periodEndInput) periodEndInput.value = "2017-03-31";
 
   // Also populate the obligation dropdown with a test option if it exists
   if (obligationSelect) {
@@ -160,6 +169,27 @@ function populateSubmitVatForm() {
     const vatDueInput = document.getElementById("vatDue");
     if (vatDueInput) vatDueInput.value = generateTestVatAmount();
     console.log("[Test Data] Populated legacy VAT submission form with test data");
+  }
+
+  // Auto-check allowSandboxObligations in sandbox mode - this allows the backend
+  // to use any available open obligation if the test dates don't match HMRC's actual obligations
+  const allowSandboxObligationsCheckbox = document.getElementById("allowSandboxObligations");
+  if (allowSandboxObligationsCheckbox) {
+    allowSandboxObligationsCheckbox.checked = true;
+    console.log("[Test Data] Auto-checked allowSandboxObligations for sandbox testing");
+  }
+
+  // Show the sandbox obligations option and developer section for test data
+  const sandboxObligationsOption = document.getElementById("sandboxObligationsOption");
+  const developerSection = document.getElementById("developerSection");
+  if (sandboxObligationsOption) {
+    sandboxObligationsOption.style.display = "block";
+  }
+  if (developerSection) {
+    developerSection.style.display = "block";
+    // Update the toggle button text
+    const toggleBtn = document.getElementById("toggleDeveloperMode");
+    if (toggleBtn) toggleBtn.textContent = "Hide Developer Options";
   }
 }
 

@@ -5,7 +5,10 @@
 // Gov-Test-Scenario handlers for VAT obligations endpoint
 
 /**
- * Default obligations array (from captured test data)
+ * Default obligations array (aligned with HMRC sandbox)
+ * Note: HMRC sandbox typically only has one open obligation (Q1 2017).
+ * Tests using different periods need allowSandboxObligations enabled
+ * to use whatever obligation is available.
  */
 const defaultObligations = [
   {
@@ -13,14 +16,6 @@ const defaultObligations = [
     start: "2017-01-01",
     end: "2017-03-31",
     due: "2017-05-07",
-    status: "F",
-    received: "2017-05-06",
-  },
-  {
-    periodKey: "18A2",
-    start: "2017-04-01",
-    end: "2017-06-30",
-    due: "2017-08-07",
     status: "O",
   },
 ];

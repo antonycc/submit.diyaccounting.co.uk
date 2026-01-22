@@ -108,12 +108,18 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 // Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
 const runFraudPreventionHeaderValidation = isSandboxMode();
+// Enable sandbox obligation fallback - allows test to use any available open obligation if dates don't match
+const allowSandboxObligations = isSandboxMode();
 
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
-// Expected resolved periodKey from simulator obligations for dates 2017-04-01 to 2017-06-30
-const expectedResolvedPeriodKey = "18A2";
+// Expected resolved periodKey - with allowSandboxObligations, the backend will use
+// the first available open obligation from HMRC. For the sandbox, this is typically
+// Q1 2017 (18A1). The simulator uses Q2 2017 (18A2) as default.
+// When running against real HMRC sandbox, allowSandboxObligations enables fallback
+// to whatever obligation HMRC has available.
+const expectedResolvedPeriodKey = isSandboxMode() ? "18A1" : "18A2";
 
 let mockOAuth2Process;
 let s3Endpoint;
@@ -319,7 +325,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* *********** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */

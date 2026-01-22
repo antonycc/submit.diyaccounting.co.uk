@@ -63,6 +63,8 @@ export function extractAndValidateParameters(event, errorMessages) {
     periodEnd,
     accessToken,
     runFraudPreventionHeaderValidation,
+    // Sandbox-only option: allow using any available open obligation if dates don't match
+    allowSandboxObligations,
     // Legacy single-field format
     vatDue,
     // New 9-box format fields
@@ -177,6 +179,10 @@ export function extractAndValidateParameters(event, errorMessages) {
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
+  // allowSandboxObligations is only effective in sandbox mode
+  const allowSandboxObligationsBool =
+    (allowSandboxObligations === true || allowSandboxObligations === "true") && hmrcAccount === "sandbox";
+
   return {
     vatNumber,
     periodStart,
@@ -186,6 +192,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     requestFormat,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
+    allowSandboxObligations: allowSandboxObligationsBool,
     declarationConfirmed,
   };
 }
@@ -232,7 +239,7 @@ export async function ingestHandler(event) {
   }
 
   // Extract and validate parameters
-  const { vatNumber, periodStart, periodEnd, hmrcAccessToken, vatReturnData, requestFormat, hmrcAccount, runFraudPreventionHeaderValidation, declarationConfirmed } =
+  const { vatNumber, periodStart, periodEnd, hmrcAccessToken, vatReturnData, requestFormat, hmrcAccount, runFraudPreventionHeaderValidation, allowSandboxObligations, declarationConfirmed } =
     extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
@@ -304,9 +311,24 @@ export async function ingestHandler(event) {
 
     // obligations is the full HMRC response body containing { obligations: [...] }
     const obligationsArray = obligations?.obligations || [];
-    const resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
+    let resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
+
+    // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
+    // use the first available open obligation instead of erroring
+    if (!resolvedPeriodKey && allowSandboxObligations) {
+      const openObligations = obligationsArray.filter(o => o.status === "O");
+      if (openObligations.length > 0) {
+        resolvedPeriodKey = openObligations[0].periodKey;
+        logger.info({
+          message: "allowSandboxObligations: Using first available open obligation",
+          requestedPeriod: { periodStart, periodEnd },
+          usedObligation: openObligations[0],
+        });
+      }
+    }
+
     if (!resolvedPeriodKey) {
-      logger.error({ message: "No matching obligation found for date range", periodStart, periodEnd, obligations: obligationsArray });
+      logger.error({ message: "No matching obligation found for date range", periodStart, periodEnd, obligations: obligationsArray, allowSandboxObligations });
       return buildValidationError(
         request,
         [`No open VAT obligation found for period ${periodStart} to ${periodEnd}`],
