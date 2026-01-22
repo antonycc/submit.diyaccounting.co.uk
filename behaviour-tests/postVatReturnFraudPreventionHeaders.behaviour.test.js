@@ -81,6 +81,8 @@ const runFraudPreventionHeaderValidation = true;
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
+// Expected resolved periodKey from simulator obligations for dates 2017-04-01 to 2017-06-30
+const expectedResolvedPeriodKey = "18A2";
 
 let mockOAuth2Process;
 let serverProcess;
@@ -501,9 +503,10 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
         "httpResponse.statusCode": 201,
       });
 
-      // Check that request body contains the period key and VAT due amount
+      // Check that request body contains the resolved period key and VAT due amount
+      // periodKey is now resolved from obligations based on periodStart/periodEnd
       const requestBody = JSON.parse(vatPostRequest.httpRequest.body);
-      expect(requestBody.periodKey).toBe(hmrcVatPeriodKey.toUpperCase());
+      expect(requestBody.periodKey).toBe(expectedResolvedPeriodKey);
       expect(requestBody.vatDueSales).toBe(parseFloat(hmrcVatDueAmount));
       console.log("[DynamoDB Assertions]: VAT POST request body validated successfully");
     });
