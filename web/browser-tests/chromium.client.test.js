@@ -151,8 +151,11 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       const vatNumber = await page.locator("#vatNumber").inputValue();
       expect(vatNumber).toBe("");
 
-      const periodKey = await page.locator("#periodKey").inputValue();
-      expect(periodKey).toBe("");
+      // Check period date fields have default values
+      const periodStart = await page.locator("#periodStart").inputValue();
+      expect(periodStart).toBe("");
+      const periodEnd = await page.locator("#periodEnd").inputValue();
+      expect(periodEnd).toBe("");
 
       // Check 9-box form fields have default values
       const vatDueSales = await page.locator("#vatDueSales").inputValue();
@@ -180,7 +183,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       await expect(statusMessages.first()).toBeVisible({ timeout: 2000 });
 
       const statusText = await statusMessages.first().locator(".status-message-content").textContent();
-      expect(statusText).toBe("Please enter your VAT registration number and select a VAT period.");
+      expect(statusText).toBe("Please enter your VAT registration number.");
 
       // Check that the message has error styling
       const className = await statusMessages.first().getAttribute("class");
@@ -206,18 +209,20 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       expect(value).toBe("123456");
     });
 
-    test("should have period key as hidden field populated by obligation dropdown", async ({ page }) => {
-      // Period key is now a hidden field populated by the obligation dropdown selection
-      const periodKeyField = page.locator("#periodKey");
-      const obligationSelect = page.locator("#obligationSelect");
+    test("should have period date inputs for VAT period selection", async ({ page }) => {
+      // Period is now entered via date inputs (periodStart and periodEnd)
+      const periodStartField = page.locator("#periodStart");
+      const periodEndField = page.locator("#periodEnd");
 
-      // Verify the hidden field exists
-      await expect(periodKeyField).toHaveCount(1);
-      const fieldType = await periodKeyField.getAttribute("type");
-      expect(fieldType).toBe("hidden");
+      // Verify the date inputs exist and are visible
+      await expect(periodStartField).toBeVisible();
+      await expect(periodEndField).toBeVisible();
 
-      // Verify the obligation dropdown is visible
-      await expect(obligationSelect).toBeVisible();
+      // Verify they are date input fields
+      const startType = await periodStartField.getAttribute("type");
+      const endType = await periodEndField.getAttribute("type");
+      expect(startType).toBe("date");
+      expect(endType).toBe("date");
     });
   });
 
@@ -227,10 +232,10 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       // Fill in valid form data for 9-box VAT form
       await page.locator("#vatNumber").fill("111222333");
       await setTimeout(100);
-      // Set the hidden periodKey field via JavaScript since it's populated by obligation dropdown
-      await page.evaluate(() => {
-        document.getElementById("periodKey").value = "24A1";
-      });
+      // Set period dates
+      await page.locator("#periodStart").fill("2017-04-01");
+      await setTimeout(50);
+      await page.locator("#periodEnd").fill("2017-06-30");
       await setTimeout(100);
       // Fill 9-box fields
       await page.locator("#vatDueSales").fill("1000.00");
