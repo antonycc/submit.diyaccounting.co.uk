@@ -217,11 +217,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       }
 
       // Capture periodKey from VAT return submission response
+      // The backend returns the resolved periodKey at data.periodKey level
       if (!resolvedPeriodKey && url.includes("/api/v1/hmrc/vat/return") && response.status() === 200) {
         try {
           const body = await response.json();
-          // The periodKey is in the receipt data
-          const pk = body?.data?.receipt?.periodKey || body?.receipt?.periodKey;
+          // The periodKey is returned at data.periodKey (resolved from obligations by the backend)
+          const pk = body?.data?.periodKey || body?.periodKey;
           if (pk && periodKeyFormatRegex.test(pk)) {
             resolvedPeriodKey = pk;
             console.log(`[Test] Captured resolved periodKey from response: ${resolvedPeriodKey}`);

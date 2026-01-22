@@ -425,6 +425,7 @@ export async function ingestHandler(event) {
           receipt,
           hmrcResponse: serializableHmrcResponse,
           hmrcResponseBody,
+          periodKey: payload.periodKey, // Include resolved periodKey in response
         };
 
         if (!hmrcResponse.ok) {
@@ -583,6 +584,7 @@ export async function workerHandler(event) {
         receipt,
         hmrcResponse: serializableHmrcResponse,
         hmrcResponseBody,
+        periodKey: payload.periodKey, // Include resolved periodKey in response
       };
 
       if (!hmrcResponse.ok) {

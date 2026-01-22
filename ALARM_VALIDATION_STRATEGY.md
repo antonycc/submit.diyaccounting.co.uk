@@ -693,7 +693,70 @@ The workflow generates a JSON report:
 
 ---
 
-## Appendix A: Alarm Inventory (from CDK exploration)
+## Appendix A: Quick Reference - Where to Look
+
+### Alarm Observability Matrix
+
+| Alarm | Console Location | Logs/Details | SNS Topic | Region |
+|-------|------------------|--------------|-----------|--------|
+| `{fn}-errors` | CloudWatch Alarms | Lambda logs in CloudWatch | None (silent) | eu-west-2 |
+| `{fn}-throttles` | CloudWatch Alarms | Lambda metrics | None (silent) | eu-west-2 |
+| `{fn}-high-duration-p95` | CloudWatch Alarms | Lambda metrics, X-Ray | None (silent) | eu-west-2 |
+| `{fn}-log-errors` | CloudWatch Alarms | Lambda logs (search ERROR) | None (silent) | eu-west-2 |
+| `{prefix}-api-5xx` | CloudWatch Alarms | API Gateway logs | None (silent) | eu-west-2 |
+| `{prefix}-health-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
+| `{prefix}-api-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
+| `{prefix}-github-synthetic-failed` | CloudWatch Alarms | GitHub Actions runs | alertTopic | eu-west-2 |
+| `{prefix}-rum-lcp-p75` | CloudWatch Alarms | RUM console | None (silent) | eu-west-2 |
+| `{prefix}-rum-js-errors` | CloudWatch Alarms | RUM console | None (silent) | eu-west-2 |
+| `{prefix}-waf-rate-limit` | CloudWatch Alarms | WAF sampled requests | None | **us-east-1** |
+| `{prefix}-waf-attack-signatures` | CloudWatch Alarms | WAF sampled requests | None | **us-east-1** |
+| `{prefix}-waf-known-bad-inputs` | CloudWatch Alarms | WAF sampled requests | None | **us-east-1** |
+| `{queue}-not-empty` (DLQ) | CloudWatch Alarms | SQS console, dead letters | None (silent) | eu-west-2 |
+| `{prefix}-dynamodb-scan-detected` | CloudWatch Alarms | CloudTrail | securityFindingsTopic | eu-west-2 |
+| GuardDuty findings | GuardDuty console | GuardDuty finding details | securityFindingsTopic | eu-west-2 |
+| Security Hub findings | Security Hub console | Finding details | securityFindingsTopic | eu-west-2 |
+| IAM policy changes | EventBridge | CloudTrail | securityFindingsTopic | eu-west-2 |
+| Security group changes | EventBridge | CloudTrail | securityFindingsTopic | eu-west-2 |
+| Access key creation | EventBridge | CloudTrail | securityFindingsTopic | eu-west-2 |
+| Root account activity | EventBridge | CloudTrail | securityFindingsTopic | eu-west-2 |
+
+### Investigation Query Cheat Sheet
+
+**Lambda errors:**
+```sql
+filter @message like /ERROR|Exception/
+| fields @timestamp, @message | sort @timestamp desc | limit 50
+```
+
+**API Gateway 5xx:**
+```sql
+filter status >= 500
+| stats count(*) by path, status | sort count desc
+```
+
+**DynamoDB unusual access:**
+```sql
+filter eventSource = "dynamodb.amazonaws.com"
+| stats count(*) by eventName, userIdentity.arn | sort count desc
+```
+
+**IAM changes:**
+```sql
+filter eventSource = "iam.amazonaws.com"
+| fields @timestamp, eventName, userIdentity.arn, requestParameters
+| sort @timestamp desc
+```
+
+**WAF blocks (requires S3 access logs):**
+```sql
+filter action = "BLOCK"
+| stats count(*) by terminatingRuleId, clientIp | sort count desc
+```
+
+---
+
+## Appendix B: Alarm Inventory (from CDK exploration)
 
 | Stack | Alarm Name Pattern | Threshold | SNS Topic |
 |-------|-------------------|-----------|-----------|
@@ -712,7 +775,7 @@ The workflow generates a JSON report:
 | EdgeStack.java | `{prefix}-waf-known-bad-inputs` | ≥5/5min | None (us-east-1) |
 | AsyncApiLambda.java | `{queue}-not-empty` | >1 message | None (silent) |
 
-## Appendix B: EventBridge Security Rules
+## Appendix C: EventBridge Security Rules
 
 | Rule | Event Source | Event Pattern | SNS Topic |
 |------|-------------|---------------|-----------|
@@ -725,6 +788,564 @@ The workflow generates a JSON report:
 
 ---
 
+## Level 6: DynamoDB Exfiltration Detection
+
+### 6.1 Current State Analysis
+
+**Operations used in code:**
+| Operation | Used | Files |
+|-----------|------|-------|
+| GetItem | Yes | dynamoDbReceiptRepository.js, dynamoDbAsyncRequestRepository.js |
+| Query | Yes | dynamoDbBundleRepository.js, dynamoDbReceiptRepository.js |
+| PutItem | Yes | All repositories |
+| UpdateItem | Yes | dynamoDbAsyncRequestRepository.js |
+| DeleteItem | Yes | dynamoDbBundleRepository.js |
+| **Scan** | **NO** | - |
+| **BatchGetItem** | **NO** | - |
+| **BatchWriteItem** | **NO** | - |
+
+**Current IAM permissions (via CDK grants):**
+```java
+// grantReadData() includes: GetItem, Query, BatchGetItem, Scan
+// grantWriteData() includes: PutItem, UpdateItem, DeleteItem, BatchWriteItem
+// grantReadWriteData() includes: All of the above
+```
+
+**Gap:** `Scan` and `BatchGetItem` are permitted but never used. These are the primary vectors for bulk data exfiltration.
+
+### 6.2 Proposed IAM Tightening
+
+Replace broad CDK grants with explicit permissions:
+
+```java
+// BEFORE (too broad):
+bundlesTable.grantReadData(bundleGetLambda);
+
+// AFTER (least privilege):
+bundlesTable.grant(bundleGetLambda,
+    "dynamodb:GetItem",
+    "dynamodb:Query"
+);
+// Explicitly NO: dynamodb:Scan, dynamodb:BatchGetItem
+```
+
+**Per-Lambda Permission Matrix:**
+
+| Lambda | GetItem | Query | PutItem | UpdateItem | DeleteItem |
+|--------|---------|-------|---------|------------|------------|
+| bundleGet | - | Yes | - | - | - |
+| bundlePost (ingest) | - | Yes | - | Yes | - |
+| bundlePost (worker) | - | - | Yes | Yes | - |
+| bundleDelete (ingest) | - | Yes | - | Yes | - |
+| bundleDelete (worker) | - | - | - | Yes | Yes |
+| receiptGet | - | Yes | - | - | - |
+| hmrcVatReturnPost | Yes | - | Yes | Yes | - |
+| customAuthorizer | - | Yes | Yes | Yes | - |
+
+### 6.3 New Alarms for DynamoDB Anomaly Detection
+
+Add to `ObservabilityStack.java`:
+
+| Alarm | Metric Source | Threshold | Rationale |
+|-------|---------------|-----------|-----------|
+| `{prefix}-dynamodb-scan-detected` | CloudTrail metric filter | ≥1 | Scan should NEVER happen |
+| `{prefix}-dynamodb-batch-detected` | CloudTrail metric filter | ≥1 | BatchGet/Write not used |
+| `{prefix}-dynamodb-read-spike` | DynamoDB ConsumedReadCapacityUnits | >10× baseline | Unusual read volume |
+| `{prefix}-dynamodb-unknown-principal` | CloudTrail metric filter | ≥1 | Access from non-Lambda role |
+
+**CloudTrail Metric Filter Patterns:**
+
+```java
+// Scan detection (should trigger on ANY scan)
+FilterPattern.all(
+    FilterPattern.stringValue("$.eventSource", "=", "dynamodb.amazonaws.com"),
+    FilterPattern.stringValue("$.eventName", "=", "Scan")
+)
+
+// Batch operation detection
+FilterPattern.all(
+    FilterPattern.stringValue("$.eventSource", "=", "dynamodb.amazonaws.com"),
+    FilterPattern.any(
+        FilterPattern.stringValue("$.eventName", "=", "BatchGetItem"),
+        FilterPattern.stringValue("$.eventName", "=", "BatchWriteItem")
+    )
+)
+
+// Unknown principal (not a known Lambda role)
+// This requires listing known role ARNs and filtering for NOT IN
+```
+
+### 6.4 CloudWatch Logs Insights Queries
+
+For investigation after an alert:
+
+```sql
+-- Find ALL Scan operations (should return 0 in normal operation)
+filter eventSource = "dynamodb.amazonaws.com" and eventName = "Scan"
+| stats count(*) by userIdentity.principalId, requestParameters.tableName
+| sort count desc
+
+-- Find bulk read patterns by time window
+filter eventSource = "dynamodb.amazonaws.com" and eventName in ["GetItem", "Query"]
+| stats count(*) as ops by bin(1m), requestParameters.tableName
+| filter ops > 100
+| sort ops desc
+
+-- Find access from unexpected principals
+filter eventSource = "dynamodb.amazonaws.com"
+  and not userIdentity.arn like /.*submit-.*-lambda.*/
+| fields @timestamp, eventName, userIdentity.arn, requestParameters.tableName
+
+-- Estimate data volume by operation
+filter eventSource = "dynamodb.amazonaws.com" and eventName = "Query"
+| stats sum(responseElements.count) as itemsReturned by bin(5m), requestParameters.tableName
+```
+
+---
+
+## Level 7: Incident Response Runbooks
+
+### 7.1 Kill Switch: Manual Service Offline
+
+**Location:** CloudFront distribution behavior or WAF rule
+
+**Mechanism:**
+1. WAF rule to block all traffic (returns 403)
+2. Or: CloudFront custom error page pointing to maintenance page
+3. Or: Route 53 failover to static maintenance page
+
+**Trigger:** Manual only - via AWS Console or CLI:
+```bash
+# Option 1: WAF block-all rule (fastest)
+aws wafv2 update-web-acl --region us-east-1 \
+  --name "${PREFIX}-waf" \
+  --scope CLOUDFRONT \
+  --id $WEB_ACL_ID \
+  --default-action Block={}
+
+# Option 2: CloudFront disable (slower, ~15min propagation)
+aws cloudfront update-distribution --id $DIST_ID \
+  --distribution-config file://maintenance-config.json
+```
+
+**When to use:** Confirmed active breach, active data exfiltration, or compromised credentials with ongoing abuse.
+
+---
+
+### 7.2 Response Runbook: Lambda Errors (`{fn}-errors`)
+
+#### Signal Location
+- **Primary:** CloudWatch Alarms console → `{fn}-errors`
+- **Dashboard:** Operations dashboard → Lambda Errors widget
+- **SNS:** Currently silent (no SNS action configured)
+
+#### Investigation Steps
+1. **CloudWatch Logs Insights:**
+   ```sql
+   filter @message like /ERROR|Exception|error/
+   | fields @timestamp, @message
+   | sort @timestamp desc
+   | limit 100
+   ```
+2. **X-Ray traces:** Look for failed spans
+3. **Recent deployments:** Check GitHub Actions for recent deploys
+
+#### Possible Causes
+| Cause | Indicators | Response |
+|-------|------------|----------|
+| Code bug | Consistent error message, started after deploy | Rollback deployment |
+| Dependency failure | Timeout errors, connection refused | Check downstream service |
+| Configuration issue | Missing env var, invalid ARN | Fix configuration, redeploy |
+| Resource exhaustion | Memory/timeout errors | Increase Lambda limits |
+| Malicious input | Error in input validation | Check WAF logs, consider blocking |
+
+#### Response Actions
+| Severity | Action | Notify |
+|----------|--------|--------|
+| Isolated errors (<5/hr) | Monitor, investigate | Internal only |
+| Sustained errors (>10/hr) | Investigate urgently, consider rollback | Internal + on-call |
+| Complete failure (100% error rate) | Immediate rollback | Internal + on-call + stakeholders |
+
+#### Notification Requirements
+- **Customers:** Only if service degraded >15 minutes
+- **Authorities:** Not required (operational issue)
+
+---
+
+### 7.3 Response Runbook: API 5xx Errors (`{prefix}-api-5xx`)
+
+#### Signal Location
+- **Primary:** CloudWatch Alarms console → `{prefix}-api-5xx`
+- **Dashboard:** Operations dashboard → API Gateway widget
+- **SNS:** Currently silent
+
+#### Investigation Steps
+1. **API Gateway logs:** CloudWatch Logs → `/aws/apigateway/{api-id}`
+2. **Identify affected endpoints:**
+   ```sql
+   filter status >= 500
+   | stats count(*) by path, status
+   ```
+3. **Correlate with Lambda errors:** Check if backend Lambda failing
+
+#### Possible Causes
+| Cause | Indicators | Response |
+|-------|------------|----------|
+| Lambda failure | Corresponding Lambda error alarm | See Lambda runbook |
+| API Gateway misconfiguration | 502 Bad Gateway | Check integration settings |
+| Timeout | 504 Gateway Timeout | Increase timeout or optimize Lambda |
+| Throttling | 429 or 503 | Increase provisioned concurrency |
+
+#### Response Actions
+| Severity | Action | Notify |
+|----------|--------|--------|
+| Sporadic 5xx (<1%) | Monitor | Internal only |
+| Elevated 5xx (1-10%) | Investigate, prepare rollback | Internal + on-call |
+| Major outage (>10%) | Rollback, incident declared | All stakeholders |
+
+#### Notification Requirements
+- **Customers:** If error rate >5% for >10 minutes
+- **Authorities:** Not required
+
+---
+
+### 7.4 Response Runbook: WAF Rate Limiting (`{prefix}-waf-rate-limit`)
+
+#### Signal Location
+- **Primary:** CloudWatch Alarms console (us-east-1) → `{prefix}-waf-rate-limit`
+- **WAF Console:** WAF & Shield → Web ACLs → Sampled requests
+- **SNS:** Currently silent (cross-region SNS needed)
+
+#### Investigation Steps
+1. **WAF Sampled Requests:** Identify blocked IPs and request patterns
+2. **CloudFront Access Logs:** Full request details in S3
+3. **Geolocation:** Check origin countries of blocked requests
+
+#### Possible Causes
+| Cause | Indicators | Response |
+|-------|------------|----------|
+| DDoS attempt | Many IPs, distributed geography | Monitor, WAF handling it |
+| Single bad actor | Single IP, high volume | Consider permanent IP block |
+| Legitimate traffic spike | Known event, marketing campaign | Temporarily raise limits |
+| Bot/scraper | Repetitive patterns, no cookies | Add bot detection rule |
+| Compromised API key | Authenticated requests from single source | Revoke key |
+
+#### Response Actions
+| Severity | Action | Notify |
+|----------|--------|--------|
+| Low volume blocking (<100/hr) | Monitor, review patterns | Internal only |
+| Sustained blocking (>500/hr) | Investigate source, consider IP block | Internal + security |
+| DDoS indicators (>5000/hr) | Escalate to AWS Shield, review architecture | Internal + security + management |
+
+#### Notification Requirements
+- **Customers:** Only if legitimate traffic affected
+- **Authorities:** If sustained DDoS (>1hr) or if attack attributed
+
+#### Technical Countermeasures
+```bash
+# Block specific IP permanently
+aws wafv2 update-ip-set --region us-east-1 \
+  --name "${PREFIX}-blocked-ips" \
+  --scope CLOUDFRONT \
+  --addresses "1.2.3.4/32"
+
+# Temporarily lower rate limit (more aggressive blocking)
+# Requires WAF rule update via CDK redeploy
+```
+
+---
+
+### 7.5 Response Runbook: WAF Attack Signatures (`{prefix}-waf-attack-signatures`)
+
+#### Signal Location
+- **Primary:** CloudWatch Alarms console (us-east-1)
+- **WAF Console:** Sampled requests filtered by CommonRuleSet
+- **SNS:** Currently silent
+
+#### Investigation Steps
+1. **Identify attack type:** SQLi, XSS, path traversal, etc.
+2. **Check if any requests succeeded:** Were attacks blocked pre-Lambda?
+3. **Review application logs:** Any corresponding errors?
+
+#### Possible Causes
+| Cause | Indicators | Response |
+|-------|------------|----------|
+| Automated vulnerability scanner | Many different attack types, systematic | Block IP, monitor |
+| Targeted attack | Specific payloads, persistence | Block IP, full security review |
+| False positive | Legitimate input matching pattern | Add exception rule |
+| Penetration test (authorized) | Expected timing, known source | Confirm authorization |
+
+#### Response Actions
+| Severity | Action | Notify |
+|----------|--------|--------|
+| Scanner activity (<50 blocks) | Monitor, block IP if persistent | Internal security |
+| Targeted attack indicators | Full investigation, preserve evidence | Security team + management |
+| Successful bypass suspected | **CRITICAL**: Check Lambda logs for exploitation | Security + consider kill switch |
+
+#### Notification Requirements
+- **Customers:** If any attack succeeded and data accessed
+- **Authorities:**
+  - ICO within 72 hours if personal data breached (GDPR)
+  - Action Fraud if criminal activity suspected
+
+#### Technical Countermeasures
+```bash
+# Immediately block attacking IP
+aws wafv2 update-ip-set --region us-east-1 \
+  --name "${PREFIX}-blocked-ips" \
+  --scope CLOUDFRONT \
+  --addresses "$ATTACKER_IP/32"
+
+# If bypass suspected - KILL SWITCH
+aws wafv2 update-web-acl --region us-east-1 \
+  --name "${PREFIX}-waf" \
+  --scope CLOUDFRONT \
+  --id $WEB_ACL_ID \
+  --default-action Block={}
+```
+
+---
+
+### 7.6 Response Runbook: DynamoDB Scan Detected (`{prefix}-dynamodb-scan-detected`)
+
+#### Signal Location
+- **Primary:** CloudWatch Alarms console → `{prefix}-dynamodb-scan-detected`
+- **CloudTrail:** Event history filtered by `eventName=Scan`
+- **SNS:** → `securityFindingsTopic`
+
+#### Investigation Steps
+1. **Identify principal:** Who executed the Scan?
+   ```sql
+   filter eventSource = "dynamodb.amazonaws.com" and eventName = "Scan"
+   | fields @timestamp, userIdentity.arn, userIdentity.principalId,
+            requestParameters.tableName, sourceIPAddress
+   ```
+2. **Check if authorized:** Is this a known admin action? Deployment script?
+3. **Assess data exposure:** Which table? How much data returned?
+
+#### Possible Causes
+| Cause | Indicators | Response |
+|-------|------------|----------|
+| **Compromised Lambda credentials** | Lambda role ARN, unexpected time | **CRITICAL** - rotate credentials, investigate |
+| **Compromised deployment credentials** | Deployment role ARN | **CRITICAL** - rotate, audit GitHub Actions |
+| **Insider threat** | IAM user, console access | Suspend user, investigate |
+| **Legitimate admin action** | Known admin, documented reason | Document, improve process |
+| **Misconfigured application** | Code bug introduced Scan | Fix code, audit deployment |
+
+#### Response Actions
+| Severity | Action | Notify |
+|----------|--------|--------|
+| **ANY Scan = HIGH SEVERITY** | Immediate investigation | Security + management |
+| Unknown principal | **CRITICAL**: Assume breach, preserve evidence | All + consider authorities |
+| Known principal, unauthorized | Suspend access, investigate | Security + HR + management |
+
+#### Notification Requirements
+- **Customers:** Yes, if their data was in scanned table (potential breach)
+- **Authorities:**
+  - **ICO:** Within 72 hours if personal data potentially exposed
+  - **HMRC:** If tax data potentially exposed (financial services regulations)
+  - **Action Fraud:** If criminal activity suspected
+
+#### Technical Countermeasures
+```bash
+# 1. Identify the compromised role
+ROLE_ARN=$(aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=EventName,AttributeValue=Scan \
+  --query 'Events[0].CloudTrailEvent' --output text | jq -r '.userIdentity.arn')
+
+# 2. Immediately revoke all sessions for that role
+aws iam put-role-policy --role-name $ROLE_NAME \
+  --policy-name "DenyAll" \
+  --policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":"*","Resource":"*"}]}'
+
+# 3. If breach confirmed - KILL SWITCH
+# Take site offline while investigating
+aws wafv2 update-web-acl --region us-east-1 \
+  --name "${PREFIX}-waf" --scope CLOUDFRONT --id $WEB_ACL_ID \
+  --default-action Block={}
+
+# 4. Preserve evidence
+aws cloudtrail lookup-events \
+  --start-time $(date -d '24 hours ago' --iso-8601) \
+  --lookup-attributes AttributeKey=EventSource,AttributeValue=dynamodb.amazonaws.com \
+  > /tmp/dynamodb-audit-$(date +%Y%m%d-%H%M%S).json
+```
+
+---
+
+### 7.7 Response Runbook: GuardDuty Findings (`{prefix}-guardduty-findings`)
+
+#### Signal Location
+- **Primary:** GuardDuty console → Findings
+- **EventBridge:** → SNS `securityFindingsTopic`
+- **Security Hub:** Aggregated findings view
+
+#### Investigation Steps
+1. **Review finding type:** Severity, affected resources
+2. **Check finding details:** Source IP, user agent, API calls
+3. **Correlate with other signals:** CloudTrail, VPC Flow Logs
+
+#### Common Finding Types & Response
+
+| Finding Type | Severity | Response |
+|--------------|----------|----------|
+| `UnauthorizedAccess:IAMUser/ConsoleLoginSuccess.B` | HIGH | Unusual console login - verify user, check for credential compromise |
+| `UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration` | CRITICAL | Credentials used from outside AWS - **immediate credential rotation** |
+| `Recon:IAMUser/NetworkPermissions` | MEDIUM | Reconnaissance activity - monitor, may precede attack |
+| `CryptoCurrency:EC2/BitcoinTool.B` | HIGH | Crypto mining - likely compromised instance - **terminate instance** |
+| `Exfiltration:S3/MaliciousIPCaller` | HIGH | Data exfiltration attempt - check S3 access logs |
+
+#### Response Actions
+| Severity | Action | Notify |
+|----------|--------|--------|
+| LOW | Monitor, document | Internal security |
+| MEDIUM | Investigate within 24 hours | Security team |
+| HIGH | Investigate immediately | Security + management |
+| CRITICAL | **Incident response activated** | All stakeholders + consider authorities |
+
+#### Notification Requirements
+- **Customers:** If finding indicates their data accessed
+- **Authorities:** Depends on finding type (see specific guidance above)
+
+---
+
+### 7.8 Response Runbook: IAM Policy Changes (`{prefix}-iam-policy-changes`)
+
+#### Signal Location
+- **Primary:** EventBridge → SNS `securityFindingsTopic`
+- **CloudTrail:** Event history filtered by IAM events
+- **IAM Console:** Policy versions, attachments
+
+#### Investigation Steps
+1. **Who made the change?** Check `userIdentity` in CloudTrail
+2. **What changed?** Compare policy versions
+3. **Was it authorized?** Check change management records
+
+#### Possible Causes
+| Cause | Indicators | Response |
+|-------|------------|----------|
+| Legitimate deployment | Matches CDK/deployment timing | Document, verify expected |
+| Manual admin change | Console access, IAM user | Verify authorization |
+| Privilege escalation attempt | New admin permissions, unusual principal | **CRITICAL** - investigate immediately |
+| Compromised credentials | Unexpected time, unknown source IP | **CRITICAL** - revoke credentials |
+
+#### Response Actions
+| Change Type | Action | Notify |
+|-------------|--------|--------|
+| Expected (deployment) | Verify, document | None |
+| Unexpected but benign | Investigate, document, improve process | Internal |
+| Privilege escalation | **Revert immediately**, investigate | Security + management |
+| Compromised credentials | **Revoke all credentials**, incident response | All + consider authorities |
+
+---
+
+### 7.9 Response Runbook: Service Downtime (`{prefix}-health-failed`, `{prefix}-api-failed`)
+
+#### Signal Location
+- **Primary:** CloudWatch Alarms console
+- **Dashboard:** Operations dashboard
+- **SNS:** → `alertTopic`
+
+#### Investigation Steps
+1. **Verify outage:** Manually test endpoints
+2. **Check dependencies:** AWS status page, HMRC status
+3. **Review recent changes:** Deployments, configuration changes
+
+#### Possible Causes
+| Cause | Indicators | Response |
+|-------|------------|----------|
+| Deployment failure | Started after deploy | Rollback |
+| AWS outage | Multiple services affected, AWS status page | Wait, communicate to customers |
+| Certificate expiry | SSL errors | Renew certificate |
+| DNS issue | Name resolution failures | Check Route 53 |
+| DDoS | High traffic, WAF blocks | See WAF runbook |
+
+#### Response Actions
+| Duration | Action | Notify |
+|----------|--------|--------|
+| <5 minutes | Investigate, likely transient | Internal only |
+| 5-15 minutes | Active investigation, prepare comms | Internal + stakeholders |
+| >15 minutes | Incident declared, status page update | All customers |
+| >1 hour | Major incident, exec notification | All + consider media statement |
+
+#### Notification Requirements
+- **Customers:** Status page update if >15 minutes
+- **Authorities:** Not required (service availability issue)
+
+---
+
+### 7.10 Response Runbook: Root Account Activity (`{prefix}-root-account-activity`)
+
+#### Signal Location
+- **Primary:** EventBridge → SNS `securityFindingsTopic`
+- **CloudTrail:** Filter by `userIdentity.type = Root`
+
+#### Investigation Steps
+1. **What action was taken?** Review CloudTrail event
+2. **Was it authorized?** Check with account owners
+3. **Why was root used?** Root should almost never be needed
+
+#### Response Actions
+| Scenario | Action | Notify |
+|----------|--------|--------|
+| Authorized (known admin, documented reason) | Document, review root usage policy | Internal |
+| Unauthorized | **CRITICAL**: Assume account compromise | All + AWS Support |
+
+**Root account compromise is CRITICAL:**
+```bash
+# 1. Change root password immediately (requires console access)
+# 2. Rotate root access keys (should not exist)
+aws iam list-access-keys --user-name root
+# 3. Enable MFA if not already (should already be enabled)
+# 4. Review all IAM users and roles for backdoors
+# 5. Contact AWS Support
+```
+
+#### Notification Requirements
+- **Customers:** Yes, if account compromise confirmed
+- **Authorities:** Yes, if account compromise confirmed (data protection implications)
+
+---
+
+### 7.11 Escalation Matrix
+
+| Alarm Category | L1 Response | L2 Escalation | L3 Escalation | Kill Switch |
+|----------------|-------------|---------------|---------------|-------------|
+| Lambda/API errors | On-call engineer | Tech lead | CTO | No |
+| WAF rate limiting | On-call engineer | Security + Tech lead | CTO + Legal | If DDoS sustained |
+| WAF attack signatures | Security team | CTO + Legal | Authorities | If bypass confirmed |
+| DynamoDB Scan | **Immediate to Security** | CTO + Legal | Authorities | If breach confirmed |
+| GuardDuty CRITICAL | **Immediate to Security** | CTO + Legal | Authorities | Case-by-case |
+| Root activity | **Immediate to CTO** | All stakeholders | AWS Support | Case-by-case |
+| Service downtime | On-call engineer | Tech lead | CTO (if >1hr) | No |
+
+---
+
+### 7.12 Regulatory Notification Requirements
+
+#### ICO (Information Commissioner's Office) - GDPR
+- **When:** Personal data breach likely to result in risk to individuals
+- **Deadline:** Within 72 hours of becoming aware
+- **How:** https://ico.org.uk/for-organisations/report-a-breach/
+- **What to report:** Nature of breach, categories of data, approximate number of individuals, likely consequences, measures taken
+
+#### HMRC (if applicable as software provider)
+- **When:** Tax data potentially compromised
+- **Contact:** Through Making Tax Digital support channels
+- **Timeline:** As soon as reasonably practicable
+
+#### Action Fraud (UK)
+- **When:** Criminal activity suspected (hacking, fraud)
+- **How:** https://www.actionfraud.police.uk/
+- **Reference:** Keep crime reference number for insurance/legal
+
+#### Affected Customers
+- **When:** Their data potentially accessed
+- **Timeline:** Without undue delay after confirming breach
+- **Content:** What happened, what data affected, what you're doing, what they should do
+
+---
+
 ## Next Steps
 
 1. [ ] Create `.github/workflows/alarm-validation.yml` workflow
@@ -734,3 +1355,8 @@ The workflow generates a JSON report:
 5. [ ] Implement mutation testing framework
 6. [ ] Add to CI pipeline (weekly schedule)
 7. [ ] Document drill procedures in runbook
+8. [ ] **Implement DynamoDB IAM tightening** (remove Scan/Batch permissions)
+9. [ ] **Add DynamoDB CloudTrail metric filters and alarms**
+10. [ ] **Create kill switch automation** (WAF block-all rule)
+11. [ ] **Set up SNS routing for currently-silent alarms**
+12. [ ] **Configure cross-region SNS for WAF alarms (us-east-1 → eu-west-2)**

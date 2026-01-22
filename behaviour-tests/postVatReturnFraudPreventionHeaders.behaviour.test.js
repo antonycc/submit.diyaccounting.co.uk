@@ -77,6 +77,8 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 const runFraudPreventionHeaderValidation = true;
+// Enable sandbox obligation fallback - allows test to use any available open obligation if dates don't match
+const allowSandboxObligations = isSandboxMode();
 
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = generatePeriodKey();
@@ -186,11 +188,12 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       }
 
       // Capture periodKey from VAT return submission response
+      // The backend returns the resolved periodKey at data.periodKey level
       if (!resolvedPeriodKey && url.includes("/api/v1/hmrc/vat/return") && response.status() === 200) {
         try {
           const body = await response.json();
-          // The periodKey is in the receipt data
-          const pk = body?.data?.receipt?.periodKey || body?.receipt?.periodKey;
+          // The periodKey is returned at data.periodKey (resolved from obligations by the backend)
+          const pk = body?.data?.periodKey || body?.periodKey;
           if (pk && periodKeyFormatRegex.test(pk)) {
             resolvedPeriodKey = pk;
             console.log(`[Test] Captured resolved periodKey from response: ${resolvedPeriodKey}`);
@@ -300,7 +303,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* *********** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
