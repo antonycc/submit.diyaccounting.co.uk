@@ -89,6 +89,12 @@ jobs:
       - name: Create security review issue
         id: create
         uses: actions/github-script@v8
+        env:
+          TARGET_BRANCH: ${{ env.TARGET_BRANCH }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
         with:
           script: |
             const fs = require('fs');
@@ -102,30 +108,38 @@ jobs:
             const promptContent = fs.readFileSync(promptPath, 'utf8');
             const timestamp = new Date().toISOString().split('T')[0];
 
+            const targetBranch = process.env.TARGET_BRANCH;
+            const workflowName = process.env.WORKFLOW_NAME;
+            const runId = process.env.RUN_ID;
+            const serverUrl = process.env.SERVER_URL;
+            const repository = process.env.REPOSITORY;
+
             const issueTitle = `Security Review: OWASP Top 10 Analysis (${timestamp})`;
 
-            const issueBody = `## Automated Security Review Request
-
-**Target Branch:** ${{ env.TARGET_BRANCH }}
-**Triggered by:** ${{ github.workflow }} workflow
-**Run ID:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
----
-
-${promptContent}
-
----
-
-### Instructions for Copilot Agent
-
-1. Review each file pattern listed in the scope section
-2. Check for vulnerabilities in each OWASP category
-3. Document findings with file paths and line numbers
-4. Create a PR with fixes, grouped into logical commits
-5. If no vulnerabilities found, close this issue with a summary
-
-**Create a pull request targeting the \`${{ env.TARGET_BRANCH }}\` branch.**
-`;
+            // Build issue body using array join to avoid YAML parsing issues with ** markdown
+            const issueBody = [
+              '## Automated Security Review Request',
+              '',
+              `__Target Branch:__ ${targetBranch}`,
+              `__Triggered by:__ ${workflowName} workflow`,
+              `__Run ID:__ [${runId}](${serverUrl}/${repository}/actions/runs/${runId})`,
+              '',
+              '---',
+              '',
+              promptContent,
+              '',
+              '---',
+              '',
+              '### Instructions for Copilot Agent',
+              '',
+              '1. Review each file pattern listed in the scope section',
+              '2. Check for vulnerabilities in each OWASP category',
+              '3. Document findings with file paths and line numbers',
+              '4. Create a PR with fixes, grouped into logical commits',
+              '5. If no vulnerabilities found, close this issue with a summary',
+              '',
+              `__Create a pull request targeting the \`${targetBranch}\` branch.__`
+            ].join('\n');
 
             try {
               const repoQuery = `

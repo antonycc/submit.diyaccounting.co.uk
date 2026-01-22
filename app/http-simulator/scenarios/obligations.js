@@ -5,20 +5,51 @@
 // Gov-Test-Scenario handlers for VAT obligations endpoint
 
 /**
+ * Generate a random period key in HMRC format.
+ * HMRC states that period keys cannot be calculated, only validated.
+ * Format: 2-digit year + letter (A-Z) + alphanumeric (0-9, A-Z)
+ * Examples: 18A1, 24B3, 17AC, 25Z9
+ * @returns {string} Random period key
+ */
+function generateRandomPeriodKey() {
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const year = String(17 + Math.floor(Math.random() * 10)).padStart(2, "0"); // 17-26
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const suffix = Math.random() < 0.5
+    ? String(Math.floor(Math.random() * 10)) // 0-9
+    : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  return `${year}${letter}${suffix}`;
+}
+
+/**
+ * Validate period key format (HMRC format: YYXN or YYXX where Y=digit, X=letter, N=digit/letter)
+ * @param {string} periodKey - Period key to validate
+ * @returns {boolean} True if valid format
+ */
+export function isValidPeriodKeyFormat(periodKey) {
+  return /^[0-9]{2}[A-Z][0-9A-Z]$/.test(periodKey);
+}
+
+/**
  * Default obligations array (aligned with HMRC sandbox)
  * Note: HMRC sandbox typically only has one open obligation (Q1 2017).
  * Tests using different periods need allowSandboxObligations enabled
  * to use whatever obligation is available.
+ * Period keys are randomized to simulate HMRC's unpredictable behavior.
  */
-const defaultObligations = [
-  {
-    periodKey: "18A1",
-    start: "2017-01-01",
-    end: "2017-03-31",
-    due: "2017-05-07",
-    status: "O",
-  },
-];
+function generateDefaultObligations() {
+  return [
+    {
+      periodKey: generateRandomPeriodKey(),
+      start: "2017-01-01",
+      end: "2017-03-31",
+      due: "2017-05-07",
+      status: "O",
+    },
+  ];
+}
 
 /**
  * Scenario-specific obligation sets
@@ -238,13 +269,29 @@ const slowScenarios = {
 };
 
 /**
+ * Randomize period keys in an obligations array while preserving the structure.
+ * This simulates HMRC's unpredictable period key generation.
+ * @param {Array} obligations - Array of obligation objects
+ * @returns {Array} Obligations with randomized period keys
+ */
+function randomizePeriodKeys(obligations) {
+  return obligations.map((ob) => ({
+    ...ob,
+    periodKey: generateRandomPeriodKey(),
+  }));
+}
+
+/**
  * Get obligations based on Gov-Test-Scenario header
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @returns {Object} - {obligations: [...]} or {status: number, body: {...}} for errors or {delayMs: number, obligations: [...]} for slow
  */
 export function getObligationsForScenario(scenario) {
   if (!scenario) {
-    return { obligations: defaultObligations };
+    // Default: generate obligations with random period keys
+    const obligations = generateDefaultObligations();
+    console.log(`[http-simulator:scenarios] Using default obligations with random periodKey: ${obligations[0]?.periodKey}`);
+    return { obligations };
   }
 
   const scenarioUpper = scenario.toUpperCase();
@@ -258,15 +305,22 @@ export function getObligationsForScenario(scenario) {
   // Check for slow scenarios
   if (slowScenarios[scenarioUpper]) {
     console.log(`[http-simulator:scenarios] Applying slow scenario: ${scenario}`);
-    return slowScenarios[scenarioUpper];
+    // Randomize period keys for slow scenarios too
+    return {
+      ...slowScenarios[scenarioUpper],
+      obligations: randomizePeriodKeys(slowScenarios[scenarioUpper].obligations),
+    };
   }
 
   // Check for obligation-specific scenarios
   if (scenarioObligations[scenarioUpper]) {
     console.log(`[http-simulator:scenarios] Applying obligation scenario: ${scenario}`);
-    return { obligations: scenarioObligations[scenarioUpper] };
+    // Randomize period keys to simulate HMRC's unpredictable behavior
+    return { obligations: randomizePeriodKeys(scenarioObligations[scenarioUpper]) };
   }
 
-  // Default
-  return { obligations: defaultObligations };
+  // Default: generate obligations with random period keys
+  const obligations = generateDefaultObligations();
+  console.log(`[http-simulator:scenarios] Using default obligations (unknown scenario) with random periodKey: ${obligations[0]?.periodKey}`);
+  return { obligations };
 }
