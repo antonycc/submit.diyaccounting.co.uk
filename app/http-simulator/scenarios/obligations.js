@@ -24,13 +24,24 @@ function generateRandomPeriodKey() {
 }
 
 /**
- * Validate period key format (HMRC format: YYXZ where Y=digit, X=letter, Z=digit or letter)
- * Examples: 24A1, 18A1, 17NB, 25B3
+ * Validate period key format per HMRC MTD VAT API specification.
+ * @see https://developer.service.hmrc.gov.uk/guides/vat-mtd-end-to-end-service-guide/documentation/obligations.html
+ *
+ * Accepted formats:
+ * - Alphanumeric (YYXZ): 2-digit year + letter + alphanumeric (e.g., 18A1, 18AD, 17NB)
+ * - Numeric (NNNN): 4 digits (e.g., 0418, 1218)
+ * - Special numeric: 0000 (no period) or 9999 (ceased trading)
+ * - Hash format (#NNN): # followed by 3 digits (e.g., #001, #012)
+ *
  * @param {string} periodKey - Period key to validate
  * @returns {boolean} True if valid format
  */
 export function isValidPeriodKeyFormat(periodKey) {
-  return /^[0-9]{2}[A-Z][0-9A-Z]$/.test(periodKey);
+  const normalized = String(periodKey).toUpperCase();
+  // Alphanumeric format: 2-digit year + letter + alphanumeric (e.g., 18A1, 18AD, 17NB)
+  // Numeric format: 4 digits (e.g., 0418, 1218, 0000, 9999)
+  // Hash format: # followed by 3 digits (e.g., #001, #012)
+  return /^(\d{2}[A-Z][A-Z0-9]|\d{4}|#\d{3})$/.test(normalized);
 }
 
 /**

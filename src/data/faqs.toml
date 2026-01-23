@@ -338,3 +338,77 @@ If issues persist after clearing data, contact support.
 """
 keywords = ["clear", "browser", "cache", "cookies", "not working", "stuck", "frozen", "reset"]
 priority = 20
+
+[[faq]]
+id = "vat-field-formats"
+category = "vat-basics"
+question = "What format should I use for VAT return values?"
+answer = """
+HMRC requires specific formats for each field:
+
+**VAT Registration Number (VRN)**
+- Exactly 9 digits
+- No spaces, letters, or GB prefix
+- Example: 123456789
+
+**Period Key**
+HMRC uses several formats:
+- **Quarterly**: 24A1, 24A2, 24A3, 24A4 (year + quarter letter + period number)
+- **Monthly**: 24AA, 24AB (year + two letters)
+- **Numeric**: 0124, 1224 (4 digits)
+- **Special**: 0000 (no period), 9999 (ceased trading)
+- **Annual**: #001, #012 (hash + 3 digits)
+
+**Money amounts (Boxes 1-5)**
+- Up to 2 decimal places
+- Range: -9,999,999,999,999.99 to 9,999,999,999,999.99
+- Box 5 (Net VAT) must be positive (0 to 99,999,999,999.99)
+- Examples: 1500.50, 0.01, 0.00
+
+**Whole pound amounts (Boxes 6-9)**
+- No pence - whole numbers only
+- Range: -9,999,999,999,999 to 9,999,999,999,999
+- Examples: 15000, 0, 500000
+
+**Calculations validated by HMRC**
+- Box 3 must equal Box 1 + Box 2
+- Box 5 must equal |Box 3 - Box 4| (absolute value)
+"""
+keywords = ["format", "formats", "decimal", "decimal places", "digits", "vrn format", "period key format", "box format", "money", "amounts", "values", "numbers", "whole", "integer"]
+priority = 21
+
+[[faq]]
+id = "accessibility-features"
+category = "vat-basics"
+question = "What accessibility features does this app have?"
+answer = """
+DIY Accounting Submit is designed to meet WCAG 2.2 Level AA standards:
+
+**Keyboard navigation**
+- All functions accessible via keyboard
+- Tab order follows logical reading order
+- Skip link to main content on every page
+- Focus indicators visible on all interactive elements
+
+**Screen reader support**
+- All form fields have accessible labels
+- Error messages announced immediately
+- Status updates use ARIA live regions
+- Tables use proper header associations
+
+**Visual design**
+- Colour contrast meets 4.5:1 ratio minimum
+- Text resizable to 200% without loss
+- No information conveyed by colour alone
+- Focus states clearly visible
+
+**Input assistance**
+- Clear error messages explain how to fix issues
+- Required fields marked with visual indicator and aria-required
+- Input formats shown in labels or help text
+- Form validation prevents incorrect submissions
+
+For issues or suggestions, see our accessibility statement: submit.diyaccounting.co.uk/accessibility.html
+"""
+keywords = ["accessibility", "screen reader", "keyboard", "wcag", "aa", "2.2", "accessible", "blind", "visually impaired", "disability"]
+priority = 22

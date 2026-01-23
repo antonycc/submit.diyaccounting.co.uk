@@ -19,17 +19,27 @@ export function isValidVrn(vrn) {
 }
 
 /**
- * Validates HMRC period key format.
- * Accepts:
- * - YYXZ format: 2-digit year + letter + alphanumeric (e.g., 24A1, 18A1, 17NB)
- *   The last character can be a digit OR a letter per HMRC documentation.
- * - #NNN format: # followed by 3 digits (e.g., #001, #012)
+ * Validates HMRC period key format per HMRC MTD VAT API specification.
+ * Period keys are 4 characters and can be in several formats:
  *
+ * Accepted formats (per HMRC documentation):
+ * - Alphanumeric (YYXZ): 2-digit year + letter + alphanumeric
+ *   - Monthly: 18AD, 18AE, 18AF (letter suffix)
+ *   - Quarterly: 18A1, 18A2, 18A3, 18A4 (digit suffix)
+ * - Numeric (NNNN): 4 digits (e.g., 0418, 1218)
+ * - Special numeric: 0000 (no period) or 9999 (ceased trading)
+ * - Hash format (#NNN): # followed by 3 digits (e.g., #001, #012)
+ *
+ * @see https://developer.service.hmrc.gov.uk/guides/vat-mtd-end-to-end-service-guide/documentation/obligations.html
  * @param {string} periodKey - The period key to validate
  * @returns {boolean} True if valid
  */
 export function isValidPeriodKey(periodKey) {
-  return /^(\d{2}[A-Z][A-Z0-9]|#\d{3})$/.test(String(periodKey).toUpperCase());
+  const normalized = String(periodKey).toUpperCase();
+  // Alphanumeric format: 2-digit year + letter + alphanumeric (e.g., 18A1, 18AD, 17NB)
+  // Numeric format: 4 digits (e.g., 0418, 1218, 0000, 9999)
+  // Hash format: # followed by 3 digits (e.g., #001, #012)
+  return /^(\d{2}[A-Z][A-Z0-9]|\d{4}|#\d{3})$/.test(normalized);
 }
 
 /**
@@ -76,6 +86,135 @@ export function isValidDateRange(fromDate, toDate) {
 
   // Compare dates
   return new Date(fromDate) <= new Date(toDate);
+}
+
+/**
+ * HMRC VAT 9-Box Return Field Validation Constants
+ * @see https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-api/1.0
+ *
+ * Boxes 1-5: Monetary values with exactly 2 decimal places
+ * - vatDueSales (Box 1): VAT due on sales and other outputs
+ * - vatDueAcquisitions (Box 2): VAT due on acquisitions from other EC Member States
+ * - totalVatDue (Box 3): Total VAT due (sum of boxes 1 and 2)
+ * - vatReclaimedCurrPeriod (Box 4): VAT reclaimed on purchases and other inputs
+ * - netVatDue (Box 5): Net VAT to be paid to HMRC or reclaimed (|Box 3 - Box 4|)
+ *
+ * Boxes 6-9: Whole pound amounts (no pence)
+ * - totalValueSalesExVAT (Box 6): Total value of sales excluding VAT
+ * - totalValuePurchasesExVAT (Box 7): Total value of purchases excluding VAT
+ * - totalValueGoodsSuppliedExVAT (Box 8): Total value of goods supplied to EC Member States
+ * - totalAcquisitionsExVAT (Box 9): Total value of acquisitions from EC Member States
+ */
+
+// Box 1-4 range: -9999999999999.99 to 9999999999999.99
+const VAT_MONETARY_MIN = -9999999999999.99;
+const VAT_MONETARY_MAX = 9999999999999.99;
+
+// Box 5 (netVatDue) range: 0 to 99999999999.99 (always positive, absolute difference)
+const NET_VAT_DUE_MIN = 0;
+const NET_VAT_DUE_MAX = 99999999999.99;
+
+// Box 6-9 range: -9999999999999 to 9999999999999 (whole numbers)
+const VAT_WHOLE_MIN = -9999999999999;
+const VAT_WHOLE_MAX = 9999999999999;
+
+/**
+ * Validates a VAT monetary amount (boxes 1-4).
+ * Must be a number with at most 2 decimal places within HMRC range.
+ * @see https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-api/1.0
+ * @param {number} amount - The monetary amount to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidVatMonetaryAmount(amount) {
+  if (typeof amount !== "number" || !Number.isFinite(amount)) {
+    return false;
+  }
+
+  // Check range
+  if (amount < VAT_MONETARY_MIN || amount > VAT_MONETARY_MAX) {
+    return false;
+  }
+
+  // Check decimal places (max 2)
+  const decimalPlaces = (amount.toString().split(".")[1] || "").length;
+  return decimalPlaces <= 2;
+}
+
+/**
+ * Validates the netVatDue amount (box 5).
+ * Must be a non-negative number with at most 2 decimal places.
+ * Represents the absolute difference between totalVatDue and vatReclaimedCurrPeriod.
+ * @see https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-api/1.0
+ * @param {number} amount - The net VAT due amount to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidNetVatDue(amount) {
+  if (typeof amount !== "number" || !Number.isFinite(amount)) {
+    return false;
+  }
+
+  // Check range (must be non-negative)
+  if (amount < NET_VAT_DUE_MIN || amount > NET_VAT_DUE_MAX) {
+    return false;
+  }
+
+  // Check decimal places (max 2)
+  const decimalPlaces = (amount.toString().split(".")[1] || "").length;
+  return decimalPlaces <= 2;
+}
+
+/**
+ * Validates a VAT whole pound amount (boxes 6-9).
+ * Must be a whole number (no pence) within HMRC range.
+ * HMRC specifies these values should have "2 zeroed decimals" meaning the pence should be .00
+ * @see https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/vat-api/1.0
+ * @param {number} amount - The whole pound amount to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidVatWholeAmount(amount) {
+  if (typeof amount !== "number" || !Number.isFinite(amount)) {
+    return false;
+  }
+
+  // Check range
+  if (amount < VAT_WHOLE_MIN || amount > VAT_WHOLE_MAX) {
+    return false;
+  }
+
+  // Must be a whole number (integer)
+  return Number.isInteger(amount);
+}
+
+/**
+ * Validates that totalVatDue equals the sum of vatDueSales and vatDueAcquisitions.
+ * HMRC validates this calculation server-side and returns HTTP 400 if incorrect.
+ * @see https://developer.service.hmrc.gov.uk/guides/vat-mtd-end-to-end-service-guide/documentation/obligations.html
+ * @param {number} vatDueSales - Box 1 value
+ * @param {number} vatDueAcquisitions - Box 2 value
+ * @param {number} totalVatDue - Box 3 value
+ * @returns {boolean} True if totalVatDue = vatDueSales + vatDueAcquisitions
+ */
+export function isValidTotalVatDueCalculation(vatDueSales, vatDueAcquisitions, totalVatDue) {
+  // Handle floating point precision by rounding to 2 decimal places
+  const expectedTotal = Math.round((vatDueSales + vatDueAcquisitions) * 100) / 100;
+  const actualTotal = Math.round(totalVatDue * 100) / 100;
+  return expectedTotal === actualTotal;
+}
+
+/**
+ * Validates that netVatDue equals the absolute difference between totalVatDue and vatReclaimedCurrPeriod.
+ * HMRC validates this calculation server-side and returns HTTP 400 if incorrect.
+ * @see https://developer.service.hmrc.gov.uk/guides/vat-mtd-end-to-end-service-guide/documentation/obligations.html
+ * @param {number} totalVatDue - Box 3 value
+ * @param {number} vatReclaimedCurrPeriod - Box 4 value
+ * @param {number} netVatDue - Box 5 value
+ * @returns {boolean} True if netVatDue = |totalVatDue - vatReclaimedCurrPeriod|
+ */
+export function isValidNetVatDueCalculation(totalVatDue, vatReclaimedCurrPeriod, netVatDue) {
+  // Handle floating point precision by rounding to 2 decimal places
+  const expectedNet = Math.round(Math.abs(totalVatDue - vatReclaimedCurrPeriod) * 100) / 100;
+  const actualNet = Math.round(netVatDue * 100) / 100;
+  return expectedNet === actualNet;
 }
 
 /**
