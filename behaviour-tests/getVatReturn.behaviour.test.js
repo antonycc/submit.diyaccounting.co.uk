@@ -224,7 +224,8 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   /* ********************************************** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
+  // Pass allowSandboxObligations=true to use any available open obligation in sandbox/simulator mode
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, true);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
