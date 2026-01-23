@@ -419,10 +419,13 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   // Assert that HMRC API requests were logged correctly
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
+    // Use regex pattern since periodKey is resolved dynamically from sandbox obligations
+    // The actual periodKey may differ from the generated hmrcVatPeriodKey due to allowSandboxObligations
+    const vatReturnUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/returns/\\w+`);
     const vatGetRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,
       "GET",
-      `/organisations/vat/${testVatNumber}/returns/${hmrcVatPeriodKey}`,
+      vatReturnUrlPattern,
       "VAT return retrieval",
     );
     expect(vatGetRequests.length).toBeGreaterThan(0);

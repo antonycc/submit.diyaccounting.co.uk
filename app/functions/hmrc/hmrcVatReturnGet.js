@@ -212,6 +212,7 @@ export async function ingestHandler(event) {
   }
 
   // Resolve periodKey from obligations using the period date range
+  // Note: Do NOT pass the test scenario to obligations - it should only apply to the VAT return call
   let normalizedPeriodKey = null;
   logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vrn });
   try {
@@ -219,7 +220,7 @@ export async function ingestHandler(event) {
       vrn,
       hmrcAccessToken,
       govClientHeaders,
-      govTestScenarioHeader,
+      null, // Don't pass test scenario to obligations - apply only to the VAT return GET
       hmrcAccount,
       { from: periodStart, to: periodEnd, status: "F" }, // Use "F" for fulfilled (submitted) returns
       userSub,
