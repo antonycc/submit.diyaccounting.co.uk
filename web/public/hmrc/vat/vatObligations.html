@@ -87,23 +87,23 @@
 
             <div class="form-group">
               <label for="fromDate">From date (optional)</label>
-              <p id="fromDate-hint" class="hint">Start date for obligation period filter, defaults to the start of calendar year</p>
+              <p id="fromDate-hint" class="hint">Start date for obligation search. Defaults to the start of the current calendar year if not specified.</p>
               <input type="date" id="fromDate" name="fromDate" value="" aria-describedby="fromDate-hint" />
             </div>
 
             <div class="form-group">
               <label for="toDate">To date (optional)</label>
-              <p id="toDate-hint" class="hint">End date for obligation period filter, defaults to the current date</p>
+              <p id="toDate-hint" class="hint">End date for obligation search. Defaults to today's date if not specified. Maximum range is 366 days.</p>
               <input type="date" id="toDate" name="toDate" value="" aria-describedby="toDate-hint" />
             </div>
 
             <div class="form-group">
               <label for="status">Status (optional)</label>
-              <p id="status-hint" class="hint">Filter by obligation status</p>
+              <p id="status-hint" class="hint">Open obligations require a VAT return submission. Fulfilled obligations have already been submitted.</p>
               <select id="status" name="status" aria-describedby="status-hint">
                 <option value="">All statuses</option>
-                <option value="O">Open</option>
-                <option value="F">Fulfilled</option>
+                <option value="O">Open (awaiting submission)</option>
+                <option value="F">Fulfilled (already submitted)</option>
               </select>
             </div>
 

@@ -119,7 +119,7 @@
             <!-- Box 1: VAT due on sales -->
             <div class="form-group">
               <label for="vatDueSales">Box 1: VAT due on sales and other outputs</label>
-              <p id="vatDueSales-hint" class="hint">For example, £600 or £193.54</p>
+              <p id="vatDueSales-hint" class="hint">Enter an amount with up to 2 decimal places, for example £600 or £193.54</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -138,7 +138,7 @@
             <!-- Box 2: VAT due on acquisitions -->
             <div class="form-group">
               <label for="vatDueAcquisitions">Box 2: VAT due on acquisitions from EU</label>
-              <p id="vatDueAcquisitions-hint" class="hint">For example, £600 or £193.54</p>
+              <p id="vatDueAcquisitions-hint" class="hint">Enter an amount with up to 2 decimal places, for example £600 or £193.54. Usually 0 post-Brexit.</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -176,8 +176,8 @@
 
             <!-- Box 4: VAT reclaimed -->
             <div class="form-group">
-              <label for="vatReclaimedCurrPeriod">Box 4: VAT reclaimed on purchases</label>
-              <p id="vatReclaimedCurrPeriod-hint" class="hint">For example, £600 or £193.54</p>
+              <label for="vatReclaimedCurrPeriod">Box 4: VAT reclaimed on purchases and other inputs</label>
+              <p id="vatReclaimedCurrPeriod-hint" class="hint">Enter an amount with up to 2 decimal places, for example £600 or £193.54</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -216,7 +216,7 @@
             <!-- Box 6: Total value of sales -->
             <div class="form-group">
               <label for="totalValueSalesExVAT">Box 6: Total value of sales excluding VAT</label>
-              <p id="totalValueSalesExVAT-hint" class="hint">For example, £600 (whole pounds only)</p>
+              <p id="totalValueSalesExVAT-hint" class="hint">Enter a whole number without pence, for example £15000</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -235,7 +235,7 @@
             <!-- Box 7: Total value of purchases -->
             <div class="form-group">
               <label for="totalValuePurchasesExVAT">Box 7: Total value of purchases excluding VAT</label>
-              <p id="totalValuePurchasesExVAT-hint" class="hint">For example, £600 (whole pounds only)</p>
+              <p id="totalValuePurchasesExVAT-hint" class="hint">Enter a whole number without pence, for example £15000</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -254,7 +254,7 @@
             <!-- Box 8: Total value of goods supplied to EU -->
             <div class="form-group">
               <label for="totalValueGoodsSuppliedExVAT">Box 8: Total value of goods supplied to EU</label>
-              <p id="totalValueGoodsSuppliedExVAT-hint" class="hint">For example, £600 (whole pounds only)</p>
+              <p id="totalValueGoodsSuppliedExVAT-hint" class="hint">Enter a whole number without pence. Usually 0 post-Brexit.</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -273,7 +273,7 @@
             <!-- Box 9: Total acquisitions from EU -->
             <div class="form-group">
               <label for="totalAcquisitionsExVAT">Box 9: Total value of acquisitions from EU</label>
-              <p id="totalAcquisitionsExVAT-hint" class="hint">For example, £600 (whole pounds only)</p>
+              <p id="totalAcquisitionsExVAT-hint" class="hint">Enter a whole number without pence. Usually 0 post-Brexit.</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -540,6 +540,190 @@
         document.getElementById("netVatDue").value = net.toFixed(2);
       }
 
+      // VAT field validation constants (matching HMRC API spec)
+      const VAT_MONETARY_MIN = -9999999999999.99;
+      const VAT_MONETARY_MAX = 9999999999999.99;
+      const NET_VAT_DUE_MIN = 0;
+      const NET_VAT_DUE_MAX = 99999999999.99;
+      const VAT_WHOLE_MIN = -9999999999999;
+      const VAT_WHOLE_MAX = 9999999999999;
+
+      // Show field-level error message
+      function showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        // Remove existing error
+        clearFieldError(fieldId);
+
+        // Add error styling to field
+        field.classList.add("input--error");
+        field.setAttribute("aria-invalid", "true");
+
+        // Create and insert error message
+        const errorId = `${fieldId}-error`;
+        const errorEl = document.createElement("p");
+        errorEl.id = errorId;
+        errorEl.className = "error-message";
+        errorEl.innerHTML = `<span class="visually-hidden">Error:</span> ${message}`;
+
+        // Update aria-describedby
+        const existingDescribedBy = field.getAttribute("aria-describedby") || "";
+        if (!existingDescribedBy.includes(errorId)) {
+          field.setAttribute("aria-describedby", `${existingDescribedBy} ${errorId}`.trim());
+        }
+
+        // Insert error after the input wrapper or input itself
+        const wrapper = field.closest(".input-prefix") || field;
+        wrapper.insertAdjacentElement("afterend", errorEl);
+      }
+
+      // Clear field-level error message
+      function clearFieldError(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        field.classList.remove("input--error");
+        field.removeAttribute("aria-invalid");
+
+        const errorId = `${fieldId}-error`;
+        const errorEl = document.getElementById(errorId);
+        if (errorEl) errorEl.remove();
+
+        // Clean up aria-describedby
+        const describedBy = field.getAttribute("aria-describedby") || "";
+        field.setAttribute("aria-describedby", describedBy.replace(errorId, "").trim());
+      }
+
+      // Validate VAT monetary amount (boxes 1-4)
+      function validateVatMonetaryAmount(value, fieldId, fieldLabel) {
+        const strValue = String(value).trim();
+        if (strValue === "") {
+          showFieldError(fieldId, `Enter the ${fieldLabel}`);
+          return false;
+        }
+
+        const num = parseFloat(strValue);
+        if (isNaN(num)) {
+          showFieldError(fieldId, `Enter a valid number for ${fieldLabel}`);
+          return false;
+        }
+
+        if (num < VAT_MONETARY_MIN || num > VAT_MONETARY_MAX) {
+          showFieldError(fieldId, `${fieldLabel} must be between £-9,999,999,999,999.99 and £9,999,999,999,999.99`);
+          return false;
+        }
+
+        const decimalParts = strValue.split(".");
+        if (decimalParts[1] && decimalParts[1].length > 2) {
+          showFieldError(fieldId, `${fieldLabel} must have no more than 2 decimal places`);
+          return false;
+        }
+
+        clearFieldError(fieldId);
+        return true;
+      }
+
+      // Validate net VAT due (box 5)
+      function validateNetVatDue(value, fieldId) {
+        const num = parseFloat(value);
+        if (isNaN(num)) {
+          showFieldError(fieldId, "Net VAT due must be a valid number");
+          return false;
+        }
+
+        if (num < NET_VAT_DUE_MIN) {
+          showFieldError(fieldId, "Net VAT due must be a positive value (calculated as absolute difference)");
+          return false;
+        }
+
+        if (num > NET_VAT_DUE_MAX) {
+          showFieldError(fieldId, "Net VAT due must be £99,999,999,999.99 or less");
+          return false;
+        }
+
+        clearFieldError(fieldId);
+        return true;
+      }
+
+      // Validate whole pound amount (boxes 6-9)
+      function validateVatWholeAmount(value, fieldId, fieldLabel) {
+        const strValue = String(value).trim();
+        if (strValue === "") {
+          showFieldError(fieldId, `Enter the ${fieldLabel}`);
+          return false;
+        }
+
+        const num = parseFloat(strValue);
+        if (isNaN(num)) {
+          showFieldError(fieldId, `Enter a valid number for ${fieldLabel}`);
+          return false;
+        }
+
+        if (!Number.isInteger(num)) {
+          showFieldError(fieldId, `${fieldLabel} must be a whole number without pence`);
+          return false;
+        }
+
+        if (num < VAT_WHOLE_MIN || num > VAT_WHOLE_MAX) {
+          showFieldError(fieldId, `${fieldLabel} must be between £-9,999,999,999,999 and £9,999,999,999,999`);
+          return false;
+        }
+
+        clearFieldError(fieldId);
+        return true;
+      }
+
+      // Validate all 9-box fields
+      function validateAll9BoxFields() {
+        let isValid = true;
+
+        // Boxes 1-4: monetary amounts with 2 decimal places
+        isValid = validateVatMonetaryAmount(
+          document.getElementById("vatDueSales").value,
+          "vatDueSales", "VAT due on sales"
+        ) && isValid;
+
+        isValid = validateVatMonetaryAmount(
+          document.getElementById("vatDueAcquisitions").value,
+          "vatDueAcquisitions", "VAT due on acquisitions"
+        ) && isValid;
+
+        isValid = validateVatMonetaryAmount(
+          document.getElementById("vatReclaimedCurrPeriod").value,
+          "vatReclaimedCurrPeriod", "VAT reclaimed"
+        ) && isValid;
+
+        // Box 5: net VAT due (calculated, but validate anyway)
+        isValid = validateNetVatDue(
+          document.getElementById("netVatDue").value,
+          "netVatDue"
+        ) && isValid;
+
+        // Boxes 6-9: whole pound amounts
+        isValid = validateVatWholeAmount(
+          document.getElementById("totalValueSalesExVAT").value,
+          "totalValueSalesExVAT", "total value of sales"
+        ) && isValid;
+
+        isValid = validateVatWholeAmount(
+          document.getElementById("totalValuePurchasesExVAT").value,
+          "totalValuePurchasesExVAT", "total value of purchases"
+        ) && isValid;
+
+        isValid = validateVatWholeAmount(
+          document.getElementById("totalValueGoodsSuppliedExVAT").value,
+          "totalValueGoodsSuppliedExVAT", "total value of goods supplied to EU"
+        ) && isValid;
+
+        isValid = validateVatWholeAmount(
+          document.getElementById("totalAcquisitionsExVAT").value,
+          "totalAcquisitionsExVAT", "total acquisitions from EU"
+        ) && isValid;
+
+        return isValid;
+      }
+
       // Collect 9-box VAT data from form
       function collect9BoxData() {
         return {
@@ -587,22 +771,15 @@
           return;
         }
 
-        // Validate 9-box fields
-        if (vatBoxData.vatDueSales === "" || vatBoxData.vatReclaimedCurrPeriod === "" ||
-            vatBoxData.totalValueSalesExVAT === "" || vatBoxData.totalValuePurchasesExVAT === "") {
-          showStatus("Please fill in all required VAT box fields.", "error");
+        // Validate all 9-box fields with field-level error messages
+        if (!validateAll9BoxFields()) {
+          showStatus("Please correct the errors in the VAT box fields highlighted above.", "error");
           return;
         }
 
         // Validate declaration checkbox
         if (!declaration) {
           showStatus("You must confirm the declaration before submitting.", "error");
-          return;
-        }
-
-        // Validate netVatDue is not negative (should always be positive per HMRC rules)
-        if (vatBoxData.netVatDue < 0) {
-          showStatus("Net VAT due must be a positive value.", "error");
           return;
         }
 
@@ -909,6 +1086,29 @@
       document.getElementById("vatDueSales").addEventListener("input", calculateTotalVatDue);
       document.getElementById("vatDueAcquisitions").addEventListener("input", calculateTotalVatDue);
       document.getElementById("vatReclaimedCurrPeriod").addEventListener("input", calculateNetVatDue);
+
+      // Blur validation for real-time feedback on VAT box fields
+      document.getElementById("vatDueSales").addEventListener("blur", function() {
+        validateVatMonetaryAmount(this.value, "vatDueSales", "VAT due on sales");
+      });
+      document.getElementById("vatDueAcquisitions").addEventListener("blur", function() {
+        validateVatMonetaryAmount(this.value, "vatDueAcquisitions", "VAT due on acquisitions");
+      });
+      document.getElementById("vatReclaimedCurrPeriod").addEventListener("blur", function() {
+        validateVatMonetaryAmount(this.value, "vatReclaimedCurrPeriod", "VAT reclaimed");
+      });
+      document.getElementById("totalValueSalesExVAT").addEventListener("blur", function() {
+        validateVatWholeAmount(this.value, "totalValueSalesExVAT", "total value of sales");
+      });
+      document.getElementById("totalValuePurchasesExVAT").addEventListener("blur", function() {
+        validateVatWholeAmount(this.value, "totalValuePurchasesExVAT", "total value of purchases");
+      });
+      document.getElementById("totalValueGoodsSuppliedExVAT").addEventListener("blur", function() {
+        validateVatWholeAmount(this.value, "totalValueGoodsSuppliedExVAT", "total value of goods supplied to EU");
+      });
+      document.getElementById("totalAcquisitionsExVAT").addEventListener("blur", function() {
+        validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
+      });
 
       // Expose page-specific functions to window for testing
       window.submitVat = submitVat;

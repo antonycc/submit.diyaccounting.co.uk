@@ -92,11 +92,13 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!periodStart) errorMessages.push("Missing periodStart parameter from body");
   if (!periodEnd) errorMessages.push("Missing periodEnd parameter from body");
 
-  // Validate date formats
+  // Validate date formats - log rejected values for debugging
   if (periodStart && !isValidIsoDate(periodStart)) {
+    logger.warn({ message: "Rejected periodStart - invalid date format", rejectedValue: periodStart });
     errorMessages.push(`Invalid periodStart format '${periodStart}' - must be YYYY-MM-DD`);
   }
   if (periodEnd && !isValidIsoDate(periodEnd)) {
+    logger.warn({ message: "Rejected periodEnd - invalid date format", rejectedValue: periodEnd });
     errorMessages.push(`Invalid periodEnd format '${periodEnd}' - must be YYYY-MM-DD`);
   }
 
@@ -112,28 +114,35 @@ export function extractAndValidateParameters(event, errorMessages) {
     if (totalValueGoodsSuppliedExVAT === undefined) errorMessages.push("Missing totalValueGoodsSuppliedExVAT (Box 8)");
     if (totalAcquisitionsExVAT === undefined) errorMessages.push("Missing totalAcquisitionsExVAT (Box 9)");
 
-    // Validate decimal fields (Boxes 1, 2, 4)
+    // Validate decimal fields (Boxes 1, 2, 4) - log rejected values for debugging
     if (vatDueSales !== undefined && !isValidMonetaryAmount(Number(vatDueSales))) {
+      logger.warn({ message: "Rejected vatDueSales (Box 1) - invalid monetary format", rejectedValue: vatDueSales });
       errorMessages.push("Invalid vatDueSales (Box 1) - must be a valid monetary amount with max 2 decimal places");
     }
     if (vatDueAcquisitions !== undefined && !isValidMonetaryAmount(Number(vatDueAcquisitions))) {
+      logger.warn({ message: "Rejected vatDueAcquisitions (Box 2) - invalid monetary format", rejectedValue: vatDueAcquisitions });
       errorMessages.push("Invalid vatDueAcquisitions (Box 2) - must be a valid monetary amount with max 2 decimal places");
     }
     if (vatReclaimedCurrPeriod !== undefined && !isValidMonetaryAmount(Number(vatReclaimedCurrPeriod))) {
+      logger.warn({ message: "Rejected vatReclaimedCurrPeriod (Box 4) - invalid monetary format", rejectedValue: vatReclaimedCurrPeriod });
       errorMessages.push("Invalid vatReclaimedCurrPeriod (Box 4) - must be a valid monetary amount with max 2 decimal places");
     }
 
-    // Validate integer fields (Boxes 6-9)
+    // Validate integer fields (Boxes 6-9) - log rejected values for debugging
     if (totalValueSalesExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalValueSalesExVAT)))) {
+      logger.warn({ message: "Rejected totalValueSalesExVAT (Box 6) - must be whole number", rejectedValue: totalValueSalesExVAT });
       errorMessages.push("Invalid totalValueSalesExVAT (Box 6) - must be a whole number");
     }
     if (totalValuePurchasesExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalValuePurchasesExVAT)))) {
+      logger.warn({ message: "Rejected totalValuePurchasesExVAT (Box 7) - must be whole number", rejectedValue: totalValuePurchasesExVAT });
       errorMessages.push("Invalid totalValuePurchasesExVAT (Box 7) - must be a whole number");
     }
     if (totalValueGoodsSuppliedExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalValueGoodsSuppliedExVAT)))) {
+      logger.warn({ message: "Rejected totalValueGoodsSuppliedExVAT (Box 8) - must be whole number", rejectedValue: totalValueGoodsSuppliedExVAT });
       errorMessages.push("Invalid totalValueGoodsSuppliedExVAT (Box 8) - must be a whole number");
     }
     if (totalAcquisitionsExVAT !== undefined && !isValidWholeAmount(Math.round(Number(totalAcquisitionsExVAT)))) {
+      logger.warn({ message: "Rejected totalAcquisitionsExVAT (Box 9) - must be whole number", rejectedValue: totalAcquisitionsExVAT });
       errorMessages.push("Invalid totalAcquisitionsExVAT (Box 9) - must be a whole number");
     }
 
@@ -166,6 +175,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   }
 
   if (vatNumber && !isValidVrn(vatNumber)) {
+    // Log VRN validation failure - VRN itself is logged as it's not PII (it's a public business identifier)
+    logger.warn({ message: "Rejected vatNumber - invalid VRN format", rejectedVrnLength: vatNumber?.length });
     errorMessages.push("Invalid vatNumber format - must be 9 digits");
   }
 
