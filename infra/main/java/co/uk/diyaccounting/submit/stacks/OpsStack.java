@@ -231,7 +231,7 @@ public class OpsStack extends Stack {
         String healthCanaryName = truncateCanaryName(deploymentPrefix + "-hlth");
         this.healthCanary = Canary.Builder.create(this, "HealthCanary")
                 .canaryName(healthCanaryName)
-                .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_7_0)
+                .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_9_0)
                 .test(Test.custom(CustomTestOptions.builder()
                         .handler("index.handler")
                         .code(Code.fromInline(generateHealthCheckCode(props.baseUrl())))
@@ -269,7 +269,7 @@ public class OpsStack extends Stack {
         String apiCanaryName = truncateCanaryName(deploymentPrefix + "-api");
         this.apiCanary = Canary.Builder.create(this, "ApiCanary")
                 .canaryName(apiCanaryName)
-                .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_7_0)
+                .runtime(Runtime.SYNTHETICS_NODEJS_PUPPETEER_9_0)
                 .test(Test.custom(CustomTestOptions.builder()
                         .handler("index.handler")
                         .code(Code.fromInline(generateApiCheckCode(props.baseUrl())))

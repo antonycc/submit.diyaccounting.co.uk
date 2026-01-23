@@ -412,11 +412,17 @@ public class EdgeStack extends Stack {
                         .build())
                 // Custom headers for security policies not covered by securityHeadersBehavior
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(ResponseCustomHeader.builder()
-                                .header("Permissions-Policy")
-                                .value("camera=(), microphone=(), geolocation=()")
-                                .override(true)
-                                .build()))
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Permissions-Policy")
+                                        .value("camera=(), microphone=(), geolocation=()")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
                         .build())
                 .build();
 

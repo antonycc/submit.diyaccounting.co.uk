@@ -83,9 +83,9 @@
 
           <div class="form-group">
             <label for="obligationSelect">VAT period</label>
-            <p id="obligationSelect-hint" class="hint">Select the VAT period you want to view</p>
+            <p id="obligationSelect-hint" class="hint">Select the VAT period to view. Only fulfilled (already submitted) periods are shown.</p>
             <select id="obligationSelect" name="obligationSelect" required aria-describedby="obligationSelect-hint">
-              <option value="">-- Enter VRN to load periods --</option>
+              <option value="">-- Enter VAT registration number to load periods --</option>
             </select>
             <input type="hidden" id="periodKey" name="periodKey" value="" />
           </div>
@@ -211,7 +211,7 @@
         const periodKeyInput = document.getElementById("periodKey");
 
         if (!vrn || !/^\d{9}$/.test(vrn)) {
-          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VRN --</option>';
+          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VAT registration number --</option>';
           periodKeyInput.value = "";
           return;
         }
@@ -302,7 +302,7 @@
 
         if (vrn) {
           document.getElementById("vrn").value = vrn;
-          // Load obligations for this VRN
+          // Load obligations for this VAT registration number
           await loadObligations(vrn);
           // If periodKey was provided via URL, select it (backward compatibility)
           if (periodKey) {
@@ -453,7 +453,7 @@
 
         // Basic validation
         if (!vrn || !periodKey) {
-          showStatus("Please enter your VRN and select a VAT period.", "error");
+          showStatus("Please enter your VAT registration number and select a VAT period.", "error");
           return;
         }
 
@@ -592,10 +592,13 @@
           return div.innerHTML;
         };
 
-        const formatCurrency = (value) => {
+        const formatCurrency = (value, decimalPlaces = 2) => {
           const num = parseFloat(value);
-          return isNaN(num) ? "£0.00" : `£${num.toFixed(2)}`;
+          if (isNaN(num)) return decimalPlaces === 0 ? "£0" : "£0.00";
+          return decimalPlaces === 0 ? `£${Math.round(num).toLocaleString()}` : `£${num.toFixed(2)}`;
         };
+
+        const formatWholePounds = (value) => formatCurrency(value, 0);
 
         const formatBoolean = (value) => {
           return value === true ? "Yes" : value === false ? "No" : "-";
@@ -628,49 +631,49 @@
             </div>
 
             <div class="detail-section">
-              <h4>VAT Due</h4>
+              <h4>VAT Amounts</h4>
               <div class="detail-grid">
                 <div class="detail-item">
-                  <label>VAT due on sales:</label>
+                  <label>Box 1: VAT due on sales and other outputs:</label>
                   <span>${formatCurrency(returnData.vatDueSales)}</span>
                 </div>
                 <div class="detail-item">
-                  <label>VAT due on acquisitions:</label>
+                  <label>Box 2: VAT due on acquisitions from EU:</label>
                   <span>${formatCurrency(returnData.vatDueAcquisitions)}</span>
                 </div>
                 <div class="detail-item">
-                  <label>Total VAT due:</label>
+                  <label>Box 3: Total VAT due (Box 1 + Box 2):</label>
                   <span><strong>${formatCurrency(returnData.totalVatDue)}</strong></span>
                 </div>
                 <div class="detail-item">
-                  <label>VAT reclaimed on purchases:</label>
+                  <label>Box 4: VAT reclaimed on purchases and inputs:</label>
                   <span>${formatCurrency(returnData.vatReclaimedCurrPeriod)}</span>
                 </div>
                 <div class="detail-item">
-                  <label>Net VAT due:</label>
+                  <label>Box 5: Net VAT to pay or reclaim:</label>
                   <span class="net-amount"><strong>${formatCurrency(returnData.netVatDue)}</strong></span>
                 </div>
               </div>
             </div>
 
             <div class="detail-section">
-              <h4>Turnover</h4>
+              <h4>Turnover (whole pounds)</h4>
               <div class="detail-grid">
                 <div class="detail-item">
-                  <label>Total value of sales (excl. VAT):</label>
-                  <span>${formatCurrency(returnData.totalValueSalesExVAT)}</span>
+                  <label>Box 6: Total value of sales (excl. VAT):</label>
+                  <span>${formatWholePounds(returnData.totalValueSalesExVAT)}</span>
                 </div>
                 <div class="detail-item">
-                  <label>Total value of purchases (excl. VAT):</label>
-                  <span>${formatCurrency(returnData.totalValuePurchasesExVAT)}</span>
+                  <label>Box 7: Total value of purchases (excl. VAT):</label>
+                  <span>${formatWholePounds(returnData.totalValuePurchasesExVAT)}</span>
                 </div>
                 <div class="detail-item">
-                  <label>Total value of goods supplied (excl. VAT):</label>
-                  <span>${formatCurrency(returnData.totalValueGoodsSuppliedExVAT)}</span>
+                  <label>Box 8: Total value of goods supplied to EU (excl. VAT):</label>
+                  <span>${formatWholePounds(returnData.totalValueGoodsSuppliedExVAT)}</span>
                 </div>
                 <div class="detail-item">
-                  <label>Total acquisitions (excl. VAT):</label>
-                  <span>${formatCurrency(returnData.totalAcquisitionsExVAT)}</span>
+                  <label>Box 9: Total acquisitions from EU (excl. VAT):</label>
+                  <span>${formatWholePounds(returnData.totalAcquisitionsExVAT)}</span>
                 </div>
               </div>
             </div>
@@ -699,16 +702,16 @@
       document.getElementById("vrn").addEventListener("input", function (e) {
         // Only allow digits
         e.target.value = e.target.value.replace(/\D/g, "");
-        // Reset dropdown if VRN is being edited
+        // Reset dropdown if VAT registration number is being edited
         if (e.target.value.length < 9) {
           const obligationSelect = document.getElementById("obligationSelect");
           const periodKeyInput = document.getElementById("periodKey");
-          obligationSelect.innerHTML = '<option value="">-- Enter VRN to load periods --</option>';
+          obligationSelect.innerHTML = '<option value="">-- Enter VAT registration number to load periods --</option>';
           periodKeyInput.value = "";
         }
       });
 
-      // Load obligations when VRN field loses focus
+      // Load obligations when VAT registration number field loses focus
       document.getElementById("vrn").addEventListener("blur", function (e) {
         const vrn = e.target.value.trim();
         if (/^\d{9}$/.test(vrn)) {

@@ -45,7 +45,7 @@ demo/
 
 | Field | Label | Format | Example |
 |-------|-------|--------|---------|
-| VAT Registration Number | "VAT registration number" | 9 digits (optionally GB prefix) | 123456789 |
+| VAT registration number | "VAT registration number" | 9 digits (optionally GB prefix) | 123456789 |
 | UTR | "Unique Taxpayer Reference (UTR)" | 10 or 13 digits | 1234567890 |
 | National Insurance | "National Insurance number" | 2L + 6N + 1L | QQ 12 34 56 C |
 | PAYE Reference | "Employer PAYE reference" | 3N + "/" + ref | 123/AB456 |

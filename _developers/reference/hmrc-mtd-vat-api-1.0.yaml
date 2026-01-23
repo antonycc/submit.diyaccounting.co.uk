@@ -397,7 +397,7 @@ paths:
           <tbody>
             <tr>
               <td><p>INVALID_VRN</p></td>
-              <td><p>Submission has not passed validation. Invalid parameter VRN.</p></td>
+              <td><p>Submission has not passed validation. Invalid parameter VAT registration number.</p></td>
             </tr>
             <tr>
               <td><p>INVALID_PERIODKEY</p></td>

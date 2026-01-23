@@ -235,21 +235,13 @@ export async function getGovClientHeaders() {
 /**
  * Submit VAT return to HMRC
  * @param {string} vatNumber - VAT registration number
- * @param {string} periodKey - VAT period key
- * @param {object} vatDue - VAT due amounts
+ * @param {object} vatData - VAT submission data containing periodStart, periodEnd, and 9-box fields
  * @param {string} accessToken - HMRC access token
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @returns {Promise<object>} Submission response
  */
-export async function submitVat(
-  vatNumber,
-  periodKey,
-  vatDue,
-  accessToken,
-  govClientHeaders = {},
-  runFraudPreventionHeaderValidation = false,
-) {
+export async function submitVat(vatNumber, vatData, accessToken, govClientHeaders = {}, runFraudPreventionHeaderValidation = false) {
   const url = "/api/v1/hmrc/vat/return";
 
   // Get Cognito JWT token for custom authorizer
@@ -262,11 +254,31 @@ export async function submitVat(
     headers["X-Authorization"] = `Bearer ${cognitoAccessToken}`;
   }
 
-  // Spread vatDue object to include all 9-box fields at top level
+  // Build request body with period dates and all 9-box fields
+  const body = JSON.stringify({
+    vatNumber,
+    periodStart: vatData.periodStart,
+    periodEnd: vatData.periodEnd,
+    // Include all 9-box fields
+    vatDueSales: vatData.vatDueSales,
+    vatDueAcquisitions: vatData.vatDueAcquisitions,
+    totalVatDue: vatData.totalVatDue,
+    vatReclaimedCurrPeriod: vatData.vatReclaimedCurrPeriod,
+    netVatDue: vatData.netVatDue,
+    totalValueSalesExVAT: vatData.totalValueSalesExVAT,
+    totalValuePurchasesExVAT: vatData.totalValuePurchasesExVAT,
+    totalValueGoodsSuppliedExVAT: vatData.totalValueGoodsSuppliedExVAT,
+    totalAcquisitionsExVAT: vatData.totalAcquisitionsExVAT,
+    finalised: vatData.finalised,
+    accessToken,
+    runFraudPreventionHeaderValidation,
+  });
+  console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
+
   const response = await authorizedFetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify({ vatNumber, periodKey, ...vatDue, accessToken, runFraudPreventionHeaderValidation }),
+    body,
   });
   const responseJson = await response.json();
   if (!response.ok) {

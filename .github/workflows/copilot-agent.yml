@@ -15,7 +15,7 @@ on:
         options:
           - auto-select
           - todo-inator
-          - security-compliance-hardening
+          - security-review
           - sumarise-repository
           - create-new-prompt
           - what-next-for-mtd-vat-submission

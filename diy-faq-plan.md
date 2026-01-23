@@ -77,7 +77,7 @@ You cannot edit a bundle's VAT registration number after creation. Instead:
 
 Your submission history (receipts) is stored separately and won't be lost.
 """
-keywords = ["wrong vrn", "incorrect vrn", "change vrn", "edit bundle", "fix vrn", "mistake", "vat registration number"]
+keywords = ["wrong vrn", "incorrect vrn", "change vrn", "edit bundle", "fix vrn", "mistake", "VAT registration number"]
 priority = 4
 
 [[faq]]
@@ -92,7 +92,7 @@ Yes. Create a separate bundle for each VAT registration:
 
 Each bundle maintains its own HMRC connection. Switch between them from the home screen.
 """
-keywords = ["multiple", "businesses", "companies", "more than one", "several", "different vrn", "vat registration number"]
+keywords = ["multiple", "businesses", "companies", "more than one", "several", "different vrn", "VAT registration number"]
 priority = 5
 
 [[faq]]
@@ -297,7 +297,7 @@ If your VAT registration number is correct but still rejected:
 - Check the business is registered for MTD VAT (not just VAT)
 - New registrations can take 24-48 hours to propagate
 """
-keywords = ["invalid vrn", "vrn error", "wrong format", "9 digits", "gb", "vat registration number"]
+keywords = ["invalid vrn", "vrn error", "wrong format", "9 digits", "gb", "VAT registration number"]
 priority = 17
 
 [[faq]]
@@ -335,7 +335,7 @@ priority = 19
 
 [[faq]]
 id = "clear-browser-data"
-category = "errors" 
+category = "errors"
 question = "Something's not working — should I clear my browser data?"
 answer = """
 Clearing browser data can help with some issues but **will delete your saved receipts**.
@@ -368,30 +368,30 @@ Create a new page accessible from the hamburger menu. Design should match existi
 <div class="help-page">
   <h1>Help & FAQs</h1>
   <p class="subtitle">Find answers to common questions about DIY Accounting Submit</p>
-  
+
   <!-- Search box -->
   <div class="faq-search-container">
-    <input 
-      type="text" 
-      id="faq-search" 
+    <input
+      type="text"
+      id="faq-search"
       placeholder="Search FAQs... e.g. 'wrong figures' or 'can't connect'"
       autocomplete="off"
     >
     <span class="search-hint" id="search-hint">Showing top FAQs</span>
   </div>
-  
+
   <!-- FAQ list -->
   <div class="faq-list" id="faq-list">
     <!-- Dynamically populated -->
   </div>
-  
+
   <!-- Support section -->
   <div class="support-section">
     <h2>Still need help?</h2>
     <p>If you can't find an answer above, you can:</p>
     <div class="support-options">
-      <a href="https://github.com/[REPO]/issues/new?template=support.md" 
-         target="_blank" 
+      <a href="https://github.com/[REPO]/issues/new?template=support.md"
+         target="_blank"
          rel="noopener"
          class="support-button secondary">
         Open a GitHub Issue
@@ -401,7 +401,7 @@ Create a new page accessible from the hamburger menu. Design should match existi
       </button>
     </div>
   </div>
-  
+
   <!-- Support form modal -->
   <div class="modal" id="support-modal" hidden>
     <div class="modal-content">
@@ -409,11 +409,11 @@ Create a new page accessible from the hamburger menu. Design should match existi
       <form id="support-form">
         <label for="support-subject">Subject</label>
         <input type="text" id="support-subject" required maxlength="100">
-        
+
         <label for="support-description">Description</label>
         <textarea id="support-description" required maxlength="2000" rows="6"
           placeholder="Describe your issue. Include any error messages you see."></textarea>
-        
+
         <label for="support-category">Category</label>
         <select id="support-category" required>
           <option value="">Select a category</option>
@@ -423,7 +423,7 @@ Create a new page accessible from the hamburger menu. Design should match existi
           <option value="receipts">Receipts</option>
           <option value="other">Other</option>
         </select>
-        
+
         <div class="form-actions">
           <button type="button" id="cancel-support" class="secondary">Cancel</button>
           <button type="submit" class="primary">Submit</button>
@@ -454,7 +454,7 @@ Implement fuzzy matching using a lightweight approach (no external dependencies)
 ```javascript
 /**
  * FAQ Search Module
- * 
+ *
  * Features:
  * - Loads FAQs from pre-parsed TOML (converted to JSON at build time)
  * - Fuzzy matching using bigram similarity + keyword boost
@@ -469,11 +469,11 @@ export class FAQSearch {
     this.defaultCount = options.defaultCount || 7;
     this.maxResults = options.maxResults || 15;
     this.minScore = options.minScore || 0.2;
-    
+
     // Pre-compute bigrams for all FAQ questions + keywords
     this.faqIndex = this.buildIndex(faqs);
   }
-  
+
   buildIndex(faqs) {
     return faqs.map(faq => ({
       ...faq,
@@ -486,7 +486,7 @@ export class FAQSearch {
       ].join(' ').toLowerCase()
     }));
   }
-  
+
   getBigrams(str) {
     const clean = str.replace(/[^a-z0-9\s]/g, '').trim();
     const bigrams = new Set();
@@ -495,7 +495,7 @@ export class FAQSearch {
     }
     return bigrams;
   }
-  
+
   bigramSimilarity(set1, set2) {
     if (set1.size === 0 || set2.size === 0) return 0;
     let intersection = 0;
@@ -504,10 +504,10 @@ export class FAQSearch {
     }
     return (2 * intersection) / (set1.size + set2.size);
   }
-  
+
   search(query) {
     const trimmed = query.trim().toLowerCase();
-    
+
     // No query = return top by priority
     if (!trimmed) {
       return this.faqs
@@ -515,14 +515,14 @@ export class FAQSearch {
         .sort((a, b) => a.priority - b.priority)
         .slice(0, this.defaultCount);
     }
-    
+
     const queryBigrams = this.getBigrams(trimmed);
     const queryWords = trimmed.split(/\s+/);
-    
+
     const scored = this.faqIndex.map(faq => {
       // Bigram similarity to question
       let score = this.bigramSimilarity(queryBigrams, faq.questionBigrams);
-      
+
       // Keyword exact match boost (significant)
       for (const word of queryWords) {
         if (faq.keywordSet.has(word)) {
@@ -535,18 +535,18 @@ export class FAQSearch {
           }
         }
       }
-      
+
       // Substring match in full text
       if (faq.allText.includes(trimmed)) {
         score += 0.3;
       }
-      
+
       // Small priority boost for high-priority items
       score += (20 - faq.priority) * 0.01;
-      
+
       return { faq, score };
     });
-    
+
     return scored
       .filter(s => s.score >= this.minScore)
       .sort((a, b) => b.score - a.score)
@@ -570,7 +570,7 @@ export function debounce(fn, delay) {
 ```javascript
 /**
  * Help Page Controller
- * 
+ *
  * Initialises FAQ search, handles accordion, manages support form modal
  */
 
@@ -582,20 +582,20 @@ class HelpPage {
   constructor() {
     this.faqSearch = new FAQSearch(faqData.faq);
     this.openFaqId = null;
-    
+
     this.searchInput = document.getElementById('faq-search');
     this.searchHint = document.getElementById('search-hint');
     this.faqList = document.getElementById('faq-list');
     this.supportModal = document.getElementById('support-modal');
     this.supportForm = document.getElementById('support-form');
-    
+
     this.init();
   }
-  
+
   init() {
     // Initial render
     this.render(this.faqSearch.search(''));
-    
+
     // Search input handler
     const handleSearch = debounce((e) => {
       const query = e.target.value;
@@ -603,26 +603,26 @@ class HelpPage {
       this.render(results);
       this.updateHint(query, results.length);
     }, 150);
-    
+
     this.searchInput.addEventListener('input', handleSearch);
-    
+
     // Support modal handlers
     document.getElementById('open-support-form').addEventListener('click', () => {
       this.openModal();
     });
-    
+
     document.getElementById('cancel-support').addEventListener('click', () => {
       this.closeModal();
     });
-    
+
     this.supportModal.addEventListener('click', (e) => {
       if (e.target === this.supportModal) this.closeModal();
     });
-    
+
     // Support form submission
     this.supportForm.addEventListener('submit', (e) => this.handleSupportSubmit(e));
   }
-  
+
   updateHint(query, count) {
     if (!query.trim()) {
       this.searchHint.textContent = 'Showing top FAQs';
@@ -632,7 +632,7 @@ class HelpPage {
       this.searchHint.textContent = `${count} result${count === 1 ? '' : 's'}`;
     }
   }
-  
+
   render(faqs) {
     if (faqs.length === 0) {
       this.faqList.innerHTML = `
@@ -648,7 +648,7 @@ class HelpPage {
       });
       return;
     }
-    
+
     this.faqList.innerHTML = faqs.map(faq => `
       <div class="faq-item" data-id="${faq.id}">
         <button class="faq-question" aria-expanded="false">
@@ -663,19 +663,19 @@ class HelpPage {
         </div>
       </div>
     `).join('');
-    
+
     // Accordion click handlers
     this.faqList.querySelectorAll('.faq-question').forEach(btn => {
       btn.addEventListener('click', () => this.toggleFaq(btn));
     });
   }
-  
+
   toggleFaq(button) {
     const item = button.closest('.faq-item');
     const id = item.dataset.id;
     const answer = item.querySelector('.faq-answer');
     const isOpen = button.getAttribute('aria-expanded') === 'true';
-    
+
     // Close previously open item
     if (this.openFaqId && this.openFaqId !== id) {
       const prev = this.faqList.querySelector(`[data-id="${this.openFaqId}"]`);
@@ -684,13 +684,13 @@ class HelpPage {
         prev.querySelector('.faq-answer').hidden = true;
       }
     }
-    
+
     // Toggle current
     button.setAttribute('aria-expanded', !isOpen);
     answer.hidden = isOpen;
     this.openFaqId = isOpen ? null : id;
   }
-  
+
   formatCategory(cat) {
     const labels = {
       'connection': 'Connection',
@@ -702,13 +702,13 @@ class HelpPage {
     };
     return labels[cat] || cat;
   }
-  
+
   escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
-  
+
   renderMarkdown(text) {
     // Simple markdown: **bold**, links, tables, lists
     return text
@@ -726,7 +726,7 @@ class HelpPage {
       .replace(/^/, '<p>')
       .replace(/$/, '</p>');
   }
-  
+
   parseTableRow(row) {
     const cells = row.split('|').filter(c => c.trim());
     if (cells.every(c => /^-+$/.test(c.trim()))) return ''; // Header separator
@@ -734,30 +734,30 @@ class HelpPage {
     this.tableStarted = true;
     return `<tr>${cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('')}</tr>`;
   }
-  
+
   openModal() {
     this.supportModal.hidden = false;
     document.body.style.overflow = 'hidden';
     this.supportForm.querySelector('input').focus();
   }
-  
+
   closeModal() {
     this.supportModal.hidden = true;
     document.body.style.overflow = '';
     this.supportForm.reset();
   }
-  
+
   async handleSupportSubmit(e) {
     e.preventDefault();
-    
+
     const subject = document.getElementById('support-subject').value;
     const description = document.getElementById('support-description').value;
     const category = document.getElementById('support-category').value;
-    
+
     const submitBtn = this.supportForm.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
-    
+
     try {
       await submitSupportTicket({ subject, description, category });
       this.closeModal();
@@ -769,7 +769,7 @@ class HelpPage {
       submitBtn.textContent = 'Submit';
     }
   }
-  
+
   showNotification(message, type) {
     // Use existing notification system or create simple one
     const notif = document.createElement('div');
@@ -1042,7 +1042,7 @@ export async function submitSupportTicket({ subject, description, category }) {
   // Get current Cognito session token
   const session = await getCurrentSession(); // Use your existing auth helper
   const token = session.getIdToken().getJwtToken();
-  
+
   const response = await fetch(SUPPORT_API_URL, {
     method: 'POST',
     headers: {
@@ -1051,12 +1051,12 @@ export async function submitSupportTicket({ subject, description, category }) {
     },
     body: JSON.stringify({ subject, description, category }),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to submit');
   }
-  
+
   return response.json();
 }
 ```
@@ -1085,9 +1085,9 @@ assignees: ''
 <!-- Describe your issue clearly -->
 
 **Steps to reproduce (if applicable)**
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 **Expected behaviour**
 

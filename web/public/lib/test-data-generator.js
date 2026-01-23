@@ -5,27 +5,31 @@
 // Generates test data for VAT forms in sandbox mode
 
 /**
- * Generate a standard test VRN (VAT Registration Number)
+ * Generate a standard test VAT registration number
  * Always returns the placeholder value used throughout the application
- * @returns {string} 9-digit VRN
+ * @returns {string} 9-digit VAT registration number
  */
 function generateTestVrn() {
   return "176540158";
 }
 
 /**
- * Generate a random period key in YYXN format
- * Format: 2-digit year + letter + digit (e.g., 24A1, 25B3)
- * @returns {string} Period key in YYXN format
+ * Generate a random period key in YYXZ format
+ * Format: 2-digit year + letter + alphanumeric (e.g., 24A1, 25B3, 17NB)
+ * The last character can be either a digit or a letter per HMRC specification.
+ * @returns {string} Period key in YYXZ format
  */
 function generateTestPeriodKey() {
   // eslint-disable-next-line sonarjs/pseudo-random
   const year = String(24 + Math.floor(Math.random() * 2)).padStart(2, "0"); // 24 or 25
   // eslint-disable-next-line sonarjs/pseudo-random
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  // Last character can be digit (0-9) or letter (A-Z)
   // eslint-disable-next-line sonarjs/pseudo-random
-  const number = Math.floor(Math.random() * 9) + 1; // 1-9
-  return `${year}${letter}${number}`;
+  const lastChar = Math.random() < 0.5
+    ? String(Math.floor(Math.random() * 10)) // 0-9
+    : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  return `${year}${letter}${lastChar}`;
 }
 
 /**
@@ -60,12 +64,12 @@ function generateTest9BoxData() {
   const netVatDue = Math.abs(totalVatDue - vatReclaimedCurrPeriod);
 
   // eslint-disable-next-line sonarjs/pseudo-random
-  const totalValueSalesExVAT = Math.floor(vatDueSales / 0.2 * (1 + Math.random() * 0.2)); // Approximate sales value
+  const totalValueSalesExVAT = Math.floor((vatDueSales / 0.2) * (1 + Math.random() * 0.2)); // Approximate sales value
   // eslint-disable-next-line sonarjs/pseudo-random
-  const totalValuePurchasesExVAT = Math.floor(vatReclaimedCurrPeriod / 0.2 * (1 + Math.random() * 0.2)); // Approximate purchase value
+  const totalValuePurchasesExVAT = Math.floor((vatReclaimedCurrPeriod / 0.2) * (1 + Math.random() * 0.2)); // Approximate purchase value
   // eslint-disable-next-line sonarjs/pseudo-random
   const totalValueGoodsSuppliedExVAT = Math.random() < 0.2 ? Math.floor(Math.random() * 1000) : 0; // 20% chance
-  // eslint-disable-next-line sonarjs/pseudo-random
+
   const totalAcquisitionsExVAT = vatDueAcquisitions > 0 ? Math.floor(vatDueAcquisitions / 0.2) : 0;
 
   return {
@@ -115,12 +119,21 @@ function populateSubmitVatForm() {
   const vrnInput = document.getElementById("vatNumber");
   const periodKeyInput = document.getElementById("periodKey");
   const obligationSelect = document.getElementById("obligationSelect");
+  const periodStartInput = document.getElementById("periodStart");
+  const periodEndInput = document.getElementById("periodEnd");
 
   const testVrn = generateTestVrn();
   const testPeriodKey = generateTestPeriodKey();
 
   if (vrnInput) vrnInput.value = testVrn;
   if (periodKeyInput) periodKeyInput.value = testPeriodKey;
+
+  // Set default period dates based on the simulator's default open obligation
+  // Both the simulator and HMRC sandbox use Q1 2017 (2017-01-01 to 2017-03-31) as the default open period
+  // Note: allowSandboxObligations is also enabled so the backend will use whatever
+  // open obligation is available if these dates don't match exactly
+  if (periodStartInput) periodStartInput.value = "2017-01-01";
+  if (periodEndInput) periodEndInput.value = "2017-03-31";
 
   // Also populate the obligation dropdown with a test option if it exists
   if (obligationSelect) {
@@ -160,6 +173,27 @@ function populateSubmitVatForm() {
     const vatDueInput = document.getElementById("vatDue");
     if (vatDueInput) vatDueInput.value = generateTestVatAmount();
     console.log("[Test Data] Populated legacy VAT submission form with test data");
+  }
+
+  // Auto-check allowSandboxObligations in sandbox mode - this allows the backend
+  // to use any available open obligation if the test dates don't match HMRC's actual obligations
+  const allowSandboxObligationsCheckbox = document.getElementById("allowSandboxObligations");
+  if (allowSandboxObligationsCheckbox) {
+    allowSandboxObligationsCheckbox.checked = true;
+    console.log("[Test Data] Auto-checked allowSandboxObligations for sandbox testing");
+  }
+
+  // Show the sandbox obligations option and developer section for test data
+  const sandboxObligationsOption = document.getElementById("sandboxObligationsOption");
+  const developerSection = document.getElementById("developerSection");
+  if (sandboxObligationsOption) {
+    sandboxObligationsOption.style.display = "block";
+  }
+  if (developerSection) {
+    developerSection.style.display = "block";
+    // Update the toggle button text
+    const toggleBtn = document.getElementById("toggleDeveloperMode");
+    if (toggleBtn) toggleBtn.textContent = "Hide Developer Options";
   }
 }
 

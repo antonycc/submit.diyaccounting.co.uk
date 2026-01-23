@@ -637,7 +637,7 @@ public class SubmitSharedNames {
                 "Retrieves VAT obligations from HMRC for the authenticated user",
                 "getVatObligations",
                 List.of(
-                        new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                        new ApiParameter("vrn", "query", true, "VAT registration number (9 digits)"),
                         new ApiParameter("from", "query", false, "From date in YYYY-MM-DD format"),
                         new ApiParameter("to", "query", false, "To date in YYYY-MM-DD format"),
                         new ApiParameter("status", "query", false, "Obligation status: O (Open) or F (Fulfilled)"),
@@ -682,7 +682,7 @@ public class SubmitSharedNames {
                 "getVatReturns",
                 List.of(
                         new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
-                        new ApiParameter("vrn", "query", true, "VAT Registration Number (9 digits)"),
+                        new ApiParameter("vrn", "query", true, "VAT registration number (9 digits)"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",

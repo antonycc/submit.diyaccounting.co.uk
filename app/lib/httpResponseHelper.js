@@ -145,7 +145,7 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
     }),
   };
   if (request) {
-    levelledLogger({ message: "Responding to request with response", request, response });
+    levelledLogger({ message: "Responding to request with response", request: request.toString(), response });
   } else {
     levelledLogger({ message: "Responding with response", response });
   }
@@ -196,14 +196,15 @@ export function extractRequest(event) {
         baseRequestUrl = `https://${getHeader(event.headers, "host") || "unknown-host"}`;
       }
       const path = event.rawPath || event.path || event.requestContext?.http?.path || "";
-      const queryString = event.rawQueryString || "";
-      request = new URL(`${baseRequestUrl}${path}?${queryString}`);
+      // Build URL without query string first, then add queryStringParameters
+      // (avoids duplication when both rawQueryString and queryStringParameters are present)
+      request = new URL(`${baseRequestUrl}${path}`);
       if (event.queryStringParameters) {
         Object.keys(event.queryStringParameters).forEach((key) => {
           request.searchParams.append(key, event.queryStringParameters[key]);
         });
       }
-      logger.info({ message: "Processing request with event", request, event });
+      logger.info({ message: "Processing request with event", request: request.toString(), event });
     } catch (err) {
       logger.warn({ message: "Error building request URL from event", error: err, event });
       request = "https://unknown-url"; // Fallback URL in case of error

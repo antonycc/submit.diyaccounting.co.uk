@@ -49,7 +49,7 @@ This guide consolidates UK government standards for identifying and labelling fo
 
 ## HMRC Tax Reference Fields
 
-### VAT Registration Number
+### VAT registration number
 
 | Property | Value |
 |----------|-------|

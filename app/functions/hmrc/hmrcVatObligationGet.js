@@ -78,8 +78,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   const { vrn, from, to, status, runFraudPreventionHeaderValidation } = queryParams;
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
-  if (!vrn) errorMessages.push("Missing vrn parameter");
-  if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
+  if (!vrn) errorMessages.push("Missing VAT registration number parameter");
+  if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid VAT registration number format - must be 9 digits");
   if (from && !isValidIsoDate(from)) errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
   if (to && !isValidIsoDate(to)) errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
   if (status && !["O", "F"].includes(status)) errorMessages.push("Invalid status - must be O (Open) or F (Fulfilled)");

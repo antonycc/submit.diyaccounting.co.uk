@@ -51,18 +51,16 @@ test.describe("View VAT Return - 9-Box Display", () => {
     });
 
     // Prepare HTML with base tag
-    const modifiedHtml = viewVatReturnHtmlContent
-      .replace("<head>", '<head><base href="http://localhost:3000/hmrc/vat/">')
-      .replace(
-        "<body>",
-        `<body><script>
+    const modifiedHtml = viewVatReturnHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/vat/">').replace(
+      "<body>",
+      `<body><script>
 window.showStatus = window.showStatus || function(){};
 window.checkAuthStatus = window.checkAuthStatus || function(){};
 window.toggleMenu = window.toggleMenu || function(){};
 window.loadEnv = window.loadEnv || function(){ return Promise.resolve({ HMRC_VAT_API_BASE_URL: "https://test-api" }); };
 window.authorizedFetch = window.authorizedFetch || function(){ return Promise.resolve({ ok: true, json: function(){ return Promise.resolve({}); }}); };
 </script>`,
-      );
+    );
 
     // Load the modified page HTML
     await page.setContent(modifiedHtml, {
@@ -77,7 +75,7 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     const form = page.locator("#vatReturnForm");
     await expect(form).toBeVisible();
 
-    // Check for VRN input
+    // Check for VAT registration number input
     const vrnInput = page.locator("#vrn");
     await expect(vrnInput).toBeVisible();
 

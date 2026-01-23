@@ -5,25 +5,63 @@
 // Gov-Test-Scenario handlers for VAT obligations endpoint
 
 /**
- * Default obligations array (from captured test data)
+ * Generate a random period key in HMRC format.
+ * HMRC states that period keys cannot be calculated, only validated.
+ * Format: 2-digit year + letter (A-Z) + alphanumeric (0-9, A-Z)
+ * Examples: 18A1, 24B3, 17AC, 25Z9
+ * @returns {string} Random period key
  */
-const defaultObligations = [
-  {
-    periodKey: "18A1",
-    start: "2017-01-01",
-    end: "2017-03-31",
-    due: "2017-05-07",
-    status: "F",
-    received: "2017-05-06",
-  },
-  {
-    periodKey: "18A2",
-    start: "2017-04-01",
-    end: "2017-06-30",
-    due: "2017-08-07",
-    status: "O",
-  },
-];
+function generateRandomPeriodKey() {
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const year = String(17 + Math.floor(Math.random() * 10)).padStart(2, "0"); // 17-26
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  // eslint-disable-next-line sonarjs/pseudo-random
+  const suffix = Math.random() < 0.5
+    ? String(Math.floor(Math.random() * 10)) // 0-9
+    : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  return `${year}${letter}${suffix}`;
+}
+
+/**
+ * Validate period key format per HMRC MTD VAT API specification.
+ * @see https://developer.service.hmrc.gov.uk/guides/vat-mtd-end-to-end-service-guide/documentation/obligations.html
+ *
+ * Accepted formats:
+ * - Alphanumeric (YYXZ): 2-digit year + letter + alphanumeric (e.g., 18A1, 18AD, 17NB)
+ * - Numeric (NNNN): 4 digits (e.g., 0418, 1218)
+ * - Special numeric: 0000 (no period) or 9999 (ceased trading)
+ * - Hash format (#NNN): # followed by 3 digits (e.g., #001, #012)
+ *
+ * @param {string} periodKey - Period key to validate
+ * @returns {boolean} True if valid format
+ */
+export function isValidPeriodKeyFormat(periodKey) {
+  const normalized = String(periodKey).toUpperCase();
+  // Alphanumeric format: 2-digit year + letter + alphanumeric (e.g., 18A1, 18AD, 17NB)
+  // Numeric format: 4 digits (e.g., 0418, 1218, 0000, 9999)
+  // Hash format: # followed by 3 digits (e.g., #001, #012)
+  return /^(\d{2}[A-Z][A-Z0-9]|\d{4}|#\d{3})$/.test(normalized);
+}
+
+/**
+ * Default obligations array (aligned with HMRC sandbox)
+ * Note: HMRC sandbox typically only has one open obligation (Q1 2017).
+ * Tests using different periods need allowSandboxObligations enabled
+ * to use whatever obligation is available.
+ * Period keys are randomized to simulate HMRC's unpredictable behavior.
+ */
+function generateDefaultObligations() {
+  return [
+    {
+      periodKey: generateRandomPeriodKey(),
+      start: "2017-01-01",
+      end: "2017-03-31",
+      due: "2017-05-07",
+      status: "O",
+    },
+  ];
+}
 
 /**
  * Scenario-specific obligation sets
@@ -191,7 +229,7 @@ const errorScenarios = {
     status: 400,
     body: {
       code: "VRN_INVALID",
-      message: "The provided VRN is invalid",
+      message: "The provided VAT registration number is invalid",
     },
   },
   INVALID_DATE_FROM: {
@@ -243,13 +281,29 @@ const slowScenarios = {
 };
 
 /**
+ * Randomize period keys in an obligations array while preserving the structure.
+ * This simulates HMRC's unpredictable period key generation.
+ * @param {Array} obligations - Array of obligation objects
+ * @returns {Array} Obligations with randomized period keys
+ */
+function randomizePeriodKeys(obligations) {
+  return obligations.map((ob) => ({
+    ...ob,
+    periodKey: generateRandomPeriodKey(),
+  }));
+}
+
+/**
  * Get obligations based on Gov-Test-Scenario header
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @returns {Object} - {obligations: [...]} or {status: number, body: {...}} for errors or {delayMs: number, obligations: [...]} for slow
  */
 export function getObligationsForScenario(scenario) {
   if (!scenario) {
-    return { obligations: defaultObligations };
+    // Default: generate obligations with random period keys
+    const obligations = generateDefaultObligations();
+    console.log(`[http-simulator:scenarios] Using default obligations with random periodKey: ${obligations[0]?.periodKey}`);
+    return { obligations };
   }
 
   const scenarioUpper = scenario.toUpperCase();
@@ -263,15 +317,22 @@ export function getObligationsForScenario(scenario) {
   // Check for slow scenarios
   if (slowScenarios[scenarioUpper]) {
     console.log(`[http-simulator:scenarios] Applying slow scenario: ${scenario}`);
-    return slowScenarios[scenarioUpper];
+    // Randomize period keys for slow scenarios too
+    return {
+      ...slowScenarios[scenarioUpper],
+      obligations: randomizePeriodKeys(slowScenarios[scenarioUpper].obligations),
+    };
   }
 
   // Check for obligation-specific scenarios
   if (scenarioObligations[scenarioUpper]) {
     console.log(`[http-simulator:scenarios] Applying obligation scenario: ${scenario}`);
-    return { obligations: scenarioObligations[scenarioUpper] };
+    // Randomize period keys to simulate HMRC's unpredictable behavior
+    return { obligations: randomizePeriodKeys(scenarioObligations[scenarioUpper]) };
   }
 
-  // Default
-  return { obligations: defaultObligations };
+  // Default: generate obligations with random period keys
+  const obligations = generateDefaultObligations();
+  console.log(`[http-simulator:scenarios] Using default obligations (unknown scenario) with random periodKey: ${obligations[0]?.periodKey}`);
+  return { obligations };
 }

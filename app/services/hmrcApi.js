@@ -718,7 +718,7 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
 export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.error({
     message: "HMRC request failed for request",
-    request,
+    request: request?.toString(),
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });

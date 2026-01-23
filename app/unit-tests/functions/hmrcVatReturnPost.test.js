@@ -40,12 +40,46 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
+// Mock getVatObligations to return obligations for period key resolution
+const mockGetVatObligations = vi.fn();
+vi.mock("@app/functions/hmrc/hmrcVatObligationGet.js", () => ({
+  getVatObligations: (...args) => mockGetVatObligations(...args),
+}));
+
 // Defer importing the ingestHandlers until after mocks are defined
 import { ingestHandler as hmrcVatReturnPostHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const mockFetch = setupFetchMock();
+
+// Standard test period dates (matches simulator default open obligation)
+const TEST_PERIOD_START = "2017-04-01";
+const TEST_PERIOD_END = "2017-06-30";
+const TEST_PERIOD_KEY = "18A2";
+
+// Helper to set up mock obligations response
+// Note: getVatObligations returns { obligations: hmrcResponse.data } where hmrcResponse.data is the HMRC JSON body { obligations: [...] }
+function mockObligationsSuccess(periodKey = TEST_PERIOD_KEY, periodStart = TEST_PERIOD_START, periodEnd = TEST_PERIOD_END) {
+  mockGetVatObligations.mockResolvedValue({
+    obligations: { obligations: [{ periodKey, start: periodStart, end: periodEnd, status: "O" }] },
+    hmrcResponse: { ok: true, status: 200 },
+  });
+}
+
+function mockObligationsNotFound() {
+  mockGetVatObligations.mockResolvedValue({
+    obligations: { obligations: [] },
+    hmrcResponse: { ok: true, status: 200 },
+  });
+}
+
+function mockObligationsError(status = 500) {
+  mockGetVatObligations.mockResolvedValue({
+    obligations: { obligations: [] },
+    hmrcResponse: { ok: false, status },
+  });
+}
 
 describe("hmrcVatReturnPost ingestHandler", () => {
   beforeEach(() => {
@@ -67,6 +101,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
       }
       return {};
     });
+    // Default: obligations resolve successfully
+    mockObligationsSuccess();
   });
 
   test("HEAD request returns 200 OK", async () => {
@@ -78,7 +114,7 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when vatNumber is missing", async () => {
     const event = buildHmrcEvent({
-      body: { periodKey: "24A1", vatDue: 100, accessToken: "token" },
+      body: { periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -86,17 +122,29 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     expect(body.message).toContain("vatNumber");
   });
 
-  test("returns 400 when periodKey is missing", async () => {
+  test("returns 400 when periodStart is missing", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", vatDue: 100, accessToken: "token" },
+      body: { vatNumber: "111222333", periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("periodStart");
+  });
+
+  test("returns 400 when periodEnd is missing", async () => {
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, vatDue: 100, accessToken: "token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("periodEnd");
   });
 
   test("returns 400 when vatDue is missing", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodKey: "24A1", accessToken: "token" },
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, accessToken: "token" },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -104,7 +152,7 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when accessToken is missing", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodKey: "24A1", vatDue: 100 },
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100 },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -112,7 +160,7 @@ describe("hmrcVatReturnPost ingestHandler", () => {
 
   test("returns 400 when vatNumber has invalid format", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "12345678", periodKey: "24A1", vatDue: 100, accessToken: "token" }, // 8 digits instead of 9
+      body: { vatNumber: "12345678", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" }, // 8 digits instead of 9
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
@@ -121,45 +169,55 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     expect(body.message).toContain("9 digits");
   });
 
-  test("returns 400 when periodKey has invalid format", async () => {
+  test("returns 400 when periodStart has invalid format", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodKey: "INVALID", vatDue: 100, accessToken: "token" },
+      body: { vatNumber: "111222333", periodStart: "invalid-date", periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "token" },
     });
     const response = await hmrcVatReturnPostHandler(event);
     expect(response.statusCode).toBe(400);
     const body = parseResponseBody(response);
-    expect(body.message).toContain("periodKey");
+    expect(body.message).toContain("periodStart");
+    expect(body.message).toContain("YYYY-MM-DD");
   });
 
-  test("accepts valid period key formats - YYXN", async () => {
-    mockHmrcSuccess(mockFetch, {
-      formBundleNumber: "123456789012",
-      chargeRefNumber: "XM002610011594",
-      processingDate: "2023-01-01T12:00:00.000Z",
-    });
-
+  test("returns 400 when periodEnd has invalid format", async () => {
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodKey: "24A1", vatDue: 100, accessToken: "token" },
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: "invalid-date", vatDue: 100, accessToken: "token" },
     });
     const response = await hmrcVatReturnPostHandler(event);
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("periodEnd");
+    expect(body.message).toContain("YYYY-MM-DD");
   });
 
-  test("accepts valid period key formats - #NNN", async () => {
-    mockHmrcSuccess(mockFetch, {
-      formBundleNumber: "123456789012",
-      chargeRefNumber: "XM002610011594",
-      processingDate: "2023-01-01T12:00:00.000Z",
-    });
+  test("returns 400 when no matching obligation found for period dates", async () => {
+    mockObligationsNotFound();
 
     const event = buildHmrcEvent({
-      body: { vatNumber: "111222333", periodKey: "#001", vatDue: 100, accessToken: "token" },
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
     });
     const response = await hmrcVatReturnPostHandler(event);
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("No open VAT obligation found");
   });
 
-  test("returns 200 with receipt on successful submission and persists it", async () => {
+  test("returns error when obligations API fails", async () => {
+    mockObligationsError(500);
+
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("Failed to resolve period key");
+  });
+
+  test("resolves periodKey from obligations and returns 200 on successful submission", async () => {
+    mockObligationsSuccess("18A2", TEST_PERIOD_START, TEST_PERIOD_END);
+
     const receipt = {
       formBundleNumber: "123456789012",
       chargeRefNumber: "XM002610011594",
@@ -170,7 +228,8 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     const event = buildHmrcEvent({
       body: {
         vatNumber: "111222333",
-        periodKey: "24A1",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
         vatDue: 100,
         accessToken: "test-token",
       },
@@ -180,6 +239,14 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     const body = parseResponseBody(response);
     expect(body).toHaveProperty("receipt");
     expect(body).toHaveProperty("receiptId");
+
+    // Verify getVatObligations was called
+    expect(mockGetVatObligations).toHaveBeenCalled();
+    // Verify key parameters
+    const callArgs = mockGetVatObligations.mock.calls[0];
+    expect(callArgs[0]).toBe("111222333"); // vatNumber
+    expect(callArgs[1]).toBe("test-token"); // hmrcAccessToken
+    expect(callArgs[5]).toEqual(expect.objectContaining({ from: TEST_PERIOD_START, to: TEST_PERIOD_END, status: "O" }));
 
     // Verify receipt was persisted to DynamoDB
     const lib = await import("@aws-sdk/lib-dynamodb");
@@ -193,12 +260,14 @@ describe("hmrcVatReturnPost ingestHandler", () => {
   });
 
   test("returns 500 on HMRC API error", async () => {
+    mockObligationsSuccess();
     mockHmrcError(mockFetch, 400, { error: "INVALID_VAT_NUMBER" });
 
     const event = buildHmrcEvent({
       body: {
         vatNumber: "111222333",
-        periodKey: "24A1",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
         vatDue: 100,
         accessToken: "test-token",
       },
@@ -208,12 +277,14 @@ describe("hmrcVatReturnPost ingestHandler", () => {
   });
 
   test("returns user-friendly error message for HMRC error codes", async () => {
+    mockObligationsSuccess();
     mockHmrcError(mockFetch, 400, { code: "DUPLICATE_SUBMISSION", message: "Duplicate submission" });
 
     const event = buildHmrcEvent({
       body: {
         vatNumber: "111222333",
-        periodKey: "24A1",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
         vatDue: 100,
         accessToken: "test-token",
       },

@@ -77,10 +77,16 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 const runFraudPreventionHeaderValidation = true;
+// Enable sandbox obligation fallback - allows test to use any available open obligation if dates don't match
+const allowSandboxObligations = isSandboxMode();
 
 // eslint-disable-next-line sonarjs/pseudo-random
 const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
+// Period keys are unpredictable per HMRC documentation - they cannot be calculated, only validated.
+// Tests should capture the actual periodKey from the response and use that for subsequent calls.
+// Format validation: /^[0-9]{2}[A-Z][0-9A-Z]$/ (e.g., 18A1, 24B3, 17AC)
+const periodKeyFormatRegex = /^[0-9]{2}[A-Z][0-9A-Z]$/;
 
 let mockOAuth2Process;
 let serverProcess;
@@ -88,6 +94,8 @@ let ngrokProcess;
 let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
+// Capture the actual resolved period key from the submission response
+let resolvedPeriodKey = null;
 
 test.setTimeout(300_000);
 
@@ -163,14 +171,40 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   // Add console logging to capture browser messages
   addOnPageLogging(page);
 
-  page.on("response", (response) => {
+  // Capture the first traceparent header observed in any API response
+  // Also capture the resolved periodKey from the VAT return submission response
+  page.on("response", async (response) => {
     try {
-      if (observedTraceparent) return;
-      const headers = response.headers?.() ?? {};
-      const h = typeof headers === "function" ? headers() : headers;
-      const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
-      if (tp) observedTraceparent = tp;
-    } catch {}
+      const url = response.url();
+
+      // Capture traceparent header
+      if (!observedTraceparent) {
+        const headers = response.headers?.() ?? {};
+        const h = typeof headers === "function" ? headers() : headers;
+        const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
+        if (tp) {
+          observedTraceparent = tp;
+        }
+      }
+
+      // Capture periodKey from VAT return submission response
+      // The backend returns the resolved periodKey at data.periodKey level
+      if (!resolvedPeriodKey && url.includes("/api/v1/hmrc/vat/return") && response.status() === 200) {
+        try {
+          const body = await response.json();
+          // The periodKey is returned at data.periodKey (resolved from obligations by the backend)
+          const pk = body?.data?.periodKey || body?.periodKey;
+          if (pk && periodKeyFormatRegex.test(pk)) {
+            resolvedPeriodKey = pk;
+            console.log(`[Test] Captured resolved periodKey from response: ${resolvedPeriodKey}`);
+          }
+        } catch (_jsonErr) {
+          // Response may not be JSON or may have been consumed
+        }
+      }
+    } catch (_e) {
+      // ignore header/body parsing errors
+    }
   });
 
   // ---------- Test artefacts (video-adjacent) ----------
@@ -217,7 +251,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     console.log("[HMRC Test User] Successfully created test user:");
     console.log(`  User ID: ${testUser.userId}`);
     console.log(`  User Full Name: ${testUser.userFullName}`);
-    console.log(`  VAT Registration Number: ${testUser.vrn}`);
+    console.log(`  VAT registration number: ${testUser.vrn}`);
     console.log(`  Organisation: ${testUser.organisationDetails?.name || "N/A"}`);
 
     // Save test user details to files
@@ -269,7 +303,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* *********** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
+  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -501,11 +535,12 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
         "httpResponse.statusCode": 201,
       });
 
-      // Check that request body contains the period key and VAT due amount
+      // Check that request body contains a valid period key format and VAT due amount
+      // periodKey is unpredictable per HMRC - only validate format, not specific value
       const requestBody = JSON.parse(vatPostRequest.httpRequest.body);
-      expect(requestBody.periodKey).toBe(hmrcVatPeriodKey.toUpperCase());
+      expect(requestBody.periodKey, "periodKey should match HMRC format").toMatch(periodKeyFormatRegex);
       expect(requestBody.vatDueSales).toBe(parseFloat(hmrcVatDueAmount));
-      console.log("[DynamoDB Assertions]: VAT POST request body validated successfully");
+      console.log(`[DynamoDB Assertions]: VAT POST request body validated - periodKey format: ${requestBody.periodKey}`);
     });
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields

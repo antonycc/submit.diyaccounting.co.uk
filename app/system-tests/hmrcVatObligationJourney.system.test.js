@@ -232,15 +232,18 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     // Find an open obligation to submit
     const openObligation = obligationBody.obligations.find((o) => o.status === "O");
     expect(openObligation).toBeDefined();
+    const periodStartToSubmit = openObligation.start;
+    const periodEndToSubmit = openObligation.end;
     const periodKeyToSubmit = openObligation.periodKey;
 
-    // Step 4: Submit VAT return for the open obligation
+    // Step 4: Submit VAT return for the open obligation using period dates
     const submitEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/vat/return",
       body: {
         vatNumber: "123456789",
-        periodKey: periodKeyToSubmit,
+        periodStart: periodStartToSubmit,
+        periodEnd: periodEndToSubmit,
         vatDue: 2750.0,
         accessToken: hmrcAccessToken,
       },

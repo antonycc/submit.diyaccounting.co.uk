@@ -250,7 +250,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
      * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
      *
      * POST /organisations/vat/{vrn}/returns
-     *  - INVALID_VRN: Submission has not passed validation. Invalid parameter VRN.
+     *  - INVALID_VRN: Submission has not passed validation. Invalid parameter VAT registration number.
      *  - INVALID_PERIODKEY: Submission has not passed validation. Invalid parameter PERIODKEY.
      *  - INVALID_PAYLOAD: Submission has not passed validation. Invalid parameter Payload.
      *  - DUPLICATE_SUBMISSION: VAT has already been submitted for that period.

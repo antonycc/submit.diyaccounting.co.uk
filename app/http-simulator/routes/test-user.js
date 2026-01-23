@@ -8,7 +8,7 @@
 import { randomUUID } from "crypto";
 
 /**
- * Generate a random VAT Registration Number (9 digits)
+ * Generate a random VAT registration number (9 digits)
  */
 function generateVrn() {
   return Math.floor(100000000 + Math.random() * 900000000).toString();
@@ -83,7 +83,7 @@ export function apiEndpoint(app) {
     // Generate mock test user
     const testUser = generateTestUser(serviceNames);
 
-    console.log(`[http-simulator:test-user] Created test user with VRN: ${testUser.vrn}`);
+    console.log(`[http-simulator:test-user] Created test user with VAT registration number: ${testUser.vrn}`);
 
     res.status(201).json(testUser);
   });

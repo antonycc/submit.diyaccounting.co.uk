@@ -70,7 +70,7 @@
       }
       .native-hint {
         font-size: 0.75rem;
-        color: #999;
+        color: #666;
         margin: 0.5rem 0 0;
         text-align: center;
       }

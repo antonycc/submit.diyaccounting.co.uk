@@ -12,7 +12,7 @@ import { getScenarioResponse } from "../scenarios/returns.js";
 import { validateVatReturnBody, calculateTotalVatDue, calculateNetVatDue } from "../../lib/vatReturnTypes.js";
 
 /**
- * Validate VRN format (9 digits)
+ * Validate VAT registration number format (9 digits)
  */
 function isValidVrn(vrn) {
   return /^\d{9}$/.test(vrn);
@@ -45,11 +45,11 @@ export function apiEndpoint(app) {
 
     console.log(`[http-simulator:vat-returns] POST /organisations/vat/${vrn}/returns`);
 
-    // Validate VRN
+    // Validate VAT registration number
     if (!isValidVrn(vrn)) {
       return res.status(400).json({
         code: "VRN_INVALID",
-        message: "The provided VRN is invalid",
+        message: "The provided VAT registration number is invalid",
       });
     }
 
@@ -145,11 +145,11 @@ export function apiEndpoint(app) {
 
     console.log(`[http-simulator:vat-returns] GET /organisations/vat/${vrn}/returns/${periodKey}`);
 
-    // Validate VRN
+    // Validate VAT registration number
     if (!isValidVrn(vrn)) {
       return res.status(400).json({
         code: "VRN_INVALID",
-        message: "The provided VRN is invalid",
+        message: "The provided VAT registration number is invalid",
       });
     }
 

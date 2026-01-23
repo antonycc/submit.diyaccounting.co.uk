@@ -176,7 +176,7 @@ describe("HTTP Simulator", () => {
   });
 
   describe("VAT Obligations", () => {
-    it("should return obligations for valid VRN", async () => {
+    it("should return obligations for valid VAT registration number", async () => {
       const response = await fetch(`${baseUrl}/organisations/vat/443941738/obligations?from=2025-01-01&to=2025-12-01`, {
         headers: {
           Accept: "application/vnd.hmrc.1.0+json",
@@ -199,7 +199,7 @@ describe("HTTP Simulator", () => {
       expect(obligation).toHaveProperty("status");
     });
 
-    it("should return 400 for invalid VRN", async () => {
+    it("should return 400 for invalid VAT registration number", async () => {
       const response = await fetch(`${baseUrl}/organisations/vat/invalid/obligations?from=2025-01-01&to=2025-12-01`);
       expect(response.status).toBe(400);
 

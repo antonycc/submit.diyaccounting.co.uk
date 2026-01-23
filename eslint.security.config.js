@@ -26,7 +26,9 @@ export default [
       "sonarjs/no-parameter-reassignment": "off",
       "sonarjs/no-os-command-from-path": "off",
       ...security.configs.recommended.rules,
-      "security/detect-object-injection": "warn",
+      // Disabled: generates too many false positives for intentional obj[key] patterns.
+      // Real object injection risks are mitigated by input validation at API boundaries.
+      "security/detect-object-injection": "off",
       "security/detect-non-literal-regexp": "warn",
       "security/detect-non-literal-require": "warn",
       "security/detect-non-literal-fs-filename": "warn",

@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => {
               "@app": path.resolve(process.cwd(), "app"),
             },
           },
-          include: ["app/unit-tests/*.test.js", "app/unit-tests/*/*.test.js", "app/system-tests/*.test.js", "web/unit-tests/*.test.js"],
+          include: ["app/unit-tests/*.test.js", "app/unit-tests/**/*.test.js", "app/system-tests/*.test.js", "web/unit-tests/*.test.js"],
           exclude: [
             "app/bin/*",
             "app/test-helpers/*",

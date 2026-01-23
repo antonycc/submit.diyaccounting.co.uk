@@ -3,8 +3,20 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://wanted-finally-anteater.ngrok-free.app
-**Generated**: 2026-01-19T19:38:51.197Z
+**Generated**: 2026-01-21T20:53:19.562Z
 **Overall Status**: ❌ FAIL
+
+**Source Files**:
+```
+  ✅ target/penetration/npm-audit.json
+  ✅ target/penetration/eslint-security.txt
+  ✅ target/penetration/retire.json
+  ✅ target/penetration/zap-report.json
+  ✅ target/accessibility/pa11y-report.txt
+  ✅ target/accessibility/axe-results.json
+  ✅ target/accessibility/axe-wcag22-results.json
+  ✅ target/accessibility/lighthouse-results.json
+```
 
 ---
 
@@ -13,11 +25,11 @@
 | Check | Status | Summary |
 |-------|--------|---------|
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
-| ESLint Security | ✅ | 0 errors, 54 warnings |
+| ESLint Security | ✅ | 0 errors, 6 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 6 medium, 5 low |
+| OWASP ZAP | ✅ | 0 high, 6 medium, 6 low |
 | Pa11y (WCAG AA) | ✅ | 16/16 pages passed |
-| axe-core | ❌ | 13 violations, 239 passes |
+| axe-core | ❌ | 12 violations, 240 passes |
 | axe-core (WCAG 2.2) | ❌ | 10 violations, 148 passes |
 | Lighthouse | ❌ | A11y: 0%, Perf: 0%, BP: 0% |
 
@@ -32,8 +44,8 @@
 | Critical | 0 |
 | High | 0 |
 | Moderate | 0 |
-| Low | 3 |
-| **Total** | **3** |
+| Low | 1 |
+| **Total** | **1** |
 
 **Status**: ✅ No critical/high vulnerabilities
 
@@ -42,7 +54,7 @@
 | Metric | Count |
 |--------|-------|
 | Errors | 0 |
-| Warnings | 54 |
+| Warnings | 6 |
 
 **Status**: ✅ No security errors
 
@@ -62,7 +74,7 @@
 |------------|-------|
 | High | 0 |
 | Medium | 6 |
-| Low | 5 |
+| Low | 6 |
 | Informational | 5 |
 
 **Status**: ✅ No high risk vulnerabilities
@@ -75,9 +87,10 @@
 | Sub Resource Integrity Attribute Missing | Medium (High) | 5 |
 | Cross-Domain JavaScript Source File Inclusion | Low (Medium) | 1 |
 | Permissions Policy Header Not Set | Low (Medium) | 1 |
-| Strict-Transport-Security Header Not Set | Low (High) | 3 |
+| Strict-Transport-Security Header Not Set | Low (High) | 4 |
 | Modern Web Application | Informational (Medium) | 1 |
 | Storable and Cacheable Content | Informational (Medium) | 4 |
+
 
 ---
 
@@ -118,8 +131,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Violations | 13 |
-| Passes | 239 |
+| Violations | 12 |
+| Passes | 240 |
 | Incomplete | 0 |
 
 **Status**: ❌ Accessibility violations require attention
@@ -131,7 +144,6 @@
 | document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
 | landmark-one-main | moderate | Ensure the document has a main landmark | 1 |
 | page-has-heading-one | moderate | Ensure that the page, or at least one of its frames contains a level-one heading | 1 |
-| document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
 | link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
 | link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
 | link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
