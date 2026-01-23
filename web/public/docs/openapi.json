@@ -233,35 +233,24 @@
     "/hmrc/vat/return" : {
       "post" : {
         "summary" : "Submit VAT return to HMRC",
-        "description" : "Submits a 9-box VAT return to HMRC on behalf of the authenticated user.\n\n## Field Format Requirements (per HMRC MTD VAT API 1.0)\n\n### VAT Registration Number\n- Exactly 9 digits, no spaces or letters\n- Example: 123456789 (not GB123456789)\n\n### Period Dates\n- Format: YYYY-MM-DD\n- Period key is resolved server-side from obligations\n\n### VAT Amounts (Boxes 1-5)\n- Up to 2 decimal places\n- Range: -9,999,999,999,999.99 to 9,999,999,999,999.99\n- Box 5 (Net VAT) must be positive: 0 to 99,999,999,999.99\n\n### Whole Pound Amounts (Boxes 6-9)\n- Whole numbers only (no pence)\n- Range: -9,999,999,999,999 to 9,999,999,999,999\n\n### Calculations\n- Box 3 = Box 1 + Box 2 (auto-calculated)\n- Box 5 = |Box 3 - Box 4| (auto-calculated)",
+        "description" : "Submits a VAT return to HMRC on behalf of the authenticated user",
         "operationId" : "submitVatReturn",
         "parameters" : [ {
           "name" : "Gov-Test-Scenario",
           "in" : "header",
           "required" : false,
-          "description" : "HMRC sandbox test scenario (sandbox environment only)",
+          "description" : "HMRC sandbox test scenario",
           "schema" : {
             "type" : "string",
-            "enum" : ["QUARTERLY_ONE_MET", "DATE_RANGE_TOO_LARGE", "INSOLVENT_TRADER"],
             "example" : "QUARTERLY_ONE_MET"
           }
         }, {
           "name" : "runFraudPreventionHeaderValidation",
           "in" : "query",
           "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers against HMRC's validator API",
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
           "schema" : {
-            "type" : "boolean",
-            "default" : false
-          }
-        }, {
-          "name" : "allowSandboxObligations",
-          "in" : "query",
-          "required" : false,
-          "description" : "Sandbox only: When true, uses any available open obligation if dates don't match exactly",
-          "schema" : {
-            "type" : "boolean",
-            "default" : false
+            "type" : "string"
           }
         } ],
         "requestBody" : {
@@ -270,142 +259,31 @@
             "application/json" : {
               "schema" : {
                 "type" : "object",
-                "required" : ["vatNumber", "periodStart", "periodEnd", "accessToken", "vatDueSales", "vatDueAcquisitions", "vatReclaimedCurrPeriod", "totalValueSalesExVAT", "totalValuePurchasesExVAT", "totalValueGoodsSuppliedExVAT", "totalAcquisitionsExVAT"],
                 "properties" : {
                   "vatNumber" : {
                     "type" : "string",
-                    "pattern" : "^\\d{9}$",
-                    "description" : "VAT registration number - exactly 9 digits, no spaces or GB prefix",
                     "example" : "176540158"
                   },
-                  "periodStart" : {
+                  "periodKey" : {
                     "type" : "string",
-                    "format" : "date",
-                    "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
-                    "description" : "Start date of VAT period in YYYY-MM-DD format",
-                    "example" : "2024-01-01"
+                    "example" : "24A1"
                   },
-                  "periodEnd" : {
-                    "type" : "string",
-                    "format" : "date",
-                    "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
-                    "description" : "End date of VAT period in YYYY-MM-DD format",
-                    "example" : "2024-03-31"
+                  "vatDue" : {
+                    "type" : "number",
+                    "format" : "float",
+                    "example" : 2400.0
                   },
                   "accessToken" : {
                     "type" : "string",
-                    "description" : "HMRC OAuth2 access token obtained via /hmrc/token endpoint",
                     "example" : "HMRC_ACCESS_TOKEN"
-                  },
-                  "vatDueSales" : {
-                    "type" : "number",
-                    "format" : "double",
-                    "minimum" : -9999999999999.99,
-                    "maximum" : 9999999999999.99,
-                    "multipleOf" : 0.01,
-                    "description" : "Box 1: VAT due on sales and other outputs. Up to 2 decimal places.",
-                    "example" : 1500.50
-                  },
-                  "vatDueAcquisitions" : {
-                    "type" : "number",
-                    "format" : "double",
-                    "minimum" : -9999999999999.99,
-                    "maximum" : 9999999999999.99,
-                    "multipleOf" : 0.01,
-                    "description" : "Box 2: VAT due on acquisitions from EU (usually 0 post-Brexit). Up to 2 decimal places.",
-                    "example" : 0.00
-                  },
-                  "vatReclaimedCurrPeriod" : {
-                    "type" : "number",
-                    "format" : "double",
-                    "minimum" : -9999999999999.99,
-                    "maximum" : 9999999999999.99,
-                    "multipleOf" : 0.01,
-                    "description" : "Box 4: VAT reclaimed on purchases and other inputs. Up to 2 decimal places.",
-                    "example" : 300.25
-                  },
-                  "totalValueSalesExVAT" : {
-                    "type" : "integer",
-                    "minimum" : -9999999999999,
-                    "maximum" : 9999999999999,
-                    "description" : "Box 6: Total value of sales excluding VAT. Whole pounds only, no pence.",
-                    "example" : 15000
-                  },
-                  "totalValuePurchasesExVAT" : {
-                    "type" : "integer",
-                    "minimum" : -9999999999999,
-                    "maximum" : 9999999999999,
-                    "description" : "Box 7: Total value of purchases excluding VAT. Whole pounds only, no pence.",
-                    "example" : 3000
-                  },
-                  "totalValueGoodsSuppliedExVAT" : {
-                    "type" : "integer",
-                    "minimum" : -9999999999999,
-                    "maximum" : 9999999999999,
-                    "description" : "Box 8: Total value of goods supplied to EU excluding VAT (usually 0 post-Brexit). Whole pounds only.",
-                    "example" : 0
-                  },
-                  "totalAcquisitionsExVAT" : {
-                    "type" : "integer",
-                    "minimum" : -9999999999999,
-                    "maximum" : 9999999999999,
-                    "description" : "Box 9: Total value of acquisitions from EU excluding VAT (usually 0 post-Brexit). Whole pounds only.",
-                    "example" : 0
                   }
                 }
               },
-              "examples" : {
-                "standard-quarterly" : {
-                  "summary" : "Standard quarterly VAT return",
-                  "description" : "A typical quarterly VAT return for a small business",
-                  "value" : {
-                    "vatNumber" : "176540158",
-                    "periodStart" : "2024-01-01",
-                    "periodEnd" : "2024-03-31",
-                    "accessToken" : "HMRC_ACCESS_TOKEN",
-                    "vatDueSales" : 1500.50,
-                    "vatDueAcquisitions" : 0.00,
-                    "vatReclaimedCurrPeriod" : 300.25,
-                    "totalValueSalesExVAT" : 15000,
-                    "totalValuePurchasesExVAT" : 3000,
-                    "totalValueGoodsSuppliedExVAT" : 0,
-                    "totalAcquisitionsExVAT" : 0
-                  }
-                },
-                "flat-rate-scheme" : {
-                  "summary" : "Flat Rate Scheme return",
-                  "description" : "VAT return for a business on the Flat Rate Scheme (FRS)",
-                  "value" : {
-                    "vatNumber" : "176540158",
-                    "periodStart" : "2024-01-01",
-                    "periodEnd" : "2024-03-31",
-                    "accessToken" : "HMRC_ACCESS_TOKEN",
-                    "vatDueSales" : 1200.00,
-                    "vatDueAcquisitions" : 0.00,
-                    "vatReclaimedCurrPeriod" : 0.00,
-                    "totalValueSalesExVAT" : 10000,
-                    "totalValuePurchasesExVAT" : 0,
-                    "totalValueGoodsSuppliedExVAT" : 0,
-                    "totalAcquisitionsExVAT" : 0
-                  }
-                },
-                "refund-claim" : {
-                  "summary" : "VAT refund claim",
-                  "description" : "VAT return where input VAT exceeds output VAT (reclaim scenario)",
-                  "value" : {
-                    "vatNumber" : "176540158",
-                    "periodStart" : "2024-01-01",
-                    "periodEnd" : "2024-03-31",
-                    "accessToken" : "HMRC_ACCESS_TOKEN",
-                    "vatDueSales" : 500.00,
-                    "vatDueAcquisitions" : 0.00,
-                    "vatReclaimedCurrPeriod" : 1200.00,
-                    "totalValueSalesExVAT" : 5000,
-                    "totalValuePurchasesExVAT" : 12000,
-                    "totalValueGoodsSuppliedExVAT" : 0,
-                    "totalAcquisitionsExVAT" : 0
-                  }
-                }
+              "example" : {
+                "vatNumber" : "176540158",
+                "periodKey" : "24A1",
+                "vatDue" : 2400.0,
+                "accessToken" : "HMRC_ACCESS_TOKEN"
               }
             }
           }
@@ -416,80 +294,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "VAT return submitted successfully",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object",
-                  "properties" : {
-                    "receipt" : {
-                      "type" : "object",
-                      "properties" : {
-                        "formBundleNumber" : {
-                          "type" : "string",
-                          "description" : "HMRC bundle reference number",
-                          "example" : "119000067890"
-                        },
-                        "processingDate" : {
-                          "type" : "string",
-                          "format" : "date-time",
-                          "description" : "HMRC processing timestamp",
-                          "example" : "2024-03-31T15:30:00Z"
-                        },
-                        "paymentIndicator" : {
-                          "type" : "string",
-                          "description" : "DD (Direct Debit) or BANK",
-                          "example" : "BANK"
-                        },
-                        "chargeRefNumber" : {
-                          "type" : "string",
-                          "description" : "HMRC charge reference number",
-                          "example" : "XD002750001234"
-                        }
-                      }
-                    },
-                    "periodKey" : {
-                      "type" : "string",
-                      "description" : "The resolved HMRC period key",
-                      "example" : "24A1"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Validation error - invalid field values",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object",
-                  "properties" : {
-                    "status" : {
-                      "type" : "integer",
-                      "example" : 400
-                    },
-                    "message" : {
-                      "type" : "string",
-                      "example" : "Validation Error"
-                    },
-                    "errors" : {
-                      "type" : "array",
-                      "items" : {
-                        "type" : "string"
-                      },
-                      "example" : ["Invalid vatDueSales (Box 1) - must be a valid monetary amount with max 2 decimal places"]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Authentication required - invalid or expired HMRC access token"
-          },
-          "403" : {
-            "description" : "Forbidden - user does not have required bundle entitlement"
+            "description" : "VAT return submitted successfully"
           }
         }
       }
@@ -555,68 +360,62 @@
     "/hmrc/vat/obligation" : {
       "get" : {
         "summary" : "Get VAT obligations from HMRC",
-        "description" : "Retrieves VAT obligations from HMRC for the authenticated user.\n\n## Response Fields\n\n| Field | Description |\n|-------|-------------|\n| start | Period start date (YYYY-MM-DD) |\n| end | Period end date (YYYY-MM-DD) |\n| due | Submission deadline (YYYY-MM-DD) |\n| status | O (Open - awaiting submission) or F (Fulfilled - already submitted) |\n| periodKey | HMRC period identifier (e.g., 24A1) |\n| received | Date return was received (fulfilled only) |\n\n## Period Key Formats\n\n- **Quarterly**: YYXN (e.g., 24A1 = Q1 2024, 24B2 = May 2024)\n- **Monthly**: YYAB (e.g., 24AA = Jan 2024)\n- **Annual**: #NNN (e.g., #001)\n\n## Date Range Limit\n\nMaximum 366 days between from and to dates.",
+        "description" : "Retrieves VAT obligations from HMRC for the authenticated user",
         "operationId" : "getVatObligations",
         "parameters" : [ {
           "name" : "vrn",
           "in" : "query",
           "required" : true,
-          "description" : "VAT registration number - exactly 9 digits, no spaces or GB prefix",
+          "description" : "VAT registration number (9 digits)",
           "schema" : {
             "type" : "string",
-            "pattern" : "^\\d{9}$",
-            "example" : "176540158"
+            "example" : "176540158",
+            "pattern" : "^\\d{9}$"
           }
         }, {
           "name" : "from",
           "in" : "query",
           "required" : false,
-          "description" : "From date in YYYY-MM-DD format. Defaults to start of current calendar year.",
+          "description" : "From date in YYYY-MM-DD format",
           "schema" : {
             "type" : "string",
-            "format" : "date",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
-            "example" : "2024-01-01"
+            "example" : "2025-01-01"
           }
         }, {
           "name" : "to",
           "in" : "query",
           "required" : false,
-          "description" : "To date in YYYY-MM-DD format. Defaults to today. Maximum range is 366 days from 'from' date.",
+          "description" : "To date in YYYY-MM-DD format",
           "schema" : {
             "type" : "string",
-            "format" : "date",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
-            "example" : "2024-12-31"
+            "example" : "2025-03-31"
           }
         }, {
           "name" : "status",
           "in" : "query",
           "required" : false,
-          "description" : "Obligation status filter. O = Open (awaiting submission), F = Fulfilled (already submitted)",
+          "description" : "Obligation status: O (Open) or F (Fulfilled)",
           "schema" : {
             "type" : "string",
-            "enum" : ["O", "F"],
+            "enum" : "O,F",
             "example" : "O"
           }
         }, {
           "name" : "Gov-Test-Scenario",
-          "in" : "header",
+          "in" : "query",
           "required" : false,
-          "description" : "HMRC sandbox test scenario (sandbox environment only)",
+          "description" : "HMRC sandbox test scenario",
           "schema" : {
             "type" : "string",
-            "enum" : ["QUARTERLY_ONE_MET", "QUARTERLY_NONE_MET", "MONTHLY_ONE_MET", "DATE_RANGE_TOO_LARGE", "NOT_FOUND"],
             "example" : "QUARTERLY_ONE_MET"
           }
         }, {
           "name" : "runFraudPreventionHeaderValidation",
           "in" : "query",
           "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers against HMRC's validator API",
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
           "schema" : {
-            "type" : "boolean",
-            "default" : false
+            "type" : "string"
           }
         } ],
         "tags" : [ "HMRC" ],
@@ -625,157 +424,51 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Obligations retrieved successfully",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object",
-                  "properties" : {
-                    "obligations" : {
-                      "type" : "array",
-                      "items" : {
-                        "type" : "object",
-                        "properties" : {
-                          "start" : {
-                            "type" : "string",
-                            "format" : "date",
-                            "description" : "Period start date",
-                            "example" : "2024-01-01"
-                          },
-                          "end" : {
-                            "type" : "string",
-                            "format" : "date",
-                            "description" : "Period end date",
-                            "example" : "2024-03-31"
-                          },
-                          "due" : {
-                            "type" : "string",
-                            "format" : "date",
-                            "description" : "Submission deadline",
-                            "example" : "2024-05-07"
-                          },
-                          "status" : {
-                            "type" : "string",
-                            "enum" : ["O", "F"],
-                            "description" : "O = Open, F = Fulfilled",
-                            "example" : "O"
-                          },
-                          "periodKey" : {
-                            "type" : "string",
-                            "description" : "HMRC period identifier",
-                            "example" : "24A1"
-                          },
-                          "received" : {
-                            "type" : "string",
-                            "format" : "date",
-                            "description" : "Date return was received (fulfilled obligations only)",
-                            "example" : "2024-04-30"
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                "examples" : {
-                  "quarterly-open" : {
-                    "summary" : "Open quarterly obligation",
-                    "value" : {
-                      "obligations" : [
-                        {
-                          "start" : "2024-01-01",
-                          "end" : "2024-03-31",
-                          "due" : "2024-05-07",
-                          "status" : "O",
-                          "periodKey" : "24A1"
-                        }
-                      ]
-                    }
-                  },
-                  "quarterly-fulfilled" : {
-                    "summary" : "Fulfilled quarterly obligation",
-                    "value" : {
-                      "obligations" : [
-                        {
-                          "start" : "2024-01-01",
-                          "end" : "2024-03-31",
-                          "due" : "2024-05-07",
-                          "status" : "F",
-                          "periodKey" : "24A1",
-                          "received" : "2024-04-30"
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Validation error - invalid parameters",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object",
-                  "properties" : {
-                    "code" : {
-                      "type" : "string",
-                      "example" : "DATE_RANGE_TOO_LARGE"
-                    },
-                    "message" : {
-                      "type" : "string",
-                      "example" : "The date range is too large"
-                    }
-                  }
-                }
-              }
-            }
+            "description" : "Request completed successfully"
           }
         }
       }
     },
     "/hmrc/vat/return/{periodKey}" : {
       "get" : {
-        "summary" : "Get submitted VAT return from HMRC",
-        "description" : "Retrieves a previously submitted VAT return from HMRC for the authenticated user.\n\n## Response Fields (9-Box VAT Return)\n\n### VAT Amounts (2 decimal places)\n| Box | Field | Description |\n|-----|-------|-------------|\n| 1 | vatDueSales | VAT due on sales and other outputs |\n| 2 | vatDueAcquisitions | VAT due on acquisitions from EU |\n| 3 | totalVatDue | Total VAT due (Box 1 + Box 2) |\n| 4 | vatReclaimedCurrPeriod | VAT reclaimed on purchases and inputs |\n| 5 | netVatDue | Net VAT to pay/reclaim (|Box 3 - Box 4|) |\n\n### Whole Pound Amounts\n| Box | Field | Description |\n|-----|-------|-------------|\n| 6 | totalValueSalesExVAT | Total value of sales excluding VAT |\n| 7 | totalValuePurchasesExVAT | Total value of purchases excluding VAT |\n| 8 | totalValueGoodsSuppliedExVAT | Total value of goods supplied to EU |\n| 9 | totalAcquisitionsExVAT | Total value of acquisitions from EU |",
-        "operationId" : "getVatReturn",
+        "summary" : "Get submitted VAT returns from HMRC",
+        "description" : "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+        "operationId" : "getVatReturns",
         "parameters" : [ {
           "name" : "periodKey",
           "in" : "path",
           "required" : true,
-          "description" : "The HMRC period key to retrieve. Formats: YYXN (quarterly), YYAB (monthly), #NNN (annual)",
+          "description" : "The VAT period key to retrieve",
           "schema" : {
             "type" : "string",
-            "pattern" : "^(\\d{2}[A-Z][A-Z0-9]|\\d{4}|#\\d{3})$",
             "example" : "24A1"
           }
         }, {
           "name" : "vrn",
           "in" : "query",
           "required" : true,
-          "description" : "VAT registration number - exactly 9 digits, no spaces or GB prefix",
+          "description" : "VAT registration number (9 digits)",
           "schema" : {
             "type" : "string",
-            "pattern" : "^\\d{9}$",
-            "example" : "176540158"
+            "example" : "176540158",
+            "pattern" : "^\\d{9}$"
           }
         }, {
           "name" : "Gov-Test-Scenario",
-          "in" : "header",
+          "in" : "query",
           "required" : false,
-          "description" : "HMRC sandbox test scenario (sandbox environment only)",
+          "description" : "HMRC sandbox test scenario",
           "schema" : {
             "type" : "string",
-            "enum" : ["DATE_RANGE_TOO_LARGE", "INSOLVENT_TRADER"],
             "example" : "QUARTERLY_ONE_MET"
           }
         }, {
           "name" : "runFraudPreventionHeaderValidation",
           "in" : "query",
           "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers against HMRC's validator API",
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
           "schema" : {
-            "type" : "boolean",
-            "default" : false
+            "type" : "string"
           }
         } ],
         "tags" : [ "HMRC" ],
@@ -784,98 +477,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "VAT return retrieved successfully",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "object",
-                  "properties" : {
-                    "periodKey" : {
-                      "type" : "string",
-                      "description" : "HMRC period identifier",
-                      "example" : "24A1"
-                    },
-                    "vatDueSales" : {
-                      "type" : "number",
-                      "format" : "double",
-                      "description" : "Box 1: VAT due on sales (2 decimal places)",
-                      "example" : 1500.50
-                    },
-                    "vatDueAcquisitions" : {
-                      "type" : "number",
-                      "format" : "double",
-                      "description" : "Box 2: VAT due on acquisitions from EU (2 decimal places)",
-                      "example" : 0.00
-                    },
-                    "totalVatDue" : {
-                      "type" : "number",
-                      "format" : "double",
-                      "description" : "Box 3: Total VAT due = Box 1 + Box 2 (2 decimal places)",
-                      "example" : 1500.50
-                    },
-                    "vatReclaimedCurrPeriod" : {
-                      "type" : "number",
-                      "format" : "double",
-                      "description" : "Box 4: VAT reclaimed on purchases (2 decimal places)",
-                      "example" : 300.25
-                    },
-                    "netVatDue" : {
-                      "type" : "number",
-                      "format" : "double",
-                      "minimum" : 0,
-                      "description" : "Box 5: Net VAT to pay or reclaim = |Box 3 - Box 4| (always positive, 2 decimal places)",
-                      "example" : 1200.25
-                    },
-                    "totalValueSalesExVAT" : {
-                      "type" : "integer",
-                      "description" : "Box 6: Total value of sales excluding VAT (whole pounds)",
-                      "example" : 15000
-                    },
-                    "totalValuePurchasesExVAT" : {
-                      "type" : "integer",
-                      "description" : "Box 7: Total value of purchases excluding VAT (whole pounds)",
-                      "example" : 3000
-                    },
-                    "totalValueGoodsSuppliedExVAT" : {
-                      "type" : "integer",
-                      "description" : "Box 8: Total value of goods supplied to EU excluding VAT (whole pounds)",
-                      "example" : 0
-                    },
-                    "totalAcquisitionsExVAT" : {
-                      "type" : "integer",
-                      "description" : "Box 9: Total value of acquisitions from EU excluding VAT (whole pounds)",
-                      "example" : 0
-                    },
-                    "finalised" : {
-                      "type" : "boolean",
-                      "description" : "Whether the return has been finalised by HMRC",
-                      "example" : true
-                    }
-                  }
-                },
-                "examples" : {
-                  "standard-return" : {
-                    "summary" : "Standard quarterly VAT return",
-                    "value" : {
-                      "periodKey" : "24A1",
-                      "vatDueSales" : 1500.50,
-                      "vatDueAcquisitions" : 0.00,
-                      "totalVatDue" : 1500.50,
-                      "vatReclaimedCurrPeriod" : 300.25,
-                      "netVatDue" : 1200.25,
-                      "totalValueSalesExVAT" : 15000,
-                      "totalValuePurchasesExVAT" : 3000,
-                      "totalValueGoodsSuppliedExVAT" : 0,
-                      "totalAcquisitionsExVAT" : 0,
-                      "finalised" : true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "VAT return not found for the specified period"
+            "description" : "Request completed successfully"
           }
         }
       }

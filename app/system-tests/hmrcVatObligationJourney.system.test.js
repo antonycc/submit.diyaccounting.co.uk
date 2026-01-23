@@ -273,6 +273,20 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
     expect(submitBody.receipt).toHaveProperty("processingDate");
 
     // Step 5: Retrieve the submitted VAT return to verify
+    // After submission, the obligation should now be fulfilled - update the stub
+    process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
+      source: "stub",
+      obligations: [
+        {
+          start: periodStartToSubmit,
+          end: periodEndToSubmit,
+          due: "2025-05-07",
+          status: "F",
+          periodKey: periodKeyToSubmit,
+          received: new Date().toISOString().split("T")[0],
+        },
+      ],
+    });
     process.env.TEST_VAT_RETURN = JSON.stringify({
       source: "stub",
       periodKey: periodKeyToSubmit,
@@ -290,10 +304,11 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     const getReturnEvent = buildLambdaEvent({
       method: "GET",
-      path: `/api/v1/hmrc/vat/return/${periodKeyToSubmit}`,
-      pathParameters: { periodKey: periodKeyToSubmit },
+      path: `/api/v1/hmrc/vat/return`,
       queryStringParameters: {
         vrn: "123456789",
+        periodStart: periodStartToSubmit,
+        periodEnd: periodEndToSubmit,
       },
       headers: {
         ...buildGovClientHeaders(),
