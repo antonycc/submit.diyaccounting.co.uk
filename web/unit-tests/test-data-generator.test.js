@@ -55,10 +55,10 @@ describe("test-data-generator", () => {
   });
 
   describe("generateTestPeriodKey", () => {
-    test("generates period key in YYXN format", () => {
+    test("generates period key in YYXZ format", () => {
       const periodKey = testDataGenerator.generateTestPeriodKey();
-      // Format: 2-digit year + letter + digit (e.g., 24A1)
-      expect(/^\d{2}[A-Z]\d$/.test(periodKey)).toBe(true);
+      // Format: 2-digit year + letter + alphanumeric (e.g., 24A1, 17NB)
+      expect(/^\d{2}[A-Z][A-Z0-9]$/.test(periodKey)).toBe(true);
     });
 
     test("generates year 24 or 25", () => {
@@ -93,11 +93,12 @@ describe("test-data-generator", () => {
       }
     });
 
-    test("generates valid number 1-9", () => {
+    test("generates valid last character (digit 0-9 or letter A-Z)", () => {
       for (let i = 0; i < 10; i++) {
         const periodKey = testDataGenerator.generateTestPeriodKey();
-        const number = periodKey.charAt(3);
-        expect(/[1-9]/.test(number)).toBe(true);
+        const lastChar = periodKey.charAt(3);
+        // Last character can be digit (0-9) or letter (A-Z)
+        expect(/[0-9A-Z]/.test(lastChar)).toBe(true);
       }
     });
   });
@@ -225,7 +226,8 @@ describe("test-data-generator", () => {
 
     test("populates period key field", () => {
       localTestDataGenerator.populateSubmitVatForm();
-      expect(/^\d{2}[A-Z]\d$/.test(mockElements.periodKey.value)).toBe(true);
+      // YYXZ format: last char can be digit or letter
+      expect(/^\d{2}[A-Z][A-Z0-9]$/.test(mockElements.periodKey.value)).toBe(true);
     });
 
     test("populates VAT due field", () => {
@@ -270,7 +272,8 @@ describe("test-data-generator", () => {
 
     test("populates period key field", () => {
       localTestDataGenerator.populateViewVatReturnForm();
-      expect(/^\d{2}[A-Z]\d$/.test(mockElements.periodKey.value)).toBe(true);
+      // YYXZ format: last char can be digit or letter
+      expect(/^\d{2}[A-Z][A-Z0-9]$/.test(mockElements.periodKey.value)).toBe(true);
     });
 
     test("handles missing elements gracefully", () => {

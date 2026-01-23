@@ -14,18 +14,22 @@ function generateTestVrn() {
 }
 
 /**
- * Generate a random period key in YYXN format
- * Format: 2-digit year + letter + digit (e.g., 24A1, 25B3)
- * @returns {string} Period key in YYXN format
+ * Generate a random period key in YYXZ format
+ * Format: 2-digit year + letter + alphanumeric (e.g., 24A1, 25B3, 17NB)
+ * The last character can be either a digit or a letter per HMRC specification.
+ * @returns {string} Period key in YYXZ format
  */
 function generateTestPeriodKey() {
   // eslint-disable-next-line sonarjs/pseudo-random
   const year = String(24 + Math.floor(Math.random() * 2)).padStart(2, "0"); // 24 or 25
   // eslint-disable-next-line sonarjs/pseudo-random
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  // Last character can be digit (0-9) or letter (A-Z)
   // eslint-disable-next-line sonarjs/pseudo-random
-  const number = Math.floor(Math.random() * 9) + 1; // 1-9
-  return `${year}${letter}${number}`;
+  const lastChar = Math.random() < 0.5
+    ? String(Math.floor(Math.random() * 10)) // 0-9
+    : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  return `${year}${letter}${lastChar}`;
 }
 
 /**

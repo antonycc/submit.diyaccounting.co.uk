@@ -94,10 +94,10 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   // Validate date formats
   if (periodStart && !isValidIsoDate(periodStart)) {
-    errorMessages.push("Invalid periodStart format - must be YYYY-MM-DD");
+    errorMessages.push(`Invalid periodStart format '${periodStart}' - must be YYYY-MM-DD`);
   }
   if (periodEnd && !isValidIsoDate(periodEnd)) {
-    errorMessages.push("Invalid periodEnd format - must be YYYY-MM-DD");
+    errorMessages.push(`Invalid periodEnd format '${periodEnd}' - must be YYYY-MM-DD`);
   }
 
   // Format-specific validation

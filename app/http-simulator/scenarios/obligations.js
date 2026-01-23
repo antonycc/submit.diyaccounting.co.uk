@@ -24,7 +24,8 @@ function generateRandomPeriodKey() {
 }
 
 /**
- * Validate period key format (HMRC format: YYXN or YYXX where Y=digit, X=letter, N=digit/letter)
+ * Validate period key format (HMRC format: YYXZ where Y=digit, X=letter, Z=digit or letter)
+ * Examples: 24A1, 18A1, 17NB, 25B3
  * @param {string} periodKey - Period key to validate
  * @returns {boolean} True if valid format
  */

@@ -89,7 +89,7 @@ test.describe("Test Data Link Browser Tests", () => {
       const periodKeyValue = await page.locator("#periodKey").inputValue();
 
       expect(vrnValue).toBe("176540158");
-      expect(periodKeyValue).toMatch(/^\d{2}[A-Z]\d$/); // YYXN format
+      expect(periodKeyValue).toMatch(/^\d{2}[A-Z][A-Z0-9]$/); // YYXZ format (last char can be digit or letter)
 
       // Check 9-box fields are populated
       const vatDueSalesValue = await page.locator("#vatDueSales").inputValue();
@@ -142,7 +142,7 @@ test.describe("Test Data Link Browser Tests", () => {
       const periodKeyValue = await page.locator("#periodKey").inputValue();
 
       expect(vrnValue).toBe("176540158");
-      expect(periodKeyValue).toMatch(/^\d{2}[A-Z]\d$/);
+      expect(periodKeyValue).toMatch(/^\d{2}[A-Z][A-Z0-9]$/); // YYXZ format
     });
   });
 
@@ -215,7 +215,7 @@ test.describe("Test Data Link Browser Tests", () => {
         return window.testDataGenerator.generateTestPeriodKey();
       });
 
-      expect(periodKey).toMatch(/^\d{2}[A-Z]\d$/);
+      expect(periodKey).toMatch(/^\d{2}[A-Z][A-Z0-9]$/); // YYXZ format
       const year = periodKey.substring(0, 2);
       expect(["24", "25"]).toContain(year);
     });
