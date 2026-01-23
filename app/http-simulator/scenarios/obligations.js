@@ -46,7 +46,8 @@ export function isValidPeriodKeyFormat(periodKey) {
 
 /**
  * Default obligations array (aligned with HMRC sandbox)
- * Note: HMRC sandbox typically only has one open obligation (Q1 2017).
+ * Includes both an open obligation (for submission) and a fulfilled obligation (for viewing)
+ * to support the full VAT return lifecycle in tests.
  * Tests using different periods need allowSandboxObligations enabled
  * to use whatever obligation is available.
  * Period keys are randomized to simulate HMRC's unpredictable behavior.
@@ -58,6 +59,14 @@ function generateDefaultObligations() {
       start: "2017-01-01",
       end: "2017-03-31",
       due: "2017-05-07",
+      status: "F",
+      received: "2017-05-06",
+    },
+    {
+      periodKey: generateRandomPeriodKey(),
+      start: "2017-04-01",
+      end: "2017-06-30",
+      due: "2017-08-07",
       status: "O",
     },
   ];
