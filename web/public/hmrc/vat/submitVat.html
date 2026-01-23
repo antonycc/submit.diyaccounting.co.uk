@@ -436,93 +436,8 @@
         }
       };
 
-      // Store loaded obligations for reference
-      let loadedObligations = [];
-
-      // Load obligations from API
-      async function loadObligations(vrn) {
-        const obligationSelect = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        if (!vrn || !/^\d{9}$/.test(vrn)) {
-          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VAT registration number --</option>';
-          periodKeyInput.value = "";
-          return;
-        }
-
-        obligationSelect.innerHTML = '<option value="">Loading periods...</option>';
-
-        try {
-          const hmrcAccount = sessionStorage.getItem("hmrcAccount") || new URLSearchParams(window.location.search).get("hmrcAccount");
-          const accessToken = sessionStorage.getItem("hmrcAccessToken");
-
-          // Build URL with parameters
-          const params = new URLSearchParams({ vrn });
-          if (hmrcAccount) params.append("hmrcAccount", hmrcAccount);
-
-          const headers = { "Content-Type": "application/json" };
-          if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
-          if (hmrcAccount) headers["hmrcAccount"] = hmrcAccount;
-
-          // Use authorizedFetch to include Cognito token in X-Authorization header
-          // for API Gateway Lambda authorizer (bundle enforcement)
-          const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
-            method: "GET",
-            headers
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to load obligations: ${response.status}`);
-          }
-
-          const data = await response.json();
-          const obligations = data.obligations || [];
-
-          // Format and filter for open obligations only
-          const formatted = ObligationUtils.formatObligationsForSelection(obligations);
-          const openObligations = ObligationUtils.filterOpenObligations(formatted);
-          loadedObligations = openObligations;
-
-          populateObligationDropdown(openObligations);
-        } catch (error) {
-          console.error("Error loading obligations:", error);
-          obligationSelect.innerHTML = '<option value="">-- Failed to load periods --</option>';
-          periodKeyInput.value = "";
-        }
-      }
-
-      // Populate the obligation dropdown
-      function populateObligationDropdown(obligations) {
-        const obligationSelect = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        if (!obligations || obligations.length === 0) {
-          obligationSelect.innerHTML = '<option value="">-- No open periods available --</option>';
-          periodKeyInput.value = "";
-          return;
-        }
-
-        obligationSelect.innerHTML = '<option value="">-- Select a VAT period --</option>';
-        obligations.forEach((obl) => {
-          const option = document.createElement("option");
-          option.value = obl._periodKey;
-          option.textContent = ObligationUtils.getDropdownOptionText(obl);
-          obligationSelect.appendChild(option);
-        });
-
-        // If only one obligation, auto-select it
-        if (obligations.length === 1) {
-          obligationSelect.value = obligations[0]._periodKey;
-          periodKeyInput.value = obligations[0]._periodKey;
-        }
-      }
-
-      // Handle obligation selection change
-      function handleObligationChange() {
-        const obligationSelect = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-        periodKeyInput.value = obligationSelect.value;
-      }
+      // Note: Obligation dropdown has been replaced with date inputs (periodStart/periodEnd).
+      // Period key is now resolved server-side from the dates.
 
       // Auto-calculation functions for 9-box VAT return
       function calculateTotalVatDue() {
@@ -1003,13 +918,10 @@
       let accessToken = null;
       let submissionData = null;
 
-      // DOM elements
-      const form = document.getElementById("vatSubmissionForm");
-      //const submitBtn = document.getElementById("submitBtn");
-      //const statusMessagesContainer = document.getElementById("statusMessagesContainer");
-      //const loadingSpinner = document.getElementById("loadingSpinner");
-      const receiptDisplay = document.getElementById("receiptDisplay");
-      const vatFormContainer = document.getElementById("vatForm");
+      // DOM elements - initialized in DOMContentLoaded
+      let form = null;
+      let receiptDisplay = null;
+      let vatFormContainer = null;
 
       // Initialize page
       async function initializePage() {
@@ -1071,45 +983,6 @@
         }
       }
 
-      // Event listeners
-      form.addEventListener("submit", handleFormSubmission);
-
-      // Input validation
-      document.getElementById("vatNumber").addEventListener("input", function (e) {
-        // Only allow digits
-        e.target.value = e.target.value.replace(/\D/g, "");
-      });
-
-      // Note: Obligation dropdown replaced with date inputs - period key resolved server-side
-
-      // Auto-calculation event listeners for 9-box VAT return
-      document.getElementById("vatDueSales").addEventListener("input", calculateTotalVatDue);
-      document.getElementById("vatDueAcquisitions").addEventListener("input", calculateTotalVatDue);
-      document.getElementById("vatReclaimedCurrPeriod").addEventListener("input", calculateNetVatDue);
-
-      // Blur validation for real-time feedback on VAT box fields
-      document.getElementById("vatDueSales").addEventListener("blur", function() {
-        validateVatMonetaryAmount(this.value, "vatDueSales", "VAT due on sales");
-      });
-      document.getElementById("vatDueAcquisitions").addEventListener("blur", function() {
-        validateVatMonetaryAmount(this.value, "vatDueAcquisitions", "VAT due on acquisitions");
-      });
-      document.getElementById("vatReclaimedCurrPeriod").addEventListener("blur", function() {
-        validateVatMonetaryAmount(this.value, "vatReclaimedCurrPeriod", "VAT reclaimed");
-      });
-      document.getElementById("totalValueSalesExVAT").addEventListener("blur", function() {
-        validateVatWholeAmount(this.value, "totalValueSalesExVAT", "total value of sales");
-      });
-      document.getElementById("totalValuePurchasesExVAT").addEventListener("blur", function() {
-        validateVatWholeAmount(this.value, "totalValuePurchasesExVAT", "total value of purchases");
-      });
-      document.getElementById("totalValueGoodsSuppliedExVAT").addEventListener("blur", function() {
-        validateVatWholeAmount(this.value, "totalValueGoodsSuppliedExVAT", "total value of goods supplied to EU");
-      });
-      document.getElementById("totalAcquisitionsExVAT").addEventListener("blur", function() {
-        validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
-      });
-
       // Expose page-specific functions to window for testing
       window.submitVat = submitVat;
       window.handleOAuthCallback = handleOAuthCallback;
@@ -1120,9 +993,90 @@
       window.calculateNetVatDue = calculateNetVatDue;
       window.collect9BoxData = collect9BoxData;
 
+      // Helper function that runs immediately if DOM is ready, otherwise waits for DOMContentLoaded
+      // This ensures compatibility with both browser loading and test environments
+      function onDOMReady(fn) {
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", fn);
+        } else {
+          // DOM is already ready (interactive or complete)
+          fn();
+        }
+      }
+
       // Initialize
-      document.addEventListener("DOMContentLoaded", async function () {
+      onDOMReady(async function () {
         console.log("JS block started loading: DOMContentLoaded event handler");
+
+        // Initialize DOM element references
+        form = document.getElementById("vatSubmissionForm");
+        receiptDisplay = document.getElementById("receiptDisplay");
+        vatFormContainer = document.getElementById("vatForm");
+
+        // Event listeners
+        if (form) {
+          form.addEventListener("submit", handleFormSubmission);
+        }
+
+        // Input validation
+        const vatNumberInput = document.getElementById("vatNumber");
+        if (vatNumberInput) {
+          vatNumberInput.addEventListener("input", function (e) {
+            // Only allow digits
+            e.target.value = e.target.value.replace(/\D/g, "");
+          });
+        }
+
+        // Note: Obligation dropdown replaced with date inputs - period key resolved server-side
+
+        // Auto-calculation event listeners for 9-box VAT return
+        const vatDueSalesInput = document.getElementById("vatDueSales");
+        const vatDueAcquisitionsInput = document.getElementById("vatDueAcquisitions");
+        const vatReclaimedInput = document.getElementById("vatReclaimedCurrPeriod");
+        const totalValueSalesInput = document.getElementById("totalValueSalesExVAT");
+        const totalValuePurchasesInput = document.getElementById("totalValuePurchasesExVAT");
+        const totalValueGoodsSuppliedInput = document.getElementById("totalValueGoodsSuppliedExVAT");
+        const totalAcquisitionsInput = document.getElementById("totalAcquisitionsExVAT");
+
+        if (vatDueSalesInput) {
+          vatDueSalesInput.addEventListener("input", calculateTotalVatDue);
+          vatDueSalesInput.addEventListener("blur", function() {
+            validateVatMonetaryAmount(this.value, "vatDueSales", "VAT due on sales");
+          });
+        }
+        if (vatDueAcquisitionsInput) {
+          vatDueAcquisitionsInput.addEventListener("input", calculateTotalVatDue);
+          vatDueAcquisitionsInput.addEventListener("blur", function() {
+            validateVatMonetaryAmount(this.value, "vatDueAcquisitions", "VAT due on acquisitions");
+          });
+        }
+        if (vatReclaimedInput) {
+          vatReclaimedInput.addEventListener("input", calculateNetVatDue);
+          vatReclaimedInput.addEventListener("blur", function() {
+            validateVatMonetaryAmount(this.value, "vatReclaimedCurrPeriod", "VAT reclaimed");
+          });
+        }
+        if (totalValueSalesInput) {
+          totalValueSalesInput.addEventListener("blur", function() {
+            validateVatWholeAmount(this.value, "totalValueSalesExVAT", "total value of sales");
+          });
+        }
+        if (totalValuePurchasesInput) {
+          totalValuePurchasesInput.addEventListener("blur", function() {
+            validateVatWholeAmount(this.value, "totalValuePurchasesExVAT", "total value of purchases");
+          });
+        }
+        if (totalValueGoodsSuppliedInput) {
+          totalValueGoodsSuppliedInput.addEventListener("blur", function() {
+            validateVatWholeAmount(this.value, "totalValueGoodsSuppliedExVAT", "total value of goods supplied to EU");
+          });
+        }
+        if (totalAcquisitionsInput) {
+          totalAcquisitionsInput.addEventListener("blur", function() {
+            validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
+          });
+        }
+
         // Initialize page state (e.g., show sandbox indicator when applicable)
         await initializePage();
         // Check if we're returning from OAuth
