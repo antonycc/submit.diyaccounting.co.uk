@@ -110,9 +110,10 @@ export function extractAndValidateParameters(event, errorMessages) {
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
-  // allowSandboxObligations is only effective in sandbox mode
+  // In sandbox mode, default to allowing sandbox obligations (use any available fulfilled obligation)
+  // unless explicitly disabled. This provides flexibility for unpredictable HMRC sandbox responses.
   const allowSandboxObligationsBool =
-    (allowSandboxObligations === true || allowSandboxObligations === "true") && hmrcAccount === "sandbox";
+    hmrcAccount === "sandbox" && allowSandboxObligations !== false && allowSandboxObligations !== "false";
 
   return {
     vrn,
