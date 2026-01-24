@@ -649,7 +649,9 @@ public class SubmitSharedNames {
                                 "When true, validates HMRC Fraud Prevention Headers"))));
 
         this.hmrcVatReturnGetLambdaHttpMethod = HttpMethod.GET;
-        this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return/{periodKey}";
+        // Note: Uses query params (vrn, periodStart, periodEnd), not path parameter
+        // Must match Express server route in app/functions/hmrc/hmrcVatReturnGet.js
+        this.hmrcVatReturnGetLambdaUrlPath = "/api/v1/hmrc/vat/return";
         this.hmrcVatReturnGetLambdaJwtAuthorizer = false;
         this.hmrcVatReturnGetLambdaCustomAuthorizer = true;
         var hmrcVatReturnGetLambdaHandlerName = "hmrcVatReturnGet.ingestHandler";

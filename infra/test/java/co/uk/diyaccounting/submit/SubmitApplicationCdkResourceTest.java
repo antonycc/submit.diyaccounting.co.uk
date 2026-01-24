@@ -106,7 +106,9 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 20);
+        // Note: Changed from 20 to 19 after fixing hmrcVatReturnGet route from
+        // /api/v1/hmrc/vat/return/{periodKey} to /api/v1/hmrc/vat/return (query params)
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 19);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

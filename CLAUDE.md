@@ -201,6 +201,17 @@ When implementing features that require infrastructure validation:
 - **No server-side fallbacks to favor tests** - if a header or parameter is required, the client must send it. Don't add `|| process.env.X` fallbacks in production code to work around test setup issues.
 - Only run `npm run linting-fix && npm run formatting-fix` when specifically asked
 
+## API Error Handling (CRITICAL)
+
+**API endpoints (`/api/*`) must ALWAYS return JSON responses, NEVER HTML.**
+
+- CloudFront custom error responses apply GLOBALLY to all origins (S3 AND API Gateway)
+- Do NOT configure CloudFront `.errorResponses()` - it breaks API JSON error handling
+- When debugging "Unexpected token '<'" JSON parse errors, check CloudFront error config
+- Test error cases (404, 500) against deployed AWS, not just local Express server
+- Lambda functions must return proper JSON error responses via `httpResponseHelper.js`
+- Express server routes and API Gateway routes MUST match exactly (path params vs query params)
+
 ## Four-Tier Testing Pyramid
 
 | Tier | Location | Command | Focus |
