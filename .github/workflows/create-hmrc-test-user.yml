@@ -65,47 +65,59 @@ jobs:
           HMRC_SANDBOX_CLIENT_ID: ${{ env.HMRC_SANDBOX_CLIENT_ID }}
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-      - name: Display Credentials Summary
+      - name: Write Job Summary with Credentials
         if: success()
         run: |
-          echo ""
-          echo "========================================================================"
-          echo "HMRC SANDBOX TEST CREDENTIALS - COPY FROM ABOVE OR FROM ARTIFACT"
-          echo "========================================================================"
-          echo ""
-          echo "User ID:     ${{ steps.create-user.outputs.hmrc-user-id }}"
-          echo "Password:    ${{ steps.create-user.outputs.hmrc-password }}"
-          echo "VAT Number:  ${{ steps.create-user.outputs.hmrc-vat-number }}"
-          echo "Org Name:    ${{ steps.create-user.outputs.hmrc-org-name }}"
-          echo ""
-          echo "========================================================================"
-          echo "USE THESE CREDENTIALS AT THE HMRC SANDBOX LOGIN PAGE"
-          echo "========================================================================"
-          echo ""
-          echo "These are TEST credentials for the HMRC Sandbox environment only."
-          echo "They cannot access real tax data and are safe to share for testing."
-          echo ""
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          ## 🔑 HMRC Sandbox Test Credentials
+
+          > **⚠️ SANDBOX/TEST CREDENTIALS ONLY** - These have NO access to real HMRC data or production systems.
+
+          ### Credentials (copy these)
+
+          | Field | Value |
+          |-------|-------|
+          | **User ID** | `${{ steps.create-user.outputs.hmrc-user-id }}` |
+          | **Password** | `${{ steps.create-user.outputs.hmrc-password }}` |
+          | **VAT Number (VRN)** | `${{ steps.create-user.outputs.hmrc-vat-number }}` |
+          | **Organisation** | ${{ steps.create-user.outputs.hmrc-org-name }} |
+
+          ### How to Use
+
+          1. Go to your app and initiate HMRC OAuth (sandbox mode)
+          2. When redirected to HMRC login, enter the **User ID** and **Password** above
+          3. Grant access to your application
+          4. Use the **VAT Number (VRN)** in your submission forms
+
+          ---
+          *These credentials are also available in the `hmrc-test-user-credentials` artifact.*
+          EOF
 
       - name: Upload credentials artifact
         if: success()
         uses: actions/upload-artifact@v6
         with:
           name: hmrc-test-user-credentials
-          retention-days: 30
+          retention-days: 7
           path: hmrc-test-user.json
 
-      - name: Display failure message
+      - name: Write Failure Summary
         if: failure()
         run: |
-          echo ""
-          echo "========================================================================"
-          echo "FAILED TO CREATE HMRC TEST USER"
-          echo "========================================================================"
-          echo ""
-          echo "Check the logs above for error details."
-          echo ""
-          echo "Common issues:"
-          echo "  - HMRC_SANDBOX_CLIENT_SECRET not configured in GitHub Secrets"
-          echo "  - HMRC Sandbox API temporarily unavailable"
-          echo "  - Network connectivity issues"
-          echo ""
+          cat >> "$GITHUB_STEP_SUMMARY" << 'EOF'
+          ## ❌ Failed to Create HMRC Test User
+
+          Check the logs above for error details.
+
+          ### Common Issues
+
+          - `HMRC_SANDBOX_CLIENT_SECRET` not configured in GitHub Secrets
+          - HMRC Sandbox API temporarily unavailable
+          - Network connectivity issues
+
+          ### Troubleshooting
+
+          1. Verify the `HMRC_SANDBOX_CLIENT_SECRET` secret exists in the `ci` environment
+          2. Check HMRC API status at https://developer.service.hmrc.gov.uk/api-documentation
+          3. Try running the workflow again
+          EOF
