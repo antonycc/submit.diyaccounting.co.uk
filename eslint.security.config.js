@@ -1,4 +1,5 @@
 import security from "eslint-plugin-security";
+import sonarjs from "eslint-plugin-sonarjs";
 import globals from "globals";
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
@@ -6,6 +7,7 @@ export default [
   {
     plugins: {
       security,
+      sonarjs, // Loaded so eslint-disable comments for sonarjs rules don't cause errors
     },
     languageOptions: {
       ecmaVersion: 2022,
