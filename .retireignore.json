@@ -1,0 +1,22 @@
+[
+  {
+    "path": "target/",
+    "justification": "Build artifacts and test output, not production code"
+  },
+  {
+    "path": "web/public/tests/",
+    "justification": "Test reports and artifacts, not production code"
+  },
+  {
+    "path": "cdk.out/",
+    "justification": "CDK synthesis output, not deployed code"
+  },
+  {
+    "path": "cdk-application/cdk.out/",
+    "justification": "CDK application synthesis output"
+  },
+  {
+    "path": "cdk-environment/cdk.out/",
+    "justification": "CDK environment synthesis output"
+  }
+]
