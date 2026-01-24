@@ -139,10 +139,13 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.click("#testDataLink a");
 
       const vrnValue = await page.locator("#vrn").inputValue();
-      const periodKeyValue = await page.locator("#periodKey").inputValue();
+      const periodStartValue = await page.locator("#periodStart").inputValue();
+      const periodEndValue = await page.locator("#periodEnd").inputValue();
 
       expect(vrnValue).toBe("176540158");
-      expect(periodKeyValue).toMatch(/^\d{2}[A-Z][A-Z0-9]$/); // YYXZ format
+      // View VAT Return form now uses date inputs instead of periodKey dropdown
+      expect(periodStartValue).toBe("2017-01-01");
+      expect(periodEndValue).toBe("2017-03-31");
     });
   });
 
