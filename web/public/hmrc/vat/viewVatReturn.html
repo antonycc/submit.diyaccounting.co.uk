@@ -220,6 +220,13 @@
         const periodEnd = urlParams.get("periodEnd");
         const hmrcAccount = urlParams.get("hmrcAccount");
 
+        // If URL params provide complete period data, clear any stale pendingReturnRequest
+        // This handles navigation from obligations page where URL params should take precedence
+        if (vrn && periodStart && periodEnd) {
+          sessionStorage.removeItem("pendingReturnRequest");
+          console.log("Cleared stale pendingReturnRequest - using URL params instead");
+        }
+
         if (vrn) {
           document.getElementById("vrn").value = vrn;
         }
@@ -676,7 +683,12 @@
       });
 
       document.getElementById("backToObligationsBtn")?.addEventListener("click", () => {
-        window.location.href = "vatObligations.html";
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        let url = "vatObligations.html";
+        if (hmrcAccount) {
+          url += `?hmrcAccount=${encodeURIComponent(hmrcAccount)}`;
+        }
+        window.location.href = url;
       });
 
       // Input validation for VAT registration number
