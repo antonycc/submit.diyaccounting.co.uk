@@ -94,7 +94,6 @@ public class SubmitSharedNames {
     public String ue1SelfDestructLogGroupName;
     public String apiAccessLogGroupName;
 
-    public String envDashedDomainName;
     public String envResourceNamePrefix;
     public String observabilityStackId;
     public String observabilityUE1StackId;
@@ -308,7 +307,6 @@ public class SubmitSharedNames {
         this.dashedDeploymentDomainName = buildDashedDomainName(this.deploymentDomainName);
 
         this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
-        this.envDashedDomainName = buildDashedDomainName(this.envDomainName);
         // Use envName directly for consistency with stack IDs (e.g., ci-env-IdentityStack → ci-env-user-pool)
         this.envResourceNamePrefix = "%s-env".formatted(props.envName);
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);
@@ -319,23 +317,23 @@ public class SubmitSharedNames {
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
-        this.receiptsTableName = "%s-receipts".formatted(this.envDashedDomainName);
-        this.bundlesTableName = "%s-bundles".formatted(this.envDashedDomainName);
-        this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envDashedDomainName);
-        this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envDashedDomainName);
+        this.receiptsTableName = "%s-receipts".formatted(this.envResourceNamePrefix);
+        this.bundlesTableName = "%s-bundles".formatted(this.envResourceNamePrefix);
+        this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcVatReturnPostAsyncRequestsTableName =
-                "%s-hmrc-vat-return-post-async-requests".formatted(this.envDashedDomainName);
+                "%s-hmrc-vat-return-post-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcVatReturnGetAsyncRequestsTableName =
-                "%s-hmrc-vat-return-get-async-requests".formatted(this.envDashedDomainName);
+                "%s-hmrc-vat-return-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcVatObligationGetAsyncRequestsTableName =
-                "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envDashedDomainName);
-        this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envDashedDomainName);
-        this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envDashedDomainName);
+                "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
+        this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =
-                "%s-holding-dist-logs-src".formatted(this.envDashedDomainName);
+                "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryOriginSourceName = "%s-orig-dist-l-src".formatted(props.deploymentName); // x
         this.distributionAccessLogDeliveryHoldingDestinationName =
-                "%s-holding-logs-dest".formatted(this.envDashedDomainName);
+                "%s-holding-logs-dest".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryOriginDestinationName = "%s-orig-l-dst".formatted(props.deploymentName); // x
 
         this.ew2SelfDestructLogGroupName =
@@ -344,7 +342,7 @@ public class SubmitSharedNames {
                 "/aws/lambda/%s-self-destruct-us-east-1".formatted(this.envResourceNamePrefix);
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
-        this.appResourceNamePrefix = "%s-app".formatted(generateResourceNamePrefix(this.deploymentDomainName));
+        this.appResourceNamePrefix = "%s-app".formatted(props.deploymentName);
         this.devStackId = "%s-app-DevStack".formatted(props.deploymentName);
         this.ue1DevStackId = "%s-app-DevUE1Stack".formatted(props.deploymentName);
         this.authStackId = "%s-app-AuthStack".formatted(props.deploymentName);
