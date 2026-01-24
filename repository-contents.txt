@@ -377,7 +377,7 @@
 ./BACKUP_STRATEGY_PLAN.md
 ./simulated.log
 ./vitest.config.js
-./REPOSITORY_DOCUMENTATION.md
+./REPORT_REPOSITORY_CONTENTS.md
 ./.prettierignore
 ./.editorconfig
 ./deploy.log
@@ -459,7 +459,7 @@
 ./eslint.security.config.js
 ./eslint.config.js
 ./.eslintrc.security.json
-./COMPLIANCE_REPORT.md
+./REPORT_ACCESSIBILITY_PENETRATION.md
 ./PLAN_DISABLE_COGNITO_SIGNUP.md
 ./test-sim.log
 ./CLAUDE.md

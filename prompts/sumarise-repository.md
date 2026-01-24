@@ -388,7 +388,7 @@ repository-contents.txt:
 ./docs/aws-multi-account/SETUP_GUIDE.md
 ./BACKUP_STRATEGY_PLAN.md
 ./vitest.config.js
-./REPOSITORY_DOCUMENTATION.md
+./REPORT_REPOSITORY_CONTENTS.md
 ./.prettierignore
 ./.editorconfig
 ./README.md
@@ -467,7 +467,7 @@ repository-contents.txt:
 ./PII_AND_SENSITIVE_DATA.md
 ./MARKETING_GUIDANCE.md
 ./.eslintrc.security.json
-./COMPLIANCE_REPORT.md
+./REPORT_ACCESSIBILITY_PENETRATION.md
 ./CLAUDE.md
 ./mock-oauth2-config.json
 ./src/data/faqs.toml

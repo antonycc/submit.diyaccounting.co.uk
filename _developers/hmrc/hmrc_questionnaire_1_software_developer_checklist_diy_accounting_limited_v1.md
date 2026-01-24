@@ -179,7 +179,7 @@ Reference: [WCAG 2.1](https://www.w3.org/TR/WCAG21/), [Terms of Use](https://dev
 
 Answer: `Partial` - **REQUIRES REMEDIATION**
 
-Current State (per COMPLIANCE_REPORT.md dated 19 January 2026):
+Current State (per REPORT_ACCESSIBILITY_PENETRATION.md dated 19 January 2026):
 - Pa11y (WCAG 2.1 AA): ✅ 16/16 pages passed
 - axe-core: ❌ 13 violations across pages
 
@@ -191,7 +191,7 @@ axe-core Violations Requiring Remediation:
 | landmark-one-main | Moderate | Document missing main landmark |
 | page-has-heading-one | Moderate | Page missing level-one heading |
 
-Remediation Required: Address axe-core violations before production approval. See COMPLIANCE_REPORT.md for full details and PLAN-9-BOX-VAT-IMPLEMENTATION.md Component 4 (CSS/Accessibility) for link styling fixes.
+Remediation Required: Address axe-core violations before production approval. See REPORT_ACCESSIBILITY_PENETRATION.md for full details and PLAN-9-BOX-VAT-IMPLEMENTATION.md Component 4 (CSS/Accessibility) for link styling fixes.
 
 ## Compliance Gap Summary
 

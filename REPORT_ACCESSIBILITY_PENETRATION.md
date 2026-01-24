@@ -3,19 +3,19 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-01-24T23:05:57.004Z
-**Overall Status**: ❌ FAIL
+**Generated**: 2026-01-24T23:24:12.615Z
+**Overall Status**: ✅ PASS
 
 **Source Files**:
 ```
-  ✅ target/penetration/npm-audit.json
-  ✅ target/penetration/eslint-security.txt
-  ✅ target/penetration/retire.json
-  ✅ target/penetration/zap-report.json
-  ✅ target/accessibility/pa11y-report.txt
-  ✅ target/accessibility/axe-results.json
-  ✅ target/accessibility/axe-wcag22-results.json
-  ✅ target/accessibility/lighthouse-results.json
+  ✅ web/public/tests/penetration/npm-audit.json
+  ✅ web/public/tests/penetration/eslint-security.txt
+  ✅ web/public/tests/penetration/retire.json
+  ✅ web/public/tests/penetration/zap-report.json
+  ✅ web/public/tests/accessibility/pa11y-report.txt
+  ✅ web/public/tests/accessibility/axe-results.json
+  ✅ web/public/tests/accessibility/axe-wcag22-results.json
+  ✅ web/public/tests/accessibility/lighthouse-results.json
 ```
 
 ---
@@ -25,12 +25,12 @@
 | Check | Status | Summary |
 |-------|--------|---------|
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
-| ESLint Security | ❌ | 4 errors, 6 warnings |
+| ESLint Security | ✅ | 0 errors, 0 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
 | OWASP ZAP | ✅ | 0 high, 0 medium, 9 low |
-| Pa11y (WCAG AA) | ✅ | 15/15 pages passed |
-| axe-core | ✅ | 0 violations, 378 passes |
-| axe-core (WCAG 2.2) | ✅ | 0 violations, 231 passes |
+| Pa11y (WCAG AA) | ✅ | 21/21 pages passed |
+| axe-core | ✅ | 0 violations, 748 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 450 passes |
 | Lighthouse | ✅ | A11y: 95%, Perf: 99%, BP: 100% |
 
 ---
@@ -44,8 +44,8 @@
 | Critical | 0 |
 | High | 0 |
 | Moderate | 0 |
-| Low | 1 |
-| **Total** | **1** |
+| Low | 0 |
+| **Total** | **0** |
 
 **Status**: ✅ No critical/high vulnerabilities
 
@@ -53,10 +53,10 @@
 
 | Metric | Count |
 |--------|-------|
-| Errors | 4 |
-| Warnings | 6 |
+| Errors | 0 |
+| Warnings | 0 |
 
-**Status**: ❌ Security errors require attention
+**Status**: ✅ No security errors
 
 ### 1.3 retire.js (Known Vulnerabilities)
 
@@ -84,10 +84,10 @@
 | Alert | Risk | Count |
 |-------|------|-------|
 | Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 9 |
-| Information Disclosure - Suspicious Comments | Informational (Low) | 13 |
+| Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
 | Modern Web Application | Informational (Medium) | 5 |
 | Non-Storable Content | Informational (Medium) | 3 |
-| Re-examine Cache-control Directives | Informational (Low) | 4 |
+| Re-examine Cache-control Directives | Informational (Low) | 5 |
 | Retrieved from Cache | Informational (Medium) | 5 |
 | Storable and Cacheable Content | Informational (Medium) | 5 |
 
@@ -106,8 +106,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 15 |
-| Pages Passed | 15 |
+| Pages Tested | 21 |
+| Pages Passed | 21 |
 | Pages Failed | 0 |
 
 **Status**: ✅ All pages comply with WCAG AA
@@ -131,14 +131,20 @@
 | /help/index.html | 0 |
 | /errors/404-error-distribution.html | 0 |
 | /errors/404-error-origin.html | 0 |
+| /error/403.html | 0 |
+| /error/404.html | 0 |
+| /error/500.html | 0 |
+| /error/502.html | 0 |
+| /error/503.html | 0 |
+| /error/504.html | 0 |
 
 ### 2.2 axe-core (Automated Accessibility)
 
 | Metric | Count |
 |--------|-------|
 | Violations | 0 |
-| Passes | 378 |
-| Incomplete | 10 |
+| Passes | 748 |
+| Incomplete | 21 |
 
 **Status**: ✅ No accessibility violations
 
@@ -148,8 +154,8 @@
 | Metric | Count |
 |--------|-------|
 | Violations | 0 |
-| Passes | 231 |
-| Incomplete | 10 |
+| Passes | 450 |
+| Incomplete | 21 |
 
 **Status**: ✅ No WCAG 2.2 violations
 

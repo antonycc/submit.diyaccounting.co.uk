@@ -24,7 +24,7 @@ This document traces each answer provided in the HMRC questionnaires to the spec
 |----|----------|----------|-------------|
 | DOC-001 | HMRC MTD API Approval Submission | `HMRC_MTD_API_APPROVAL_SUBMISSION.md` | Comprehensive technical documentation for HMRC approval |
 | DOC-002 | HMRC Production Credentials Email | `HMRC_PRODUCTION_CREDENTIALS_EMAIL.md` | Email template for production credential request |
-| DOC-003 | Repository Documentation | `REPOSITORY_DOCUMENTATION.md` | Architecture and directory structure |
+| DOC-003 | Repository Documentation | `REPORT_REPOSITORY_CONTENTS.md` | Architecture and directory structure |
 
 ### Test Results - Accessibility
 

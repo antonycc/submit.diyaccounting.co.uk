@@ -2,7 +2,7 @@
 
 **PRE-PRODUCTION DRAFT - 20 January 2026 - Version 1.1**
 
-> **Note**: This document reflects the CURRENT state of the application before production approval. Items marked with ⚠️ require remediation before HMRC production approval can be granted. Based on COMPLIANCE_REPORT.md dated 19 January 2026.
+> **Note**: This document reflects the CURRENT state of the application before production approval. Items marked with ⚠️ require remediation before HMRC production approval can be granted. Based on REPORT_ACCESSIBILITY_PENETRATION.md dated 19 January 2026.
 
 ## Document Information
 
@@ -35,7 +35,7 @@
 
 ### ⚠️ Criteria Requiring Remediation
 
-Based on COMPLIANCE_REPORT.md axe-core results (13 violations, 239 passes):
+Based on REPORT_ACCESSIBILITY_PENETRATION.md axe-core results (13 violations, 239 passes):
 
 | Criterion | Issue | Severity | axe-core Rule |
 |-----------|-------|----------|---------------|
@@ -556,7 +556,7 @@ Based on COMPLIANCE_REPORT.md axe-core results (13 violations, 239 passes):
 
 | File | Description |
 |------|-------------|
-| COMPLIANCE_REPORT.md | Consolidated compliance report dated 19 January 2026 showing overall status |
+| REPORT_ACCESSIBILITY_PENETRATION.md | Consolidated compliance report dated 19 January 2026 showing overall status |
 | web/public/tests/accessibility/pa11y-report.txt | Pa11y WCAG 2.1 AA automated scan results (16/16 pages pass) |
 | web/public/tests/accessibility/axe-results.json | axe-core WCAG 2.1 detailed rule results (13 violations, 239 passes) |
 | web/public/tests/accessibility/axe-wcag22-results.json | axe-core WCAG 2.2 rule results (10 violations, 148 passes) |

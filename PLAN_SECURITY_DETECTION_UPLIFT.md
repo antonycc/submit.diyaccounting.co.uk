@@ -570,7 +570,7 @@ Options:
 After each phase, update:
 1. **PRIVACY_DUTIES.md** - Add detection procedures and response steps
 2. **PII_AND_SENSITIVE_DATA.md** - Mark recommendations as implemented
-3. **REPOSITORY_DOCUMENTATION.md** - Add new CloudWatch alarms/dashboards
+3. **REPORT_REPOSITORY_CONTENTS.md** - Add new CloudWatch alarms/dashboards
 
 ---
 
