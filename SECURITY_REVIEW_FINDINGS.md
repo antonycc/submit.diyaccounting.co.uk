@@ -390,14 +390,14 @@ const hmrcBase = validateEnvFormat('HMRC_BASE_URI',
 
 ### ✅ FIXED - npm Dependency Vulnerability
 **Severity**: Low (FIXED)  
-**Package**: `diff` v5.0.0 - 5.2.1 → **Updated to v5.2.2**  
+**Package**: `diff` v5.2.0 → **Updated to v5.2.2**  
 **CVE**: GHSA-73rr-hh4g-fpgx  
 **Issue**: Denial of Service vulnerability in jsdiff parsePatch and applyPatch
 
 **Fix Applied**:
 ```bash
 npm audit fix
-# Result: changed 1 package, found 0 vulnerabilities
+# Result: changed 1 package (diff 5.2.0 → 5.2.2), found 0 vulnerabilities
 ```
 
 **Impact**: 
@@ -610,11 +610,11 @@ const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/s
 
 ### ⚠️ AREAS FOR IMPROVEMENT
 
-1. **Content Security Policy**: Add CSP headers to mitigate XSS (HIGH priority)
-2. **OAuth State Validation**: Verify CSRF protection in OAuth callbacks (HIGH priority)
-3. **Token Storage**: Consider HTTP-only cookies as localStorage alternative (MEDIUM priority)
-4. **CORS Configuration**: Verify API Gateway/CloudFront settings (MEDIUM priority)
-5. **Infrastructure Review**: CDK-managed IAM roles, Cognito settings need separate review
+1. **Token Storage**: Consider HTTP-only cookies as localStorage alternative (MEDIUM priority)
+2. **CORS Configuration**: Verify API Gateway/CloudFront production settings (MEDIUM priority)
+3. **Infrastructure Review**: CDK-managed IAM roles, Cognito settings need separate Java code review
+4. **CSP Hardening**: Remove `'unsafe-inline'` directive (LOW priority, requires architecture change)
+5. **Defense-in-Depth**: Add format validation for userId and environment variables (LOW priority)
 
 ---
 
@@ -638,18 +638,20 @@ const redirectUri = `${process.env.DIY_SUBMIT_BASE_URL}${maybeSlash}activities/s
 
 ### Immediate Actions (All Complete ✅)
 
+**Note**: Items 1-3 below were initially flagged for implementation but were discovered during the review to already be comprehensively implemented. They are documented here for completeness.
+
 1. **✅ COMPLETE - Content Security Policy Headers**
-   - Already implemented in CloudFront EdgeStack.java
+   - **Status**: Already implemented in CloudFront EdgeStack.java
    - Comprehensive CSP with proper directives
    - Consider removing `'unsafe-inline'` in future (requires architecture change)
 
 2. **✅ COMPLETE - OAuth State Parameter Validation**
-   - Already implemented with state + nonce validation
-   - Textbook-perfect implementation
+   - **Status**: Already implemented with state + nonce validation
+   - Textbook-perfect implementation in loginWithCognitoCallback.html
    - No action needed
 
 3. **✅ COMPLETE - Fix npm Dependency Vulnerability**
-   - `diff` package updated from 5.0.0-5.2.1 to 5.2.2
+   - **Status**: `diff` package updated during review (5.2.0 → 5.2.2)
    - All vulnerabilities resolved
    - Zero vulnerabilities remaining
 
