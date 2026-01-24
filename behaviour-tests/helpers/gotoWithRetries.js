@@ -103,21 +103,3 @@ export async function gotoWithRetries(page, url, options = {}, screenshotPath = 
   }
   throw lastErr; // Exhausted attempts
 }
-
-/**
- * A small adapter to preserve legacy signature `loggedGoto(url, description)`
- * while delegating to gotoWithRetries with sensible defaults.
- *
- * @param {import('@playwright/test').Page} page
- * @param {string} url
- * @param {string} description
- * @param {object} [options]
- */
-export async function loggedGotoWithRetries(page, url, description = "", options = {}, screenshotPath = defaultScreenshotPath) {
-  return gotoWithRetries(page, url, {
-    description,
-    waitUntil: "domcontentloaded",
-    ...options,
-    screenshotPath,
-  });
-}

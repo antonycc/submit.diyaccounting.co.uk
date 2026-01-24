@@ -31,10 +31,14 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
   });
 }
 
+// Default period dates for Q1 2017 (matches simulator and HMRC sandbox)
+const DEFAULT_SUBMIT_PERIOD_START = "2017-01-01";
+const DEFAULT_SUBMIT_PERIOD_END = "2017-03-31";
+
 export async function fillInVat(
   page,
   hmrcVatNumber,
-  hmrcVatPeriodKeyOrDates,
+  periodDates = { periodStart: DEFAULT_SUBMIT_PERIOD_START, periodEnd: DEFAULT_SUBMIT_PERIOD_END },
   hmrcVatDueAmount,
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
@@ -74,21 +78,7 @@ export async function fillInVat(
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-filled.png` });
 
-    // Determine if we have period dates or a legacy periodKey
-    const isPeriodDates = typeof hmrcVatPeriodKeyOrDates === "object" && hmrcVatPeriodKeyOrDates.periodStart;
-
-    let periodStart, periodEnd;
-    if (isPeriodDates) {
-      // New date-based period selection
-      periodStart = hmrcVatPeriodKeyOrDates.periodStart;
-      periodEnd = hmrcVatPeriodKeyOrDates.periodEnd;
-    } else {
-      // Legacy periodKey support - set dates based on default simulator/HMRC sandbox obligation
-      // Both use Q1 2017 (2017-01-01 to 2017-03-31) as the default open period
-      // The server will resolve the periodKey from these dates
-      periodStart = "2017-01-01"; // Default open obligation in both simulator and HMRC sandbox
-      periodEnd = "2017-03-31";
-    }
+    const { periodStart, periodEnd } = periodDates;
 
     // Set date inputs using evaluate for reliability with type="date" inputs
     await page.evaluate(
@@ -103,7 +93,7 @@ export async function fillInVat(
       },
       { startDate: periodStart, endDate: periodEnd },
     );
-    console.log(`Set period dates: ${periodStart} to ${periodEnd}${!isPeriodDates ? ` (legacy periodKey: ${hmrcVatPeriodKeyOrDates})` : ""}`);
+    console.log(`Set period dates: ${periodStart} to ${periodEnd}`);
     await page.waitForTimeout(50);
 
     await page.waitForTimeout(100);
@@ -204,7 +194,7 @@ export async function fillInVat(
  * Fill in the 9-box VAT form with specific values
  * @param {object} page - Playwright page object
  * @param {string} hmrcVatNumber - VAT registration number
- * @param {string|object} hmrcVatPeriodKeyOrDates - Period Key (legacy) or { periodStart, periodEnd } dates
+ * @param {{ periodStart: string, periodEnd: string }} periodDates - Period dates
  * @param {object} vatBoxData - Object containing all 9 box values
  * @param {string|null} testScenario - Optional test scenario
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers
@@ -213,7 +203,7 @@ export async function fillInVat(
 export async function fillInVat9Box(
   page,
   hmrcVatNumber,
-  hmrcVatPeriodKeyOrDates,
+  periodDates = { periodStart: DEFAULT_SUBMIT_PERIOD_START, periodEnd: DEFAULT_SUBMIT_PERIOD_END },
   vatBoxData,
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
@@ -227,19 +217,7 @@ export async function fillInVat9Box(
     await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
     await page.waitForTimeout(100);
 
-    // Determine if we have period dates or a legacy periodKey
-    const isPeriodDates = typeof hmrcVatPeriodKeyOrDates === "object" && hmrcVatPeriodKeyOrDates.periodStart;
-
-    let periodStart, periodEnd;
-    if (isPeriodDates) {
-      periodStart = hmrcVatPeriodKeyOrDates.periodStart;
-      periodEnd = hmrcVatPeriodKeyOrDates.periodEnd;
-    } else {
-      // Legacy periodKey support - set dates based on default simulator/HMRC sandbox obligation
-      // Both use Q1 2017 (2017-01-01 to 2017-03-31) as the default open period
-      periodStart = "2017-01-01"; // Default open obligation in both simulator and HMRC sandbox
-      periodEnd = "2017-03-31";
-    }
+    const { periodStart, periodEnd } = periodDates;
 
     // Set date inputs using evaluate for reliability with type="date" inputs
     await page.evaluate(
@@ -253,7 +231,7 @@ export async function fillInVat9Box(
       },
       { startDate: periodStart, endDate: periodEnd },
     );
-    console.log(`Set period dates: ${periodStart} to ${periodEnd}${!isPeriodDates ? ` (legacy periodKey: ${hmrcVatPeriodKeyOrDates})` : ""}`);
+    console.log(`Set period dates: ${periodStart} to ${periodEnd}`);
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-9box-vrn.png` });
 
@@ -960,14 +938,10 @@ export async function initViewVatReturn(page, screenshotPath = defaultScreenshot
   });
 }
 
-// Default period dates for Q1 2017 (matches simulator and HMRC sandbox)
-const DEFAULT_PERIOD_START = "2017-01-01";
-const DEFAULT_PERIOD_END = "2017-03-31";
-
 export async function fillInViewVatReturn(
   page,
   hmrcTestVatNumber,
-  periodKeyOrDates = { periodStart: DEFAULT_PERIOD_START, periodEnd: DEFAULT_PERIOD_END },
+  periodDates = { periodStart: DEFAULT_SUBMIT_PERIOD_START, periodEnd: DEFAULT_SUBMIT_PERIOD_END },
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
@@ -990,16 +964,7 @@ export async function fillInViewVatReturn(
       await expect(page.locator("#periodEnd")).not.toHaveValue("");
     }
 
-    // Determine period dates - support both legacy periodKey string and new date object format
-    let periodStart, periodEnd;
-    if (typeof periodKeyOrDates === "object" && periodKeyOrDates.periodStart) {
-      periodStart = periodKeyOrDates.periodStart;
-      periodEnd = periodKeyOrDates.periodEnd;
-    } else {
-      // Legacy support: if passed a periodKey string, use default dates
-      periodStart = DEFAULT_PERIOD_START;
-      periodEnd = DEFAULT_PERIOD_END;
-    }
+    const { periodStart, periodEnd } = periodDates;
 
     // Fill out the form manually
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-view-vat-fill-in.png` });
@@ -1054,7 +1019,7 @@ export async function fillInViewVatReturn(
   });
 }
 
-export async function submitViewVatReturnForm(page, periodKeyOrDates = null, screenshotPath = defaultScreenshotPath) {
+export async function submitViewVatReturnForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the view VAT return form", async () => {
     // Focus change before submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
@@ -1064,9 +1029,6 @@ export async function submitViewVatReturnForm(page, periodKeyOrDates = null, scr
     await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {
       console.log("Network idle timeout after focus - continuing");
     });
-
-    // Period dates are now set via date inputs and don't need special preservation
-    // (unlike the previous dropdown which could be reset by blur events)
 
     await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-submit.png` });

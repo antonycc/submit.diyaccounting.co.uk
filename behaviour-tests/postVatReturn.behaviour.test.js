@@ -18,7 +18,6 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -85,8 +84,6 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 // Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
 const runFraudPreventionHeaderValidation = isSandboxMode();
 
-// eslint-disable-next-line sonarjs/pseudo-random
-const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
 
 let mockOAuth2Process;
@@ -142,9 +139,9 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-async function requestAndVerifySubmitReturn(page, { vatNumber, periodKey, vatDue, testScenario, runFraudPreventionHeaderValidation }) {
+async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation }) {
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, vatNumber, periodKey, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
+  await fillInVat(page, vatNumber, undefined, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
@@ -222,7 +219,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* *************************** */
   // First submission: perform HMRC AUTH only this first time
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
+  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -259,42 +256,36 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
      */
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_VRN",
       runFraudPreventionHeaderValidation,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PERIODKEY",
       runFraudPreventionHeaderValidation,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PAYLOAD",
       runFraudPreventionHeaderValidation,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
       vatDue: hmrcVatDueAmount,
       testScenario: "DUPLICATE_SUBMISSION",
       runFraudPreventionHeaderValidation,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "TAX_PERIOD_NOT_ENDED",
       runFraudPreventionHeaderValidation,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "INSOLVENT_TRADER",
       runFraudPreventionHeaderValidation,
@@ -303,14 +294,12 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     // Custom forced error scenarios
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_API_HTTP_500",
       runFraudPreventionHeaderValidation,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
-      periodKey: generatePeriodKey(),
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_HMRC_API_HTTP_500",
       runFraudPreventionHeaderValidation,
@@ -322,7 +311,6 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     //test.setTimeout(10_800_000);
     // await requestAndVerifySubmitReturn(page, {
     //   vatNumber: testVatNumber,
-    //   periodKey: generatePeriodKey(),
     //   vatDue: hmrcVatDueAmount,
     //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
     //   runFraudPreventionHeaderValidation,
@@ -332,7 +320,6 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     // const slowStartMs = Date.now();
     // await requestAndVerifySubmitReturn(page, {
     //   vatNumber: testVatNumber,
-    //   periodKey: generatePeriodKey(),
     //   vatDue: hmrcVatDueAmount,
     //   testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
     //   runFraudPreventionHeaderValidation,
@@ -386,7 +373,6 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     },
     testData: {
       hmrcTestVatNumber: testVatNumber,
-      hmrcVatPeriodKey,
       hmrcVatDueAmount,
       testUserGenerated: isSandboxMode() && !hmrcTestUsername,
       userSub,

@@ -18,7 +18,6 @@ import {
   runLocalOAuth2Server,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -95,8 +94,6 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 // Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
 const runFraudPreventionHeaderValidation = isSandboxMode();
 
-// eslint-disable-next-line sonarjs/pseudo-random
-const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
 
 let mockOAuth2Process;
@@ -154,10 +151,10 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-async function requestAndVerifyViewReturn(page, { vrn, periodKey, testScenario }) {
+async function requestAndVerifyViewReturn(page, { vrn, testScenario }) {
   await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, vrn, periodKey, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
-  await submitViewVatReturnForm(page, periodKey, screenshotPath);
+  await fillInViewVatReturn(page, vrn, undefined, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
+  await submitViewVatReturnForm(page, screenshotPath);
   await verifyViewVatReturnResults(page, testScenario, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 }
@@ -225,7 +222,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
 
   await initSubmitVat(page, screenshotPath);
   // Pass allowSandboxObligations=true to use any available open obligation in sandbox/simulator mode
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, true);
+  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, true);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
   await goToHmrcAuth(page, screenshotPath);
@@ -241,7 +238,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   /*  VIEW VAT RETURN */
   /* **************** */
 
-  await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey });
+  await requestAndVerifyViewReturn(page, { vrn: testVatNumber });
 
   /* ************************************* */
   /*  VIEW VAT RETURN: TEST SCENARIOS      */
@@ -255,13 +252,12 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
      *  - DATE_RANGE_TOO_LARGE: The date of the requested return cannot be further than four years from the current date.
      *  - INSOLVENT_TRADER: Client is an insolvent trader.
      */
-    await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey, testScenario: "DATE_RANGE_TOO_LARGE" });
-    await requestAndVerifyViewReturn(page, { vrn: testVatNumber, periodKey: hmrcVatPeriodKey, testScenario: "INSOLVENT_TRADER" });
+    await requestAndVerifyViewReturn(page, { vrn: testVatNumber, testScenario: "DATE_RANGE_TOO_LARGE" });
+    await requestAndVerifyViewReturn(page, { vrn: testVatNumber, testScenario: "INSOLVENT_TRADER" });
 
     // Custom forced error scenarios (mirrors POST tests)
     await requestAndVerifyViewReturn(page, {
       vrn: testVatNumber,
-      periodKey: hmrcVatPeriodKey,
       testScenario: "SUBMIT_API_HTTP_500",
     });
     // TODO: Fix, fails like this:
@@ -272,7 +268,6 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     // ×"
     // await requestAndVerifyViewReturn(page, {
     //   vrn: testVatNumber,
-    //   periodKey: hmrcVatPeriodKey,
     //   testScenario: "SUBMIT_HMRC_API_HTTP_500",
     // });
     // VERY EXPENSIVE: Triggers after 1 HTTP 503, this triggers 2 retries (visibility delay 140s), so 12+ minutes to dlq
@@ -282,7 +277,6 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     //test.setTimeout(1_200_000);
     // await requestAndVerifyViewReturn(page, {
     //   vrn: testVatNumber,
-    //   periodKey: hmrcVatPeriodKey,
     //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
     // });
     //
@@ -292,7 +286,6 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     //   const slowStartMs = Date.now();
     //   await requestAndVerifyViewReturn(page, {
     //     vrn: testVatNumber,
-    //     periodKey: hmrcVatPeriodKey,
     //     testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
     //   });
     //   const slowElapsedMs = Date.now() - slowStartMs;
@@ -345,7 +338,6 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     },
     testData: {
       hmrcTestVatNumber: testVatNumber,
-      hmrcVatPeriodKey,
       hmrcVatDueAmount,
       testUserGenerated: isSandboxMode() && !hmrcTestUsername,
       userSub,
@@ -421,7 +413,6 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
     // Use regex pattern since periodKey is resolved dynamically from sandbox obligations
-    // The actual periodKey may differ from the generated hmrcVatPeriodKey due to allowSandboxObligations
     const vatReturnUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/returns/\\w+`);
     const vatGetRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,

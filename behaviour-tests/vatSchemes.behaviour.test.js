@@ -20,7 +20,6 @@ import {
   runLocalDynamoDb,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -241,7 +240,6 @@ async function setupTestUserAndLogin(page, testInfo) {
 test.describe("VAT Scheme Support Tests", () => {
   test("Cash Accounting Scheme: Submit return with cash basis values", async ({ page }, testInfo) => {
     const { testUsername, testPassword, testVatNumber, testUrl } = await setupTestUserAndLogin(page, testInfo);
-    const periodKey = generatePeriodKey();
 
     console.log(`[VAT Scheme Test] Testing Cash Accounting Scheme submission`);
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.CASH_ACCOUNTING.description}`);
@@ -250,7 +248,7 @@ test.describe("VAT Scheme Support Tests", () => {
     await fillInVat9Box(
       page,
       testVatNumber,
-      periodKey,
+      undefined,
       vatSchemeTestData.CASH_ACCOUNTING,
       null,
       runFraudPreventionHeaderValidation,
@@ -274,7 +272,6 @@ test.describe("VAT Scheme Support Tests", () => {
 
   test("Flat Rate Scheme: Submit return with flat rate calculations", async ({ page }, testInfo) => {
     const { testUsername, testPassword, testVatNumber, testUrl } = await setupTestUserAndLogin(page, testInfo);
-    const periodKey = generatePeriodKey();
 
     console.log(`[VAT Scheme Test] Testing Flat Rate Scheme submission`);
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.FLAT_RATE.description}`);
@@ -283,7 +280,7 @@ test.describe("VAT Scheme Support Tests", () => {
     await fillInVat9Box(
       page,
       testVatNumber,
-      periodKey,
+      undefined,
       vatSchemeTestData.FLAT_RATE,
       null,
       runFraudPreventionHeaderValidation,
@@ -305,7 +302,6 @@ test.describe("VAT Scheme Support Tests", () => {
 
   test("Retail Scheme: Submit return with retail values", async ({ page }, testInfo) => {
     const { testUsername, testPassword, testVatNumber, testUrl } = await setupTestUserAndLogin(page, testInfo);
-    const periodKey = generatePeriodKey();
 
     console.log(`[VAT Scheme Test] Testing Retail Scheme submission`);
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.RETAIL.description}`);
@@ -314,7 +310,7 @@ test.describe("VAT Scheme Support Tests", () => {
     await fillInVat9Box(
       page,
       testVatNumber,
-      periodKey,
+      undefined,
       vatSchemeTestData.RETAIL,
       null,
       runFraudPreventionHeaderValidation,
@@ -336,7 +332,6 @@ test.describe("VAT Scheme Support Tests", () => {
 
   test("Margin Scheme: Submit return with margin-only VAT", async ({ page }, testInfo) => {
     const { testUsername, testPassword, testVatNumber, testUrl } = await setupTestUserAndLogin(page, testInfo);
-    const periodKey = generatePeriodKey();
 
     console.log(`[VAT Scheme Test] Testing Margin Scheme submission`);
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.MARGIN.description}`);
@@ -345,7 +340,7 @@ test.describe("VAT Scheme Support Tests", () => {
     await fillInVat9Box(
       page,
       testVatNumber,
-      periodKey,
+      undefined,
       vatSchemeTestData.MARGIN,
       null,
       runFraudPreventionHeaderValidation,
@@ -367,7 +362,6 @@ test.describe("VAT Scheme Support Tests", () => {
 
   test("Annual Accounting Scheme: Submit annual return", async ({ page }, testInfo) => {
     const { testUsername, testPassword, testVatNumber, testUrl } = await setupTestUserAndLogin(page, testInfo);
-    const periodKey = generatePeriodKey();
 
     console.log(`[VAT Scheme Test] Testing Annual Accounting Scheme submission`);
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.ANNUAL_ACCOUNTING.description}`);
@@ -376,7 +370,7 @@ test.describe("VAT Scheme Support Tests", () => {
     await fillInVat9Box(
       page,
       testVatNumber,
-      periodKey,
+      undefined,
       vatSchemeTestData.ANNUAL_ACCOUNTING,
       null,
       runFraudPreventionHeaderValidation,
