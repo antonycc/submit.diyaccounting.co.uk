@@ -282,9 +282,9 @@ jobs:
       - name: List generated reports
         run: |
           echo "Penetration reports:"
-          ls -la target/penetration/ || echo "No penetration reports"
+          ls -la web/public/tests/penetration/ || echo "No penetration reports"
           echo "Accessibility reports:"
-          ls -la target/accessibility/ || echo "No accessibility reports"
+          ls -la web/public/tests/accessibility/ || echo "No accessibility reports"
           echo "Compliance report:"
           ls -la COMPLIANCE_REPORT.md || echo "No compliance report"
 
@@ -293,8 +293,8 @@ jobs:
         with:
           name: compliance-reports
           path: |
-            target/penetration/
-            target/accessibility/
+            web/public/tests/penetration/
+            web/public/tests/accessibility/
             COMPLIANCE_REPORT.md
           retention-days: 90
 
@@ -308,9 +308,9 @@ jobs:
           echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ -f target/penetration/npm-audit.json ]; then
+          if [ -f web/public/tests/penetration/npm-audit.json ]; then
             echo "## npm Audit Summary" >> $GITHUB_STEP_SUMMARY
-            AUDIT=$(cat target/penetration/npm-audit.json)
+            AUDIT=$(cat web/public/tests/penetration/npm-audit.json)
             echo "- Critical: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.critical // 0')" >> $GITHUB_STEP_SUMMARY
             echo "- High: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.high // 0')" >> $GITHUB_STEP_SUMMARY
             echo "- Moderate: $(echo "$AUDIT" | jq -r '.metadata.vulnerabilities.moderate // 0')" >> $GITHUB_STEP_SUMMARY
@@ -318,16 +318,16 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ -f target/accessibility/axe-results.json ]; then
+          if [ -f web/public/tests/accessibility/axe-results.json ]; then
             echo "## axe-core Summary" >> $GITHUB_STEP_SUMMARY
-            VIOLATIONS=$(jq '[.[].violations | length] | add // 0' target/accessibility/axe-results.json)
-            PASSES=$(jq '[.[].passes | length] | add // 0' target/accessibility/axe-results.json)
+            VIOLATIONS=$(jq '[.[].violations | length] | add // 0' web/public/tests/accessibility/axe-results.json)
+            PASSES=$(jq '[.[].passes | length] | add // 0' web/public/tests/accessibility/axe-results.json)
             echo "- Violations: $VIOLATIONS" >> $GITHUB_STEP_SUMMARY
             echo "- Passes: $PASSES" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ -f target/penetration/zap-report.json ]; then
+          if [ -f web/public/tests/penetration/zap-report.json ]; then
             echo "## ZAP Scan Summary" >> $GITHUB_STEP_SUMMARY
             echo "ZAP report generated" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY

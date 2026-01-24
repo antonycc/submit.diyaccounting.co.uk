@@ -1,0 +1,23 @@
+Running Pa11y on 16 URLs:
+ > https://submit.diyaccounting.co.uk/ - 0 errors
+ > https://submit.diyaccounting.co.uk/index.html - 0 errors
+ > https://submit.diyaccounting.co.uk/privacy.html - 0 errors
+ > https://submit.diyaccounting.co.uk/terms.html - 0 errors
+ > https://submit.diyaccounting.co.uk/about.html - 0 errors
+ > https://submit.diyaccounting.co.uk/accessibility.html - 0 errors
+ > https://submit.diyaccounting.co.uk/auth/login.html - Failed to run
+ > https://submit.diyaccounting.co.uk/account/bundles.html - 0 errors
+ > https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html - 0 errors
+ > https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html - 0 errors
+ > https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html - 0 errors
+ > https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html - 0 errors
+ > https://submit.diyaccounting.co.uk/guide/index.html - 0 errors
+ > https://submit.diyaccounting.co.uk/help/index.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/404-error-distribution.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/404-error-origin.html - 0 errors
+
+Errors in https://submit.diyaccounting.co.uk/auth/login.html:
+
+ • Error: Cannot read properties of undefined (reading 'replace')
+
+✘ 15/16 URLs passed

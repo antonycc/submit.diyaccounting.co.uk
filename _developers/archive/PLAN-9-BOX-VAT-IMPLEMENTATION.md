@@ -2870,9 +2870,9 @@ test.describe('View VAT Return - 9-Box Display', () => {
 - `COMPLIANCE_REPORT.md` - Consolidated compliance scan results
 - `_developers/hmrc/hmrc_questionnaire_1_software_developer_checklist_diy_accounting_limited_v1.md`
 - `_developers/hmrc/hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v1.md`
-- `target/accessibility/axe-results.json` - axe-core detailed violations
-- `target/penetration/zap-report.json` - OWASP ZAP scan results
-- `target/penetration/eslint-security.txt` - ESLint security warnings
+- `web/public/tests/accessibility/axe-results.json` - axe-core detailed violations
+- `web/public/tests/penetration/zap-report.json` - OWASP ZAP scan results
+- `web/public/tests/penetration/eslint-security.txt` - ESLint security warnings
 
 ---
 

@@ -1,6 +1,6 @@
 # DIY Accounting Submit - Repository Documentation
 
-**Generated:** 2026-01-07
+**Generated:** 2026-01-24
 
 This document provides a high-level overview of the `submit.diyaccounting.co.uk` repository. For detailed reference, consult the source files directly.
 
@@ -48,6 +48,7 @@ The repository uses multiple environment files. See the actual files for complet
 | **test** | `.env.test` | Unit/system tests with mocked services |
 | **proxy** | `.env.proxy` | Local dev with ngrok, Docker OAuth2, dynalite |
 | **proxyRunning** | `.env.proxyRunning` | Connect to already-running local services |
+| **simulator** | `.env.simulator` | Local dev with HTTP simulator (lightweight, no Docker) |
 | **ci** | `.env.ci` | CI with real AWS (`ci.submit.diyaccounting.co.uk`) |
 | **prod** | `.env.prod` | Production (`submit.diyaccounting.co.uk`) |
 
@@ -164,9 +165,11 @@ Created once per environment by `deploy-environment.yml`:
 | Stack | Resources |
 |-------|-----------|
 | ObservabilityStack | CloudWatch Log Groups, RUM, Alarms |
+| ObservabilityUE1Stack | CloudWatch resources in us-east-1 (for CloudFront) |
 | DataStack | DynamoDB tables |
 | ApexStack | Route53 apex domain |
 | IdentityStack | Cognito user pool |
+| BackupStack | Cross-account backup configuration |
 
 #### Application Stacks (Per-Deployment)
 
@@ -192,10 +195,21 @@ Created per deployment by `deploy.yml`:
 |----------|---------|---------|
 | `deploy.yml` | Build, test, deploy application | Push, schedule, manual |
 | `deploy-environment.yml` | Deploy shared infrastructure | Push to env files, manual |
+| `deploy-cdk-stack.yml` | Deploy individual CDK stack (reusable) | workflow_call |
 | `test.yml` | Run all tests (reusable) | Push, schedule, workflow_call |
+| `synthetic-test.yml` | Run synthetic monitoring tests | Schedule, manual |
+| `destroy.yml` | Tear down deployments | Manual only |
+| `publish.yml` | Publish static assets | Manual only |
 | `set-origins.yml` | Update DNS/CloudFront | Manual only |
-| `scale-to.yml` | Set Lambda concurrency | Manual only |
 | `manage-secrets.yml` | Backup/restore salt secrets | Manual only |
+| `verify-backups.yml` | Verify cross-account backups | Schedule, manual |
+| `setup-backup-account.yml` | Configure backup AWS account | Manual only |
+| `create-hmrc-test-user.yml` | Create HMRC sandbox test user | Manual only |
+| `compliance.yml` | Run compliance checks | Push, manual |
+| `security-review.yml` | Security scanning | Push, manual |
+| `codeql.yml` | CodeQL security analysis | Push, schedule |
+| `copilot-agent.yml` | GitHub Copilot agent workflow | workflow_dispatch |
+| `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |
 
 **Read `.github/workflows/*.yml` for complete workflow definitions.**
 
@@ -203,6 +217,7 @@ Created per deployment by `deploy.yml`:
 
 ### Local Development Stack
 
+**Simulator Mode** (lightweight, no Docker):
 ```
 Developer Machine
     │
@@ -210,7 +225,20 @@ Developer Machine
     │       │
     ├── ngrok (tunnel) ──► Public HTTPS URL for OAuth
     │
-    ├── Mock OAuth2 (localhost:8080) ──► Simulates Cognito
+    ├── HTTP Simulator (localhost:9000) ──► Mock OAuth2 + HMRC API
+    │
+    └── Dynalite (dynamic port) ──► Local DynamoDB
+```
+
+**Proxy Mode** (full stack with Docker):
+```
+Developer Machine
+    │
+    ├── Express Server (localhost:3000) ──► Lambda handlers
+    │       │
+    ├── ngrok (tunnel) ──► Public HTTPS URL for OAuth
+    │
+    ├── Mock OAuth2 (Docker, localhost:8080) ──► Simulates Cognito
     │
     └── Dynalite (dynamic port) ──► Local DynamoDB
 ```
@@ -218,12 +246,15 @@ Developer Machine
 ### Starting Local Services
 
 ```bash
-# Start all services
-npm start
+# Start with HTTP simulator (recommended, lightweight)
+npm start                    # or npm run start:simulator
 
-# Or individually:
+# Start with Docker OAuth2 (full stack)
+npm run start:proxy
+
+# Individual services (advanced):
 npm run data    # Local DynamoDB
-npm run auth    # Mock OAuth2
+npm run auth    # Mock OAuth2 (Docker)
 npm run proxy   # ngrok tunnel
 npm run server  # Express server
 ```
@@ -263,6 +294,7 @@ npm run server  # Express server
 | `bin/` | Entry point scripts (server.js, ngrok.js, dynamodb.js) |
 | `data/` | DynamoDB repository implementations |
 | `functions/` | Lambda function handlers (auth/, hmrc/, account/, infra/) |
+| `http-simulator/` | Lightweight HTTP simulator for local OAuth2 and HMRC API mocking |
 | `lib/` | Shared libraries (logger, JWT, HTTP helpers) |
 | `services/` | Business logic (hmrcApi.js, bundleManagement.js, subHasher.js) |
 | `unit-tests/` | Vitest unit tests |
@@ -345,9 +377,12 @@ For specific topics, see:
 | Document | Location |
 |----------|----------|
 | Developer setup | `_developers/SETUP.md` |
-| Salted hash implementation | `_developers/SALTED_HASH_IMPLEMENTATION.md` |
-| Salt secret recovery | `_developers/SALT_SECRET_RECOVERY.md` |
+| MFA implementation | `_developers/MFA_IMPLEMENTATION_SUMMARY.md` |
+| Marketing guidance | `_developers/MARKETING_GUIDANCE.md` |
+| Salted hash implementation | `_developers/archive/SALTED_HASH_IMPLEMENTATION.md` |
+| Salt secret recovery | `_developers/archive/SALT_SECRET_RECOVERY.md` |
 | CloudFront fix history | `_developers/archive/CLOUDFRONT_FRAUD_HEADERS_FIX.md` |
+| Obligation flexibility | `_developers/archive/OBLIGATION_FLEXIBILITY_FIX.md` |
 | Test report generation | `scripts/generate-test-reports.js` |
 | API documentation | `web/public/docs/openapi.yaml` |
 
