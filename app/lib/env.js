@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 
 export function dotenvConfigIfNotBlank({ path }) {
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- paths are literal strings from callers (.env.test, .env.proxy, etc.)
   if (!fs.existsSync(path)) {
     if (path !== ".env") {
       `dotenvConfigIfNotBlank: Environment config file not found: ${path}`;
@@ -15,6 +16,7 @@ export function dotenvConfigIfNotBlank({ path }) {
   }
   console.log(`dotenvConfigIfNotBlank: Loading environment config from ${path}`);
 
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- paths are literal strings from callers
   const parsed = dotenv.parse(fs.readFileSync(path));
 
   for (const [key, value] of Object.entries(parsed)) {
