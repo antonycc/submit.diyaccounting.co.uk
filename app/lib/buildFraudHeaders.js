@@ -6,6 +6,7 @@
 import { createLogger } from "./logger.js";
 import { readFileSync } from "fs";
 
+// eslint-disable-next-line security/detect-non-literal-fs-filename -- path is static relative to import.meta.url
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url)));
 // Strip npm scope prefix (e.g., @org/package -> package) for cleaner HMRC product name
 const packageName = rawPackageName.startsWith("@") ? rawPackageName.split("/")[1] : rawPackageName;

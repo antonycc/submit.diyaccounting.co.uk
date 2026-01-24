@@ -123,6 +123,7 @@ const PII_PATTERNS = [
   { name: "NINO", pattern: /\b([A-Za-z]{2}\d{6}[A-Da-d])\b/g },
 
   // EORI: GB or XI followed by 12 or 15 digits
+  // eslint-disable-next-line security/detect-unsafe-regex -- linear time regex, no backtracking risk
   { name: "EORI", pattern: /\b((?:GB|XI)\d{12}(?:\d{3})?)\b/gi },
 
   // Email addresses
@@ -225,6 +226,7 @@ if (logToConsole && logToFile) {
   // Ensure directory exists
   const dir = path.dirname(logFilePath);
   try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- path from env var or safe default
     fs.mkdirSync(dir, { recursive: true });
   } catch {
     // ignore mkdir errors; pino will throw on write if truly unusable
@@ -243,6 +245,7 @@ if (logToConsole && logToFile) {
 
   const dir = path.dirname(logFilePath);
   try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- path from env var or safe default
     fs.mkdirSync(dir, { recursive: true });
   } catch (error) {
     console.error(`Failed to create log directory ${dir}:`, error);

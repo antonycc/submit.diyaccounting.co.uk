@@ -12,11 +12,9 @@
  * @returns {string} Random period key
  */
 function generateRandomPeriodKey() {
-  // eslint-disable-next-line sonarjs/pseudo-random
+  // Math.random is intentional for test data generation - not used for security
   const year = String(17 + Math.floor(Math.random() * 10)).padStart(2, "0"); // 17-26
-  // eslint-disable-next-line sonarjs/pseudo-random
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
-  // eslint-disable-next-line sonarjs/pseudo-random
   const suffix = Math.random() < 0.5
     ? String(Math.floor(Math.random() * 10)) // 0-9
     : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
