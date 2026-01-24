@@ -3,19 +3,19 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-01-24T22:28:08.719Z
+**Generated**: 2026-01-24T23:05:57.004Z
 **Overall Status**: ❌ FAIL
 
 **Source Files**:
 ```
-  ✅ web/public/tests/penetration/npm-audit.json
-  ✅ web/public/tests/penetration/eslint-security.txt
-  ✅ web/public/tests/penetration/retire.json
-  ✅ web/public/tests/penetration/zap-report.json
-  ✅ web/public/tests/accessibility/pa11y-report.txt
-  ✅ web/public/tests/accessibility/axe-results.json
-  ✅ web/public/tests/accessibility/axe-wcag22-results.json
-  ✅ web/public/tests/accessibility/lighthouse-results.json
+  ✅ target/penetration/npm-audit.json
+  ✅ target/penetration/eslint-security.txt
+  ✅ target/penetration/retire.json
+  ✅ target/penetration/zap-report.json
+  ✅ target/accessibility/pa11y-report.txt
+  ✅ target/accessibility/axe-results.json
+  ✅ target/accessibility/axe-wcag22-results.json
+  ✅ target/accessibility/lighthouse-results.json
 ```
 
 ---
