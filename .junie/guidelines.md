@@ -12,7 +12,7 @@ Each assistant has complementary strengths - Junie is optimized for continuous t
 
 ## Primary References
 
-Orientate yourself with the repository using <repository root>/`REPOSITORY_DOCUMENTATION.md`
+Orientate yourself with the repository using <repository root>/`REPORT_REPOSITORY_CONTENTS.md`
 
 Use the script section of <repository root>/`package.json` to find the test commands.
 Run the following test commands in sequence to check that the code works:

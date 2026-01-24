@@ -6,16 +6,16 @@
  * Generate Compliance Report
  *
  * Generates a markdown compliance report from existing test reports.
- * Does NOT run tests - expects reports to already exist in target/.
+ * Does NOT run tests - expects reports to already exist in web/public/tests/.
  *
  * Usage:
  *   node scripts/generate-compliance-report.js --target URL [--output FILE]
  *
  * Options:
  *   --target URL    Target URL that was tested (required)
- *   --output FILE   Output file (default: COMPLIANCE_REPORT.md)
+ *   --output FILE   Output file (default: REPORT_ACCESSIBILITY_PENETRATION.md)
  *
- * Expected report files in target/:
+ * Expected report files in web/public/tests/:
  *   - accessibility/pa11y-report.txt
  *   - accessibility/axe-results.json
  *   - accessibility/axe-wcag22-results.json
@@ -45,7 +45,7 @@ const getArg = (name, defaultValue) => {
 };
 
 const targetUrl = getArg("--target", null);
-const outputFile = getArg("--output", "COMPLIANCE_REPORT.md");
+const outputFile = getArg("--output", "REPORT_ACCESSIBILITY_PENETRATION.md");
 
 if (!targetUrl) {
   console.error("Error: --target URL is required");
@@ -53,7 +53,7 @@ if (!targetUrl) {
   process.exit(1);
 }
 
-const targetDir = join(projectRoot, "target");
+const targetDir = join(projectRoot, "web/public/tests");
 const accessibilityDir = join(targetDir, "accessibility");
 const penetrationDir = join(targetDir, "penetration");
 

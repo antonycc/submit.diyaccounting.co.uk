@@ -1,6 +1,6 @@
 Instructions for Junie to follow:
 
-Orientate yourself with the repository using <repository root>/`REPOSITORY_DOCUMENTATION.md`
+Orientate yourself with the repository using <repository root>/`REPORT_REPOSITORY_CONTENTS.md`
 
 Use the script section of <repository root>/`package.json` to find the test commands.
 The behaviour tests generate too much output for you to read, pipe it to a file.

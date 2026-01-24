@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-**Primary documentation**: See `REPOSITORY_DOCUMENTATION.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
+**Primary documentation**: See `REPORT_REPOSITORY_CONTENTS.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
 
 **Other AI assistants in this repo**:
 - `.junie/guidelines.md` - Junie (testing & iteration focus)

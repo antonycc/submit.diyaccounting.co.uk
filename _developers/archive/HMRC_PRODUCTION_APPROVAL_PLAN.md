@@ -195,7 +195,7 @@ The workflow runs individual compliance checks in parallel, then generates a com
 
 | Job | Script | Purpose |
 |-----|--------|---------|
-| `compliance-report` | `compliance:<env>-report-md` | Generate combined COMPLIANCE_REPORT.md |
+| `compliance-report` | `compliance:<env>-report-md` | Generate combined REPORT_ACCESSIBILITY_PENETRATION.md |
 
 **Triggers:**
 - Weekly on Monday at 6am UTC (scheduled)

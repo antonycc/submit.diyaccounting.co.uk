@@ -286,7 +286,7 @@ jobs:
           echo "Accessibility reports:"
           ls -la web/public/tests/accessibility/ || echo "No accessibility reports"
           echo "Compliance report:"
-          ls -la COMPLIANCE_REPORT.md || echo "No compliance report"
+          ls -la REPORT_ACCESSIBILITY_PENETRATION.md || echo "No compliance report"
 
       - name: Upload compliance reports
         uses: actions/upload-artifact@v6
@@ -295,7 +295,7 @@ jobs:
           path: |
             web/public/tests/penetration/
             web/public/tests/accessibility/
-            COMPLIANCE_REPORT.md
+            REPORT_ACCESSIBILITY_PENETRATION.md
           retention-days: 90
 
       - name: Generate GitHub summary
@@ -337,4 +337,4 @@ jobs:
           echo "- ESLint security, npm audit, retire.js" >> $GITHUB_STEP_SUMMARY
           echo "- Pa11y, axe-core (WCAG 2.1 + 2.2), Lighthouse accessibility" >> $GITHUB_STEP_SUMMARY
           echo "- OWASP ZAP baseline scan" >> $GITHUB_STEP_SUMMARY
-          echo "- Consolidated COMPLIANCE_REPORT.md" >> $GITHUB_STEP_SUMMARY
+          echo "- Consolidated REPORT_ACCESSIBILITY_PENETRATION.md" >> $GITHUB_STEP_SUMMARY
