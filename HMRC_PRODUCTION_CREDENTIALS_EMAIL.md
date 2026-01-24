@@ -42,7 +42,7 @@ I am writing to request production credentials for our VAT (MTD) software applic
 We have completed testing in the sandbox environment using the Create Test User API and Test Fraud Prevention Headers API.
 
 **Test evidence is available at:**
-https://submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test
+https://submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test-local
 
 ## Fraud Prevention Headers
 
