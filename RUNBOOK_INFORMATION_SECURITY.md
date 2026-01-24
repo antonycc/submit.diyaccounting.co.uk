@@ -19,7 +19,8 @@ This document consolidates all security, privacy, and data protection procedures
 7. [Security Monitoring](#7-security-monitoring)
 8. [Data Retention](#8-data-retention)
 9. [Regulatory Compliance](#9-regulatory-compliance)
-10. [Improvement Recommendations](#10-improvement-recommendations)
+10. [Public Repository Security](#10-public-repository-security)
+11. [Improvement Recommendations](#11-improvement-recommendations)
 
 ---
 
@@ -444,42 +445,45 @@ fields @timestamp, @message
 
 ---
 
-## 10. Improvement Recommendations
+## 10. Public Repository Security
 
-### 10.1 Quick Wins (Low Risk, Implement Now)
+This repository is **public on GitHub**. The security model is "secure by design" - no security through obscurity.
 
-| Priority | Recommendation | Effort | Status |
-|----------|----------------|--------|--------|
-| 1 | **Document rotation dates** in Section 3.3 table | 5 min | ⬜ |
-| 2 | **Create admin scripts** referenced in Section 5 (`export-user-data.js`, etc.) | 2-4 hours | ⬜ |
-| 3 | **Set up monthly calendar reminder** for salt backup | 5 min | ⬜ |
-| 4 | **Archive old documents** after this runbook is complete | 10 min | ⬜ |
+### 10.1 What Is Public (By Design)
 
-### 10.2 Medium Term (Plan for Next Quarter)
+| Item | Why It's Safe |
+|------|---------------|
+| AWS Account ID `887764105431` | Account IDs are identifiers, not secrets. AWS IAM controls access. |
+| HMRC Client IDs | Public OAuth identifiers. Secrets stored in GitHub Secrets → AWS Secrets Manager. |
+| Secret ARNs | Just references to secrets, not the secrets themselves. |
+| Infrastructure code (CDK) | Reveals architecture but not access credentials. |
+| `.env.ci`, `.env.prod` | No secrets, only configuration and ARN references. |
+| `product-subscribers.subs` | Contains hashed user subs, not raw identifiers. |
 
-| Priority | Recommendation | Effort | Notes |
-|----------|----------------|--------|-------|
-| 5 | **Enable GuardDuty** for threat detection | 1 day | See `SECURITY_DETECTION_UPLIFT_PLAN.md` |
-| 6 | **Add CloudWatch alarms** for auth failure spikes | 2 hours | Currently logged but not alerting |
-| 7 | **Add WAF rate limit alerts** | 1 hour | Detect active attacks |
-| 8 | **Implement automated secret rotation** in Secrets Manager | 1 week | Phase 3.4 of security uplift plan |
+### 10.2 What Is Kept Private
 
-### 10.3 Known Gaps
+| Item | Protection Method |
+|------|-------------------|
+| OAuth client secrets | GitHub Secrets → AWS Secrets Manager (never in code) |
+| User sub hash salt | AWS Secrets Manager only (auto-generated) |
+| GitHub PATs | GitHub Secrets only |
+| HMRC test credentials | GitHub Secrets + regenerated per test run |
+| Salt backups | `.gitignore` excludes `salt-backup-*.json` |
+| Local dev secrets | `.gitignore` excludes `/.env`, `/secrets.env` |
 
-| Gap | Risk | Mitigation |
-|-----|------|------------|
-| Admin scripts not implemented | Manual data requests slow | Create scripts per Section 5 |
-| Salt backup not automated | Recovery risk if deleted | Monthly manual backup (Section 4.4) |
-| GuardDuty not enabled | Reduced threat visibility | Manual CloudTrail review |
-| No automated rotation | Secrets may become stale | Annual manual rotation schedule |
+### 10.3 Security Verification (Passed)
 
-### 10.4 Documents to Archive
+| Check | Result |
+|-------|--------|
+| No AWS access keys (AKIA/ASIA) in code | ✅ Clean |
+| No GitHub PATs (ghp_/gho_) in code | ✅ Clean |
+| No hardcoded passwords | ✅ All from env vars |
+| Sensitive files in .gitignore | ✅ Properly configured |
+| Secrets use ARN references only | ✅ Never inline values |
 
-After this runbook is adopted, the following source documents should be archived or deleted:
-- `_developers/PRIVACY_DUTIES.md` → Merged into this document
-- `_developers/PII_AND_SENSITIVE_DATA.md` → Merged into this document
-- `_developers/SALT_SECRET_RECOVERY.md` → Merged into this document
-- `_developers/SALTED_HASH_IMPLEMENTATION.md` → Merged into this document
+### 10.4 HMRC Production URL Placeholder
+
+**Note**: `.env.prod` contains placeholder `HMRC_BASE_URI=https://to0request0from0hmrc-api.service.hmrc.gov.uk`. This must be updated with the real production URL when HMRC grants production access.
 
 ---
 
