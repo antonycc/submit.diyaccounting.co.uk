@@ -10,7 +10,7 @@
  * @returns {string} 9-digit VAT registration number
  */
 function generateTestVrn() {
-  return "176540158";
+  return "983238295";
 }
 
 /**
@@ -25,10 +25,11 @@ function generateTestPeriodKey() {
   // eslint-disable-next-line sonarjs/pseudo-random
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
   // Last character can be digit (0-9) or letter (A-Z)
-  // eslint-disable-next-line sonarjs/pseudo-random
-  const lastChar = Math.random() < 0.5
-    ? String(Math.floor(Math.random() * 10)) // 0-9
-    : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+
+  const lastChar =
+    Math.random() < 0.5
+      ? String(Math.floor(Math.random() * 10)) // 0-9
+      : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
   return `${year}${letter}${lastChar}`;
 }
 

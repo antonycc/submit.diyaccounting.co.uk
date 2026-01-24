@@ -18,6 +18,11 @@ on:
           - 'ci'
           - 'prod'
         default: ''
+      force-identity-refresh:
+        type: boolean
+        description: 'Force refresh of Cognito Identity Provider (use after rotating GOOGLE_CLIENT_SECRET)'
+        required: false
+        default: false
 
   push:
     branches:
@@ -75,8 +80,10 @@ jobs:
         shell: bash
         run: |
           echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'force-identity-refresh=${{ inputs.force-identity-refresh }}' | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
+      force-identity-refresh: ${{ steps.normalise.outputs.force-identity-refresh }}
 
   names:
     needs:
@@ -441,6 +448,44 @@ jobs:
           echo "COGNITO_USER_POOL_ID=$COGNITO_USER_POOL_ID" >> $GITHUB_OUTPUT
           echo "COGNITO_CLIENT_ID=$COGNITO_CLIENT_ID" >> $GITHUB_OUTPUT
         shell: bash
+
+      - name: Force refresh Google Identity Provider (after secret rotation)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.force-identity-refresh == true }}
+        run: |
+          echo "Force refreshing Google Identity Provider to pick up rotated secret..."
+          COGNITO_USER_POOL_ID=$(jq -r '.["${{ needs.names.outputs.environment-name }}-env-IdentityStack"].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
+
+          # Get current Google IdP configuration
+          CURRENT_CONFIG=$(aws cognito-idp describe-identity-provider \
+            --user-pool-id "$COGNITO_USER_POOL_ID" \
+            --provider-name Google \
+            --query 'IdentityProvider.ProviderDetails' \
+            --output json)
+
+          # Get current attribute mapping
+          CURRENT_ATTRS=$(aws cognito-idp describe-identity-provider \
+            --user-pool-id "$COGNITO_USER_POOL_ID" \
+            --provider-name Google \
+            --query 'IdentityProvider.AttributeMapping' \
+            --output json)
+
+          # Fetch the new secret value from Secrets Manager
+          NEW_SECRET=$(aws secretsmanager get-secret-value \
+            --secret-id "${{ needs.names.outputs.environment-name }}/submit/google/client_secret" \
+            --query 'SecretString' \
+            --output text)
+
+          # Update the IdP with the new secret - this forces Cognito to use the new value
+          # We need to re-specify all provider details including the updated client_secret
+          CLIENT_ID=$(echo "$CURRENT_CONFIG" | jq -r '.client_id')
+
+          aws cognito-idp update-identity-provider \
+            --user-pool-id "$COGNITO_USER_POOL_ID" \
+            --provider-name Google \
+            --provider-details "client_id=$CLIENT_ID,client_secret=$NEW_SECRET,authorize_scopes=email openid profile" \
+            --attribute-mapping "$CURRENT_ATTRS"
+
+          echo "Google Identity Provider updated with new secret"
     outputs:
       COGNITO_USER_POOL_ARN: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ARN }}
       COGNITO_USER_POOL_ID: ${{ steps.identity-outputs.outputs.COGNITO_USER_POOL_ID }}

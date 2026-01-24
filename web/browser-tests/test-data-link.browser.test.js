@@ -88,7 +88,7 @@ test.describe("Test Data Link Browser Tests", () => {
       const vrnValue = await page.locator("#vatNumber").inputValue();
       const periodKeyValue = await page.locator("#periodKey").inputValue();
 
-      expect(vrnValue).toBe("176540158");
+      expect(vrnValue).toBe("983238295");
       expect(periodKeyValue).toMatch(/^\d{2}[A-Z][A-Z0-9]$/); // YYXZ format (last char can be digit or letter)
 
       // Check 9-box fields are populated
@@ -142,7 +142,7 @@ test.describe("Test Data Link Browser Tests", () => {
       const periodStartValue = await page.locator("#periodStart").inputValue();
       const periodEndValue = await page.locator("#periodEnd").inputValue();
 
-      expect(vrnValue).toBe("176540158");
+      expect(vrnValue).toBe("983238295");
       // View VAT Return form now uses date inputs instead of periodKey dropdown
       expect(periodStartValue).toBe("2017-01-01");
       expect(periodEndValue).toBe("2017-03-31");
@@ -190,7 +190,7 @@ test.describe("Test Data Link Browser Tests", () => {
       const fromDateValue = await page.locator("#fromDate").inputValue();
       const toDateValue = await page.locator("#toDate").inputValue();
 
-      expect(vrnValue).toBe("176540158");
+      expect(vrnValue).toBe("983238295");
       expect(fromDateValue).toMatch(/^\d{4}-01-01$/); // Start of current year
       expect(toDateValue).toMatch(/^\d{4}-\d{2}-\d{2}$/); // Current date
     });
@@ -205,7 +205,7 @@ test.describe("Test Data Link Browser Tests", () => {
         return window.testDataGenerator.generateTestVrn();
       });
 
-      expect(vrn).toBe("176540158");
+      expect(vrn).toBe("983238295");
       expect(vrn).toHaveLength(9);
       expect(vrn).toMatch(/^\d{9}$/);
     });

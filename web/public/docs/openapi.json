@@ -262,7 +262,7 @@
                 "properties" : {
                   "vatNumber" : {
                     "type" : "string",
-                    "example" : "176540158"
+                    "example" : "983238295"
                   },
                   "periodKey" : {
                     "type" : "string",
@@ -280,7 +280,7 @@
                 }
               },
               "example" : {
-                "vatNumber" : "176540158",
+                "vatNumber" : "983238295",
                 "periodKey" : "24A1",
                 "vatDue" : 2400.0,
                 "accessToken" : "HMRC_ACCESS_TOKEN"
@@ -292,6 +292,54 @@
         "security" : [ {
           "HmrcAuth" : [ ]
         } ],
+        "responses" : {
+          "200" : {
+            "description" : "VAT return submitted successfully"
+          }
+        }
+      },
+      "get" : {
+        "summary" : "Get submitted VAT returns from HMRC",
+        "description" : "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+        "operationId" : "getVatReturns",
+        "parameters" : [ {
+          "name" : "periodKey",
+          "in" : "path",
+          "required" : true,
+          "description" : "The VAT period key to retrieve",
+          "schema" : {
+            "type" : "string",
+            "example" : "24A1"
+          }
+        }, {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
         "responses" : {
           "200" : {
             "description" : "VAT return submitted successfully"
@@ -369,7 +417,7 @@
           "description" : "VAT registration number (9 digits)",
           "schema" : {
             "type" : "string",
-            "example" : "176540158",
+            "example" : "983238295",
             "pattern" : "^\\d{9}$"
           }
         }, {
@@ -399,59 +447,6 @@
             "type" : "string",
             "enum" : "O,F",
             "example" : "O"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
-      }
-    },
-    "/hmrc/vat/return/{periodKey}" : {
-      "get" : {
-        "summary" : "Get submitted VAT returns from HMRC",
-        "description" : "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
-        "operationId" : "getVatReturns",
-        "parameters" : [ {
-          "name" : "periodKey",
-          "in" : "path",
-          "required" : true,
-          "description" : "The VAT period key to retrieve",
-          "schema" : {
-            "type" : "string",
-            "example" : "24A1"
-          }
-        }, {
-          "name" : "vrn",
-          "in" : "query",
-          "required" : true,
-          "description" : "VAT registration number (9 digits)",
-          "schema" : {
-            "type" : "string",
-            "example" : "176540158",
-            "pattern" : "^\\d{9}$"
           }
         }, {
           "name" : "Gov-Test-Scenario",

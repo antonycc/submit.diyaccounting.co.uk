@@ -503,46 +503,11 @@ public class EdgeStack extends Stack {
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
-                // Custom error responses - serve static error pages from S3
-                // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD pipelines
-                // Note: These only apply to S3 origin errors; API Gateway (/api/*) returns its own JSON errors
-                .errorResponses(List.of(
-                        ErrorResponse.builder()
-                                .httpStatus(403)
-                                .responseHttpStatus(403)
-                                .responsePagePath("/error/403.html")
-                                .ttl(software.amazon.awscdk.Duration.seconds(10))
-                                .build(),
-                        ErrorResponse.builder()
-                                .httpStatus(404)
-                                .responseHttpStatus(404)
-                                .responsePagePath("/error/404.html")
-                                .ttl(software.amazon.awscdk.Duration.seconds(10))
-                                .build(),
-                        ErrorResponse.builder()
-                                .httpStatus(500)
-                                .responseHttpStatus(500)
-                                .responsePagePath("/error/500.html")
-                                .ttl(software.amazon.awscdk.Duration.seconds(10))
-                                .build(),
-                        ErrorResponse.builder()
-                                .httpStatus(502)
-                                .responseHttpStatus(502)
-                                .responsePagePath("/error/502.html")
-                                .ttl(software.amazon.awscdk.Duration.seconds(10))
-                                .build(),
-                        ErrorResponse.builder()
-                                .httpStatus(503)
-                                .responseHttpStatus(503)
-                                .responsePagePath("/error/503.html")
-                                .ttl(software.amazon.awscdk.Duration.seconds(10))
-                                .build(),
-                        ErrorResponse.builder()
-                                .httpStatus(504)
-                                .responseHttpStatus(504)
-                                .responsePagePath("/error/504.html")
-                                .ttl(software.amazon.awscdk.Duration.seconds(10))
-                                .build()))
+                // IMPORTANT: Do NOT configure errorResponses here!
+                // CloudFront error responses apply GLOBALLY to ALL origins (S3 AND API Gateway).
+                // This breaks API routes which must return JSON errors, not HTML error pages.
+                // For static content (S3), accept default CloudFront error behavior.
+                // For API routes (/api/*), Lambda functions return proper JSON error responses.
                 .build();
         Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
 

@@ -38,7 +38,7 @@ describe("test-data-generator", () => {
   describe("generateTestVrn", () => {
     test("returns the standard placeholder VAT registration number", () => {
       const vrn = testDataGenerator.generateTestVrn();
-      expect(vrn).toBe("176540158");
+      expect(vrn).toBe("983238295");
     });
 
     test("returns a 9-digit string", () => {
@@ -221,7 +221,7 @@ describe("test-data-generator", () => {
 
     test("populates VAT number field", () => {
       localTestDataGenerator.populateSubmitVatForm();
-      expect(mockElements.vatNumber.value).toBe("176540158");
+      expect(mockElements.vatNumber.value).toBe("983238295");
     });
 
     test("populates period key field", () => {
@@ -269,7 +269,7 @@ describe("test-data-generator", () => {
 
     test("populates VAT registration number field", () => {
       localTestDataGenerator.populateViewVatReturnForm();
-      expect(mockElements.vrn.value).toBe("176540158");
+      expect(mockElements.vrn.value).toBe("983238295");
     });
 
     test("populates period start field with ISO date", () => {
@@ -317,7 +317,7 @@ describe("test-data-generator", () => {
 
     test("populates VAT registration number field", () => {
       localTestDataGenerator.populateVatObligationsForm();
-      expect(mockElements.vrn.value).toBe("176540158");
+      expect(mockElements.vrn.value).toBe("983238295");
     });
 
     test("populates from date field", () => {

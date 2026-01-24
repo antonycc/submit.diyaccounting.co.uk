@@ -59,9 +59,14 @@
 
       <!-- VAT Obligations Form -->
       <div id="obligationsForm" class="form-container">
-        <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
-          Show Obligation Search Criteria
-        </button>
+        <div class="form-toggle-buttons">
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
+            Show Obligation Search Criteria
+          </button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">
+            Cancel Request
+          </button>
+        </div>
         <div id="searchCriteriaContainer">
           <h2>Retrieve VAT Obligations</h2>
           <form id="vatObligationsForm">
@@ -77,7 +82,7 @@
                 name="vrn"
                 required
                 value=""
-                placeholder="e.g., 176540158"
+                placeholder="e.g., 983238295"
                 maxlength="9"
                 pattern="[0-9]{9}"
                 aria-describedby="vrn-hint"
@@ -224,9 +229,11 @@
       function hideSearchCriteria() {
         const container = document.getElementById("searchCriteriaContainer");
         const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
         if (container && toggleBtn) {
           container.style.display = "none";
-          toggleBtn.style.display = "block";
+          toggleBtn.style.display = "inline-block";
+          if (cancelBtn) cancelBtn.style.display = "inline-block";
           searchCriteriaHidden = true;
         }
       }
@@ -234,11 +241,29 @@
       function showSearchCriteria() {
         const container = document.getElementById("searchCriteriaContainer");
         const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
         if (container && toggleBtn) {
           container.style.display = "block";
           toggleBtn.style.display = "none";
+          if (cancelBtn) cancelBtn.style.display = "none";
           searchCriteriaHidden = false;
         }
+      }
+
+      function cancelRequest() {
+        // Clear all in-progress session data
+        sessionStorage.removeItem("pendingObligationsRequest");
+        sessionStorage.removeItem("pendingReturnRequest");
+        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("hmrcAccount");
+        sessionStorage.removeItem("currentActivity");
+
+        // Show form and hide results
+        showSearchCriteria();
+        document.getElementById("obligationsResults").style.display = "none";
+        hideStatus();
+        console.log("Request cancelled, session data cleared");
       }
 
       // Check if we're in sandbox/test mode to show developer options
@@ -435,7 +460,7 @@
 
             sessionStorage.setItem("oauth_state", state);
             sessionStorage.setItem("pendingObligationsRequest", JSON.stringify(requestData));
-            sessionStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
+            // Note: Don't set pendingReturnRequest here - it has different field names (periodStart/periodEnd vs from/to)
             sessionStorage.setItem("currentActivity", currentActivity);
             if (hmrcAccount === "sandbox") {
               sessionStorage.setItem("hmrcAccount", hmrcAccount);
@@ -568,6 +593,8 @@
           // Escape values to prevent XSS
           const escapedVrn = escapeHtml(vrn);
           const escapedPeriodKey = escapeHtml(obligation.periodKey);
+          const escapedPeriodStart = escapeHtml(obligation.start);
+          const escapedPeriodEnd = escapeHtml(obligation.end);
 
           // Format date range for display (HMRC requirement: don't show period key)
           const periodDisplay = formatDateRange(obligation.start, obligation.end);
@@ -583,8 +610,8 @@
               <td>
                 ${
                   obligation.status === "F"
-                    ? `<button class="action-button btn" onclick="viewReturn('${escapedVrn}', '${escapedPeriodKey}')">View Return</button>`
-                    : `<button class="action-button btn" onclick="submitReturn('${escapedVrn}', '${escapedPeriodKey}')">Submit Return</button>`
+                    ? `<button class="action-button btn" onclick="viewReturn('${escapedVrn}', '${escapedPeriodKey}', '${escapedPeriodStart}', '${escapedPeriodEnd}')">View Return</button>`
+                    : `<button class="action-button btn" onclick="submitReturn('${escapedVrn}', '${escapedPeriodKey}', '${escapedPeriodStart}', '${escapedPeriodEnd}')">Submit Return</button>`
                 }
               </td>
             </tr>
@@ -620,19 +647,34 @@
         return `${startDate.toLocaleDateString("en-GB", options)} to ${endDate.toLocaleDateString("en-GB", options)}`;
       }
 
-      function viewReturn(vrn, periodKey) {
-        // Navigate to view VAT return page
-        window.location.href = `viewVatReturn.html?vrn=${vrn}&periodKey=${periodKey}`;
+      function viewReturn(vrn, periodKey, periodStart, periodEnd) {
+        // Navigate to view VAT return page with period dates
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        let url = `viewVatReturn.html?vrn=${encodeURIComponent(vrn)}&periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`;
+        if (hmrcAccount) {
+          url += `&hmrcAccount=${encodeURIComponent(hmrcAccount)}`;
+        }
+        window.location.href = url;
       }
 
-      function submitReturn(vrn, periodKey) {
-        // Navigate to submit VAT return page with pre-filled data
-        window.location.href = `submitVat.html?vrn=${vrn}&periodKey=${periodKey}`;
+      function submitReturn(vrn, periodKey, periodStart, periodEnd) {
+        // Navigate to submit VAT return page with period dates
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        let url = `submitVat.html?vrn=${encodeURIComponent(vrn)}&periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`;
+        if (hmrcAccount) {
+          url += `&hmrcAccount=${encodeURIComponent(hmrcAccount)}`;
+        }
+        window.location.href = url;
       }
 
       // Toggle search criteria button handler
       document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
         showSearchCriteria();
+      });
+
+      // Cancel request button handler
+      document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
+        cancelRequest();
       });
 
       // New search button handler

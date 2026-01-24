@@ -47,12 +47,24 @@
   function logout() {
     console.log("Logging out user");
 
-    // Clear stored tokens and user info
+    // Clear Cognito tokens and user info from localStorage
     localStorage.removeItem("cognitoAccessToken");
     localStorage.removeItem("cognitoIdToken");
     localStorage.removeItem("cognitoRefreshToken");
     localStorage.removeItem("userInfo");
     localStorage.removeItem("authState");
+
+    // Clear HMRC-related data from sessionStorage
+    sessionStorage.removeItem("hmrcAccessToken");
+    sessionStorage.removeItem("hmrcAccount");
+    sessionStorage.removeItem("submission_data");
+    sessionStorage.removeItem("pendingObligationsRequest");
+    sessionStorage.removeItem("pendingReturnRequest");
+    sessionStorage.removeItem("oauth_state");
+    sessionStorage.removeItem("currentActivity");
+    sessionStorage.removeItem("cognito_oauth_state");
+    sessionStorage.removeItem("traceparent");
+    sessionStorage.removeItem("mfaMetadata");
 
     // Update login status
     updateLoginStatus();

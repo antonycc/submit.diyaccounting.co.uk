@@ -1323,7 +1323,7 @@ Then('I should see the submission receipt', async function() {
 ```javascript
 populateSubmitVatForm() {
   // VRN
-  this.setInputValue('vatNumber', '176540158');
+  this.setInputValue('vatNumber', '983238295');
 
   // Generate realistic 9-box test data
   const salesVat = this.randomBetween(500, 5000);

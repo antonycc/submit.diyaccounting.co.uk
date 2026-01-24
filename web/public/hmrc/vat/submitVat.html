@@ -60,6 +60,14 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- VAT Submission Form -->
+      <div class="form-toggle-buttons">
+        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">
+          Show Submission Form
+        </button>
+        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">
+          Cancel Request
+        </button>
+      </div>
       <div id="vatForm" class="form-container">
         <h2>VAT Return Submission</h2>
         <form id="vatSubmissionForm">
@@ -75,7 +83,7 @@
               name="vatNumber"
               required
               value=""
-              placeholder="e.g., 176540158"
+              placeholder="e.g., 983238295"
               maxlength="9"
               pattern="[0-9]{9}"
               aria-describedby="vatNumber-hint"
@@ -760,6 +768,47 @@
         }
       }
 
+      // Form visibility management
+      let formHidden = false;
+
+      function hideForm() {
+        const container = document.getElementById("vatForm");
+        const toggleBtn = document.getElementById("toggleFormBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "none";
+          toggleBtn.style.display = "inline-block";
+          if (cancelBtn) cancelBtn.style.display = "inline-block";
+          formHidden = true;
+        }
+      }
+
+      function showForm() {
+        const container = document.getElementById("vatForm");
+        const toggleBtn = document.getElementById("toggleFormBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "block";
+          toggleBtn.style.display = "none";
+          if (cancelBtn) cancelBtn.style.display = "none";
+          formHidden = false;
+        }
+      }
+
+      function cancelRequest() {
+        // Clear all in-progress session data
+        sessionStorage.removeItem("submission_data");
+        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("hmrcAccount");
+        sessionStorage.removeItem("currentActivity");
+
+        // Show form and clear status
+        showForm();
+        hideStatus();
+        console.log("Request cancelled, session data cleared");
+      }
+
       // OAuth callback handling
       function handleOAuthCallback() {
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
@@ -787,6 +836,9 @@
 
           console.log("Retrieved submission data:", submissionData);
 
+          // Hide form while submitting
+          hideForm();
+          showLoading();
           showStatus("Submitting VAT return to HMRC...", "info");
 
           // Submit VAT return with 9-box data
@@ -811,6 +863,8 @@
         } catch (error) {
           console.error("Submission error:", error);
           showStatus(`Submission failed: ${error.message}`, "error");
+          // Auto-expand form on error so user can retry
+          showForm();
           // Clear submission data to prevent auto-retry loop on next page load
           // User will need to manually retry by filling the form again
           sessionStorage.removeItem("submission_data");
@@ -939,6 +993,13 @@
         const periodStart = urlParams.get("periodStart");
         const periodEnd = urlParams.get("periodEnd");
         const hmrcAccount = urlParams.get("hmrcAccount");
+
+        // If URL params provide complete period data, clear any stale submission_data
+        // This handles navigation from obligations page where URL params should take precedence
+        if (vrn && periodStart && periodEnd) {
+          sessionStorage.removeItem("submission_data");
+          console.log("Cleared stale submission_data - using URL params instead");
+        }
 
         if (vrn) {
           document.getElementById("vatNumber").value = vrn;
@@ -1088,6 +1149,16 @@
             validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
           });
         }
+
+        // Toggle form button handler
+        document.getElementById("toggleFormBtn")?.addEventListener("click", () => {
+          showForm();
+        });
+
+        // Cancel request button handler
+        document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
+          cancelRequest();
+        });
 
         // Initialize page state (e.g., show sandbox indicator when applicable)
         await initializePage();
