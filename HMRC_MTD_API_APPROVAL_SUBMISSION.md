@@ -739,7 +739,7 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 >
 > **Evidence:**
 > - Compliance reports generated automatically: `COMPLIANCE_REPORT.md`
-> - Security scan results in `target/penetration/`
+> - Security scan results in `web/public/tests/penetration/`
 > - GitHub Actions workflows run security scans on each deployment
 > - Documentation: `PII_AND_SENSITIVE_DATA.md`, `PRIVACY_DUTIES.md`
 >

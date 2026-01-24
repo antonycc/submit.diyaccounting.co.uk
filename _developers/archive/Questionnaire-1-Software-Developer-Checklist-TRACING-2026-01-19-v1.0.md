@@ -94,7 +94,7 @@ This document traces each answer to its evidence source.
 | Is your product built to UK standards and conventions (e.g. UK dates, £ not $ etc.)? | Yes | UK date formats, GBP currency, English language throughout |
 | Is your product a white label? | No | DIY Accounting branded product, not resold under other brands |
 | Is your product GDPR compliant? | Yes | Privacy policy published - https://submit.diyaccounting.co.uk/privacy.html |
-| Does your product meet the Web Content Accessibility Guidelines (minimum level AA)? | Yes | Pa11y: 16/16 pages pass, axe-core: 0 violations - target/accessibility/pa11y-report.txt |
+| Does your product meet the Web Content Accessibility Guidelines (minimum level AA)? | Yes | Pa11y: 16/16 pages pass, axe-core: 0 violations - web/public/tests/accessibility/pa11y-report.txt |
 
 ---
 

@@ -229,8 +229,10 @@ function parseLighthouseResults(lighthouseJson) {
 
 // Suppressed ZAP alerts - accepted risks documented in privacy.html
 const SUPPRESSED_ZAP_ALERTS = {
-  "CSP: script-src unsafe-inline": "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
-  "CSP: style-src unsafe-inline": "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
+  "CSP: script-src unsafe-inline":
+    "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
+  "CSP: style-src unsafe-inline":
+    "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
 };
 
 function parseZapResults(zapJson) {
@@ -318,9 +320,7 @@ function generateReport(sourceFiles) {
   const zap = parseZapResults(zapJson);
 
   // Build source files section
-  const sourceFilesSection = sourceFiles
-    .map((sf) => `  ${sf.exists ? "✅" : "❌"} ${sf.path}`)
-    .join("\n");
+  const sourceFilesSection = sourceFiles.map((sf) => `  ${sf.exists ? "✅" : "❌"} ${sf.path}`).join("\n");
 
   // Determine status
   const securityPass = npmAudit.critical === 0 && npmAudit.high === 0 && eslint.errors === 0 && zap.high === 0;
@@ -376,7 +376,7 @@ ${
 | **Total** | **${npmAudit.total}** |
 
 **Status**: ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} ${npmAudit.critical === 0 && npmAudit.high === 0 ? "No critical/high vulnerabilities" : "Critical/high vulnerabilities require attention"}`
-    : "⚠️ Report not found: `target/penetration/npm-audit.json`"
+    : "⚠️ Report not found: `web/public/tests/penetration/npm-audit.json`"
 }
 
 ### 1.2 ESLint Security Analysis
@@ -389,7 +389,7 @@ ${
 | Warnings | ${eslint.warnings} |
 
 **Status**: ${statusIcon(eslint.errors === 0)} ${eslint.errors === 0 ? "No security errors" : "Security errors require attention"}`
-    : "⚠️ Report not found: `target/penetration/eslint-security.txt`"
+    : "⚠️ Report not found: `web/public/tests/penetration/eslint-security.txt`"
 }
 
 ### 1.3 retire.js (Known Vulnerabilities)
@@ -403,7 +403,7 @@ ${
 | Low | ${retire.low} |
 
 **Status**: ${statusIcon(retire.high === 0)} ${retire.high === 0 ? "No high severity vulnerabilities" : "High severity vulnerabilities require attention"}`
-    : "⚠️ Report not found: `target/penetration/retire.json`"
+    : "⚠️ Report not found: `web/public/tests/penetration/retire.json`"
 }
 
 ### 1.4 OWASP ZAP (Dynamic Security Scan)
@@ -438,7 +438,7 @@ ${
 ${zap.suppressedAlerts.map((a) => `| ${a.name} | ${a.risk} | ${a.reason} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/penetration/zap-report.json`"
+    : "⚠️ Report not found: `web/public/tests/penetration/zap-report.json`"
 }
 
 ---
@@ -466,7 +466,7 @@ ${
 ${pa11y.results.map((r) => `| ${r.url.replace(targetUrl, "") || "/"} | ${r.errorCount} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/accessibility/pa11y-report.txt`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/pa11y-report.txt`"
 }
 
 ### 2.2 axe-core (Automated Accessibility)
@@ -490,7 +490,7 @@ ${
 ${axe.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | ${v.nodes} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/accessibility/axe-results.json`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/axe-results.json`"
 }
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
@@ -514,7 +514,7 @@ ${
 ${axeWcag22.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | ${v.nodes} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/accessibility/axe-wcag22-results.json`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/axe-wcag22-results.json`"
 }
 
 ### 2.4 Lighthouse
@@ -529,7 +529,7 @@ ${
 | SEO | ${lighthouse.seo}% |
 
 **Status**: ${statusIcon(lighthouse.accessibility >= 90)} ${lighthouse.accessibility >= 90 ? "Accessibility score meets threshold (90%+)" : "Accessibility score below 90% threshold"}`
-    : "⚠️ Report not found: `target/accessibility/lighthouse-results.json`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/lighthouse-results.json`"
 }
 
 ---
@@ -538,14 +538,14 @@ ${
 
 | Report | Path | Status |
 |--------|------|--------|
-| npm audit | target/penetration/npm-audit.json | ${npmAudit.found ? "✅ Found" : "❌ Missing"} |
-| ESLint Security | target/penetration/eslint-security.txt | ${eslint.found ? "✅ Found" : "❌ Missing"} |
-| retire.js | target/penetration/retire.json | ${retire.found ? "✅ Found" : "❌ Missing"} |
-| OWASP ZAP | target/penetration/zap-report.json | ${zap.found ? "✅ Found" : "❌ Missing"} |
-| Pa11y | target/accessibility/pa11y-report.txt | ${pa11y.found ? "✅ Found" : "❌ Missing"} |
-| axe-core | target/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
-| axe-core (WCAG 2.2) | target/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
-| Lighthouse | target/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
+| npm audit | web/public/tests/penetration/npm-audit.json | ${npmAudit.found ? "✅ Found" : "❌ Missing"} |
+| ESLint Security | web/public/tests/penetration/eslint-security.txt | ${eslint.found ? "✅ Found" : "❌ Missing"} |
+| retire.js | web/public/tests/penetration/retire.json | ${retire.found ? "✅ Found" : "❌ Missing"} |
+| OWASP ZAP | web/public/tests/penetration/zap-report.json | ${zap.found ? "✅ Found" : "❌ Missing"} |
+| Pa11y | web/public/tests/accessibility/pa11y-report.txt | ${pa11y.found ? "✅ Found" : "❌ Missing"} |
+| axe-core | web/public/tests/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
+| axe-core (WCAG 2.2) | web/public/tests/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
+| Lighthouse | web/public/tests/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
 
 ---
 

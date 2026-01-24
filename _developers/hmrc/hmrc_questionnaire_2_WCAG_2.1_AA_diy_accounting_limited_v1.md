@@ -557,9 +557,9 @@ Based on COMPLIANCE_REPORT.md axe-core results (13 violations, 239 passes):
 | File | Description |
 |------|-------------|
 | COMPLIANCE_REPORT.md | Consolidated compliance report dated 19 January 2026 showing overall status |
-| target/accessibility/pa11y-report.txt | Pa11y WCAG 2.1 AA automated scan results (16/16 pages pass) |
-| target/accessibility/axe-results.json | axe-core WCAG 2.1 detailed rule results (13 violations, 239 passes) |
-| target/accessibility/axe-wcag22-results.json | axe-core WCAG 2.2 rule results (10 violations, 148 passes) |
+| web/public/tests/accessibility/pa11y-report.txt | Pa11y WCAG 2.1 AA automated scan results (16/16 pages pass) |
+| web/public/tests/accessibility/axe-results.json | axe-core WCAG 2.1 detailed rule results (13 violations, 239 passes) |
+| web/public/tests/accessibility/axe-wcag22-results.json | axe-core WCAG 2.2 rule results (10 violations, 148 passes) |
 | Manual review | Manual testing performed for criteria not covered by automated tools |
 | Manual testing | Interactive testing with keyboard, screen readers, zoom |
 
