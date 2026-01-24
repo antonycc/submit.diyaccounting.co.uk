@@ -46,11 +46,13 @@ The repository uses multiple environment files. See the actual files for complet
 | Environment | File | Purpose |
 |-------------|------|---------|
 | **test** | `.env.test` | Unit/system tests with mocked services |
-| **proxy** | `.env.proxy` | Local dev with ngrok, Docker OAuth2, dynalite |
+| **simulator** | `.env.simulator` | Local dev with HTTP simulator (lightweight, no Docker, no external config needed) |
+| **proxy** | `.env.proxy` | Local dev with ngrok, Docker OAuth2, dynalite (requires HMRC sandbox credentials) |
 | **proxyRunning** | `.env.proxyRunning` | Connect to already-running local services |
-| **simulator** | `.env.simulator` | Local dev with HTTP simulator (lightweight, no Docker) |
 | **ci** | `.env.ci` | CI with real AWS (`ci.submit.diyaccounting.co.uk`) |
 | **prod** | `.env.prod` | Production (`submit.diyaccounting.co.uk`) |
+
+**Note:** Simulator mode works out of the box with no `.env` file - it uses built-in defaults for all mocked services. Proxy mode requires configuration for ngrok and HMRC sandbox credentials.
 
 ### Key Environment Variables
 
@@ -84,13 +86,16 @@ See `_developers/SALTED_HASH_IMPLEMENTATION.md` and `_developers/SALT_SECRET_REC
 ### Quick Reference
 
 ```bash
-# Core test suite (~4s)
+# Core test suite (~4s, no config needed)
 npm test
 
 # Java CDK build (~45s)
 ./mvnw clean verify
 
-# Local E2E tests
+# Local E2E tests - simulator mode (no config needed)
+npm run test:submitVatBehaviour-simulator
+
+# Local E2E tests - proxy mode (gold standard, requires .env.proxy)
 npm run test:submitVatBehaviour-proxy
 ```
 
@@ -103,7 +108,8 @@ npm run test:submitVatBehaviour-proxy
 | Unit | `app/unit-tests/`, `web/unit-tests/` | `npm run test:unit` | Business logic |
 | System | `app/system-tests/` | `npm run test:system` | Docker integration |
 | Browser | `web/browser-tests/` | `npm run test:browser` | UI components |
-| Behaviour | `behaviour-tests/` | `npm run test:submitVatBehaviour-proxy` | E2E journeys |
+| Behaviour | `behaviour-tests/` | `npm run test:submitVatBehaviour-simulator` | E2E journeys (fast, local) |
+| Behaviour | `behaviour-tests/` | `npm run test:submitVatBehaviour-proxy` | E2E journeys (gold standard) |
 
 ### Maven Commands
 
@@ -215,28 +221,56 @@ Created per deployment by `deploy.yml`:
 
 ## Local Development
 
+### Quick Start (Ubuntu/Debian)
+
+Set up a development environment from scratch:
+
+```bash
+# Install Node.js 22+ (using NodeSource)
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Install Java 21+ (for CDK builds)
+sudo apt-get install -y openjdk-21-jdk
+
+# Clone and install
+git clone https://github.com/antonycc/submit.diyaccounting.co.uk.git
+cd submit.diyaccounting.co.uk
+npm install
+
+# Run unit tests (no configuration needed)
+npm test
+
+# Start in simulator mode (no .env file, Docker, or external services needed)
+npm start
+# Open http://localhost:3000 in your browser
+
+# Run behaviour tests in simulator mode
+npm run test:submitVatBehaviour-simulator
+```
+
+The simulator mode requires no external configuration - it mocks OAuth2 and HMRC APIs locally.
+
 ### Local Development Stack
 
-**Simulator Mode** (lightweight, no Docker):
+**Simulator Mode** (lightweight, no Docker, no external services):
 ```
 Developer Machine
     │
     ├── Express Server (localhost:3000) ──► Lambda handlers
-    │       │
-    ├── ngrok (tunnel) ──► Public HTTPS URL for OAuth
     │
     ├── HTTP Simulator (localhost:9000) ──► Mock OAuth2 + HMRC API
     │
-    └── Dynalite (dynamic port) ──► Local DynamoDB
+    └── Dynalite (localhost:9001) ──► Local DynamoDB
 ```
 
-**Proxy Mode** (full stack with Docker):
+**Proxy Mode** (full stack with Docker and ngrok for real HMRC sandbox):
 ```
 Developer Machine
     │
     ├── Express Server (localhost:3000) ──► Lambda handlers
-    │       │
-    ├── ngrok (tunnel) ──► Public HTTPS URL for OAuth
+    │
+    ├── ngrok (tunnel) ──► Public HTTPS URL for OAuth callbacks
     │
     ├── Mock OAuth2 (Docker, localhost:8080) ──► Simulates Cognito
     │
@@ -246,11 +280,11 @@ Developer Machine
 ### Starting Local Services
 
 ```bash
-# Start with HTTP simulator (recommended, lightweight)
+# Simulator mode (recommended for development - no config needed)
 npm start                    # or npm run start:simulator
 
-# Start with Docker OAuth2 (full stack)
-npm run start:proxy
+# Proxy mode (for testing with real HMRC sandbox)
+npm run start:proxy          # Requires .env.proxy, ngrok, Docker
 
 # Individual services (advanced):
 npm run data    # Local DynamoDB
@@ -258,6 +292,18 @@ npm run auth    # Mock OAuth2 (Docker)
 npm run proxy   # ngrok tunnel
 npm run server  # Express server
 ```
+
+### Behaviour Tests
+
+```bash
+# Simulator mode (no external dependencies, fastest)
+npm run test:submitVatBehaviour-simulator
+
+# Proxy mode (gold standard, uses ngrok and Docker)
+npm run test:submitVatBehaviour-proxy    # Requires .env.proxy configuration
+```
+
+The proxy mode tests are the gold standard for CI validation as they use real OAuth flows via ngrok. Simulator mode tests are faster and require no external setup, making them ideal for rapid development iteration.
 
 ### Local vs AWS Comparison
 

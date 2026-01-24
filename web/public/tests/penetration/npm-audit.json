@@ -1,45 +1,14 @@
 {
   "auditReportVersion": 2,
-  "vulnerabilities": {
-    "diff": {
-      "name": "diff",
-      "severity": "low",
-      "isDirect": false,
-      "via": [
-        {
-          "source": 1112490,
-          "name": "diff",
-          "dependency": "diff",
-          "title": "jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch",
-          "url": "https://github.com/advisories/GHSA-73rr-hh4g-fpgx",
-          "severity": "low",
-          "cwe": [
-            "CWE-400",
-            "CWE-1333"
-          ],
-          "cvss": {
-            "score": 0,
-            "vectorString": null
-          },
-          "range": ">=5.0.0 <5.2.2"
-        }
-      ],
-      "effects": [],
-      "range": "5.0.0 - 5.2.1",
-      "nodes": [
-        "node_modules/diff"
-      ],
-      "fixAvailable": true
-    }
-  },
+  "vulnerabilities": {},
   "metadata": {
     "vulnerabilities": {
       "info": 0,
-      "low": 1,
+      "low": 0,
       "moderate": 0,
       "high": 0,
       "critical": 0,
-      "total": 1
+      "total": 0
     },
     "dependencies": {
       "prod": 136,
