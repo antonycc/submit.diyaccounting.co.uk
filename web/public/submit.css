@@ -1171,6 +1171,26 @@ a.external-link:hover::after {
   background-color: #5a6268;
 }
 
+.cancel-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin: 5px;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #c82333;
+}
+
+.form-toggle-buttons {
+  margin-bottom: 10px;
+}
+
 .button-group {
   text-align: center;
   margin-top: 1.5em;

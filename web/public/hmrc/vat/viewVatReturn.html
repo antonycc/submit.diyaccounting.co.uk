@@ -58,6 +58,14 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Search Form -->
+      <div class="form-toggle-buttons">
+        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">
+          Show Search Form
+        </button>
+        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">
+          Cancel Request
+        </button>
+      </div>
       <div id="searchForm" class="form-container">
         <h2>Retrieve VAT Return</h2>
         <form id="vatReturnForm">
@@ -73,7 +81,7 @@
               name="vrn"
               required
               value=""
-              placeholder="e.g., 176540158"
+              placeholder="e.g., 983238295"
               maxlength="9"
               pattern="[0-9]{9}"
               aria-describedby="vrn-hint"
@@ -247,6 +255,48 @@
         }
       }
 
+      // Form visibility management
+      let formHidden = false;
+
+      function hideForm() {
+        const container = document.getElementById("searchForm");
+        const toggleBtn = document.getElementById("toggleFormBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "none";
+          toggleBtn.style.display = "inline-block";
+          if (cancelBtn) cancelBtn.style.display = "inline-block";
+          formHidden = true;
+        }
+      }
+
+      function showForm() {
+        const container = document.getElementById("searchForm");
+        const toggleBtn = document.getElementById("toggleFormBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "block";
+          toggleBtn.style.display = "none";
+          if (cancelBtn) cancelBtn.style.display = "none";
+          formHidden = false;
+        }
+      }
+
+      function cancelRequest() {
+        // Clear all in-progress session data
+        sessionStorage.removeItem("pendingReturnRequest");
+        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("hmrcAccount");
+        sessionStorage.removeItem("currentActivity");
+
+        // Show form and hide results
+        showForm();
+        document.getElementById("returnResults").style.display = "none";
+        hideStatus();
+        console.log("Request cancelled, session data cleared");
+      }
+
       // OAuth callback handling
       function handleOAuthCallback() {
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
@@ -272,6 +322,8 @@
           }
 
           console.log("Retrieved pending request:", pendingRequest);
+          // Hide form while retrieving
+          hideForm();
           showLoading();
           showStatus("Retrieving VAT return...", "info");
 
@@ -350,6 +402,8 @@
         } catch (error) {
           console.error("Error retrieving VAT return:", error);
           showStatus(`Failed to retrieve return: ${error.message}`, "error");
+          // Auto-expand form on error so user can retry
+          showForm();
           // Clear pending request data to prevent auto-retry loop on next page load
           sessionStorage.removeItem("pendingReturnRequest");
           sessionStorage.removeItem("hmrcAccessToken");
@@ -637,6 +691,17 @@
       // Initialize page when DOM is loaded
       document.addEventListener("DOMContentLoaded", async function () {
         console.log("JS block started loading: DOMContentLoaded event handler");
+
+        // Toggle form button handler
+        document.getElementById("toggleFormBtn")?.addEventListener("click", () => {
+          showForm();
+        });
+
+        // Cancel request button handler
+        document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
+          cancelRequest();
+        });
+
         await initializePage();
         // Check if we're returning from OAuth
         handleOAuthCallback();

@@ -85,7 +85,17 @@
       const proceed = confirm("Delete all local storage for this site? This will log you out.");
       if (!proceed) return;
       try {
+        // Preserve RUM consent settings before clearing
+        const rumConsent = localStorage.getItem("consent.rum");
+        const analyticsConsent = localStorage.getItem("consent.analytics");
+        const rumConfig = localStorage.getItem("rum.config");
+
         localStorage.clear();
+
+        // Restore RUM consent settings
+        if (rumConsent !== null) localStorage.setItem("consent.rum", rumConsent);
+        if (analyticsConsent !== null) localStorage.setItem("consent.analytics", analyticsConsent);
+        if (rumConfig !== null) localStorage.setItem("rum.config", rumConfig);
       } catch (e) {
         console.warn("localStorage.clear failed", e);
       }

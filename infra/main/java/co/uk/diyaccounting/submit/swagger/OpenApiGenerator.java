@@ -156,7 +156,7 @@ public class OpenApiGenerator {
                         // Add sensible defaults/examples for known params
                         switch (p.name) {
                             case "vrn" -> {
-                                schema.put("example", "176540158");
+                                schema.put("example", "983238295");
                                 schema.put("pattern", "^\\d{9}$");
                             }
                             case "from" -> schema.put("example", "2025-01-01");
@@ -228,7 +228,7 @@ public class OpenApiGenerator {
                         ObjectNode props = mapper.createObjectNode();
                         ObjectNode vatNumber = mapper.createObjectNode();
                         vatNumber.put("type", "string");
-                        vatNumber.put("example", "176540158");
+                        vatNumber.put("example", "983238295");
                         ObjectNode periodKey = mapper.createObjectNode();
                         periodKey.put("type", "string");
                         periodKey.put("example", "24A1");
@@ -246,7 +246,7 @@ public class OpenApiGenerator {
                         schema.set("properties", props);
                         media.set("schema", schema);
                         ObjectNode exam = mapper.createObjectNode();
-                        exam.put("vatNumber", "176540158");
+                        exam.put("vatNumber", "983238295");
                         exam.put("periodKey", "24A1");
                         exam.put("vatDue", 2400.00);
                         exam.put("accessToken", "HMRC_ACCESS_TOKEN");

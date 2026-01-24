@@ -262,7 +262,7 @@
                 "properties" : {
                   "vatNumber" : {
                     "type" : "string",
-                    "example" : "176540158"
+                    "example" : "983238295"
                   },
                   "periodKey" : {
                     "type" : "string",
@@ -280,7 +280,7 @@
                 }
               },
               "example" : {
-                "vatNumber" : "176540158",
+                "vatNumber" : "983238295",
                 "periodKey" : "24A1",
                 "vatDue" : 2400.0,
                 "accessToken" : "HMRC_ACCESS_TOKEN"
@@ -318,7 +318,7 @@
           "description" : "VAT registration number (9 digits)",
           "schema" : {
             "type" : "string",
-            "example" : "176540158",
+            "example" : "983238295",
             "pattern" : "^\\d{9}$"
           }
         }, {
@@ -417,7 +417,7 @@
           "description" : "VAT registration number (9 digits)",
           "schema" : {
             "type" : "string",
-            "example" : "176540158",
+            "example" : "983238295",
             "pattern" : "^\\d{9}$"
           }
         }, {
