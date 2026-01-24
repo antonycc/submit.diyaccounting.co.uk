@@ -309,7 +309,8 @@ public class SubmitSharedNames {
 
         this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
         this.envDashedDomainName = buildDashedDomainName(this.envDomainName);
-        this.envResourceNamePrefix = "%s-env".formatted(generateResourceNamePrefix(this.envDomainName));
+        // Use envName directly for consistency with stack IDs (e.g., ci-env-IdentityStack → ci-env-user-pool)
+        this.envResourceNamePrefix = "%s-env".formatted(props.envName);
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);
         this.observabilityUE1StackId = "%s-env-ObservabilityUE1Stack".formatted(props.envName);
         this.dataStackId = "%s-env-DataStack".formatted(props.envName);
