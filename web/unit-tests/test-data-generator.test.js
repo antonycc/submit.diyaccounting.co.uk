@@ -251,13 +251,15 @@ describe("test-data-generator", () => {
     beforeEach(() => {
       mockElements = {
         vrn: { value: "" },
-        periodKey: { value: "" },
+        periodStart: { value: "" },
+        periodEnd: { value: "" },
       };
 
       const mockDocument = {
         getElementById: vi.fn((id) => {
           if (id === "vrn") return mockElements.vrn;
-          if (id === "periodKey") return mockElements.periodKey;
+          if (id === "periodStart") return mockElements.periodStart;
+          if (id === "periodEnd") return mockElements.periodEnd;
           return null;
         }),
       };
@@ -270,10 +272,16 @@ describe("test-data-generator", () => {
       expect(mockElements.vrn.value).toBe("176540158");
     });
 
-    test("populates period key field", () => {
+    test("populates period start field with ISO date", () => {
       localTestDataGenerator.populateViewVatReturnForm();
-      // YYXZ format: last char can be digit or letter
-      expect(/^\d{2}[A-Z][A-Z0-9]$/.test(mockElements.periodKey.value)).toBe(true);
+      // ISO date format: YYYY-MM-DD (uses Q1 2017 test period: 2017-01-01)
+      expect(mockElements.periodStart.value).toBe("2017-01-01");
+    });
+
+    test("populates period end field with ISO date", () => {
+      localTestDataGenerator.populateViewVatReturnForm();
+      // ISO date format: YYYY-MM-DD (uses Q1 2017 test period: 2017-03-31)
+      expect(mockElements.periodEnd.value).toBe("2017-03-31");
     });
 
     test("handles missing elements gracefully", () => {

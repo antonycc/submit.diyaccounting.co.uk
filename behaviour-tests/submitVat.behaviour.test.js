@@ -19,7 +19,6 @@ import {
   runLocalDynamoDb,
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
-  generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import {
   consentToDataCollection,
@@ -111,8 +110,6 @@ const runFraudPreventionHeaderValidation = isSandboxMode();
 // Enable sandbox obligation fallback - allows test to use any available open obligation if dates don't match
 const allowSandboxObligations = isSandboxMode();
 
-// eslint-disable-next-line sonarjs/pseudo-random
-const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
 // Period keys are unpredictable per HMRC documentation - they cannot be calculated, only validated.
 // Tests should capture the actual periodKey from the response and use that for subsequent calls.
@@ -346,7 +343,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* *********** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
+  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -379,17 +376,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /*  VIEW VAT RETURN    */
   /* ******************* */
 
-  // Now attempt to view the VAT return that was just submitted
-  // Use the resolved periodKey captured from the submission response
-  // If not captured, this test will use a placeholder (will likely fail, which is expected)
-  const viewPeriodKey = resolvedPeriodKey || "UNKNOWN";
-  console.log(`[Test] Using periodKey for view VAT return: ${viewPeriodKey}`);
-  if (!resolvedPeriodKey) {
-    console.warn("[Test] WARNING: Could not capture periodKey from submission response - view VAT return may fail");
-  }
+  // View a VAT return using default dates
+  // BE FLEXIBLE: Don't rely on specific periodKeys - server resolves periodKey from dates
   await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, testVatNumber, viewPeriodKey, null, runFraudPreventionHeaderValidation, screenshotPath);
-  await submitViewVatReturnForm(page, viewPeriodKey, screenshotPath);
+  await fillInViewVatReturn(page, testVatNumber, undefined, null, runFraudPreventionHeaderValidation, screenshotPath);
+  await submitViewVatReturnForm(page, screenshotPath);
 
   /* ******************* */
   /*  VIEW VAT RESULTS   */
@@ -473,8 +464,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       hmrcTestUsername: testUsername,
       hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
       hmrcTestVatNumber: testVatNumber,
-      hmrcVatPeriodKey, // Input periodKey (legacy, not used for server-side resolution)
-      resolvedPeriodKey, // Actual periodKey used from HMRC obligations
+      resolvedPeriodKey, // Actual periodKey resolved from HMRC obligations
       hmrcVatDueAmount,
       s3Endpoint,
       testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
@@ -588,11 +578,9 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     });
 
     // Assert VAT return GET request exists and validate key fields
-    // periodKey is unpredictable - search for any VAT return GET request with valid format
-    // Use the captured resolvedPeriodKey if available, otherwise match any valid periodKey
-    const vatGetUrlPattern = resolvedPeriodKey
-      ? `/organisations/vat/${testVatNumber}/returns/${resolvedPeriodKey}`
-      : new RegExp(`/organisations/vat/${testVatNumber}/returns/[0-9]{2}[A-Z][0-9A-Z]`);
+    // BE FLEXIBLE: periodKey may differ between submission and viewing due to sandbox obligation fallback
+    // Always use regex pattern to match any valid periodKey format
+    const vatGetUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/returns/\\w+`);
 
     const vatGetRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,

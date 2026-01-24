@@ -79,15 +79,17 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     const vrnInput = page.locator("#vrn");
     await expect(vrnInput).toBeVisible();
 
-    // Check for period key hidden input (populated by obligation dropdown)
+    // Check for period date inputs (replaced obligation dropdown)
+    const periodStartInput = page.locator("#periodStart");
+    await expect(periodStartInput).toBeVisible();
+    const periodEndInput = page.locator("#periodEnd");
+    await expect(periodEndInput).toBeVisible();
+
+    // Check for period key hidden input (populated server-side from obligations)
     const periodKeyInput = page.locator("#periodKey");
     await expect(periodKeyInput).toHaveCount(1);
     const fieldType = await periodKeyInput.getAttribute("type");
     expect(fieldType).toBe("hidden");
-
-    // Check for obligation dropdown (which populates periodKey)
-    const obligationSelect = page.locator("#obligationSelect");
-    await expect(obligationSelect).toBeVisible();
 
     // Check for retrieve button
     const retrieveBtn = page.locator("#retrieveBtn");

@@ -948,8 +948,9 @@
           document.getElementById("periodKey").value = periodKey;
         }
 
-        // Show sandbox indicator if hmrcAccount=sandbox
+        // Show sandbox indicator and store hmrcAccount if hmrcAccount=sandbox
         if (hmrcAccount === "sandbox") {
+          sessionStorage.setItem("hmrcAccount", hmrcAccount);
           const sandboxIndicator = document.getElementById("sandboxIndicator");
           if (sandboxIndicator) {
             sandboxIndicator.classList.add("visible");
@@ -958,6 +959,9 @@
           if (testDataLink) {
             testDataLink.classList.add("visible");
           }
+        } else if (hmrcAccount) {
+          // Clear sandbox mode if explicitly set to something else
+          sessionStorage.removeItem("hmrcAccount");
         }
 
         // Toggle developer mode button

@@ -200,28 +200,20 @@ function populateSubmitVatForm() {
 /**
  * Populate the view VAT return form with test data
  * Used in viewVatReturn.html
+ * Now uses date inputs instead of dropdown (matches submitVat.html pattern)
  */
 function populateViewVatReturnForm() {
   const vrnInput = document.getElementById("vrn");
-  const periodKeyInput = document.getElementById("periodKey");
-  const obligationSelect = document.getElementById("obligationSelect");
+  const periodStartInput = document.getElementById("periodStart");
+  const periodEndInput = document.getElementById("periodEnd");
 
   const testVrn = generateTestVrn();
-  const testPeriodKey = generateTestPeriodKey();
+  // Use the standard Q1 2017 test obligation dates (matches simulator and HMRC sandbox)
+  const testDateRange = { from: "2017-01-01", to: "2017-03-31" };
 
   if (vrnInput) vrnInput.value = testVrn;
-  if (periodKeyInput) periodKeyInput.value = testPeriodKey;
-
-  // Also populate the obligation dropdown with a test option if it exists
-  if (obligationSelect) {
-    // Add a test option to the dropdown
-    const testOption = document.createElement("option");
-    testOption.value = testPeriodKey;
-    testOption.textContent = "Test Period (Sandbox)";
-    testOption.selected = true;
-    obligationSelect.innerHTML = ""; // Clear existing options
-    obligationSelect.appendChild(testOption);
-  }
+  if (periodStartInput) periodStartInput.value = testDateRange.from;
+  if (periodEndInput) periodEndInput.value = testDateRange.to;
 
   console.log("[Test Data] Populated view VAT return form with test data");
 }

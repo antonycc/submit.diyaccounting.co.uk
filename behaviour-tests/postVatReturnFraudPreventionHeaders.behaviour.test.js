@@ -20,7 +20,6 @@ import {
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
   checkFraudPreventionHeadersFeedback,
-  generatePeriodKey,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import {
@@ -80,8 +79,6 @@ const runFraudPreventionHeaderValidation = true;
 // Enable sandbox obligation fallback - allows test to use any available open obligation if dates don't match
 const allowSandboxObligations = isSandboxMode();
 
-// eslint-disable-next-line sonarjs/pseudo-random
-const hmrcVatPeriodKey = generatePeriodKey();
 const hmrcVatDueAmount = "1000.00";
 // Period keys are unpredictable per HMRC documentation - they cannot be calculated, only validated.
 // Tests should capture the actual periodKey from the response and use that for subsequent calls.
@@ -303,7 +300,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* *********** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, hmrcVatPeriodKey, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
+  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -389,7 +386,6 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       hmrcTestUsername: testUsername,
       hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
       hmrcTestVatNumber: testVatNumber,
-      hmrcVatPeriodKey,
       hmrcVatDueAmount,
       testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
       userSub,

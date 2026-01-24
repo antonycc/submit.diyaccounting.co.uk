@@ -82,11 +82,31 @@
           </div>
 
           <div class="form-group">
-            <label for="obligationSelect">VAT period</label>
-            <p id="obligationSelect-hint" class="hint">Select the VAT period to view. Only fulfilled (already submitted) periods are shown.</p>
-            <select id="obligationSelect" name="obligationSelect" required aria-describedby="obligationSelect-hint">
-              <option value="">-- Enter VAT registration number to load periods --</option>
-            </select>
+            <label>VAT period</label>
+            <p id="periodDates-hint" class="hint">Enter the start and end dates of the VAT period you want to view</p>
+            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap;">
+              <div>
+                <label for="periodStart">Period start</label>
+                <input
+                  type="date"
+                  id="periodStart"
+                  name="periodStart"
+                  required
+                  aria-describedby="periodDates-hint"
+                />
+              </div>
+              <div>
+                <label for="periodEnd">Period end</label>
+                <input
+                  type="date"
+                  id="periodEnd"
+                  name="periodEnd"
+                  required
+                  aria-describedby="periodDates-hint"
+                />
+              </div>
+            </div>
+            <!-- Hidden fields for backwards compatibility -->
             <input type="hidden" id="periodKey" name="periodKey" value="" />
           </div>
 
@@ -171,29 +191,8 @@
         }
       })();
 
-      // Obligation formatting utilities (inline version for non-module context)
-      const ObligationUtils = {
-        formatObligationForDisplay(obligation) {
-          const startDate = new Date(obligation.start);
-          const endDate = new Date(obligation.end);
-          const dateOptions = { day: "numeric", month: "short", year: "numeric" };
-          return {
-            _periodKey: obligation.periodKey,
-            id: obligation.periodKey,
-            displayName: `${startDate.toLocaleDateString("en-GB", dateOptions)} to ${endDate.toLocaleDateString("en-GB", dateOptions)}`,
-            startDate: obligation.start,
-            endDate: obligation.end,
-            status: obligation.status,
-            statusDisplay: obligation.status === "O" ? "Open" : "Submitted",
-          };
-        },
-        formatObligationsForSelection(obligations) {
-          if (!Array.isArray(obligations)) return [];
-          return obligations.map(this.formatObligationForDisplay).sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
-        },
-        filterFulfilledObligations(formattedObligations) {
-          return formattedObligations.filter((o) => o.status === "F");
-        },
+      // Date formatting utilities (inline version for non-module context)
+      const DateUtils = {
         formatDateRange(start, end) {
           const startDate = new Date(start);
           const endDate = new Date(end);
@@ -202,94 +201,6 @@
         }
       };
 
-      // Store loaded obligations for reference
-      let loadedObligations = [];
-
-      // Load obligations from API (fulfilled only for viewing)
-      async function loadObligations(vrn) {
-        const obligationSelect = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        if (!vrn || !/^\d{9}$/.test(vrn)) {
-          obligationSelect.innerHTML = '<option value="">-- Enter valid 9-digit VAT registration number --</option>';
-          periodKeyInput.value = "";
-          return;
-        }
-
-        obligationSelect.innerHTML = '<option value="">Loading periods...</option>';
-
-        try {
-          const hmrcAccount = sessionStorage.getItem("hmrcAccount") || new URLSearchParams(window.location.search).get("hmrcAccount");
-          const accessToken = sessionStorage.getItem("hmrcAccessToken");
-
-          // Build URL with parameters - request fulfilled obligations
-          const params = new URLSearchParams({ vrn, status: "F" });
-          if (hmrcAccount) params.append("hmrcAccount", hmrcAccount);
-
-          const headers = { "Content-Type": "application/json" };
-          if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
-          if (hmrcAccount) headers["hmrcAccount"] = hmrcAccount;
-
-          // Use authorizedFetch to include Cognito token in X-Authorization header
-          // for API Gateway Lambda authorizer (bundle enforcement)
-          const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
-            method: "GET",
-            headers
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to load obligations: ${response.status}`);
-          }
-
-          const data = await response.json();
-          const obligations = data.obligations || [];
-
-          // Format and filter for fulfilled obligations only
-          const formatted = ObligationUtils.formatObligationsForSelection(obligations);
-          const fulfilledObligations = ObligationUtils.filterFulfilledObligations(formatted);
-          loadedObligations = fulfilledObligations;
-
-          populateObligationDropdown(fulfilledObligations);
-        } catch (error) {
-          console.error("Error loading obligations:", error);
-          obligationSelect.innerHTML = '<option value="">-- Failed to load periods --</option>';
-          periodKeyInput.value = "";
-        }
-      }
-
-      // Populate the obligation dropdown
-      function populateObligationDropdown(obligations) {
-        const obligationSelect = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-
-        if (!obligations || obligations.length === 0) {
-          obligationSelect.innerHTML = '<option value="">-- No submitted returns available --</option>';
-          periodKeyInput.value = "";
-          return;
-        }
-
-        obligationSelect.innerHTML = '<option value="">-- Select a VAT period --</option>';
-        obligations.forEach((obl) => {
-          const option = document.createElement("option");
-          option.value = obl._periodKey;
-          option.textContent = obl.displayName;
-          obligationSelect.appendChild(option);
-        });
-
-        // If only one obligation, auto-select it
-        if (obligations.length === 1) {
-          obligationSelect.value = obligations[0]._periodKey;
-          periodKeyInput.value = obligations[0]._periodKey;
-        }
-      }
-
-      // Handle obligation selection change
-      function handleObligationChange() {
-        const obligationSelect = document.getElementById("obligationSelect");
-        const periodKeyInput = document.getElementById("periodKey");
-        periodKeyInput.value = obligationSelect.value;
-      }
-
       // Global variables
       let returnData = null;
 
@@ -297,23 +208,18 @@
       async function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
         const vrn = urlParams.get("vrn");
-        const periodKey = urlParams.get("periodKey");
+        const periodStart = urlParams.get("periodStart");
+        const periodEnd = urlParams.get("periodEnd");
         const hmrcAccount = urlParams.get("hmrcAccount");
 
         if (vrn) {
           document.getElementById("vrn").value = vrn;
-          // Load obligations for this VAT registration number
-          await loadObligations(vrn);
-          // If periodKey was provided via URL, select it (backward compatibility)
-          if (periodKey) {
-            const obligationSelect = document.getElementById("obligationSelect");
-            const periodKeyInput = document.getElementById("periodKey");
-            const optionExists = Array.from(obligationSelect.options).some(opt => opt.value === periodKey);
-            if (optionExists) {
-              obligationSelect.value = periodKey;
-              periodKeyInput.value = periodKey;
-            }
-          }
+        }
+        if (periodStart) {
+          document.getElementById("periodStart").value = periodStart;
+        }
+        if (periodEnd) {
+          document.getElementById("periodEnd").value = periodEnd;
         }
 
         // Show sandbox indicator if hmrcAccount=sandbox
@@ -371,15 +277,21 @@
 
           // Restore form values
           if (pendingRequest.vrn) document.getElementById("vrn").value = pendingRequest.vrn;
-          if (pendingRequest.periodKey) document.getElementById("periodKey").value = pendingRequest.periodKey;
+          if (pendingRequest.periodStart) document.getElementById("periodStart").value = pendingRequest.periodStart;
+          if (pendingRequest.periodEnd) document.getElementById("periodEnd").value = pendingRequest.periodEnd;
           if (pendingRequest.testScenario) document.getElementById("testScenario").value = pendingRequest.testScenario;
           if (pendingRequest.runFraudPreventionHeaderValidation)
             document.getElementById("runFraudPreventionHeaderValidation").checked = pendingRequest.runFraudPreventionHeaderValidation;
 
-          // Build query parameters
-          const params = new URLSearchParams({ vrn: pendingRequest.vrn });
+          // Build query parameters - use date range instead of periodKey
+          const params = new URLSearchParams({
+            vrn: pendingRequest.vrn,
+            periodStart: pendingRequest.periodStart,
+            periodEnd: pendingRequest.periodEnd,
+          });
           if (pendingRequest.testScenario) params.append("Gov-Test-Scenario", pendingRequest.testScenario);
           if (pendingRequest.runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+          if (pendingRequest.allowSandboxObligations) params.append("allowSandboxObligations", "true");
 
           // Get Gov-Client headers
           const govClientHeaders = await getGovClientHeaders();
@@ -397,7 +309,7 @@
             requestHeaders["hmrcAccount"] = hmrcAccount;
           }
 
-          const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${pendingRequest.periodKey}?${params}`, {
+          const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return?${params}`, {
             method: "GET",
             headers: {
               ...requestHeaders,
@@ -420,7 +332,9 @@
             throw new Error(result.message || "Failed to retrieve VAT return");
           }
 
-          // Display results
+          // Display results - add period dates for display
+          result.periodStart = pendingRequest.periodStart;
+          result.periodEnd = pendingRequest.periodEnd;
           displayReturn(result);
           document.getElementById("returnResults").style.display = "block";
           document.getElementById("searchForm").style.display = "none";
@@ -447,13 +361,14 @@
 
         const formData = new FormData(event.target);
         const vrn = formData.get("vrn").trim();
-        const periodKey = formData.get("periodKey").trim();
+        const periodStart = formData.get("periodStart");
+        const periodEnd = formData.get("periodEnd");
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
         // Basic validation
-        if (!vrn || !periodKey) {
-          showStatus("Please enter your VAT registration number and select a VAT period.", "error");
+        if (!vrn || !periodStart || !periodEnd) {
+          showStatus("Please enter your VAT registration number and VAT period start and end dates.", "error");
           return;
         }
 
@@ -465,6 +380,11 @@
         // Check if we have an access token
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
 
+        // Check hmrcAccount for sandbox mode
+        const urlParams = new URLSearchParams(window.location.search);
+        const hmrcAccount = urlParams.get("hmrcAccount") || sessionStorage.getItem("hmrcAccount");
+        const allowSandboxObligations = hmrcAccount === "sandbox";
+
         if (!accessToken) {
           try {
             showLoading();
@@ -474,14 +394,13 @@
             const state = generateRandomState();
             const requestData = {
               vrn,
-              periodKey,
+              periodStart,
+              periodEnd,
               testScenario,
               runFraudPreventionHeaderValidation,
+              allowSandboxObligations,
             };
 
-            // Add current activity hmrcAccount header if present in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const hmrcAccount = urlParams.get("hmrcAccount");
             const currentActivity = `${location.pathname}`;
 
             sessionStorage.setItem("oauth_state", state);
@@ -522,10 +441,11 @@
             showLoading();
             showStatus("Retrieving VAT return...", "info");
 
-            // Build query parameters
-            const params = new URLSearchParams({ vrn });
+            // Build query parameters with date range
+            const params = new URLSearchParams({ vrn, periodStart, periodEnd });
             if (testScenario) params.append("Gov-Test-Scenario", testScenario);
             if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+            if (allowSandboxObligations) params.append("allowSandboxObligations", "true");
 
             // Get Gov-Client headers
             const govClientHeaders = await getGovClientHeaders();
@@ -537,12 +457,11 @@
             };
 
             // Add hmrcAccount header if present
-            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
             if (hmrcAccount) {
               requestHeaders["hmrcAccount"] = hmrcAccount;
             }
 
-            const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return/${periodKey}?${params}`, {
+            const response = await window.authorizedFetch(`/api/v1/hmrc/vat/return?${params}`, {
               method: "GET",
               headers: {
                 ...requestHeaders,
@@ -565,7 +484,9 @@
               throw new Error(result.message || "Failed to retrieve VAT return");
             }
 
-            // Display results
+            // Display results - add period dates for display
+            result.periodStart = periodStart;
+            result.periodEnd = periodEnd;
             displayReturn(result);
             document.getElementById("returnResults").style.display = "block";
             document.getElementById("searchForm").style.display = "none";
@@ -604,12 +525,11 @@
           return value === true ? "Yes" : value === false ? "No" : "-";
         };
 
-        // Find the matching obligation to get the date range
-        const matchingObligation = loadedObligations.find(o => o._periodKey === returnData.periodKey);
-        const periodDisplay = matchingObligation
-          ? matchingObligation.displayName
+        // Get period display from the dates (periodStart/periodEnd are set on returnData before calling displayReturn)
+        const periodDisplay = returnData.periodStart && returnData.periodEnd
+          ? DateUtils.formatDateRange(returnData.periodStart, returnData.periodEnd)
           : (returnData.start && returnData.end
-            ? ObligationUtils.formatDateRange(returnData.start, returnData.end)
+            ? DateUtils.formatDateRange(returnData.start, returnData.end)
             : "-");
 
         const detailsHtml = `
@@ -698,29 +618,11 @@
         window.location.href = "vatObligations.html";
       });
 
-      // Input validation
+      // Input validation for VAT registration number
       document.getElementById("vrn").addEventListener("input", function (e) {
         // Only allow digits
         e.target.value = e.target.value.replace(/\D/g, "");
-        // Reset dropdown if VAT registration number is being edited
-        if (e.target.value.length < 9) {
-          const obligationSelect = document.getElementById("obligationSelect");
-          const periodKeyInput = document.getElementById("periodKey");
-          obligationSelect.innerHTML = '<option value="">-- Enter VAT registration number to load periods --</option>';
-          periodKeyInput.value = "";
-        }
       });
-
-      // Load obligations when VAT registration number field loses focus
-      document.getElementById("vrn").addEventListener("blur", function (e) {
-        const vrn = e.target.value.trim();
-        if (/^\d{9}$/.test(vrn)) {
-          loadObligations(vrn);
-        }
-      });
-
-      // Handle obligation dropdown selection
-      document.getElementById("obligationSelect").addEventListener("change", handleObligationChange);
 
       // Event listeners
       document.getElementById("vatReturnForm").addEventListener("submit", handleFormSubmission);
@@ -735,11 +637,12 @@
         // Auto-submit if we have URL parameters and no OAuth callback
         const urlParams = new URLSearchParams(window.location.search);
         const vrn = urlParams.get("vrn");
-        const periodKey = urlParams.get("periodKey");
-        if (vrn && periodKey && !sessionStorage.getItem("hmrcAccessToken")) {
+        const periodStart = urlParams.get("periodStart");
+        const periodEnd = urlParams.get("periodEnd");
+        if (vrn && periodStart && periodEnd && !sessionStorage.getItem("hmrcAccessToken")) {
           // Will trigger OAuth flow
           document.getElementById("vatReturnForm").requestSubmit();
-        } else if (vrn && periodKey && sessionStorage.getItem("hmrcAccessToken")) {
+        } else if (vrn && periodStart && periodEnd && sessionStorage.getItem("hmrcAccessToken")) {
           // Have token, execute directly
           document.getElementById("vatReturnForm").requestSubmit();
         }

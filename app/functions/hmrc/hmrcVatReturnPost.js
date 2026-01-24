@@ -181,7 +181,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   }
 
   // Extract HMRC account (sandbox/live) from header hmrcAccount
-  const hmrcAccountHeader = (event.headers && event.headers.hmrcaccount) || "";
+  const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
   if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
     errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
@@ -190,9 +190,10 @@ export function extractAndValidateParameters(event, errorMessages) {
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
-  // allowSandboxObligations is only effective in sandbox mode
+  // In sandbox mode, default to allowing sandbox obligations (use any available open obligation)
+  // unless explicitly disabled. This provides flexibility for unpredictable HMRC sandbox responses.
   const allowSandboxObligationsBool =
-    (allowSandboxObligations === true || allowSandboxObligations === "true") && hmrcAccount === "sandbox";
+    hmrcAccount === "sandbox" && allowSandboxObligations !== false && allowSandboxObligations !== "false";
 
   return {
     vatNumber,

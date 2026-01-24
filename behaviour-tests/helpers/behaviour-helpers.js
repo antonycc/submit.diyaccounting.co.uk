@@ -139,10 +139,8 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
   return serverProcess;
 }
 
-export async function runLocalNgrokProxy(runProxy, httpServerPort, baseUrl) {
+export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
   logger.info(`[proxy]: runProxy=${runProxy}, httpServerPort=${httpServerPort}, baseUrl=${baseUrl}`);
-  let stop;
-  let endpoint;
   if (runProxy === "run") {
     logger.info("[proxy]: Starting ngrok tunnel using @ngrok/ngrok...");
     // Extract domain from baseUrl if provided
@@ -152,29 +150,18 @@ export async function runLocalNgrokProxy(runProxy, httpServerPort, baseUrl) {
       domain: domain,
       poolingEnabled: true,
     });
-    stop = started.stop;
-    endpoint = started.endpoint;
-    logger.info(`[proxy]: Started at ${endpoint}`);
-    await checkIfServerIsRunning(endpoint, 1000, undefined, "proxy");
+    logger.info(`[proxy]: Started at ${started.endpoint}`);
+    await checkIfServerIsRunning(started.endpoint, 1000, undefined, "proxy");
+    return {
+      kill: () => {
+        logger.info("[proxy]: kill() called on ngrok proxy, stopping...");
+        started.stop().catch((error) => logger.error("[proxy]: Error during kill:", error));
+      },
+    };
   } else {
     logger.info("[proxy]: Skipping ngrok tunnel as runProxy is not set to 'run'");
+    return null;
   }
-  return { stop, endpoint };
-}
-
-export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
-  // This function is now a wrapper around runLocalNgrokProxy for backwards compatibility
-  logger.info(`[proxy]: runLocalSslProxy called (delegating to runLocalNgrokProxy)`);
-  const result = await runLocalNgrokProxy(runProxy, httpServerPort, baseUrl);
-  // For backwards compatibility, return an object that looks like a process with a kill method
-  return result.stop
-    ? {
-        kill: () => {
-          logger.info("[proxy]: kill() called on ngrok proxy, stopping...");
-          result.stop().catch((error) => logger.error("[proxy]: Error during kill:", error));
-        },
-      }
-    : null;
 }
 
 export async function runLocalOAuth2Server(runMockOAuth2) {
@@ -858,13 +845,6 @@ export async function checkFraudPreventionHeadersFeedback(
     console.warn("Could not retrieve HMRC access token from session storage for feedback check");
     return null;
   }
-}
-
-export function generatePeriodKey() {
-  const year = String(24 + Math.floor(Math.random() * 2)).padStart(2, "0"); // 24 or 25
-  const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
-  const number = Math.floor(Math.random() * 9) + 1; // 1-9
-  return `${year}${letter}${number}`;
 }
 
 /**

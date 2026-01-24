@@ -39,6 +39,41 @@ grep -i -n -A 20 -E 'fail|error' target/test.txt
 
 **Important**: Behaviour tests generate too much output to read directly - always pipe to file.
 
+## Active Test Monitoring (CRITICAL)
+
+**You MUST actively monitor running tests, not sit waiting for an exit code.**
+
+Behaviour tests (`npm run test:submitVatBehaviour-*`) take approximately 2-3 minutes. If a test appears stuck:
+
+1. **Tail the output file** to see progress:
+   ```bash
+   tail -f target/behaviour.txt
+   ```
+
+2. **Kill stuck processes** if no progress for 60+ seconds:
+   ```bash
+   pkill -f "playwright|ngrok|server.js"
+   ```
+
+3. **Never wait indefinitely** - if a test hasn't produced output in 2 minutes, it's stuck.
+
+**Signs a test is stuck:**
+- No new output for 60+ seconds
+- "Waiting for..." messages that don't resolve
+- Test running longer than 5 minutes total
+
+## HMRC Obligation Flexibility (CRITICAL)
+
+**YOU CANNOT RELY UPON SPECIFIC OBLIGATIONS COMING BACK.**
+
+- HMRC obligations are unpredictable
+- Period keys are opaque and cannot be calculated
+- Different environments return different obligations
+- Tests MUST NOT be overfit to specific responses
+- Simulator should NOT encourage hardcoding specific dates/periods
+
+See `OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
+
 ## Target Directory Access
 
 The `./target` directory is always accessible - you do not need to ask about accessing it. This directory contains:
@@ -162,6 +197,8 @@ When implementing features that require infrastructure validation:
 - **No import reordering** - considered unnecessary formatting
 - **No fallback paths** for silent failures when fixing bugs
 - **No compatibility adaptors** when refactoring - change names everywhere consistently
+- **No "legacy" support code** - all requests originate in this repository, so there's no external caller needing backwards compatibility. Code that accepts parameters and ignores them is toxic. If a parameter isn't used, remove it. Don't add complexity pretending to support something.
+- **No server-side fallbacks to favor tests** - if a header or parameter is required, the client must send it. Don't add `|| process.env.X` fallbacks in production code to work around test setup issues.
 - Only run `npm run linting-fix && npm run formatting-fix` when specifically asked
 
 ## Four-Tier Testing Pyramid

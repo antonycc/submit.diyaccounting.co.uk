@@ -202,6 +202,19 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
   });
 
   it("should retrieve VAT return with QUARTERLY_ONE_MET scenario", async () => {
+    // Set up stub data for fulfilled obligations (needed for periodKey resolution)
+    process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
+      source: "stub",
+      obligations: [
+        {
+          start: "2024-01-01",
+          end: "2024-03-31",
+          due: "2024-05-07",
+          status: "F",
+          periodKey: "24A1",
+        },
+      ],
+    });
     // Set up stub data for VAT return
     process.env.TEST_VAT_RETURN = JSON.stringify({
       source: "stub",
@@ -220,10 +233,11 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const returnEvent = buildLambdaEvent({
       method: "GET",
-      path: "/api/v1/hmrc/vat/return/24A1",
-      pathParameters: { periodKey: "24A1" },
+      path: "/api/v1/hmrc/vat/return",
       queryStringParameters: {
         "vrn": "123456789",
+        "periodStart": "2024-01-01",
+        "periodEnd": "2024-03-31",
         "Gov-Test-Scenario": "QUARTERLY_ONE_MET",
       },
       headers: {
@@ -308,7 +322,20 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
   }, 60_000);
 
   it("should handle different test scenarios without Gov-Test-Scenario header", async () => {
-    // Set up stub data
+    // Set up stub data for fulfilled obligations (needed for periodKey resolution)
+    process.env.TEST_VAT_OBLIGATIONS = JSON.stringify({
+      source: "stub",
+      obligations: [
+        {
+          start: "2024-04-01",
+          end: "2024-06-30",
+          due: "2024-08-07",
+          status: "F",
+          periodKey: "24B1",
+        },
+      ],
+    });
+    // Set up stub data for VAT return
     process.env.TEST_VAT_RETURN = JSON.stringify({
       source: "stub",
       periodKey: "24B1",
@@ -319,10 +346,11 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
 
     const returnEvent = buildLambdaEvent({
       method: "GET",
-      path: "/api/v1/hmrc/vat/return/24B1",
-      pathParameters: { periodKey: "24B1" },
+      path: "/api/v1/hmrc/vat/return",
       queryStringParameters: {
         vrn: "987654321",
+        periodStart: "2024-04-01",
+        periodEnd: "2024-06-30",
       },
       headers: {
         ...buildGovClientHeaders(),
