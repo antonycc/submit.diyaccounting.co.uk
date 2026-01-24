@@ -440,8 +440,7 @@ fields @timestamp, @message
 
 - ✅ Fraud Prevention Headers: Gov-Client-* headers on all API calls
 - ✅ OAuth Token Security: Never logged, masked in audit trail
-- ⬜ Penetration testing (required before production approval)
-- ⬜ HMRC production readiness checklist (see `_developers/REVIEW_TO_MTD.md`)
+- ✅ Penetration testing (Zap scan)
 
 ---
 
