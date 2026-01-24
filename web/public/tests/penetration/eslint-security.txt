@@ -1,0 +1,10 @@
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/services/bundleManagement.js
+  214:19  warning  Found non-literal argument to RegExp Constructor                   security/detect-non-literal-regexp
+  250:11  error    Definition for rule 'sonarjs/no-nested-conditional' was not found  sonarjs/no-nested-conditional
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/services/hmrcApi.js
+  405:3  error  Definition for rule 'sonarjs/no-nested-template-literals' was not found  sonarjs/no-nested-template-literals
+
+✖ 3 problems (2 errors, 1 warning)
+
