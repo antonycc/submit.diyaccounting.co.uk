@@ -374,6 +374,13 @@
           console.error("Error retrieving obligations:", error);
           showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
           showSearchCriteria(); // Show form on error
+          // Clear pending request data to prevent auto-retry loop on next page load
+          sessionStorage.removeItem("pendingObligationsRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
+          sessionStorage.removeItem("currentActivity");
+          console.log("Obligations retrieval failed, cleared session storage to prevent retry loop");
         } finally {
           hideLoading();
         }
