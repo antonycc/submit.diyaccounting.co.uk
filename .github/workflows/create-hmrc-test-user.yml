@@ -1,0 +1,111 @@
+name: create-hmrc-test-user
+run-name: "Create HMRC Sandbox test user"
+# SPDX-FileCopyrightText: 2025-2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Creates an HMRC Sandbox test user with MTD-VAT access.
+# The credentials can be used for manual testing against the HMRC Sandbox environment.
+#
+# IMPORTANT: These are SANDBOX/TEST credentials only.
+# They have NO access to real HMRC data or production systems.
+# The credentials are safe to copy from GitHub Actions logs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      service-names:
+        type: choice
+        description: 'HMRC services to enable for the test user'
+        required: false
+        options:
+          - 'mtd-vat'
+          - 'mtd-vat,mtd-income-tax'
+        default: 'mtd-vat'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+  # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
+  HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'
+
+jobs:
+  create-test-user:
+    name: 'Create HMRC Sandbox Test User'
+    runs-on: ubuntu-24.04
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Create HMRC Sandbox Test User
+        id: create-user
+        run: |
+          echo ""
+          echo "========================================================================"
+          echo "CREATING HMRC SANDBOX TEST USER"
+          echo "========================================================================"
+          echo ""
+          echo "NOTE: These are SANDBOX/TEST credentials only."
+          echo "      They have NO access to real HMRC data or production systems."
+          echo "      It is safe to copy these from the GitHub Actions logs."
+          echo ""
+          node scripts/create-hmrc-test-user.js
+        env:
+          HMRC_SANDBOX_CLIENT_ID: ${{ env.HMRC_SANDBOX_CLIENT_ID }}
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+      - name: Display Credentials Summary
+        if: success()
+        run: |
+          echo ""
+          echo "========================================================================"
+          echo "HMRC SANDBOX TEST CREDENTIALS - COPY FROM ABOVE OR FROM ARTIFACT"
+          echo "========================================================================"
+          echo ""
+          echo "User ID:     ${{ steps.create-user.outputs.hmrc-user-id }}"
+          echo "Password:    ${{ steps.create-user.outputs.hmrc-password }}"
+          echo "VAT Number:  ${{ steps.create-user.outputs.hmrc-vat-number }}"
+          echo "Org Name:    ${{ steps.create-user.outputs.hmrc-org-name }}"
+          echo ""
+          echo "========================================================================"
+          echo "USE THESE CREDENTIALS AT THE HMRC SANDBOX LOGIN PAGE"
+          echo "========================================================================"
+          echo ""
+          echo "These are TEST credentials for the HMRC Sandbox environment only."
+          echo "They cannot access real tax data and are safe to share for testing."
+          echo ""
+
+      - name: Upload credentials artifact
+        if: success()
+        uses: actions/upload-artifact@v6
+        with:
+          name: hmrc-test-user-credentials
+          retention-days: 30
+          path: hmrc-test-user.json
+
+      - name: Display failure message
+        if: failure()
+        run: |
+          echo ""
+          echo "========================================================================"
+          echo "FAILED TO CREATE HMRC TEST USER"
+          echo "========================================================================"
+          echo ""
+          echo "Check the logs above for error details."
+          echo ""
+          echo "Common issues:"
+          echo "  - HMRC_SANDBOX_CLIENT_SECRET not configured in GitHub Secrets"
+          echo "  - HMRC Sandbox API temporarily unavailable"
+          echo "  - Network connectivity issues"
+          echo ""
