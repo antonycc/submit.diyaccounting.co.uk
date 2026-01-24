@@ -350,6 +350,13 @@
         } catch (error) {
           console.error("Error retrieving VAT return:", error);
           showStatus(`Failed to retrieve return: ${error.message}`, "error");
+          // Clear pending request data to prevent auto-retry loop on next page load
+          sessionStorage.removeItem("pendingReturnRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
+          sessionStorage.removeItem("currentActivity");
+          console.log("Return retrieval failed, cleared session storage to prevent retry loop");
         } finally {
           hideLoading();
         }

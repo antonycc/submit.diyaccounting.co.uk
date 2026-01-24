@@ -811,6 +811,14 @@
         } catch (error) {
           console.error("Submission error:", error);
           showStatus(`Submission failed: ${error.message}`, "error");
+          // Clear submission data to prevent auto-retry loop on next page load
+          // User will need to manually retry by filling the form again
+          sessionStorage.removeItem("submission_data");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
+          sessionStorage.removeItem("currentActivity");
+          console.log("Submission failed, cleared session storage to prevent retry loop");
         } finally {
           hideLoading();
         }
