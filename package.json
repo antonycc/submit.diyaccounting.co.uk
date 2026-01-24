@@ -62,6 +62,7 @@
     "test:submitVatBehaviour-proxyRunning": "npx dotenv -e .env.proxyRunning -- npm run test:submitVatBehaviour",
     "test:submitVatBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:submitVatBehaviour",
     "test:submitVatBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:submitVatBehaviour",
+    "test:submitVatBehaviour-prod-report": "HMRC_ACCOUNT=sandbox npm run test:submitVatBehaviour-prod ; npm run test-report -- --testName submitVatBehaviour --testFile ./behaviour-tests/submitVat.behaviour.test.js --envFile .env.prod && ./scripts/publish-web-test-local.sh target/behaviour-test-results/test-report-submitVatBehaviour.json web-test-local",
     "test:submitVatBehaviour-simulator": "npx dotenv -e .env.simulator -- npm run test:submitVatBehaviour",
     "test:postVatReturnFraudPreventionHeadersBehaviour": "playwright test --project=postVatReturnFraudPreventionHeadersBehaviour",
     "test:postVatReturnFraudPreventionHeadersBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:postVatReturnFraudPreventionHeadersBehaviour",
