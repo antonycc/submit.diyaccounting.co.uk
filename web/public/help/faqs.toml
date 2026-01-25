@@ -423,3 +423,131 @@ Your submission receipts are stored separately and won't be lost.
 """
 keywords = ["wrong", "incorrect", "change", "edit bundle", "fix", "mistake", "vat registration number"]
 priority = 23
+
+[[faq]]
+id = "data-security"
+category = "vat-basics"
+question = "Where is my data stored? Is it secure?"
+answer = """
+DIY Accounting Submit takes data security seriously:
+
+**What we store:**
+- Your bundle settings (VAT registration number, environment preference)
+- Submission receipts (stored in your browser's local storage)
+
+**What we don't store:**
+- Your VAT figures - these go directly to HMRC and are not stored on our servers
+- Your Government Gateway credentials - you enter these on HMRC's own website
+
+**Security measures:**
+- All connections use HTTPS encryption
+- HMRC authorisation uses OAuth 2.0 (the same standard banks use)
+- Your HMRC access tokens are stored securely and never exposed to JavaScript
+
+See our [privacy policy](https://submit.diyaccounting.co.uk/privacy.html) for full details.
+"""
+keywords = ["data", "security", "privacy", "stored", "safe", "secure", "credentials", "password"]
+priority = 24
+
+[[faq]]
+id = "mobile-compatibility"
+category = "vat-basics"
+question = "Can I use this on my phone or tablet?"
+answer = """
+Yes. DIY Accounting Submit works on:
+
+- **Desktop browsers** - Chrome, Firefox, Safari, Edge
+- **Tablets** - iPad, Android tablets
+- **Mobile phones** - iPhone, Android phones
+
+The interface is responsive and adapts to your screen size. For entering VAT figures, a larger screen (tablet or desktop) may be easier to use, but mobile works fine.
+
+**Note:** You'll need to complete the HMRC authorisation step, which opens in a new browser window. Make sure pop-ups are allowed.
+"""
+keywords = ["mobile", "phone", "tablet", "ipad", "iphone", "android", "browser", "device", "responsive"]
+priority = 25
+
+[[faq]]
+id = "vat-refund"
+category = "submission"
+question = "What if Box 5 shows a negative amount (refund)?"
+answer = """
+A negative Box 5 means HMRC owes you a refund. This happens when your Box 4 (VAT reclaimed) is greater than Box 3 (VAT due).
+
+**The system handles this automatically:**
+- Box 5 displays as a positive number representing the refund amount
+- The calculation is |Box 3 - Box 4| (absolute value)
+- HMRC knows from the figures whether it's a payment or refund
+
+**After submission:**
+- HMRC will process the refund according to their normal procedures
+- Refunds typically appear in your bank account within 10 working days
+- Check your HMRC online account for refund status
+"""
+keywords = ["refund", "negative", "box 5", "owed", "repayment", "claim back", "hmrc owes me"]
+priority = 26
+
+[[faq]]
+id = "payment-to-hmrc"
+category = "submission"
+question = "How do I pay HMRC after submitting my return?"
+answer = """
+**DIY Accounting Submit only handles the VAT return submission - not payment.**
+
+After submitting your return, you need to pay HMRC separately if you owe VAT:
+
+1. Log in to your [HMRC online account](https://www.gov.uk/pay-vat)
+2. Choose your payment method:
+   - Direct Debit (can be set up for automatic payment)
+   - Bank transfer (use your VAT registration number as the reference)
+   - Debit or credit card
+
+**Payment deadline:** Usually the same as your return deadline (shown in your obligations).
+
+**Important:** Submitting your return on time and paying on time are separate obligations. Late payment incurs different penalties than late submission.
+"""
+keywords = ["pay", "payment", "bank", "direct debit", "how to pay", "owe", "money", "transfer"]
+priority = 27
+
+[[faq]]
+id = "period-key-format"
+category = "submission"
+question = "What do the period codes like '26AF' mean?"
+answer = """
+Period codes (like 26AF, 26AG) are HMRC's internal reference for VAT periods. You don't need to understand them - they're shown for reference only.
+
+**The format:**
+- First two digits = year (26 = 2026)
+- Letters = quarter or month (varies by scheme)
+
+**What matters to you:**
+- The **period dates** shown (e.g., 1 January to 31 March 2026)
+- The **due date** for submission
+
+When selecting a period to submit, use the date range to identify the correct one - ignore the period code.
+"""
+keywords = ["period key", "period code", "26af", "format", "meaning", "what does", "letters", "reference"]
+priority = 28
+
+[[faq]]
+id = "lost-google-account"
+category = "connection"
+question = "What if I can't access my Google account?"
+answer = """
+If you lose access to your Google account:
+
+**Your data is still safe:**
+- Receipts are stored in your browser (not tied to your Google account)
+- Your HMRC authorisation is tied to your Government Gateway, not Google
+- Your VAT returns are recorded at HMRC regardless of your Google account status
+
+**To continue using DIY Accounting Submit:**
+1. Recover your Google account through Google's account recovery process
+2. Or create a new Google account and log in with that
+3. Re-add your bundle (VAT registration number)
+4. The next time you submit, you'll re-authorise with HMRC
+
+**Note:** Previous receipts stored in your browser will still be visible as they're stored locally, not with your account.
+"""
+keywords = ["google account", "locked out", "can't login", "forgot", "account access", "lost access"]
+priority = 29
