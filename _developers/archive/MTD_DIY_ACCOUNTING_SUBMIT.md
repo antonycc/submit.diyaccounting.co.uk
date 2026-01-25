@@ -2,7 +2,7 @@ Here is the **full report as Markdown**, in a single code block so you can copy-
 
 ````md
 # HMRC MTD VAT Production-Approval Checklist
-**For:** Submit DIY Accounting (submit.diyaccounting.co.uk)
+**For:** DIY Accounting Submit (submit.diyaccounting.co.uk)
 **Repo:** https://github.com/antonycc/submit.diyaccounting.co.uk
 **Guide:** https://submit.diyaccounting.co.uk/guide/index.html
 
@@ -159,7 +159,7 @@ Matches implementation in `hmrcVatReturnPost.js` and `hmrcReceiptGet.js`
 ## 5. Production Approval Checklist (Fill & Send to HMRC)
 
 ```
-Product name: Submit DIY Accounting
+Product name: DIY Accounting Submit
 Version: (e.g. v0.9.0 or commit SHA)
 Supported endpoints:
   ✔ Retrieve VAT Obligations
