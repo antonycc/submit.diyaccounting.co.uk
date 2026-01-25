@@ -75,6 +75,12 @@ All other mandatory headers are sent correctly:
 | Gov-Vendor-Public-IP | Server public IP |
 | Gov-Vendor-Forwarded | Proxy chain information |
 
+## Compliance
+
+| Compliance | Evidence |
+|------------|----------|
+| ICO Registration | ZB070902 ([ICO Public Register](https://ico.org.uk/ESDWebPages/Entry/ZB070902)) |
+
 ## Documentation
 
 | Document | URL |
