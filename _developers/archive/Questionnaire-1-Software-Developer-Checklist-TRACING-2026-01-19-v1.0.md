@@ -1,7 +1,7 @@
 # Questionnaire 1: Software Developer Checklist - Evidence Tracing
 
 **Organisation**: DIY Accounting Limited
-**Product**: Submit DIY Accounting
+**Product**: DIY Accounting Submit
 **Date Completed**: 19 January 2026
 **Version**: 1.0
 
@@ -23,10 +23,10 @@ This document traces each answer to its evidence source.
 | Website address: | https://submit.diyaccounting.co.uk | HMRC_MTD_API_APPROVAL_SUBMISSION.md line 65 |
 | LinkedIn address (if any): | N/A | Not applicable |
 | Twitter address (if any): | N/A | Not applicable |
-| Product Name: | Submit DIY Accounting | HMRC_MTD_API_APPROVAL_SUBMISSION.md line 64 |
-| Sandbox Application Name: | Submit DIY Accounting (Sandbox) | HMRC sandbox testing environment |
+| Product Name: | DIY Accounting Submit | HMRC_MTD_API_APPROVAL_SUBMISSION.md line 64 |
+| Sandbox Application Name: | DIY Accounting Submit (Sandbox) | HMRC sandbox testing environment |
 | Sandbox Application ID: | uqMHA6RsDGGa7h8EG2VqfqAmv4tV | .env.proxy line - HMRC_SANDBOX_CLIENT_ID |
-| Production Application Name: | Submit DIY Accounting | HMRC_MTD_API_APPROVAL_SUBMISSION.md line 64 |
+| Production Application Name: | DIY Accounting Submit | HMRC_MTD_API_APPROVAL_SUBMISSION.md line 64 |
 
 ---
 

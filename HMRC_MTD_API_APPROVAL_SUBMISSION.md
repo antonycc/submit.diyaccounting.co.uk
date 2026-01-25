@@ -62,7 +62,7 @@
 ## 1.1 Application Summary
 
 ```
-Product Name: Submit DIY Accounting
+Product Name: DIY Accounting Submit
 Product URL: https://submit.diyaccounting.co.uk
 Version: 1.0.0
 

@@ -1,6 +1,6 @@
 # Software Developer Checklist (Questionnaire 1)
 
-**Version 2 - 24 January 2026**
+**Version 2 - 25 January 2026**
 
 > **Status**: PRODUCTION READY - All items compliant. See comparison with v1 (20 January 2026) at end of document.
 
@@ -18,10 +18,10 @@
 | Website address | https://submit.diyaccounting.co.uk |
 | LinkedIn address (if any) | N/A |
 | Twitter address (if any) | N/A |
-| Product Name | Submit DIY Accounting |
-| Sandbox Application Name | Submit DIY Accounting (Sandbox) |
+| Product Name | DIY Accounting Submit |
+| Sandbox Application Name | DIY Accounting Submit (Sandbox) |
 | Sandbox Application ID | uqMHA6RsDGGa7h8EG2VqfqAmv4tV |
-| Production Application Name | Submit DIY Accounting |
+| Production Application Name | DIY Accounting Submit |
 
 **Evidence**: Company registration verified at Companies House (06846849). Contact details from HMRC_PRODUCTION_CREDENTIALS_EMAIL.md.
 
