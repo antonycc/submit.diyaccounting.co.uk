@@ -149,17 +149,17 @@ Note: It must be shown. Please add prior to data submission if it is missing. A 
 
 Answer: `Yes` - **COMPLIANT**
 
-**Evidence**: Legal declaration implemented in `submitVat.html` lines 301-308:
+**Evidence**: Legal declaration implemented in `submitVat.html` lines 301-308 using HMRC's exact wording:
 ```html
 <div class="declaration-box">
-  <input type="checkbox" id="declaration" name="declaration" required />
+  <input type="checkbox" id="declaration" name="declaration" required aria-describedby="declaration-hint" />
   <label for="declaration">
-    I confirm that the information I have given on this VAT return is correct and complete to the best of my knowledge and belief.
-    I understand that giving false information may result in penalties.
+    When you submit this VAT information you are making a legal declaration that the information is true and complete. A false declaration can result in prosecution.
   </label>
+  <p id="declaration-hint" class="hint">You must tick this box to confirm you understand before submitting</p>
 </div>
 ```
-Form validation at lines 703-707 enforces checkbox before submission. Declaration text aligns with HMRC guidance.
+Form validation enforces checkbox before submission. Declaration text matches HMRC VAT MTD end-to-end service guide exactly.
 
 Screenshot: See live application at https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html
 

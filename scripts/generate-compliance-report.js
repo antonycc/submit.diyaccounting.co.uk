@@ -227,6 +227,30 @@ function parseLighthouseResults(lighthouseJson) {
   };
 }
 
+function parseTextSpacingResults(textSpacingJson) {
+  if (!textSpacingJson || !textSpacingJson.pages) {
+    return { passed: 0, failed: 0, total: 0, errors: 0, failedPages: [], found: false };
+  }
+
+  const summary = textSpacingJson.summary || {};
+  const failedPages = textSpacingJson.pages
+    .filter((p) => !p.passed && !p.error)
+    .map((p) => ({
+      url: p.url,
+      clippedCount: p.clippedElements?.length || 0,
+      clippedElements: p.clippedElements || [],
+    }));
+
+  return {
+    passed: summary.passed || 0,
+    failed: summary.failed || 0,
+    total: summary.total || 0,
+    errors: summary.errors || 0,
+    failedPages,
+    found: true,
+  };
+}
+
 // Suppressed ZAP alerts - accepted risks documented in privacy.html
 const SUPPRESSED_ZAP_ALERTS = {
   "CSP: script-src unsafe-inline":
@@ -306,6 +330,7 @@ function generateReport(sourceFiles) {
   const axeJson = readJsonFile(join(accessibilityDir, "axe-results.json"));
   const axeWcag22Json = readJsonFile(join(accessibilityDir, "axe-wcag22-results.json"));
   const lighthouseJson = readJsonFile(join(accessibilityDir, "lighthouse-results.json"));
+  const textSpacingJson = readJsonFile(join(accessibilityDir, "text-spacing-results.json"));
   const retireJson = readJsonFile(join(penetrationDir, "retire.json"));
   const zapJson = readJsonFile(join(penetrationDir, "zap-report.json"));
 
@@ -316,6 +341,7 @@ function generateReport(sourceFiles) {
   const axe = parseAxeResults(axeJson);
   const axeWcag22 = parseAxeResults(axeWcag22Json);
   const lighthouse = parseLighthouseResults(lighthouseJson);
+  const textSpacing = parseTextSpacingResults(textSpacingJson);
   const retire = parseRetireResults(retireJson);
   const zap = parseZapResults(zapJson);
 
@@ -324,7 +350,7 @@ function generateReport(sourceFiles) {
 
   // Determine status
   const securityPass = npmAudit.critical === 0 && npmAudit.high === 0 && eslint.errors === 0 && zap.high === 0;
-  const accessibilityPass = pa11y.failed === 0 && axe.violations === 0;
+  const accessibilityPass = pa11y.failed === 0 && axe.violations === 0 && textSpacing.failed === 0;
   const overallPass = securityPass && accessibilityPass;
 
   const statusIcon = (pass) => (pass ? "✅" : "❌");
@@ -358,6 +384,7 @@ ${sourceFilesSection}
 | axe-core | ${statusIcon(axe.violations === 0)} | ${axe.found ? `${axe.violations} violations, ${axe.passes} passes` : "Report not found"} |
 | axe-core (WCAG 2.2) | ${statusIcon(axeWcag22.violations === 0)} | ${axeWcag22.found ? `${axeWcag22.violations} violations, ${axeWcag22.passes} passes` : "Report not found"} |
 | Lighthouse | ${statusIcon(lighthouse.accessibility >= 90)} | ${lighthouse.found ? `A11y: ${lighthouse.accessibility}%, Perf: ${lighthouse.performance}%, BP: ${lighthouse.bestPractices}%` : "Report not found"} |
+| Text Spacing (1.4.12) | ${statusIcon(textSpacing.failed === 0)} | ${textSpacing.found ? `${textSpacing.passed}/${textSpacing.total} pages passed` : "Report not found"} |
 
 ---
 
@@ -532,6 +559,37 @@ ${
     : "⚠️ Report not found: `web/public/tests/accessibility/lighthouse-results.json`"
 }
 
+### 2.5 Text Spacing (WCAG 1.4.12)
+
+${
+  textSpacing.found
+    ? `| Metric | Value |
+|--------|-------|
+| Pages Tested | ${textSpacing.total} |
+| Pages Passed | ${textSpacing.passed} |
+| Pages Failed | ${textSpacing.failed} |
+| Errors | ${textSpacing.errors} |
+
+**Status**: ${statusIcon(textSpacing.failed === 0)} ${textSpacing.failed === 0 ? "All pages pass text spacing test" : "Some pages have text spacing issues"}
+
+**Test Parameters** (WCAG 1.4.12 minimum values):
+- Line height: 1.5 times font size
+- Letter spacing: 0.12 times font size
+- Word spacing: 0.16 times font size
+- Paragraph spacing: 2 times font size
+${
+  textSpacing.failedPages.length > 0
+    ? `
+#### Pages with Clipped Content
+
+| Page | Clipped Elements |
+|------|------------------|
+${textSpacing.failedPages.map((p) => `| ${p.url.replace(targetUrl, "") || "/"} | ${p.clippedCount} |`).join("\n")}`
+    : ""
+}`
+    : "⚠️ Report not found: `web/public/tests/accessibility/text-spacing-results.json`"
+}
+
 ---
 
 ## 3. Report Files
@@ -546,6 +604,7 @@ ${
 | axe-core | web/public/tests/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
 | axe-core (WCAG 2.2) | web/public/tests/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
 | Lighthouse | web/public/tests/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
+| Text Spacing | web/public/tests/accessibility/text-spacing-results.json | ${textSpacing.found ? "✅ Found" : "❌ Missing"} |
 
 ---
 
@@ -574,6 +633,7 @@ function main() {
     join(accessibilityDir, "axe-results.json"),
     join(accessibilityDir, "axe-wcag22-results.json"),
     join(accessibilityDir, "lighthouse-results.json"),
+    join(accessibilityDir, "text-spacing-results.json"),
   ];
 
   const sourceFiles = [];

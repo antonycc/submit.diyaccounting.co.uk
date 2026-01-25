@@ -20,7 +20,8 @@
 | Pa11y (WCAG 2.1 AA) | 21/21 pages passed, 0 errors |
 | axe-core | 0 violations, 748 passes |
 | axe-core (WCAG 2.2) | 0 violations, 450 passes |
-| Lighthouse Accessibility | 95% |
+| Lighthouse Accessibility | 95% (target-size audit - footer link touch targets fixed) |
+| Text Spacing (1.4.12) | Automated test via `npm run accessibility:text-spacing-prod` |
 
 **Evidence**: REPORT_ACCESSIBILITY_PENETRATION.md generated 2026-01-24T23:24:12.615Z
 
@@ -145,7 +146,7 @@
 
 | Compliance Level | Remarks and Explanations |
 |------------------|-------------------------|
-| Supports | Input fields have descriptive labels and hint text via `aria-describedby`. VAT number input has appropriate `pattern`, `maxlength`, and hint text explaining format. Date inputs use `type="date"`. Currency inputs have £ prefix and hints specifying format (e.g., "Enter an amount with up to 2 decimal places"). |
+| Supports | All input fields have `autocomplete="off"` attribute (appropriate for financial/tax data that should not be browser-autofilled). Input fields have descriptive labels and hint text via `aria-describedby`. VAT number input has appropriate `pattern`, `maxlength`, and hint text explaining format. Date inputs use `type="date"`. Currency inputs have £ prefix and hints specifying format (e.g., "Enter an amount with up to 2 decimal places"). |
 
 ---
 
@@ -216,13 +217,13 @@
 | Supports | Form input borders (#767676 on #FFFFFF) meet 3:1 ratio (actual: 4.48:1). Button backgrounds meet contrast requirements. Focus indicators are clearly visible. Checkbox and radio buttons use native styling with adequate contrast. |
 
 ### 1.4.12 Text Spacing (Level AA)
-**Criterion:** In content implemented using markup languages that support the following text style properties, no loss of content or functionality occurs by setting all of the following and by changing no other style property: Line height (line spacing) to at least 1.5 times the font size; Spacing following paragraphs to at least 2 times the font size; Letter spacing (tracking) to at least 0.12 times the font size; Word spacing to at least 0.16 times the font size. Exception: Human languages and scripts that do not make use of one or more of these text style properties in written text can conform using only the properties that exist for that combination of language and script.
+**Criterion:** In content implemented using markup languages that support the following text style properties, no loss of content or functionality occurs by setting all of the following and by changing no other style property: Line height (line spacing) to at least 1.5 times the font size; Spacing following paragraphs to at least 2 times the font size; Letter spacing (tracking) to at least 0.12 times the font size; Word spacing to at least 0.16 times the font size. Exception: Human languages and scripts that do not make use of these text style properties in written text can conform using only the properties that exist for that combination of language and script.
 
 **Supports:** Visual (Screen reader)
 
 | Compliance Level | Remarks and Explanations |
 |------------------|-------------------------|
-| Supports | CSS does not override user-defined text spacing. Content containers use flexible heights. No content is clipped when text spacing is increased. Tested with browser extensions that modify text spacing. |
+| Supports | CSS does not override user-defined text spacing. Content containers use flexible heights. Automated testing with `npm run accessibility:text-spacing-prod` injects WCAG 1.4.12 minimum CSS values (line-height: 1.5, letter-spacing: 0.12em, word-spacing: 0.16em, paragraph margin: 2em) and verifies no content is clipped via overflow detection. Results stored in `web/public/tests/accessibility/text-spacing-results.json`. |
 
 ### 1.4.13 Content on Hover or Focus (Level AA)
 **Criterion:** Where receiving and then removing pointer hover or keyboard focus triggers additional content to become visible and then hidden, the following are true: Dismissable (A mechanism is available to dismiss the additional content without moving pointer hover or keyboard focus, unless the additional content communicates an input error or does not obscure or replace other content); Hoverable (If pointer hover can trigger the additional content, then the pointer can be moved over the additional content without the additional content disappearing); Persistent (The additional content remains visible until the hover or focus trigger is removed, the user dismisses it, or its information is no longer valid). Exception: The visual presentation of the additional content is controlled by the user agent and is not modified by the author.
@@ -277,7 +278,7 @@
 
 | Compliance Level | Remarks and Explanations |
 |------------------|-------------------------|
-| Supports | OAuth session tokens have standard expiry managed by HMRC. Application does not impose additional time limits on form completion. Users can take as long as needed to complete VAT return entry. Session data persists in sessionStorage until explicitly cleared. |
+| Supports | OAuth session tokens have standard expiry managed by HMRC (Essential Exception - authentication). Application does not impose additional time limits on form completion. **Mitigation**: Form data is auto-saved to sessionStorage as users type, so if OAuth token expires mid-session, users can re-authenticate and their entered data is restored automatically. Implementation in `submitVat.html` saves all VAT box values on input/change events and restores on page load. |
 
 ### 2.2.2 Pause, Stop, Hide (Level A)
 **Criterion:** For moving, blinking, scrolling, or auto-updating information, all of the following are true: Moving, blinking, scrolling; Auto-updating.

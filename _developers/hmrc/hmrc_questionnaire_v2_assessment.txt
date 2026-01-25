@@ -1,0 +1,180 @@
+Critical Review: Areas That Could Be Challenged
+
+Questionnaire 1 - Software Developer Checklist
+┌───────────────────────┬────────────┬──────────────────────────────────────────────────────┬────────────────────────┐
+│       Question        │ Risk Level │                        Issue                         │     Challenge Risk     │
+├───────────────────────┼────────────┼──────────────────────────────────────────────────────┼────────────────────────┤
+│ Q10 Legal Declaration │ ⚠️ MEDIUM  │ Declaration text doesn't match HMRC's exact wording  │ Could be rejected      │
+├───────────────────────┼────────────┼──────────────────────────────────────────────────────┼────────────────────────┤
+│ Q15 GDPR              │ ⚠️ MEDIUM  │ "ICO registration pending" - not yet registered      │ May require completion │
+├───────────────────────┼────────────┼──────────────────────────────────────────────────────┼────────────────────────┤
+│ Q16 WCAG              │ ⚠️ LOW     │ Lighthouse 95% not 100% - implies some issues        │ Unlikely but possible  │
+├───────────────────────┼────────────┼──────────────────────────────────────────────────────┼────────────────────────┤
+│ Q4 Manual Keying      │ ⚠️ LOW     │ Relies on bridging software exemption interpretation │ May need clarification │
+└───────────────────────┴────────────┴──────────────────────────────────────────────────────┴────────────────────────┘
+Q10 Legal Declaration - MEDIUM RISK
+
+Problem: The declaration text in the application doesn't match HMRC's exact required wording.
+
+Current text (submitVat.html):
+"I confirm that the information I have given on this VAT return is correct and complete to the best of my knowledge and belief. I understand that giving false information may result in penalties."
+
+HMRC's required text (from VAT MTD end-to-end service guide):
+"When you submit this VAT information you are making a legal declaration that the information is true and complete. A false declaration can result in prosecution."
+
+Differences:
+- "correct and complete" vs "true and complete"
+- "may result in penalties" vs "can result in prosecution"
+- Missing "legal declaration" terminology
+- Missing "When you submit this VAT information" preamble
+
+Recommendation: Update to use HMRC's exact wording.
+
+---
+Q15 GDPR Compliance - MEDIUM RISK
+
+Problem: The answer states "ICO registration pending" but GDPR compliance typically requires:
+1. ICO registration (if processing personal data commercially)
+2. Data Protection Officer appointment (if required)
+3. Privacy impact assessment
+4. Data processing records
+
+What's missing:
+- No evidence of completed ICO registration
+- No Data Protection Officer named
+- No reference to data processing records
+
+Recommendation: Complete ICO registration before submission, or clarify that registration is not required for the data processing activities undertaken.
+
+---
+Q4 Manual Keying - LOW RISK
+
+Problem: The answer relies on VAT Notice 700/22 Section 4.3 exemption for bridging software, but the questionnaire note explicitly states:
+"Manual element must be removed before a Production application can be approved"
+
+Potential challenge: HMRC may push back on allowing manual entry even for bridging software, particularly if they want to encourage more automated digital links.
+
+Recommendation: Be prepared to defend the bridging software classification with reference to HMRC's own documentation.
+
+---
+Questionnaire 2 - WCAG 2.1 AA Checklist
+┌──────────────────────────────┬────────────┬─────────────────────────────────────────────────────────┬───────────────────────────┐
+│          Criterion           │ Risk Level │                          Issue                          │      Challenge Risk       │
+├──────────────────────────────┼────────────┼─────────────────────────────────────────────────────────┼───────────────────────────┤
+│ 1.3.5 Identify Input Purpose │ ⚠️ MEDIUM  │ No autocomplete attributes on personal data fields      │ Technically non-compliant │
+├──────────────────────────────┼────────────┼─────────────────────────────────────────────────────────┼───────────────────────────┤
+│ 1.4.12 Text Spacing          │ ⚠️ MEDIUM  │ "Tested with browser extensions" - no evidence provided │ Unverified claim          │
+├──────────────────────────────┼────────────┼─────────────────────────────────────────────────────────┼───────────────────────────┤
+│ 2.2.1 Timing Adjustable      │ ⚠️ MEDIUM  │ OAuth token expiry not user-controllable                │ Potential gap             │
+├──────────────────────────────┼────────────┼─────────────────────────────────────────────────────────┼───────────────────────────┤
+│ 2.4.5 Multiple Ways          │ ⚠️ LOW     │ No search functionality                                 │ Borderline                │
+├──────────────────────────────┼────────────┼─────────────────────────────────────────────────────────┼───────────────────────────┤
+│ 3.3.4 Error Prevention       │ ⚠️ LOW     │ No review step before final submission                  │ Could be stronger         │
+├──────────────────────────────┼────────────┼─────────────────────────────────────────────────────────┼───────────────────────────┤
+│ Lighthouse 95%               │ ⚠️ LOW     │ Not 100% - what's the missing 5%?                       │ May be questioned         │
+└──────────────────────────────┴────────────┴─────────────────────────────────────────────────────────┴───────────────────────────┘
+1.3.5 Identify Input Purpose - MEDIUM RISK
+
+Problem: WCAG 2.1 AA requires input fields collecting user information to have autocomplete attributes. The VAT number field doesn't have this.
+
+Current:
+<input type="text" id="vatNumber" name="vatNumber" ... />
+
+Should be:
+<input type="text" id="vatNumber" name="vatNumber" autocomplete="off" ... />
+
+Or if it's a field browsers should autocomplete, it needs the appropriate autocomplete value.
+
+Note: The questionnaire claims "Supports" but this may not be fully verified for all input fields.
+
+Recommendation: Audit all input fields and add appropriate autocomplete attributes.
+
+---
+1.4.12 Text Spacing - MEDIUM RISK
+
+Problem: The evidence states "Tested with browser extensions that modify text spacing" but provides no:
+- Name of the testing tool used
+- Test results documentation
+- Screenshots proving no content clipping
+
+Challenge: This is a common area where applications fail because fixed-height containers clip text.
+
+Recommendation: Document the actual test performed, ideally with a tool like the "Text Spacing Bookmarklet" and include screenshots.
+
+---
+2.2.1 Timing Adjustable - MEDIUM RISK
+
+Problem: The OAuth token has a time limit that users cannot extend, adjust, or turn off. The answer deflects by saying "managed by HMRC" but:
+- The application could warn users before token expiry
+- The application could offer to refresh tokens
+- Session timeout is the application's responsibility
+
+Challenge: If a user takes too long filling in the form and the OAuth token expires mid-submission, they lose their work.
+
+Recommendation: Either implement session timeout warnings, or acknowledge this as a limitation with mitigation (e.g., form data is preserved in sessionStorage).
+
+---
+2.4.5 Multiple Ways - LOW RISK
+
+Problem: The criterion requires multiple ways to locate pages. The answer mentions:
+- Hamburger menu
+- Footer links
+- User Guide
+
+But notably missing:
+- Site search (not implemented)
+- Sitemap page (not implemented)
+
+For a small application, this may be acceptable, but it's borderline.
+
+Recommendation: Consider adding a sitemap page, or strengthen the evidence that existing navigation methods are sufficient.
+
+---
+3.3.4 Error Prevention (Legal, Financial, Data) - LOW RISK
+
+Problem: The criterion requires one of: Reversible, Checked, or Confirmed.
+
+Current implementation only has:
+- Checkbox confirmation
+
+What's missing:
+- No review step showing all entered data before final submission
+- No ability to go back and review/edit after clicking submit
+- No undo once submitted
+
+The checkbox alone is the minimum compliance. HMRC may expect a review screen.
+
+Recommendation: Consider adding a "Review your return" step before final submission that shows all 9 boxes and asks for explicit confirmation.
+
+---
+Lighthouse Accessibility 95% - LOW RISK
+
+Problem: The score is 95%, not 100%. What's causing the 5% reduction?
+
+Common Lighthouse accessibility issues not caught by axe-core:
+- Form elements without labels (but we claim all have labels)
+- Low contrast on some elements
+- Missing lang attributes on parts of page
+- Touch targets too small
+
+Recommendation: Run Lighthouse manually and document what the remaining 5% consists of. If they're false positives or acceptable limitations, document that.
+
+---
+Summary: Items Requiring Action
+┌──────────┬───────────────────────────────────┬────────────────────────────────────────────┐
+│ Priority │               Item                │              Action Required               │
+├──────────┼───────────────────────────────────┼────────────────────────────────────────────┤
+│ HIGH     │ Q10 Legal Declaration wording     │ Update to match HMRC's exact text          │
+├──────────┼───────────────────────────────────┼────────────────────────────────────────────┤
+│ MEDIUM   │ Q15 ICO Registration              │ Complete registration or justify exemption │
+├──────────┼───────────────────────────────────┼────────────────────────────────────────────┤
+│ MEDIUM   │ 1.3.5 autocomplete attributes     │ Add to all user input fields               │
+├──────────┼───────────────────────────────────┼────────────────────────────────────────────┤
+│ MEDIUM   │ 1.4.12 Text spacing test evidence │ Document actual testing performed          │
+├──────────┼───────────────────────────────────┼────────────────────────────────────────────┤
+│ MEDIUM   │ 2.2.1 Session timeout             │ Add warning or document mitigation         │
+├──────────┼───────────────────────────────────┼────────────────────────────────────────────┤
+│ LOW      │ 3.3.4 Review step                 │ Consider adding data review before submit  │
+├──────────┼───────────────────────────────────┼────────────────────────────────────────────┤
+│ LOW      │ Lighthouse 95%                    │ Document what the remaining issues are     │
+└──────────┴───────────────────────────────────┴────────────────────────────────────────────┘
