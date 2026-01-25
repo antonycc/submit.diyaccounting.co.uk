@@ -132,15 +132,6 @@ See [LICENSE](LICENSE) for the full license text.
 
 ---
 
-## Contributing
-
-Contributions are welcome. Please see our [GitHub repository](https://github.com/antonycc/submit.diyaccounting.co.uk) for:
-- Issue tracking
-- Pull request guidelines
-- Development setup instructions
-
----
-
 ## Support
 
 For support enquiries: **admin@diyaccounting.co.uk**
