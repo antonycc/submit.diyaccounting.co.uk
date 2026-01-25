@@ -13,8 +13,8 @@ npm run accessibility          # WCAG Level AA audit
 npm run penetration            # Security vulnerability scan
 
 # Generate reports
-npm run accessibility:report   # HTML report in target/accessibility/
-npm run penetration:report     # HTML report in target/penetration/
+npm run accessibility:report   # HTML report in web/public/tests/accessibility/
+npm run penetration:report     # HTML report in web/public/tests/penetration/
 ```
 
 ---
@@ -33,9 +33,9 @@ npm run penetration:report     # HTML report in target/penetration/
 ```json
 {
   "accessibility": "pa11y-ci --config .pa11yci.json",
-  "accessibility:report": "pa11y-ci --config .pa11yci.json --reporter html > target/accessibility/report.html",
-  "accessibility:lighthouse": "lighthouse https://wanted-finally-anteater.ngrok-free.app --output html --output-path target/accessibility/lighthouse.html --chrome-flags='--headless'",
-  "accessibility:axe-proxy-report": "axe https://wanted-finally-anteater.ngrok-free.app --save target/accessibility/axe-results.json"
+  "accessibility:report": "pa11y-ci --config .pa11yci.json --reporter html > web/public/tests/accessibility/report.html",
+  "accessibility:lighthouse": "lighthouse https://wanted-finally-anteater.ngrok-free.app --output html --output-path web/public/tests/accessibility/lighthouse.html --chrome-flags='--headless'",
+  "accessibility:axe-proxy-report": "axe https://wanted-finally-anteater.ngrok-free.app --save web/public/tests/accessibility/axe-results.json"
 }
 ```
 
@@ -82,11 +82,11 @@ npm run penetration:report     # HTML report in target/penetration/
 ```json
 {
   "penetration": "npm audit --audit-level=moderate && npm run penetration:static",
-  "penetration:static": "eslint --config eslint.security.config.js . --format stylish | tee target/penetration/eslint-security.txt || true",
-  "penetration:deps": "npm audit --json > target/penetration/npm-audit.json || true",
-  "penetration:retire": "retire --path . --outputformat json --outputpath target/penetration/retire.json || true",
-  "penetration:zap": "docker run --rm -v $(pwd)/target/penetration:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t ${DIY_SUBMIT_BASE_URL:-https://wanted-finally-anteater.ngrok-free.app} -r zap-report.html -J zap-report.json",
-  "penetration:report": "npm run penetration:deps && npm run penetration:static && npm run penetration:retire && echo 'Reports in target/penetration/'"
+  "penetration:static": "eslint --config eslint.security.config.js . --format stylish | tee web/public/tests/penetration/eslint-security.txt || true",
+  "penetration:deps": "npm audit --json > web/public/tests/penetration/npm-audit.json || true",
+  "penetration:retire": "retire --path . --outputformat json --outputpath web/public/tests/penetration/retire.json || true",
+  "penetration:zap": "docker run --rm -v $(pwd)/web/public/tests/penetration:/zap/wrk:rw -t zaproxy/zap-stable zap-baseline.py -t ${DIY_SUBMIT_BASE_URL:-https://wanted-finally-anteater.ngrok-free.app} -r zap-report.html -J zap-report.json",
+  "penetration:report": "npm run penetration:deps && npm run penetration:static && npm run penetration:retire && echo 'Reports in web/public/tests/penetration/'"
 }
 ```
 
@@ -195,7 +195,7 @@ The workflow runs individual compliance checks in parallel, then generates a com
 
 | Job | Script | Purpose |
 |-----|--------|---------|
-| `compliance-report` | `compliance:<env>-report-md` | Generate combined COMPLIANCE_REPORT.md |
+| `compliance-report` | `compliance:<env>-report-md` | Generate combined REPORT_ACCESSIBILITY_PENETRATION.md |
 
 **Triggers:**
 - Weekly on Monday at 6am UTC (scheduled)

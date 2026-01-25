@@ -23,6 +23,12 @@
     "https://ci.submit.diyaccounting.co.uk/guide/index.html",
     "https://ci.submit.diyaccounting.co.uk/help/index.html",
     "https://ci.submit.diyaccounting.co.uk/errors/404-error-distribution.html",
-    "https://ci.submit.diyaccounting.co.uk/errors/404-error-origin.html"
+    "https://ci.submit.diyaccounting.co.uk/errors/404-error-origin.html",
+    "https://ci.submit.diyaccounting.co.uk/error/403.html",
+    "https://ci.submit.diyaccounting.co.uk/error/404.html",
+    "https://ci.submit.diyaccounting.co.uk/error/500.html",
+    "https://ci.submit.diyaccounting.co.uk/error/502.html",
+    "https://ci.submit.diyaccounting.co.uk/error/503.html",
+    "https://ci.submit.diyaccounting.co.uk/error/504.html"
   ]
 }

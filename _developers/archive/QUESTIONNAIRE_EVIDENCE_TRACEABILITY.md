@@ -24,26 +24,26 @@ This document traces each answer provided in the HMRC questionnaires to the spec
 |----|----------|----------|-------------|
 | DOC-001 | HMRC MTD API Approval Submission | `HMRC_MTD_API_APPROVAL_SUBMISSION.md` | Comprehensive technical documentation for HMRC approval |
 | DOC-002 | HMRC Production Credentials Email | `HMRC_PRODUCTION_CREDENTIALS_EMAIL.md` | Email template for production credential request |
-| DOC-003 | Repository Documentation | `REPOSITORY_DOCUMENTATION.md` | Architecture and directory structure |
+| DOC-003 | Repository Documentation | `REPORT_REPOSITORY_CONTENTS.md` | Architecture and directory structure |
 
 ### Test Results - Accessibility
 
 | ID | Test Type | Location | Date | Tool |
 |----|-----------|----------|------|------|
-| ACC-001 | Pa11y WCAG 2.1 AA | `target/accessibility/pa11y-report.txt` | 2026-01-19 | Pa11y |
-| ACC-002 | axe-core WCAG 2.1 | `target/accessibility/axe-results.json` | 2026-01-19 | axe-core 4.11.1 |
-| ACC-003 | axe-core WCAG 2.2 | `target/accessibility/axe-wcag22-results.json` | 2026-01-19 | axe-core 4.11.1 |
-| ACC-004 | Lighthouse Audit | `target/accessibility/lighthouse-results.json` | 2026-01-19 | Lighthouse 12.8.2 |
+| ACC-001 | Pa11y WCAG 2.1 AA | `web/public/tests/accessibility/pa11y-report.txt` | 2026-01-19 | Pa11y |
+| ACC-002 | axe-core WCAG 2.1 | `web/public/tests/accessibility/axe-results.json` | 2026-01-19 | axe-core 4.11.1 |
+| ACC-003 | axe-core WCAG 2.2 | `web/public/tests/accessibility/axe-wcag22-results.json` | 2026-01-19 | axe-core 4.11.1 |
+| ACC-004 | Lighthouse Audit | `web/public/tests/accessibility/lighthouse-results.json` | 2026-01-19 | Lighthouse 12.8.2 |
 
 ### Test Results - Security/Penetration
 
 | ID | Test Type | Location | Date | Tool |
 |----|-----------|----------|------|------|
-| SEC-001 | Dependency Audit | `target/penetration/npm-audit.json` | 2026-01-19 | npm audit |
-| SEC-002 | Vulnerable Libraries | `target/penetration/retire.json` | 2026-01-19 | retire.js 5.4.0 |
-| SEC-003 | Static Analysis | `target/penetration/eslint-security.txt` | 2026-01-19 | ESLint Security Plugin |
-| SEC-004 | Dynamic Security Scan | `target/penetration/zap-report.json` | 2026-01-19 | OWASP ZAP 2.17.0 |
-| SEC-005 | ZAP HTML Report | `target/penetration/zap-report.html` | 2026-01-19 | OWASP ZAP 2.17.0 |
+| SEC-001 | Dependency Audit | `web/public/tests/penetration/npm-audit.json` | 2026-01-19 | npm audit |
+| SEC-002 | Vulnerable Libraries | `web/public/tests/penetration/retire.json` | 2026-01-19 | retire.js 5.4.0 |
+| SEC-003 | Static Analysis | `web/public/tests/penetration/eslint-security.txt` | 2026-01-19 | ESLint Security Plugin |
+| SEC-004 | Dynamic Security Scan | `web/public/tests/penetration/zap-report.json` | 2026-01-19 | OWASP ZAP 2.17.0 |
+| SEC-005 | ZAP HTML Report | `web/public/tests/penetration/zap-report.html` | 2026-01-19 | OWASP ZAP 2.17.0 |
 
 ### Test Results - Behaviour/API
 
@@ -144,7 +144,7 @@ This document traces each answer provided in the HMRC questionnaires to the spec
 | ESLint Security | 0 errors, 54 warnings | SEC-003 | Line 100: `✖ 54 problems (0 errors, 54 warnings)` |
 | OWASP ZAP | 0 high, 2 medium, 3 low | SEC-004 | Lines 102-132: site alerts with riskcode values |
 
-**npm audit Detail** (from target/penetration/npm-audit.json):
+**npm audit Detail** (from web/public/tests/penetration/npm-audit.json):
 ```json
 "vulnerabilities": {
   "info": 0,
@@ -157,7 +157,7 @@ This document traces each answer provided in the HMRC questionnaires to the spec
 ```
 Note: All 3 low vulnerabilities are in dev dependencies (sinon/diff) not production code.
 
-**OWASP ZAP Findings** (from target/penetration/zap-report.json):
+**OWASP ZAP Findings** (from web/public/tests/penetration/zap-report.json):
 | Risk Level | Count | Details |
 |------------|-------|---------|
 | High | 0 | None |
@@ -214,7 +214,7 @@ Note: All medium/low findings are artifacts of using ngrok for local testing, no
 
 ### Pa11y Test Results Detail
 
-From `target/accessibility/pa11y-report.txt`:
+From `web/public/tests/accessibility/pa11y-report.txt`:
 
 | Page | Errors | Evidence Line |
 |------|--------|---------------|
@@ -237,7 +237,7 @@ From `target/accessibility/pa11y-report.txt`:
 
 ### axe-core Test Results Detail
 
-From `target/accessibility/axe-results.json`:
+From `web/public/tests/accessibility/axe-results.json`:
 
 | Field | Value | Evidence |
 |-------|-------|----------|
@@ -292,7 +292,7 @@ From `target/accessibility/axe-results.json`:
 
 ### WCAG 2.2 Additional Criteria
 
-From `target/accessibility/axe-wcag22-results.json`:
+From `web/public/tests/accessibility/axe-wcag22-results.json`:
 
 | Criterion | Compliance | Evidence |
 |-----------|------------|----------|
@@ -341,13 +341,13 @@ Screenshots from behaviour tests that provide visual evidence of application fun
 |--------|----------|
 | `HMRC_MTD_API_APPROVAL_SUBMISSION.md` | Organisation details, API implementation, security measures |
 | `HMRC_PRODUCTION_CREDENTIALS_EMAIL.md` | Contact details, API endpoints |
-| `target/accessibility/pa11y-report.txt` | Page-by-page WCAG compliance |
-| `target/accessibility/axe-results.json` | Detailed WCAG rule validation |
-| `target/accessibility/axe-wcag22-results.json` | WCAG 2.2 validation |
-| `target/penetration/npm-audit.json` | Dependency vulnerability counts |
-| `target/penetration/retire.json` | Known vulnerable library scan |
-| `target/penetration/eslint-security.txt` | Static code analysis results |
-| `target/penetration/zap-report.json` | Dynamic security scan results |
+| `web/public/tests/accessibility/pa11y-report.txt` | Page-by-page WCAG compliance |
+| `web/public/tests/accessibility/axe-results.json` | Detailed WCAG rule validation |
+| `web/public/tests/accessibility/axe-wcag22-results.json` | WCAG 2.2 validation |
+| `web/public/tests/penetration/npm-audit.json` | Dependency vulnerability counts |
+| `web/public/tests/penetration/retire.json` | Known vulnerable library scan |
+| `web/public/tests/penetration/eslint-security.txt` | Static code analysis results |
+| `web/public/tests/penetration/zap-report.json` | Dynamic security scan results |
 | `web/public/tests/test-report-web-test-local.json` | HMRC API test evidence, fraud prevention headers |
 
 ---

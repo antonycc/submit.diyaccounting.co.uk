@@ -3,31 +3,32 @@
 **Application**: DIY Accounting Submit
 **URL**: https://submit.diyaccounting.co.uk
 **Repository**: https://github.com/antonycc/submit.diyaccounting.co.uk
-**Document Date**: 13 January 2026
-**Version**: 1.1.0
+**Document Date**: 24 January 2026
+**Version**: 1.2.0
 
 ---
 
 ```text
-  Current State (Updated 13 January 2026)
+  Current State (Updated 24 January 2026)
 
   COMPLIANCE STATUS: READY FOR SUBMISSION
 
   Security Compliance:
-  - npm audit: 0 critical, 0 high, 0 moderate vulnerabilities
+  - npm audit: 0 critical, 0 high, 0 moderate, 0 low vulnerabilities
   - ESLint Security: 0 errors, 0 warnings
   - retire.js: 0 high, 0 medium, 0 low vulnerabilities
-  - OWASP ZAP: 0 high-risk findings (12 medium accepted, 12 low accepted)
+  - OWASP ZAP: 0 high, 0 medium, 9 low (informational only)
 
   Accessibility Compliance:
-  - WCAG 2.1 Level AA: 13/13 pages pass (Pa11y)
-  - WCAG 2.2 Level AA: 0 violations (axe-core)
-  - Lighthouse Accessibility: 100%
+  - WCAG 2.1 Level AA: 21/21 pages pass (Pa11y)
+  - WCAG 2.2 Level AA: 0 violations, 450 passes (axe-core)
+  - Lighthouse Accessibility: 95%
   - Lighthouse Performance: 99%
   - Lighthouse Best Practices: 100%
+  - Lighthouse SEO: 100%
 
   Functional Testing:
-  - All behaviour tests PASSING
+  - All 583 tests PASSING
   - All HMRC APIs working (POST/GET VAT returns, obligations)
   - Fraud prevention headers validated (minor expected warnings only)
   - MFA header implemented via mock injection
@@ -134,7 +135,7 @@ All API requests to HMRC include the required fraud prevention headers. The impl
 | Gov-Vendor-License-IDs | Open source software, no license keys issued |
 | Gov-Client-Public-Port | Cannot be reliably collected through CloudFront |
 
-### HMRC Validation Results (Latest Test: 10 Jan 2026)
+### HMRC Validation Results (Latest Test: 24 Jan 2026)
 
 From automated test run `web-test-local`:
 - **Validation Endpoint**: `https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate`
@@ -159,6 +160,7 @@ From automated test run `web-test-local`:
 
 | Measure | Implementation |
 |---------|----------------|
+| ICO Registration | ZB070902 ([ICO Public Register](https://ico.org.uk/ESDWebPages/Entry/ZB070902)) |
 | User Data Hashing | HMAC-SHA256 with environment-specific salt |
 | PII Masking | Sensitive data masked in logs and test reports |
 | Data Retention | 7-year retention for VAT receipts (HMRC requirement) |
@@ -270,11 +272,11 @@ npm run test:submitVatBehaviour-proxy-report
 
 ## 3.2 Test Report Interpretation
 
-### Latest Test Run: 10 January 2026
+### Latest Test Run: 24 January 2026
 
 **Test Name**: `web-test-local`
 **Status**: PASSED
-**Environment**: proxy (ngrok + local server + HMRC sandbox)
+**Environment**: prod (Cognito + HMRC sandbox)
 
 **HMRC APIs Called**:
 1. `POST /oauth/token` - Token exchange (200 OK)
@@ -527,21 +529,21 @@ Each header is traced from collection to transmission.
 | Field | Value |
 |-------|-------|
 | Test ID | `web-test-local` |
-| Generated | 2026-01-10T11:23:29.128Z |
+| Generated | 2026-01-24T22:15:45.035Z |
 | Status | PASSED |
-| Environment | proxy (ngrok + local + HMRC sandbox) |
+| Environment | prod (Cognito + HMRC sandbox) |
 | HMRC Test User | Auto-generated |
-| VRN | 996040105 |
-| Period Key | 24B5 |
+| VRN | 239849510 |
+| Period Key | 18A1 |
 
 ### HMRC API Requests Captured
 
 | API | Method | URL | Status |
 |-----|--------|-----|--------|
 | Token Exchange | POST | `/oauth/token` | 200 |
-| VAT Return Submit | POST | `/organisations/vat/996040105/returns` | 201 |
-| VAT Return View | GET | `/organisations/vat/996040105/returns/24B5` | 200 |
-| VAT Obligations | GET | `/organisations/vat/996040105/obligations?from=2025-01-01&to=2025-12-01` | 200 |
+| VAT Return Submit | POST | `/organisations/vat/{vrn}/returns` | 201 |
+| VAT Return View | GET | `/organisations/vat/{vrn}/returns/{periodKey}` | 200 |
+| VAT Obligations | GET | `/organisations/vat/{vrn}/obligations?from=2025-01-01&to=2025-12-01` | 200 |
 | Header Validation | GET | `/test/fraud-prevention-headers/validate` | 200 |
 
 ### Fraud Prevention Header Validation Result
@@ -583,7 +585,7 @@ https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-star
 
 ---
 
-## Appendix F: Accessibility & Security Compliance (13 January 2026)
+## Appendix F: Accessibility & Security Compliance (24 January 2026)
 
 ### Accessibility Testing Results
 
@@ -591,25 +593,33 @@ https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-star
 
 | Tool | Standard | Result |
 |------|----------|--------|
-| Pa11y | WCAG 2.1 Level AA | 13/13 pages passed (0 errors) |
-| axe-core | WCAG 2.1 Level AA | 0 violations, 35 passes |
-| axe-core | WCAG 2.2 Level AA | 0 violations, 22 passes |
-| Lighthouse | Accessibility | 100% |
+| Pa11y | WCAG 2.1 Level AA | 21/21 pages passed (0 errors) |
+| axe-core | WCAG 2.1 Level AA | 0 violations, 748 passes |
+| axe-core | WCAG 2.2 Level AA | 0 violations, 450 passes |
+| Lighthouse | Accessibility | 95% |
 
-**Pages Tested:**
+**Pages Tested (21 total):**
 - / (home)
 - /index.html
 - /privacy.html
 - /terms.html
 - /about.html
 - /accessibility.html
-- /auth/login.html
 - /account/bundles.html
 - /hmrc/vat/submitVat.html
 - /hmrc/vat/vatObligations.html
 - /hmrc/vat/viewVatReturn.html
 - /hmrc/receipt/receipts.html
 - /guide/index.html
+- /help/index.html
+- /errors/404-error-distribution.html
+- /errors/404-error-origin.html
+- /error/403.html
+- /error/404.html
+- /error/500.html
+- /error/502.html
+- /error/503.html
+- /error/504.html
 
 ### Security Testing Results
 
@@ -618,11 +628,16 @@ https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-star
 | npm audit | 0 critical, 0 high, 0 moderate, 0 low |
 | ESLint Security | 0 errors, 0 warnings |
 | retire.js | 0 high, 0 medium, 0 low |
-| OWASP ZAP | 0 high risk (12 medium, 12 low accepted) |
+| OWASP ZAP | 0 high, 0 medium, 9 low (informational) |
 
-**ZAP Accepted Medium Findings (not blocking):**
-- CSP `unsafe-inline` for script-src/style-src (required for inline scripts)
-- Sub Resource Integrity missing on Swagger UI (third-party component)
+**ZAP Accepted Risks (suppressed in report):**
+- CSP `unsafe-inline` for script-src (required for inline event handlers)
+- CSP `unsafe-inline` for style-src (required for dynamic styling)
+
+**ZAP Low-Risk Findings (not blocking):**
+- Insufficient Site Isolation Against Spectre Vulnerability (9 instances)
+- Information Disclosure - Suspicious Comments (12 instances, informational)
+- Various cache-related informational alerts
 
 **Security Headers Implemented:**
 - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
@@ -640,7 +655,7 @@ https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-star
 |--------|-------|
 | Lighthouse Performance | 99% |
 | Lighthouse Best Practices | 100% |
-| Lighthouse SEO | 82% |
+| Lighthouse SEO | 100% |
 
 
 ---
@@ -656,6 +671,7 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 | Official registration evidence | Yes | Company Number 06846849 |
 | Valid organisation URL | Yes | https://submit.diyaccounting.co.uk |
 | **Data Protection & Security** | | |
+| ICO Registration | Yes | ZB070902 ([ICO Public Register](https://ico.org.uk/ESDWebPages/Entry/ZB070902)) |
 | UK GDPR compliance | Yes | Privacy policy published |
 | Encrypt tokens and PII at rest/transit | Yes | DynamoDB KMS + TLS 1.2+ |
 | Access controls (RBAC) | Yes | AWS Cognito + IAM |
@@ -668,7 +684,7 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 | **Software Development** | | |
 | Follow HMRC development practices | Yes | Server-side API calls, no CORS |
 | Error handling per HMRC specs | Yes | All error codes handled |
-| WCAG Level AA accessibility | Yes | 100% compliance (WCAG 2.2 AA) |
+| WCAG Level AA accessibility | Yes | 21/21 pages pass Pa11y, 0 axe-core violations, 95% Lighthouse |
 | **Marketing** | | |
 | Use only "HMRC recognised" | Yes | Not claiming accreditation |
 | **SaaS Requirements** | | |
@@ -738,10 +754,10 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 > | Incident response | Documented 72-hour notification procedure (privacy policy) |
 >
 > **Evidence:**
-> - Compliance reports generated automatically: `COMPLIANCE_REPORT.md`
-> - Security scan results in `target/penetration/`
+> - Compliance reports generated automatically: `REPORT_ACCESSIBILITY_PENETRATION.md`
+> - Security scan results in `web/public/tests/penetration/`
 > - GitHub Actions workflows run security scans on each deployment
-> - Documentation: `PII_AND_SENSITIVE_DATA.md`, `PRIVACY_DUTIES.md`
+> - Documentation: `_developers/archive/PII_AND_SENSITIVE_DATA.md`, `_developers/archive/PRIVACY_DUTIES.md`
 >
 > **Reference:** ICO Information Security Checklist: https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-started-with-gdpr/data-protection-self-assessment-medium-businesses/information-security-checklist/
 
@@ -753,7 +769,8 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 |------|---------|---------|
 | 2026-01-11 | 1.0 | Initial consolidated document |
 | 2026-01-13 | 1.1 | Added WCAG 2.2 compliance, security testing results, accessibility statement URL, HMRC terms compliance checklist |
-| 2026-01-15 | 1.2 | Added Appendix H with HMRC application questionnaire responses (business model, branding, security audits) |
+| 2026-01-15 | 1.1.1 | Added Appendix H with HMRC application questionnaire responses (business model, branding, security audits) |
+| 2026-01-24 | 1.2.0 | Updated compliance data from latest reports: Pa11y 21/21 pages, axe-core 748/450 passes, ZAP 0 medium, Lighthouse SEO 100%, added error pages and help page to tested pages list, corrected documentation file paths |
 
 ---
 

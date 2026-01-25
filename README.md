@@ -77,7 +77,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | Fraud prevention headers | Implemented and validated |
 | OAuth 2.0 authentication | Implemented |
 | Error handling | All HMRC error codes handled |
-| Accessibility (WCAG 2.1 AA) | Audit in progress |
+| Accessibility (WCAG 2.1 AA) | Implemented (13/13 pages pass) |
 | Penetration testing | Scheduled |
 
 ### Data Protection
@@ -109,6 +109,7 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 | [Privacy Policy](https://submit.diyaccounting.co.uk/privacy.html) | How we handle your data |
 | [Terms of Use](https://submit.diyaccounting.co.uk/terms.html) | Service terms and conditions |
 | [User Guide](https://submit.diyaccounting.co.uk/guide/index.html) | How to use the application |
+| [Accessibility Statement](https://submit.diyaccounting.co.uk/accessibility.html) | WCAG 2.1 AA compliance |
 
 ---
 
@@ -128,15 +129,6 @@ See [LICENSE](LICENSE) for the full license text.
 - HMRC and Making Tax Digital are trademarks of HM Revenue and Customs
 - AWS is a trademark of Amazon Web Services
 - Google is a trademark of Alphabet Inc.
-
----
-
-## Contributing
-
-Contributions are welcome. Please see our [GitHub repository](https://github.com/antonycc/submit.diyaccounting.co.uk) for:
-- Issue tracking
-- Pull request guidelines
-- Development setup instructions
 
 ---
 

@@ -1,4 +1,5 @@
 import security from "eslint-plugin-security";
+import sonarjs from "eslint-plugin-sonarjs";
 import globals from "globals";
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
@@ -6,6 +7,7 @@ export default [
   {
     plugins: {
       security,
+      sonarjs, // Loaded so eslint-disable comments for sonarjs rules don't cause errors
     },
     languageOptions: {
       ecmaVersion: 2022,
@@ -70,11 +72,8 @@ export default [
       // Exclude entry points that have eslint-disable for other plugins
       "web/public/submit.js",
       "web/public/lib/test-data-generator.js",
-      // Note: The following files have eslint-disable for sonarjs (code quality).
-      // They are security-reviewed but excluded here due to config incompatibility.
-      // Security warnings for these files appear in the main eslint run.
-      "app/services/bundleManagement.js",
-      "app/services/hmrcApi.js",
+      // Note: bundleManagement.js and hmrcApi.js have eslint-disable for sonarjs (code quality)
+      // but are now included in security scanning since this config only uses security plugin
     ],
   },
 ];

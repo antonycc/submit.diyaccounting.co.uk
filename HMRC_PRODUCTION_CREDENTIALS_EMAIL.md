@@ -42,7 +42,7 @@ I am writing to request production credentials for our VAT (MTD) software applic
 We have completed testing in the sandbox environment using the Create Test User API and Test Fraud Prevention Headers API.
 
 **Test evidence is available at:**
-https://submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test
+https://submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test-local
 
 ## Fraud Prevention Headers
 
@@ -74,6 +74,12 @@ All other mandatory headers are sent correctly:
 | Gov-Vendor-Product-Name | `web-submit-diyaccounting-co-uk` |
 | Gov-Vendor-Public-IP | Server public IP |
 | Gov-Vendor-Forwarded | Proxy chain information |
+
+## Compliance
+
+| Compliance | Evidence |
+|------------|----------|
+| ICO Registration | ZB070902 ([ICO Public Register](https://ico.org.uk/ESDWebPages/Entry/ZB070902)) |
 
 ## Documentation
 

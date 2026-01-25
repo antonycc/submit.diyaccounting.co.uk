@@ -189,7 +189,7 @@ From [HMRC VAT MTD End-to-End Service Guide](https://developer.service.hmrc.gov.
 
 ### WCAG 2.1 AA Accessibility Requirements
 
-From COMPLIANCE_REPORT.md (19 January 2026) - axe-core detected 13 violations:
+From REPORT_ACCESSIBILITY_PENETRATION.md (19 January 2026) - axe-core detected 13 violations:
 
 | Requirement | Current State | Target State |
 |-------------|---------------|--------------|
@@ -2408,7 +2408,7 @@ if (typeof window !== "undefined") {
 | 5.2 | Run Compliance Scans | `npm run test:compliance` |
 | 5.3 | Update Questionnaire 1 to v2.0 | Manual update |
 | 5.4 | Update Questionnaire 2 to v2.0 | Manual update |
-| 5.5 | Generate final COMPLIANCE_REPORT.md | `npm run test:compliance` |
+| 5.5 | Generate final REPORT_ACCESSIBILITY_PENETRATION.md | `npm run test:compliance` |
 
 ---
 
@@ -2466,7 +2466,7 @@ if (typeof window !== "undefined") {
 |------|--------|---------|
 | `_developers/hmrc/hmrc_questionnaire_1_*.md` | MODIFY | Update to v2.0 with all compliant answers |
 | `_developers/hmrc/hmrc_questionnaire_2_*.md` | MODIFY | Update to v2.0 with all "Supports" |
-| `COMPLIANCE_REPORT.md` | REGENERATE | Final compliance scan results |
+| `REPORT_ACCESSIBILITY_PENETRATION.md` | REGENERATE | Final compliance scan results |
 
 ---
 
@@ -2529,7 +2529,7 @@ if (typeof window !== "undefined") {
 - [ ] `npm run test:compliance` shows PASS for all categories
 - [ ] Questionnaire 1 v2.0: All answers "Yes" or compliant
 - [ ] Questionnaire 2 v2.0: All criteria "Supports"
-- [ ] COMPLIANCE_REPORT.md shows overall PASS
+- [ ] REPORT_ACCESSIBILITY_PENETRATION.md shows overall PASS
 - [ ] Ready for HMRC production approval submission
 
 ---
@@ -2867,12 +2867,12 @@ test.describe('View VAT Return - 9-Box Display', () => {
 
 ### Internal
 
-- `COMPLIANCE_REPORT.md` - Consolidated compliance scan results
+- `REPORT_ACCESSIBILITY_PENETRATION.md` - Consolidated compliance scan results
 - `_developers/hmrc/hmrc_questionnaire_1_software_developer_checklist_diy_accounting_limited_v1.md`
 - `_developers/hmrc/hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v1.md`
-- `target/accessibility/axe-results.json` - axe-core detailed violations
-- `target/penetration/zap-report.json` - OWASP ZAP scan results
-- `target/penetration/eslint-security.txt` - ESLint security warnings
+- `web/public/tests/accessibility/axe-results.json` - axe-core detailed violations
+- `web/public/tests/penetration/zap-report.json` - OWASP ZAP scan results
+- `web/public/tests/penetration/eslint-security.txt` - ESLint security warnings
 
 ---
 

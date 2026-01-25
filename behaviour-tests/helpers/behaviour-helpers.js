@@ -310,6 +310,7 @@ const autoFocusScreenshot = async (page, context) => {
 export const loggedClick = async (page, selectorOrLocator, description = "", options = undefined) =>
   await test.step(description ? `The user clicks ${description}` : `The user clicks selector ${selectorOrLocator}`, async () => {
     const opts = options && typeof options === "object" ? options : {};
+    const timeout = opts.timeout || 30000;
     const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
     const selector = isLocator ? undefined : selectorOrLocator;
     const locator = isLocator ? selectorOrLocator : page.locator(selector);
@@ -318,8 +319,8 @@ export const loggedClick = async (page, selectorOrLocator, description = "", opt
 
     // Wait for element to be visible and stable before clicking
     await (isLocator
-      ? locator.waitFor({ state: "visible", timeout: 30000 })
-      : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+      ? locator.waitFor({ state: "visible", timeout })
+      : page.waitForSelector(selector, { state: "visible", timeout }));
 
     // Explicitly focus the element before clicking
     try {
@@ -356,6 +357,7 @@ export const loggedFill = async (page, selectorOrLocator, value, description = "
     description ? `The user fills ${description} with "${value}"` : `The user fills selector ${selectorOrLocator} with "${value}"`,
     async () => {
       const opts = options && typeof options === "object" ? options : {};
+      const timeout = opts.timeout || 30000;
       const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
       const selector = isLocator ? undefined : selectorOrLocator;
       const locator = isLocator ? selectorOrLocator : page.locator(selector);
@@ -366,8 +368,8 @@ export const loggedFill = async (page, selectorOrLocator, value, description = "
 
       // Wait for visibility and focus before filling
       await (isLocator
-        ? locator.waitFor({ state: "visible", timeout: 30000 })
-        : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+        ? locator.waitFor({ state: "visible", timeout })
+        : page.waitForSelector(selector, { state: "visible", timeout }));
 
       try {
         if (isLocator) {
@@ -416,6 +418,7 @@ export const loggedGoto = async (page, url, description = "", screenshotPath = d
 export const loggedFocus = async (page, selectorOrLocator, description = "", options = undefined) =>
   await test.step(description ? `The user focuses ${description}` : `The user focuses selector ${selectorOrLocator}`, async () => {
     const opts = options && typeof options === "object" ? options : {};
+    const timeout = opts.timeout || 30000;
     const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
     const selector = isLocator ? undefined : selectorOrLocator;
     const locator = isLocator ? selectorOrLocator : page.locator(selector);
@@ -423,8 +426,8 @@ export const loggedFocus = async (page, selectorOrLocator, description = "", opt
     console.log(`[USER INTERACTION] Focusing: ${isLocator ? "[Locator]" : selector} ${description ? "- " + description : ""}`);
 
     await (isLocator
-      ? locator.waitFor({ state: "visible", timeout: 30000 })
-      : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+      ? locator.waitFor({ state: "visible", timeout })
+      : page.waitForSelector(selector, { state: "visible", timeout }));
 
     // Perform the focus
     try {
@@ -463,6 +466,7 @@ export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions
       : `The user selects on ${typeof selectorOrLocator === "string" ? selectorOrLocator : "[Locator]"}`,
     async () => {
       const opts = options && typeof options === "object" ? options : {};
+      const timeout = opts.timeout || 30000;
       const isLocator = selectorOrLocator && typeof selectorOrLocator !== "string";
       const selector = isLocator ? undefined : selectorOrLocator;
       const locator = isLocator ? selectorOrLocator : page.locator(selector);
@@ -476,8 +480,8 @@ export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions
 
       // Ensure element is visible and focused before selection
       await (isLocator
-        ? locator.waitFor({ state: "visible", timeout: 30000 })
-        : page.waitForSelector(selector, { state: "visible", timeout: 30000 }));
+        ? locator.waitFor({ state: "visible", timeout })
+        : page.waitForSelector(selector, { state: "visible", timeout }));
 
       try {
         if (isLocator) {

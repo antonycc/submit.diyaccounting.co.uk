@@ -6,16 +6,16 @@
  * Generate Compliance Report
  *
  * Generates a markdown compliance report from existing test reports.
- * Does NOT run tests - expects reports to already exist in target/.
+ * Does NOT run tests - expects reports to already exist in web/public/tests/.
  *
  * Usage:
  *   node scripts/generate-compliance-report.js --target URL [--output FILE]
  *
  * Options:
  *   --target URL    Target URL that was tested (required)
- *   --output FILE   Output file (default: COMPLIANCE_REPORT.md)
+ *   --output FILE   Output file (default: REPORT_ACCESSIBILITY_PENETRATION.md)
  *
- * Expected report files in target/:
+ * Expected report files in web/public/tests/:
  *   - accessibility/pa11y-report.txt
  *   - accessibility/axe-results.json
  *   - accessibility/axe-wcag22-results.json
@@ -45,7 +45,7 @@ const getArg = (name, defaultValue) => {
 };
 
 const targetUrl = getArg("--target", null);
-const outputFile = getArg("--output", "COMPLIANCE_REPORT.md");
+const outputFile = getArg("--output", "REPORT_ACCESSIBILITY_PENETRATION.md");
 
 if (!targetUrl) {
   console.error("Error: --target URL is required");
@@ -53,7 +53,7 @@ if (!targetUrl) {
   process.exit(1);
 }
 
-const targetDir = join(projectRoot, "target");
+const targetDir = join(projectRoot, "web/public/tests");
 const accessibilityDir = join(targetDir, "accessibility");
 const penetrationDir = join(targetDir, "penetration");
 
@@ -227,10 +227,36 @@ function parseLighthouseResults(lighthouseJson) {
   };
 }
 
+function parseTextSpacingResults(textSpacingJson) {
+  if (!textSpacingJson || !textSpacingJson.pages) {
+    return { passed: 0, failed: 0, total: 0, errors: 0, failedPages: [], found: false };
+  }
+
+  const summary = textSpacingJson.summary || {};
+  const failedPages = textSpacingJson.pages
+    .filter((p) => !p.passed && !p.error)
+    .map((p) => ({
+      url: p.url,
+      clippedCount: p.clippedElements?.length || 0,
+      clippedElements: p.clippedElements || [],
+    }));
+
+  return {
+    passed: summary.passed || 0,
+    failed: summary.failed || 0,
+    total: summary.total || 0,
+    errors: summary.errors || 0,
+    failedPages,
+    found: true,
+  };
+}
+
 // Suppressed ZAP alerts - accepted risks documented in privacy.html
 const SUPPRESSED_ZAP_ALERTS = {
-  "CSP: script-src unsafe-inline": "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
-  "CSP: style-src unsafe-inline": "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
+  "CSP: script-src unsafe-inline":
+    "Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy.",
+  "CSP: style-src unsafe-inline":
+    "Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy.",
 };
 
 function parseZapResults(zapJson) {
@@ -304,6 +330,7 @@ function generateReport(sourceFiles) {
   const axeJson = readJsonFile(join(accessibilityDir, "axe-results.json"));
   const axeWcag22Json = readJsonFile(join(accessibilityDir, "axe-wcag22-results.json"));
   const lighthouseJson = readJsonFile(join(accessibilityDir, "lighthouse-results.json"));
+  const textSpacingJson = readJsonFile(join(accessibilityDir, "text-spacing-results.json"));
   const retireJson = readJsonFile(join(penetrationDir, "retire.json"));
   const zapJson = readJsonFile(join(penetrationDir, "zap-report.json"));
 
@@ -314,17 +341,16 @@ function generateReport(sourceFiles) {
   const axe = parseAxeResults(axeJson);
   const axeWcag22 = parseAxeResults(axeWcag22Json);
   const lighthouse = parseLighthouseResults(lighthouseJson);
+  const textSpacing = parseTextSpacingResults(textSpacingJson);
   const retire = parseRetireResults(retireJson);
   const zap = parseZapResults(zapJson);
 
   // Build source files section
-  const sourceFilesSection = sourceFiles
-    .map((sf) => `  ${sf.exists ? "✅" : "❌"} ${sf.path}`)
-    .join("\n");
+  const sourceFilesSection = sourceFiles.map((sf) => `  ${sf.exists ? "✅" : "❌"} ${sf.path}`).join("\n");
 
   // Determine status
   const securityPass = npmAudit.critical === 0 && npmAudit.high === 0 && eslint.errors === 0 && zap.high === 0;
-  const accessibilityPass = pa11y.failed === 0 && axe.violations === 0;
+  const accessibilityPass = pa11y.failed === 0 && axe.violations === 0 && textSpacing.failed === 0;
   const overallPass = securityPass && accessibilityPass;
 
   const statusIcon = (pass) => (pass ? "✅" : "❌");
@@ -358,6 +384,7 @@ ${sourceFilesSection}
 | axe-core | ${statusIcon(axe.violations === 0)} | ${axe.found ? `${axe.violations} violations, ${axe.passes} passes` : "Report not found"} |
 | axe-core (WCAG 2.2) | ${statusIcon(axeWcag22.violations === 0)} | ${axeWcag22.found ? `${axeWcag22.violations} violations, ${axeWcag22.passes} passes` : "Report not found"} |
 | Lighthouse | ${statusIcon(lighthouse.accessibility >= 90)} | ${lighthouse.found ? `A11y: ${lighthouse.accessibility}%, Perf: ${lighthouse.performance}%, BP: ${lighthouse.bestPractices}%` : "Report not found"} |
+| Text Spacing (1.4.12) | ${statusIcon(textSpacing.failed === 0)} | ${textSpacing.found ? `${textSpacing.passed}/${textSpacing.total} pages passed` : "Report not found"} |
 
 ---
 
@@ -376,7 +403,7 @@ ${
 | **Total** | **${npmAudit.total}** |
 
 **Status**: ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} ${npmAudit.critical === 0 && npmAudit.high === 0 ? "No critical/high vulnerabilities" : "Critical/high vulnerabilities require attention"}`
-    : "⚠️ Report not found: `target/penetration/npm-audit.json`"
+    : "⚠️ Report not found: `web/public/tests/penetration/npm-audit.json`"
 }
 
 ### 1.2 ESLint Security Analysis
@@ -389,7 +416,7 @@ ${
 | Warnings | ${eslint.warnings} |
 
 **Status**: ${statusIcon(eslint.errors === 0)} ${eslint.errors === 0 ? "No security errors" : "Security errors require attention"}`
-    : "⚠️ Report not found: `target/penetration/eslint-security.txt`"
+    : "⚠️ Report not found: `web/public/tests/penetration/eslint-security.txt`"
 }
 
 ### 1.3 retire.js (Known Vulnerabilities)
@@ -403,7 +430,7 @@ ${
 | Low | ${retire.low} |
 
 **Status**: ${statusIcon(retire.high === 0)} ${retire.high === 0 ? "No high severity vulnerabilities" : "High severity vulnerabilities require attention"}`
-    : "⚠️ Report not found: `target/penetration/retire.json`"
+    : "⚠️ Report not found: `web/public/tests/penetration/retire.json`"
 }
 
 ### 1.4 OWASP ZAP (Dynamic Security Scan)
@@ -438,7 +465,7 @@ ${
 ${zap.suppressedAlerts.map((a) => `| ${a.name} | ${a.risk} | ${a.reason} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/penetration/zap-report.json`"
+    : "⚠️ Report not found: `web/public/tests/penetration/zap-report.json`"
 }
 
 ---
@@ -466,7 +493,7 @@ ${
 ${pa11y.results.map((r) => `| ${r.url.replace(targetUrl, "") || "/"} | ${r.errorCount} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/accessibility/pa11y-report.txt`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/pa11y-report.txt`"
 }
 
 ### 2.2 axe-core (Automated Accessibility)
@@ -490,7 +517,7 @@ ${
 ${axe.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | ${v.nodes} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/accessibility/axe-results.json`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/axe-results.json`"
 }
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
@@ -514,7 +541,7 @@ ${
 ${axeWcag22.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.description} | ${v.nodes} |`).join("\n")}`
     : ""
 }`
-    : "⚠️ Report not found: `target/accessibility/axe-wcag22-results.json`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/axe-wcag22-results.json`"
 }
 
 ### 2.4 Lighthouse
@@ -529,7 +556,38 @@ ${
 | SEO | ${lighthouse.seo}% |
 
 **Status**: ${statusIcon(lighthouse.accessibility >= 90)} ${lighthouse.accessibility >= 90 ? "Accessibility score meets threshold (90%+)" : "Accessibility score below 90% threshold"}`
-    : "⚠️ Report not found: `target/accessibility/lighthouse-results.json`"
+    : "⚠️ Report not found: `web/public/tests/accessibility/lighthouse-results.json`"
+}
+
+### 2.5 Text Spacing (WCAG 1.4.12)
+
+${
+  textSpacing.found
+    ? `| Metric | Value |
+|--------|-------|
+| Pages Tested | ${textSpacing.total} |
+| Pages Passed | ${textSpacing.passed} |
+| Pages Failed | ${textSpacing.failed} |
+| Errors | ${textSpacing.errors} |
+
+**Status**: ${statusIcon(textSpacing.failed === 0)} ${textSpacing.failed === 0 ? "All pages pass text spacing test" : "Some pages have text spacing issues"}
+
+**Test Parameters** (WCAG 1.4.12 minimum values):
+- Line height: 1.5 times font size
+- Letter spacing: 0.12 times font size
+- Word spacing: 0.16 times font size
+- Paragraph spacing: 2 times font size
+${
+  textSpacing.failedPages.length > 0
+    ? `
+#### Pages with Clipped Content
+
+| Page | Clipped Elements |
+|------|------------------|
+${textSpacing.failedPages.map((p) => `| ${p.url.replace(targetUrl, "") || "/"} | ${p.clippedCount} |`).join("\n")}`
+    : ""
+}`
+    : "⚠️ Report not found: `web/public/tests/accessibility/text-spacing-results.json`"
 }
 
 ---
@@ -538,14 +596,15 @@ ${
 
 | Report | Path | Status |
 |--------|------|--------|
-| npm audit | target/penetration/npm-audit.json | ${npmAudit.found ? "✅ Found" : "❌ Missing"} |
-| ESLint Security | target/penetration/eslint-security.txt | ${eslint.found ? "✅ Found" : "❌ Missing"} |
-| retire.js | target/penetration/retire.json | ${retire.found ? "✅ Found" : "❌ Missing"} |
-| OWASP ZAP | target/penetration/zap-report.json | ${zap.found ? "✅ Found" : "❌ Missing"} |
-| Pa11y | target/accessibility/pa11y-report.txt | ${pa11y.found ? "✅ Found" : "❌ Missing"} |
-| axe-core | target/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
-| axe-core (WCAG 2.2) | target/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
-| Lighthouse | target/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
+| npm audit | web/public/tests/penetration/npm-audit.json | ${npmAudit.found ? "✅ Found" : "❌ Missing"} |
+| ESLint Security | web/public/tests/penetration/eslint-security.txt | ${eslint.found ? "✅ Found" : "❌ Missing"} |
+| retire.js | web/public/tests/penetration/retire.json | ${retire.found ? "✅ Found" : "❌ Missing"} |
+| OWASP ZAP | web/public/tests/penetration/zap-report.json | ${zap.found ? "✅ Found" : "❌ Missing"} |
+| Pa11y | web/public/tests/accessibility/pa11y-report.txt | ${pa11y.found ? "✅ Found" : "❌ Missing"} |
+| axe-core | web/public/tests/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
+| axe-core (WCAG 2.2) | web/public/tests/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
+| Lighthouse | web/public/tests/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
+| Text Spacing | web/public/tests/accessibility/text-spacing-results.json | ${textSpacing.found ? "✅ Found" : "❌ Missing"} |
 
 ---
 
@@ -574,6 +633,7 @@ function main() {
     join(accessibilityDir, "axe-results.json"),
     join(accessibilityDir, "axe-wcag22-results.json"),
     join(accessibilityDir, "lighthouse-results.json"),
+    join(accessibilityDir, "text-spacing-results.json"),
   ];
 
   const sourceFiles = [];
