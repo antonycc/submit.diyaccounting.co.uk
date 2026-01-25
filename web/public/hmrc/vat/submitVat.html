@@ -88,6 +88,7 @@
               pattern="[0-9]{9}"
               aria-describedby="vatNumber-hint"
               spellcheck="false"
+              autocomplete="off"
             />
           </div>
 
@@ -103,6 +104,7 @@
                   name="periodStart"
                   required
                   aria-describedby="periodDates-hint"
+                  autocomplete="off"
                 />
               </div>
               <div>
@@ -113,6 +115,7 @@
                   name="periodEnd"
                   required
                   aria-describedby="periodDates-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -139,6 +142,7 @@
                   placeholder="0.00"
                   inputmode="decimal"
                   aria-describedby="vatDueSales-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -158,6 +162,7 @@
                   placeholder="0.00"
                   inputmode="decimal"
                   aria-describedby="vatDueAcquisitions-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -178,6 +183,7 @@
                   inputmode="decimal"
                   aria-describedby="totalVatDue-hint"
                   readonly
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -197,6 +203,7 @@
                   placeholder="0.00"
                   inputmode="decimal"
                   aria-describedby="vatReclaimedCurrPeriod-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -217,6 +224,7 @@
                   inputmode="decimal"
                   aria-describedby="netVatDue-hint"
                   readonly
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -236,6 +244,7 @@
                   placeholder="0"
                   inputmode="numeric"
                   aria-describedby="totalValueSalesExVAT-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -255,6 +264,7 @@
                   placeholder="0"
                   inputmode="numeric"
                   aria-describedby="totalValuePurchasesExVAT-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -274,6 +284,7 @@
                   placeholder="0"
                   inputmode="numeric"
                   aria-describedby="totalValueGoodsSuppliedExVAT-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -293,6 +304,7 @@
                   placeholder="0"
                   inputmode="numeric"
                   aria-describedby="totalAcquisitionsExVAT-hint"
+                  autocomplete="off"
                 />
               </div>
             </div>
@@ -300,11 +312,11 @@
 
           <!-- Legal Declaration -->
           <div class="declaration-box">
-            <input type="checkbox" id="declaration" name="declaration" required />
+            <input type="checkbox" id="declaration" name="declaration" required aria-describedby="declaration-hint" />
             <label for="declaration">
-              I confirm that the information I have given on this VAT return is correct and complete to the best of my knowledge and belief.
-              I understand that giving false information may result in penalties.
+              When you submit this VAT information you are making a legal declaration that the information is true and complete. A false declaration can result in prosecution.
             </label>
+            <p id="declaration-hint" class="hint">You must tick this box to confirm you understand before submitting</p>
           </div>
 
           <!-- Developer Test Scenario Section -->
@@ -858,6 +870,10 @@
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("oauth_state");
           sessionStorage.removeItem("submission_data");
+          // Clear form draft after successful submission
+          if (window.clearFormDraft) {
+            window.clearFormDraft();
+          }
           // Keep hmrcAccessToken and hmrcAccount for subsequent operations (view return, obligations)
           console.log("Continue submission handler (success, session storage cleared)");
         } catch (error) {
@@ -1149,6 +1165,87 @@
             validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
           });
         }
+
+        // === Form Data Persistence (WCAG 2.2.1 mitigation) ===
+        // Auto-save form data as user types so it's preserved if session expires
+
+        const FORM_DRAFT_KEY = "vat_form_draft";
+
+        // Fields to persist
+        const persistableFields = [
+          "vatNumber", "periodStart", "periodEnd",
+          "vatDueSales", "vatDueAcquisitions", "vatReclaimedCurrPeriod",
+          "totalValueSalesExVAT", "totalValuePurchasesExVAT",
+          "totalValueGoodsSuppliedExVAT", "totalAcquisitionsExVAT"
+        ];
+
+        // Save form data to sessionStorage
+        function saveFormDraft() {
+          const draft = {};
+          for (const fieldId of persistableFields) {
+            const field = document.getElementById(fieldId);
+            if (field && field.value) {
+              draft[fieldId] = field.value;
+            }
+          }
+          if (Object.keys(draft).length > 0) {
+            draft._savedAt = new Date().toISOString();
+            sessionStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
+          }
+        }
+
+        // Restore form data from sessionStorage
+        function restoreFormDraft() {
+          const draftJson = sessionStorage.getItem(FORM_DRAFT_KEY);
+          if (!draftJson) return false;
+
+          try {
+            const draft = JSON.parse(draftJson);
+            let restored = false;
+            for (const fieldId of persistableFields) {
+              if (draft[fieldId]) {
+                const field = document.getElementById(fieldId);
+                // Only restore if field is empty (don't override URL params)
+                if (field && !field.value) {
+                  field.value = draft[fieldId];
+                  restored = true;
+                }
+              }
+            }
+            if (restored) {
+              // Trigger recalculation of auto-calculated fields
+              calculateTotalVatDue();
+              console.log("Restored form draft from", draft._savedAt);
+            }
+            return restored;
+          } catch (e) {
+            console.warn("Could not restore form draft:", e);
+            return false;
+          }
+        }
+
+        // Clear form draft (after successful submission)
+        function clearFormDraft() {
+          sessionStorage.removeItem(FORM_DRAFT_KEY);
+        }
+
+        // Attach auto-save to all persistable fields
+        for (const fieldId of persistableFields) {
+          const field = document.getElementById(fieldId);
+          if (field) {
+            field.addEventListener("input", saveFormDraft);
+            field.addEventListener("change", saveFormDraft);
+          }
+        }
+
+        // Restore draft on page load (if not coming from URL params)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.get("vrn") && !urlParams.get("periodStart")) {
+          restoreFormDraft();
+        }
+
+        // Expose clearFormDraft for post-submission cleanup
+        window.clearFormDraft = clearFormDraft;
 
         // Toggle form button handler
         document.getElementById("toggleFormBtn")?.addEventListener("click", () => {

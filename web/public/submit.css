@@ -561,6 +561,11 @@ footer {
   text-decoration: none;
   font-size: 0.85em;
   transition: color 0.3s;
+  /* WCAG 2.5.5 Target Size - minimum 24x24px touch target */
+  display: inline-block;
+  min-height: 24px;
+  padding: 4px 0;
+  line-height: 1.2;
 }
 
 .footer-left a:hover {
