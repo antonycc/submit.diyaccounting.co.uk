@@ -18,10 +18,10 @@
 | Website address | https://submit.diyaccounting.co.uk |
 | LinkedIn address (if any) | N/A |
 | Twitter address (if any) | N/A |
-| Product Name | Submit DIY Accounting |
-| Sandbox Application Name | Submit DIY Accounting (Sandbox) |
+| Product Name | DIY Accounting Submit |
+| Sandbox Application Name | DIY Accounting Submit (Sandbox) |
 | Sandbox Application ID | uqMHA6RsDGGa7h8EG2VqfqAmv4tV |
-| Production Application Name | Submit DIY Accounting |
+| Production Application Name | DIY Accounting Submit |
 
 ## Product Type
 

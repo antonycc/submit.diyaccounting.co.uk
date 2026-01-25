@@ -9,7 +9,7 @@
 | Field | Value |
 |-------|-------|
 | Developer | DIY Accounting Limited |
-| Product Name | Submit DIY Accounting |
+| Product Name | DIY Accounting Submit |
 | Checklist Drafted by | Antony Cartwright |
 | Draft Date | 20 January 2026 |
 | Status | PRE-PRODUCTION - Pending remediation |

@@ -1,6 +1,6 @@
 # Questionnaire Evidence Traceability
 
-## DIY Accounting Limited - Submit DIY Accounting
+## DIY Accounting Limited - DIY Accounting Submit
 **Document Date**: 19 January 2026
 **Version**: 1.0
 
@@ -81,7 +81,7 @@ This document traces each answer provided in the HMRC questionnaires to the spec
 
 | Question | Answer | Evidence Source | Evidence Location |
 |----------|--------|-----------------|-------------------|
-| Software Name | Submit DIY Accounting | DOC-001 | Line 64: Product Name |
+| Software Name | DIY Accounting Submit | DOC-001 | Line 64: Product Name |
 | Software Version | 1.0.0 | DOC-001 | Line 66: Version |
 | Application URL | https://submit.diyaccounting.co.uk | DOC-001 | Line 65: Product URL |
 | Connection Method | WEB_APP_VIA_SERVER | DOC-001 | Line 87: Connection Method |

@@ -1,7 +1,7 @@
 # Questionnaire 2: WCAG 2.1 AA - Evidence Tracing
 
 **Developer**: DIY Accounting Limited
-**Product Name**: Submit DIY Accounting
+**Product Name**: DIY Accounting Submit
 **Completed by**: Antony Cartwright
 **Date**: 19 January 2026
 **Version**: 1.0

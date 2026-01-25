@@ -6,12 +6,12 @@
 
 ## Document Information
 
-| Field | Value |
-|-------|-------|
-| Developer | DIY Accounting Limited |
-| Product Name | Submit DIY Accounting |
+| Field | Value                       |
+|-------|-----------------------------|
+| Developer | DIY Accounting Limited      |
+| Product Name | DIY Accounting Submit       |
 | Checklist Completed by | Antony Cartwright, Director |
-| Date | 24 January 2026 |
+| Date | 25 January 2026             |
 
 ## Testing Summary
 
