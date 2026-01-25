@@ -727,7 +727,7 @@ jobs:
             ;
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr
 
       - name: Check if image already exists in ECR
         id: image-exists
@@ -743,7 +743,7 @@ jobs:
           fi
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -781,7 +781,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
 
@@ -828,7 +828,7 @@ jobs:
             ;
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr-us-east-1
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr-us-east-1
 
       - name: Check if image already exists in ECR
         id: image-exists
@@ -844,7 +844,7 @@ jobs:
           fi
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr-us-east-1
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr-us-east-1
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -882,7 +882,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-submit-app-ecr-us-east-1
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr-us-east-1
     outputs:
       base-image-tag: ${{ github.sha }}
 
