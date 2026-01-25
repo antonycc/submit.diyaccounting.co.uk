@@ -1,0 +1,425 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2025-2026 DIY Accounting Ltd
+
+# FAQ entries for DIY Accounting Submit
+# Categories: connection, submission, bundles, receipts, vat-basics, errors
+# Terminology follows _developers/reference/UK-Government-Form-Field-Standards-Guide.md
+
+[[faq]]
+id = "how-to-submit-vat-return"
+category = "submission"
+question = "How do I submit my VAT return?"
+answer = """
+To submit your VAT return:
+
+1. **Log in** using your Google account
+2. **Check your obligations** to see which VAT periods need returns
+3. **Click Submit VAT Return** from the home page
+4. **Enter your figures** in Boxes 1-9 (Boxes 3 and 5 calculate automatically)
+5. **Tick the declaration** confirming the information is true and complete
+6. **Click Submit** - you'll be redirected to HMRC to authorise the submission
+7. **Save your receipt** showing the HMRC Form Bundle Number
+
+Keep your receipt as proof of submission.
+"""
+keywords = ["submit", "how to", "vat return", "send", "file", "make submission"]
+priority = 1
+
+[[faq]]
+id = "what-are-vat-obligations"
+category = "submission"
+question = "What are VAT obligations?"
+answer = """
+VAT obligations are the periods for which HMRC expects you to submit a VAT return.
+
+Each obligation shows:
+- **VAT period** - The date range (e.g., 1 January to 31 March 2026)
+- **Due date** - When the return must be submitted by
+- **Status** - Open (not yet submitted) or Fulfilled (submitted)
+
+Use **Check VAT Obligations** to see your upcoming and past obligations. You can only submit a return for an Open obligation.
+"""
+keywords = ["obligations", "periods", "due date", "when", "deadline"]
+priority = 2
+
+[[faq]]
+id = "box-numbers"
+category = "vat-basics"
+question = "What goes in each VAT return box (1-9)?"
+answer = """
+| Box | Description |
+|-----|-------------|
+| 1 | VAT due on sales and other outputs |
+| 2 | VAT due on acquisitions from EU (usually £0 post-Brexit) |
+| 3 | Total VAT due (Box 1 + Box 2) - **calculated automatically** |
+| 4 | VAT reclaimed on purchases and other inputs |
+| 5 | Net VAT to pay or reclaim (Box 3 - Box 4) - **calculated automatically** |
+| 6 | Total value of sales excluding VAT (whole pounds) |
+| 7 | Total value of purchases excluding VAT (whole pounds) |
+| 8 | Total value of supplies to EU excluding VAT (usually £0 post-Brexit) |
+| 9 | Total value of acquisitions from EU excluding VAT (usually £0 post-Brexit) |
+
+You enter Boxes 1, 2, 4, 6, 7, 8, and 9. Boxes 3 and 5 are calculated for you.
+"""
+keywords = ["box", "boxes", "box 1", "box 2", "box 3", "box 4", "box 5", "box 6", "box 7", "box 8", "box 9", "what goes", "which box", "vat return", "fields"]
+priority = 3
+
+[[faq]]
+id = "hmrc-connect-fail"
+category = "connection"
+question = "Why can't I connect to HMRC?"
+answer = """
+The most common causes are:
+
+1. **Pop-up blocker** - HMRC authentication opens in a new window. Allow pop-ups for submit.diyaccounting.co.uk
+2. **Browser cookies** - HMRC requires cookies. Ensure third-party cookies aren't blocked for tax.service.gov.uk
+3. **Session expired** - If you've been on the page a while, refresh and try again
+4. **HMRC service down** - Check [HMRC service availability](https://www.gov.uk/government/collections/hm-revenue-and-customs-service-availability-and-issues) for outages
+
+If problems persist, try a different browser or clear your cookies for this site.
+"""
+keywords = ["connect", "hmrc", "login", "authorise", "authorize", "popup", "blocked", "won't connect", "can't connect", "failed", "connection"]
+priority = 4
+
+[[faq]]
+id = "where-is-receipt"
+category = "receipts"
+question = "Where can I find my submission receipt?"
+answer = """
+After a successful submission:
+
+1. A receipt appears immediately showing your **Form Bundle Number** - save or print this
+2. Click **My Receipts** from the menu to see all your submissions
+3. Each receipt shows the date, VAT registration number, period, and HMRC reference
+
+**Important:** Receipts are stored in your browser's local storage. If you clear browser data or use a different device, you won't see previous receipts. Always save or print receipts after submission.
+"""
+keywords = ["receipt", "receipts", "where", "find", "confirmation", "proof", "submitted", "form bundle number"]
+priority = 5
+
+[[faq]]
+id = "submitted-wrong-figures"
+category = "submission"
+question = "I submitted the wrong figures - what do I do?"
+answer = """
+**You cannot amend a submitted VAT return through this app.**
+
+To correct errors:
+
+- **Small errors** (under £10,000 or 1% of Box 6, maximum £50,000) - Adjust in your next VAT return
+- **Larger errors** - Submit form VAT652 to HMRC or write to them
+
+See [HMRC guidance on correcting VAT errors](https://www.gov.uk/vat-corrections)
+
+Keep your receipt from DIY Accounting Submit as a record of what was originally submitted.
+"""
+keywords = ["wrong figures", "mistake", "error", "submitted wrong", "amend", "correct", "change", "fix submission"]
+priority = 6
+
+[[faq]]
+id = "first-time-mtd"
+category = "connection"
+question = "I've never submitted digitally before - where do I start?"
+answer = """
+First-time Making Tax Digital setup:
+
+1. **Sign up for Making Tax Digital** - Register at [gov.uk/vat-record-keeping](https://www.gov.uk/vat-record-keeping/sign-up-for-making-tax-digital-for-vat) if you haven't already
+2. **Wait 24-48 hours** - HMRC needs time to activate your Making Tax Digital access
+3. **Log in** to DIY Accounting Submit using your Google account
+4. **Add a bundle** - Enter your 9-digit VAT registration number
+5. **Check obligations** - See which VAT periods HMRC expects returns for
+6. **Submit** - Enter your figures and submit your return
+
+Keep your Government Gateway login details handy - you'll need them when authorising submissions.
+"""
+keywords = ["first time", "never", "new", "start", "begin", "how do i", "getting started", "setup", "making tax digital", "mtd"]
+priority = 7
+
+[[faq]]
+id = "vat-registration-number-format"
+category = "vat-basics"
+question = "What format should my VAT registration number be in?"
+answer = """
+Your VAT registration number should be:
+
+- **Exactly 9 digits** (e.g., 123456789)
+- **No spaces, letters, or GB prefix**
+- Found on your VAT registration certificate from HMRC
+
+If you have it written as "GB 123 456 789", just enter the 9 digits: 123456789
+
+The system will reject formats like:
+- GB123456789 (has GB prefix)
+- 123 456 789 (has spaces)
+- 12345678 (only 8 digits)
+"""
+keywords = ["vat registration number", "format", "9 digits", "gb", "how to enter", "invalid"]
+priority = 8
+
+[[faq]]
+id = "obligations-not-showing"
+category = "submission"
+question = "My VAT obligations aren't showing"
+answer = """
+If no obligations appear:
+
+1. **Expand the date range** - Obligations only show for periods HMRC expects a return. Try a wider date range.
+2. **Check the status filter** - By default, only Open obligations show. Change to "All statuses" to see Fulfilled ones too.
+3. **New registration** - HMRC may take 24-48 hours to create your first obligation after Making Tax Digital registration
+4. **Check your VAT registration number** - Make sure you're using the correct 9-digit number
+
+If you've just registered for Making Tax Digital, wait 24-48 hours and try again.
+"""
+keywords = ["obligations", "not showing", "no obligations", "empty", "can't see", "missing", "periods"]
+priority = 9
+
+[[faq]]
+id = "what-is-bundle"
+category = "bundles"
+question = "What is a bundle?"
+answer = """
+A bundle saves your VAT submission settings:
+
+- Your **VAT registration number**
+- Whether to use **sandbox** (testing) or **production** (real HMRC)
+- Your **HMRC authorisation** for submitting returns
+
+If you submit VAT for multiple businesses, create a separate bundle for each. Each bundle maintains its own HMRC connection.
+
+Most users only need one bundle for their business.
+"""
+keywords = ["bundle", "what is", "bundles", "configuration", "setup"]
+priority = 10
+
+[[faq]]
+id = "figures-dont-match"
+category = "submission"
+question = "My figures don't match my spreadsheet"
+answer = """
+Common causes of mismatches:
+
+1. **Rounding** - HMRC accepts figures to 2 decimal places for Boxes 1-5. Check your spreadsheet rounds correctly.
+2. **Box 3 and 5** - These are calculated automatically (Box 3 = Box 1 + Box 2, Box 5 = |Box 3 - Box 4|). Don't calculate them yourself.
+3. **VAT vs Net amounts** - Boxes 1-5 are VAT amounts. Boxes 6-9 are net values excluding VAT.
+4. **Whole pounds** - Boxes 6-9 must be whole numbers with no pence.
+5. **Period dates** - Ensure your spreadsheet covers exactly the same dates as the obligation.
+"""
+keywords = ["figures", "don't match", "doesn't match", "wrong", "different", "spreadsheet", "mismatch", "numbers", "calculation"]
+priority = 11
+
+[[faq]]
+id = "flat-rate-scheme"
+category = "vat-basics"
+question = "I'm on the Flat Rate Scheme - can I use this app?"
+answer = """
+Yes. The Flat Rate Scheme changes how you calculate your VAT, not how you submit it.
+
+When using DIY Accounting Submit with Flat Rate:
+- **Box 1** = Your flat rate VAT (gross turnover x your flat rate percentage)
+- **Box 6** = Your gross turnover including VAT
+- **Boxes 2, 4, 7, 8, 9** are typically £0 (check HMRC guidance for exceptions)
+
+Calculate your figures using your flat rate percentage, then submit as normal.
+"""
+keywords = ["flat rate", "flat rate scheme", "frs", "simplified"]
+priority = 12
+
+[[faq]]
+id = "annual-accounting"
+category = "vat-basics"
+question = "I'm on Annual Accounting - how does this work?"
+answer = """
+Annual Accounting means you submit one VAT return per year instead of quarterly.
+
+In DIY Accounting Submit:
+1. You'll see **one obligation** covering your annual period
+2. Submit as normal - the process is identical to quarterly returns
+
+Your interim payments to HMRC throughout the year are separate from your return submission.
+"""
+keywords = ["annual", "annual accounting", "yearly", "once a year"]
+priority = 13
+
+[[faq]]
+id = "authorisation-expired"
+category = "connection"
+question = "My HMRC authorisation has expired"
+answer = """
+HMRC authorisations expire after 18 months or if you revoke access.
+
+To re-authorise:
+1. When you try to submit, you'll be redirected to HMRC automatically
+2. Log in with your **Government Gateway** credentials
+3. Grant permission for DIY Accounting Submit to act on your behalf
+
+You can also check or revoke authorisations at [tax.service.gov.uk/agent-services-account](https://www.tax.service.gov.uk/agent-services-account)
+"""
+keywords = ["expired", "authorisation", "authorization", "renew", "re-authorise", "token", "18 months"]
+priority = 14
+
+[[faq]]
+id = "hmrc-not-received"
+category = "receipts"
+question = "HMRC says they haven't received my return but I got a success message"
+answer = """
+If DIY Accounting Submit showed a success message with a Form Bundle Number, HMRC received it. Discrepancies usually mean:
+
+1. **Timing** - HMRC's own systems can take a few hours to update. Check again later.
+2. **Wrong period** - You may have submitted for a different period than you're checking
+3. **Different VAT registration number** - Ensure you're checking the same business in HMRC's portal
+
+Your receipt includes the **Form Bundle Number** (e.g., 425379263134). Quote this to HMRC if you need to prove submission.
+"""
+keywords = ["hmrc", "not received", "haven't received", "didn't get", "missing submission", "success but", "form bundle number"]
+priority = 15
+
+[[faq]]
+id = "error-invalid-vat-registration-number"
+category = "errors"
+question = "Error: Invalid VAT registration number"
+answer = """
+This error means the VAT registration number format is incorrect:
+
+- Must be **exactly 9 digits**
+- **No spaces, letters, or GB prefix**
+- Example: 123456789 (not GB123456789 or 123 456 789)
+
+If your number is correct but still rejected:
+- Check the business is registered for **Making Tax Digital for VAT** (not just standard VAT)
+- New registrations can take 24-48 hours to activate
+"""
+keywords = ["invalid", "vat registration number", "error", "wrong format", "9 digits", "gb"]
+priority = 16
+
+[[faq]]
+id = "error-duplicate-submission"
+category = "errors"
+question = "Error: Duplicate submission"
+answer = """
+HMRC rejected the submission because a return for this period already exists.
+
+This happens if:
+- You already submitted for this period (check your receipts)
+- Someone else submitted for this VAT registration number (e.g., an accountant)
+
+Check the period status in **VAT Obligations** - it should show as **Fulfilled** with a received date.
+"""
+keywords = ["duplicate", "already submitted", "exists", "period already"]
+priority = 17
+
+[[faq]]
+id = "error-obligation-not-found"
+category = "errors"
+question = "Error: Obligation not found for this period"
+answer = """
+You're trying to submit for a period HMRC isn't expecting a return for.
+
+Check:
+1. The VAT period matches an **Open** obligation exactly
+2. You haven't already submitted for this period (would show as Fulfilled)
+3. The VAT registration number is correct
+
+Use **Check VAT Obligations** to see which periods are open and need returns.
+"""
+keywords = ["obligation not found", "period not found", "no obligation", "can't submit"]
+priority = 18
+
+[[faq]]
+id = "sandbox-vs-production"
+category = "connection"
+question = "What's the difference between sandbox and production?"
+answer = """
+**Sandbox** is HMRC's test environment:
+- Uses test credentials (any VAT registration number works)
+- Submissions don't affect real tax records
+- Useful for learning how the app works
+
+**Production** is the real HMRC system:
+- Requires your actual Government Gateway login
+- Submissions are legally binding VAT returns
+- This is what you use for real submissions
+
+Most users should use **Production** for their actual VAT returns.
+"""
+keywords = ["sandbox", "production", "test", "live", "real", "difference"]
+priority = 19
+
+[[faq]]
+id = "clear-browser-data"
+category = "errors"
+question = "Something's not working - should I clear my browser data?"
+answer = """
+Clearing browser data can help with some issues but **will delete your saved receipts**.
+
+Before clearing:
+1. Go to **My Receipts**
+2. Save or print any receipts you need
+
+Safer alternatives to try first:
+- Open a private/incognito window
+- Try a different browser
+- Clear cookies just for submit.diyaccounting.co.uk
+
+If issues persist after clearing data, [open a support issue on GitHub](https://github.com/antonycc/submit.diyaccounting.co.uk/issues).
+"""
+keywords = ["clear", "browser", "cache", "cookies", "not working", "stuck", "frozen", "reset"]
+priority = 20
+
+[[faq]]
+id = "accessibility-features"
+category = "vat-basics"
+question = "What accessibility features does this app have?"
+answer = """
+DIY Accounting Submit is designed to meet WCAG 2.2 Level AA accessibility standards:
+
+**Keyboard navigation**
+- All functions accessible via keyboard
+- Tab order follows logical reading order
+- Skip link to main content on every page
+
+**Screen reader support**
+- All form fields have accessible labels
+- Error messages announced immediately
+- Status updates use ARIA live regions
+
+**Visual design**
+- Colour contrast meets 4.5:1 ratio minimum
+- Text resizable to 200% without loss
+- Focus states clearly visible
+
+For issues or suggestions, see our [accessibility statement](https://submit.diyaccounting.co.uk/accessibility.html).
+"""
+keywords = ["accessibility", "screen reader", "keyboard", "wcag", "accessible", "disability"]
+priority = 21
+
+[[faq]]
+id = "multiple-businesses"
+category = "bundles"
+question = "Can I submit VAT for multiple businesses?"
+answer = """
+Yes. Create a separate bundle for each VAT registration number:
+
+1. Click **Add Bundle**
+2. Enter the VAT registration number for that business
+3. Authorise with HMRC using that business's Government Gateway credentials
+
+Each bundle maintains its own HMRC connection. Switch between them from the home screen.
+"""
+keywords = ["multiple", "businesses", "companies", "more than one", "several", "different"]
+priority = 22
+
+[[faq]]
+id = "wrong-vat-registration-number"
+category = "bundles"
+question = "I added the wrong VAT registration number - how do I fix it?"
+answer = """
+You cannot edit a bundle's VAT registration number after creation. Instead:
+
+1. Go to **Bundles** from the menu
+2. Remove the incorrect bundle
+3. Click **Add Bundle** and enter the correct VAT registration number
+
+Your submission receipts are stored separately and won't be lost.
+"""
+keywords = ["wrong", "incorrect", "change", "edit bundle", "fix", "mistake", "vat registration number"]
+priority = 23

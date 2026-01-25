@@ -29,13 +29,14 @@ class HelpPage {
   }
 
   async init() {
-    // Load FAQ data
+    // Load FAQ data directly from TOML
     try {
-      const response = await fetch("/data/faqs.json");
+      const response = await fetch("/help/faqs.toml");
       if (!response.ok) {
         throw new Error(`Failed to load FAQs: ${response.status}`);
       }
-      const faqData = await response.json();
+      const tomlText = await response.text();
+      const faqData = window.TOML.parse(tomlText);
       this.faqSearch = new FAQSearch(faqData.faq);
 
       // Initial render

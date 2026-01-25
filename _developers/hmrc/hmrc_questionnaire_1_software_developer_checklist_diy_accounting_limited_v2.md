@@ -197,14 +197,20 @@ Answer: `No`
 
 **Evidence**: DIY Accounting Limited is the sole developer and operator. No third-party rebranding arrangements exist.
 
-### Q15: GDPR Compliance
+### Q15: GDPR Compliance ✅
 **Is your product GDPR compliant?**
 
 Reference: [Terms of Use](https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-use) - "Storing Data"
 
-Answer: `Yes`
+Answer: `Yes` - **COMPLIANT**
 
-**Evidence**: Privacy Policy published at https://submit.diyaccounting.co.uk/privacy.html. ICO registration pending. Data minimization: only stores HMRC OAuth tokens temporarily in session, VAT submission receipts in DynamoDB with 7-year retention (legal requirement). No personal data sold or shared. Users can request data deletion.
+**Evidence**: Privacy Policy published at https://submit.diyaccounting.co.uk/privacy.html. ICO registration completed:
+- **ICO Registration Number**: ZB070902
+- **ICO Public Register Entry**: https://ico.org.uk/ESDWebPages/Entry/ZB070902
+- **Registration Certificate**: "ICO Registration Certificate - ZB070902 - Diy Accounting Limited.pdf" (in repository)
+- **Data Controller**: DIY Accounting Limited
+
+Data minimization: only stores HMRC OAuth tokens temporarily in session, VAT submission receipts in DynamoDB with 7-year retention (legal requirement). No personal data sold or shared. Users can request data deletion via admin@diyaccounting.co.uk.
 
 ### Q16: WCAG Compliance ✅
 **Does your product meet the Web Content Accessibility Guidelines (minimum level AA)?**

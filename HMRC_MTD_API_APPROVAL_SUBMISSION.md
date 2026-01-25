@@ -160,6 +160,7 @@ From automated test run `web-test-local`:
 
 | Measure | Implementation |
 |---------|----------------|
+| ICO Registration | ZB070902 ([ICO Public Register](https://ico.org.uk/ESDWebPages/Entry/ZB070902)) |
 | User Data Hashing | HMAC-SHA256 with environment-specific salt |
 | PII Masking | Sensitive data masked in logs and test reports |
 | Data Retention | 7-year retention for VAT receipts (HMRC requirement) |
@@ -670,6 +671,7 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 | Official registration evidence | Yes | Company Number 06846849 |
 | Valid organisation URL | Yes | https://submit.diyaccounting.co.uk |
 | **Data Protection & Security** | | |
+| ICO Registration | Yes | ZB070902 ([ICO Public Register](https://ico.org.uk/ESDWebPages/Entry/ZB070902)) |
 | UK GDPR compliance | Yes | Privacy policy published |
 | Encrypt tokens and PII at rest/transit | Yes | DynamoDB KMS + TLS 1.2+ |
 | Access controls (RBAC) | Yes | AWS Cognito + IAM |
