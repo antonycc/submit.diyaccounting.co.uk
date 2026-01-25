@@ -11,6 +11,7 @@ Allow: /privacy.html
 Allow: /terms.html
 Allow: /accessibility.html
 Allow: /guide/
+Allow: /help/
 
 # Block authenticated/functional areas
 Disallow: /account/
