@@ -13,7 +13,7 @@ The site is a static SPA hosted on S3/CloudFront, using Cognito for auth and raw
 
 ## Part 1: FAQ Data Structure
 
-### File: `src/data/faqs.toml`
+### File: `web/public/help/faqs.toml`
 
 ```toml
 # FAQ entries for DIY Accounting Submit
@@ -799,7 +799,7 @@ Use a simple Node script or integrate into existing build:
 import { parse } from 'smol-toml'; // or @iarna/toml
 import { readFileSync, writeFileSync } from 'fs';
 
-const toml = readFileSync('src/data/faqs.toml', 'utf-8');
+const toml = readFileSync('web/public/help/faqs.toml', 'utf-8');
 const data = parse(toml);
 writeFileSync('src/data/faqs.json', JSON.stringify(data, null, 2));
 console.log(`Built ${data.faq.length} FAQs`);
@@ -1437,7 +1437,7 @@ Add to existing stylesheet or create `src/css/help.css`:
 ## Summary Checklist
 
 ### Files to Create
-- [ ] `src/data/faqs.toml` — FAQ content
+- [ ] `web/public/help/faqs.toml` — FAQ content
 - [ ] `src/pages/help.html` — Help page HTML
 - [ ] `src/js/faq-search.js` — Search logic
 - [ ] `src/js/help-page.js` — Page controller

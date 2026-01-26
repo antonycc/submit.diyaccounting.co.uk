@@ -470,5 +470,4 @@ repository-contents.txt:
 ./REPORT_ACCESSIBILITY_PENETRATION.md
 ./CLAUDE.md
 ./mock-oauth2-config.json
-./src/data/faqs.toml
 ```
