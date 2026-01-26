@@ -8,10 +8,9 @@ This document describes the navigation structure for DIY Accounting Submit.
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ HEADER                                                                  │
 │ ┌─────────────────────────────────┐  ┌────────────────────────────────┐ │
-│ │ 🏠  ☰                           │  │ Activity: unrestricted         │ │
-│ │      ├─ User Guide              │  │ Not logged in  [Log in]        │ │
-│ │      ├─ Help                    │  └────────────────────────────────┘ │
-│ │      └─ About                   │                                     │
+│ │ 🏠  ⓘ                           │  │ Activity: unrestricted         │ │
+│ │                                 │  │ Not logged in  [Log in]        │ │
+│ │                                 │  └────────────────────────────────┘ │
 │ └─────────────────────────────────┘                                     │
 │                                                                         │
 │                    DIY Accounting Submit                                │
@@ -35,7 +34,23 @@ This document describes the navigation structure for DIY Accounting Submit.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Site Map / Flow
+## About Page (Info Icon Destination)
+
+The info icon (ⓘ) navigates to the About page, which provides links to Help and User Guide:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      About DIY Accounting Submit                        │
+│                                                                         │
+│              [ Help & FAQs ]          [ User Guide ]                    │
+│                                                                         │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │  [ Activities ]     [ Receipts ]     [ Bundles ]                    │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+## Site Map / Navigation Flow
 
 ```
                             ┌─────────────┐
@@ -56,6 +71,66 @@ This document describes the navigation structure for DIY Accounting Submit.
                             ┌─────────────┐       ┌─────────────┐       ┌─────────────┐
                             │ Submit VAT  │       │ Obligations │       │ View Return │
                             └─────────────┘       └─────────────┘       └─────────────┘
+
+Help Navigation (via Info Icon ⓘ):
+
+                            ┌─────────────┐
+                            │  Any Page   │
+                            └──────┬──────┘
+                                   │ (click ⓘ)
+                                   ▼
+                            ┌─────────────┐
+                            │    About    │
+                            └──────┬──────┘
+                                   │
+                      ┌────────────┴────────────┐
+                      │                         │
+                      ▼                         ▼
+               ┌─────────────┐           ┌─────────────┐
+               │ Help & FAQs │           │ User Guide  │
+               └─────────────┘           └─────────────┘
+```
+
+## Authentication Journeys
+
+### HMRC Auth Journey: Submit VAT Return
+
+```
+┌──────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Home   │ ───► │  Submit VAT  │ ───► │ Fill Form &  │ ───► │    HMRC      │
+│ (click   │      │  Return Page │      │  Click       │      │   OAuth      │
+│  Submit) │      │              │      │  Submit      │      │   Login      │
+└──────────┘      └──────────────┘      └──────────────┘      └──────┬───────┘
+                                                                     │
+                                                                     │ (grant access)
+                                                                     ▼
+┌──────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Home   │ ◄─── │   Receipts   │ ◄─── │   Callback   │ ◄─── │    HMRC      │
+│ (via     │      │   (see new   │      │   Page w/    │      │   Redirect   │
+│  nav)    │      │    receipt)  │      │   Result     │      │   Back       │
+└──────────┘      └──────────────┘      └──────────────┘      └──────────────┘
+
+Timeline: Home → Submit VAT → Fill Form → HMRC OAuth → Callback → Receipt → Home
+```
+
+### Cognito/Google Auth Journey: Add Bundle
+
+```
+┌──────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Home   │ ───► │   Bundles    │ ───► │  Click Add   │ ───► │  Cognito/    │
+│ (click   │      │  Page (not   │      │  Bundle      │      │  Google      │
+│  Bundles)│      │  logged in)  │      │  (or Login)  │      │  OAuth       │
+└──────────┘      └──────────────┘      └──────────────┘      └──────┬───────┘
+                                                                     │
+                                                                     │ (authenticate)
+                                                                     ▼
+┌──────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Home   │ ◄─── │   Bundles    │ ◄─── │   Callback   │ ◄─── │   Cognito    │
+│ (with    │      │   (logged    │      │   Page       │      │   Redirect   │
+│  bundle) │      │   in, select)│      │   (tokens)   │      │   Back       │
+└──────────┘      └──────────────┘      └──────────────┘      └──────────────┘
+
+Timeline: Home → Bundles → Login → Google OAuth → Callback → Bundles (select) → Home
 ```
 
 ## Navigation Tiers
@@ -70,15 +145,16 @@ Always visible below the header title. Contains core application functions:
 | Receipts | `/hmrc/receipt/receipts.html` | View submission receipts |
 | Bundles | `/account/bundles.html` | Manage feature bundles |
 
-### Secondary Navigation (Hamburger Menu)
+### Secondary Navigation (Info Icon → About Page)
 
-Top-left corner, contains informational/support pages:
+Top-left info icon (ⓘ) navigates to About page with links to:
 
 | Link | Path | Purpose |
 |------|------|---------|
+| Help & FAQs | `/help/index.html` | FAQs and troubleshooting |
 | User Guide | `/guide/index.html` | Step-by-step usage instructions |
-| Help | `/help/index.html` | FAQs and troubleshooting |
-| About | `/about.html` | Application information |
+
+The About page (`/about.html`) itself contains application information.
 
 ### Tertiary Navigation (Footer)
 
@@ -96,23 +172,27 @@ Bottom of page, contains legal and meta links:
 
 | Element | Location | Purpose |
 |---------|----------|---------|
-| Home Icon | Top-left (before hamburger) | Quick return to home from any page |
+| Home Icon (🏠) | Top-left | Quick return to home from any page |
+| Info Icon (ⓘ) | Top-left (after home) | Navigate to About page for Help/Guide |
 | Log in | Top-right | Authentication action |
 
 ## Design Principles
 
 1. **Primary actions visible** - Activities, Receipts, Bundles are always one click away
-2. **Secondary info accessible** - User Guide, Help, About available via hamburger
+2. **Help accessible** - Info icon provides quick access to About → Help/Guide
 3. **Legal content unobtrusive** - Footer keeps privacy/terms out of the way
 4. **Consistent layout** - Same navigation structure on every page
 5. **Home always reachable** - Home icon provides escape hatch from any page
+6. **No hidden menus** - All navigation is visible (no hamburger/dropdown required)
 
 ## What Works Well
 
 - Clear separation between primary actions and secondary information
 - Main nav is always visible - no hunting through menus
+- Info icon provides intuitive path to help content
 - Home icon provides quick navigation from any page
 - Footer keeps legal/meta links accessible but out of the way
+- About page serves as hub for help-related content
 
 ## Potential Future Improvements
 
@@ -125,19 +205,12 @@ The main nav shows Receipts/Bundles but those require login. Options:
 
 ### 2. Active State Highlighting
 
-Currently only Activities shows as "active" on home page. Each page should highlight its corresponding nav item:
+Each page should highlight its corresponding nav item:
 - Activities: active on `/index.html`
 - Receipts: active on `/hmrc/receipt/receipts.html`
 - Bundles: active on `/account/bundles.html`
 
-### 3. Mobile Hamburger Simplification
-
-On mobile, there's now both the hamburger AND the main nav visible. Options:
-- Remove hamburger entirely on mobile
-- Move User Guide/Help/About to footer
-- Collapse main nav into hamburger on very small screens
-
-### 4. Breadcrumbs for VAT Pages
+### 3. Breadcrumbs for VAT Pages
 
 VAT pages are nested (Submit VAT, Obligations, View Return). Could add breadcrumbs:
 ```
@@ -165,9 +238,9 @@ Navigation structure is implemented in:
 - `web/public/guide/index.html`
 
 ### CSS
-- `web/public/submit.css` - `.main-nav`, `.header-left`, `.home-link`, `.home-icon` styles
+- `web/public/submit.css` - `.main-nav`, `.header-left`, `.home-link`, `.home-icon`, `.info-link`, `.info-icon`, `.about-nav-links`, `.about-nav-link` styles
 
 ### Test Files
-- `behaviour-tests/steps/behaviour-steps.js` - `goToHomePageUsingHamburgerMenu()`
+- `behaviour-tests/steps/behaviour-steps.js` - `goToHomePageUsingMainNav()`, `goToAboutPage()`, `goToHelpPageFromAbout()`, `goToUserGuideFromAbout()`
 - `behaviour-tests/steps/behaviour-bundle-steps.js` - `goToBundlesPage()`
-- `behaviour-tests/steps/behaviour-hmrc-receipts-steps.js` - `goToReceiptsPageUsingHamburgerMenu()`
+- `behaviour-tests/steps/behaviour-hmrc-receipts-steps.js` - `goToReceiptsPageUsingMainNav()`

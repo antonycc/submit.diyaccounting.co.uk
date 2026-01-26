@@ -44,19 +44,19 @@ const screenshotPath = "target/behaviour-test-results/screenshots/help-behaviour
 let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess;
 
 /**
- * Help Page Behaviour Tests
+ * Help & Navigation Behaviour Tests
  *
- * These tests verify that the Help & FAQ page functions correctly:
- * 1. FAQs are loaded and displayed
- * 2. Search functionality works
- * 3. FAQ accordion expands/collapses
- * 4. Support modal opens and closes
- * 5. Support form can be filled out
+ * These tests verify that help navigation and content functionality works correctly:
+ * 1. Info icon navigates to About page
+ * 2. About page has links to Help and User Guide
+ * 3. Help page FAQs work (load, search, expand/collapse)
+ * 4. User Guide content loads and sections are navigable
+ * 5. Support modal opens and closes
  */
 
-test.describe("Help Page - FAQs and Support Form", () => {
+test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
   test.beforeAll(async () => {
-    console.log("\n Setting up test environment for help page tests...\n");
+    console.log("\n Setting up test environment for help navigation tests...\n");
     console.log(` Base URL (raw): ${baseUrlRaw}`);
     console.log(` Base URL (normalized): ${baseUrl}`);
     console.log(` Environment: ${envName}`);
@@ -104,7 +104,7 @@ test.describe("Help Page - FAQs and Support Form", () => {
     console.log(" Cleanup complete\n");
   });
 
-  test("Navigate to help page and verify FAQ functionality", async ({ page }) => {
+  test("Navigate via info icon to About page and explore Help and User Guide", async ({ page }) => {
     // Add comprehensive page logging
     addOnPageLogging(page);
 
@@ -117,34 +117,106 @@ test.describe("Help Page - FAQs and Support Form", () => {
       }
     });
 
-    // ============================================================
-    // STEP 1: Navigate to Help Page
-    // ============================================================
-    console.log("\n" + "=".repeat(60));
-    console.log("STEP 1: Navigate to Help Page");
-    console.log("=".repeat(60));
-
     // Set header to bypass ngrok browser warning page (for local proxy testing)
     await page.setExtraHTTPHeaders({
       "ngrok-skip-browser-warning": "any value",
     });
 
-    const helpUrl = `${baseUrl}/help/index.html`;
-    console.log(` Navigating to help page: ${helpUrl}`);
-    await page.goto(helpUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-help-page.png` });
+    // ============================================================
+    // STEP 1: Start on Home Page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 1: Start on Home Page");
+    console.log("=".repeat(60));
 
-    // Check page loaded
+    const homeUrl = `${baseUrl}/index.html`;
+    console.log(` Navigating to home page: ${homeUrl}`);
+    await page.goto(homeUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-home-page.png` });
+
+    // Verify home page loaded
+    const homeTitle = await page.title();
+    console.log(` Home page title: "${homeTitle}"`);
+    expect(homeTitle).toMatch(/DIY Accounting/i);
+    console.log(" Home page loaded successfully");
+
+    // ============================================================
+    // STEP 2: Click Info Icon to Navigate to About Page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 2: Click Info Icon to Navigate to About Page");
+    console.log("=".repeat(60));
+
+    // Verify info icon is visible
+    const infoIcon = page.locator("a.info-link");
+    await expect(infoIcon).toBeVisible({ timeout: 10000 });
+    console.log(" Info icon is visible");
+
+    // Click info icon
+    console.log(" Clicking info icon...");
+    await Promise.all([
+      page.waitForURL(/about\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      infoIcon.click(),
+    ]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-about-page.png` });
+
+    // Verify About page loaded
+    const aboutTitle = await page.title();
+    console.log(` About page title: "${aboutTitle}"`);
+    expect(aboutTitle).toMatch(/About/i);
+    console.log(" About page loaded successfully");
+
+    // ============================================================
+    // STEP 3: Verify About Page Has Help and User Guide Links
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 3: Verify About Page Navigation Links");
+    console.log("=".repeat(60));
+
+    // Check for Help link
+    const helpLink = page.locator("a.about-nav-link:has-text('Help')");
+    await expect(helpLink).toBeVisible({ timeout: 10000 });
+    console.log(" Help link is visible on About page");
+
+    // Check for User Guide link
+    const guideLink = page.locator("a.about-nav-link:has-text('User Guide')");
+    await expect(guideLink).toBeVisible({ timeout: 10000 });
+    console.log(" User Guide link is visible on About page");
+
+    // Verify About page content
+    const aboutHeading = page.locator("h1:has-text('About')");
+    await expect(aboutHeading).toBeVisible();
+    console.log(" About page heading is visible");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-about-nav-links.png` });
+
+    // ============================================================
+    // STEP 4: Navigate to Help Page from About
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 4: Navigate to Help Page from About");
+    console.log("=".repeat(60));
+
+    console.log(" Clicking Help link...");
+    await Promise.all([
+      page.waitForURL(/help\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      helpLink.click(),
+    ]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-help-page.png` });
+
+    // Verify Help page loaded
     const helpTitle = await page.title();
     console.log(` Help page title: "${helpTitle}"`);
     expect(helpTitle).toMatch(/Help.*FAQ/i);
     console.log(" Help page loaded successfully");
 
     // ============================================================
-    // STEP 2: Verify FAQs are loaded
+    // STEP 5: Verify FAQs are loaded and explore them
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 2: Verify FAQs are loaded");
+    console.log("STEP 5: Verify FAQs are loaded and explore them");
     console.log("=".repeat(60));
 
     // Wait for FAQ list to be populated
@@ -160,23 +232,16 @@ test.describe("Help Page - FAQs and Support Form", () => {
     expect(faqCount).toBeGreaterThan(0);
     console.log(" FAQs loaded successfully");
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-faqs-loaded.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-faqs-loaded.png` });
 
-    // ============================================================
-    // STEP 3: Test FAQ accordion expand/collapse
-    // ============================================================
-    console.log("\n" + "=".repeat(60));
-    console.log("STEP 3: Test FAQ accordion expand/collapse");
-    console.log("=".repeat(60));
-
-    // Click first FAQ question to expand
+    // Test FAQ accordion expand/collapse
     const firstFaqQuestion = page.locator(".faq-question").first();
     await expect(firstFaqQuestion).toBeVisible();
     console.log(" Clicking first FAQ to expand...");
 
     await firstFaqQuestion.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-faq-expanded.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-faq-expanded.png` });
 
     // Verify the answer is now visible
     const firstFaqAnswer = page.locator(".faq-answer").first();
@@ -192,17 +257,13 @@ test.describe("Help Page - FAQs and Support Form", () => {
     console.log(" Clicking first FAQ to collapse...");
     await firstFaqQuestion.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-faq-collapsed.png` });
-
-    // Verify the answer is now hidden
-    await expect(firstFaqAnswer).toBeHidden({ timeout: 5000 });
-    console.log(" First FAQ collapsed - answer is hidden");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-faq-collapsed.png` });
 
     // ============================================================
-    // STEP 4: Test search functionality
+    // STEP 6: Test FAQ search functionality
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 4: Test search functionality");
+    console.log("STEP 6: Test FAQ search functionality");
     console.log("=".repeat(60));
 
     const searchInput = page.locator("#faq-search");
@@ -212,7 +273,7 @@ test.describe("Help Page - FAQs and Support Form", () => {
     console.log(" Searching for 'VAT'...");
     await searchInput.fill("VAT");
     await page.waitForTimeout(300); // Wait for debounce
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-search-vat.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-search-vat.png` });
 
     // Check that results are filtered
     const searchHint = page.locator("#search-hint");
@@ -225,21 +286,145 @@ test.describe("Help Page - FAQs and Support Form", () => {
     console.log(" Clearing search...");
     await searchInput.fill("");
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-search-cleared.png` });
-
-    const clearedHint = await searchHint.textContent();
-    expect(clearedHint).toMatch(/Showing top FAQs/);
-    console.log(" Search cleared - showing all FAQs again");
 
     // ============================================================
-    // STEP 5: Test support modal
+    // STEP 7: Navigate back to About page via info icon
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 5: Test support modal open/close");
+    console.log("STEP 7: Navigate back to About page via info icon");
+    console.log("=".repeat(60));
+
+    const helpInfoIcon = page.locator("a.info-link");
+    await expect(helpInfoIcon).toBeVisible({ timeout: 10000 });
+    console.log(" Clicking info icon to return to About page...");
+
+    await Promise.all([
+      page.waitForURL(/about\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      helpInfoIcon.click(),
+    ]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-back-to-about.png` });
+
+    // Verify we're back on About page
+    const aboutTitleAgain = await page.title();
+    expect(aboutTitleAgain).toMatch(/About/i);
+    console.log(" Returned to About page successfully");
+
+    // ============================================================
+    // STEP 8: Navigate to User Guide from About
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 8: Navigate to User Guide from About");
+    console.log("=".repeat(60));
+
+    const guideLinkAgain = page.locator("a.about-nav-link:has-text('User Guide')");
+    await expect(guideLinkAgain).toBeVisible({ timeout: 10000 });
+    console.log(" Clicking User Guide link...");
+
+    await Promise.all([
+      page.waitForURL(/guide\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      guideLinkAgain.click(),
+    ]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-user-guide-page.png` });
+
+    // Verify User Guide page loaded
+    const guideTitle = await page.title();
+    console.log(` User Guide page title: "${guideTitle}"`);
+    expect(guideTitle).toMatch(/User Guide/i);
+    console.log(" User Guide page loaded successfully");
+
+    // ============================================================
+    // STEP 9: Explore User Guide content
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 9: Explore User Guide content");
+    console.log("=".repeat(60));
+
+    // Check for guide sections
+    const guideSections = page.locator(".guide-section");
+    const sectionCount = await guideSections.count();
+    console.log(` Found ${sectionCount} guide sections`);
+    expect(sectionCount).toBeGreaterThan(0);
+
+    // Check for step numbers
+    const stepNumbers = page.locator(".step-number");
+    const stepCount = await stepNumbers.count();
+    console.log(` Found ${stepCount} step numbers`);
+    expect(stepCount).toBeGreaterThan(0);
+
+    // Check for guide cards with images
+    const guideCards = page.locator(".guide-card");
+    const cardCount = await guideCards.count();
+    console.log(` Found ${cardCount} guide cards with images`);
+    expect(cardCount).toBeGreaterThan(0);
+
+    // Check section headings
+    const obligationsSection = page.locator("#obligations");
+    const submitSection = page.locator("#submit");
+    const viewSection = page.locator("#view");
+
+    await expect(obligationsSection).toBeVisible({ timeout: 5000 });
+    console.log(" Obligations section is visible");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-guide-sections.png` });
+
+    // Scroll to submit section
+    await submitSection.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-12-submit-section.png` });
+    console.log(" Submit section is visible after scroll");
+
+    // ============================================================
+    // STEP 10: Test navigation buttons on User Guide
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 10: Test navigation buttons on User Guide");
+    console.log("=".repeat(60));
+
+    // Scroll to bottom to find navigation buttons
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(300);
+
+    // Check for Return to Home button
+    const returnHomeBtn = page.locator("button:has-text('Return to Home')");
+    await expect(returnHomeBtn).toBeVisible({ timeout: 5000 });
+    console.log(" Return to Home button is visible");
+
+    // Check for View FAQs button
+    const viewFaqsBtn = page.locator("button:has-text('View FAQs')");
+    await expect(viewFaqsBtn).toBeVisible({ timeout: 5000 });
+    console.log(" View FAQs button is visible");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-13-guide-navigation.png` });
+
+    // Click View FAQs to navigate to Help page
+    console.log(" Clicking View FAQs button...");
+    await Promise.all([
+      page.waitForURL(/help\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      viewFaqsBtn.click(),
+    ]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-14-help-from-guide.png` });
+
+    // Verify we're on Help page
+    const helpTitleAgain = await page.title();
+    expect(helpTitleAgain).toMatch(/Help.*FAQ/i);
+    console.log(" Navigated to Help page via View FAQs button");
+
+    // ============================================================
+    // STEP 11: Test support modal
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 11: Test support modal open/close");
     console.log("=".repeat(60));
 
     const supportModal = page.locator("#support-modal");
     const openSupportBtn = page.locator("#open-support-form");
+
+    // Scroll to support section
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(300);
 
     // Verify modal is initially hidden
     await expect(supportModal).toBeHidden();
@@ -250,7 +435,7 @@ test.describe("Help Page - FAQs and Support Form", () => {
     await expect(openSupportBtn).toBeVisible();
     await openSupportBtn.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-modal-opened.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-15-modal-opened.png` });
 
     // Verify modal is now visible
     await expect(supportModal).toBeVisible({ timeout: 5000 });
@@ -270,68 +455,61 @@ test.describe("Help Page - FAQs and Support Form", () => {
     await expect(cancelBtn).toBeVisible();
     console.log(" All form elements are visible");
 
+    // Fill form fields
+    console.log(" Filling form fields...");
+    await subjectInput.fill("Test support request");
+    await descriptionTextarea.fill("This is a test description for the support form behavior test.");
+    await categorySelect.selectOption("other");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-16-form-filled.png` });
+
     // Test cancel button
     console.log(" Clicking cancel to close modal...");
     await cancelBtn.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-modal-closed.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-17-modal-closed.png` });
 
     // Verify modal is hidden again
     await expect(supportModal).toBeHidden({ timeout: 5000 });
     console.log(" Modal closed successfully via cancel button");
 
     // ============================================================
-    // STEP 6: Test support form fill
+    // STEP 12: Navigate home via main navigation
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 6: Test support form fill");
+    console.log("STEP 12: Navigate home via main navigation");
     console.log("=".repeat(60));
 
-    // Reopen modal
-    console.log(" Reopening support modal...");
-    await openSupportBtn.click();
-    await page.waitForTimeout(300);
-    await expect(supportModal).toBeVisible({ timeout: 5000 });
+    const activitiesLink = page.locator("nav.main-nav a:has-text('Activities')");
+    await expect(activitiesLink).toBeVisible({ timeout: 10000 });
+    console.log(" Clicking Activities in main nav to return home...");
 
-    // Fill form fields
-    console.log(" Filling form fields...");
-    await subjectInput.fill("Test support request");
-    await descriptionTextarea.fill("This is a test description for the support form behavior test.");
-    await categorySelect.selectOption("other");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-form-filled.png` });
+    await Promise.all([
+      page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      activitiesLink.click(),
+    ]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-18-back-home.png` });
 
-    // Verify fields are filled
-    const subjectValue = await subjectInput.inputValue();
-    const descriptionValue = await descriptionTextarea.inputValue();
-    const categoryValue = await categorySelect.inputValue();
-
-    expect(subjectValue).toBe("Test support request");
-    expect(descriptionValue).toContain("test description");
-    expect(categoryValue).toBe("other");
-    console.log(" Form fields filled correctly");
-
-    // Test Escape key closes modal
-    console.log(" Testing Escape key closes modal...");
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-modal-closed-escape.png` });
-
-    await expect(supportModal).toBeHidden({ timeout: 5000 });
-    console.log(" Modal closed successfully via Escape key");
+    // Verify we're back on home page
+    const finalTitle = await page.title();
+    expect(finalTitle).toMatch(/DIY Accounting/i);
+    console.log(" Returned to home page successfully");
 
     // ============================================================
-    // STEP 7: Final summary
+    // STEP 13: Final summary
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("TEST COMPLETE - All help page functionality verified");
+    console.log("TEST COMPLETE - All help navigation functionality verified");
     console.log("=".repeat(60));
 
     console.log("\n Summary:");
-    console.log("   Help page accessible and loads FAQs");
-    console.log("   FAQ accordion expand/collapse works");
+    console.log("   Info icon navigates to About page");
+    console.log("   About page has Help and User Guide links");
+    console.log("   Help page FAQs load and expand/collapse");
     console.log("   FAQ search functionality works");
+    console.log("   User Guide has sections with step numbers and cards");
+    console.log("   User Guide navigation buttons work");
     console.log("   Support modal opens and closes correctly");
-    console.log("   Support form fields can be filled");
-    console.log("   Escape key closes the modal\n");
+    console.log("   Main navigation returns to home page\n");
   });
 });

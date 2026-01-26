@@ -8,7 +8,7 @@ import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-receipts-steps";
 
-export async function goToReceiptsPageUsingHamburgerMenu(page, screenshotPath = defaultScreenshotPath) {
+export async function goToReceiptsPageUsingMainNav(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user navigates to the Receipts page via main navigation", async () => {
     console.log("Navigating to Receipts via main navigation...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-nav.png` });
@@ -22,6 +22,9 @@ export async function goToReceiptsPageUsingHamburgerMenu(page, screenshotPath = 
     });
   });
 }
+
+// Backwards compatibility alias
+export const goToReceiptsPageUsingHamburgerMenu = goToReceiptsPageUsingMainNav;
 
 export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user reviews the receipts list and opens the first receipt when available", async () => {
