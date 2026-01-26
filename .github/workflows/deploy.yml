@@ -7,7 +7,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump20
+# Bump21 - trigger deploy after deploy-environment for Cognito DNS fix
 
 on:
   workflow_dispatch:

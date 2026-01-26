@@ -361,6 +361,64 @@ jobs:
       deployment-name: ${{ needs.names.outputs.environment-name }}
       cdk-application: 'environment'
 
+  verify-certificate:
+    name: 'verify certificate'
+    needs:
+      - names
+      - create-secrets
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: us-east-1
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Verify certificate covers Cognito domain
+        run: |
+          CERT_ARN="arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b"
+          COGNITO_DOMAIN="${{ needs.names.outputs.environment-name }}-auth.submit.diyaccounting.co.uk"
+
+          echo "Verifying certificate $CERT_ARN covers $COGNITO_DOMAIN"
+
+          SANS=$(aws acm describe-certificate \
+            --certificate-arn "$CERT_ARN" \
+            --query 'Certificate.SubjectAlternativeNames' \
+            --output text)
+
+          echo "Certificate SANs: $SANS"
+
+          # Check for exact match or wildcard coverage
+          if echo "$SANS" | grep -qE "(^|[[:space:]])(\*\.submit\.diyaccounting\.co\.uk|${COGNITO_DOMAIN})($|[[:space:]])"; then
+            echo "Certificate covers $COGNITO_DOMAIN"
+          else
+            echo "ERROR: Certificate does NOT cover $COGNITO_DOMAIN"
+            echo "The certificate needs to include either:"
+            echo "  - *.submit.diyaccounting.co.uk (wildcard)"
+            echo "  - $COGNITO_DOMAIN (explicit)"
+            exit 1
+          fi
+
   # TODO: Switch to deploy-cdk-stack.yml
   deploy-identity:
     name: 'deploy identity'
@@ -368,6 +426,7 @@ jobs:
       - names
       - create-secrets
       - deploy-apex
+      - verify-certificate
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     permissions:
