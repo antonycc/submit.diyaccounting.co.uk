@@ -48,47 +48,55 @@ subscriptionTier = "business"
 [[activities]]
 id = "bundle"
 name = "View and edit your bundles"
+display = "never"
 bundles = ["default"]
 paths = ["account/bundles.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 
 [[activities]]
 id = "submit-vat-sandbox"
 name = "Submit VAT (HMRC Sandbox)"
+display = "onEntitlement" # (default)
 bundles = ["test"]
 paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "vat-obligations-sandbox"
 name = "VAT Obligations (HMRC Sandbox)"
+display = "onEntitlement" # (default)
 bundles = ["test"]
 paths = ["hmrc/vat/vatObligations.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "view-vat-return-sandbox"
 name = "View VAT Return (HMRC Sandbox)"
+display = "onEntitlement" # (default)
 bundles = ["test"]
 paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "submit-vat"
 name = "Submit VAT (HMRC)"
+display = "alwaysWithUpsell" # show upsell prompt if not entitled
 bundles = ["guest", "business", "diylegacy"]
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
+display = "alwaysWithUpsell" # show upsell prompt if not entitled
 bundles = ["guest", "business", "diylegacy"]
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
+display = "alwaysWithUpsell" # show upsell prompt if not entitled
 bundles = ["guest", "business", "diylegacy"]
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "my-receipts"
 name = "View previously submitted receipts"
+display = "always"
 bundles = ["default"]
 paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]

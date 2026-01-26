@@ -43,18 +43,16 @@ export async function goToHomePage(page, screenshotPath = defaultScreenshotPath)
 }
 
 export async function goToHomePageUsingHamburgerMenu(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user returns to the home page via the menu", async () => {
-    // Return to home via hamburger menu
-    console.log("Returning to home via hamburger menu...");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-hamburger.png` });
-    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu to go home", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home-hamburger-clicked-menu.png` });
-    await expect(page.getByRole("link", { name: "Home" })).toBeVisible({ timeout: 10000 });
+  await test.step("The user returns to the home page via the main navigation", async () => {
+    // Return to home via main navigation
+    console.log("Returning to home via main navigation...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-nav.png` });
+    await expect(page.locator("nav.main-nav a:has-text('Activities')")).toBeVisible({ timeout: 10000 });
     await Promise.all([
       page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
-      loggedClick(page, "a:has-text('Home')", "Clicking Home in hamburger menu", { screenshotPath }),
+      loggedClick(page, "nav.main-nav a:has-text('Activities')", "Clicking Activities in main navigation", { screenshotPath }),
     ]);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-home.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home.png` });
   });
 }
 

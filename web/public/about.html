@@ -228,15 +228,19 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <div class="header-nav">
-        <div class="hamburger-menu">
-          <button class="hamburger-btn" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false">☰</button>
-          <div class="menu-dropdown" id="menuDropdown">
-            <a href="index.html">Home</a>
-            <a href="account/bundles.html">Bundles</a>
-            <a href="hmrc/receipt/receipts.html">Receipts</a>
-            <a href="guide/index.html">User Guide</a>
-            <a href="help/index.html">Help</a>
-            <a href="about.html">About</a>
+        <div class="header-left">
+          <a href="index.html" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+          </a>
+          <div class="hamburger-menu">
+            <button class="hamburger-btn" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false">☰</button>
+            <div class="menu-dropdown" id="menuDropdown">
+              <a href="guide/index.html">User Guide</a>
+              <a href="help/index.html">Help</a>
+              <a href="about.html">About</a>
+            </div>
           </div>
         </div>
         <div class="auth-section">
@@ -246,6 +250,11 @@
         </div>
       </div>
       <h1>About DIY Accounting Submit</h1>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html">Activities</a>
+        <a href="hmrc/receipt/receipts.html">Receipts</a>
+        <a href="account/bundles.html">Bundles</a>
+      </nav>
     </header>
 
     <main id="mainContent">

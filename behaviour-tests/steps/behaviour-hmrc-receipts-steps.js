@@ -9,21 +9,16 @@ import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-receipts-steps";
 
 export async function goToReceiptsPageUsingHamburgerMenu(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user opens the menu to view receipts and navigates to the Receipts page", async () => {
-    console.log("Opening hamburger menu to go to receipts...");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hamburger.png` });
-    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu for receipts", { screenshotPath });
-    await page.waitForTimeout(500);
-    await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-02-hamburger-menu-receipts.png`,
-    });
-    await expect(page.getByRole("link", { name: "Receipts" })).toBeVisible({ timeout: 16000 });
-    await loggedClick(page, "a:has-text('Receipts')", "Clicking Receipts in hamburger menu", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-hamburger-clicked.png` });
+  await test.step("The user navigates to the Receipts page via main navigation", async () => {
+    console.log("Navigating to Receipts via main navigation...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-nav.png` });
+    await expect(page.locator("nav.main-nav a:has-text('Receipts')")).toBeVisible({ timeout: 10000 });
+    await loggedClick(page, "nav.main-nav a:has-text('Receipts')", "Clicking Receipts in main navigation", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-nav-clicked.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-04-receipts-page.png`,
+      path: `${screenshotPath}/${timestamp()}-03-receipts-page.png`,
     });
   });
 }

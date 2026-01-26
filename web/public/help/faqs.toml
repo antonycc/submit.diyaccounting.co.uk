@@ -89,10 +89,10 @@ answer = """
 After a successful submission:
 
 1. A receipt appears immediately showing your **Form Bundle Number** - save or print this
-2. Click **My Receipts** from the menu to see all your submissions
+2. Click **Receipts** from the navigation bar to see all your submissions
 3. Each receipt shows the date, VAT registration number, period, and HMRC reference
 
-**Important:** Receipts are stored in your browser's local storage. If you clear browser data or use a different device, you won't see previous receipts. Always save or print receipts after submission.
+**Note:** Receipts are stored securely in your account and accessible from any device when logged in.
 """
 keywords = ["receipt", "receipts", "where", "find", "confirmation", "proof", "submitted", "form bundle number"]
 priority = 5
@@ -433,7 +433,7 @@ DIY Accounting Submit takes data security seriously:
 
 **What we store:**
 - Your bundle settings (VAT registration number, environment preference)
-- Submission receipts (stored in your browser's local storage)
+- Submission receipts (stored securely in your account)
 
 **What we don't store:**
 - Your VAT figures - these go directly to HMRC and are not stored on our servers

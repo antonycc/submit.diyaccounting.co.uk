@@ -105,15 +105,19 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <div class="header-nav">
-        <div class="hamburger-menu">
-          <button class="hamburger-btn" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false">☰</button>
-          <div class="menu-dropdown" id="menuDropdown">
-            <a href="../index.html">Home</a>
-            <a href="../account/bundles.html">Bundles</a>
-            <a href="../hmrc/receipt/receipts.html">Receipts</a>
-            <a href="index.html">User Guide</a>
-            <a href="../help/index.html">Help</a>
-            <a href="../about.html">About</a>
+        <div class="header-left">
+          <a href="../index.html" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+          </a>
+          <div class="hamburger-menu">
+            <button class="hamburger-btn" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false">☰</button>
+            <div class="menu-dropdown" id="menuDropdown">
+              <a href="index.html">User Guide</a>
+              <a href="../help/index.html">Help</a>
+              <a href="../about.html">About</a>
+            </div>
           </div>
         </div>
         <div class="auth-section">
@@ -124,6 +128,11 @@
       </div>
       <h1>User Guide</h1>
       <p class="subtitle">How to submit your VAT return to HMRC</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../index.html">Activities</a>
+        <a href="../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../account/bundles.html">Bundles</a>
+      </nav>
     </header>
 
     <main id="mainContent">
@@ -235,15 +244,14 @@
       <section class="guide-section" id="receipts">
         <h2>Finding Your Receipts</h2>
         <p>
-          Your submission receipts are saved in your browser. Access them anytime from the <strong>Receipts</strong> menu to see your
-          submission history.
+          Your submission receipts are saved securely in your account. Access them anytime from the <strong>Receipts</strong> link in the
+          navigation bar to see your submission history.
         </p>
         <div class="guide-steps">
           <h3>Important notes about receipts</h3>
           <ol>
-            <li>Receipts are stored in your browser's local storage</li>
-            <li>If you clear browser data, receipts will be lost - always save or print them</li>
-            <li>Receipts from different devices won't sync - each device has its own history</li>
+            <li>Receipts are stored securely in your account and accessible from any device</li>
+            <li>Log in to view your submission history</li>
             <li>
               Your receipt includes the <strong>Form Bundle Number</strong> - quote this to HMRC if you ever need to prove submission
             </li>

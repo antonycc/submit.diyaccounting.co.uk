@@ -210,6 +210,31 @@ header {
   position: relative;
 }
 
+/* Header left section with home icon and hamburger */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.home-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-brand-primary);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s;
+}
+
+.home-link:hover {
+  background-color: var(--color-brand-primary-light);
+}
+
+.home-link .home-icon {
+  fill: currentColor;
+}
+
 /* Hamburger menu */
 .hamburger-menu {
   position: relative;
@@ -312,7 +337,86 @@ header {
 .subtitle {
   font-size: var(--font-size-lg);
   color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   Main Navigation Bar
+   ============================================ */
+
+.main-nav {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-sm) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.main-nav a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  font-size: var(--font-size-base);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.main-nav a:hover {
+  text-decoration: underline;
+  background-color: var(--color-brand-primary-light);
+}
+
+.main-nav a.active {
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+/* Home icon in header */
+.home-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+  margin-right: var(--spacing-xs);
+}
+
+.home-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+/* Header title with home link */
+.header-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.header-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.header-title a:hover {
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+@media (max-width: 600px) {
+  .main-nav {
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+
+  .main-nav a {
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
 }
 
 /* ============================================
