@@ -1417,13 +1417,34 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
-  web-test:
+  web-test-auth:
     if: ${{ !cancelled() }}
-    name: 'submitVatBehaviour-proxy via synthetic test'
+    name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - names
       - set-origins
       - deploy-publish
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'authBehaviour'
+      generate-test-reports: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test:
+    if: ${{ !cancelled() }}
+    name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - names
+      - set-origins
+      - deploy-publish
+      - web-test-auth
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1439,7 +1460,7 @@ jobs:
 
   web-test-post-vat-return-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'postVatReturnBehaviour-proxy via synthetic test'
+    name: 'postVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
@@ -1460,7 +1481,7 @@ jobs:
 
   web-test-get-vat-return-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'getVatReturnBehaviour-proxy via synthetic test'
+    name: 'getVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
@@ -1481,7 +1502,7 @@ jobs:
 
   web-test-obligation-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'getVatObligationsBehaviour-proxy via synthetic test'
+    name: 'getVatObligationsBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
@@ -1502,7 +1523,7 @@ jobs:
 
   web-test-fraud-prevention-headers-vat-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'postVatReturnFraudPreventionHeadersBehaviour-proxy via synthetic test'
+    name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
@@ -1523,7 +1544,7 @@ jobs:
 
   web-test-compliance-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'complianceBehaviour-proxy via synthetic test'
+    name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
@@ -1544,7 +1565,7 @@ jobs:
 
   web-test-vatValidation-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'vatValidationBehaviour-proxy via synthetic test'
+    name: 'vatValidationBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
@@ -1565,7 +1586,7 @@ jobs:
 
   web-test-vatSchemes-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'vatSchemesBehaviour-proxy via synthetic test'
+    name: 'vatSchemesBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names

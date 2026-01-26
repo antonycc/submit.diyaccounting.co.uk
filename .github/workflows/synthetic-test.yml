@@ -188,7 +188,7 @@ jobs:
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
 
   behaviour-test:
-    name: 'web behaviour test'
+    name: 'behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
     needs:
       - params
       - names
@@ -254,7 +254,7 @@ jobs:
             echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
-      - name: Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}
+      - name: 'Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test
         if: ${{ !cancelled() }}
         run: |
