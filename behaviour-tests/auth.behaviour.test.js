@@ -177,7 +177,7 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  await clearBundles(page, screenshotPath);
+  //await clearBundles(page, screenshotPath);
   await goToHomePageUsingHamburgerMenu(page, screenshotPath);
 
   /* ****************** */
