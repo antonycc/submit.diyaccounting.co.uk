@@ -464,4 +464,4 @@
 ./test-sim.log
 ./CLAUDE.md
 ./mock-oauth2-config.json
-./src/data/faqs.toml
+./web/public/help/faqs.toml
