@@ -57,7 +57,7 @@ on:
           - 'true'
           - 'false'
         required: false
-        default: 'true'
+        default: 'false'
       runProxyBehaviourTests:
         description: 'Run proxy behaviour tests (uses ngrok and Docker)'
         type: choice
@@ -156,7 +156,7 @@ jobs:
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.loadTestDuration }}' ; echo "loadTestDuration=${X:-30s}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSkippingDeploy: true if skipDeploy=true OR (push event with skip: in commit message)
           SKIP_DEPLOY='${{ inputs.skipDeploy }}'
