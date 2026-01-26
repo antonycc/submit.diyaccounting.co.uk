@@ -8,6 +8,26 @@
 - `.junie/guidelines.md` - Junie (testing & iteration focus)
 - `.github/copilot-instructions.md` - GitHub Copilot (code review focus)
 
+## Permission Handling (CRITICAL)
+
+**Before starting any task**, review what permissions may be required and request them all upfront:
+
+1. **Analyze the task** - What tools, commands, and access will be needed?
+2. **List all permissions** - File access, git operations, shell commands, external services
+3. **Request upfront** - Ask for all permissions at the start, not piecemeal during execution
+
+**If a permission is missing mid-task:**
+- Continue working on other parts of the task that don't require the missing permission
+- Run background tasks that can proceed independently
+- Only block and ask when you've exhausted all parallel work options
+
+**Common permissions to consider:**
+- Git: commit, push, branch operations
+- GitHub CLI: workflow monitoring, PR operations, log retrieval
+- Shell: specific command patterns (npm, mvnw, aws, etc.)
+- File operations: read/write in specific directories
+- External services: API calls, web fetches
+
 ## Git Workflow
 
 **You may**: create branches, commit changes, push branches, open pull requests
