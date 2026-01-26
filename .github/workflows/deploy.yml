@@ -1563,6 +1563,27 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-help-sandbox:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'helpBehaviour'
+      generate-test-reports: 'false'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-vatValidation-sandbox:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
     name: 'vatValidationBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
