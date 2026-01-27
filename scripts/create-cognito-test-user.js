@@ -10,14 +10,14 @@
 // This script creates a test user in the Cognito user pool for the specified environment.
 // It outputs the credentials as environment variables that can be used by behavior tests.
 
-const { CloudFormationClient, DescribeStacksCommand } = require("@aws-sdk/client-cloudformation");
-const {
+import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
+import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
   AdminSetUserPasswordCommand,
-} = require("@aws-sdk/client-cognito-identity-provider");
-const crypto = require("crypto");
-const fs = require("fs");
+} from "@aws-sdk/client-cognito-identity-provider";
+import crypto from "crypto";
+import fs from "fs";
 
 const environmentName = process.argv[2] || "ci";
 
