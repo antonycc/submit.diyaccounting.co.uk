@@ -1074,6 +1074,48 @@ jobs:
           HTTP_API_URL=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-ApiStack"].HttpApiUrl' cdk-submit-application.out/cdk-outputs-api.json)
           echo "HTTP_API_URL=$HTTP_API_URL"
           echo "HTTP_API_URL=$HTTP_API_URL" >> $GITHUB_OUTPUT
+          HTTP_API_ID=$(jq -r '.["${{ needs.names.outputs.deployment-name }}-app-ApiStack"].HttpApiId' cdk-submit-application.out/cdk-outputs-api.json)
+          echo "HTTP_API_ID=$HTTP_API_ID"
+          echo "HTTP_API_ID=$HTTP_API_ID" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Force API Gateway re-deployment
+        id: force-redeploy
+        run: |
+          API_ID="${{ steps.api-outputs.outputs.HTTP_API_ID }}"
+          echo "API_ID=$API_ID"
+          if [ -z "$API_ID" ] || [ "$API_ID" = "null" ]; then
+            echo "ERROR: Could not resolve HttpApiId from CDK outputs"
+            exit 1
+          fi
+
+          echo "Creating new API Gateway deployment for API: $API_ID"
+          DEPLOYMENT_ID=$(aws apigatewayv2 create-deployment \
+            --api-id "$API_ID" \
+            --description "Forced deployment from build ${{ env.BUILD_NUMBER }}" \
+            --query 'DeploymentId' \
+            --output text)
+          echo "Created deployment: $DEPLOYMENT_ID"
+
+          echo "Disabling AutoDeploy to allow manual stage update"
+          aws apigatewayv2 update-stage \
+            --api-id "$API_ID" \
+            --stage-name '$default' \
+            --no-auto-deploy
+
+          echo "Updating \$default stage to use deployment: $DEPLOYMENT_ID"
+          aws apigatewayv2 update-stage \
+            --api-id "$API_ID" \
+            --stage-name '$default' \
+            --deployment-id "$DEPLOYMENT_ID"
+
+          echo "Re-enabling AutoDeploy"
+          aws apigatewayv2 update-stage \
+            --api-id "$API_ID" \
+            --stage-name '$default' \
+            --auto-deploy
+
+          echo "API Gateway re-deployment complete"
         shell: bash
     outputs:
       # TODO: Can this be derived from shared names?
@@ -1417,6 +1459,55 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
+  verify-api:
+    if: ${{ !cancelled() }}
+    name: 'verify API endpoints are reachable'
+    needs:
+      - names
+      - set-origins
+      - deploy-publish
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Wait for DNS propagation
+        run: sleep 10
+
+      - name: Verify API health via HEAD /api/v1/cognito/token
+        run: |
+          APEX_URL="${{ needs.names.outputs.apex-url }}"
+          ENDPOINT="${APEX_URL}api/v1/cognito/token"
+          echo "Checking API endpoint: $ENDPOINT"
+
+          MAX_RETRIES=5
+          RETRY_DELAY=10
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_RETRIES ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT of $MAX_RETRIES..."
+
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --head --max-time 15 "$ENDPOINT" || echo "000")
+            echo "HTTP status: $HTTP_STATUS"
+
+            if [ "$HTTP_STATUS" = "404" ] || [ "$HTTP_STATUS" = "000" ]; then
+              echo "API route not reachable (status: $HTTP_STATUS)"
+              if [ $ATTEMPT -lt $MAX_RETRIES ]; then
+                echo "Retrying in ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            else
+              echo "API route is reachable (status: $HTTP_STATUS)"
+              exit 0
+            fi
+          done
+
+          echo "ERROR: API routes are unreachable after $MAX_RETRIES attempts."
+          echo "This likely means the API Gateway deployment is stale."
+          echo "The \$default stage does not include the configured routes."
+          echo ""
+          echo "Expected: 200, 400, or 401"
+          echo "Got: $HTTP_STATUS (404 means routes are not deployed)"
+          exit 1
+
   web-test-auth:
     if: ${{ !cancelled() }}
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
@@ -1424,6 +1515,7 @@ jobs:
       - names
       - set-origins
       - deploy-publish
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read

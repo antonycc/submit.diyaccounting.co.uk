@@ -84,6 +84,8 @@ public class ApiStack extends Stack {
         String userPoolClientId();
 
         String customAuthorizerLambdaArn();
+
+        String buildNumber();
     }
 
     @Value.Immutable
@@ -123,7 +125,8 @@ public class ApiStack extends Stack {
         // Create HTTP API Gateway v2
         this.httpApi = HttpApi.Builder.create(this, props.resourceNamePrefix() + "-HttpApi")
                 .apiName(props.resourceNamePrefix() + "-api")
-                .description("API Gateway v2 for " + props.resourceNamePrefix())
+                .description("API Gateway v2 for " + props.resourceNamePrefix() + " (build "
+                        + props.buildNumber() + ")")
                 .build();
 
         // Enable access logging for the default stage - ensure log group exists (idempotent creation)

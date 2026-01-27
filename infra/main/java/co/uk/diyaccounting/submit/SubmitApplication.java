@@ -288,6 +288,7 @@ public class SubmitApplication {
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
+                        .buildNumber(buildNumber)
                         .build());
         this.apiStack.addDependency(accountStack);
         this.apiStack.addDependency(hmrcStack);
