@@ -2,9 +2,9 @@ name: synthetic-test
 run-name: "synthetic test of ${{ github.ref_name }}"
 # SPDX-FileCopyrightText: 2025 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#concurrency:
-#  group: synthetic-test-${{ github.ref_name }}
-#  cancel-in-progress: false
+concurrency:
+  group: synthetic-test-${{ inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
+  cancel-in-progress: false
 
 # bump 00
 
@@ -48,6 +48,16 @@ on:
         description: 'Generate test reports, e.g. true (default) or false'
         required: false
         default: true
+      skip-cleanup:
+        type: boolean
+        description: 'Keep test user and native auth enabled after test (for manual debugging)'
+        required: false
+        default: false
+      skip-native-auth-toggle:
+        type: boolean
+        description: 'Skip enabling/disabling native auth (caller manages lifecycle)'
+        required: false
+        default: false
   workflow_call:
     inputs:
       environment-name:
@@ -66,6 +76,14 @@ on:
         type: string
         description: 'Generate test reports, e.g. "true" or "false"'
         required: true
+      skip-cleanup:
+        type: string
+        description: 'Keep test user and native auth enabled after test (for manual debugging)'
+        required: false
+      skip-native-auth-toggle:
+        type: string
+        description: 'Skip enabling/disabling native auth (caller manages lifecycle)'
+        required: false
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: true
@@ -241,6 +259,18 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Enable native auth on Cognito Hosted UI
+        if: ${{ inputs.skip-native-auth-toggle != 'true' }}
+        shell: bash
+        run: |
+          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
+          if [ "$PROVIDER" = "cognito-native" ]; then
+            node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
+          else
+            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+          fi
+
       - name: Create Cognito test user
         id: cognito-test-user
         shell: bash
@@ -296,6 +326,24 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      - name: Delete Cognito test user
+        if: ${{ !cancelled() && inputs.skip-cleanup != 'true' && steps.cognito-test-user.outputs.test-auth-username != '' }}
+        shell: bash
+        run: |
+          node scripts/delete-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" "${{ steps.cognito-test-user.outputs.test-auth-username }}"
+
+      - name: Disable native auth on Cognito Hosted UI
+        if: ${{ !cancelled() && inputs.skip-native-auth-toggle != 'true' && inputs.skip-cleanup != 'true' }}
+        shell: bash
+        run: |
+          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
+          if [ "$PROVIDER" = "cognito-native" ]; then
+            node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
+          else
+            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+          fi
 
       - name: Export DynamoDB data for test users
         if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}

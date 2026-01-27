@@ -213,9 +213,10 @@ public class IdentityStack extends Stack {
         this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 
         // User Pool Client
-        // Include COGNITO (native users) alongside federated identity providers
+        // Native Cognito login (COGNITO) is NOT included by default to hide the email/password
+        // form on the Hosted UI. It is enabled dynamically during behaviour tests via
+        // scripts/toggle-cognito-native-auth.js and disabled afterwards.
         var allProviders = new java.util.ArrayList<>(this.identityProviders.keySet());
-        allProviders.add(UserPoolClientIdentityProvider.COGNITO); // Enable native Cognito users
         this.userPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-UserPoolClient")
                 .userPool(userPool)
                 .userPoolClientName(props.resourceNamePrefix() + "-client")

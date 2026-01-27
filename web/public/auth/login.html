@@ -64,8 +64,6 @@
           <!-- Mock auth button injected by login-mock-addon.js in dev environments only -->
           <div id="mock-auth-container"></div>
 
-          <!-- Native Cognito auth form injected by login-native-addon.js for behavior tests -->
-          <div id="native-auth-container"></div>
         </div>
       </div>
     </main>
@@ -175,7 +173,5 @@
         document.body.appendChild(script);
       }
     </script>
-    <!-- Native Cognito auth addon - returns empty script unless TEST_AUTH_PROVIDER=cognito-native -->
-    <script src="./login-native-addon.js"></script>
   </body>
 </html>
