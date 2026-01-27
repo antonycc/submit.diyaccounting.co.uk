@@ -367,6 +367,238 @@ Create `scripts/build-simulator.js`:
 5. **Clear labeling** - Cannot be mistaken for production
 6. **ARIA announcements** - Screen readers informed this is demo mode
 
+### Phase 6: Guided Journey Automation
+
+Add buttons that automate click-throughs of specific journeys inside the iframe - like Playwright running in the browser.
+
+**UI Layout:**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Try the Simulator                                           │
+│                                                              │
+│  Watch a demo journey:                                       │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌────────────────┐  │
+│  │ ▶ Submit VAT    │ │ ▶ View Return   │ │ ▶ Obligations  │  │
+│  │   Return        │ │                 │ │                │  │
+│  └─────────────────┘ └─────────────────┘ └────────────────┘  │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Step 2 of 5: Entering VAT figures...            [⏸][⏹] │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │                    SIMULATOR                           │  │
+│  │  ┌──────────────────────────────────────────────────┐  │  │
+│  │  │   [Element highlighted with pulsing border]      │  │  │
+│  └──┴──────────────────────────────────────────────────┴──┘  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Create `web/public/widgets/simulator-journeys.js`:**
+
+```javascript
+// Guided journey automation for simulator iframe
+class SimulatorJourney {
+  constructor(iframe, statusEl) {
+    this.doc = iframe.contentDocument;
+    this.statusEl = statusEl;
+    this.currentStep = 0;
+    this.steps = [];
+    this.paused = false;
+    this.aborted = false;
+  }
+
+  async highlight(selector) {
+    const el = this.doc.querySelector(selector);
+    if (!el) return null;
+    el.classList.add('simulator-highlight');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return el;
+  }
+
+  async click(selector, description) {
+    this.updateStatus(description);
+    const el = await this.highlight(selector);
+    await this.wait(800);
+    el?.click();
+    el?.classList.remove('simulator-highlight');
+    await this.waitForLoad();
+  }
+
+  async fill(selector, value, description) {
+    this.updateStatus(description);
+    const el = await this.highlight(selector);
+    await this.wait(500);
+    if (el) {
+      el.value = '';
+      for (const char of value) {
+        el.value += char;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        await this.wait(50); // Typewriter effect
+      }
+    }
+    el?.classList.remove('simulator-highlight');
+  }
+
+  async wait(ms) {
+    while (this.paused && !this.aborted) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    if (this.aborted) throw new Error('Journey aborted');
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  async waitForLoad() {
+    await this.wait(1000); // Wait for navigation
+  }
+
+  updateStatus(message) {
+    this.currentStep++;
+    this.statusEl.textContent = `Step ${this.currentStep} of ${this.steps.length}: ${message}`;
+  }
+}
+
+// Journey: Submit VAT Return
+async function journeySubmitVat(journey) {
+  journey.steps = ['Navigate', 'Enter VRN', 'Fill Box 1', 'Fill Box 2', 'Submit', 'View Receipt'];
+
+  await journey.click('[data-activity="submit-vat"]', 'Selecting Submit VAT Return...');
+  await journey.fill('#vrn', '123456789', 'Entering VAT Registration Number...');
+  await journey.fill('#periodKey', '24A1', 'Entering period key...');
+  await journey.click('#fetchObligationsBtn', 'Fetching obligations...');
+  await journey.wait(2000);
+  await journey.fill('#vatDueSales', '1000.00', 'Entering VAT due on sales (Box 1)...');
+  await journey.fill('#vatDueAcquisitions', '0.00', 'Entering VAT due on acquisitions (Box 2)...');
+  await journey.fill('#vatReclaimedCurrPeriod', '250.00', 'Entering VAT reclaimed (Box 4)...');
+  await journey.fill('#totalValueSalesExVAT', '5000', 'Entering total sales (Box 6)...');
+  await journey.fill('#totalValuePurchasesExVAT', '1250', 'Entering total purchases (Box 7)...');
+  await journey.fill('#totalValueGoodsSuppliedExVAT', '0', 'Entering goods supplied to EU (Box 8)...');
+  await journey.fill('#totalAcquisitionsExVAT', '0', 'Entering acquisitions from EU (Box 9)...');
+  await journey.click('#submitVatBtn', 'Submitting VAT return to HMRC...');
+  await journey.wait(3000);
+  journey.updateStatus('Complete! Receipt shown above.');
+}
+
+// Journey: View Obligations
+async function journeyViewObligations(journey) {
+  journey.steps = ['Navigate', 'Enter VRN', 'Fetch', 'View Results'];
+
+  await journey.click('[data-activity="obligations"]', 'Selecting View Obligations...');
+  await journey.fill('#vrn', '123456789', 'Entering VAT Registration Number...');
+  await journey.click('#fetchObligationsBtn', 'Fetching obligations from HMRC...');
+  await journey.wait(2000);
+  journey.updateStatus('Complete! Obligations displayed above.');
+}
+
+// Journey: View Submitted Return
+async function journeyViewReturn(journey) {
+  journey.steps = ['Navigate', 'Enter VRN', 'Enter Period', 'Fetch', 'View'];
+
+  await journey.click('[data-activity="view-return"]', 'Selecting View VAT Return...');
+  await journey.fill('#vrn', '123456789', 'Entering VAT Registration Number...');
+  await journey.fill('#periodKey', '24A1', 'Entering period key...');
+  await journey.click('#fetchReturnBtn', 'Fetching return from HMRC...');
+  await journey.wait(2000);
+  journey.updateStatus('Complete! Return details displayed above.');
+}
+
+export { SimulatorJourney, journeySubmitVat, journeyViewObligations, journeyViewReturn };
+```
+
+**CSS for highlight effect (add to simulator pages):**
+
+```css
+/* Injected into simulator iframe */
+.simulator-highlight {
+  outline: 3px solid #ff6b6b !important;
+  outline-offset: 2px;
+  animation: pulse-highlight 1s ease-in-out infinite;
+  position: relative;
+  z-index: 1000;
+}
+
+@keyframes pulse-highlight {
+  0%, 100% { outline-color: #ff6b6b; box-shadow: 0 0 10px rgba(255, 107, 107, 0.5); }
+  50% { outline-color: #ff9999; box-shadow: 0 0 20px rgba(255, 107, 107, 0.8); }
+}
+```
+
+**Updated simulator.html with journey buttons:**
+
+```html
+<div class="journey-buttons" role="group" aria-label="Demo journeys">
+  <button type="button" class="journey-btn" data-journey="submit-vat">
+    <span class="journey-icon">▶</span>
+    <span class="journey-label">Submit VAT Return</span>
+  </button>
+  <button type="button" class="journey-btn" data-journey="view-obligations">
+    <span class="journey-icon">▶</span>
+    <span class="journey-label">View Obligations</span>
+  </button>
+  <button type="button" class="journey-btn" data-journey="view-return">
+    <span class="journey-icon">▶</span>
+    <span class="journey-label">View Return</span>
+  </button>
+</div>
+
+<div class="journey-status" role="status" aria-live="polite">
+  <span id="journeyStatusText">Select a demo journey above to watch it in action</span>
+  <div class="journey-controls" style="display: none;">
+    <button type="button" id="pauseBtn" aria-label="Pause">⏸</button>
+    <button type="button" id="stopBtn" aria-label="Stop">⏹</button>
+  </div>
+</div>
+
+<script type="module">
+  import { SimulatorJourney, journeySubmitVat, journeyViewObligations, journeyViewReturn }
+    from './widgets/simulator-journeys.js';
+
+  const journeys = {
+    'submit-vat': journeySubmitVat,
+    'view-obligations': journeyViewObligations,
+    'view-return': journeyViewReturn,
+  };
+
+  let activeJourney = null;
+
+  document.querySelectorAll('.journey-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const journeyName = btn.dataset.journey;
+      const iframe = document.querySelector('.simulator-frame');
+      const statusEl = document.getElementById('journeyStatusText');
+
+      // Reset iframe to home
+      iframe.contentWindow.location.href = '/index.html';
+      await new Promise(r => setTimeout(r, 1500));
+
+      activeJourney = new SimulatorJourney(iframe, statusEl);
+      document.querySelector('.journey-controls').style.display = 'flex';
+
+      try {
+        await journeys[journeyName](activeJourney);
+      } catch (e) {
+        if (e.message !== 'Journey aborted') console.error(e);
+      }
+
+      document.querySelector('.journey-controls').style.display = 'none';
+      activeJourney = null;
+    });
+  });
+
+  document.getElementById('pauseBtn').addEventListener('click', () => {
+    if (activeJourney) {
+      activeJourney.paused = !activeJourney.paused;
+      document.getElementById('pauseBtn').textContent = activeJourney.paused ? '▶' : '⏸';
+    }
+  });
+
+  document.getElementById('stopBtn').addEventListener('click', () => {
+    if (activeJourney) activeJourney.aborted = true;
+  });
+</script>
+```
+
 ## Cost Estimate
 
 - **Lambda**: ~$0/month at low traffic (free tier: 1M requests, 400,000 GB-seconds)
@@ -376,6 +608,7 @@ Create `scripts/build-simulator.js`:
 
 ## Task Breakdown
 
+### Core Simulator
 1. [ ] Create `app/bin/simulator-server.js` - merged Express server
 2. [ ] Create `scripts/build-simulator.js` - HTML/CSS transformation
 3. [ ] Add simulator CSS to `submit.css`
@@ -387,9 +620,21 @@ Create `scripts/build-simulator.js`:
 9. [ ] Test locally with `npm run start:simulator`
 10. [ ] Deploy and verify
 
+### Guided Journeys
+11. [ ] Create `web/public/widgets/simulator-journeys.js` - journey automation
+12. [ ] Add journey button styles to `submit.css`
+13. [ ] Add highlight animation CSS to simulator build
+14. [ ] Implement Submit VAT journey
+15. [ ] Implement View Obligations journey
+16. [ ] Implement View Return journey
+17. [ ] Add pause/stop controls
+18. [ ] Test journeys work with mock HMRC responses
+19. [ ] Add journey tests to `simulator.behaviour.test.js`
+
 ## Future Enhancements
 
-- **Guided tour**: Highlight UI elements with tooltips
-- **Pre-populated scenarios**: "See a submitted return" button
-- **Mobile-friendly**: Responsive iframe container
+- **Speed control**: Slow/normal/fast journey playback
+- **Voiceover**: Narrated journeys (text-to-speech or pre-recorded)
+- **Mobile-friendly**: Responsive iframe container with touch support
 - **Fargate upgrade**: When traffic justifies always-on compute
+- **Analytics**: Track which journeys users watch most
