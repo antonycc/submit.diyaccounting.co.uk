@@ -306,6 +306,36 @@ When CloudFormation references resources that might not exist (e.g., log groups 
 
 6. **Verify compilation locally**: Run `./mvnw clean verify` before considering any infrastructure change complete.
 
+## AWS CLI Access (Local Development)
+
+To query AWS resources or debug infrastructure issues locally, use the assume role scripts:
+
+```bash
+# Assume the deployment role (gets temporary credentials for ~1 hour)
+. ./scripts/aws-assume-submit-deployment-role.sh
+
+# Now you can run AWS CLI commands
+aws cloudformation describe-stacks --stack-name ci-env-IdentityStack
+aws dynamodb scan --table-name ci-env-bundles
+aws logs tail /aws/lambda/ci-env-customAuthorizer
+```
+
+**Available assume role scripts:**
+- `scripts/aws-assume-submit-deployment-role.sh` - Deployment role for submit-prod account (887764105431)
+- `scripts/aws-assume-user-provisioning-role.sh` - User provisioning role (different account)
+- `scripts/aws-unset-iam-session.sh` - Clear assumed role credentials
+
+**Important:**
+- Source the script with `. ./script.sh` (not `bash script.sh`) to set env vars in current shell
+- Credentials expire after ~1 hour - re-run to refresh
+- These scripts assume your local AWS profile can assume the target role
+
+**Stack naming patterns:**
+- Environment stacks: `{env}-env-{StackName}` (e.g., `ci-env-IdentityStack`, `prod-env-DataStack`)
+- Application stacks: `{deployment}-app-{StackName}` (e.g., `ci-cleanlogin-app-AuthStack`)
+
+See `PLAN_AWS_ACCOUNTS.md` for multi-account architecture and role structure.
+
 ## Security Checklist
 
 - Never commit secrets - use AWS Secrets Manager ARNs

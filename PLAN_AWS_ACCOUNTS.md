@@ -222,6 +222,104 @@ GitHub Actions (main branch)
 
 ---
 
+## IAM Role Structure
+
+### Current State (Single Account)
+
+All roles live in submit-prod (887764105431):
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  submit-prod (887764105431)                                         │
+│                                                                     │
+│  GitHub Actions OIDC Provider                                       │
+│         │                                                           │
+│         ▼                                                           │
+│  submit-github-actions-role  ◄── GitHub Actions assumes via OIDC   │
+│         │                                                           │
+│         ▼ (role chaining)                                           │
+│  submit-deployment-role  ◄── CDK deploys, CloudFormation executes  │
+│                                                                     │
+│  Local Developer                                                    │
+│         │                                                           │
+│         ▼ (sts:AssumeRole)                                          │
+│  submit-deployment-role  ◄── scripts/aws-assume-submit-deployment-role.sh │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Local assume role scripts:**
+- `scripts/aws-assume-submit-deployment-role.sh` - Direct assumption of deployment role
+- `scripts/aws-assume-user-provisioning-role.sh` - External user provisioning (different account)
+
+### Target State (Multi-Account)
+
+Bastion pattern with role chaining across accounts:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  submit-management (Organization Admin)                             │
+│                                                                     │
+│  GitHub Actions OIDC Provider                                       │
+│         │                                                           │
+│         ▼                                                           │
+│  submit-github-actions-role  ◄── GitHub Actions assumes via OIDC   │
+│         │                                                           │
+│  Local Developer (IAM User or SSO)                                  │
+│         │                                                           │
+│         ▼                                                           │
+│  submit-bastion-role  ◄── "Jump" role for cross-account access     │
+│         │                                                           │
+└─────────┼───────────────────────────────────────────────────────────┘
+          │
+          │ (sts:AssumeRole - cross-account)
+          │
+          ├──────────────────────────────────┐
+          │                                  │
+          ▼                                  ▼
+┌─────────────────────────┐    ┌─────────────────────────┐
+│  submit-ci              │    │  submit-prod            │
+│                         │    │                         │
+│  submit-deployment-role │    │  submit-deployment-role │
+│  (trust: bastion-role,  │    │  (trust: bastion-role,  │
+│   actions-role)         │    │   actions-role)         │
+└─────────────────────────┘    └─────────────────────────┘
+```
+
+**Planned assume role scripts:**
+```bash
+# Step 1: Assume bastion role in management account
+. ./scripts/aws-assume-bastion-role.sh
+
+# Step 2: Assume deployment role in target account
+. ./scripts/aws-assume-deployment-role.sh ci    # or 'prod'
+```
+
+### Role Trust Policies
+
+**submit-bastion-role** (in submit-management):
+```json
+{
+  "Principal": {
+    "AWS": [
+      "arn:aws:iam::MANAGEMENT_ACCOUNT:user/developer",
+      "arn:aws:iam::MANAGEMENT_ACCOUNT:role/github-actions-role"
+    ],
+    "Federated": "arn:aws:iam::MANAGEMENT_ACCOUNT:oidc-provider/token.actions.githubusercontent.com"
+  }
+}
+```
+
+**submit-deployment-role** (in each workload account):
+```json
+{
+  "Principal": {
+    "AWS": "arn:aws:iam::MANAGEMENT_ACCOUNT:role/submit-bastion-role"
+  }
+}
+```
+
+---
+
 ## Cost Attribution
 
 | Account | Expected Cost | Main Drivers |
