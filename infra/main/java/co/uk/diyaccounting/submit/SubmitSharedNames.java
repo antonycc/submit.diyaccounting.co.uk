@@ -65,7 +65,6 @@ public class SubmitSharedNames {
     public String deploymentDomainName;
     public String envDomainName;
     public String cognitoDomainName;
-    public String cognitoDomainPrefix; // AWS-managed domain prefix for OAuth2 token endpoint
     public String holdingDomainName;
     public String baseUrl;
     public String envBaseUrl;
@@ -296,9 +295,6 @@ public class SubmitSharedNames {
                 ? "%s.%s".formatted(props.subDomainName, props.hostedZoneName)
                 : "%s.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.cognitoDomainName = "%s-auth.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
-        // AWS-managed domain prefix for Cognito OAuth2 endpoints
-        // Format: {prefix}.auth.{region}.amazoncognito.com
-        this.cognitoDomainPrefix = "%s-env-user-pool".formatted(props.envName);
         this.holdingDomainName = "%s-holding.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
                 .formatted(
@@ -319,9 +315,7 @@ public class SubmitSharedNames {
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);
         this.apexStackId = "%s-env-ApexStack".formatted(props.envName);
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
-        // Use AWS-managed Cognito domain for OAuth2 token endpoint
-        // This ensures reliability as custom domains require DNS setup
-        this.cognitoBaseUri = "https://%s.auth.%s.amazoncognito.com".formatted(this.cognitoDomainPrefix, props.regionName);
+        this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         this.receiptsTableName = "%s-receipts".formatted(this.envResourceNamePrefix);
         this.bundlesTableName = "%s-bundles".formatted(this.envResourceNamePrefix);
