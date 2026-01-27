@@ -241,11 +241,6 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Install AWS CLI (for Cognito test user creation)
-        run: |
-          pip3 install awscli --quiet
-          aws --version
-
       - name: Create Cognito test user
         id: cognito-test-user
         shell: bash
@@ -253,8 +248,7 @@ jobs:
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
           if [ "$PROVIDER" = "cognito-native" ]; then
-            chmod +x 'scripts/create-cognito-test-user.sh'
-            'scripts/create-cognito-test-user.sh' "${{ needs.names.outputs.environment-name }}"
+            node 'scripts/create-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}"
           else
             echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
