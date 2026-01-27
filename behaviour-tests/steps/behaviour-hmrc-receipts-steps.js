@@ -23,8 +23,6 @@ export async function goToReceiptsPageUsingMainNav(page, screenshotPath = defaul
   });
 }
 
-// Backwards compatibility alias
-export const goToReceiptsPageUsingHamburgerMenu = goToReceiptsPageUsingMainNav;
 
 export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user reviews the receipts list and opens the first receipt when available", async () => {

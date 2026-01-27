@@ -23,7 +23,7 @@ import {
   consentToDataCollection,
   goToHomePage,
   goToHomePageExpectNotLoggedIn,
-  goToHomePageUsingHamburgerMenu,
+  goToHomePageUsingMainNav,
 } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
@@ -151,7 +151,7 @@ async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScena
   await grantPermissionHmrcAuth(page, screenshotPath);
   await completeVat(page, baseUrl, testScenario, screenshotPath);
   await verifyVatSubmission(page, testScenario, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 }
 
 let currentTestUsername;
@@ -212,7 +212,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
   }
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* *************************** */
   /*  VAT RETURN SUBMIT (SIMPLE) */
@@ -237,7 +237,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* **************************** */
   await completeVat(page, baseUrl, null, screenshotPath);
   await verifyVatSubmission(page, null, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ************************************* */
   /*  VAT RETURN SUBMIT: TEST SCENARIOS    */

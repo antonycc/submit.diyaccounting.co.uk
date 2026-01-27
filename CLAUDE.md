@@ -218,6 +218,7 @@ When implementing features that require infrastructure validation:
 - **No fallback paths** for silent failures when fixing bugs
 - **No compatibility adaptors** when refactoring - change names everywhere consistently
 - **No "legacy" support code** - all requests originate in this repository, so there's no external caller needing backwards compatibility. Code that accepts parameters and ignores them is toxic. If a parameter isn't used, remove it. Don't add complexity pretending to support something.
+- **No backwards-compatible aliases** - when renaming a function/export, update ALL callers in this repository instead of creating aliases like `export const oldName = newName`. All code in this repo can be refactored together; aliases create tech debt and confuse future readers.
 - **No server-side fallbacks to favor tests** - if a header or parameter is required, the client must send it. Don't add `|| process.env.X` fallbacks in production code to work around test setup issues.
 - Only run `npm run linting-fix && npm run formatting-fix` when specifically asked
 

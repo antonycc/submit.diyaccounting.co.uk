@@ -210,7 +210,7 @@ header {
   position: relative;
 }
 
-/* Header left section with home icon and hamburger */
+/* Header left section with home icon and info icon */
 .header-left {
   display: flex;
   align-items: center;
@@ -235,7 +235,7 @@ header {
   fill: currentColor;
 }
 
-/* Info/help icon link (replaces hamburger menu) */
+/* Info/help icon link */
 .info-link {
   display: flex;
   align-items: center;
@@ -261,24 +261,28 @@ header {
   display: flex;
   justify-content: center;
   gap: var(--spacing-xl);
-  margin: var(--spacing-md) 0 var(--spacing-lg) 0;
+  margin: var(--spacing-xl) 0 var(--spacing-lg) 0;
 }
 
 .about-nav-link {
+  background: white;
   color: var(--color-brand-primary);
   text-decoration: underline;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-xl);
   border: 2px solid transparent;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
 }
 
 .about-nav-link:hover {
-  background-color: var(--color-brand-primary-light);
+  background-color: white;
   border-color: var(--color-brand-primary);
   text-decoration: underline;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
 /* ============================================

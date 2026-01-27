@@ -354,7 +354,6 @@ repository-contents.txt:
 ./web/public/widgets/status-messages.js
 ./web/public/widgets/localstorage-viewer.js
 ./web/public/widgets/view-source-link.js
-./web/public/widgets/hamburger-menu.js
 ./web/public/widgets/error-page.js
 ./web/public/widgets/loading-spinner.js
 ./web/public/widgets/entitlement-status.js

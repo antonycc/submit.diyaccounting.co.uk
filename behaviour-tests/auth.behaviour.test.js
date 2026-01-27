@@ -16,14 +16,14 @@ import {
   runLocalDynamoDb,
   runLocalSslProxy,
 } from "./helpers/behaviour-helpers.js";
-import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePageUsingHamburgerMenu } from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { goToReceiptsPageUsingHamburgerMenu } from "./steps/behaviour-hmrc-receipts-steps.js";
+import { goToReceiptsPageUsingMainNav } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { intentionallyNotSuppliedHeaders } from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
@@ -169,8 +169,8 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
   /*  RECEIPTS  */
   /* ********** */
 
-  await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToReceiptsPageUsingMainNav(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ********* */
   /*  BUNDLES  */
@@ -178,7 +178,7 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
 
   await goToBundlesPage(page, screenshotPath);
   //await clearBundles(page, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ****************** */
   /*  Extract user sub  */

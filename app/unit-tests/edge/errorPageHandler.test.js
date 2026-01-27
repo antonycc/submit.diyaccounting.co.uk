@@ -194,14 +194,14 @@ describe("errorPageHandler", () => {
   });
 
   describe("error page content", () => {
-    test("includes navigation menu", async () => {
+    test("includes navigation icons", async () => {
       const event = build404Event();
       const result = await handler(event);
 
-      expect(result.body).toContain("hamburger-menu");
+      expect(result.body).toContain("home-link");
+      expect(result.body).toContain("info-link");
       expect(result.body).toContain("/index.html");
-      expect(result.body).toContain("/account/bundles.html");
-      expect(result.body).toContain("/hmrc/receipt/receipts.html");
+      expect(result.body).toContain("/about.html");
     });
 
     test("includes auth status section", async () => {

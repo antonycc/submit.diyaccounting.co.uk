@@ -70,16 +70,6 @@
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
     <script>
-      // Close menu when clicking outside
-      window.onclick = function (event) {
-        if (!event.target.matches(".hamburger-btn")) {
-          const dropdown = document.getElementById("menuDropdown");
-          if (dropdown.classList.contains("show")) {
-            dropdown.classList.remove("show");
-          }
-        }
-      };
-
       // Initialize page - wait for submit.js module to be ready
       function initPage() {
         checkAuthStatus();

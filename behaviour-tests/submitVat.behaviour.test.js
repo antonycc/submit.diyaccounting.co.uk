@@ -24,7 +24,7 @@ import {
   consentToDataCollection,
   goToHomePage,
   goToHomePageExpectNotLoggedIn,
-  goToHomePageUsingHamburgerMenu,
+  goToHomePageUsingMainNav,
 } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
@@ -33,7 +33,7 @@ import {
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import { goToReceiptsPageUsingHamburgerMenu, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
+import { goToReceiptsPageUsingMainNav, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertHmrcApiRequestExists,
@@ -368,9 +368,9 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /*  RECEIPTS  */
   /* ********** */
 
-  await goToReceiptsPageUsingHamburgerMenu(page, screenshotPath);
+  await goToReceiptsPageUsingMainNav(page, screenshotPath);
   await verifyAtLeastOneClickableReceipt(page, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ******************* */
   /*  VIEW VAT RETURN    */
@@ -387,7 +387,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* ******************* */
 
   await verifyViewVatReturnResults(page, null, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ******************* */
   /*  VIEW OBLIGATIONS   */
@@ -413,7 +413,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* ************************** */
 
   await verifyVatObligationsResults(page, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ****************** */
   /*  Extract user sub  */
