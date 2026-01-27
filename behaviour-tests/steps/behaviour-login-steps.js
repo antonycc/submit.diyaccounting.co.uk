@@ -208,19 +208,21 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png` });
 
     // Wait for the Hosted UI email/password form to be visible
-    await expect(page.locator('input[type="email"], input[name="username"]')).toBeVisible({ timeout: 10000 });
+    // The Hosted UI may have multiple matching elements (e.g. both input[type="email"] and
+    // input[name="username"]), so use .first() to avoid Playwright strict mode violations.
+    const usernameField = page.locator('input[type="email"], input[name="username"]').first();
+    await expect(usernameField).toBeVisible({ timeout: 10000 });
 
     // Fill in email
-    await loggedFill(page, 'input[type="email"], input[name="username"]', testAuthUsername, "Entering email on Hosted UI", {
-      screenshotPath,
-    });
+    await usernameField.fill(testAuthUsername);
+    console.log(`Filled username field on Hosted UI`);
     await page.waitForTimeout(100);
 
     // Fill in password
     if (testAuthPassword) {
-      await loggedFill(page, 'input[type="password"], input[name="password"]', testAuthPassword, "Entering password on Hosted UI", {
-        screenshotPath,
-      });
+      const passwordField = page.locator('input[type="password"], input[name="password"]').first();
+      await passwordField.fill(testAuthPassword);
+      console.log(`Filled password field on Hosted UI`);
     }
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-auth-filled.png` });
@@ -230,7 +232,9 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
 export async function submitHostedUINativeAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the Cognito Hosted UI login form", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
-    await loggedClick(page, 'input[type="submit"], button[type="submit"]', "Sign in on Hosted UI", { screenshotPath });
+    const submitBtn = page.locator('input[type="submit"], button[type="submit"]').first();
+    await submitBtn.click();
+    console.log(`Clicked sign-in button on Hosted UI`);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-signed-in.png` });
