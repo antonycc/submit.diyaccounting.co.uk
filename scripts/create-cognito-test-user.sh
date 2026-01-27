@@ -32,14 +32,25 @@ echo ""
 # Get the Cognito User Pool ID from CloudFormation stack outputs
 # Stack name pattern: {env}-env-IdentityStack, Output key: UserPoolId
 STACK_NAME="${ENVIRONMENT_NAME}-env-IdentityStack"
+
+# Debug: Show AWS identity and region
+echo "AWS Region: ${AWS_REGION:-${AWS_DEFAULT_REGION:-not set}}"
+echo "Checking AWS identity..."
+aws sts get-caller-identity || echo "WARNING: Could not get AWS caller identity"
+
+echo "Looking up stack: $STACK_NAME"
 USER_POOL_ID=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
     --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
-    --output text 2>/dev/null || echo "")
+    --output text 2>&1) || {
+    echo "ERROR: CloudFormation describe-stacks failed with: $USER_POOL_ID"
+    USER_POOL_ID=""
+}
 
 if [ -z "$USER_POOL_ID" ] || [ "$USER_POOL_ID" = "None" ]; then
     echo "ERROR: Could not find Cognito User Pool ID for environment: $ENVIRONMENT_NAME"
     echo "Looking for stack: ${STACK_NAME}, output: UserPoolId"
+    echo "USER_POOL_ID value was: '$USER_POOL_ID'"
     exit 1
 fi
 
