@@ -207,21 +207,21 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
   await test.step("The user enters their credentials on the Cognito Hosted UI", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png` });
 
-    // Wait for the Hosted UI email/password form to be visible
-    // The Hosted UI may have multiple matching elements (e.g. both input[type="email"] and
-    // input[name="username"]), so use .first() to avoid Playwright strict mode violations.
-    const usernameField = page.locator('input[type="email"], input[name="username"]').first();
-    await expect(usernameField).toBeVisible({ timeout: 10000 });
+    // Wait for the Hosted UI email/password form to load.
+    // The Cognito Hosted UI uses id="signInFormUsername" for the email field.
+    // Use waitForSelector instead of toBeVisible — the Hosted UI layout can cause
+    // Playwright visibility checks to fail even though the field is rendered and interactive.
+    await page.waitForSelector('#signInFormUsername', { state: 'attached', timeout: 10000 });
+    console.log(`Hosted UI username field found in DOM`);
 
     // Fill in email
-    await usernameField.fill(testAuthUsername);
+    await page.fill('#signInFormUsername', testAuthUsername);
     console.log(`Filled username field on Hosted UI`);
     await page.waitForTimeout(100);
 
     // Fill in password
     if (testAuthPassword) {
-      const passwordField = page.locator('input[type="password"], input[name="password"]').first();
-      await passwordField.fill(testAuthPassword);
+      await page.fill('#signInFormPassword', testAuthPassword);
       console.log(`Filled password field on Hosted UI`);
     }
     await page.waitForTimeout(100);
@@ -232,8 +232,8 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
 export async function submitHostedUINativeAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the Cognito Hosted UI login form", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
-    const submitBtn = page.locator('input[type="submit"], button[type="submit"]').first();
-    await submitBtn.click();
+    // The Cognito Hosted UI sign-in button has name="signInSubmitButton"
+    await page.click('input[name="signInSubmitButton"], button[name="signInSubmitButton"], input[type="submit"], button[type="submit"]');
     console.log(`Clicked sign-in button on Hosted UI`);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1000);
