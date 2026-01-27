@@ -237,25 +237,28 @@ public class IdentityStack extends Stack {
                 .values()
                 .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
 
-        // Create Cognito User Pool Domain
+        // Create Cognito User Pool Domain with AWS-managed prefix
+        // Using AWS-managed domain for reliability - works immediately without DNS setup
+        // Format: {prefix}.auth.{region}.amazoncognito.com
         this.userPoolDomain = UserPoolDomain.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomain")
                 .userPool(userPool)
-                .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
-                        .domainName(props.sharedNames().cognitoDomainName)
-                        .certificate(this.authCertificate)
+                .cognitoDomain(software.amazon.awscdk.services.cognito.CognitoDomainOptions.builder()
+                        .domainPrefix(props.sharedNames().cognitoDomainPrefix)
                         .build())
                 .build();
 
-        // Create Route53 records for the Cognito UserPoolDomain as subdomains from the web domain.
-        // Idempotent UPSERT of Route53 A/AAAA alias to Cognito User Pool Domain CloudFront endpoint
-        co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
-                this,
-                props.resourceNamePrefix() + "-UserPoolDomainAlias",
-                hostedZone,
-                props.sharedNames().cognitoDomainName,
-                this.userPoolDomain.getCloudFrontEndpoint());
-        this.userPoolDomainARecordName = props.sharedNames().cognitoDomainName;
-        this.userPoolDomainAaaaRecordName = props.sharedNames().cognitoDomainName;
+        // NOTE: Custom domain configuration removed to use AWS-managed domain for OAuth2 endpoints
+        // Custom domains require DNS setup and certificate validation which can cause delays
+        // If custom domain is needed for branding, it can be added later with proper DNS configuration
+        // Old custom domain setup (commented out):
+        // .customDomain(software.amazon.awscdk.services.cognito.CustomDomainOptions.builder()
+        //         .domainName(props.sharedNames().cognitoDomainName)
+        //         .certificate(this.authCertificate)
+        //         .build())
+
+        this.userPoolDomainARecordName = "%s.auth.%s.amazoncognito.com".formatted(
+                props.sharedNames().cognitoDomainPrefix, props.getEnv().getRegion());
+        this.userPoolDomainAaaaRecordName = this.userPoolDomainARecordName;
 
         // Stack Outputs for Identity resources
         cfnOutput(this, "UserPoolId", this.userPool.getUserPoolId());
