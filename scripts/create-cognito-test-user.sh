@@ -29,14 +29,17 @@ echo "=== Creating Cognito Test User ==="
 echo "Environment: $ENVIRONMENT_NAME"
 echo ""
 
-# Get the Cognito User Pool ID from CloudFormation exports
-USER_POOL_ID=$(aws cloudformation list-exports \
-    --query "Exports[?Name=='${ENVIRONMENT_NAME}-submit-env-CognitoUserPoolId'].Value" \
+# Get the Cognito User Pool ID from CloudFormation stack outputs
+# Stack name pattern: {env}-env-IdentityStack, Output key: UserPoolId
+STACK_NAME="${ENVIRONMENT_NAME}-env-IdentityStack"
+USER_POOL_ID=$(aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
     --output text 2>/dev/null || echo "")
 
 if [ -z "$USER_POOL_ID" ] || [ "$USER_POOL_ID" = "None" ]; then
     echo "ERROR: Could not find Cognito User Pool ID for environment: $ENVIRONMENT_NAME"
-    echo "Looking for export: ${ENVIRONMENT_NAME}-submit-env-CognitoUserPoolId"
+    echo "Looking for stack: ${STACK_NAME}, output: UserPoolId"
     exit 1
 fi
 
