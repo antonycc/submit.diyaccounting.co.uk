@@ -34,16 +34,17 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <div class="header-nav">
-        <div class="hamburger-menu">
-          <button class="hamburger-btn" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false">☰</button>
-          <div class="menu-dropdown" id="menuDropdown">
-            <a href="index.html">Home</a>
-            <a href="account/bundles.html">Bundles</a>
-            <a href="hmrc/receipt/receipts.html">Receipts</a>
-            <a href="guide/index.html">User Guide</a>
-            <a href="help/index.html">Help</a>
-            <a href="about.html">About</a>
-          </div>
+        <div class="header-left">
+          <a href="index.html" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+          </a>
+          <a href="about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+          </a>
         </div>
         <div class="auth-section">
           <span class="entitlement-status">Activity: unrestricted</span>
@@ -53,34 +54,20 @@
       </div>
       <h1>DIY Accounting Submit</h1>
       <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html" class="active">Activities</a>
+        <a href="hmrc/receipt/receipts.html">Receipts</a>
+        <a href="account/bundles.html">Bundles</a>
+      </nav>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
       <div class="form-container" style="text-align: center">
-        <h2>Select an activity to continue:</h2>
-
         <div id="dynamicActivities" style="margin: 2em 0"></div>
 
         <!--div id="activitiesByBundle" style="text-align: left; margin: 1.5em auto; max-width: 640px"></div-->
-
-        <div
-          class="add-service-section"
-          style="margin: 2em 0; padding: 1.5em; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #ddd"
-        >
-          <p style="margin-bottom: 1em; color: #666; font-style: italic">
-            Need more choices? Select additional bundles to expand your available activities.
-          </p>
-          <button
-            type="button"
-            class="btn"
-            onclick="window.location.href = 'account/bundles.html'"
-            style="background-color: #0a8927; border-color: #0a8927"
-          >
-            Add Bundle
-          </button>
-        </div>
       </div>
     </main>
 
@@ -104,7 +91,6 @@
     <script type="module" src="./submit.js"></script>
     <script src="lib/request-cache.js"></script>
     <script src="lib/toml-parser.js"></script>
-    <script src="widgets/hamburger-menu.js"></script>
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
@@ -279,7 +265,12 @@
       //   container.style.display = "block"; // Make sure it's visible
       // }
 
-      // Generate dynamic activity buttons
+      // Generate dynamic activity buttons based on display rules from catalogue
+      // Display rules:
+      //   - "never": don't show the button
+      //   - "onEntitlement": show only if user has an active bundle (default)
+      //   - "alwaysWithUpsell": always show; if not entitled, show as call-to-action linking to bundles page
+      //   - "always": always show the button regardless of entitlement
       async function renderDynamicActivities() {
         const dynamicContainer = document.getElementById("dynamicActivities");
         if (!dynamicContainer) return;
@@ -298,79 +289,84 @@
           const activeBundles = getActiveBundles(catalog, userBundles);
           const expiredBundles = getExpiredBundles(userBundles);
 
-          // Categorize activities into accessible, expired, and inaccessible
-          const accessibleActivities = [];
-          const expiredActivities = [];
+          // Build a map of bundle id -> bundle name for upsell display
+          const bundleNameMap = {};
+          for (const bundle of catalog.bundles || []) {
+            bundleNameMap[bundle.id] = bundle.name || bundle.id;
+          }
+
+          const buttons = [];
 
           for (const activity of catalog.activities || []) {
             if (!activity.bundles || !Array.isArray(activity.bundles)) continue;
 
+            const displayRule = activity.display || "onEntitlement";
+
+            // Skip activities with display="never"
+            if (displayRule === "never") continue;
+
             const hasNonExpiredAccess = activity.bundles.some((bundleId) => activeBundles.includes(bundleId));
             const hasExpiredAccess = activity.bundles.some((bundleId) => expiredBundles.includes(bundleId));
 
-            if (hasNonExpiredAccess) {
-              accessibleActivities.push(activity);
-            } else if (hasExpiredAccess) {
-              expiredActivities.push(activity);
+            // Get the activity path
+            let path = "#";
+            if (activity.paths) {
+              path = activity.paths.find((p) => p.includes(".html")) || "#";
+            } else if (activity.path) {
+              path = activity.path;
             }
+
+            if (hasNonExpiredAccess || displayRule === "always") {
+              // User has access OR display="always" - show active button
+              buttons.push(`
+                <div style="margin: 1em 0">
+                  <button type="button" class="btn" onclick="window.location.href='${path}'">
+                    ${activity.name}
+                  </button>
+                </div>
+              `);
+            } else if (hasExpiredAccess) {
+              // User had access but it expired - show disabled button
+              buttons.push(`
+                <div style="margin: 1em 0">
+                  <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
+                    ${activity.name} (expired)
+                  </button>
+                </div>
+              `);
+            } else if (displayRule === "alwaysWithUpsell") {
+              // User doesn't have access - show upsell button linking to bundles page
+              const requiredBundleNames = activity.bundles
+                .filter((id) => id !== "default") // Don't show "default" bundle in requirements
+                .map((id) => bundleNameMap[id] || id)
+                .join(" or ");
+              buttons.push(`
+                <div style="margin: 1em 0">
+                  <button type="button" class="btn" onclick="window.location.href='account/bundles.html'">
+                    Get access to: ${activity.name}
+                  </button>
+                  <p style="font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;">
+                    Requires: ${requiredBundleNames}
+                  </p>
+                </div>
+              `);
+            }
+            // For displayRule === "onEntitlement" with no access, don't show anything
           }
 
-          // If no activities at all, show message
-          if (accessibleActivities.length === 0 && expiredActivities.length === 0) {
+          // If no activities to show, display message
+          if (buttons.length === 0) {
             dynamicContainer.innerHTML =
               '<p style="color: #666;">No activities available. Request additional bundles to access more features.</p>';
             return;
           }
 
-          // Generate buttons for accessible activities
-          const activeButtons = accessibleActivities
-            .map((activity) => {
-              let path;
-              if (activity.paths) {
-                // Get the first path which contains .html (handles query parameters)
-                path = activity.paths.find((p) => p.includes(".html")) || "#";
-              } else {
-                path = activity.path || "#";
-              }
-              return `
-              <div style="margin: 1em 0">
-                <button type="button" class="btn" onclick="window.location.href='${path}'">
-                  ${activity.name}
-                </button>
-              </div>
-            `;
-            })
-            .join("");
-
-          // Generate disabled buttons for expired activities
-          const expiredButtons = expiredActivities
-            .map((activity) => {
-              return `
-              <div style="margin: 1em 0">
-                <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
-                  ${activity.name} (expired)
-                </button>
-              </div>
-            `;
-            })
-            .join("");
-
-          dynamicContainer.innerHTML = activeButtons + expiredButtons;
+          dynamicContainer.innerHTML = buttons.join("");
         } catch (error) {
           console.error("Error loading activities:", error);
           dynamicContainer.innerHTML = '<p style="color: #b00020;">Error loading activities. Please refresh the page.</p>';
         }
       }
-
-      // Close menu when clicking outside
-      window.onclick = function (event) {
-        if (!event.target.matches(".hamburger-btn")) {
-          const dropdown = document.getElementById("menuDropdown");
-          if (dropdown.classList.contains("show")) {
-            dropdown.classList.remove("show");
-          }
-        }
-      };
 
       sessionStorage.removeItem("currentActivity");
       console.log("Current activity cleared");

@@ -36,15 +36,17 @@ export function generateErrorHtml(statusCode, requestedUri = "") {
 <body>
   <header>
     <div class="header-nav">
-      <div class="hamburger-menu">
-        <button class="hamburger-btn" onclick="toggleMenu()">☰</button>
-        <div class="menu-dropdown" id="menuDropdown">
-          <a href="/index.html">Home</a>
-          <a href="/account/bundles.html">Bundles</a>
-          <a href="/hmrc/receipt/receipts.html">Receipts</a>
-          <a href="/guide/index.html">User Guide</a>
-          <a href="/about.html">About</a>
-        </div>
+      <div class="header-left">
+        <a href="/index.html" title="Home" class="home-link">
+          <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+        </a>
+        <a href="/about.html" title="About & Help" class="info-link">
+          <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+          </svg>
+        </a>
       </div>
       <div class="auth-section">
         <span class="entitlement-status">Activity: unrestricted</span>
@@ -83,7 +85,6 @@ export function generateErrorHtml(statusCode, requestedUri = "") {
     </div>
   </footer>
 
-  <script src="/widgets/hamburger-menu.js"></script>
   <script>
     // Display actual URL from browser if not already set by server
     if (!document.getElementById('requestedUrl').textContent) {

@@ -151,7 +151,7 @@ public class IdentityStack extends Stack {
                 .build();
         this.userPool = UserPool.Builder.create(this, props.resourceNamePrefix() + "-UserPool")
                 .userPoolName(props.resourceNamePrefix() + "-user-pool")
-                .selfSignUpEnabled(true)
+                .selfSignUpEnabled(false)
                 .signInAliases(SignInAliases.builder().email(true).build())
                 .standardAttributes(standardAttributes)
                 .customAttributes(Map.of(

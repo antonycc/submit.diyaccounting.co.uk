@@ -248,7 +248,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     "02.*removing.*all.*bundles.*clicked",
     "01.*request.*bundle",
     "05.*ensure.*bundle.*adding",
-    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu",
+    "00.*focus.*clicking.*bundles.*in.*main.*nav",
   ];
 
   const screenshotDescriptions = {
@@ -256,7 +256,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     "02.*removing.*all.*bundles.*clicked": "Removing all bundles",
     "01.*request.*bundle": "The request the Test bundle",
     "05.*ensure.*bundle.*adding": "Added the Test bundle",
-    "00.*focus.*clicking.*bundles.*in.*hamburger.*menu": "The home page with activities from bundles",
+    "00.*focus.*clicking.*bundles.*in.*main.*nav": "The home page with activities from bundles",
   };
 
   const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);

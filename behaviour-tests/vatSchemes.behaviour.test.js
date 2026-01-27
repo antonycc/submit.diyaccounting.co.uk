@@ -25,7 +25,7 @@ import {
   consentToDataCollection,
   goToHomePage,
   goToHomePageExpectNotLoggedIn,
-  goToHomePageUsingHamburgerMenu,
+  goToHomePageUsingMainNav,
 } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,

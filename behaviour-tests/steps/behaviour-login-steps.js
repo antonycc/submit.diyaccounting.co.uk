@@ -34,7 +34,8 @@ export async function loginWithCognitoOrMockAuth(
   screenshotPath = defaultScreenshotPath,
   testAuthPassword = null,
 ) {
-  if (testAuthProvider === "mock") {
+  if (testAuthProvider === "mock" || testAuthProvider === "simulator") {
+    // Mock OAuth flow (used by both mock and simulator providers)
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-or-mock-auth.png` });
     await initMockAuth(page, screenshotPath);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-or-mock-auth.png` });
@@ -203,6 +204,14 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
 export async function fillInNativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath = defaultScreenshotPath) {
   await test.step("The user enters their native Cognito credentials", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-native-auth.png` });
+
+    // Click "Show developer options" to reveal the native login form
+    const devToggle = page.locator("#showDevOptions");
+    if (await devToggle.isVisible({ timeout: 5000 })) {
+      await loggedClick(page, devToggle, "Show developer options", { screenshotPath });
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01b-native-auth-dev-options-shown.png` });
+    }
 
     // Wait for the native auth form to be visible
     await expect(page.locator("#nativeLoginForm")).toBeVisible({ timeout: 10000 });

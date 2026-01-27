@@ -173,7 +173,7 @@
       "id": "where-is-receipt",
       "category": "receipts",
       "question": "Where's my submission receipt?",
-      "answer": "After successful submission:\n1. A receipt appears immediately - **save or print this**\n2. Click **View previously submitted receipts** from the home screen\n3. Receipts are stored locally in your browser\n\n**Important:** Receipts are stored in browser local storage. If you clear browser data or use a different device, historical receipts won't appear. Always save/print receipts after submission.\n",
+      "answer": "After successful submission:\n1. A receipt appears immediately - **save or print this**\n2. Click **Receipts** in the navigation bar to see all your submissions\n3. Receipts are stored securely in your account\n\n**Note:** Log in to view your submission history from any device.\n",
       "keywords": [
         "receipt",
         "receipts",

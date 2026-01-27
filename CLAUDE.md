@@ -218,6 +218,7 @@ When implementing features that require infrastructure validation:
 - **No fallback paths** for silent failures when fixing bugs
 - **No compatibility adaptors** when refactoring - change names everywhere consistently
 - **No "legacy" support code** - all requests originate in this repository, so there's no external caller needing backwards compatibility. Code that accepts parameters and ignores them is toxic. If a parameter isn't used, remove it. Don't add complexity pretending to support something.
+- **No backwards-compatible aliases** - when renaming a function/export, update ALL callers in this repository instead of creating aliases like `export const oldName = newName`. All code in this repo can be refactored together; aliases create tech debt and confuse future readers.
 - **No server-side fallbacks to favor tests** - if a header or parameter is required, the client must send it. Don't add `|| process.env.X` fallbacks in production code to work around test setup issues.
 - Only run `npm run linting-fix && npm run formatting-fix` when specifically asked
 
@@ -304,6 +305,36 @@ When CloudFormation references resources that might not exist (e.g., log groups 
 5. **Understand the full error**: When a deployment fails, don't just fix the immediate error. Ask: "What other resources does this construct depend on? What else could be in a bad state?"
 
 6. **Verify compilation locally**: Run `./mvnw clean verify` before considering any infrastructure change complete.
+
+## AWS CLI Access (Local Development)
+
+To query AWS resources or debug infrastructure issues locally, use the assume role scripts:
+
+```bash
+# Assume the deployment role (gets temporary credentials for ~1 hour)
+. ./scripts/aws-assume-submit-deployment-role.sh
+
+# Now you can run AWS CLI commands
+aws cloudformation describe-stacks --stack-name ci-env-IdentityStack
+aws dynamodb scan --table-name ci-env-bundles
+aws logs tail /aws/lambda/ci-env-customAuthorizer
+```
+
+**Available assume role scripts:**
+- `scripts/aws-assume-submit-deployment-role.sh` - Deployment role for submit-prod account (887764105431)
+- `scripts/aws-assume-user-provisioning-role.sh` - User provisioning role (different account)
+- `scripts/aws-unset-iam-session.sh` - Clear assumed role credentials
+
+**Important:**
+- Source the script with `. ./script.sh` (not `bash script.sh`) to set env vars in current shell
+- Credentials expire after ~1 hour - re-run to refresh
+- These scripts assume your local AWS profile can assume the target role
+
+**Stack naming patterns:**
+- Environment stacks: `{env}-env-{StackName}` (e.g., `ci-env-IdentityStack`, `prod-env-DataStack`)
+- Application stacks: `{deployment}-app-{StackName}` (e.g., `ci-cleanlogin-app-AuthStack`)
+
+See `PLAN_AWS_ACCOUNTS.md` for multi-account architecture and role structure.
 
 ## Security Checklist
 

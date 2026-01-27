@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (C) 2025-2026 DIY Accounting Ltd
 #
-# Create a Cognito test user for behavior tests
+# Create a Cognito test user for behavior tests (bash version for local use)
 #
 # Usage: ./scripts/create-cognito-test-user.sh <environment-name>
 # Example: ./scripts/create-cognito-test-user.sh ci
@@ -10,9 +10,11 @@
 # This script creates a test user in the Cognito user pool for the specified environment.
 # It outputs the credentials as environment variables that can be used by behavior tests.
 #
+# Note: For CI environments without AWS CLI, use the Node.js version:
+#       node scripts/create-cognito-test-user.js <environment-name>
+#
 # Prerequisites:
-# - AWS credentials configured with permission to manage Cognito users
-# - jq installed for JSON parsing
+# - AWS CLI installed and configured with permission to manage Cognito users
 
 set -e
 
@@ -29,14 +31,19 @@ echo "=== Creating Cognito Test User ==="
 echo "Environment: $ENVIRONMENT_NAME"
 echo ""
 
-# Get the Cognito User Pool ID from CloudFormation exports
-USER_POOL_ID=$(aws cloudformation list-exports \
-    --query "Exports[?Name=='${ENVIRONMENT_NAME}-submit-env-CognitoUserPoolId'].Value" \
+# Get the Cognito User Pool ID from CloudFormation stack outputs
+# Stack name pattern: {env}-env-IdentityStack, Output key: UserPoolId
+STACK_NAME="${ENVIRONMENT_NAME}-env-IdentityStack"
+
+echo "Looking up stack: $STACK_NAME"
+USER_POOL_ID=$(aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
     --output text 2>/dev/null || echo "")
 
 if [ -z "$USER_POOL_ID" ] || [ "$USER_POOL_ID" = "None" ]; then
     echo "ERROR: Could not find Cognito User Pool ID for environment: $ENVIRONMENT_NAME"
-    echo "Looking for export: ${ENVIRONMENT_NAME}-submit-env-CognitoUserPoolId"
+    echo "Looking for stack: ${STACK_NAME}, output: UserPoolId"
     exit 1
 fi
 

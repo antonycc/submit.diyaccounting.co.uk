@@ -123,12 +123,12 @@ app.use("/docs", (req, res, next) => {
 });
 
 // Conditionally serve mock auth addon script based on environment
-// In mock environments, serve the actual addon file; otherwise return empty script
+// In mock/simulator environments, serve the actual addon file; otherwise return empty script
 app.get("/auth/login-mock-addon.js", (req, res) => {
   const authProvider = process.env.TEST_AUTH_PROVIDER;
 
-  if (authProvider === "mock") {
-    // Serve the actual addon file in mock environments
+  if (authProvider === "mock" || authProvider === "simulator") {
+    // Serve the actual addon file in mock/simulator environments
     res.sendFile(path.join(__dirname, "../../web/public/auth/login-mock-addon.js"));
   } else {
     // Return empty script for non-mock environments (ci, prod)
@@ -154,11 +154,11 @@ app.get("/auth/login-native-addon.js", (req, res) => {
 
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 
-// Only register mock OAuth routes in mock auth environments
-if (process.env.TEST_AUTH_PROVIDER === "mock") {
+// Register mock OAuth routes in mock/simulator auth environments
+if (process.env.TEST_AUTH_PROVIDER === "mock" || process.env.TEST_AUTH_PROVIDER === "simulator") {
   mockAuthUrlGetApiEndpoint(app);
   mockTokenPostApiEndpoint(app);
-  console.log("Mock OAuth routes registered (TEST_AUTH_PROVIDER=mock)");
+  console.log(`Mock OAuth routes registered (TEST_AUTH_PROVIDER=${process.env.TEST_AUTH_PROVIDER})`);
 }
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);

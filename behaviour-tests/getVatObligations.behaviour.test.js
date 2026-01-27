@@ -23,7 +23,7 @@ import {
   consentToDataCollection,
   goToHomePage,
   goToHomePageExpectNotLoggedIn,
-  goToHomePageUsingHamburgerMenu,
+  goToHomePageUsingMainNav,
 } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
@@ -168,7 +168,7 @@ async function requestAndVerifyObligations(page, obligationsQuery) {
   await fillInVatObligations(page, { ...obligationsQuery, runFraudPreventionHeaderValidation }, screenshotPath);
   await submitVatObligationsForm(page, screenshotPath);
   await verifyVatObligationsResults(page, obligationsQuery, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 }
 
 test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo) => {
@@ -284,7 +284,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
   }
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ******************* */
   /*  GET OBLIGATIONS    */
@@ -321,7 +321,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /* ******************** */
 
   await verifyVatObligationsResults(page, screenshotPath);
-  await goToHomePageUsingHamburgerMenu(page, screenshotPath);
+  await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ************************************* */
   /*  GET OBLIGATIONS WITH TEST SCENARIOS  */

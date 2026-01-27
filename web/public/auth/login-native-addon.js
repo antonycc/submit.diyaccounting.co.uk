@@ -11,9 +11,14 @@
   const container = document.getElementById("native-auth-container");
   if (!container) return;
 
-  // Inject the native login form
+  // Inject the native login form (hidden by default)
   container.innerHTML = `
-    <div class="auth-provider" id="nativeCognitoProvider">
+    <div class="developer-options">
+      <button type="button" class="dev-toggle-btn" id="showDevOptions">
+        Show developer options
+      </button>
+    </div>
+    <div class="auth-provider" id="nativeCognitoProvider" style="display: none;">
       <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem; color: #666;">Test User Login</h3>
       <form id="nativeLoginForm" class="native-login-form">
         <div class="form-group">
@@ -43,6 +48,22 @@
       </form>
     </div>
     <style>
+      .developer-options {
+        margin-top: 2rem;
+        text-align: center;
+      }
+      .dev-toggle-btn {
+        background: none;
+        border: none;
+        color: #999;
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 0.5rem;
+      }
+      .dev-toggle-btn:hover {
+        color: #666;
+        text-decoration: underline;
+      }
       .native-login-form {
         display: flex;
         flex-direction: column;
@@ -76,6 +97,17 @@
       }
     </style>
   `;
+
+  // Add toggle handler for developer options
+  const toggleBtn = document.getElementById("showDevOptions");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", function () {
+      const provider = document.getElementById("nativeCognitoProvider");
+      const isHidden = provider.style.display === "none";
+      provider.style.display = isHidden ? "block" : "none";
+      this.textContent = isHidden ? "Hide developer options" : "Show developer options";
+    });
+  }
 
   // Add form submit handler
   const form = document.getElementById("nativeLoginForm");

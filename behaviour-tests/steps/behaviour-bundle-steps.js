@@ -9,21 +9,18 @@ import { loggedClick, timestamp, isSandboxMode } from "../helpers/behaviour-help
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-bundle-steps";
 
 export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user opens the menu and navigates to Bundles", async () => {
-    // Go to bundles via hamburger menu
-    console.log("Opening hamburger menu...");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-bundles-page-hamburger-menu.png` });
-    await expect(page.locator("button.hamburger-btn")).toBeVisible({ timeout: 10000 });
-    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-hamburger-menu.png` });
-    await expect(page.getByRole("link", { name: "Bundles", exact: true })).toBeVisible({ timeout: 16000 });
+  await test.step("The user navigates to Bundles via main navigation", async () => {
+    // Go to bundles via main navigation
+    console.log("Navigating to Bundles via main navigation...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-bundles-page-nav.png` });
+    await expect(page.locator("nav.main-nav a:has-text('Bundles')")).toBeVisible({ timeout: 10000 });
     await Promise.all([
       page.waitForURL(/bundles\.html/, { waitUntil: "domcontentloaded", timeout: 30000 }),
-      loggedClick(page, "a[href*='bundles.html']", "Clicking Bundles in hamburger menu", { screenshotPath }),
+      loggedClick(page, "nav.main-nav a:has-text('Bundles')", "Clicking Bundles in main navigation", { screenshotPath }),
     ]);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page-hamburger-menu.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-nav.png` });
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-bundles-page-hamburger-menu.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page.png` });
   });
 }
 

@@ -42,19 +42,56 @@ export async function goToHomePage(page, screenshotPath = defaultScreenshotPath)
   });
 }
 
-export async function goToHomePageUsingHamburgerMenu(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user returns to the home page via the menu", async () => {
-    // Return to home via hamburger menu
-    console.log("Returning to home via hamburger menu...");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-hamburger.png` });
-    await loggedClick(page, "button.hamburger-btn", "Opening hamburger menu to go home", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home-hamburger-clicked-menu.png` });
-    await expect(page.getByRole("link", { name: "Home" })).toBeVisible({ timeout: 10000 });
+export async function goToHomePageUsingMainNav(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user returns to the home page via the main navigation", async () => {
+    // Return to home via main navigation
+    console.log("Returning to home via main navigation...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-nav.png` });
+    await expect(page.locator("nav.main-nav a:has-text('Activities')")).toBeVisible({ timeout: 10000 });
     await Promise.all([
       page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
-      loggedClick(page, "a:has-text('Home')", "Clicking Home in hamburger menu", { screenshotPath }),
+      loggedClick(page, "nav.main-nav a:has-text('Activities')", "Clicking Activities in main navigation", { screenshotPath }),
     ]);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-goto-home.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home.png` });
+  });
+}
+
+export async function goToAboutPage(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the About page via the info icon", async () => {
+    console.log("Navigating to About page via info icon...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-about.png` });
+    await expect(page.locator("a.info-link")).toBeVisible({ timeout: 10000 });
+    await Promise.all([
+      page.waitForURL(/about\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      loggedClick(page, "a.info-link", "Clicking info icon to go to About", { screenshotPath }),
+    ]);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-about-page.png` });
+  });
+}
+
+export async function goToHelpPageFromAbout(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the Help page from the About page", async () => {
+    console.log("Navigating to Help page from About...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-about-to-help.png` });
+    await expect(page.locator("a.about-nav-link:has-text('Help')")).toBeVisible({ timeout: 10000 });
+    await Promise.all([
+      page.waitForURL(/help\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      loggedClick(page, "a.about-nav-link:has-text('Help')", "Clicking Help link on About page", { screenshotPath }),
+    ]);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-help-page.png` });
+  });
+}
+
+export async function goToUserGuideFromAbout(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the User Guide from the About page", async () => {
+    console.log("Navigating to User Guide from About...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-about-to-guide.png` });
+    await expect(page.locator("a.about-nav-link:has-text('User Guide')")).toBeVisible({ timeout: 10000 });
+    await Promise.all([
+      page.waitForURL(/guide\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      loggedClick(page, "a.about-nav-link:has-text('User Guide')", "Clicking User Guide link on About page", { screenshotPath }),
+    ]);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-guide-page.png` });
   });
 }
 

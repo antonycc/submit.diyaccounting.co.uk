@@ -22,16 +22,22 @@ test.describe("Navigation Browser Tests", () => {
     bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/account/bundles.html"), "utf-8");
   });
 
-  test.describe("Home Page to Activities Navigation", () => {
-    test("should show activities/features on home page after clicking 'View available activities'", async ({ page }) => {
+  test.describe("Home Page Structure", () => {
+    test("should display home page with navigation and dynamic activities container", async ({ page }) => {
       // Set the home page content
       await page.setContent(indexHtmlContent, {
         baseURL: "http://localhost:3000",
         waitUntil: "domcontentloaded",
       });
 
-      // Verify activities/features are now visible on the home page (index.html)
-      await expect(page.locator("h2")).toContainText(/Select an activity/);
+      // Verify page title
+      await expect(page.locator("h1")).toContainText(/DIY Accounting Submit/);
+
+      // Verify main navigation exists with Activities link
+      await expect(page.locator("nav.main-nav a:has-text('Activities')")).toBeVisible();
+
+      // Verify dynamic activities container exists (activities load via JavaScript)
+      await expect(page.locator("#dynamicActivities")).toHaveCount(1);
     });
   });
 
@@ -71,16 +77,12 @@ test.describe("Navigation Browser Tests", () => {
     });
   });
 
-  test.describe("Hamburger Menu Navigation", () => {
-    test("should navigate to bundles page from hamburger menu", async ({ page }) => {
+  test.describe("Main Navigation", () => {
+    test("should navigate to bundles page from main navigation", async ({ page }) => {
       await page.setContent(indexHtmlContent, {
         baseURL: "http://localhost:3000",
         waitUntil: "domcontentloaded",
       });
-
-      // Click hamburger menu
-      await page.click(".hamburger-btn");
-      await setTimeout(100);
 
       // Mock navigation to bundles page
       await page.route("**/bundles.html", async (route) => {
@@ -91,9 +93,21 @@ test.describe("Navigation Browser Tests", () => {
         });
       });
 
-      // Click "Add Bundle" in dropdown
-      await page.click("text=Add Bundle");
+      // Click Bundles in main navigation
+      await page.click("nav.main-nav a:has-text('Bundles')");
       await setTimeout(100);
+    });
+
+    test("should have info icon that links to about page", async ({ page }) => {
+      await page.setContent(indexHtmlContent, {
+        baseURL: "http://localhost:3000",
+        waitUntil: "domcontentloaded",
+      });
+
+      // Verify info icon is visible and links to about page
+      const infoLink = page.locator("a.info-link");
+      await expect(infoLink).toBeVisible();
+      await expect(infoLink).toHaveAttribute("href", "about.html");
     });
   });
 
