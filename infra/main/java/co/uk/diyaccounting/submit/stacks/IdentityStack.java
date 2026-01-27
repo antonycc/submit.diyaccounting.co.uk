@@ -22,6 +22,7 @@ import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.CustomThreatProtectionMode;
 import software.amazon.awscdk.services.cognito.FeaturePlan;
 import software.amazon.awscdk.services.cognito.StandardThreatProtectionMode;
+import software.amazon.awscdk.services.cognito.AccountRecovery;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
@@ -168,6 +169,7 @@ public class IdentityStack extends Stack {
                 .featurePlan(FeaturePlan.PLUS)
                 .standardThreatProtectionMode(StandardThreatProtectionMode.FULL_FUNCTION)
                 .customThreatProtectionMode(CustomThreatProtectionMode.FULL_FUNCTION)
+                .accountRecovery(AccountRecovery.NONE)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
