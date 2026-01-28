@@ -278,11 +278,8 @@ jobs:
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
           if [ "$PROVIDER" = "cognito-native" ]; then
+            # The script writes test-auth-username and test-auth-password to $GITHUB_OUTPUT directly
             node 'scripts/create-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}"
-            echo "test-auth-username=$TEST_AUTH_USERNAME"
-            echo "test-auth-username=$TEST_AUTH_USERNAME" >> $GITHUB_OUTPUT
-            echo "test-auth-password=$TEST_AUTH_PASSWORD"
-            echo "test-auth-password=$TEST_AUTH_PASSWORD" >> $GITHUB_OUTPUT
           else
             echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
