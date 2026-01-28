@@ -22,7 +22,7 @@ export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
     //  page.waitForURL(/auth\/login\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
     //  // the click already happened above; we still wait for the URL change
     // ]);
-    await expect(page.getByText("Continue with Google")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Google account")).toBeVisible({ timeout: 15000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-login.png` });
   });
 }
@@ -109,10 +109,10 @@ export async function logOutAndExpectToBeLoggedOut(page, screenshotPath = defaul
 }
 
 export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("Continue with Google via Amazon Cognito", async () => {
+  await test.step("Google account", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png` });
-    await expect(page.getByText("Continue with Google via Amazon Cognito")).toBeVisible();
-    await loggedClick(page, "button:has-text('Continue with Google via Amazon Cognito')", "Continue with Google via Amazon Cognito", {
+    await expect(page.getByText("Google account")).toBeVisible();
+    await loggedClick(page, "button:has-text('Google account')", "Google account", {
       screenshotPath,
     });
     await page.waitForLoadState("networkidle");
@@ -223,8 +223,8 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     for (let attempt = 1; attempt <= maxAttempts && !formFound; attempt++) {
       try {
         console.log(`Waiting for Hosted UI form (attempt ${attempt}/${maxAttempts})...`);
-        await page.waitForSelector('input[name="username"]', { state: 'attached', timeout: baseTimeout });
-        await page.waitForSelector('input[name="password"]', { state: 'attached', timeout: 5000 });
+        await page.waitForSelector('input[name="username"]', { state: "attached", timeout: baseTimeout });
+        await page.waitForSelector('input[name="password"]', { state: "attached", timeout: 5000 });
         formFound = true;
         console.log(`Hosted UI form fields found in DOM`);
       } catch (error) {
@@ -235,7 +235,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
         }
         console.log(`Form not found, refreshing page and retrying...`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-hosted-ui-retry-${attempt}.png` });
-        await page.reload({ waitUntil: 'networkidle' });
+        await page.reload({ waitUntil: "networkidle" });
         await page.waitForTimeout(2000);
       }
     }
@@ -247,7 +247,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     await page.evaluate(() => {
       // Find the visible username field (second instance = desktop form)
       const fields = document.querySelectorAll('input[name="username"]');
-      const visible = Array.from(fields).find(el => el.offsetParent !== null) || fields[fields.length - 1];
+      const visible = Array.from(fields).find((el) => el.offsetParent !== null) || fields[fields.length - 1];
       visible.focus();
       visible.select();
     });
@@ -257,7 +257,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     if (testAuthPassword) {
       await page.evaluate(() => {
         const fields = document.querySelectorAll('input[name="password"]');
-        const visible = Array.from(fields).find(el => el.offsetParent !== null) || fields[fields.length - 1];
+        const visible = Array.from(fields).find((el) => el.offsetParent !== null) || fields[fields.length - 1];
         visible.focus();
         visible.select();
       });
@@ -267,7 +267,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
 
     // Disable form validation
     await page.evaluate(() => {
-      for (const form of document.querySelectorAll('form')) form.noValidate = true;
+      for (const form of document.querySelectorAll("form")) form.noValidate = true;
     });
 
     await page.waitForTimeout(100);
@@ -282,9 +282,9 @@ export async function submitHostedUINativeAuth(page, screenshotPath = defaultScr
     // Click the VISIBLE submit button (second instance = desktop form).
     await page.evaluate(() => {
       const btns = document.querySelectorAll('input[name="signInSubmitButton"]');
-      const visible = Array.from(btns).find(el => el.offsetParent !== null) || btns[btns.length - 1];
+      const visible = Array.from(btns).find((el) => el.offsetParent !== null) || btns[btns.length - 1];
       if (visible) {
-        visible.closest('form').noValidate = true;
+        visible.closest("form").noValidate = true;
         visible.click();
       }
     });
