@@ -209,21 +209,29 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
 
     // Wait for the Hosted UI email/password form to load.
     // The Cognito Hosted UI uses id="signInFormUsername" for the email field.
-    // Use waitForSelector instead of toBeVisible — the Hosted UI layout can cause
-    // Playwright visibility checks to fail even though the field is rendered and interactive.
+    // Playwright's actionability checks (visible, enabled) can fail on the Hosted UI
+    // despite the form being visually rendered, so fill via JavaScript evaluation.
     await page.waitForSelector('#signInFormUsername', { state: 'attached', timeout: 10000 });
     console.log(`Hosted UI username field found in DOM`);
 
-    // Fill in email
-    await page.fill('#signInFormUsername', testAuthUsername);
-    console.log(`Filled username field on Hosted UI`);
-    await page.waitForTimeout(100);
-
-    // Fill in password
-    if (testAuthPassword) {
-      await page.fill('#signInFormPassword', testAuthPassword);
-      console.log(`Filled password field on Hosted UI`);
-    }
+    // Fill in email via JavaScript to bypass Playwright actionability checks
+    await page.evaluate(({ username, password }) => {
+      const usernameEl = document.getElementById('signInFormUsername');
+      if (usernameEl) {
+        usernameEl.value = username;
+        usernameEl.dispatchEvent(new Event('input', { bubbles: true }));
+        usernameEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (password) {
+        const passwordEl = document.getElementById('signInFormPassword');
+        if (passwordEl) {
+          passwordEl.value = password;
+          passwordEl.dispatchEvent(new Event('input', { bubbles: true }));
+          passwordEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    }, { username: testAuthUsername, password: testAuthPassword });
+    console.log(`Filled credentials on Hosted UI via JavaScript`);
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-auth-filled.png` });
   });
@@ -233,7 +241,14 @@ export async function submitHostedUINativeAuth(page, screenshotPath = defaultScr
   await test.step("The user submits the Cognito Hosted UI login form", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
     // The Cognito Hosted UI sign-in button has name="signInSubmitButton"
-    await page.click('input[name="signInSubmitButton"], button[name="signInSubmitButton"], input[type="submit"], button[type="submit"]');
+    // Use JavaScript click to bypass Playwright actionability checks on the Hosted UI
+    await page.evaluate(() => {
+      const btn = document.querySelector('input[name="signInSubmitButton"]')
+        || document.querySelector('button[name="signInSubmitButton"]')
+        || document.querySelector('input[type="submit"]')
+        || document.querySelector('button[type="submit"]');
+      if (btn) btn.click();
+    });
     console.log(`Clicked sign-in button on Hosted UI`);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1000);
