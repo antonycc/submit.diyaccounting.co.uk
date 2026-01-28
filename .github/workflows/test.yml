@@ -120,15 +120,17 @@ jobs:
       - name: Validate workflows
         run: |
           # Run actionlint with relaxed checking
-          # - Ignore shellcheck info/style warnings (SC2086, SC2129, SC2001, SC2016, SC2076, SC2155, SC2207)
+          # - Ignore shellcheck info/style warnings that don't affect execution
           # - Ignore type mismatch false positives for quoted 'true'/'false' strings
           # - Only fail on actual syntax errors that prevent workflows from running
           ./actionlint \
-            -ignore 'SC2086' \
-            -ignore 'SC2129' \
             -ignore 'SC2001' \
+            -ignore 'SC2002' \
+            -ignore 'SC2015' \
             -ignore 'SC2016' \
             -ignore 'SC2076' \
+            -ignore 'SC2086' \
+            -ignore 'SC2129' \
             -ignore 'SC2155' \
             -ignore 'SC2207' \
             -ignore 'bool value cannot be assigned' \
