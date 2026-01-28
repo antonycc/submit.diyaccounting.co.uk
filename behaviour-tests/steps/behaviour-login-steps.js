@@ -208,42 +208,44 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png` });
 
     // Wait for the Hosted UI email/password form to load.
-    // The Cognito Hosted UI uses id="signInFormUsername" for the email field.
-    // Playwright's actionability checks (visible, enabled) can fail on the Hosted UI
-    // despite the form being visually rendered, so fill via JavaScript evaluation.
-    await page.waitForSelector('#signInFormUsername', { state: 'attached', timeout: 10000 });
-    console.log(`Hosted UI username field found in DOM`);
+    // The Cognito Hosted UI renders duplicate forms (desktop/mobile) synced by JS.
+    // Playwright's fill() hangs even with force:true (editable check blocks), so we
+    // use JavaScript to set values on ALL matching input elements by name attribute.
+    // We use the native HTMLInputElement setter to trigger framework state updates.
+    await page.waitForSelector('input[name="username"]', { state: 'attached', timeout: 10000 });
+    await page.waitForSelector('input[name="password"]', { state: 'attached', timeout: 5000 });
+    console.log(`Hosted UI form fields found in DOM`);
 
-    // Fill in email and password via JavaScript to bypass Playwright actionability checks.
-    // Also disable HTML5 form validation to prevent "invalid form control not focusable" errors.
-    const fillResult = await page.evaluate(({ username, password }) => {
-      const result = { username: false, password: false, formNoValidate: false };
-      const usernameEl = document.getElementById('signInFormUsername');
-      if (usernameEl) {
-        usernameEl.value = username;
-        usernameEl.dispatchEvent(new Event('input', { bubbles: true }));
-        usernameEl.dispatchEvent(new Event('change', { bubbles: true }));
-        result.username = usernameEl.value === username;
-      }
-      if (password) {
-        const passwordEl = document.getElementById('signInFormPassword');
-        if (passwordEl) {
-          passwordEl.value = password;
-          passwordEl.dispatchEvent(new Event('input', { bubbles: true }));
-          passwordEl.dispatchEvent(new Event('change', { bubbles: true }));
-          result.password = passwordEl.value === password;
-        }
-      }
-      // Disable HTML5 form validation on the parent form to prevent
-      // "An invalid form control with name='password' is not focusable" errors
-      const form = usernameEl?.closest('form');
-      if (form) {
-        form.noValidate = true;
-        result.formNoValidate = true;
-      }
-      return result;
-    }, { username: testAuthUsername, password: testAuthPassword });
-    console.log(`Filled credentials on Hosted UI via JavaScript: ${JSON.stringify(fillResult)}`);
+    // The Cognito Hosted UI has duplicate forms (desktop/mobile) synced by JS.
+    // DOM value assignment doesn't work — the UI reads from its own state.
+    // Simulate keyboard input: focus the VISIBLE field, then type into it.
+    // Cognito's sync JS will propagate values to the hidden form.
+    await page.evaluate(() => {
+      // Find the visible username field (second instance = desktop form)
+      const fields = document.querySelectorAll('input[name="username"]');
+      const visible = Array.from(fields).find(el => el.offsetParent !== null) || fields[fields.length - 1];
+      visible.focus();
+      visible.select();
+    });
+    await page.keyboard.type(testAuthUsername, { delay: 10 });
+    console.log(`Typed username on Hosted UI`);
+
+    if (testAuthPassword) {
+      await page.evaluate(() => {
+        const fields = document.querySelectorAll('input[name="password"]');
+        const visible = Array.from(fields).find(el => el.offsetParent !== null) || fields[fields.length - 1];
+        visible.focus();
+        visible.select();
+      });
+      await page.keyboard.type(testAuthPassword, { delay: 10 });
+      console.log(`Typed password on Hosted UI`);
+    }
+
+    // Disable form validation
+    await page.evaluate(() => {
+      for (const form of document.querySelectorAll('form')) form.noValidate = true;
+    });
+
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-auth-filled.png` });
   });
@@ -252,18 +254,14 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
 export async function submitHostedUINativeAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the Cognito Hosted UI login form", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
-    // The Cognito Hosted UI sign-in button has name="signInSubmitButton"
-    // Use JavaScript click to bypass Playwright actionability checks on the Hosted UI.
-    // Ensure noValidate is set on the form to prevent HTML5 validation errors.
+    // The Cognito Hosted UI sign-in button is input[name="signInSubmitButton"][type="submit"].
+    // Click the VISIBLE submit button (second instance = desktop form).
     await page.evaluate(() => {
-      const btn = document.querySelector('input[name="signInSubmitButton"]')
-        || document.querySelector('button[name="signInSubmitButton"]')
-        || document.querySelector('input[type="submit"]')
-        || document.querySelector('button[type="submit"]');
-      if (btn) {
-        const form = btn.closest('form');
-        if (form) form.noValidate = true;
-        btn.click();
+      const btns = document.querySelectorAll('input[name="signInSubmitButton"]');
+      const visible = Array.from(btns).find(el => el.offsetParent !== null) || btns[btns.length - 1];
+      if (visible) {
+        visible.closest('form').noValidate = true;
+        visible.click();
       }
     });
     console.log(`Clicked sign-in button on Hosted UI`);
