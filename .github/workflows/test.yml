@@ -46,6 +46,8 @@ on:
         required: false
       NGROK_AUTHTOKEN:
         required: false
+      NGROK_AUTH_TOKEN:
+        required: false
 
   push:
     branches:
