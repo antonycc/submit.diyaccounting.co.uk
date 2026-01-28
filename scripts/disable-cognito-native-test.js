@@ -17,7 +17,7 @@ import path from "path";
 
 const execFileAsync = promisify(execFile);
 const environmentName = process.argv[2] || "ci";
-const credentialsFile = path.resolve("target", "cognito-native-test-credentials.json");
+const credentialsFile = path.resolve("cognito-native-test-credentials.json");
 
 async function main() {
   // Check AWS credentials

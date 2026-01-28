@@ -1523,6 +1523,22 @@ jobs:
             echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
+      - name: Create Cognito test user for behaviour tests
+        id: cognito-test-user
+        shell: bash
+        run: |
+          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
+          if [ "$PROVIDER" = "cognito-native" ]; then
+            # Creates test user and outputs credentials to GITHUB_OUTPUT
+            node scripts/create-cognito-test-user.js "${{ needs.names.outputs.environment-name }}"
+          else
+            echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+          fi
+    outputs:
+      test-auth-username: ${{ steps.cognito-test-user.outputs.test-auth-username }}
+      test-auth-password: ${{ steps.cognito-test-user.outputs.test-auth-password }}
+
   verify-api:
     if: ${{ !cancelled() }}
     name: 'verify API endpoints are reachable'
@@ -1592,6 +1608,8 @@ jobs:
       behaviour-test-suite: 'authBehaviour'
       generate-test-reports: 'true'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1602,6 +1620,7 @@ jobs:
       - names
       - set-origins
       - deploy-publish
+      - enable-native-auth
       - web-test-auth
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1614,6 +1633,8 @@ jobs:
       behaviour-test-suite: 'submitVatBehaviour'
       generate-test-reports: 'true'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1624,6 +1645,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1636,6 +1658,8 @@ jobs:
       behaviour-test-suite: 'postVatReturnBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1646,6 +1670,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1658,6 +1683,8 @@ jobs:
       behaviour-test-suite: 'getVatReturnBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1668,6 +1695,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1680,6 +1708,8 @@ jobs:
       behaviour-test-suite: 'getVatObligationsBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1690,6 +1720,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1702,6 +1733,8 @@ jobs:
       behaviour-test-suite: 'postVatReturnFraudPreventionHeadersBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1712,6 +1745,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1724,6 +1758,8 @@ jobs:
       behaviour-test-suite: 'complianceBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1734,6 +1770,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1746,6 +1783,8 @@ jobs:
       behaviour-test-suite: 'helpBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1756,6 +1795,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1768,6 +1808,8 @@ jobs:
       behaviour-test-suite: 'vatValidationBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1778,6 +1820,7 @@ jobs:
       - params
       - names
       - set-origins
+      - enable-native-auth
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1790,6 +1833,8 @@ jobs:
       behaviour-test-suite: 'vatSchemesBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1847,6 +1892,13 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      - name: Delete Cognito test user
+        if: ${{ inputs.skipCleanup != 'true' && needs.enable-native-auth.outputs.test-auth-username != '' }}
+        shell: bash
+        run: |
+          echo "Deleting shared test user: ${{ needs.enable-native-auth.outputs.test-auth-username }}"
+          node scripts/delete-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" "${{ needs.enable-native-auth.outputs.test-auth-username }}"
 
       - name: Disable native auth on Cognito Hosted UI
         if: ${{ inputs.skipCleanup != 'true' }}

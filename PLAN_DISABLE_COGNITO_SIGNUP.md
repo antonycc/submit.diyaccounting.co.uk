@@ -95,7 +95,7 @@ Remove `cognito` (the antonycc OIDC provider name) from the UserPoolClient's `su
 
 **File:** `infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java`
 
-**Remove line 213:**
+**Comment out line 213:**
 ```java
 this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 ```
@@ -231,6 +231,6 @@ Workflows:
 - [x] Custom native auth code removed (login-native-addon.js, cognitoNativeAuthPost.js)
 - [x] Tests use Hosted UI native form via `cognito-native`
 - [x] `.env.ci` and `.env.prod` set to `TEST_AUTH_PROVIDER=cognito-native`
-- [ ] OIDC.antonycc.com provider removed from Hosted UI (Phase 4.1)
+- [x] OIDC.antonycc.com provider removed from Hosted UI (Phase 4.1)
 - [ ] OIDC.antonycc.com issuer changed to placeholder (Phase 4.2)
 - [ ] OIDC.antonycc.com provider code fully removed (Phase 4.3)

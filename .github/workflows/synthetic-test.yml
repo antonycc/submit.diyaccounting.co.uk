@@ -84,6 +84,14 @@ on:
         type: string
         description: 'Skip enabling/disabling native auth (caller manages lifecycle)'
         required: false
+      test-auth-username:
+        type: string
+        description: 'Pre-created test user username (skips user creation if provided)'
+        required: false
+      test-auth-password:
+        type: string
+        description: 'Pre-created test user password (skips user creation if provided)'
+        required: false
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: true
@@ -275,13 +283,26 @@ jobs:
         id: cognito-test-user
         shell: bash
         run: |
+          # If credentials were passed in, use them instead of creating a new user
+          if [ -n "${{ inputs.test-auth-username }}" ] && [ -n "${{ inputs.test-auth-password }}" ]; then
+            echo "Using provided test credentials (skipping user creation)"
+            # Mask the password to prevent it appearing in logs
+            echo "::add-mask::${{ inputs.test-auth-password }}"
+            echo "test-auth-username=${{ inputs.test-auth-username }}" >> "$GITHUB_OUTPUT"
+            echo "test-auth-password=${{ inputs.test-auth-password }}" >> "$GITHUB_OUTPUT"
+            echo "user-created-here=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
           if [ "$PROVIDER" = "cognito-native" ]; then
             # The script writes test-auth-username and test-auth-password to $GITHUB_OUTPUT directly
             node 'scripts/create-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}"
+            echo "user-created-here=true" >> "$GITHUB_OUTPUT"
           else
             echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+            echo "user-created-here=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: 'Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
@@ -325,9 +346,10 @@ jobs:
           retry-max-attempts: 3
 
       - name: Delete Cognito test user
-        if: ${{ !cancelled() && inputs.skip-cleanup != 'true' && steps.cognito-test-user.outputs.test-auth-username != '' }}
+        if: ${{ !cancelled() && inputs.skip-cleanup != 'true' && steps.cognito-test-user.outputs.test-auth-username != '' && steps.cognito-test-user.outputs.user-created-here == 'true' }}
         shell: bash
         run: |
+          echo "Deleting test user created by this workflow..."
           node scripts/delete-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" "${{ steps.cognito-test-user.outputs.test-auth-username }}"
 
       - name: Disable native auth on Cognito Hosted UI

@@ -706,7 +706,7 @@ footer {
   border-color: #4285f4;
 }
 
-.google-btn:hover {
+.btn.google-btn:hover {
   background-color: #4285f4;
   color: white;
 }

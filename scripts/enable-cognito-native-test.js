@@ -13,7 +13,7 @@
 // This script:
 //   1. Enables COGNITO on the Hosted UI (toggle-cognito-native-auth.js enable)
 //   2. Creates a test user (create-cognito-test-user.js)
-//   3. Saves credentials to target/cognito-native-test-credentials.json
+//   3. Saves credentials to cognito-native-test-credentials.json
 //   4. Prints export commands for running behaviour tests
 
 import { execFile } from "child_process";
@@ -23,7 +23,7 @@ import path from "path";
 
 const execFileAsync = promisify(execFile);
 const environmentName = process.argv[2] || "ci";
-const credentialsFile = path.resolve("target", "cognito-native-test-credentials.json");
+const credentialsFile = path.resolve("cognito-native-test-credentials.json");
 
 async function main() {
   // Check AWS credentials
@@ -40,16 +40,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Ensure target directory exists
-  fs.mkdirSync(path.dirname(credentialsFile), { recursive: true });
-
   // Step 1: Enable native auth
   console.log(`=== Enabling Cognito native auth for ${environmentName} ===`);
   try {
-    const { stdout, stderr } = await execFileAsync(
-      "node",
-      ["scripts/toggle-cognito-native-auth.js", "enable", environmentName]
-    );
+    const { stdout, stderr } = await execFileAsync("node", ["scripts/toggle-cognito-native-auth.js", "enable", environmentName]);
     if (stdout) console.log(stdout.trimEnd());
     if (stderr) console.error(stderr.trimEnd());
   } catch (error) {
@@ -65,10 +59,7 @@ async function main() {
   let username = null;
   let password = null;
   try {
-    const { stdout, stderr } = await execFileAsync(
-      "node",
-      ["scripts/create-cognito-test-user.js", environmentName]
-    );
+    const { stdout, stderr } = await execFileAsync("node", ["scripts/create-cognito-test-user.js", environmentName]);
     if (stdout) console.log(stdout.trimEnd());
     if (stderr) console.error(stderr.trimEnd());
 
@@ -109,6 +100,10 @@ async function main() {
   console.log("Run the auth behaviour test:");
   console.log("");
   console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}' npm run test:authBehaviour-${environmentName}`);
+  console.log("");
+  console.log("Run the submit VAT behaviour test:");
+  console.log("");
+  console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}' npm run test:submitVatBehaviour-${environmentName}`);
   console.log("");
   console.log("When done, clean up:");
   console.log("");

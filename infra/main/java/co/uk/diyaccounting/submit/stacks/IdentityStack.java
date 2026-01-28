@@ -210,7 +210,9 @@ public class IdentityStack extends Stack {
                         "given_name", "given_name",
                         "family_name", "family_name"))
                 .build();
-        this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
+        // Phase 4.1: Removed from supportedIdentityProviders to hide "Sign in with your corporate ID" from Hosted UI
+        // The provider definition remains in the stack for safe rollback. See PLAN_DISABLE_COGNITO_SIGNUP.md
+        // this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 
         // User Pool Client
         // Native Cognito login (COGNITO) is NOT included by default to hide the email/password

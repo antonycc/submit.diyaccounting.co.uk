@@ -21,6 +21,7 @@
     "formatting:java-fix": "./mvnw -DskipTests spotless:apply && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true",
     "linting": "eslint .",
     "linting-fix": "eslint --fix . && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true",
+    "lint:workflows": "./scripts/validate-workflows.sh",
     "docker:build": "docker build -t submit-base:latest -f Dockerfile .",
     "cdk:synth-environment": "cd cdk-environment && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation && cd ..",
     "cdk:synth-application": "cd cdk-application && npx dotenv -e ../.env -- npx dotenv -e ../.env.${ENVIRONMENT_NAME:-prod} -- npx cdk synth --require-approval never --ci true --strict --validation && cd ..",

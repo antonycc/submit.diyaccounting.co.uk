@@ -104,6 +104,22 @@ env:
 
 jobs:
 
+  lint-workflows:
+    name: 'validate workflow syntax'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install actionlint
+        run: |
+          # Download and install actionlint
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          echo "$PWD" >> $GITHUB_PATH
+
+      - name: Validate workflows
+        run: ./actionlint .github/workflows/*.yml
+
   params:
     runs-on: ubuntu-24.04
     steps:

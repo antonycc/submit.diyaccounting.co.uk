@@ -336,6 +336,67 @@ aws logs tail /aws/lambda/ci-env-customAuthorizer
 
 See `PLAN_AWS_ACCOUNTS.md` for multi-account architecture and role structure.
 
+## Running Behaviour Tests Against Deployed Environments (Fast Turnaround)
+
+For faster iteration than pushing commits and waiting for GitHub Actions (`synthetic-test.yml` or `deploy.yml`), run behaviour tests directly against ci or prod from your local machine.
+
+### Prerequisites
+
+The assume role script requires:
+- AWS CLI installed and configured
+- `jq` installed (for parsing JSON from `aws sts assume-role`)
+- Local AWS profile that can assume `arn:aws:iam::887764105431:role/submit-deployment-role`
+
+### Workflow
+
+**1. Assume the deployment role:**
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+```
+This sets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, and `AWS_REGION` in your shell. Credentials expire after ~1 hour.
+
+**2. Enable Cognito native auth and create test user:**
+```bash
+# For ci environment (default)
+npm run test:enableCognitoNative
+
+# For prod environment
+npm run test:enableCognitoNative -- prod
+```
+This script:
+- Adds `COGNITO` to the Hosted UI's SupportedIdentityProviders (enables email/password login)
+- Creates a test user with a random email and password
+- Saves credentials to `cognito-native-test-credentials.json` (in project root)
+- Prints the export commands and test command to run
+
+**3. Run behaviour tests:**
+```bash
+# Use the credentials printed by the enable script
+TEST_AUTH_USERNAME='test-xxx@test.diyaccounting.co.uk' TEST_AUTH_PASSWORD='TestXxx!Aa1' npm run test:submitVatBehaviour-ci
+
+# Or for prod
+TEST_AUTH_USERNAME='...' TEST_AUTH_PASSWORD='...' npm run test:submitVatBehaviour-prod
+```
+
+Available behaviour test variants: `-ci` and `-prod` (see package.json for full list).
+
+**4. Clean up - disable Cognito native auth and delete test user:**
+```bash
+npm run test:disableCognitoNative
+```
+This script:
+- Reads the saved credentials from `cognito-native-test-credentials.json`
+- Deletes the test user from Cognito
+- Removes `COGNITO` from SupportedIdentityProviders (restores federated-only login)
+- Deletes the credentials file
+
+### Important Notes
+
+- **Always clean up** after testing - the credentials file acts as a lock to prevent duplicate test users
+- If the enable script says credentials already exist, run `npm run test:disableCognitoNative` first
+- The scripts are idempotent: enabling when already enabled or disabling when already disabled is a no-op
+- For auth-specific tests, use `npm run test:authBehaviour-ci` or `npm run test:authBehaviour-prod`
+
 ## Security Checklist
 
 - Never commit secrets - use AWS Secrets Manager ARNs

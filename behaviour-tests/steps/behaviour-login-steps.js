@@ -212,9 +212,33 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     // Playwright's fill() hangs even with force:true (editable check blocks), so we
     // use JavaScript to set values on ALL matching input elements by name attribute.
     // We use the native HTMLInputElement setter to trigger framework state updates.
-    await page.waitForSelector('input[name="username"]', { state: 'attached', timeout: 10000 });
-    await page.waitForSelector('input[name="password"]', { state: 'attached', timeout: 5000 });
-    console.log(`Hosted UI form fields found in DOM`);
+    //
+    // IMPORTANT: After enabling native auth on Cognito, the Hosted UI may take extra
+    // time to reflect the changes. We use a longer timeout (30s) and retry logic to
+    // handle this propagation delay.
+    const maxAttempts = 3;
+    const baseTimeout = 15000;
+    let formFound = false;
+
+    for (let attempt = 1; attempt <= maxAttempts && !formFound; attempt++) {
+      try {
+        console.log(`Waiting for Hosted UI form (attempt ${attempt}/${maxAttempts})...`);
+        await page.waitForSelector('input[name="username"]', { state: 'attached', timeout: baseTimeout });
+        await page.waitForSelector('input[name="password"]', { state: 'attached', timeout: 5000 });
+        formFound = true;
+        console.log(`Hosted UI form fields found in DOM`);
+      } catch (error) {
+        if (attempt === maxAttempts) {
+          console.error(`Failed to find Hosted UI form after ${maxAttempts} attempts`);
+          await page.screenshot({ path: `${screenshotPath}/${timestamp()}-hosted-ui-form-not-found.png` });
+          throw error;
+        }
+        console.log(`Form not found, refreshing page and retrying...`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-hosted-ui-retry-${attempt}.png` });
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.waitForTimeout(2000);
+      }
+    }
 
     // The Cognito Hosted UI has duplicate forms (desktop/mobile) synced by JS.
     // DOM value assignment doesn't work — the UI reads from its own state.
