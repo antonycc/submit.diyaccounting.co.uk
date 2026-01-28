@@ -1,0 +1,28 @@
+# actionlint configuration
+# https://github.com/rhysd/actionlint/blob/main/docs/config.md
+
+self-hosted-runner:
+  labels: []
+
+# Configuration variables used in workflows (from GitHub repository settings)
+config-variables:
+  - AWS_CERTIFICATE_ARN
+  - AWS_HOSTED_ZONE_ID
+  - AWS_HOSTED_ZONE_NAME
+  - COGNITO_USER_POOL_ARN
+  - COGNITO_CLIENT_ID
+
+# Ignore patterns (regex)
+# - Shellcheck informational warnings that don't affect workflow execution
+# - Type mismatch false positives for quoted 'true'/'false' string values
+ignore:
+  - 'SC2001'
+  - 'SC2002'
+  - 'SC2015'
+  - 'SC2016'
+  - 'SC2076'
+  - 'SC2086'
+  - 'SC2129'
+  - 'SC2155'
+  - 'SC2207'
+  - 'bool value cannot be assigned'

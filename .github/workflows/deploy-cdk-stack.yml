@@ -20,20 +20,21 @@ on:
         description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
         required: false
         options:
-          - ''
+          - '(auto)'
           - 'ci'
           - 'prod'
-        default: ''
+        default: '(auto)'
       deployment-name:
         type: string
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
       cdk-application:
+        type: choice
         description: 'CDK application name'
         required: false
         options:
-          - ''
+          - '(auto)'
           - 'application'
           - 'environment'
         default: 'application'
@@ -139,9 +140,12 @@ jobs:
         run: |
           echo 'stackName=${{ inputs.stackName }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.force-stack-deployment }}' ; echo "force-stack-deployment=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.cdk-application }}' ; echo "cdk-application=${X:-application}" | tee -a "$GITHUB_OUTPUT"
+          CDK_APP='${{ inputs.cdk-application }}'; [[ "$CDK_APP" == "(auto)" ]] && CDK_APP=""
+          echo "cdk-application=${CDK_APP:-application}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.base-image-tag }}' ; echo "base-image-tag=${X:-${{ github.sha }}}" | tee -a "$GITHUB_OUTPUT"
           echo "self-destruct-start-datetime=${{ inputs['self-destruct-start-datetime'] }}" | tee -a "$GITHUB_OUTPUT"
           echo "http-api-url=${{ inputs['http-api-url'] }}" | tee -a "$GITHUB_OUTPUT"

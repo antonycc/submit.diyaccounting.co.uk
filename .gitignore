@@ -352,6 +352,9 @@ fabric.properties
 # HMRC test user credentials
 /hmrc-test-user.json
 
+# Cognito native auth test credentials (survives mvnw clean, unlike target/)
+/cognito-native-test-credentials.json
+
 # Salt backups (sensitive - store securely, not in Git)
 salt-backup-*.json
 

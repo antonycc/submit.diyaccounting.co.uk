@@ -9,10 +9,10 @@ on:
         description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
         required: false
         options:
-          - ''
+          - '(auto)'
           - 'ci'
           - 'prod'
-        default: ''
+        default: '(auto)'
       deployment-name:
         type: string
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
@@ -45,6 +45,8 @@ on:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: false
       NGROK_AUTHTOKEN:
+        required: false
+      NGROK_AUTH_TOKEN:
         required: false
 
   push:
@@ -92,17 +94,49 @@ env:
   AWS_ACCOUNT_ID: '887764105431'
   AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
-  loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
+  loadTestDuration: '30s'
   GITHUB_ACTOR: ${{ github.actor }}
-  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '1' }}
+  SELF_DESTRUCT_DELAY_HOURS: '1'
   BASE_IMAGE_TAG: ${{ github.sha }}
-  FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
+  FORCE_ALL_STACK_DEPLOYMENT: 'false'
   COMMIT_HASH: ${{ github.sha }}
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
   GITHUB_REF_TO_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
 
 jobs:
+
+  lint-workflows:
+    name: 'validate workflow syntax'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install actionlint
+        run: |
+          # Download and install actionlint
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          echo "$PWD" >> $GITHUB_PATH
+
+      - name: Validate workflows
+        run: |
+          # Run actionlint with relaxed checking
+          # - Ignore shellcheck info/style warnings that don't affect execution
+          # - Ignore type mismatch false positives for quoted 'true'/'false' strings
+          # - Only fail on actual syntax errors that prevent workflows from running
+          ./actionlint \
+            -ignore 'SC2001' \
+            -ignore 'SC2002' \
+            -ignore 'SC2015' \
+            -ignore 'SC2016' \
+            -ignore 'SC2076' \
+            -ignore 'SC2086' \
+            -ignore 'SC2129' \
+            -ignore 'SC2155' \
+            -ignore 'SC2207' \
+            -ignore 'bool value cannot be assigned' \
+            .github/workflows/*.yml
 
   params:
     runs-on: ubuntu-24.04
@@ -121,7 +155,9 @@ jobs:
         id: normalise
         shell: bash
         run: |
-          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
     outputs:

@@ -65,6 +65,7 @@ const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
+const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
@@ -275,7 +276,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* ******* */
 
   await clickLogIn(page, screenshotPath);
-  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
 
   // Inject mock MFA metadata for testing Gov-Client-Multi-Factor header

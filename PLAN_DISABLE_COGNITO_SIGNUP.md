@@ -95,7 +95,7 @@ Remove `cognito` (the antonycc OIDC provider name) from the UserPoolClient's `su
 
 **File:** `infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java`
 
-**Remove line 213:**
+**Comment out line 213:**
 ```java
 this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 ```
@@ -112,56 +112,76 @@ this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), thi
 # Should show only Google (and COGNITO if toggled on)
 ```
 
-#### Phase 4.2: Change the OIDC issuer domain
+#### Phase 4.2: Remove the provider entirely (merged with original 4.3)
 
-Change the OIDC issuer from `https://oidc.antonycc.com/` to a placeholder like `https://oidc.removed.invalid/`. This ensures the provider can't be used even if somehow re-enabled, and confirms CloudFormation can update the provider resource in-place.
+Remove all `oidc.antonycc.com` OIDC provider code, configuration, and test helpers. Skip the placeholder domain step — go directly to full removal.
 
-**Files:**
-- `cdk-environment/cdk.json` line 29: change `"antonyccBaseUri": "https://oidc.antonycc.com/"` to `"antonyccBaseUri": "https://oidc.removed.invalid/"`
-- `cdk-application/cdk.json` line 34: same change
+**Complete removal checklist:**
 
-**Verification:**
-```bash
-./mvnw clean verify
-# Deploy and verify CloudFormation updates the provider resource successfully
-```
-
-#### Phase 4.3: Remove the provider entirely
-
-Remove all antonycc OIDC provider code and configuration.
-
-**Files to modify:**
-
-**`IdentityStack.java`:**
-- Remove field (line 56): `public CfnUserPoolIdentityProvider antonyccIdentityProvider;`
-- Remove interface props (lines 96-98): `String antonyccClientId();` and `String antonyccBaseUri();`
-- Remove provider creation (lines 191-212): the entire `CfnUserPoolIdentityProvider.Builder` block
-- Remove output (line 271): `cfnOutput(this, "CognitoAntonyccIdpId", ...);`
-- Remove import if no longer needed: `CfnUserPoolIdentityProvider`
-
-**`SubmitEnvironment.java`:**
-- Remove props (lines 50-51): `public String antonyccClientId;` and `public String antonyccBaseUri;`
-- Remove builder calls (lines 215-216): `.antonyccClientId(appProps.antonyccClientId)` and `.antonyccBaseUri(appProps.antonyccBaseUri)`
+##### Infrastructure — CDK Context (`cdk.json` files)
 
 **`cdk-environment/cdk.json`:**
-- Remove lines 28-29: `"antonyccClientId"` and `"antonyccBaseUri"`
+- Remove line 28: `"antonyccClientId": "submit-diyaccounting-co-uk",`
+- Remove line 29: `"antonyccBaseUri": "https://oidc.antonycc.com/",`
 
 **`cdk-application/cdk.json`:**
-- Remove the same keys
+- Remove line 33: `"antonyccClientId": "submit-diyaccounting-co-uk",`
+- Remove line 34: `"antonyccBaseUri": "https://oidc.antonycc.com/",`
+
+##### Infrastructure — Java CDK Stacks
+
+**`infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java`:**
+- Remove field (line 56): `public CfnUserPoolIdentityProvider antonyccIdentityProvider;`
+- Remove interface method (line 96): `String antonyccClientId();`
+- Remove interface method (line 98): `String antonyccBaseUri();`
+- Remove the entire `CfnUserPoolIdentityProvider.Builder` block (lines 192-212)
+- Remove the commented-out line (line 215): `// this.identityProviders.put(...antonyccIdentityProvider);`
+- Remove CloudFormation output (line 273): `cfnOutput(this, "CognitoAntonyccIdpId", this.antonyccIdentityProvider.getProviderName());`
+- Remove import if no longer used: `import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;`
+
+**`infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java`:**
+- Remove field (line 50): `public String antonyccClientId;`
+- Remove field (line 51): `public String antonyccBaseUri;`
+- Remove builder call (line 215): `.antonyccClientId(appProps.antonyccClientId)`
+- Remove builder call (line 216): `.antonyccBaseUri(appProps.antonyccBaseUri)`
+
+##### Behaviour Tests
 
 **`behaviour-tests/steps/behaviour-login-steps.js`:**
-- Remove `selectOidcCognitoAuth()` function (lines 126-141)
-- Remove `fillInCognitoAuth()` function (lines 143-149)
-- Remove `submitCognitoAuth()` function (lines 151-159)
-- Remove the `cognito` branch in `loginWithCognitoOrMockAuth()` (lines 55-79)
+- Remove the `cognito` branch in `loginWithCognitoOrMockAuth()` (lines 55-79, the entire `else if (testAuthProvider === "cognito")` block)
+- Remove function `selectOidcCognitoAuth()` (lines 126-141)
+- Remove function `fillInCognitoAuth()` (lines 143-149)
+- Remove function `submitCognitoAuth()` (lines 151-159)
+
+##### Documentation (update references)
+
+**`PLAN_DISABLE_COGNITO_SIGNUP.md`:**
+- Update this file to mark Phase 4.2 complete
+- Update the "Authentication Flow Reference" section to remove `cognito` from the provider table
+
+**`REPORT_REPOSITORY_CONTENTS.md`:**
+- No changes needed (references `antonycc` as GitHub username, not OIDC provider)
+
+##### What NOT to remove (GitHub username references)
+
+The following use `antonycc` as the GitHub username/org, NOT the OIDC provider — keep them:
+- `AccountStack.java:92` — GitHub repo reference `antonycc/submit.diyaccounting.co.uk`
+- `EdgeStack.java`, `PublishStack.java`, `SelfDestructStack.java`, etc. — AWS tags like `@antonycc/submit.diyaccounting.co.uk`
+- `package.json` — npm package scope
+- `REPORT_REPOSITORY_CONTENTS.md` — git clone URL
 
 **Verification:**
 ```bash
 ./mvnw clean verify
 npm test
+npm run lint:workflows
 # Deploy and verify CloudFormation deletes the CfnUserPoolIdentityProvider resource
 # Run synthetic tests to confirm cognito-native still works
+# Visit Hosted UI and confirm only Google appears (no "Sign in with your corporate ID")
 ```
+
+**Rollback:**
+If needed, revert this commit. The Phase 4.1 change (commenting out `supportedIdentityProviders` line) already hides the provider from the UI, so even a partial rollback is safe.
 
 ---
 
@@ -183,7 +203,7 @@ npm test
 1. `synthetic-test.yml` / `deploy.yml` enables COGNITO on UserPoolClient via `toggle-cognito-native-auth.js`
 2. `synthetic-test.yml` creates test user via `scripts/create-cognito-test-user.js`
 3. Test navigates to `/auth/login.html`
-4. Test clicks "Continue with Google via Amazon Cognito" (goes to Hosted UI)
+4. Test clicks "Google account" (goes to Hosted UI)
 5. Hosted UI shows native email/password form (because COGNITO was enabled)
 6. Test fills in email/password on the Hosted UI
 7. Test submits; Hosted UI does OAuth code exchange
@@ -231,6 +251,5 @@ Workflows:
 - [x] Custom native auth code removed (login-native-addon.js, cognitoNativeAuthPost.js)
 - [x] Tests use Hosted UI native form via `cognito-native`
 - [x] `.env.ci` and `.env.prod` set to `TEST_AUTH_PROVIDER=cognito-native`
-- [ ] OIDC.antonycc.com provider removed from Hosted UI (Phase 4.1)
-- [ ] OIDC.antonycc.com issuer changed to placeholder (Phase 4.2)
-- [ ] OIDC.antonycc.com provider code fully removed (Phase 4.3)
+- [x] OIDC.antonycc.com provider removed from Hosted UI (Phase 4.1)
+- [ ] OIDC.antonycc.com provider code and config fully removed (Phase 4.2)

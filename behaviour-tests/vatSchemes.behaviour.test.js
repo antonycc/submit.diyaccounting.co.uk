@@ -63,6 +63,7 @@ const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
+const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
@@ -223,7 +224,7 @@ async function setupTestUserAndLogin(page, testInfo) {
 
   await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
   await clickLogIn(page, screenshotPath);
-  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
   await injectMockMfa(page);
   await consentToDataCollection(page, screenshotPath);
