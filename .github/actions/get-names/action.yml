@@ -1,4 +1,5 @@
 name: "Get environment and domain names"
+description: "Computes environment name, deployment name, and domain URLs based on branch and inputs"
 
 inputs:
   environment-name:
