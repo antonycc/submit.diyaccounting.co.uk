@@ -1,0 +1,14 @@
+# actionlint configuration
+# https://github.com/rhysd/actionlint/blob/main/docs/config.md
+
+self-hosted-runner:
+  labels: []
+
+config-variables: []
+
+# Ignore shellcheck informational warnings that don't affect workflow execution
+# SC2086: Double quote to prevent globbing and word splitting (info level)
+# SC2129: Consider using { cmd1; cmd2; } >> file (style suggestion)
+ignore:
+  - 'SC2086'
+  - 'SC2129'

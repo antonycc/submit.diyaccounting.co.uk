@@ -14,10 +14,10 @@ on:
         description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
         required: false
         options:
-          - ''
+          - '(auto)'
           - 'ci'
           - 'prod'
-        default: ''
+        default: '(auto)'
       force-identity-refresh:
         type: boolean
         description: 'Force refresh of Cognito Identity Provider (use after rotating GOOGLE_CLIENT_SECRET)'
@@ -79,7 +79,9 @@ jobs:
         id: normalise
         shell: bash
         run: |
-          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           echo 'force-identity-refresh=${{ inputs.force-identity-refresh }}' | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}

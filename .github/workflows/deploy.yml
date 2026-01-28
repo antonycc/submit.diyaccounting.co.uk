@@ -33,10 +33,10 @@ on:
         description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
         required: false
         options:
-          - ''
+          - '(auto)'
           - 'ci'
           - 'prod'
-        default: ''
+        default: '(auto)'
       deployment-name:
         type: string
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
@@ -160,7 +160,9 @@ jobs:
         run: |
           X='${{ inputs.forceAllStackDeployment }}' ; echo "forceAllStackDeployment=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipDeploy }}' ; echo "skipDeploy=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          echo 'environment-name=${{ inputs.environment-name }}' | tee -a "$GITHUB_OUTPUT"
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.loadTestDuration }}' ; echo "loadTestDuration=${X:-30s}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
@@ -1004,6 +1006,7 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - push-images
       - deploy-auth
       - deploy-hmrc
       - deploy-account

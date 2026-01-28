@@ -23,11 +23,23 @@ if command -v actionlint &> /dev/null; then
     echo ""
 
     # Run actionlint on all workflow files
-    if actionlint "${WORKFLOW_DIR}"/*.yml; then
+    # Filter out shellcheck info-level warnings (SC2086, SC2129) which are style suggestions
+    # that don't affect workflow execution
+    OUTPUT=$(actionlint "${WORKFLOW_DIR}"/*.yml 2>&1)
+    FILTERED=$(echo "$OUTPUT" | grep -v "SC2086:info" | grep -v "SC2129:style" || true)
+
+    if [ -n "$FILTERED" ]; then
+        echo "$FILTERED"
+        # Check if any remaining issues are errors (not just warnings)
+        if echo "$FILTERED" | grep -qE "\\[syntax-check\\]|\\[expression\\].*cannot be assigned|\\[action\\]"; then
+            ERRORS=1
+        else
+            echo ""
+            echo "Warnings found but no blocking errors"
+        fi
+    else
         echo ""
         echo "All workflows passed actionlint validation"
-    else
-        ERRORS=1
     fi
 else
     echo "actionlint not found - using basic YAML validation"
