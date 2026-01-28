@@ -23,6 +23,30 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-start-submission.png` });
+
+    // Check if the button is visible; if not, the Test bundle may not have been added or activities didn't refresh
+    const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
+    let buttonVisible = await submitButton.isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (!buttonVisible) {
+      console.log(`[initSubmitVat] "${activityButtonText}" button not visible, attempting page refresh...`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01b-after-refresh.png` });
+      buttonVisible = await submitButton.isVisible({ timeout: 5000 }).catch(() => false);
+    }
+
+    if (!buttonVisible) {
+      // Log visible buttons to help diagnose the issue
+      const visibleButtons = await page.locator("button").allTextContents();
+      console.log(`[initSubmitVat] Visible buttons on page: ${JSON.stringify(visibleButtons)}`);
+      throw new Error(
+        `"${activityButtonText}" button not visible. This usually means the Test bundle was not added. ` +
+          `Visible buttons: ${visibleButtons.join(", ")}`
+      );
+    }
+
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT return submission", { screenshotPath, timeout: 60000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-start-submission.png` });
     await page.waitForLoadState("networkidle");
