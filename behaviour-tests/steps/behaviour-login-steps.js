@@ -214,13 +214,16 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     await page.waitForSelector('#signInFormUsername', { state: 'attached', timeout: 10000 });
     console.log(`Hosted UI username field found in DOM`);
 
-    // Fill in email via JavaScript to bypass Playwright actionability checks
-    await page.evaluate(({ username, password }) => {
+    // Fill in email and password via JavaScript to bypass Playwright actionability checks.
+    // Also disable HTML5 form validation to prevent "invalid form control not focusable" errors.
+    const fillResult = await page.evaluate(({ username, password }) => {
+      const result = { username: false, password: false, formNoValidate: false };
       const usernameEl = document.getElementById('signInFormUsername');
       if (usernameEl) {
         usernameEl.value = username;
         usernameEl.dispatchEvent(new Event('input', { bubbles: true }));
         usernameEl.dispatchEvent(new Event('change', { bubbles: true }));
+        result.username = usernameEl.value === username;
       }
       if (password) {
         const passwordEl = document.getElementById('signInFormPassword');
@@ -228,10 +231,19 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
           passwordEl.value = password;
           passwordEl.dispatchEvent(new Event('input', { bubbles: true }));
           passwordEl.dispatchEvent(new Event('change', { bubbles: true }));
+          result.password = passwordEl.value === password;
         }
       }
+      // Disable HTML5 form validation on the parent form to prevent
+      // "An invalid form control with name='password' is not focusable" errors
+      const form = usernameEl?.closest('form');
+      if (form) {
+        form.noValidate = true;
+        result.formNoValidate = true;
+      }
+      return result;
     }, { username: testAuthUsername, password: testAuthPassword });
-    console.log(`Filled credentials on Hosted UI via JavaScript`);
+    console.log(`Filled credentials on Hosted UI via JavaScript: ${JSON.stringify(fillResult)}`);
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-auth-filled.png` });
   });
@@ -241,13 +253,18 @@ export async function submitHostedUINativeAuth(page, screenshotPath = defaultScr
   await test.step("The user submits the Cognito Hosted UI login form", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
     // The Cognito Hosted UI sign-in button has name="signInSubmitButton"
-    // Use JavaScript click to bypass Playwright actionability checks on the Hosted UI
+    // Use JavaScript click to bypass Playwright actionability checks on the Hosted UI.
+    // Ensure noValidate is set on the form to prevent HTML5 validation errors.
     await page.evaluate(() => {
       const btn = document.querySelector('input[name="signInSubmitButton"]')
         || document.querySelector('button[name="signInSubmitButton"]')
         || document.querySelector('input[type="submit"]')
         || document.querySelector('button[type="submit"]');
-      if (btn) btn.click();
+      if (btn) {
+        const form = btn.closest('form');
+        if (form) form.noValidate = true;
+        btn.click();
+      }
     });
     console.log(`Clicked sign-in button on Hosted UI`);
     await page.waitForLoadState("networkidle");
