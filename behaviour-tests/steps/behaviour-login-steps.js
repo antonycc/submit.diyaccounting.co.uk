@@ -44,12 +44,14 @@ export async function loginWithCognitoOrMockAuth(
     await submitMockAuth(page, screenshotPath);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-or-mock-auth.png` });
   } else if (testAuthProvider === "cognito-native") {
-    // Native Cognito user authentication (username/password)
+    // Native Cognito user authentication via the Cognito Hosted UI email/password form
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-native.png` });
-    await fillInNativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-native-filled.png` });
-    await submitNativeAuth(page, screenshotPath);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-native-submitted.png` });
+    await initCognitoAuth(page, screenshotPath);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-native-hosted-ui.png` });
+    await fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-native-filled.png` });
+    await submitHostedUINativeAuth(page, screenshotPath);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-native-submitted.png` });
   } else if (testAuthProvider === "cognito") {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-login-with-cognito-or-mock-auth.png` });
     await initCognitoAuth(page, screenshotPath);
@@ -200,41 +202,71 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
   });
 }
 
-// Native Cognito authentication (username/password)
-export async function fillInNativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user enters their native Cognito credentials", async () => {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-native-auth.png` });
+// Native Cognito authentication via the Cognito Hosted UI email/password form
+export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters their credentials on the Cognito Hosted UI", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png` });
 
-    // Click "Show developer options" to reveal the native login form
-    const devToggle = page.locator("#showDevOptions");
-    if (await devToggle.isVisible({ timeout: 5000 })) {
-      await loggedClick(page, devToggle, "Show developer options", { screenshotPath });
-      await page.waitForTimeout(200);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01b-native-auth-dev-options-shown.png` });
-    }
+    // Wait for the Hosted UI email/password form to load.
+    // The Cognito Hosted UI renders duplicate forms (desktop/mobile) synced by JS.
+    // Playwright's fill() hangs even with force:true (editable check blocks), so we
+    // use JavaScript to set values on ALL matching input elements by name attribute.
+    // We use the native HTMLInputElement setter to trigger framework state updates.
+    await page.waitForSelector('input[name="username"]', { state: 'attached', timeout: 10000 });
+    await page.waitForSelector('input[name="password"]', { state: 'attached', timeout: 5000 });
+    console.log(`Hosted UI form fields found in DOM`);
 
-    // Wait for the native auth form to be visible
-    await expect(page.locator("#nativeLoginForm")).toBeVisible({ timeout: 10000 });
+    // The Cognito Hosted UI has duplicate forms (desktop/mobile) synced by JS.
+    // DOM value assignment doesn't work — the UI reads from its own state.
+    // Simulate keyboard input: focus the VISIBLE field, then type into it.
+    // Cognito's sync JS will propagate values to the hidden form.
+    await page.evaluate(() => {
+      // Find the visible username field (second instance = desktop form)
+      const fields = document.querySelectorAll('input[name="username"]');
+      const visible = Array.from(fields).find(el => el.offsetParent !== null) || fields[fields.length - 1];
+      visible.focus();
+      visible.select();
+    });
+    await page.keyboard.type(testAuthUsername, { delay: 10 });
+    console.log(`Typed username on Hosted UI`);
 
-    // Fill in username (email)
-    await loggedFill(page, "#nativeUsername", testAuthUsername, "Entering username", { screenshotPath });
-    await page.waitForTimeout(100);
-
-    // Fill in password
     if (testAuthPassword) {
-      await loggedFill(page, "#nativePassword", testAuthPassword, "Entering password", { screenshotPath });
+      await page.evaluate(() => {
+        const fields = document.querySelectorAll('input[name="password"]');
+        const visible = Array.from(fields).find(el => el.offsetParent !== null) || fields[fields.length - 1];
+        visible.focus();
+        visible.select();
+      });
+      await page.keyboard.type(testAuthPassword, { delay: 10 });
+      console.log(`Typed password on Hosted UI`);
     }
+
+    // Disable form validation
+    await page.evaluate(() => {
+      for (const form of document.querySelectorAll('form')) form.noValidate = true;
+    });
+
     await page.waitForTimeout(100);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-native-auth-filled.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-auth-filled.png` });
   });
 }
 
-export async function submitNativeAuth(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user submits the native Cognito login form", async () => {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-native.png` });
-    await loggedClick(page, "#loginWithNativeCognito", "Sign in with Test Account", { screenshotPath });
+export async function submitHostedUINativeAuth(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the Cognito Hosted UI login form", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
+    // The Cognito Hosted UI sign-in button is input[name="signInSubmitButton"][type="submit"].
+    // Click the VISIBLE submit button (second instance = desktop form).
+    await page.evaluate(() => {
+      const btns = document.querySelectorAll('input[name="signInSubmitButton"]');
+      const visible = Array.from(btns).find(el => el.offsetParent !== null) || btns[btns.length - 1];
+      if (visible) {
+        visible.closest('form').noValidate = true;
+        visible.click();
+      }
+    });
+    console.log(`Clicked sign-in button on Hosted UI`);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1000);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-native-signed-in.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-signed-in.png` });
   });
 }

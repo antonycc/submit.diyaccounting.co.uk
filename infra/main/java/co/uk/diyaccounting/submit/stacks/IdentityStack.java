@@ -22,6 +22,7 @@ import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.CustomThreatProtectionMode;
 import software.amazon.awscdk.services.cognito.FeaturePlan;
 import software.amazon.awscdk.services.cognito.StandardThreatProtectionMode;
+import software.amazon.awscdk.services.cognito.AccountRecovery;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
@@ -168,6 +169,7 @@ public class IdentityStack extends Stack {
                 .featurePlan(FeaturePlan.PLUS)
                 .standardThreatProtectionMode(StandardThreatProtectionMode.FULL_FUNCTION)
                 .customThreatProtectionMode(CustomThreatProtectionMode.FULL_FUNCTION)
+                .accountRecovery(AccountRecovery.NONE)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
 
@@ -211,9 +213,10 @@ public class IdentityStack extends Stack {
         this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
 
         // User Pool Client
-        // Include COGNITO (native users) alongside federated identity providers
+        // Native Cognito login (COGNITO) is NOT included by default to hide the email/password
+        // form on the Hosted UI. It is enabled dynamically during behaviour tests via
+        // scripts/toggle-cognito-native-auth.js and disabled afterwards.
         var allProviders = new java.util.ArrayList<>(this.identityProviders.keySet());
-        allProviders.add(UserPoolClientIdentityProvider.COGNITO); // Enable native Cognito users
         this.userPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-UserPoolClient")
                 .userPool(userPool)
                 .userPoolClientName(props.resourceNamePrefix() + "-client")

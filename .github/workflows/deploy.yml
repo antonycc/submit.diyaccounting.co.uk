@@ -66,6 +66,14 @@ on:
           - 'false'
         required: false
         default: 'false'
+      skipCleanup:
+        description: 'Keep test users and native auth enabled after tests (for debugging)'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   push:
     branches:
       - '**'
@@ -1459,6 +1467,62 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
+  enable-native-auth:
+    if: ${{ !cancelled() }}
+    name: 'enable native auth for behaviour tests'
+    needs:
+      - names
+      - deploy-publish
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Enable native auth on Cognito Hosted UI
+        shell: bash
+        run: |
+          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
+          if [ "$PROVIDER" = "cognito-native" ]; then
+            node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
+          else
+            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+          fi
+
   verify-api:
     if: ${{ !cancelled() }}
     name: 'verify API endpoints are reachable'
@@ -1515,6 +1579,7 @@ jobs:
       - names
       - set-origins
       - deploy-publish
+      - enable-native-auth
       - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1526,6 +1591,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'authBehaviour'
       generate-test-reports: 'true'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1547,6 +1613,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'submitVatBehaviour'
       generate-test-reports: 'true'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1568,6 +1635,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'postVatReturnBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1589,6 +1657,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'getVatReturnBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1610,6 +1679,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'getVatObligationsBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1631,6 +1701,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'postVatReturnFraudPreventionHeadersBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1652,6 +1723,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'complianceBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1673,6 +1745,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'helpBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1694,6 +1767,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'vatValidationBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1715,8 +1789,76 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'vatSchemesBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  disable-native-auth:
+    if: ${{ !cancelled() }}
+    name: 'disable native auth after behaviour tests'
+    needs:
+      - names
+      - enable-native-auth
+      - web-test-auth
+      - web-test
+      - web-test-post-vat-return-sandbox
+      - web-test-get-vat-return-sandbox
+      - web-test-obligation-sandbox
+      - web-test-fraud-prevention-headers-vat-sandbox
+      - web-test-compliance-sandbox
+      - web-test-help-sandbox
+      - web-test-vatValidation-sandbox
+      - web-test-vatSchemes-sandbox
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Disable native auth on Cognito Hosted UI
+        if: ${{ inputs.skipCleanup != 'true' }}
+        shell: bash
+        run: |
+          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
+          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
+          if [ "$PROVIDER" = "cognito-native" ]; then
+            node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
+          else
+            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
+          fi
 
   # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
   set-last-known-good-deployment:
@@ -1724,6 +1866,7 @@ jobs:
     needs:
       - names
       - web-test
+      - disable-native-auth
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:

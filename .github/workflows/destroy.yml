@@ -568,7 +568,7 @@ jobs:
       - name: Empty origin bucket
         shell: bash
         run: |
-          aws s3 rm s3://${{ needs.names.outputs.deployment-name }}-submit-app-origin-us-east-1 --recursive \
+          aws s3 rm s3://${{ needs.names.outputs.deployment-name }}-app-origin-us-east-1 --recursive \
             || echo "Origin bucket already empty or does not exist"
 
       - name: Destroy Submit Application
