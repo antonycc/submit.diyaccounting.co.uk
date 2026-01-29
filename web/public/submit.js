@@ -31,85 +31,6 @@ import { authorizedFetch, fetchWithIdToken, handle403Error, executeAsyncRequestP
 import { submitVat, getGovClientHeaders, getClientIP, getIPViaWebRTC } from "./lib/services/hmrc-service.js";
 import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCatalogText } from "./lib/services/catalog-service.js";
 
-// Correlation widget - render to the left of the entitlement status in the header
-(function correlationWidget() {
-  if (typeof window === "undefined" || typeof document === "undefined") return;
-
-  function copy(text) {
-    try {
-      navigator.clipboard?.writeText?.(text);
-    } catch (err) {
-      console.warn("Failed to copy to clipboard:", err.message);
-    }
-  }
-
-  function render() {
-    try {
-      const authSection = document.querySelector?.(".auth-section");
-      if (!authSection || document.getElementById("correlationWidget")) return;
-
-      const container = document.createElement("span");
-      container.id = "correlationWidget";
-      container.style.marginRight = "12px";
-      container.style.fontSize = "0.8em";
-      container.style.color = "#666";
-      container.style.display = "inline-flex";
-      container.style.gap = "8px";
-
-      const tpSpan = document.createElement("span");
-      tpSpan.title = "traceparent (click to copy)";
-      const tpVal = getTraceparent() || sessionStorage.getItem("traceparent") || "";
-      tpSpan.textContent = `traceparent: ${tpVal}`;
-      tpSpan.style.cursor = "pointer";
-      tpSpan.addEventListener("click", () => copy(tpVal));
-
-      const ridSpan = document.createElement("span");
-      ridSpan.title = "last x-request-id (click to copy)";
-      const initialRid = getLastXRequestId() || "-";
-      const initialSeenAtIso = (window.__correlation && window.__correlation.getLastXRequestIdSeenAt?.()) || "";
-      const initialSeenAt = initialSeenAtIso ? new Date(initialSeenAtIso) : null;
-      const initialSeenText = initialSeenAt ? ` (seen ${initialSeenAt.toLocaleString()})` : "";
-      ridSpan.textContent = `x-request-id: ${initialRid}${initialSeenText}`;
-      ridSpan.style.cursor = "pointer";
-      ridSpan.addEventListener("click", () => {
-        const rid = getLastXRequestId() || "";
-        if (rid) copy(rid);
-      });
-
-      container.appendChild(tpSpan);
-      container.appendChild(ridSpan);
-
-      // Insert as first element inside auth-section
-      authSection.insertBefore(container, authSection.firstChild);
-
-      // Update on correlation changes
-      window.addEventListener("correlation:update", (evt) => {
-        const latest = getLastXRequestId() || "-";
-        const seenAtIso = evt?.detail?.seenAt || (window.__correlation && window.__correlation.getLastXRequestIdSeenAt?.());
-        const seenAt = seenAtIso ? new Date(seenAtIso) : null;
-        const seenText = seenAt ? ` (seen ${seenAt.toLocaleString()})` : "";
-        ridSpan.textContent = `x-request-id: ${latest}${seenText}`;
-      });
-
-      // Respect developer mode state
-      try {
-        const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
-        container.style.display = developerModeEnabled ? "inline-flex" : "none";
-      } catch (err) {
-        console.warn("Failed to check developer mode for correlation widget:", err.message);
-      }
-    } catch (e) {
-      console.warn("Failed to render correlation widget", e);
-    }
-  }
-
-  if (document.readyState === "complete" || document.readyState === "interactive") {
-    render();
-  } else {
-    document.addEventListener("DOMContentLoaded", render, { once: true });
-  }
-})();
-
 // Debug widgets initial setup
 // Visibility is controlled by developer-mode.js toggle, but we set up hrefs here
 (function debugWidgetsSetup() {
@@ -125,7 +46,6 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
       const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
 
       const entitlement = document.querySelector(".entitlement-status");
-      const corr = document.getElementById("correlationWidget");
       const viewSrc = document.getElementById("viewSourceLink");
       const tests = document.getElementById("latestTestsLink");
       const apiDocs = document.getElementById("apiDocsLink");
@@ -141,7 +61,6 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
 
       // Apply initial visibility based on developer mode state
       setDisplay(entitlement, developerModeEnabled ? "inline" : "none");
-      setDisplay(corr, developerModeEnabled ? "inline-flex" : "none");
       setDisplay(viewSrc, developerModeEnabled ? "inline" : "none");
       setDisplay(tests, developerModeEnabled ? "inline" : "none");
       setDisplay(apiDocs, developerModeEnabled ? "inline" : "none");

@@ -303,11 +303,6 @@
       body.developer-mode #viewSourceLink { top: 290px; }
       body.developer-mode #localstorageContainer { top: 320px; }
 
-      /* Hide the old combined correlationWidget - we use separate floats now */
-      body.developer-mode #correlationWidget {
-        display: none !important;
-      }
-
       /* Entitlement status styling */
       body.developer-mode .entitlement-status {
         position: fixed;
