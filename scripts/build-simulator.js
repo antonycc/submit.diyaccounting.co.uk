@@ -41,6 +41,19 @@ User-agent: *
 Disallow: /
 `;
 
+// Simulator demo user identity
+const SIMULATOR_DEMO_USER = {
+  sub: "demo-user-12345",
+  email: "demo@simulator.diyaccounting.co.uk",
+  name: "Demo User",
+  given_name: "Demo",
+};
+
+// Build proper JWT-format tokens (unsigned) so decodeJwtNoVerify can extract claims
+const JWT_HEADER = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
+const SIMULATOR_ID_TOKEN = `${JWT_HEADER}.${Buffer.from(JSON.stringify(SIMULATOR_DEMO_USER)).toString("base64url")}.`;
+const SIMULATOR_ACCESS_TOKEN = `${JWT_HEADER}.${Buffer.from(JSON.stringify({ sub: SIMULATOR_DEMO_USER.sub, token_use: "access" })).toString("base64url")}.`;
+
 /**
  * Recursively copy directory
  */
@@ -88,15 +101,9 @@ function transformHtmlFile(filePath) {
     (function() {
       if (document.documentElement.dataset.simulator === 'true') {
         // Set up demo user session
-        const demoUser = {
-          sub: 'demo-user-12345',
-          email: 'demo@simulator.diyaccounting.co.uk',
-          name: 'Demo User',
-          given_name: 'Demo'
-        };
-        localStorage.setItem('userInfo', JSON.stringify(demoUser));
-        localStorage.setItem('cognitoIdToken', 'simulator-demo-token');
-        localStorage.setItem('cognitoAccessToken', 'simulator-demo-access-token');
+        localStorage.setItem('userInfo', ${JSON.stringify(JSON.stringify(SIMULATOR_DEMO_USER))});
+        localStorage.setItem('cognitoIdToken', '${SIMULATOR_ID_TOKEN}');
+        localStorage.setItem('cognitoAccessToken', '${SIMULATOR_ACCESS_TOKEN}');
 
         // Set HMRC token in sessionStorage
         sessionStorage.setItem('hmrcAccessToken', 'simulator-hmrc-token');
@@ -105,6 +112,9 @@ function transformHtmlFile(filePath) {
     })();
   </script>
 `;
+
+  // Remove old localstorage-viewer widget (replaced by developer floats)
+  content = content.replace(/<script src="[^"]*localstorage-viewer\.js"><\/script>\s*/g, "");
 
   // Insert simulator script before closing </body>
   content = content.replace(/<\/body>/i, simulatorScript + "</body>");

@@ -119,6 +119,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.evaluate(() => {
         const sandboxIndicator = document.getElementById("sandboxIndicator");
         if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const developerSection = document.getElementById("developerSection");
+        if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
         if (testDataLink) testDataLink.classList.add("visible");
       });
@@ -138,6 +140,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.evaluate(() => {
         const sandboxIndicator = document.getElementById("sandboxIndicator");
         if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const developerSection = document.getElementById("developerSection");
+        if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
         if (testDataLink) testDataLink.classList.add("visible");
       });
@@ -167,6 +171,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.evaluate(() => {
         const sandboxIndicator = document.getElementById("sandboxIndicator");
         if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const developerSection = document.getElementById("developerSection");
+        if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
         if (testDataLink) testDataLink.classList.add("visible");
       });
@@ -186,6 +192,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.evaluate(() => {
         const sandboxIndicator = document.getElementById("sandboxIndicator");
         if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const developerSection = document.getElementById("developerSection");
+        if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
         if (testDataLink) testDataLink.classList.add("visible");
       });
