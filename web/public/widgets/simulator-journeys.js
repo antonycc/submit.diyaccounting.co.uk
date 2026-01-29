@@ -37,6 +37,18 @@ export class SimulatorJourney {
   }
 
   /**
+   * Find an element by CSS selector matching text content
+   */
+  findByText(selector, text) {
+    const doc = this.getDocument();
+    if (!doc) return null;
+    for (const el of doc.querySelectorAll(selector)) {
+      if (el.textContent.trim().includes(text)) return el;
+    }
+    return null;
+  }
+
+  /**
    * Highlight an element in the iframe
    */
   async highlight(selector) {
@@ -78,6 +90,27 @@ export class SimulatorJourney {
     if (el) {
       el.click();
       el.classList.remove("simulator-highlight");
+    }
+
+    await this.waitForLoad();
+  }
+
+  /**
+   * Click an element matched by text content with visual feedback
+   */
+  async clickByText(selector, text, description) {
+    this.updateStatus(description);
+    const el = this.findByText(selector, text);
+
+    if (el) {
+      el.classList.add("simulator-highlight");
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      await this.wait(800);
+      el.click();
+      el.classList.remove("simulator-highlight");
+    } else {
+      console.warn(`Element not found by text: ${selector} containing "${text}"`);
+      await this.wait(800);
     }
 
     await this.waitForLoad();
@@ -182,61 +215,51 @@ export class SimulatorJourney {
  * Demonstrates the full VAT return submission flow
  */
 export async function journeySubmitVat(journey) {
-  journey.setTotalSteps(12);
+  journey.setTotalSteps(10);
 
-  // Navigate to Submit VAT Return page
-  await journey.click('a[href*="submitVat"], button:has-text("Submit VAT")', "Selecting Submit VAT Return activity...");
+  // Navigate to Submit VAT Return page (activity buttons are dynamically rendered)
+  await journey.clickByText("button", "Submit VAT", "Selecting Submit VAT Return activity...");
 
   // Wait for page to load
   await journey.wait(2000);
 
-  // Fill VRN
-  await journey.fill("#vrn, input[name='vrn']", "123456789", "Entering VAT Registration Number...");
+  // Fill VRN (submitVat uses #vatNumber, not #vrn)
+  await journey.fill("#vatNumber", "123456789", "Entering VAT Registration Number...");
 
-  // Click fetch obligations or similar button if present
-  const doc = journey.getDocument();
-  if (doc) {
-    const fetchBtn = doc.querySelector("#fetchObligationsBtn, button:has-text('Fetch')");
-    if (fetchBtn) {
-      await journey.click("#fetchObligationsBtn, button:has-text('Fetch')", "Fetching VAT obligations...");
-      await journey.wait(2000);
-    }
-  }
+  // Fill period dates
+  await journey.fill("#periodStart", "2017-01-01", "Entering period start date...");
+  await journey.fill("#periodEnd", "2017-03-31", "Entering period end date...");
 
   // Fill Box 1 - VAT due on sales
-  await journey.fill("#vatDueSales, input[name='vatDueSales']", "1250.00", "Entering VAT due on sales (Box 1)...");
+  await journey.fill("#vatDueSales", "1250.00", "Entering VAT due on sales (Box 1)...");
 
   // Fill Box 2 - VAT due on acquisitions
-  await journey.fill("#vatDueAcquisitions, input[name='vatDueAcquisitions']", "0.00", "Entering VAT due on acquisitions (Box 2)...");
+  await journey.fill("#vatDueAcquisitions", "0.00", "Entering VAT due on acquisitions (Box 2)...");
 
   // Fill Box 4 - VAT reclaimed
-  await journey.fill("#vatReclaimedCurrPeriod, input[name='vatReclaimedCurrPeriod']", "350.00", "Entering VAT reclaimed (Box 4)...");
+  await journey.fill("#vatReclaimedCurrPeriod", "350.00", "Entering VAT reclaimed (Box 4)...");
 
   // Fill Box 6 - Total sales ex VAT
-  await journey.fill("#totalValueSalesExVAT, input[name='totalValueSalesExVAT']", "6250", "Entering total sales excluding VAT (Box 6)...");
+  await journey.fill("#totalValueSalesExVAT", "6250", "Entering total sales excluding VAT (Box 6)...");
 
   // Fill Box 7 - Total purchases ex VAT
-  await journey.fill(
-    "#totalValuePurchasesExVAT, input[name='totalValuePurchasesExVAT']",
-    "1750",
-    "Entering total purchases excluding VAT (Box 7)...",
-  );
+  await journey.fill("#totalValuePurchasesExVAT", "1750", "Entering total purchases excluding VAT (Box 7)...");
 
   // Fill Box 8 - Goods supplied to EU
-  await journey.fill(
-    "#totalValueGoodsSuppliedExVAT, input[name='totalValueGoodsSuppliedExVAT']",
-    "0",
-    "Entering goods supplied to EU (Box 8)...",
-  );
+  await journey.fill("#totalValueGoodsSuppliedExVAT", "0", "Entering goods supplied to EU (Box 8)...");
 
   // Fill Box 9 - Acquisitions from EU
-  await journey.fill("#totalAcquisitionsExVAT, input[name='totalAcquisitionsExVAT']", "0", "Entering acquisitions from EU (Box 9)...");
+  await journey.fill("#totalAcquisitionsExVAT", "0", "Entering acquisitions from EU (Box 9)...");
+
+  // Check declaration
+  const doc = journey.getDocument();
+  if (doc) {
+    const declaration = doc.querySelector("#declaration");
+    if (declaration) declaration.checked = true;
+  }
 
   // Submit the return
-  await journey.click(
-    "#submitVatBtn, button[type='submit']:has-text('Submit'), .btn:has-text('Submit')",
-    "Submitting VAT return to HMRC...",
-  );
+  await journey.click("#submitBtn", "Submitting VAT return to HMRC...");
 
   // Wait for submission response
   await journey.wait(3000);
@@ -251,17 +274,17 @@ export async function journeySubmitVat(journey) {
 export async function journeyViewObligations(journey) {
   journey.setTotalSteps(4);
 
-  // Navigate to Obligations page
-  await journey.click('a[href*="vatObligations"], button:has-text("Obligations")', "Selecting View Obligations activity...");
+  // Navigate to Obligations page (activity buttons are dynamically rendered)
+  await journey.clickByText("button", "Obligations", "Selecting View Obligations activity...");
 
   // Wait for page to load
   await journey.wait(2000);
 
   // Fill VRN
-  await journey.fill("#vrn, input[name='vrn']", "123456789", "Entering VAT Registration Number...");
+  await journey.fill("#vrn", "123456789", "Entering VAT Registration Number...");
 
-  // Click fetch button
-  await journey.click("#fetchObligationsBtn, button:has-text('Fetch'), .btn:has-text('Fetch')", "Fetching obligations from HMRC...");
+  // Click retrieve button
+  await journey.click("#retrieveBtn", "Fetching obligations from HMRC...");
 
   // Wait for results
   await journey.wait(2500);
@@ -276,20 +299,21 @@ export async function journeyViewObligations(journey) {
 export async function journeyViewReturn(journey) {
   journey.setTotalSteps(5);
 
-  // Navigate to View Return page
-  await journey.click('a[href*="viewVatReturn"], button:has-text("View Return")', "Selecting View VAT Return activity...");
+  // Navigate to View Return page (activity buttons are dynamically rendered)
+  await journey.clickByText("button", "View VAT Return", "Selecting View VAT Return activity...");
 
   // Wait for page to load
   await journey.wait(2000);
 
   // Fill VRN
-  await journey.fill("#vrn, input[name='vrn']", "123456789", "Entering VAT Registration Number...");
+  await journey.fill("#vrn", "123456789", "Entering VAT Registration Number...");
 
-  // Fill period key
-  await journey.fill("#periodKey, input[name='periodKey']", "24A1", "Entering period key...");
+  // Fill period dates (viewVatReturn now uses date inputs, not periodKey dropdown)
+  await journey.fill("#periodStart", "2017-01-01", "Entering period start date...");
+  await journey.fill("#periodEnd", "2017-03-31", "Entering period end date...");
 
-  // Click fetch button
-  await journey.click("#fetchReturnBtn, button:has-text('Fetch'), .btn:has-text('Fetch')", "Fetching VAT return from HMRC...");
+  // Click retrieve button
+  await journey.click("#retrieveBtn", "Fetching VAT return from HMRC...");
 
   // Wait for results
   await journey.wait(2500);

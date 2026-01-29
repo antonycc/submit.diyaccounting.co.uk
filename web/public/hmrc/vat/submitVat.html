@@ -695,65 +695,76 @@
           return;
         }
 
-        try {
-          showLoading();
-          showStatus("Initiating HMRC authentication...", "info");
+        // Store submission data for the submission handler
+        submissionData = {
+          vatNumber,
+          periodStart,
+          periodEnd,
+          ...vatBoxData,
+          testScenario,
+          runFraudPreventionHeaderValidation,
+          allowSandboxObligations,
+        };
 
-          // Store submission data and generate state
-          const state = generateRandomState();
-          submissionData = {
-            vatNumber,
-            periodStart,
-            periodEnd,
-            ...vatBoxData,
-            testScenario,
-            runFraudPreventionHeaderValidation,
-            allowSandboxObligations,
-          };
+        const urlParams = new URLSearchParams(window.location.search);
+        const hmrcAccount = urlParams.get("hmrcAccount");
+        const requestData = JSON.stringify(submissionData);
 
-          // Add current activity hmrcAccount header if present in URL
-          const urlParams = new URLSearchParams(window.location.search);
-          const hmrcAccount = urlParams.get("hmrcAccount");
-          const currentActivity = `${location.pathname}`;
-          const requestData = JSON.stringify(submissionData);
+        sessionStorage.setItem("submission_data", requestData);
+        if (hmrcAccount === "sandbox") {
+          sessionStorage.setItem("hmrcAccount", hmrcAccount);
+        } else {
+          sessionStorage.removeItem("hmrcAccount");
+        }
 
-          sessionStorage.setItem("oauth_state", state);
-          sessionStorage.setItem("submission_data", requestData);
-          sessionStorage.setItem("currentActivity", currentActivity);
-          if (hmrcAccount === "sandbox") {
-            sessionStorage.setItem("hmrcAccount", hmrcAccount);
-          } else {
-            sessionStorage.removeItem("hmrcAccount");
-          }
-          console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
+        // Check if we already have an HMRC access token
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
 
-          // Get OAuth URL
-          let authResponseUrl;
-          if (window.__env && window.authUrlBuilder) {
-            authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, "write:vat read:vat", hmrcAccount || "live");
-            console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
-          } else {
-            // Get OAuth URL from API (fallback)
-            const authResponse = await getAuthUrl(state, "hmrc");
-            authResponseUrl = authResponse.authUrl;
-            console.log("Using server-side HMRC Auth URL:", authResponseUrl);
-          }
-
-          sessionStorage.setItem("currentActivity", location.pathname);
-          console.log("Current activity set to:", location.pathname);
-
-          showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
-
-          // Redirect to HMRC OAuth
-          console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
+        if (accessToken) {
+          // Token available - submit directly without OAuth redirect
+          console.log("HMRC access token found, submitting directly");
+          continueVatSubmission();
+        } else {
+          // No token - redirect to HMRC OAuth
           try {
-            window.__correlation?.prepareRedirect?.();
-          } catch {}
-          window.location.href = authResponseUrl;
-        } catch (error) {
-          console.error("Authentication error:", error);
-          showStatus(`Authentication failed: ${error.message}`, "error");
-          hideLoading();
+            showLoading();
+            showStatus("Initiating HMRC authentication...", "info");
+
+            const state = generateRandomState();
+            const currentActivity = `${location.pathname}`;
+
+            sessionStorage.setItem("oauth_state", state);
+            sessionStorage.setItem("currentActivity", currentActivity);
+            console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
+
+            // Get OAuth URL
+            let authResponseUrl;
+            if (window.__env && window.authUrlBuilder) {
+              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, "write:vat read:vat", hmrcAccount || "live");
+              console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
+            } else {
+              // Get OAuth URL from API (fallback)
+              const authResponse = await getAuthUrl(state, "hmrc");
+              authResponseUrl = authResponse.authUrl;
+              console.log("Using server-side HMRC Auth URL:", authResponseUrl);
+            }
+
+            sessionStorage.setItem("currentActivity", location.pathname);
+            console.log("Current activity set to:", location.pathname);
+
+            showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+
+            // Redirect to HMRC OAuth
+            console.log(`Page transition initiated: Redirecting to HMRC OAuth URL ${authResponseUrl}`);
+            try {
+              window.__correlation?.prepareRedirect?.();
+            } catch {}
+            window.location.href = authResponseUrl;
+          } catch (error) {
+            console.error("Authentication error:", error);
+            showStatus(`Authentication failed: ${error.message}`, "error");
+            hideLoading();
+          }
         }
       }
 

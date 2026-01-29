@@ -69,6 +69,14 @@
     // Update login status
     updateLoginStatus();
 
+    // In simulator mode, navigate to activities page instead of reloading
+    // (demo credentials are re-injected on each page load)
+    if (document.documentElement.dataset.simulator === "true") {
+      const pathPrefix = window.location.pathname.startsWith("/sim/") ? "/sim/" : "/";
+      window.location.href = window.location.origin + pathPrefix + "index.html";
+      return;
+    }
+
     // Check if COGNITO_CONFIG is available for logout URL
     // if (typeof COGNITO_CONFIG !== "undefined") {
     //  // Redirect to Cognito logout URL
