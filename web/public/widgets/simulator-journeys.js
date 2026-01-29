@@ -232,14 +232,50 @@ export class SimulatorJourney {
 }
 
 /**
+ * Ensure the test bundle is available before proceeding with a journey.
+ * Navigates to the bundles page, requests the test bundle if not already added,
+ * then navigates back to the activities page.
+ */
+async function ensureTestBundle(journey) {
+  // Navigate to bundles page via nav link
+  await journey.clickByText("a", "Bundles", "Navigating to Bundles page...");
+
+  // Wait for bundles page to load (fetches catalog and user bundles from API)
+  await journey.wait(3000);
+
+  // Check if test bundle button exists and whether it's already added
+  const doc = journey.getDocument();
+  const testBtn = doc ? doc.querySelector('button[data-bundle-id="test"]') : null;
+  if (testBtn && !testBtn.disabled) {
+    // Test bundle not yet added - click to request it
+    await journey.click('button[data-bundle-id="test"]', "Requesting Test bundle...");
+    // Wait for the bundle request to complete
+    await journey.wait(2000);
+  } else {
+    // Bundle already added or button not found - log and continue
+    journey.updateStatus("Test bundle already added");
+    await journey.wait(500);
+  }
+
+  // Navigate back to activities page
+  await journey.clickByText("a", "Activities", "Returning to Activities page...");
+
+  // Wait for activities page to render dynamic buttons
+  await journey.wait(2000);
+}
+
+/**
  * Journey: Submit VAT Return
  * Demonstrates the full VAT return submission flow
  */
 export async function journeySubmitVat(journey) {
-  journey.setTotalSteps(10);
+  journey.setTotalSteps(15);
+
+  // Ensure test bundle is available for sandbox API access
+  await ensureTestBundle(journey);
 
   // Navigate to Submit VAT Return page (activity buttons are dynamically rendered)
-  await journey.clickByText("button", "Submit VAT", "Selecting Submit VAT Return activity...");
+  await journey.clickByText("button", "Submit VAT", "Selecting Submit VAT Return activity (sandbox)...");
 
   // Wait for page to load
   await journey.wait(2000);
@@ -296,10 +332,13 @@ export async function journeySubmitVat(journey) {
  * Demonstrates viewing VAT obligations from HMRC
  */
 export async function journeyViewObligations(journey) {
-  journey.setTotalSteps(4);
+  journey.setTotalSteps(6);
+
+  // Ensure test bundle is available for sandbox API access
+  await ensureTestBundle(journey);
 
   // Navigate to Obligations page (activity buttons are dynamically rendered)
-  await journey.clickByText("button", "Obligations", "Selecting View Obligations activity...");
+  await journey.clickByText("button", "Obligations", "Selecting View Obligations activity (sandbox)...");
 
   // Wait for page to load
   await journey.wait(2000);
@@ -324,10 +363,13 @@ export async function journeyViewObligations(journey) {
  * Demonstrates retrieving a previously submitted VAT return
  */
 export async function journeyViewReturn(journey) {
-  journey.setTotalSteps(5);
+  journey.setTotalSteps(8);
+
+  // Ensure test bundle is available for sandbox API access
+  await ensureTestBundle(journey);
 
   // Navigate to View Return page (activity buttons are dynamically rendered)
-  await journey.clickByText("button", "View VAT Return", "Selecting View VAT Return activity...");
+  await journey.clickByText("button", "View VAT Return", "Selecting View VAT Return activity (sandbox)...");
 
   // Wait for page to load
   await journey.wait(2000);
