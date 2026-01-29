@@ -3,6 +3,7 @@
 
 // behaviour-tests/simulator.behaviour.test.js
 
+import { execSync } from "child_process";
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -10,6 +11,7 @@ import {
   addOnPageLogging,
   getEnvVarAndLog,
   runLocalHttpServer,
+  runLocalHttpSimulator,
   runLocalOAuth2Server,
   runLocalDynamoDb,
   runLocalSslProxy,
@@ -31,6 +33,8 @@ const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER
 const baseUrlRaw = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const testDynamoDb = getEnvVarAndLog("testDynamoDb", "TEST_DYNAMODB", null);
 const dynamoDbPort = getEnvVarAndLog("dynamoDbPort", "TEST_DYNAMODB_PORT", 8000);
+const runHttpSimulator = getEnvVarAndLog("runHttpSimulator", "TEST_HTTP_SIMULATOR", null);
+const httpSimulatorPort = getEnvVarAndLog("httpSimulatorPort", "TEST_HTTP_SIMULATOR_PORT", 9000);
 
 // Normalize baseUrl - remove trailing slash to prevent double slashes in URL construction
 const baseUrl = baseUrlRaw ? baseUrlRaw.replace(/\/+$/, "") : "";
@@ -38,7 +42,7 @@ const baseUrl = baseUrlRaw ? baseUrlRaw.replace(/\/+$/, "") : "";
 // Screenshot path for simulator page tests
 const screenshotPath = "target/behaviour-test-results/screenshots/simulator-behaviour-test";
 
-let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess;
+let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess, httpSimulatorProcess;
 
 /**
  * Simulator Page Behaviour Tests
@@ -62,12 +66,24 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     // Ensure screenshot directory exists
     ensureDirSync(screenshotPath);
 
+    // Build simulator for local testing (creates web/public-simulator/ and simulator-local.js)
+    if (runTestServer === "run") {
+      console.log("  Building simulator for local testing...");
+      execSync("npm run build:simulator", { stdio: "pipe" });
+      console.log("  Simulator built");
+    }
+
     if (testAuthProvider === "mock" && runMockOAuth2 === "run") {
       mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
     }
 
     if (testDynamoDb === "run") {
       dynamoDbProcess = await runLocalDynamoDb(testDynamoDb);
+    }
+
+    // Start HTTP simulator (replaces HMRC API for simulator mode)
+    if (runHttpSimulator === "run") {
+      httpSimulatorProcess = await runLocalHttpSimulator(runHttpSimulator, httpSimulatorPort);
     }
 
     if (runTestServer === "run") {
@@ -95,6 +111,9 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     }
     if (dynamoDbProcess && dynamoDbProcess.stop) {
       await dynamoDbProcess.stop();
+    }
+    if (httpSimulatorProcess && httpSimulatorProcess.stop) {
+      await httpSimulatorProcess.stop();
     }
 
     Object.assign(process.env, originalEnv);
@@ -194,16 +213,20 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     await submitVatBtn.click();
     console.log(" Clicked Submit VAT journey button");
 
-    // Wait for status to change
+    // Wait for status to show step progress (confirms journey is executing, not erroring)
     await page.waitForFunction(
-      () => !document.getElementById("journeyStatusText").textContent.includes("Select a demo journey"),
-      { timeout: 10000 },
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Step") || text.includes("error") || text.includes("complete");
+      },
+      { timeout: 15000 },
     );
 
     const runningStatus = await statusText.textContent();
     console.log(` Running status: "${runningStatus}"`);
-    expect(runningStatus).not.toContain("Select a demo journey");
-    console.log(" Status text changed from initial");
+    expect(runningStatus).toContain("Step");
+    expect(runningStatus).not.toContain("error");
+    console.log(" Journey is making step progress (not erroring)");
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-journey-started.png` });
 
@@ -248,26 +271,54 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-buttons-reenabled.png` });
 
     // ============================================================
-    // STEP 8: Start View Obligations journey and stop it
+    // STEP 8: Start View Obligations journey and let it complete
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 8: Start and stop View Obligations journey");
+    console.log("STEP 8: Run View Obligations journey to completion");
     console.log("=".repeat(60));
 
     await viewObligationsBtn.click();
     console.log(" Clicked View Obligations journey button");
 
+    // Wait for step progress first (confirms journey started executing)
     await page.waitForFunction(
-      () => !document.getElementById("journeyStatusText").textContent.includes("Select a demo journey"),
-      { timeout: 10000 },
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Step") || text.includes("error") || text.includes("complete");
+      },
+      { timeout: 15000 },
     );
-    console.log(" Obligations journey started");
+
+    const obligationsRunning = await statusText.textContent();
+    console.log(` Obligations running status: "${obligationsRunning}"`);
+    expect(obligationsRunning).not.toContain("error");
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-started.png` });
 
-    await stopBtn.click();
-    await page.waitForTimeout(2000);
-    console.log(" Obligations journey stopped");
+    // Wait for the journey to complete (View Obligations has 4 steps, ~12s total)
+    await page.waitForFunction(
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Obligations fetched") || text.includes("error") || text.includes("Select");
+      },
+      { timeout: 30000 },
+    );
+
+    const obligationsCompleted = await statusText.textContent();
+    console.log(` Obligations completed status: "${obligationsCompleted}"`);
+    expect(obligationsCompleted).not.toContain("error");
+    expect(obligationsCompleted).toContain("Obligations fetched");
+    console.log(" View Obligations journey completed successfully");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07b-obligations-completed.png` });
+
+    // Verify iframe navigated to obligations page (proves journey actually interacted with iframe)
+    if (runTestServer === "run") {
+      const frame = page.frameLocator("#simulatorFrame");
+      const vrnField = frame.locator("#vrn");
+      await expect(vrnField).toBeVisible({ timeout: 5000 });
+      console.log(" Verified: iframe navigated to obligations page (VRN field visible)");
+    }
 
     await expect(submitVatBtn).toBeEnabled({ timeout: 10000 });
     console.log(" Buttons re-enabled after obligations journey");
@@ -310,8 +361,8 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     console.log("   Simulator page loads with correct title");
     console.log("   Iframe is present and has source URL");
     console.log("   All three journey buttons are visible");
-    console.log("   Submit VAT journey starts and can be stopped");
-    console.log("   View Obligations journey starts and can be stopped");
+    console.log("   Submit VAT journey shows step progress and can be stopped");
+    console.log("   View Obligations journey completes successfully end-to-end");
     console.log("   View Return journey starts and can be stopped");
     console.log("   Buttons re-enable after each journey stops\n");
   });

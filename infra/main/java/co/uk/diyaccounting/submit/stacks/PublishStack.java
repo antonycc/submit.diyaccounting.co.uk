@@ -253,6 +253,7 @@ public class PublishStack extends Stack {
                         "/submit.js",
                         "/submit.version.txt",
                         "/terms.html",
+                        "/simulator.html",
                         "/developer-mode.js"))
                 .retainOnDelete(true)
                 // .logGroup(webDeploymentLogGroup)
