@@ -233,27 +233,35 @@ public class SubmitEnvironment {
                         .holdingDocRootPath(holdingDocRootPath)
                         .build());
 
-        // Create SimulatorStack for public demo simulator
+        // Create SimulatorStack for public demo simulator (only if the code path exists)
         var simulatorCodePath =
                 envOr("SIMULATOR_CODE_PATH", appProps.simulatorCodePath, "web/public-simulator");
         var simulatorBaseUrl = "https://simulator.%s".formatted(appProps.hostedZoneName);
-        infof(
-                "Synthesizing stack %s for deployment %s to environment %s",
-                sharedNames.simulatorStackId, deploymentName, envName);
-        this.simulatorStack = new SimulatorStack(
-                app,
-                sharedNames.simulatorStackId,
-                SimulatorStack.SimulatorStackProps.builder()
-                        .env(primaryEnv)
-                        .crossRegionReferences(false)
-                        .envName(envName)
-                        .deploymentName(deploymentName)
-                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .sharedNames(sharedNames)
-                        .simulatorCodePath(simulatorCodePath)
-                        .simulatorBaseUrl(simulatorBaseUrl)
-                        .build());
+        var simulatorCodeDir = Paths.get(simulatorCodePath).toFile();
+        if (simulatorCodeDir.exists() && simulatorCodeDir.isDirectory()) {
+            infof(
+                    "Synthesizing stack %s for deployment %s to environment %s",
+                    sharedNames.simulatorStackId, deploymentName, envName);
+            this.simulatorStack = new SimulatorStack(
+                    app,
+                    sharedNames.simulatorStackId,
+                    SimulatorStack.SimulatorStackProps.builder()
+                            .env(primaryEnv)
+                            .crossRegionReferences(false)
+                            .envName(envName)
+                            .deploymentName(deploymentName)
+                            .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                            .cloudTrailEnabled(cloudTrailEnabled)
+                            .sharedNames(sharedNames)
+                            .simulatorCodePath(simulatorCodePath)
+                            .simulatorBaseUrl(simulatorBaseUrl)
+                            .build());
+        } else {
+            warnf(
+                    "Skipping SimulatorStack synthesis - simulator code path %s does not exist (run 'npm run build:simulator' first)",
+                    simulatorCodePath);
+            this.simulatorStack = null;
+        }
     }
 
     // load context from cdk.json like existing apps
