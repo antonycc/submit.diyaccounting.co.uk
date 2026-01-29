@@ -47,9 +47,7 @@ async function main() {
   let clientId;
 
   try {
-    const response = await cfnClient.send(
-      new DescribeStacksCommand({ StackName: stackName })
-    );
+    const response = await cfnClient.send(new DescribeStacksCommand({ StackName: stackName }));
 
     const stack = response.Stacks?.[0];
     if (!stack) {
@@ -87,7 +85,7 @@ async function main() {
       new DescribeUserPoolClientCommand({
         UserPoolId: userPoolId,
         ClientId: clientId,
-      })
+      }),
     );
     clientConfig = describeResponse.UserPoolClient;
   } catch (error) {
@@ -144,7 +142,7 @@ async function main() {
         PreventUserExistenceErrors: clientConfig.PreventUserExistenceErrors,
         EnableTokenRevocation: clientConfig.EnableTokenRevocation,
         EnablePropagateAdditionalUserContextData: clientConfig.EnablePropagateAdditionalUserContextData,
-      })
+      }),
     );
 
     console.log("");

@@ -4,7 +4,12 @@
 // app/unit-tests/lib/obligationFormatter.test.js
 
 import { describe, test, expect } from "vitest";
-import { formatObligationForDisplay, formatObligationsForSelection, filterOpenObligations, getPeriodKeyFromSelection } from "@app/lib/obligationFormatter.js";
+import {
+  formatObligationForDisplay,
+  formatObligationsForSelection,
+  filterOpenObligations,
+  getPeriodKeyFromSelection,
+} from "@app/lib/obligationFormatter.js";
 
 describe("obligationFormatter", () => {
   const sampleObligation = {

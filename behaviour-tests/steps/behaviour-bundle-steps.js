@@ -25,77 +25,68 @@ export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPa
 }
 
 export async function clearBundles(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user clears any existing bundles before requesting a new one", async () => {
-    // Remove all bundles first (idempotent operation)
-    console.log("Removing all bundles first...");
+  await test.step("The user clears any existing bundles via API call", async () => {
+    // Remove all bundles via API call (idempotent operation)
+    console.log("Removing all bundles via API...");
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-01-removing-all-bundles.png`,
     });
 
-    let removeAllBtn = page.locator("#removeAllBtn");
-    // If the "Remove All Bundles" button is not visible, wait 1000ms and try again.
-    if (!(await removeAllBtn.isVisible({ timeout: 1000 }))) {
-      const tries = 5;
-      for (let i = 0; i < tries; i++) {
-        console.log(
-          `[polling to be ready to remove]: "Remove All Bundles" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`,
-        );
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-clear-bundles-waiting.png` });
-        await page.waitForTimeout(1000);
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-clear-bundles-waited.png` });
-        removeAllBtn = page.locator("#removeAllBtn");
-        if (await removeAllBtn.isVisible({ timeout: 1000 })) {
-          console.log(`[polling to be ready to remove]: "Remove All Bundles" button visible.`);
-          break;
-        } else {
-          console.log(`[polling to be ready to remove]: "Remove All Bundles" button still not visible.`);
-        }
-      }
-    } else {
-      console.log('[polling to be ready to remove]: "Remove All Bundles" button already visible.');
+    const bundleName = "Test";
+
+    // First check if bundles are already cleared by looking for "Request <bundle>" button
+    const requestBundleLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: true });
+    if (await requestBundleLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
+      console.log("Bundles already cleared (Request button visible), skipping API call.");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-clear-bundles-skipping.png` });
+      return;
     }
 
-    const bundleName = "Test"; // isSandboxMode(page) ? "Test" : "Guest";
-
-    // If the "Remove All Bundles" button is not visible, check if "Request <bundle>" is visible instead and if so, skip.
-    if (!(await removeAllBtn.isVisible({ timeout: 1000 }))) {
-      const requestBundleLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: true });
-      if (await requestBundleLocator.isVisible({ timeout: 1000 })) {
-        console.log("Bundles already cleared, skipping.");
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-clear-bundles-skipping.png` });
-        return;
-      } else {
-        console.log('"Remove All Bundles" button still not visible, assuming it\'s a different error.');
+    // Call the API to remove all bundles
+    console.log("Calling DELETE /api/v1/bundle with removeAll: true...");
+    const result = await page.evaluate(async () => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) {
+        return { ok: false, error: "No auth token" };
       }
-    } else {
-      console.log('"Remove All Bundles" button visible.');
-    }
-
-    // Accept the confirmation dialog triggered by the click
-    page.once("dialog", (dialog) => dialog.accept());
-    await Promise.all([
-      // No navigation expected, just UI update
-      loggedClick(page, "#removeAllBtn", "Remove All Bundles", { screenshotPath }),
-    ]);
-    await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-05-removing-all-bundles-clicked.png`,
+      try {
+        const response = await fetch("/api/v1/bundle", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ removeAll: true }),
+        });
+        return { ok: response.ok, status: response.status };
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
     });
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle.png` });
+    console.log(`API remove all bundles result: ${JSON.stringify(result)}`);
+    await page.screenshot({
+      path: `${screenshotPath}/${timestamp()}-03-removing-all-bundles-api-called.png`,
+    });
+
+    // Reload the page to reflect the changes
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-page-reloaded.png` });
+
+    // Wait for the "Request <bundle>" button to become visible
     let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-    // await expect(page.getByText("Request test")).toBeVisible();
-    // If the "Request test" button is not visible, wait 1000ms and try again.
-    if (!(await requestTestLocator.isVisible({ timeout: 1000 }))) {
-      const tries = 20;
+    if (!(await requestTestLocator.isVisible({ timeout: 2000 }).catch(() => false))) {
+      const tries = 10;
       for (let i = 0; i < tries; i++) {
         console.log(
           `[polling for removal]: "Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`,
         );
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-request-bundle-waiting.png` });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-bundle-waiting.png` });
         await page.waitForTimeout(1000);
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-request-bundle-waited.png` });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle-waited.png` });
         requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-        if (await requestTestLocator.isVisible({ timeout: 1000 })) {
+        if (await requestTestLocator.isVisible({ timeout: 1000 }).catch(() => false)) {
           console.log(`[polling for removal]: Request ${bundleName} button visible.`);
           break;
         } else {
@@ -108,7 +99,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
 
     await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 32000 });
     await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-09-removed-all-bundles.png`,
+      path: `${screenshotPath}/${timestamp()}-07-removed-all-bundles.png`,
     });
   });
 }

@@ -19,12 +19,7 @@ import {
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
-import {
-  consentToDataCollection,
-  goToHomePage,
-  goToHomePageExpectNotLoggedIn,
-  goToHomePageUsingMainNav,
-} from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -415,12 +410,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
     // Use regex pattern since periodKey is resolved dynamically from sandbox obligations
     const vatReturnUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/returns/\\w+`);
-    const vatGetRequests = assertHmrcApiRequestExists(
-      hmrcApiRequestsFile,
-      "GET",
-      vatReturnUrlPattern,
-      "VAT return retrieval",
-    );
+    const vatGetRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "GET", vatReturnUrlPattern, "VAT return retrieval");
     expect(vatGetRequests.length).toBeGreaterThan(0);
     vatGetRequests.forEach((vatGetRequest) => {
       assertHmrcApiRequestValues(vatGetRequest, { "httpRequest.method": "GET" });

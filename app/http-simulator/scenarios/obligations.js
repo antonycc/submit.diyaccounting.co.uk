@@ -15,9 +15,10 @@ function generateRandomPeriodKey() {
   // Math.random is intentional for test data generation - not used for security
   const year = String(17 + Math.floor(Math.random() * 10)).padStart(2, "0"); // 17-26
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
-  const suffix = Math.random() < 0.5
-    ? String(Math.floor(Math.random() * 10)) // 0-9
-    : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  const suffix =
+    Math.random() < 0.5
+      ? String(Math.floor(Math.random() * 10)) // 0-9
+      : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
   return `${year}${letter}${suffix}`;
 }
 
@@ -344,6 +345,8 @@ export function getObligationsForScenario(scenario) {
 
   // Default: generate obligations with random period keys
   const obligations = generateDefaultObligations();
-  console.log(`[http-simulator:scenarios] Using default obligations (unknown scenario) with random periodKey: ${obligations[0]?.periodKey}`);
+  console.log(
+    `[http-simulator:scenarios] Using default obligations (unknown scenario) with random periodKey: ${obligations[0]?.periodKey}`,
+  );
   return { obligations };
 }

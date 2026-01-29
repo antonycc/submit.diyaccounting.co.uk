@@ -91,12 +91,12 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
         ridSpan.textContent = `x-request-id: ${latest}${seenText}`;
       });
 
-      // Respect debug gating
+      // Respect developer mode state
       try {
-        const enabled = !!window.__debugEnabled__;
-        container.style.display = enabled ? "inline-flex" : "none";
+        const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+        container.style.display = developerModeEnabled ? "inline-flex" : "none";
       } catch (err) {
-        console.warn("Failed to check debug enabled flag for correlation widget:", err.message);
+        console.warn("Failed to check developer mode for correlation widget:", err.message);
       }
     } catch (e) {
       console.warn("Failed to render correlation widget", e);
@@ -110,43 +110,28 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
   }
 })();
 
-// Debug widgets gating
-(async function debugWidgetsGating() {
+// Debug widgets initial setup
+// Visibility is controlled by developer-mode.js toggle, but we set up hrefs here
+(function debugWidgetsSetup() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-
-  async function userHasTestBundle() {
-    try {
-      const userInfo = localStorage.getItem("userInfo");
-      if (!userInfo) return false;
-      const resp = await fetchWithIdToken("/api/v1/bundle", {});
-      if (!resp.ok) return false;
-      const data = await resp.json();
-      const bundles = Array.isArray(data?.bundles) ? data.bundles : [];
-      return bundles.some((b) => (b?.bundleId || b) === "test" || String(b).startsWith("test|"));
-    } catch (e) {
-      console.warn("Failed to determine debug entitlement:", e);
-      return false;
-    }
-  }
 
   function setDisplay(el, value) {
     if (el) el.style.display = value;
   }
 
-  function applyVisibility(enabled) {
+  function setupWidgets() {
     try {
-      window.__debugEnabled__ = !!enabled;
+      // Check if developer mode is enabled from sessionStorage
+      const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
 
       const entitlement = document.querySelector(".entitlement-status");
-      setDisplay(entitlement, enabled ? "inline" : "none");
-
       const corr = document.getElementById("correlationWidget");
-      setDisplay(corr, enabled ? "inline-flex" : "none");
-
       const viewSrc = document.getElementById("viewSourceLink");
       const tests = document.getElementById("latestTestsLink");
       const apiDocs = document.getElementById("apiDocsLink");
+      const localStorageContainer = document.getElementById("localstorageContainer");
 
+      // Set up hrefs for links
       if (viewSrc && !viewSrc.getAttribute("data-href-initialized")) {
         viewSrc.href = viewSrc.href || "#";
         viewSrc.setAttribute("data-href-initialized", "true");
@@ -154,31 +139,19 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
       if (tests) tests.href = "/tests/index.html";
       if (apiDocs) apiDocs.href = "/docs/index.html";
 
-      setDisplay(viewSrc, enabled ? "inline" : "none");
-      setDisplay(tests, enabled ? "inline" : "none");
-      setDisplay(apiDocs, enabled ? "inline" : "none");
-
-      const localStorageContainer = document.getElementById("localstorageContainer");
-      setDisplay(localStorageContainer, enabled ? "block" : "none");
+      // Apply initial visibility based on developer mode state
+      setDisplay(entitlement, developerModeEnabled ? "inline" : "none");
+      setDisplay(corr, developerModeEnabled ? "inline-flex" : "none");
+      setDisplay(viewSrc, developerModeEnabled ? "inline" : "none");
+      setDisplay(tests, developerModeEnabled ? "inline" : "none");
+      setDisplay(apiDocs, developerModeEnabled ? "inline" : "none");
+      setDisplay(localStorageContainer, developerModeEnabled ? "block" : "none");
     } catch (e) {
-      console.warn("Failed to apply debug widget visibility:", e);
+      console.warn("Failed to setup debug widgets:", e);
     }
   }
 
-  onDomReady(async () => {
-    const enabled = await userHasTestBundle();
-    applyVisibility(enabled);
-  });
-
-  window.addEventListener("storage", (e) => {
-    if (e.key === "cognitoIdToken" || e.key === "userInfo") {
-      userHasTestBundle()
-        .then(applyVisibility)
-        .catch((err) => {
-          console.warn("Failed to apply visibility after storage change:", err.message);
-        });
-    }
-  });
+  onDomReady(setupWidgets);
 })();
 
 // RUM consent + init

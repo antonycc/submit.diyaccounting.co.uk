@@ -20,12 +20,7 @@ import {
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
-import {
-  consentToDataCollection,
-  goToHomePage,
-  goToHomePageExpectNotLoggedIn,
-  goToHomePageUsingMainNav,
-} from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -344,7 +339,16 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* *********** */
 
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
+  await fillInVat(
+    page,
+    testVatNumber,
+    undefined,
+    hmrcVatDueAmount,
+    null,
+    runFraudPreventionHeaderValidation,
+    screenshotPath,
+    allowSandboxObligations,
+  );
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -583,12 +587,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     // Always use regex pattern to match any valid periodKey format
     const vatGetUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/returns/\\w+`);
 
-    const vatGetRequests = assertHmrcApiRequestExists(
-      hmrcApiRequestsFile,
-      "GET",
-      vatGetUrlPattern,
-      "VAT return retrieval",
-    );
+    const vatGetRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "GET", vatGetUrlPattern, "VAT return retrieval");
     console.log(`[DynamoDB Assertions]: Found ${vatGetRequests.length} VAT return GET request(s)`);
 
     expect(vatGetRequests.length).toBeGreaterThan(0);

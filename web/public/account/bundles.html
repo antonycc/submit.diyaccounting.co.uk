@@ -19,12 +19,12 @@
         <div class="header-left">
           <a href="../index.html" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
           </a>
           <a href="../about.html" title="About & Help" class="info-link">
             <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
             </svg>
           </a>
         </div>
@@ -57,28 +57,6 @@
           <h3>Your Current Bundles</h3>
           <div id="currentBundles" style="margin: 1em 0"></div>
         </div>
-
-        <div style="margin-top: 2em">
-          <button
-            type="button"
-            class="btn"
-            onclick="window.location.href = '../index.html'"
-            style="background-color: #6c757d; border-color: #6c757d"
-          >
-            Back to Home
-          </button>
-        </div>
-
-        <div style="margin-top: 3em; padding-top: 1em; border-top: 1px solid #eee">
-          <button
-            type="button"
-            class="btn"
-            id="removeAllBtn"
-            style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.9em"
-          >
-            Remove All Bundles
-          </button>
-        </div>
       </div>
     </main>
 
@@ -97,6 +75,7 @@
     </footer>
 
     <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/bundle-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
@@ -278,6 +257,8 @@
               try {
                 updateBundleStatus();
               } catch {}
+              // Notify developer mode toggle to refresh
+              window.dispatchEvent(new CustomEvent("bundle-changed"));
               return true;
             } else {
               showStatus(`Bundle ${bundleId} request failed: unexpected response`, "error");
@@ -444,8 +425,6 @@
           const btn = e.target.closest("button[data-remove-bundle-id]");
           const bundleId = btn.getAttribute("data-remove-bundle-id");
           await removeBundle(bundleId);
-        } else if (e.target.id === "removeAllBtn") {
-          await removeAllBundles();
         }
       });
 
@@ -488,6 +467,8 @@
             invalidate("/api/v1/bundle");
             renderCurrentBundles();
             updateBundleStatus(); // Update the request buttons
+            // Notify developer mode toggle to refresh
+            window.dispatchEvent(new CustomEvent("bundle-changed"));
             showStatus(`Bundle "${bundleId}" removed successfully.`, "success");
           } else {
             showStatus(`Failed to remove bundle: ${result.error || "Unknown error"}`, "error");
@@ -495,55 +476,6 @@
         } catch (error) {
           showStatus("Failed to remove bundle. Please try again.", "error");
           console.error("Remove bundle error:", error);
-        }
-      }
-
-      // --- remove all bundles
-      async function removeAllBundles(fireAndForget = true) {
-        const idToken = getIdToken();
-        if (!idToken) {
-          showStatus("Please log in first to remove bundles.", "warning");
-          window.location.href = "../auth/login.html";
-          return;
-        }
-
-        // Show status immediately before making the request
-        showStatus("Removing all bundles...", "info");
-
-        try {
-          const response = await window.fetchWithIdToken("/api/v1/bundle", {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            fireAndForget,
-            body: JSON.stringify({ removeAll: true }),
-          });
-
-          const result = await response.json().catch(() => ({}));
-
-          if (response.ok) {
-            // Update local state and write through to persistent cache
-            __userBundles = [];
-            const userInfoJson = localStorage.getItem("userInfo");
-            let userId = null;
-            try {
-              const userInfo = JSON.parse(userInfoJson);
-              userId = userInfo && userInfo.sub;
-            } catch {}
-            if (userId) {
-              await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000);
-            }
-            invalidate("/api/v1/bundle");
-            renderCurrentBundles();
-            updateBundleStatus(); // Update the request buttons
-            showStatus("All bundles removed successfully.", "success");
-          } else {
-            showStatus(`Failed to remove all bundles: ${result.error || "Unknown error"}`, "error");
-          }
-        } catch (error) {
-          showStatus("Failed to remove all bundles. Please try again.", "error");
-          console.error("Remove all bundles error:", error);
         }
       }
 

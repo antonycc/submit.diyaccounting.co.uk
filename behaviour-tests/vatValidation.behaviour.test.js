@@ -21,16 +21,8 @@ import {
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
-import {
-  consentToDataCollection,
-  goToHomePage,
-  goToHomePageExpectNotLoggedIn,
-} from "./steps/behaviour-steps.js";
-import {
-  clickLogIn,
-  loginWithCognitoOrMockAuth,
-  verifyLoggedInStatus,
-} from "./steps/behaviour-login-steps.js";
+import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
+import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { initSubmitVat, fillInVat9Box, submitFormVat } from "./steps/behaviour-hmrc-vat-steps.js";
 import { goToHmrcAuth, initHmrcAuth, fillInHmrcAuth, submitHmrcAuth, grantPermissionHmrcAuth } from "./steps/behaviour-hmrc-steps.js";

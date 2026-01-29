@@ -37,9 +37,7 @@ describe("lib/logger PII redaction", () => {
     });
 
     test("redacts Bearer tokens in strings", () => {
-      expect(sanitiseString("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig")).toBe(
-        "Authorization: [TOKEN]",
-      );
+      expect(sanitiseString("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig")).toBe("Authorization: [TOKEN]");
       expect(sanitiseString("bearer abc123def456")).toBe("[TOKEN]");
     });
 

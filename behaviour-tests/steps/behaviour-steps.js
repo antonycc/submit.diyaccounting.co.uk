@@ -28,13 +28,14 @@ export async function goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPat
 }
 
 export async function goToHomePage(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user returns to the home page from the Bundles screen", async () => {
-    // Return to home
-    await expect(page.getByText("Back to Home")).toBeVisible();
+  await test.step("The user returns to the home page from the Bundles screen via home icon", async () => {
+    // Return to home via home icon
+    console.log("Returning to home via home icon...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-page.png` });
+    await expect(page.locator(".home-link")).toBeVisible({ timeout: 10000 });
     await Promise.all([
       page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
-      loggedClick(page, "button:has-text('Back to Home')", "Back to Home", { screenshotPath }),
+      loggedClick(page, ".home-link", "Home icon", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-home.png` });
     await page.waitForTimeout(500);
@@ -92,6 +93,31 @@ export async function goToUserGuideFromAbout(page, screenshotPath = defaultScree
       loggedClick(page, "a.about-nav-link:has-text('User Guide')", "Clicking User Guide link on About page", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-guide-page.png` });
+  });
+}
+
+export async function enableDeveloperMode(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enables developer mode via the global toggle", async () => {
+    console.log("Enabling developer mode via global toggle...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-enable-dev-mode.png` });
+
+    // Check if developer mode is already enabled
+    const isEnabled = await page.evaluate(() => sessionStorage.getItem("showDeveloperOptions") === "true");
+    if (isEnabled) {
+      console.log("Developer mode already enabled, skipping toggle.");
+      return;
+    }
+
+    // Click the developer mode toggle icon
+    const toggleIcon = page.locator(".developer-mode-toggle");
+    await expect(toggleIcon).toBeVisible({ timeout: 10000 });
+    await loggedClick(page, ".developer-mode-toggle", "Developer mode toggle icon", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-dev-mode-enabled.png` });
+
+    // Verify developer mode is now enabled
+    const nowEnabled = await page.evaluate(() => sessionStorage.getItem("showDeveloperOptions") === "true");
+    expect(nowEnabled).toBe(true);
+    console.log("Developer mode enabled successfully.");
   });
 }
 

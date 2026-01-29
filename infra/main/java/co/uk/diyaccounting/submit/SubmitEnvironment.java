@@ -15,6 +15,7 @@ import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
+import co.uk.diyaccounting.submit.stacks.SimulatorStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
@@ -30,6 +31,7 @@ public class SubmitEnvironment {
     public final BackupStack backupStack;
     public final IdentityStack identityStack;
     public final ApexStack apexStack;
+    public final SimulatorStack simulatorStack;
 
     public static class SubmitEnvironmentProps {
 
@@ -47,9 +49,8 @@ public class SubmitEnvironment {
         public String holdingDocRootPath;
         public String googleClientId;
         public String googleClientSecretArn;
-        public String antonyccClientId;
-        public String antonyccBaseUri;
         public String securityServicesEnabled;
+        public String simulatorCodePath;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -212,8 +213,6 @@ public class SubmitEnvironment {
                         .certificateArn(appProps.certificateArn)
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
-                        .antonyccClientId(appProps.antonyccClientId)
-                        .antonyccBaseUri(appProps.antonyccBaseUri)
                         .build());
 
         this.apexStack = new ApexStack(
@@ -232,6 +231,28 @@ public class SubmitEnvironment {
                         .certificateArn(appProps.certificateArn)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .holdingDocRootPath(holdingDocRootPath)
+                        .build());
+
+        // Create SimulatorStack for public demo simulator
+        var simulatorCodePath =
+                envOr("SIMULATOR_CODE_PATH", appProps.simulatorCodePath, "web/public-simulator");
+        var simulatorBaseUrl = "https://simulator.%s".formatted(appProps.hostedZoneName);
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.simulatorStackId, deploymentName, envName);
+        this.simulatorStack = new SimulatorStack(
+                app,
+                sharedNames.simulatorStackId,
+                SimulatorStack.SimulatorStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .simulatorCodePath(simulatorCodePath)
+                        .simulatorBaseUrl(simulatorBaseUrl)
                         .build());
     }
 

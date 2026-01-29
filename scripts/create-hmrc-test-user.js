@@ -203,7 +203,6 @@ async function main() {
     const fs = await import("fs");
     fs.writeFileSync("hmrc-test-user.json", JSON.stringify(testUser, null, 2));
     console.log("\nCredentials also saved to: hmrc-test-user.json");
-
   } catch (error) {
     console.error("");
     console.error("=".repeat(70));

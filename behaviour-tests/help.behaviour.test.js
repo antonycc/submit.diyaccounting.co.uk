@@ -376,41 +376,40 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log(" Submit section is visible after scroll");
 
     // ============================================================
-    // STEP 10: Test navigation buttons on User Guide
+    // STEP 10: Navigate to Help page via info icon from User Guide
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 10: Test navigation buttons on User Guide");
+    console.log("STEP 10: Navigate to Help page via info icon from User Guide");
     console.log("=".repeat(60));
 
-    // Scroll to bottom to find navigation buttons
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(300);
+    // Navigate to About page via info icon, then to Help
+    const guideInfoIcon = page.locator("a.info-link");
+    await expect(guideInfoIcon).toBeVisible({ timeout: 10000 });
+    console.log(" Clicking info icon to go to About page...");
 
-    // Check for Return to Home button
-    const returnHomeBtn = page.locator("button:has-text('Return to Home')");
-    await expect(returnHomeBtn).toBeVisible({ timeout: 5000 });
-    console.log(" Return to Home button is visible");
-
-    // Check for View FAQs button
-    const viewFaqsBtn = page.locator("button:has-text('View FAQs')");
-    await expect(viewFaqsBtn).toBeVisible({ timeout: 5000 });
-    console.log(" View FAQs button is visible");
-
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-13-guide-navigation.png` });
-
-    // Click View FAQs to navigate to Help page
-    console.log(" Clicking View FAQs button...");
     await Promise.all([
-      page.waitForURL(/help\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
-      viewFaqsBtn.click(),
+      page.waitForURL(/about\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      guideInfoIcon.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-14-help-from-guide.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-13-guide-to-about.png` });
+
+    // Now navigate to Help from About
+    const helpLinkFromAbout = page.locator("a.about-nav-link:has-text('Help')");
+    await expect(helpLinkFromAbout).toBeVisible({ timeout: 10000 });
+    console.log(" Clicking Help link on About page...");
+
+    await Promise.all([
+      page.waitForURL(/help\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      helpLinkFromAbout.click(),
+    ]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-14-help-from-about.png` });
 
     // Verify we're on Help page
     const helpTitleAgain = await page.title();
     expect(helpTitleAgain).toMatch(/Help.*FAQ/i);
-    console.log(" Navigated to Help page via View FAQs button");
+    console.log(" Navigated to Help page via About page");
 
     // ============================================================
     // STEP 11: Test support modal
