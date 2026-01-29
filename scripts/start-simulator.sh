@@ -24,6 +24,9 @@ cleanup() {
 
 trap cleanup INT TERM EXIT
 
+echo 'Building simulator static files...' >&2
+npm run build:simulator
+
 echo 'Starting data (dynalite)...' >&2
 npm run data:simulator &
 BG_PIDS+=("$!")

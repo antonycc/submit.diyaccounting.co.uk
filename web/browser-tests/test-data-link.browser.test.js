@@ -33,11 +33,15 @@ test.describe("Test Data Link Browser Tests", () => {
       // Load the test data generator script
       await page.addScriptTag({ content: testDataGeneratorContent });
 
-      // Simulate the initializePage logic that shows sandbox indicator and test data link
+      // Simulate the initializePage logic that shows sandbox indicator, developer section, and test data link
       await page.evaluate(() => {
         const sandboxIndicator = document.getElementById("sandboxIndicator");
         if (sandboxIndicator) {
           sandboxIndicator.classList.add("visible");
+        }
+        const developerSection = document.getElementById("developerSection");
+        if (developerSection) {
+          developerSection.style.display = "block";
         }
         const testDataLink = document.getElementById("testDataLink");
         if (testDataLink) {
@@ -77,6 +81,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.evaluate(() => {
         const sandboxIndicator = document.getElementById("sandboxIndicator");
         if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const developerSection = document.getElementById("developerSection");
+        if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
         if (testDataLink) testDataLink.classList.add("visible");
       });

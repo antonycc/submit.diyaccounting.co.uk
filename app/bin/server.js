@@ -5,6 +5,7 @@
 // app/bin/server.js
 
 import path from "path";
+import fs from "fs";
 import express from "express";
 import { fileURLToPath } from "url";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
@@ -77,7 +78,7 @@ app.use((req, res, next) => {
   // Content-Security-Policy: Basic CSP for security
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-ancestors 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
   );
   // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
@@ -137,6 +138,26 @@ app.get("/auth/login-mock-addon.js", (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
+
+// Serve simulator build at /sim/ sub-path for same-origin iframe embedding
+// Only available when web/public-simulator/ exists (after npm run build:simulator)
+const simulatorPublicPath = path.join(__dirname, "../../web/public-simulator");
+if (fs.existsSync(simulatorPublicPath)) {
+  // Override security headers for /sim/ routes to allow framing from same origin
+  app.use("/sim", (req, res, next) => {
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; form-action 'self'",
+    );
+    next();
+  });
+  app.use("/sim", express.static(simulatorPublicPath, { dotfiles: "allow" }));
+  // SPA fallback for /sim/ routes
+  app.get("/sim/{*path}", (req, res) => {
+    res.sendFile(path.join(simulatorPublicPath, "index.html"));
+  });
+}
 
 // Register mock OAuth routes in mock/simulator auth environments
 if (process.env.TEST_AUTH_PROVIDER === "mock" || process.env.TEST_AUTH_PROVIDER === "simulator") {

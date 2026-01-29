@@ -41,6 +41,7 @@ on:
           - 'helpBehaviour'
           - 'vatValidationBehaviour'
           - 'vatSchemesBehaviour'
+          - 'simulatorBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:

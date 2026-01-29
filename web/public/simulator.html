@@ -211,11 +211,9 @@
         <div class="simulator-overlay-label" aria-hidden="true">SIMULATOR</div>
         <iframe
           id="simulatorFrame"
-          src="https://simulator.submit.diyaccounting.co.uk/"
           class="simulator-frame"
           title="DIY Accounting Submit Simulator - Demo Mode"
           sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
-          loading="lazy"
         >
           <p>
             Your browser does not support iframes. Please visit
@@ -251,6 +249,24 @@
       </div>
     </footer>
 
+    <script>
+      // Compute simulator URL from current hostname:
+      //   submit.diyaccounting.co.uk     → https://simulator.submit.diyaccounting.co.uk/
+      //   ci.submit.diyaccounting.co.uk  → https://simulator.ci.submit.diyaccounting.co.uk/
+      //   localhost / other              → production fallback
+      var host = window.location.hostname;
+      window.__simulatorFrameSrc = host.endsWith(".diyaccounting.co.uk")
+        ? "https://simulator." + host + "/"
+        : "https://simulator.submit.diyaccounting.co.uk/";
+    </script>
+    <script src="./simulator-local.js" onerror="void(0)"></script>
+    <script>
+      // If build-simulator has been run, simulator-local.js sets __simulatorLocal = true
+      // which switches the iframe to the same-origin /sim/ path
+      if (window.__simulatorLocal) window.__simulatorFrameSrc = "/sim/";
+      document.getElementById("simulatorFrame").src = window.__simulatorFrameSrc;
+    </script>
+
     <script type="module" src="./widgets/simulator-journeys.js"></script>
     <script type="module">
       import { SimulatorJourney, journeySubmitVat, journeyViewObligations, journeyViewReturn } from "./widgets/simulator-journeys.js";
@@ -276,8 +292,9 @@
 
           // Reset iframe to home
           statusEl.textContent = "Loading simulator...";
+          const simBase = window.__simulatorLocal ? "/sim/" : "/";
           try {
-            iframe.contentWindow.location.href = "/index.html";
+            iframe.contentWindow.location.href = simBase + "index.html";
           } catch (e) {
             // Cross-origin - can't reset, just proceed
           }
