@@ -35,6 +35,77 @@ const SIMULATOR_META_TAGS = `
   <meta name="simulator" content="true">
 `;
 
+// Storage namespace proxy - isolates simulator storage from parent page
+// Must run before any other script to intercept all storage access
+const SIMULATOR_STORAGE_PROXY = `
+  <script>
+    // Simulator Storage Namespace Proxy - Injected by build-simulator.js
+    // Prefixes all localStorage/sessionStorage keys with "simulator." so the
+    // simulator iframe's storage does not conflict with the parent page.
+    (function() {
+      var PREFIX = 'simulator.';
+      var realLocalStorage = window.localStorage;
+      var realSessionStorage = window.sessionStorage;
+
+      function createPrefixedStorage(real) {
+        var wrapper = {
+          getItem: function(key) {
+            return real.getItem(PREFIX + key);
+          },
+          setItem: function(key, value) {
+            real.setItem(PREFIX + key, value);
+          },
+          removeItem: function(key) {
+            real.removeItem(PREFIX + key);
+          },
+          clear: function() {
+            var keysToRemove = [];
+            for (var i = 0; i < real.length; i++) {
+              var k = real.key(i);
+              if (k && k.indexOf(PREFIX) === 0) keysToRemove.push(k);
+            }
+            for (var j = 0; j < keysToRemove.length; j++) {
+              real.removeItem(keysToRemove[j]);
+            }
+          },
+          key: function(index) {
+            var count = 0;
+            for (var i = 0; i < real.length; i++) {
+              var k = real.key(i);
+              if (k && k.indexOf(PREFIX) === 0) {
+                if (count === index) return k.substring(PREFIX.length);
+                count++;
+              }
+            }
+            return null;
+          },
+          get length() {
+            var count = 0;
+            for (var i = 0; i < real.length; i++) {
+              var k = real.key(i);
+              if (k && k.indexOf(PREFIX) === 0) count++;
+            }
+            return count;
+          }
+        };
+        return wrapper;
+      }
+
+      var prefixedLocal = createPrefixedStorage(realLocalStorage);
+      var prefixedSession = createPrefixedStorage(realSessionStorage);
+
+      Object.defineProperty(window, 'localStorage', {
+        get: function() { return prefixedLocal; },
+        configurable: true
+      });
+      Object.defineProperty(window, 'sessionStorage', {
+        get: function() { return prefixedSession; },
+        configurable: true
+      });
+    })();
+  </script>
+`;
+
 // robots.txt content for simulator subdomain
 const ROBOTS_TXT = `# Simulator subdomain - do not index
 User-agent: *
@@ -85,8 +156,9 @@ function transformHtmlFile(filePath) {
   // Add data-simulator="true" to <html> tag
   content = content.replace(/<html(\s+lang="[^"]*")?>/i, '<html$1 data-simulator="true">');
 
-  // Inject meta tags after <head>
-  content = content.replace(/<head>/i, "<head>" + SIMULATOR_META_TAGS);
+  // Inject meta tags and storage namespace proxy after <head>
+  // Storage proxy must run before any other script to intercept all storage access
+  content = content.replace(/<head>/i, "<head>" + SIMULATOR_META_TAGS + SIMULATOR_STORAGE_PROXY);
 
   // Inject simulator banner after <body>
   content = content.replace(/<body>/i, "<body>" + SIMULATOR_BANNER);
