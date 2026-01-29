@@ -250,14 +250,21 @@
     </footer>
 
     <script>
-      // Compute simulator URL from current hostname:
-      //   submit.diyaccounting.co.uk     → https://simulator.submit.diyaccounting.co.uk/
-      //   ci.submit.diyaccounting.co.uk  → https://simulator.ci.submit.diyaccounting.co.uk/
+      // Compute simulator URL from current hostname using {env}-simulator.submit.diyaccounting.co.uk pattern
+      // (matches Cognito pattern: {env}-auth.submit.diyaccounting.co.uk)
+      //   submit.diyaccounting.co.uk     → https://prod-simulator.submit.diyaccounting.co.uk/
+      //   ci.submit.diyaccounting.co.uk  → https://ci-simulator.submit.diyaccounting.co.uk/
       //   localhost / other              → production fallback
       var host = window.location.hostname;
-      window.__simulatorFrameSrc = host.endsWith(".diyaccounting.co.uk")
-        ? "https://simulator." + host + "/"
-        : "https://simulator.submit.diyaccounting.co.uk/";
+      var baseDomain = "submit.diyaccounting.co.uk";
+      if (host === baseDomain) {
+        window.__simulatorFrameSrc = "https://prod-simulator." + baseDomain + "/";
+      } else if (host.endsWith("." + baseDomain)) {
+        var env = host.slice(0, host.length - baseDomain.length - 1);
+        window.__simulatorFrameSrc = "https://" + env + "-simulator." + baseDomain + "/";
+      } else {
+        window.__simulatorFrameSrc = "https://prod-simulator." + baseDomain + "/";
+      }
     </script>
     <script src="./simulator-local.js" onerror="void(0)"></script>
     <script>

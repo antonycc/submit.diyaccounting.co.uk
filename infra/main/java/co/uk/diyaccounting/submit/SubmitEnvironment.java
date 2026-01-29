@@ -236,7 +236,7 @@ public class SubmitEnvironment {
         // Create SimulatorStack for public demo simulator (only if the code path exists)
         var simulatorCodePath =
                 envOr("SIMULATOR_CODE_PATH", appProps.simulatorCodePath, "web/public-simulator");
-        var simulatorBaseUrl = "https://simulator.%s".formatted(appProps.hostedZoneName);
+        var simulatorBaseUrl = "https://%s".formatted(sharedNames.simulatorDomainName);
         var simulatorCodeDir = Paths.get(simulatorCodePath).toFile();
         if (simulatorCodeDir.exists() && simulatorCodeDir.isDirectory()) {
             infof(
