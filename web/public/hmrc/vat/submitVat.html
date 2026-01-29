@@ -827,10 +827,9 @@
 
           if (!submissionData) {
             console.log("No pending submission data found");
-            // Clear stale OAuth data
-            sessionStorage.removeItem("hmrcAccessToken");
+            // Don't clear hmrcAccessToken - it may be needed for future submissions
+            // (e.g., in simulator mode the token is pre-injected on every page load)
             sessionStorage.removeItem("oauth_state");
-            sessionStorage.removeItem("hmrcAccount");
             return;
           }
 

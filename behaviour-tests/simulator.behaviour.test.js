@@ -18,6 +18,8 @@ import {
   timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { ensureDirSync } from "fs-extra";
+import { initializeSalt } from "@app/services/subHasher.js";
+import { putBundle } from "@app/data/dynamoDbBundleRepository.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -53,6 +55,7 @@ let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess, httpSimulatorP
  * 3. Journey buttons are visible and functional
  * 4. Journey controls (pause/stop) appear during playback
  * 5. Stop button halts the journey and re-enables buttons
+ * 6. All three journeys complete successfully to their results
  */
 
 test.describe("Simulator Page - Iframe and Journey Controls", () => {
@@ -79,6 +82,16 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
 
     if (testDynamoDb === "run") {
       dynamoDbProcess = await runLocalDynamoDb(testDynamoDb);
+
+      // Seed demo user bundles so simulator activities are accessible
+      // The demo user (sub: "demo-user-12345") needs "test" and "guest" bundles
+      // to access VAT form activities which require these entitlements
+      await initializeSalt();
+      const demoUserSub = "demo-user-12345";
+      for (const bundleId of ["test", "guest"]) {
+        await putBundle(demoUserSub, { bundleId, expiry: "2099-12-31" });
+      }
+      console.log("  Seeded demo user bundles in DynamoDB");
     }
 
     // Start HTTP simulator (replaces HMRC API for simulator mode)
@@ -217,7 +230,7 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     await page.waitForFunction(
       () => {
         const text = document.getElementById("journeyStatusText").textContent;
-        return text.includes("Step") || text.includes("error") || text.includes("complete");
+        return text.includes("Step") || text.includes("error");
       },
       { timeout: 15000 },
     );
@@ -253,7 +266,7 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
 
     const stoppedStatus = await statusText.textContent();
     console.log(` Stopped status: "${stoppedStatus}"`);
-    expect(stoppedStatus).toMatch(/stopped|error|Select/i);
+    expect(stoppedStatus).toMatch(/stopped|error|Select a demo/i);
     console.log(" Journey stopped");
 
     // ============================================================
@@ -271,60 +284,35 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-buttons-reenabled.png` });
 
     // ============================================================
-    // STEP 8: Start View Obligations journey and let it complete
+    // STEP 8: Start and stop View Obligations journey
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 8: Run View Obligations journey to completion");
+    console.log("STEP 8: Start and stop View Obligations journey");
     console.log("=".repeat(60));
 
     await viewObligationsBtn.click();
     console.log(" Clicked View Obligations journey button");
 
-    // Wait for step progress first (confirms journey started executing)
     await page.waitForFunction(
       () => {
         const text = document.getElementById("journeyStatusText").textContent;
-        return text.includes("Step") || text.includes("error") || text.includes("complete");
+        return text.includes("Step") || text.includes("error");
       },
       { timeout: 15000 },
     );
-
-    const obligationsRunning = await statusText.textContent();
-    console.log(` Obligations running status: "${obligationsRunning}"`);
-    expect(obligationsRunning).not.toContain("error");
+    console.log(" Obligations journey started");
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-obligations-started.png` });
 
-    // Wait for the journey to complete (View Obligations has 4 steps, ~12s total)
-    await page.waitForFunction(
-      () => {
-        const text = document.getElementById("journeyStatusText").textContent;
-        return text.includes("Obligations fetched") || text.includes("error") || text.includes("Select");
-      },
-      { timeout: 30000 },
-    );
-
-    const obligationsCompleted = await statusText.textContent();
-    console.log(` Obligations completed status: "${obligationsCompleted}"`);
-    expect(obligationsCompleted).not.toContain("error");
-    expect(obligationsCompleted).toContain("Obligations fetched");
-    console.log(" View Obligations journey completed successfully");
-
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07b-obligations-completed.png` });
-
-    // Verify iframe navigated to obligations page (proves journey actually interacted with iframe)
-    if (runTestServer === "run") {
-      const frame = page.frameLocator("#simulatorFrame");
-      const vrnField = frame.locator("#vrn");
-      await expect(vrnField).toBeVisible({ timeout: 5000 });
-      console.log(" Verified: iframe navigated to obligations page (VRN field visible)");
-    }
+    await stopBtn.click();
+    await page.waitForTimeout(2000);
+    console.log(" Obligations journey stopped");
 
     await expect(submitVatBtn).toBeEnabled({ timeout: 10000 });
     console.log(" Buttons re-enabled after obligations journey");
 
     // ============================================================
-    // STEP 9: Start View Return journey and stop it
+    // STEP 9: Start and stop View Return journey
     // ============================================================
     console.log("\n" + "=".repeat(60));
     console.log("STEP 9: Start and stop View Return journey");
@@ -334,8 +322,11 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     console.log(" Clicked View Return journey button");
 
     await page.waitForFunction(
-      () => !document.getElementById("journeyStatusText").textContent.includes("Select a demo journey"),
-      { timeout: 10000 },
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Step") || text.includes("error");
+      },
+      { timeout: 15000 },
     );
     console.log(" View Return journey started");
 
@@ -362,8 +353,206 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     console.log("   Iframe is present and has source URL");
     console.log("   All three journey buttons are visible");
     console.log("   Submit VAT journey shows step progress and can be stopped");
-    console.log("   View Obligations journey completes successfully end-to-end");
+    console.log("   View Obligations journey starts and can be stopped");
     console.log("   View Return journey starts and can be stopped");
     console.log("   Buttons re-enable after each journey stops\n");
+  });
+
+  test("View Obligations journey completes end-to-end", async ({ page }) => {
+    addOnPageLogging(page);
+    await page.setExtraHTTPHeaders({ "ngrok-skip-browser-warning": "any value" });
+
+    const simUrl = `${baseUrl}/simulator.html`;
+    console.log(` Navigating to: ${simUrl}`);
+    await page.goto(simUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+
+    // Wait for iframe to load
+    await page.waitForFunction(() => {
+      const frame = document.getElementById("simulatorFrame");
+      return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
+    }, { timeout: 10000 });
+    await page.waitForTimeout(3000);
+
+    const statusText = page.locator("#journeyStatusText");
+    const viewObligationsBtn = page.locator("#journeyViewObligations");
+    await expect(viewObligationsBtn).toBeVisible({ timeout: 5000 });
+
+    // Start the journey
+    console.log(" Starting View Obligations journey...");
+    await viewObligationsBtn.click();
+
+    // Wait for step progress
+    await page.waitForFunction(
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Step") || text.includes("error");
+      },
+      { timeout: 15000 },
+    );
+
+    const runningStatus = await statusText.textContent();
+    console.log(` Running: "${runningStatus}"`);
+    expect(runningStatus).toContain("Step");
+    expect(runningStatus).not.toContain("error");
+
+    // Wait for the journey to complete (4 steps, ~15s)
+    await page.waitForFunction(
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Obligations fetched") || text.includes("error");
+      },
+      { timeout: 45000 },
+    );
+
+    const completedStatus = await statusText.textContent();
+    console.log(` Completed: "${completedStatus}"`);
+    expect(completedStatus).not.toContain("error");
+    expect(completedStatus).toContain("Obligations fetched");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-obligations-completed.png` });
+
+    // Verify iframe navigated to obligations page (proves journey actually interacted with iframe)
+    if (runTestServer === "run") {
+      const frame = page.frameLocator("#simulatorFrame");
+      const vrnField = frame.locator("#vrn");
+      await expect(vrnField).toBeVisible({ timeout: 5000 });
+      console.log(" Verified: iframe navigated to obligations page (VRN field visible)");
+    }
+
+    // Verify buttons re-enable after completion
+    await expect(viewObligationsBtn).toBeEnabled({ timeout: 10000 });
+    console.log(" View Obligations journey completed successfully");
+  });
+
+  test("View VAT Return journey completes end-to-end", async ({ page }) => {
+    addOnPageLogging(page);
+    await page.setExtraHTTPHeaders({ "ngrok-skip-browser-warning": "any value" });
+
+    const simUrl = `${baseUrl}/simulator.html`;
+    console.log(` Navigating to: ${simUrl}`);
+    await page.goto(simUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+
+    // Wait for iframe to load
+    await page.waitForFunction(() => {
+      const frame = document.getElementById("simulatorFrame");
+      return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
+    }, { timeout: 10000 });
+    await page.waitForTimeout(3000);
+
+    const statusText = page.locator("#journeyStatusText");
+    const viewReturnBtn = page.locator("#journeyViewReturn");
+    await expect(viewReturnBtn).toBeVisible({ timeout: 5000 });
+
+    // Start the journey
+    console.log(" Starting View VAT Return journey...");
+    await viewReturnBtn.click();
+
+    // Wait for step progress
+    await page.waitForFunction(
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Step") || text.includes("error");
+      },
+      { timeout: 15000 },
+    );
+
+    const runningStatus = await statusText.textContent();
+    console.log(` Running: "${runningStatus}"`);
+    expect(runningStatus).toContain("Step");
+    expect(runningStatus).not.toContain("error");
+
+    // Wait for the journey to complete (5 steps, ~20s)
+    await page.waitForFunction(
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("VAT return details retrieved") || text.includes("error");
+      },
+      { timeout: 45000 },
+    );
+
+    const completedStatus = await statusText.textContent();
+    console.log(` Completed: "${completedStatus}"`);
+    expect(completedStatus).not.toContain("error");
+    expect(completedStatus).toContain("VAT return details retrieved");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-return-completed.png` });
+
+    // Verify iframe shows return results (form is hidden after successful retrieval)
+    if (runTestServer === "run") {
+      const frame = page.frameLocator("#simulatorFrame");
+      const returnResults = frame.locator("#returnResults");
+      await expect(returnResults).toBeVisible({ timeout: 5000 });
+      console.log(" Verified: iframe shows VAT return results");
+    }
+
+    // Verify buttons re-enable after completion
+    await expect(viewReturnBtn).toBeEnabled({ timeout: 10000 });
+    console.log(" View VAT Return journey completed successfully");
+  });
+
+  test("Submit VAT Return journey completes end-to-end", async ({ page }) => {
+    addOnPageLogging(page);
+    await page.setExtraHTTPHeaders({ "ngrok-skip-browser-warning": "any value" });
+
+    const simUrl = `${baseUrl}/simulator.html`;
+    console.log(` Navigating to: ${simUrl}`);
+    await page.goto(simUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+
+    // Wait for iframe to load
+    await page.waitForFunction(() => {
+      const frame = document.getElementById("simulatorFrame");
+      return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
+    }, { timeout: 10000 });
+    await page.waitForTimeout(3000);
+
+    const statusText = page.locator("#journeyStatusText");
+    const submitVatBtn = page.locator("#journeySubmitVat");
+    await expect(submitVatBtn).toBeVisible({ timeout: 5000 });
+
+    // Start the journey
+    console.log(" Starting Submit VAT Return journey...");
+    await submitVatBtn.click();
+
+    // Wait for step progress
+    await page.waitForFunction(
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("Step") || text.includes("error");
+      },
+      { timeout: 15000 },
+    );
+
+    const runningStatus = await statusText.textContent();
+    console.log(` Running: "${runningStatus}"`);
+    expect(runningStatus).toContain("Step");
+    expect(runningStatus).not.toContain("error");
+
+    // Wait for the journey to complete (10 steps, ~30s)
+    await page.waitForFunction(
+      () => {
+        const text = document.getElementById("journeyStatusText").textContent;
+        return text.includes("VAT return submitted") || text.includes("error");
+      },
+      { timeout: 60000 },
+    );
+
+    const completedStatus = await statusText.textContent();
+    console.log(` Completed: "${completedStatus}"`);
+    expect(completedStatus).not.toContain("error");
+    expect(completedStatus).toContain("VAT return submitted");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-submitvat-completed.png` });
+
+    // Verify iframe navigated to submit VAT page and shows receipt
+    if (runTestServer === "run") {
+      const frame = page.frameLocator("#simulatorFrame");
+      const receipt = frame.locator("#receiptDisplay");
+      await expect(receipt).toBeVisible({ timeout: 10000 });
+      console.log(" Verified: iframe shows submission receipt");
+    }
+
+    // Verify buttons re-enable after completion
+    await expect(submitVatBtn).toBeEnabled({ timeout: 10000 });
+    console.log(" Submit VAT Return journey completed successfully");
   });
 });

@@ -117,7 +117,7 @@ export class SimulatorJourney {
   }
 
   /**
-   * Fill a form field with typewriter effect
+   * Fill a form field with typewriter effect (or direct set for date/number inputs)
    */
   async fill(selector, value, description) {
     this.updateStatus(description);
@@ -125,20 +125,28 @@ export class SimulatorJourney {
     await this.wait(500);
 
     if (el) {
-      el.value = "";
       el.focus();
 
-      // Typewriter effect
-      for (const char of String(value)) {
-        if (this.aborted) throw new Error("Journey aborted");
-        while (this.paused) {
-          await new Promise((r) => setTimeout(r, 100));
-        }
-
-        el.value += char;
+      // Date and number inputs don't support character-by-character entry;
+      // set value directly and dispatch change event
+      if (el.type === "date" || el.type === "number" || el.type === "datetime-local") {
+        el.value = String(value);
         el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
-        await new Promise((r) => setTimeout(r, 50)); // 50ms per character
+      } else {
+        el.value = "";
+        // Typewriter effect for text inputs
+        for (const char of String(value)) {
+          if (this.aborted) throw new Error("Journey aborted");
+          while (this.paused) {
+            await new Promise((r) => setTimeout(r, 100));
+          }
+
+          el.value += char;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 50)); // 50ms per character
+        }
       }
 
       el.classList.remove("simulator-highlight");
@@ -198,6 +206,19 @@ export class SimulatorJourney {
    */
   setTotalSteps(count) {
     this.totalSteps = count;
+  }
+
+  /**
+   * Scroll to the bottom of the iframe document to show results
+   */
+  scrollToResults() {
+    const doc = this.getDocument();
+    if (!doc) return;
+    const body = doc.body || doc.documentElement;
+    if (body) {
+      body.scrollTop = body.scrollHeight;
+      doc.documentElement.scrollTop = doc.documentElement.scrollHeight;
+    }
   }
 
   /**
@@ -264,6 +285,9 @@ export async function journeySubmitVat(journey) {
   // Wait for submission response
   await journey.wait(3000);
 
+  // Scroll to show the receipt
+  journey.scrollToResults();
+
   journey.complete("VAT return submitted successfully! Receipt is displayed above.");
 }
 
@@ -288,6 +312,9 @@ export async function journeyViewObligations(journey) {
 
   // Wait for results
   await journey.wait(2500);
+
+  // Scroll down to show the results
+  journey.scrollToResults();
 
   journey.complete("Obligations fetched! You can see which periods need VAT returns and their due dates.");
 }
@@ -317,6 +344,9 @@ export async function journeyViewReturn(journey) {
 
   // Wait for results
   await journey.wait(2500);
+
+  // Scroll to show the return details
+  journey.scrollToResults();
 
   journey.complete("VAT return details retrieved! All 9 boxes are displayed as recorded by HMRC.");
 }
