@@ -112,8 +112,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   // In sandbox mode, default to allowing sandbox obligations (use any available fulfilled obligation)
   // unless explicitly disabled. This provides flexibility for unpredictable HMRC sandbox responses.
-  const allowSandboxObligationsBool =
-    hmrcAccount === "sandbox" && allowSandboxObligations !== false && allowSandboxObligations !== "false";
+  const allowSandboxObligationsBool = hmrcAccount === "sandbox" && allowSandboxObligations !== false && allowSandboxObligations !== "false";
 
   return {
     vrn,
@@ -167,10 +166,8 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { vrn, periodStart, periodEnd, testScenario, hmrcAccount, runFraudPreventionHeaderValidation, allowSandboxObligations } = extractAndValidateParameters(
-    event,
-    errorMessages,
-  );
+  const { vrn, periodStart, periodEnd, testScenario, hmrcAccount, runFraudPreventionHeaderValidation, allowSandboxObligations } =
+    extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -233,11 +230,7 @@ export async function ingestHandler(event) {
 
     if (!hmrcResponse.ok) {
       logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
-      return buildValidationError(
-        request,
-        [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`],
-        responseHeaders,
-      );
+      return buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders);
     }
 
     // obligations is the full HMRC response body containing { obligations: [...] }
@@ -247,7 +240,7 @@ export async function ingestHandler(event) {
     // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
     // use the first available fulfilled obligation instead of erroring
     if (!resolvedPeriodKey && allowSandboxObligations) {
-      const fulfilledObligations = obligationsArray.filter(o => o.status === "F");
+      const fulfilledObligations = obligationsArray.filter((o) => o.status === "F");
       if (fulfilledObligations.length > 0) {
         resolvedPeriodKey = fulfilledObligations[0].periodKey;
         logger.info({
@@ -259,12 +252,14 @@ export async function ingestHandler(event) {
     }
 
     if (!resolvedPeriodKey) {
-      logger.error({ message: "No matching obligation found for date range", periodStart, periodEnd, obligations: obligationsArray, allowSandboxObligations });
-      return buildValidationError(
-        request,
-        [`No fulfilled VAT return found for period ${periodStart} to ${periodEnd}`],
-        responseHeaders,
-      );
+      logger.error({
+        message: "No matching obligation found for date range",
+        periodStart,
+        periodEnd,
+        obligations: obligationsArray,
+        allowSandboxObligations,
+      });
+      return buildValidationError(request, [`No fulfilled VAT return found for period ${periodStart} to ${periodEnd}`], responseHeaders);
     }
 
     normalizedPeriodKey = resolvedPeriodKey.toUpperCase();

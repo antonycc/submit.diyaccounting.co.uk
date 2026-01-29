@@ -23,7 +23,6 @@ export async function goToReceiptsPageUsingMainNav(page, screenshotPath = defaul
   });
 }
 
-
 export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user reviews the receipts list and opens the first receipt when available", async () => {
     // Check if we have receipts in the table

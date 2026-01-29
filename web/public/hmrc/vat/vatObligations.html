@@ -21,12 +21,12 @@
         <div class="header-left">
           <a href="../../index.html" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
           </a>
           <a href="../../about.html" title="About & Help" class="info-link">
             <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
             </svg>
           </a>
         </div>
@@ -69,9 +69,7 @@
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
             Show Obligation Search Criteria
           </button>
-          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">
-            Cancel Request
-          </button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
         </div>
         <div id="searchCriteriaContainer">
           <h2>Retrieve VAT Obligations</h2>
@@ -79,8 +77,8 @@
             <div class="form-group">
               <label for="vrn">VAT registration number</label>
               <p id="vrn-hint" class="hint">
-                This is 9 numbers, sometimes with 'GB' at the start, for example
-                123456789 or GB123456789. You can find it on your VAT registration certificate.
+                This is 9 numbers, sometimes with 'GB' at the start, for example 123456789 or GB123456789. You can find it on your VAT
+                registration certificate.
               </p>
               <input
                 type="text"
@@ -98,19 +96,25 @@
 
             <div class="form-group">
               <label for="fromDate">From date (optional)</label>
-              <p id="fromDate-hint" class="hint">Start date for obligation search. Defaults to the start of the current calendar year if not specified.</p>
+              <p id="fromDate-hint" class="hint">
+                Start date for obligation search. Defaults to the start of the current calendar year if not specified.
+              </p>
               <input type="date" id="fromDate" name="fromDate" value="" aria-describedby="fromDate-hint" />
             </div>
 
             <div class="form-group">
               <label for="toDate">To date (optional)</label>
-              <p id="toDate-hint" class="hint">End date for obligation search. Defaults to today's date if not specified. Maximum range is 366 days.</p>
+              <p id="toDate-hint" class="hint">
+                End date for obligation search. Defaults to today's date if not specified. Maximum range is 366 days.
+              </p>
               <input type="date" id="toDate" name="toDate" value="" aria-describedby="toDate-hint" />
             </div>
 
             <div class="form-group">
               <label for="status">Status (optional)</label>
-              <p id="status-hint" class="hint">Open obligations require a VAT return submission. Fulfilled obligations have already been submitted.</p>
+              <p id="status-hint" class="hint">
+                Open obligations require a VAT return submission. Fulfilled obligations have already been submitted.
+              </p>
               <select id="status" name="status" aria-describedby="status-hint">
                 <option value="">All statuses</option>
                 <option value="O">Open (awaiting submission)</option>
@@ -171,10 +175,6 @@
 
             <button type="submit" id="retrieveBtn" class="btn">Retrieve Obligations</button>
           </form>
-
-          <div class="developer-controls">
-            <button type="button" id="toggleDeveloperMode" class="developer-button">Show Developer Options</button>
-          </div>
         </div>
       </div>
 
@@ -187,13 +187,6 @@
         </div>
       </div>
 
-      <!-- Navigation Button -->
-      <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href = '../../index.html'">Return to Home</button>
-        <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href = '../receipt/receipts.html'">
-          My Receipts
-        </button>
-      </div>
     </main>
 
     <footer>
@@ -213,6 +206,7 @@
     <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../lib/test-data-generator.js"></script>
     <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -288,17 +282,22 @@
           }
         }
 
-        // Toggle developer mode button
-        const toggleBtn = document.getElementById("toggleDeveloperMode");
+        // Developer mode is now controlled by the global toggle via developer-mode.js
+        // Show developer section based on sessionStorage and listen for changes
         const devSection = document.getElementById("developerSection");
 
-        if (toggleBtn && devSection) {
-          toggleBtn.addEventListener("click", () => {
-            const isVisible = devSection.style.display !== "none";
-            devSection.style.display = isVisible ? "none" : "block";
-            toggleBtn.textContent = isVisible ? "Show Developer Options" : "Hide Developer Options";
-          });
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) {
+            devSection.style.display = developerModeEnabled ? "block" : "none";
+          }
         }
+
+        // Initial check
+        updateDeveloperSectionVisibility();
+
+        // Listen for developer mode toggle changes
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
       }
 
       // OAuth callback handling

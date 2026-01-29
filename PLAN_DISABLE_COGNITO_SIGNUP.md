@@ -195,7 +195,6 @@ If needed, revert this commit. The Phase 4.1 change (commenting out `supportedId
 | `simulator` | simulator | HTTP simulator mode |
 | `test` | unit tests | Mocked authentication |
 | `cognito-native` | ci, prod | Toggle script enables COGNITO on Hosted UI; Playwright fills in email/password on Hosted UI |
-| `cognito` | _(deprecated, remove in Phase 4.3)_ | Redirects to OIDC.antonycc.com |
 
 ### How Behavior Tests Authenticate in AWS (ci/prod)
 
@@ -252,4 +251,4 @@ Workflows:
 - [x] Tests use Hosted UI native form via `cognito-native`
 - [x] `.env.ci` and `.env.prod` set to `TEST_AUTH_PROVIDER=cognito-native`
 - [x] OIDC.antonycc.com provider removed from Hosted UI (Phase 4.1)
-- [ ] OIDC.antonycc.com provider code and config fully removed (Phase 4.2)
+- [x] OIDC.antonycc.com provider code and config fully removed (Phase 4.2)

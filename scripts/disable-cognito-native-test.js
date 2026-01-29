@@ -43,10 +43,11 @@ async function main() {
   // Step 1: Delete test user
   console.log(`=== Deleting test user ===`);
   try {
-    const { stdout, stderr } = await execFileAsync(
-      "node",
-      ["scripts/delete-cognito-test-user.js", credentials.environment, credentials.username]
-    );
+    const { stdout, stderr } = await execFileAsync("node", [
+      "scripts/delete-cognito-test-user.js",
+      credentials.environment,
+      credentials.username,
+    ]);
     if (stdout) console.log(stdout.trimEnd());
     if (stderr) console.error(stderr.trimEnd());
   } catch (error) {
@@ -60,10 +61,7 @@ async function main() {
   console.log("");
   console.log(`=== Disabling Cognito native auth ===`);
   try {
-    const { stdout, stderr } = await execFileAsync(
-      "node",
-      ["scripts/toggle-cognito-native-auth.js", "disable", credentials.environment]
-    );
+    const { stdout, stderr } = await execFileAsync("node", ["scripts/toggle-cognito-native-auth.js", "disable", credentials.environment]);
     if (stdout) console.log(stdout.trimEnd());
     if (stderr) console.error(stderr.trimEnd());
   } catch (error) {

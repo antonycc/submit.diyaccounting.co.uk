@@ -252,7 +252,8 @@ public class PublishStack extends Stack {
                         "/submit.environment-name.txt",
                         "/submit.js",
                         "/submit.version.txt",
-                        "/terms.html"))
+                        "/terms.html",
+                        "/developer-mode.js"))
                 .retainOnDelete(true)
                 // .logGroup(webDeploymentLogGroup)
                 .logRetention(RetentionDays.ONE_DAY)

@@ -21,12 +21,12 @@
         <div class="header-left">
           <a href="../../index.html" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
           </a>
           <a href="../../about.html" title="About & Help" class="info-link">
             <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
             </svg>
           </a>
         </div>
@@ -65,12 +65,8 @@
 
       <!-- Search Form -->
       <div class="form-toggle-buttons">
-        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">
-          Show Search Form
-        </button>
-        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">
-          Cancel Request
-        </button>
+        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">Show Search Form</button>
+        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
       </div>
       <div id="searchForm" class="form-container">
         <h2>Retrieve VAT Return</h2>
@@ -78,8 +74,8 @@
           <div class="form-group">
             <label for="vrn">VAT registration number</label>
             <p id="vrn-hint" class="hint">
-              This is 9 numbers, sometimes with 'GB' at the start, for example
-              123456789 or GB123456789. You can find it on your VAT registration certificate.
+              This is 9 numbers, sometimes with 'GB' at the start, for example 123456789 or GB123456789. You can find it on your VAT
+              registration certificate.
             </p>
             <input
               type="text"
@@ -98,26 +94,14 @@
           <div class="form-group">
             <label>VAT period</label>
             <p id="periodDates-hint" class="hint">Enter the start and end dates of the VAT period you want to view</p>
-            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap;">
+            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
               <div>
                 <label for="periodStart">Period start</label>
-                <input
-                  type="date"
-                  id="periodStart"
-                  name="periodStart"
-                  required
-                  aria-describedby="periodDates-hint"
-                />
+                <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" />
               </div>
               <div>
                 <label for="periodEnd">Period end</label>
-                <input
-                  type="date"
-                  id="periodEnd"
-                  name="periodEnd"
-                  required
-                  aria-describedby="periodDates-hint"
-                />
+                <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" />
               </div>
             </div>
             <!-- Hidden fields for backwards compatibility -->
@@ -148,10 +132,6 @@
 
           <button type="submit" id="retrieveBtn" class="btn">View Return</button>
         </form>
-
-        <div class="developer-controls">
-          <button type="button" id="toggleDeveloperMode" class="developer-button">Show Developer Options</button>
-        </div>
       </div>
 
       <!-- Results Display -->
@@ -164,13 +144,6 @@
         </div>
       </div>
 
-      <!-- Navigation Button -->
-      <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageBtn" onclick="window.location.href = '../../index.html'">Return to Home</button>
-        <button type="button" class="btn" id="receiptsPageBtn" onclick="window.location.href = '../receipt/receipts.html'">
-          My Receipts
-        </button>
-      </div>
     </main>
 
     <footer>
@@ -190,6 +163,7 @@
     <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../lib/test-data-generator.js"></script>
     <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -211,7 +185,7 @@
           const endDate = new Date(end);
           const dateOptions = { day: "numeric", month: "short", year: "numeric" };
           return `${startDate.toLocaleDateString("en-GB", dateOptions)} to ${endDate.toLocaleDateString("en-GB", dateOptions)}`;
-        }
+        },
       };
 
       // Global variables
@@ -254,17 +228,22 @@
           }
         }
 
-        // Toggle developer mode button
-        const toggleBtn = document.getElementById("toggleDeveloperMode");
+        // Developer mode is now controlled by the global toggle via developer-mode.js
+        // Show developer section based on sessionStorage and listen for changes
         const devSection = document.getElementById("developerSection");
 
-        if (toggleBtn && devSection) {
-          toggleBtn.addEventListener("click", () => {
-            const isVisible = devSection.style.display !== "none";
-            devSection.style.display = isVisible ? "none" : "block";
-            toggleBtn.textContent = isVisible ? "Show Developer Options" : "Hide Developer Options";
-          });
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) {
+            devSection.style.display = developerModeEnabled ? "block" : "none";
+          }
         }
+
+        // Initial check
+        updateDeveloperSectionVisibility();
+
+        // Listen for developer mode toggle changes
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
       }
 
       // Form visibility management
@@ -599,11 +578,12 @@
         };
 
         // Get period display from the dates (periodStart/periodEnd are set on returnData before calling displayReturn)
-        const periodDisplay = returnData.periodStart && returnData.periodEnd
-          ? DateUtils.formatDateRange(returnData.periodStart, returnData.periodEnd)
-          : (returnData.start && returnData.end
-            ? DateUtils.formatDateRange(returnData.start, returnData.end)
-            : "-");
+        const periodDisplay =
+          returnData.periodStart && returnData.periodEnd
+            ? DateUtils.formatDateRange(returnData.periodStart, returnData.periodEnd)
+            : returnData.start && returnData.end
+              ? DateUtils.formatDateRange(returnData.start, returnData.end)
+              : "-";
 
         const detailsHtml = `
           <div class="return-details">

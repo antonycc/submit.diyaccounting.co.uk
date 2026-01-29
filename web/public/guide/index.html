@@ -29,19 +29,70 @@
         background: #fff;
         border: 1px solid #ddd;
         border-radius: 8px;
-        padding: 16px;
+        padding: 8px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
       .guide-card img {
         width: 100%;
         height: auto;
-        border-radius: 6px;
+        border-radius: 4px;
         border: 1px solid #eee;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+      .guide-card img:hover {
+        opacity: 0.9;
+      }
+      /* Lightbox modal styles */
+      .lightbox-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        cursor: pointer;
+        justify-content: center;
+        align-items: center;
+      }
+      .lightbox-overlay.active {
+        display: flex;
+      }
+      .lightbox-overlay img {
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      .lightbox-close {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: white;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 10000;
+        line-height: 1;
+      }
+      .lightbox-close:hover {
+        color: #ccc;
+      }
+      .lightbox-hint {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
       }
       .guide-caption {
         font-size: 0.95em;
         color: #555;
-        margin-top: 12px;
+        margin-top: 8px;
         line-height: 1.5;
       }
       .guide-steps {
@@ -108,12 +159,12 @@
         <div class="header-left">
           <a href="../index.html" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
           </a>
           <a href="../about.html" title="About & Help" class="info-link">
             <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
             </svg>
           </a>
         </div>
@@ -136,9 +187,7 @@
       <div class="form-container">
         <div class="guide-intro">
           <h2>Submit your VAT return in 3 steps</h2>
-          <p>
-            This guide walks you through checking your VAT obligations, entering your figures, and submitting to HMRC.
-          </p>
+          <p>This guide walks you through checking your VAT obligations, entering your figures, and submitting to HMRC.</p>
         </div>
       </div>
 
@@ -151,11 +200,14 @@
         </p>
         <div class="guide-grid single">
           <div class="guide-card">
-            <img src="../images/guide/obligations-with-results.png" alt="VAT obligations screen showing a list of VAT periods with their due dates and status" />
+            <img
+              src="../images/guide/obligations-with-results.png"
+              alt="VAT obligations screen showing a list of VAT periods with their due dates and status"
+            />
             <div class="guide-caption">
-              <strong>VAT Obligations</strong> shows your VAT periods. Each row displays the period dates, due date, and whether the
-              return is Open (needs submitting) or Fulfilled (already submitted). Click <strong>Submit Return</strong> to start a
-              submission for an open period.
+              <strong>VAT Obligations</strong> shows your VAT periods. Each row displays the period dates, due date, and whether the return
+              is Open (needs submitting) or Fulfilled (already submitted). Click <strong>Submit Return</strong> to start a submission for an
+              open period.
             </div>
           </div>
         </div>
@@ -177,14 +229,20 @@
         <p>Enter your VAT figures in Boxes 1-9. Boxes 3 and 5 calculate automatically based on your other entries.</p>
         <div class="guide-grid">
           <div class="guide-card">
-            <img src="../images/guide/vat-return-form-filled.png" alt="VAT return submission form showing all 9 boxes filled with example figures" />
+            <img
+              src="../images/guide/vat-return-form-filled.png"
+              alt="VAT return submission form showing all 9 boxes filled with example figures"
+            />
             <div class="guide-caption">
-              <strong>VAT Return Submission form</strong> - Enter your figures from your accounting records. Box 1 is VAT on sales, Box 4
-              is VAT you can reclaim, and Boxes 6-9 are turnover values in whole pounds.
+              <strong>VAT Return Submission form</strong> - Enter your figures from your accounting records. Box 1 is VAT on sales, Box 4 is
+              VAT you can reclaim, and Boxes 6-9 are turnover values in whole pounds.
             </div>
           </div>
           <div class="guide-card">
-            <img src="../images/guide/submission-success-receipt.png" alt="Successful submission screen showing the HMRC Form Bundle Number and processing date" />
+            <img
+              src="../images/guide/submission-success-receipt.png"
+              alt="Successful submission screen showing the HMRC Form Bundle Number and processing date"
+            />
             <div class="guide-caption">
               <strong>Success!</strong> After HMRC accepts your return, you'll see a receipt with your Form Bundle Number. Save or print
               this as proof of submission. The processing date confirms when HMRC received it.
@@ -249,19 +307,10 @@
           <ol>
             <li>Receipts are stored securely in your account and accessible from any device</li>
             <li>Log in to view your submission history</li>
-            <li>
-              Your receipt includes the <strong>Form Bundle Number</strong> - quote this to HMRC if you ever need to prove submission
-            </li>
+            <li>Your receipt includes the <strong>Form Bundle Number</strong> - quote this to HMRC if you ever need to prove submission</li>
           </ol>
         </div>
       </section>
-
-      <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" onclick="window.location.href = '../index.html'">Return to Home</button>
-        <button type="button" class="btn" onclick="window.location.href = '../help/index.html'" style="background: #6c757d; border-color: #6c757d; margin-left: 1em">
-          View FAQs
-        </button>
-      </div>
     </main>
 
     <footer>
@@ -281,12 +330,52 @@
       </div>
     </footer>
 
+    <!-- Lightbox modal for expandable images -->
+    <div class="lightbox-overlay" id="lightbox">
+      <span class="lightbox-close" aria-label="Close">&times;</span>
+      <img src="" alt="" id="lightbox-image" />
+      <span class="lightbox-hint">Click anywhere to close</span>
+    </div>
+
     <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="../widgets/localstorage-viewer.js"></script>
+    <script>
+      // Lightbox functionality for guide images
+      (function () {
+        const lightbox = document.getElementById("lightbox");
+        const lightboxImg = document.getElementById("lightbox-image");
+        const guideImages = document.querySelectorAll(".guide-card img");
+
+        // Open lightbox when clicking on guide images
+        guideImages.forEach((img) => {
+          img.addEventListener("click", function () {
+            lightboxImg.src = this.src;
+            lightboxImg.alt = this.alt;
+            lightbox.classList.add("active");
+            document.body.style.overflow = "hidden";
+          });
+        });
+
+        // Close lightbox when clicking anywhere on overlay
+        lightbox.addEventListener("click", function () {
+          lightbox.classList.remove("active");
+          document.body.style.overflow = "";
+        });
+
+        // Close lightbox with Escape key
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && lightbox.classList.contains("active")) {
+            lightbox.classList.remove("active");
+            document.body.style.overflow = "";
+          }
+        });
+      })();
+    </script>
   </body>
 </html>

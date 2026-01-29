@@ -93,7 +93,9 @@
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
       }
 
       .feature-card:hover {
@@ -231,12 +233,12 @@
         <div class="header-left">
           <a href="index.html" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
           </a>
           <a href="about.html" title="About & Help" class="info-link">
             <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
             </svg>
           </a>
         </div>
@@ -262,6 +264,7 @@
         <nav class="about-nav-links" aria-label="Help navigation">
           <a href="help/index.html" class="about-nav-link">Help & FAQs</a>
           <a href="guide/index.html" class="about-nav-link">User Guide</a>
+          <a href="simulator.html" class="about-nav-link">Try Simulator</a>
         </nav>
       </section>
 
@@ -272,8 +275,8 @@
           <div class="feature-card-content">
             <h3>Simple VAT Return Form</h3>
             <p>
-              Enter your figures in the familiar 9-box format. Boxes 3 and 5 calculate automatically. Clear labels and hints help you
-              enter the right values.
+              Enter your figures in the familiar 9-box format. Boxes 3 and 5 calculate automatically. Clear labels and hints help you enter
+              the right values.
             </p>
           </div>
         </div>
@@ -292,8 +295,8 @@
           <div class="feature-card-content">
             <h3>Track Your Obligations</h3>
             <p>
-              See exactly which VAT periods need returns and their due dates. Never miss a deadline with a clear view of open and
-              fulfilled obligations.
+              See exactly which VAT periods need returns and their due dates. Never miss a deadline with a clear view of open and fulfilled
+              obligations.
             </p>
           </div>
         </div>
@@ -301,9 +304,7 @@
           <img src="images/guide/view-return-details.png" alt="View previously submitted VAT return details" />
           <div class="feature-card-content">
             <h3>View Submitted Returns</h3>
-            <p>
-              Retrieve any previously submitted return directly from HMRC. Verify your figures were recorded correctly at any time.
-            </p>
+            <p>Retrieve any previously submitted return directly from HMRC. Verify your figures were recorded correctly at any time.</p>
           </div>
         </div>
       </div>
@@ -364,6 +365,7 @@
     </footer>
 
     <script type="module" src="./submit.js"></script>
+    <script src="./developer-mode.js"></script>
     <script src="./lib/request-cache.js"></script>
     <script src="./lib/toml-parser.js"></script>
     <script src="widgets/entitlement-status.js"></script>

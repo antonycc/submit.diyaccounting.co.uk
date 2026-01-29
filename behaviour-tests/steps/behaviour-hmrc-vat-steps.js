@@ -43,11 +43,14 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
       console.log(`[initSubmitVat] Visible buttons on page: ${JSON.stringify(visibleButtons)}`);
       throw new Error(
         `"${activityButtonText}" button not visible. This usually means the Test bundle was not added. ` +
-          `Visible buttons: ${visibleButtons.join(", ")}`
+          `Visible buttons: ${visibleButtons.join(", ")}`,
       );
     }
 
-    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT return submission", { screenshotPath, timeout: 60000 });
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT return submission", {
+      screenshotPath,
+      timeout: 60000,
+    });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-start-submission.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -162,19 +165,20 @@ export async function fillInVat(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
-      // Check if developer options are already visible (button shows "Hide" instead of "Show")
-      const showButton = page.locator("button:has-text('Show Developer Options')");
-      const hideButton = page.locator("button:has-text('Hide Developer Options')");
-      const isAlreadyVisible = await hideButton.isVisible().catch(() => false);
+      // Enable developer mode via sessionStorage and trigger UI update
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      console.log("Enabled developer mode for test scenario");
 
-      if (!isAlreadyVisible) {
-        await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
-          screenshotPath,
-        });
-      } else {
-        console.log("Developer options already visible, skipping click");
-      }
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-clicked-options.png` });
+      // Wait for developer section to be visible
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      console.log("Developer section visible (controlled by global developer mode)");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-dev-section-visible.png` });
+
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -185,8 +189,7 @@ export async function fillInVat(
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
       if (allowSandboxObligations && isSandboxMode()) {
-        // The sandboxObligationsOption div should be visible once developer options are shown in sandbox mode
-        // Wait for it to appear then check the checkbox
+        // The sandboxObligationsOption div should be visible in sandbox mode when developer mode is on
         await page.waitForSelector("#allowSandboxObligations", { state: "attached", timeout: 5000 }).catch(() => {
           console.log("allowSandboxObligations checkbox not found - may not be in sandbox mode");
         });
@@ -318,18 +321,19 @@ export async function fillInVat9Box(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
-      // Check if developer options are already visible (button shows "Hide" instead of "Show")
-      const hideButton = page.locator("button:has-text('Hide Developer Options')");
-      const isAlreadyVisible = await hideButton.isVisible().catch(() => false);
+      // Enable developer mode via sessionStorage and trigger UI update
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      console.log("Enabled developer mode for test scenario");
 
-      if (!isAlreadyVisible) {
-        await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
-          screenshotPath,
-        });
-      } else {
-        console.log("Developer options already visible, skipping click");
-      }
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      console.log("Developer section visible (controlled by global developer mode)");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-9box-options.png` });
+
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -340,7 +344,7 @@ export async function fillInVat9Box(
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
       if (allowSandboxObligations && isSandboxMode()) {
-        // The sandboxObligationsOption div should be visible once developer options are shown in sandbox mode
+        // The sandboxObligationsOption div should be visible in sandbox mode when developer mode is on
         await page.waitForSelector("#allowSandboxObligations", { state: "attached", timeout: 5000 }).catch(() => {
           console.log("allowSandboxObligations checkbox not found - may not be in sandbox mode");
         });
@@ -633,9 +637,17 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
     if (testScenario || runFraudPreventionHeaderValidation) {
-      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
-        screenshotPath,
+      // Enable developer mode via sessionStorage and trigger UI update
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
       });
+      console.log("Enabled developer mode for test scenario");
+
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      console.log("Developer section visible (controlled by global developer mode)");
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-obligations-fill-in.png` });
@@ -716,7 +728,9 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     // Relaxed assertion: HMRC may not always return obligations, even after a submission.
     // We validate the shape of any obligations that ARE returned, but don't require any.
     if (rowCount === 0) {
-      console.log("[verifyVatObligationsResults] No obligations returned - this is acceptable (HMRC may not return obligations immediately)");
+      console.log(
+        "[verifyVatObligationsResults] No obligations returned - this is acceptable (HMRC may not return obligations immediately)",
+      );
       return;
     }
     console.log(`[verifyVatObligationsResults] Found ${rowCount} obligation(s) - validating shape`);
@@ -1019,9 +1033,17 @@ export async function fillInViewVatReturn(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-view-vat-fill-in.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation) {
-      await loggedClick(page, "button:has-text('Show Developer Options')", "Show Developer Options", {
-        screenshotPath,
+      // Enable developer mode via sessionStorage and trigger UI update
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
       });
+      console.log("Enabled developer mode for test scenario");
+
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      console.log("Developer section visible (controlled by global developer mode)");
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-view-vat-fill-in.png` });

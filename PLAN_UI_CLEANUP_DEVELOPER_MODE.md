@@ -2,7 +2,18 @@
 
 ## Goal
 
-Clean up the UI by removing redundant navigation buttons, hiding test/sandbox activities behind a global developer mode toggle, and simplifying the per-form developer options into a single global mechanism.
+Clean up the UI by removing redundant navigation buttons and simplifying the per-form developer options into a single global mechanism.
+
+## Key Behavior
+
+**Test bundle controls:**
+1. Developer icon visibility (no test bundle = no icon)
+2. Sandbox activities on home page (normal bundle rules - NOT hidden by developer toggle)
+
+**Developer icon click toggles:**
+1. Header dev info visibility + terminal styling (traceparent, x-request-id, entitlement status)
+2. Footer dev links visibility + terminal styling (tests, api)
+3. Form developer sections (`#developerSection`)
 
 ---
 
@@ -38,54 +49,51 @@ Also remove the associated JavaScript that handles the "Remove All Bundles" clic
 
 ---
 
-### 2. Global developer options toggle (the "man digging" icon)
+### 2. Global developer options toggle (wrench icon)
 
 #### 2.1 Add toggle to the header nav
 
-Add a "man digging" icon button in the `header-left` section, just below (or after) the home icon. This appears on all pages that share the header.
+Add a wrench icon button in the `header-left` section, after the info icon. **Only shown if user has test bundle.**
 
 **Behaviour:**
+- Only appears if user has the "test" bundle
 - Reads `sessionStorage.getItem('showDeveloperOptions')` on page load
-- When clicked, toggles the sessionStorage flag and updates the icon
-- **Off state (default):** Silhouette (grey/dark), facing left — developer activities and options are hidden
-- **On state:** Coloured, facing right (CSS `transform: scaleX(-1)` to mirror) — developer activities and options are visible
+- When clicked, toggles the sessionStorage flag and updates visibility of dev elements
+- **Off state (default):** Grey wrench — dev info hidden
+- **On state:** Orange wrench with glow — dev info shown with terminal styling
 
-**Implementation:** Add to the shared header HTML on all pages, or create a shared JS file that injects the toggle into the header. Since there's no shared template system (static HTML pages), the toggle HTML and JS need to be added to each page's header, or loaded via a shared script.
+**Implementation:** `web/public/developer-mode.js` that:
+1. Checks if user has test bundle via API
+2. Only injects toggle icon if user has test bundle
+3. Reads/writes `sessionStorage.showDeveloperOptions`
+4. Toggles visibility of header/footer dev elements
+5. Dispatches `developer-mode-changed` event for form developer sections
+6. Adds/removes `developer-mode` class on `<body>` for terminal CSS styling
 
-The cleanest approach: create `web/public/developer-mode.js` that:
-1. Injects the toggle icon into `.header-left` (after the info icon)
-2. Reads/writes `sessionStorage.showDeveloperOptions`
-3. Dispatches a custom event `developer-mode-changed` so page-specific code can react
-4. Adds/removes a `developer-mode` class on `<body>` for CSS-driven show/hide
+#### 2.2 The wrench icon
 
-Then include `<script src="developer-mode.js"></script>` (or appropriate relative path) on each page.
-
-#### 2.2 The "man digging" icon
-
-Use an SVG of a construction worker / person digging:
-- Off: Grey silhouette, facing left
-- On: Coloured (e.g., orange/amber construction worker colour), facing right (`scaleX(-1)`)
-
-The SVG should match the style of the existing home and info icons (inline SVG, `viewBox="0 0 24 24"`).
+Simple wrench SVG that works well at small sizes:
+- Off: Grey (#888)
+- On: Orange (#e67e22) with subtle glow
 
 ---
 
-### 3. Hide "Test" bundle activities behind developer mode
+### 3. Test bundle activities follow normal bundle rules
 
 #### 3.1 `web/public/index.html` (Activities page)
 
-The activities list is built dynamically from `submit.catalogue.toml`. Activities associated with the `test` bundle (identified by `bundles = ["test"]`) should be hidden unless `sessionStorage.showDeveloperOptions` is set.
+The activities list is built dynamically from `submit.catalogue.toml`. Activities associated with the `test` bundle (identified by `bundles = ["test"]`) follow normal bundle access rules - they appear if the user has the test bundle, regardless of developer mode.
 
-Current test-bundle activities:
+Test-bundle activities:
 - `submit-vat-sandbox` — "Submit VAT (HMRC Sandbox)"
 - `vat-obligations-sandbox` — "VAT Obligations (HMRC Sandbox)"
 - `view-vat-return-sandbox` — "View VAT Return (HMRC Sandbox)"
 
-The rendering logic needs to check the developer mode flag and filter out test-bundle activities when it's not set. When the toggle is clicked, the activities list should re-render.
+These buttons look and behave exactly like regular activity buttons - no special badge or styling.
 
 #### 3.2 `web/public/account/bundles.html` (Bundles page)
 
-The "Test" bundle card/row stays visible on the bundles page. Users need to be able to request the test bundle in order to access sandbox activities. Hiding the test bundle card is a future cleanup — for now, the gate is that test-bundle **activities** on the home page are hidden unless developer mode is on.
+The "Test" bundle card/row is visible on the bundles page. Users can request the test bundle to access sandbox activities.
 
 ---
 

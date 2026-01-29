@@ -25,7 +25,6 @@ import software.amazon.awscdk.services.cognito.StandardThreatProtectionMode;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
-import software.amazon.awscdk.services.cognito.CfnUserPoolIdentityProvider;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
@@ -53,7 +52,6 @@ public class IdentityStack extends Stack {
     public UserPool userPool;
     public UserPoolClient userPoolClient;
     public UserPoolIdentityProviderGoogle googleIdentityProvider;
-    public CfnUserPoolIdentityProvider antonyccIdentityProvider;
     public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
     public final UserPoolDomain userPoolDomain;
     public final String userPoolDomainARecordName;
@@ -92,10 +90,6 @@ public class IdentityStack extends Stack {
         String hostedZoneId();
 
         String certificateArn();
-
-        String antonyccClientId();
-
-        String antonyccBaseUri();
 
         String googleClientId();
 
@@ -188,32 +182,6 @@ public class IdentityStack extends Stack {
                 .build();
         this.identityProviders.put(UserPoolClientIdentityProvider.GOOGLE, this.googleIdentityProvider);
 
-        // Antonycc OIDC via Cognito IdP (using L1 construct to avoid clientSecret requirement)
-        this.antonyccIdentityProvider = CfnUserPoolIdentityProvider.Builder.create(
-                        this, props.resourceNamePrefix() + "-CognitoIdentityProvider")
-                .providerName("cognito")
-                .providerType("OIDC")
-                .userPoolId(this.userPool.getUserPoolId())
-                .providerDetails(Map.of(
-                        "client_id",
-                        props.antonyccClientId(),
-                        "oidc_issuer",
-                        props.antonyccBaseUri(),
-                        "authorize_scopes",
-                        "email openid profile",
-                        "attributes_request_method",
-                        "GET"
-                        // No client_secret provided
-                        ))
-                .attributeMapping(Map.of(
-                        "email", "email",
-                        "given_name", "given_name",
-                        "family_name", "family_name"))
-                .build();
-        // Phase 4.1: Removed from supportedIdentityProviders to hide "Sign in with your corporate ID" from Hosted UI
-        // The provider definition remains in the stack for safe rollback. See PLAN_DISABLE_COGNITO_SIGNUP.md
-        // this.identityProviders.put(UserPoolClientIdentityProvider.custom("cognito"), this.antonyccIdentityProvider);
-
         // User Pool Client
         // Native Cognito login (COGNITO) is NOT included by default to hide the email/password
         // form on the Hosted UI. It is enabled dynamically during behaviour tests via
@@ -270,7 +238,6 @@ public class IdentityStack extends Stack {
         cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecordName);
         cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecordName);
         cfnOutput(this, "CognitoGoogleIdpId", this.googleIdentityProvider.getProviderName());
-        cfnOutput(this, "CognitoAntonyccIdpId", this.antonyccIdentityProvider.getProviderName());
 
         infof(
                 "IdentityStack %s created successfully for %s",

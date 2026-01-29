@@ -318,9 +318,7 @@ export const loggedClick = async (page, selectorOrLocator, description = "", opt
     console.log(`[USER INTERACTION] Clicking: ${isLocator ? "[Locator]" : selector} ${description ? "- " + description : ""}`);
 
     // Wait for element to be visible and stable before clicking
-    await (isLocator
-      ? locator.waitFor({ state: "visible", timeout })
-      : page.waitForSelector(selector, { state: "visible", timeout }));
+    await (isLocator ? locator.waitFor({ state: "visible", timeout }) : page.waitForSelector(selector, { state: "visible", timeout }));
 
     // Explicitly focus the element before clicking
     try {
@@ -367,9 +365,7 @@ export const loggedFill = async (page, selectorOrLocator, value, description = "
       );
 
       // Wait for visibility and focus before filling
-      await (isLocator
-        ? locator.waitFor({ state: "visible", timeout })
-        : page.waitForSelector(selector, { state: "visible", timeout }));
+      await (isLocator ? locator.waitFor({ state: "visible", timeout }) : page.waitForSelector(selector, { state: "visible", timeout }));
 
       try {
         if (isLocator) {
@@ -425,9 +421,7 @@ export const loggedFocus = async (page, selectorOrLocator, description = "", opt
 
     console.log(`[USER INTERACTION] Focusing: ${isLocator ? "[Locator]" : selector} ${description ? "- " + description : ""}`);
 
-    await (isLocator
-      ? locator.waitFor({ state: "visible", timeout })
-      : page.waitForSelector(selector, { state: "visible", timeout }));
+    await (isLocator ? locator.waitFor({ state: "visible", timeout }) : page.waitForSelector(selector, { state: "visible", timeout }));
 
     // Perform the focus
     try {
@@ -479,9 +473,7 @@ export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions
       );
 
       // Ensure element is visible and focused before selection
-      await (isLocator
-        ? locator.waitFor({ state: "visible", timeout })
-        : page.waitForSelector(selector, { state: "visible", timeout }));
+      await (isLocator ? locator.waitFor({ state: "visible", timeout }) : page.waitForSelector(selector, { state: "visible", timeout }));
 
       try {
         if (isLocator) {

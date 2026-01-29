@@ -35,9 +35,7 @@ async function main() {
   let userPoolId;
 
   try {
-    const response = await cfnClient.send(
-      new DescribeStacksCommand({ StackName: stackName })
-    );
+    const response = await cfnClient.send(new DescribeStacksCommand({ StackName: stackName }));
 
     const stack = response.Stacks?.[0];
     if (!stack) {
@@ -79,7 +77,7 @@ async function main() {
           { Name: "email_verified", Value: "true" },
         ],
         MessageAction: "SUPPRESS",
-      })
+      }),
     );
 
     console.log("Setting permanent password...");
@@ -91,7 +89,7 @@ async function main() {
         Username: testEmail,
         Password: testPassword,
         Permanent: true,
-      })
+      }),
     );
 
     console.log("");
@@ -107,10 +105,7 @@ async function main() {
     if (process.env.GITHUB_OUTPUT) {
       // Mask the password so it doesn't appear in logs
       console.log(`::add-mask::${testPassword}`);
-      fs.appendFileSync(
-        process.env.GITHUB_OUTPUT,
-        `test-auth-username=${testEmail}\ntest-auth-password=${testPassword}\n`
-      );
+      fs.appendFileSync(process.env.GITHUB_OUTPUT, `test-auth-username=${testEmail}\ntest-auth-password=${testPassword}\n`);
     }
 
     // Also output as simple key=value format for easy sourcing

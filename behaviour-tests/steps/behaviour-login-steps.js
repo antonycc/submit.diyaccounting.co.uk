@@ -52,30 +52,6 @@ export async function loginWithCognitoOrMockAuth(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-native-filled.png` });
     await submitHostedUINativeAuth(page, screenshotPath);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-native-submitted.png` });
-  } else if (testAuthProvider === "cognito") {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-login-with-cognito-or-mock-auth.png` });
-    await initCognitoAuth(page, screenshotPath);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-login-with-cognito-or-mock-auth.png` });
-
-    // Retry logic for Cognito button and OIDC login heading
-    let retries = 0;
-    const maxRetries = 5;
-    while (retries < maxRetries) {
-      try {
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-login-with-cognito-or-mock-auth-retry.png` });
-        await selectOidcCognitoAuth(page, screenshotPath);
-        break; // Success, exit loop
-      } catch (err) {
-        retries++;
-        if (retries === maxRetries) throw err;
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-login-with-cognito-or-mock-auth-failed-attempt.png` });
-      }
-    }
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-login-with-cognito-or-mock-auth.png` });
-    await fillInCognitoAuth(page, screenshotPath);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-login-with-cognito-or-mock-auth-filled-in.png` });
-    await submitCognitoAuth(page, screenshotPath);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-login-with-cognito-or-mock-auth-submitted.png` });
   }
 }
 
@@ -120,41 +96,6 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-02-cognito-provider-auth-clicked.png`,
     });
-  });
-}
-
-export async function selectOidcCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("Attempt to click Cognito button for OIDC", async () => {
-    const cognitoBtn = await page.getByRole("button", { name: "cognito" });
-    await expect(cognitoBtn).toBeVisible({ timeout: 2000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-button.png` });
-
-    await loggedClick(page, cognitoBtn, "Cognito OIDC", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-cognito-button-clicked.png` });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-cognito-button-loaded.png` });
-
-    // Wait for OIDC login heading, retry if not found
-    await page.getByRole("heading", { name: "OIDC - Direct Login" }).waitFor({ timeout: 5000 });
-  });
-}
-
-export async function fillInCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("Fill in some login details", async () => {
-    await loggedClick(page, page.getByRole("button", { name: "Fill Form" }), "Fill Form", { screenshotPath });
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-auth-form-filled.png` });
-  });
-}
-
-export async function submitCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
-  await test.step("Home page has logged in user email", async () => {
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submitting-auth.png` });
-    await loggedClick(page, page.getByRole("button", { name: "Sign in" }), "Sign in", { screenshotPath });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-auth.png` });
   });
 }
 

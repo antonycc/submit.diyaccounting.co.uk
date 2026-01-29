@@ -22,12 +22,12 @@
         <div class="header-left">
           <a href="../index.html" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
           </a>
           <a href="../about.html" title="About & Help" class="info-link">
             <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
             </svg>
           </a>
         </div>
@@ -62,7 +62,6 @@
 
           <!-- Mock auth button injected by login-mock-addon.js in dev environments only -->
           <div id="mock-auth-container"></div>
-
         </div>
       </div>
     </main>
@@ -85,6 +84,7 @@
     <script src="../lib/auth-url-builder.js"></script>
     <script type="module" src="../lib/utils/crypto-utils.js"></script>
     <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/status-messages.js"></script>
@@ -166,9 +166,13 @@
     <script>
       // Only load mock auth addon in local development (localhost/127.0.0.1/ngrok)
       // In production, this script is excluded from deployment and not needed
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('ngrok')) {
-        const script = document.createElement('script');
-        script.src = './login-mock-addon.js';
+      if (
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.hostname.includes("ngrok")
+      ) {
+        const script = document.createElement("script");
+        script.src = "./login-mock-addon.js";
         document.body.appendChild(script);
       }
     </script>

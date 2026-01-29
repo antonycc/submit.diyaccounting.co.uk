@@ -23,12 +23,12 @@
         <div class="header-left">
           <a href="../../index.html" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
           </a>
           <a href="../../about.html" title="About & Help" class="info-link">
             <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
             </svg>
           </a>
         </div>
@@ -67,12 +67,8 @@
 
       <!-- VAT Submission Form -->
       <div class="form-toggle-buttons">
-        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">
-          Show Submission Form
-        </button>
-        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">
-          Cancel Request
-        </button>
+        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">Show Submission Form</button>
+        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
       </div>
       <div id="vatForm" class="form-container">
         <h2>VAT Return Submission</h2>
@@ -80,8 +76,8 @@
           <div class="form-group">
             <label for="vatNumber">VAT registration number</label>
             <p id="vatNumber-hint" class="hint">
-              This is 9 numbers, sometimes with 'GB' at the start, for example
-              123456789 or GB123456789. You can find it on your VAT registration certificate.
+              This is 9 numbers, sometimes with 'GB' at the start, for example 123456789 or GB123456789. You can find it on your VAT
+              registration certificate.
             </p>
             <input
               type="text"
@@ -101,28 +97,14 @@
           <div class="form-group">
             <label>VAT period</label>
             <p id="periodDates-hint" class="hint">Enter the start and end dates of your VAT period</p>
-            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap;">
+            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
               <div>
                 <label for="periodStart">Period start</label>
-                <input
-                  type="date"
-                  id="periodStart"
-                  name="periodStart"
-                  required
-                  aria-describedby="periodDates-hint"
-                  autocomplete="off"
-                />
+                <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" autocomplete="off" />
               </div>
               <div>
                 <label for="periodEnd">Period end</label>
-                <input
-                  type="date"
-                  id="periodEnd"
-                  name="periodEnd"
-                  required
-                  aria-describedby="periodDates-hint"
-                  autocomplete="off"
-                />
+                <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" autocomplete="off" />
               </div>
             </div>
             <!-- Hidden fields for backwards compatibility -->
@@ -156,7 +138,9 @@
             <!-- Box 2: VAT due on acquisitions -->
             <div class="form-group">
               <label for="vatDueAcquisitions">Box 2: VAT due on acquisitions from EU</label>
-              <p id="vatDueAcquisitions-hint" class="hint">Enter an amount with up to 2 decimal places, for example £600 or £193.54. Usually 0 post-Brexit.</p>
+              <p id="vatDueAcquisitions-hint" class="hint">
+                Enter an amount with up to 2 decimal places, for example £600 or £193.54. Usually 0 post-Brexit.
+              </p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
                 <input
@@ -320,7 +304,8 @@
           <div class="declaration-box">
             <input type="checkbox" id="declaration" name="declaration" required aria-describedby="declaration-hint" />
             <label for="declaration">
-              When you submit this VAT information you are making a legal declaration that the information is true and complete. A false declaration can result in prosecution.
+              When you submit this VAT information you are making a legal declaration that the information is true and complete. A false
+              declaration can result in prosecution.
             </label>
             <p id="declaration-hint" class="hint">You must tick this box to confirm you understand before submitting</p>
           </div>
@@ -359,10 +344,6 @@
 
           <button type="submit" class="btn" id="submitBtn">Submit VAT Return</button>
         </form>
-
-        <div class="developer-controls">
-          <button type="button" id="toggleDeveloperMode" class="developer-button">Show Developer Options</button>
-        </div>
       </div>
 
       <!-- Receipt Display -->
@@ -387,12 +368,6 @@
         </p>
       </div>
 
-      <!-- Navigation Button -->
-      <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="homePageFromMainBtn" onclick="window.location.href = '../../index.html'">
-          Return to the home page
-        </button>
-      </div>
     </main>
 
     <footer>
@@ -412,6 +387,7 @@
     <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../lib/test-data-generator.js"></script>
     <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
     <script type="module" src="../../lib/utils/obligation-utils.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
@@ -458,7 +434,7 @@
             return `${formattedObligation.displayName} (Due: ${formattedObligation.dueDateFormatted})`;
           }
           return formattedObligation.displayName;
-        }
+        },
       };
 
       // Note: Obligation dropdown has been replaced with date inputs (periodStart/periodEnd).
@@ -619,47 +595,44 @@
         let isValid = true;
 
         // Boxes 1-4: monetary amounts with 2 decimal places
-        isValid = validateVatMonetaryAmount(
-          document.getElementById("vatDueSales").value,
-          "vatDueSales", "VAT due on sales"
-        ) && isValid;
+        isValid = validateVatMonetaryAmount(document.getElementById("vatDueSales").value, "vatDueSales", "VAT due on sales") && isValid;
 
-        isValid = validateVatMonetaryAmount(
-          document.getElementById("vatDueAcquisitions").value,
-          "vatDueAcquisitions", "VAT due on acquisitions"
-        ) && isValid;
+        isValid =
+          validateVatMonetaryAmount(document.getElementById("vatDueAcquisitions").value, "vatDueAcquisitions", "VAT due on acquisitions") &&
+          isValid;
 
-        isValid = validateVatMonetaryAmount(
-          document.getElementById("vatReclaimedCurrPeriod").value,
-          "vatReclaimedCurrPeriod", "VAT reclaimed"
-        ) && isValid;
+        isValid =
+          validateVatMonetaryAmount(document.getElementById("vatReclaimedCurrPeriod").value, "vatReclaimedCurrPeriod", "VAT reclaimed") &&
+          isValid;
 
         // Box 5: net VAT due (calculated, but validate anyway)
-        isValid = validateNetVatDue(
-          document.getElementById("netVatDue").value,
-          "netVatDue"
-        ) && isValid;
+        isValid = validateNetVatDue(document.getElementById("netVatDue").value, "netVatDue") && isValid;
 
         // Boxes 6-9: whole pound amounts
-        isValid = validateVatWholeAmount(
-          document.getElementById("totalValueSalesExVAT").value,
-          "totalValueSalesExVAT", "total value of sales"
-        ) && isValid;
+        isValid =
+          validateVatWholeAmount(document.getElementById("totalValueSalesExVAT").value, "totalValueSalesExVAT", "total value of sales") &&
+          isValid;
 
-        isValid = validateVatWholeAmount(
-          document.getElementById("totalValuePurchasesExVAT").value,
-          "totalValuePurchasesExVAT", "total value of purchases"
-        ) && isValid;
+        isValid =
+          validateVatWholeAmount(
+            document.getElementById("totalValuePurchasesExVAT").value,
+            "totalValuePurchasesExVAT",
+            "total value of purchases",
+          ) && isValid;
 
-        isValid = validateVatWholeAmount(
-          document.getElementById("totalValueGoodsSuppliedExVAT").value,
-          "totalValueGoodsSuppliedExVAT", "total value of goods supplied to EU"
-        ) && isValid;
+        isValid =
+          validateVatWholeAmount(
+            document.getElementById("totalValueGoodsSuppliedExVAT").value,
+            "totalValueGoodsSuppliedExVAT",
+            "total value of goods supplied to EU",
+          ) && isValid;
 
-        isValid = validateVatWholeAmount(
-          document.getElementById("totalAcquisitionsExVAT").value,
-          "totalAcquisitionsExVAT", "total acquisitions from EU"
-        ) && isValid;
+        isValid =
+          validateVatWholeAmount(
+            document.getElementById("totalAcquisitionsExVAT").value,
+            "totalAcquisitionsExVAT",
+            "total acquisitions from EU",
+          ) && isValid;
 
         return isValid;
       }
@@ -676,7 +649,7 @@
           totalValuePurchasesExVAT: Math.round(parseFloat(document.getElementById("totalValuePurchasesExVAT").value) || 0),
           totalValueGoodsSuppliedExVAT: Math.round(parseFloat(document.getElementById("totalValueGoodsSuppliedExVAT").value) || 0),
           totalAcquisitionsExVAT: Math.round(parseFloat(document.getElementById("totalAcquisitionsExVAT").value) || 0),
-          finalised: true
+          finalised: true,
         };
       }
 
@@ -860,11 +833,7 @@
 
           // Submit VAT return with 9-box data
           // Pass period info (either periodKey or periodStart/periodEnd)
-          const submitResponse = await submitVatWithCalculatedHeaders(
-            submissionData.vatNumber,
-            submissionData,
-            accessToken,
-          );
+          const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, accessToken);
 
           // Display success
           showStatus("VAT return processed", "success");
@@ -918,7 +887,14 @@
         if (testScenario) {
           requestHeaders["Gov-Test-Scenario"] = testScenario;
         }
-        return await submitVat(vatNumber, vatData, accessToken, requestHeaders, runFraudPreventionHeaderValidation, allowSandboxObligations);
+        return await submitVat(
+          vatNumber,
+          vatData,
+          accessToken,
+          requestHeaders,
+          runFraudPreventionHeaderValidation,
+          allowSandboxObligations,
+        );
       }
 
       async function submitVat(vatNumber, vatData, accessToken, headers, runFraudPreventionHeaderValidation, allowSandboxObligations) {
@@ -1054,27 +1030,30 @@
           sessionStorage.removeItem("hmrcAccount");
         }
 
-        // Toggle developer mode button
-        const toggleBtn = document.getElementById("toggleDeveloperMode");
+        // Developer mode is now controlled by the global toggle via developer-mode.js
+        // Show developer section based on sessionStorage and listen for changes
         const devSection = document.getElementById("developerSection");
+        const sandboxObligationsOption = document.getElementById("sandboxObligationsOption");
+        // hmrcAccount was already declared above from urlParams
 
-        if (toggleBtn && devSection) {
-          toggleBtn.addEventListener("click", () => {
-            const isVisible = devSection.style.display !== "none";
-            devSection.style.display = isVisible ? "none" : "block";
-            toggleBtn.textContent = isVisible ? "Show Developer Options" : "Hide Developer Options";
-
-            // Show sandbox obligations option only in sandbox mode when developer options are visible
-            const sandboxObligationsOption = document.getElementById("sandboxObligationsOption");
-            const urlParams = new URLSearchParams(window.location.search);
-            const hmrcAccount = urlParams.get("hmrcAccount");
-            if (sandboxObligationsOption && hmrcAccount === "sandbox" && !isVisible) {
-              sandboxObligationsOption.style.display = "block";
-            } else if (sandboxObligationsOption) {
-              sandboxObligationsOption.style.display = "none";
-            }
-          });
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) {
+            devSection.style.display = developerModeEnabled ? "block" : "none";
+          }
+          // Show sandbox obligations option only in sandbox mode when developer mode is on
+          if (sandboxObligationsOption && hmrcAccount === "sandbox" && developerModeEnabled) {
+            sandboxObligationsOption.style.display = "block";
+          } else if (sandboxObligationsOption) {
+            sandboxObligationsOption.style.display = "none";
+          }
         }
+
+        // Initial check
+        updateDeveloperSectionVisibility();
+
+        // Listen for developer mode toggle changes
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
       }
 
       // Expose page-specific functions to window for testing
@@ -1134,39 +1113,39 @@
 
         if (vatDueSalesInput) {
           vatDueSalesInput.addEventListener("input", calculateTotalVatDue);
-          vatDueSalesInput.addEventListener("blur", function() {
+          vatDueSalesInput.addEventListener("blur", function () {
             validateVatMonetaryAmount(this.value, "vatDueSales", "VAT due on sales");
           });
         }
         if (vatDueAcquisitionsInput) {
           vatDueAcquisitionsInput.addEventListener("input", calculateTotalVatDue);
-          vatDueAcquisitionsInput.addEventListener("blur", function() {
+          vatDueAcquisitionsInput.addEventListener("blur", function () {
             validateVatMonetaryAmount(this.value, "vatDueAcquisitions", "VAT due on acquisitions");
           });
         }
         if (vatReclaimedInput) {
           vatReclaimedInput.addEventListener("input", calculateNetVatDue);
-          vatReclaimedInput.addEventListener("blur", function() {
+          vatReclaimedInput.addEventListener("blur", function () {
             validateVatMonetaryAmount(this.value, "vatReclaimedCurrPeriod", "VAT reclaimed");
           });
         }
         if (totalValueSalesInput) {
-          totalValueSalesInput.addEventListener("blur", function() {
+          totalValueSalesInput.addEventListener("blur", function () {
             validateVatWholeAmount(this.value, "totalValueSalesExVAT", "total value of sales");
           });
         }
         if (totalValuePurchasesInput) {
-          totalValuePurchasesInput.addEventListener("blur", function() {
+          totalValuePurchasesInput.addEventListener("blur", function () {
             validateVatWholeAmount(this.value, "totalValuePurchasesExVAT", "total value of purchases");
           });
         }
         if (totalValueGoodsSuppliedInput) {
-          totalValueGoodsSuppliedInput.addEventListener("blur", function() {
+          totalValueGoodsSuppliedInput.addEventListener("blur", function () {
             validateVatWholeAmount(this.value, "totalValueGoodsSuppliedExVAT", "total value of goods supplied to EU");
           });
         }
         if (totalAcquisitionsInput) {
-          totalAcquisitionsInput.addEventListener("blur", function() {
+          totalAcquisitionsInput.addEventListener("blur", function () {
             validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
           });
         }
@@ -1178,10 +1157,16 @@
 
         // Fields to persist
         const persistableFields = [
-          "vatNumber", "periodStart", "periodEnd",
-          "vatDueSales", "vatDueAcquisitions", "vatReclaimedCurrPeriod",
-          "totalValueSalesExVAT", "totalValuePurchasesExVAT",
-          "totalValueGoodsSuppliedExVAT", "totalAcquisitionsExVAT"
+          "vatNumber",
+          "periodStart",
+          "periodEnd",
+          "vatDueSales",
+          "vatDueAcquisitions",
+          "vatReclaimedCurrPeriod",
+          "totalValueSalesExVAT",
+          "totalValuePurchasesExVAT",
+          "totalValueGoodsSuppliedExVAT",
+          "totalAcquisitionsExVAT",
         ];
 
         // Save form data to sessionStorage

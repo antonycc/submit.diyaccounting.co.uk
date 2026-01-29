@@ -364,4 +364,7 @@ CLAUDE.local.md
 
 # Generated test bundle
 web/public/submit.bundle.js
+
+# Generated simulator build output
+web/public-simulator/
 /getVatObligationsBehaviour.output.txt

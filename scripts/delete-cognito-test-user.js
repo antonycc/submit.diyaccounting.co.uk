@@ -11,10 +11,7 @@
 // It is idempotent: deleting a user that doesn't exist is a no-op.
 
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
-import {
-  CognitoIdentityProviderClient,
-  AdminDeleteUserCommand,
-} from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProviderClient, AdminDeleteUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 
 const environmentName = process.argv[2];
 const username = process.argv[3];
@@ -39,9 +36,7 @@ async function main() {
   let userPoolId;
 
   try {
-    const response = await cfnClient.send(
-      new DescribeStacksCommand({ StackName: stackName })
-    );
+    const response = await cfnClient.send(new DescribeStacksCommand({ StackName: stackName }));
 
     const stack = response.Stacks?.[0];
     if (!stack) {
@@ -69,7 +64,7 @@ async function main() {
       new AdminDeleteUserCommand({
         UserPoolId: userPoolId,
         Username: username,
-      })
+      }),
     );
 
     console.log("");
