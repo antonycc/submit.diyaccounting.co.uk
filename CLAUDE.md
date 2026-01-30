@@ -308,16 +308,26 @@ When CloudFormation references resources that might not exist (e.g., log groups 
 
 ## AWS CLI Access (Local Development)
 
-To query AWS resources or debug infrastructure issues locally, use the assume role scripts:
+To query AWS resources or debug infrastructure issues locally, use the assume role scripts.
+
+**CRITICAL for Claude Code:** Each Bash tool call runs in a fresh shell - environment variables do NOT persist between calls. You MUST combine the assume-role source and the aws command in a **single** Bash tool call:
 
 ```bash
-# Assume the deployment role (gets temporary credentials for ~1 hour)
-. ./scripts/aws-assume-submit-deployment-role.sh
+# CORRECT - assume and query in one command
+. ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && aws cloudformation describe-stacks --stack-name ci-env-IdentityStack
 
-# Now you can run AWS CLI commands
-aws cloudformation describe-stacks --stack-name ci-env-IdentityStack
-aws dynamodb scan --table-name ci-env-bundles
-aws logs tail /aws/lambda/ci-env-customAuthorizer
+# WRONG - credentials lost between separate Bash tool calls
+. ./scripts/aws-assume-submit-deployment-role.sh   # Call 1: sets env vars
+aws cloudformation describe-stacks ...              # Call 2: fresh shell, no credentials!
+```
+
+**Suppress assume script output** with `2>/dev/null` to keep command output clean. Do NOT use `2>&1` on the assume script - it mixes verbose identity output with command results.
+
+**Multiple AWS commands** - chain them in a single Bash call:
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && \
+  aws cloudformation describe-stacks --stack-name ci-env-IdentityStack --query 'Stacks[0].StackStatus' && \
+  aws dynamodb scan --table-name ci-env-bundles
 ```
 
 **Available assume role scripts:**

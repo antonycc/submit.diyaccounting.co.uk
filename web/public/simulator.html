@@ -173,6 +173,7 @@
         <a href="help/index.html">Help & FAQs</a>
         <a href="guide/index.html">User Guide</a>
         <a href="about.html">About</a>
+        <a href="mcp/index.html">MCP Server (coming soon)</a>
       </nav>
 
       <!-- Demo Notice -->
@@ -207,7 +208,10 @@
       </div>
 
       <!-- Simulator Container -->
-      <div class="simulator-container" role="region" aria-label="DIY Accounting Submit Simulator">
+      <div class="simulator-container" id="simulatorContainer" role="region" aria-label="DIY Accounting Submit Simulator">
+        <button type="button" class="simulator-expand-btn" id="simulatorExpandBtn" aria-label="Expand simulator">
+          <span id="expandIcon">&#x26F6;</span> <span id="expandLabel">Expand</span>
+        </button>
         <div class="simulator-overlay-label" aria-hidden="true">SIMULATOR</div>
         <iframe
           id="simulatorFrame"
@@ -272,6 +276,31 @@
       // which switches the iframe to the same-origin /sim/ path
       if (window.__simulatorLocal) window.__simulatorFrameSrc = "/sim/";
       document.getElementById("simulatorFrame").src = window.__simulatorFrameSrc;
+    </script>
+
+    <script>
+      // Lightbox expand/collapse for simulator iframe
+      document.getElementById("simulatorExpandBtn").addEventListener("click", function () {
+        var container = document.getElementById("simulatorContainer");
+        var icon = document.getElementById("expandIcon");
+        var label = document.getElementById("expandLabel");
+        var isExpanded = container.classList.toggle("simulator-expanded");
+        icon.textContent = isExpanded ? "\u2716" : "\u26F6";
+        label.textContent = isExpanded ? "Close" : "Expand";
+        this.setAttribute("aria-label", isExpanded ? "Close expanded simulator" : "Expand simulator");
+      });
+      // ESC key to close lightbox
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          var container = document.getElementById("simulatorContainer");
+          if (container.classList.contains("simulator-expanded")) {
+            container.classList.remove("simulator-expanded");
+            document.getElementById("expandIcon").textContent = "\u26F6";
+            document.getElementById("expandLabel").textContent = "Expand";
+            document.getElementById("simulatorExpandBtn").setAttribute("aria-label", "Expand simulator");
+          }
+        }
+      });
     </script>
 
     <script type="module" src="./widgets/simulator-journeys.js"></script>

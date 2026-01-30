@@ -131,6 +131,16 @@ const PII_PATTERNS = [
 
   // Bearer tokens in strings (e.g., in error messages)
   { name: "TOKEN", pattern: /Bearer\s+([A-Za-z0-9_-]+\.?[A-Za-z0-9_-]*\.?[A-Za-z0-9_-]*)/gi },
+
+  // Key=value pairs for secrets in query strings, form bodies, URLs, and log messages
+  // Covers: client_secret=xxx, CLIENT_SECRET=xxx, clientSecret=xxx, api_key=xxx, apiKey=xxx,
+  //         password=xxx, access_token=xxx, refresh_token=xxx, authorization=xxx
+  // eslint-disable-next-line security/detect-unsafe-regex -- linear alternation, no backtracking risk
+  {
+    name: "SECRET",
+    pattern:
+      /\b(client_secret|CLIENT_SECRET|clientSecret|client\.secret|api_key|API_KEY|apiKey|password|PASSWORD|access_token|ACCESS_TOKEN|accessToken|refresh_token|REFRESH_TOKEN|refreshToken|authorization|Authorization|AUTHORIZATION|id_token|idToken|hmrcAccessToken)[\s]*[=:]\s*([^\s&,;'"(){}]+)/gi,
+  },
 ];
 
 /**
@@ -138,9 +148,37 @@ const PII_PATTERNS = [
  * @param {string} value - The string to sanitise
  * @returns {string} The sanitised string
  */
+/**
+ * Check if a string contains sensitive data patterns (secrets, tokens, keys).
+ * Returns true if any secret-like key=value pattern is detected.
+ * @param {string} value - The string to check
+ * @returns {boolean} True if sensitive data detected
+ */
+export function containsSensitiveData(value) {
+  if (typeof value !== "string") return false;
+  const secretPattern =
+    /\b(client_secret|CLIENT_SECRET|clientSecret|client\.secret|api_key|API_KEY|apiKey|password|PASSWORD|access_token|ACCESS_TOKEN|accessToken|refresh_token|REFRESH_TOKEN|refreshToken|authorization|Authorization|AUTHORIZATION|id_token|idToken|hmrcAccessToken)[\s]*[=:]\s*[^\s&,;'"){}\]]+/gi;
+  secretPattern.lastIndex = 0;
+  return secretPattern.test(value);
+}
+
+/**
+ * Sanitise a string value by replacing PII patterns with labelled placeholders.
+ * Logs at ERROR level when sensitive credential data is detected.
+ * @param {string} value - The string to sanitise
+ * @returns {string} The sanitised string
+ */
 export function sanitiseString(value) {
   if (typeof value !== "string") {
     return value;
+  }
+
+  // Detect and alert on sensitive credential data before redaction
+  if (containsSensitiveData(value)) {
+    // Use process.stderr directly to avoid recursive sanitisation through the logger
+    process.stderr.write(
+      `{"level":50,"time":"${new Date().toISOString()}","msg":"SENSITIVE DATA DETECTED in log output - credentials were present and have been redacted"}\n`,
+    );
   }
 
   let result = value;

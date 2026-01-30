@@ -1491,6 +1491,49 @@ html[data-simulator="true"] button[aria-label]::after {
   border: none;
 }
 
+/* Lightbox expand button */
+.simulator-expand-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 101;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.simulator-expand-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Lightbox expanded state */
+.simulator-container.simulator-expanded {
+  position: fixed;
+  inset: 2.5vh 2.5vw;
+  width: 95vw;
+  height: 95vh;
+  z-index: 9999;
+  margin: 0;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+}
+
+.simulator-container.simulator-expanded .simulator-expand-btn {
+  background: rgba(220, 53, 69, 0.9);
+}
+
+.simulator-container.simulator-expanded .simulator-expand-btn:hover {
+  background: rgba(220, 53, 69, 1);
+}
+
 /* Simulator notice styling */
 .simulator-notice {
   background: var(--color-warning-bg);

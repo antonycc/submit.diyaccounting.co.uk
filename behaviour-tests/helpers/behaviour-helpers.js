@@ -16,7 +16,7 @@ import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
 import fs from "node:fs";
 import path from "node:path";
-import { createLogger } from "../../app/lib/logger.js";
+import { createLogger, sanitiseString, sanitiseData } from "../../app/lib/logger.js";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/behaviour-helpers.js" });
 
@@ -239,12 +239,13 @@ export async function runLocalHttpSimulator(runSimulator, port) {
 
 export function addOnPageLogging(page) {
   // Always capture console and page errors (useful, low volume)
+  // All output is sanitised through the logger's PII redaction to prevent credential leakage
   page.on("console", (msg) => {
-    console.log(`[BROWSER CONSOLE ${msg.type()}]: ${msg.text()}`);
+    logger.info(sanitiseString(`[BROWSER CONSOLE ${msg.type()}]: ${msg.text()}`));
   });
 
   page.on("pageerror", (error) => {
-    console.log(`[BROWSER ERROR]: ${error.message}`);
+    logger.info(sanitiseString(`[BROWSER ERROR]: ${error.message}`));
   });
 
   // Verbose network logging can flood CI logs and cause timeouts.
@@ -253,22 +254,22 @@ export function addOnPageLogging(page) {
 
   if (verboseHttp) {
     page.on("request", (request) => {
-      console.log(`[HTTP REQUEST] ${request.method()} ${request.url()}`);
-      console.log(`[HTTP REQUEST HEADERS] ${JSON.stringify(request.headers(), null, 2)}`);
+      logger.info(sanitiseString(`[HTTP REQUEST] ${request.method()} ${request.url()}`));
+      logger.info({ headers: sanitiseData(request.headers()) }, "[HTTP REQUEST HEADERS]");
       if (request.postData()) {
-        console.log(`[HTTP REQUEST BODY] ${request.postData()}`);
+        logger.info(sanitiseString(`[HTTP REQUEST BODY] ${request.postData()}`));
       }
     });
 
     page.on("response", (response) => {
-      console.log(`[HTTP RESPONSE] ${response.status()} ${response.url()}`);
-      console.log(`[HTTP RESPONSE HEADERS] ${JSON.stringify(response.headers(), null, 2)}`);
+      logger.info(sanitiseString(`[HTTP RESPONSE] ${response.status()} ${response.url()}`));
+      logger.info({ headers: sanitiseData(response.headers()) }, "[HTTP RESPONSE HEADERS]");
     });
   }
 
   // Always log failed requests — these are important for diagnosing errors
   page.on("requestfailed", (request) => {
-    console.log(`[HTTP REQUEST FAILED] ${request.method()} ${request.url()} - ${request.failure()?.errorText}`);
+    logger.info(sanitiseString(`[HTTP REQUEST FAILED] ${request.method()} ${request.url()} - ${request.failure()?.errorText}`));
   });
 }
 
