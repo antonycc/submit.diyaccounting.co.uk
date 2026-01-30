@@ -145,7 +145,7 @@ public class SimulatorStack extends Stack {
                 .description("Public simulator for DIY Accounting Submit - demo mode only")
                 .runtime(Runtime.NODEJS_20_X)
                 .architecture(Architecture.X86_64)
-                .handler("run.sh") // Lambda Web Adapter entrypoint
+                .handler("lambda-server.handler") // Module starts HTTP server at import time; Lambda Web Adapter proxies requests
                 .code(Code.fromAsset(props.simulatorCodePath()))
                 .memorySize(512)
                 .timeout(Duration.seconds(30))

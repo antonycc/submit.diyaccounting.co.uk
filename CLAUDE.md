@@ -308,6 +308,8 @@ When CloudFormation references resources that might not exist (e.g., log groups 
 
 ## AWS CLI Access (Local Development)
 
+**Read-only AWS operations are always permitted.** You may always query AWS resources (describe, get, list, logs, etc.) without asking for permission. This includes CloudFormation stack status, Lambda configuration, CloudWatch logs, DynamoDB scans, CloudFront distributions, and any other read-only API calls needed for investigation and debugging.
+
 To query AWS resources or debug infrastructure issues locally, use the assume role scripts.
 
 **CRITICAL for Claude Code:** Each Bash tool call runs in a fresh shell - environment variables do NOT persist between calls. You MUST combine the assume-role source and the aws command in a **single** Bash tool call:
