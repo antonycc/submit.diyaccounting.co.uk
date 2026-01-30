@@ -138,13 +138,23 @@ test.afterEach(async ({ page }, testInfo) => {
 async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation }) {
   await initSubmitVat(page, screenshotPath);
   await fillInVat(page, vatNumber, undefined, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
-  await submitFormVat(page, screenshotPath);
-  await acceptCookiesHmrc(page, screenshotPath);
-  await goToHmrcAuth(page, screenshotPath);
-  await initHmrcAuth(page, screenshotPath);
-  await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
-  await submitHmrcAuth(page, screenshotPath);
-  await grantPermissionHmrcAuth(page, screenshotPath);
+  // Click submit. The HMRC access token may or may not be cached:
+  // - Cached (first resubmission after success): client calls API directly
+  // - Cleared (after a failed submission): client redirects to HMRC OAuth
+  await page.locator("#submitBtn").click();
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1000);
+  // Check whether we landed on the HMRC OAuth consent page
+  const isHmrcAuthPage = await page.locator("#appNameParagraph").isVisible().catch(() => false);
+  if (isHmrcAuthPage) {
+    // Token was cleared by a previous failed submission - re-authenticate
+    await acceptCookiesHmrc(page, screenshotPath);
+    await goToHmrcAuth(page, screenshotPath);
+    await initHmrcAuth(page, screenshotPath);
+    await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
+    await submitHmrcAuth(page, screenshotPath);
+    await grantPermissionHmrcAuth(page, screenshotPath);
+  }
   await completeVat(page, baseUrl, testScenario, screenshotPath);
   await verifyVatSubmission(page, testScenario, screenshotPath);
   await goToHomePageUsingMainNav(page, screenshotPath);
