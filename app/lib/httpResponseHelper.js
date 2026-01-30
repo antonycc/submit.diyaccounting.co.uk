@@ -4,7 +4,7 @@
 // app/lib/httpResponseHelper.js
 
 import { v4 as uuidv4 } from "uuid";
-import { createLogger, context } from "./logger.js";
+import { createLogger, context, sanitiseString, sanitiseData } from "./logger.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 
 const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
@@ -145,9 +145,9 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
     }),
   };
   if (request) {
-    levelledLogger({ message: "Responding to request with response", request: request.toString(), response });
+    levelledLogger({ message: "Responding to request with response", request: request.toString(), response: sanitiseData(response) });
   } else {
-    levelledLogger({ message: "Responding with response", response });
+    levelledLogger({ message: "Responding with response", response: sanitiseData(response) });
   }
   return response;
 }
@@ -204,13 +204,13 @@ export function extractRequest(event) {
           request.searchParams.append(key, event.queryStringParameters[key]);
         });
       }
-      logger.info({ message: "Processing request with event", request: request.toString(), event });
+      logger.info({ message: "Processing request with event", request: request.toString(), event: sanitiseData(event) });
     } catch (err) {
-      logger.warn({ message: "Error building request URL from event", error: err, event });
+      logger.warn({ message: "Error building request URL from event", error: err, event: sanitiseData(event) });
       request = "https://unknown-url"; // Fallback URL in case of error
     }
   } else {
-    logger.warn({ message: "Event has missing URL path or host header", event });
+    logger.warn({ message: "Event has missing URL path or host header", event: sanitiseData(event) });
     request = "https://unknown";
   }
   return { request, requestId, amznTraceId, traceparent, correlationId };
@@ -333,7 +333,7 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
     message: `Request to POST ${providerUrl}`,
     url: providerUrl,
     headers: { ...requestHeaders },
-    body: requestBody.toString(),
+    body: sanitiseString(requestBody.toString()),
   });
 
   let duration = 0;

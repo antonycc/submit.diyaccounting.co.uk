@@ -129,8 +129,8 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
-    serverProcess.stdout.on("data", (data) => logger.info(`[http-stdout]: ${data.toString().trim()}`));
-    serverProcess.stderr.on("data", (data) => logger.error(`[http-stderr]: ${data.toString().trim()}`));
+    serverProcess.stdout.on("data", (data) => logger.info(sanitiseString(`[http-stdout]: ${data.toString().trim()}`)));
+    serverProcess.stderr.on("data", (data) => logger.error(sanitiseString(`[http-stderr]: ${data.toString().trim()}`)));
 
     await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000, undefined, "http");
   } else {
