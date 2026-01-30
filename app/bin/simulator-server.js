@@ -265,7 +265,7 @@ export function createSimulatorServer() {
   });
 
   // VAT obligations endpoint
-  app.get("/api/v1/hmrc/vat/obligations", (req, res) => {
+  app.get("/api/v1/hmrc/vat/obligation", (req, res) => {
     const { vrn, from, to, status: statusFilter } = req.query;
 
     // Import and call the obligations handler

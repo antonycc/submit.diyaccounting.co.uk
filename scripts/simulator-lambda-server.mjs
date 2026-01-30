@@ -183,6 +183,10 @@ async function serveStatic(req, res, urlPath) {
     });
     res.end(content);
   } catch {
+    // API paths must never get SPA fallback - return JSON 404
+    if (safePath.startsWith("/api/")) {
+      return sendJson(res, 404, { error: "Not found", path: safePath });
+    }
     // SPA fallback - serve index.html for HTML-like requests
     if (!extname(safePath) || extname(safePath) === ".html") {
       try {
@@ -357,7 +361,7 @@ async function handleRequest(req, res) {
   }
 
   // VAT obligations
-  if (path === "/api/v1/hmrc/vat/obligations" && req.method === "GET") {
+  if (path === "/api/v1/hmrc/vat/obligation" && req.method === "GET") {
     const statusFilter = url.searchParams.get("status");
     let obligations = generateDefaultObligations();
     if (statusFilter) {
