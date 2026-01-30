@@ -188,8 +188,9 @@ function transformHtmlFile(filePath) {
   // Remove old localstorage-viewer widget (replaced by developer floats)
   content = content.replace(/<script src="[^"]*localstorage-viewer\.js"><\/script>\s*/g, "");
 
-  // Insert simulator script before closing </body>
-  content = content.replace(/<\/body>/i, simulatorScript + "</body>");
+  // Insert simulator script and postMessage bridge before closing </body>
+  const bridgeScript = `  <script src="/widgets/simulator-bridge.js"></script>\n`;
+  content = content.replace(/<\/body>/i, simulatorScript + bridgeScript + "</body>");
 
   fs.writeFileSync(filePath, content, "utf-8");
 }

@@ -346,6 +346,7 @@
           }
 
           controlsEl.style.display = "none";
+          if (activeJourney) activeJourney.destroy();
           activeJourney = null;
 
           // Re-enable journey buttons

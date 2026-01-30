@@ -3,6 +3,7 @@
 
 // web/public/widgets/simulator-journeys.js
 // Guided journey automation for simulator iframe - like Playwright running in the browser
+// Supports both same-origin (direct DOM) and cross-origin (postMessage bridge) modes.
 
 /**
  * SimulatorJourney class - automates click-through demos inside the simulator iframe
@@ -15,20 +16,71 @@ export class SimulatorJourney {
     this.totalSteps = 0;
     this.paused = false;
     this.aborted = false;
+    this.crossOrigin = false;
+    this._pendingResponses = new Map();
+    this._messageHandler = null;
 
     // Try to access iframe document (may fail for cross-origin)
     try {
       this.doc = iframe.contentDocument || iframe.contentWindow.document;
     } catch (e) {
-      console.warn("Cannot access iframe document (cross-origin). Using postMessage instead.");
+      console.warn("Cross-origin iframe detected. Using postMessage bridge.");
       this.doc = null;
+      this.crossOrigin = true;
+      this._setupMessageListener();
     }
+  }
+
+  /**
+   * Set up listener for postMessage responses from the iframe bridge
+   */
+  _setupMessageListener() {
+    this._messageHandler = (event) => {
+      const msg = event.data;
+      if (!msg || msg.type !== "simulator-response") return;
+      const resolve = this._pendingResponses.get(msg.id);
+      if (resolve) {
+        this._pendingResponses.delete(msg.id);
+        resolve(msg);
+      }
+    };
+    window.addEventListener("message", this._messageHandler);
+  }
+
+  /**
+   * Send a command to the iframe bridge via postMessage and wait for response
+   */
+  _sendCommand(command) {
+    return new Promise((resolve) => {
+      const id = Math.random().toString(36).substring(2);
+      this._pendingResponses.set(id, resolve);
+      this.iframe.contentWindow.postMessage({ type: "simulator-command", id, ...command }, "*");
+      // Timeout after 10s (fill with typewriter can take a while)
+      setTimeout(() => {
+        if (this._pendingResponses.has(id)) {
+          this._pendingResponses.delete(id);
+          resolve({ success: false, error: "timeout" });
+        }
+      }, 10000);
+    });
+  }
+
+  /**
+   * Clean up message listener
+   */
+  destroy() {
+    if (this._messageHandler) {
+      window.removeEventListener("message", this._messageHandler);
+      this._messageHandler = null;
+    }
+    this._pendingResponses.clear();
   }
 
   /**
    * Get the iframe document, handling cross-origin restrictions
    */
   getDocument() {
+    if (this.crossOrigin) return null;
     try {
       return this.iframe.contentDocument || this.iframe.contentWindow.document;
     } catch (e) {
@@ -49,9 +101,25 @@ export class SimulatorJourney {
   }
 
   /**
+   * Check if an element matching text exists (works cross-origin)
+   */
+  async findByTextExists(selector, text) {
+    if (this.crossOrigin) {
+      const result = await this._sendCommand({ command: "findByText", selector, text });
+      return result.found || false;
+    }
+    return this.findByText(selector, text) !== null;
+  }
+
+  /**
    * Highlight an element in the iframe
    */
   async highlight(selector) {
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      return null; // No direct element reference in cross-origin mode
+    }
+
     const doc = this.getDocument();
     if (!doc) return null;
 
@@ -70,6 +138,11 @@ export class SimulatorJourney {
    * Remove highlight from an element
    */
   unhighlight(selector) {
+    if (this.crossOrigin) {
+      this._sendCommand({ command: "unhighlight", selector });
+      return;
+    }
+
     const doc = this.getDocument();
     if (!doc) return;
 
@@ -84,12 +157,19 @@ export class SimulatorJourney {
    */
   async click(selector, description) {
     this.updateStatus(description);
-    const el = await this.highlight(selector);
-    await this.wait(800);
 
-    if (el) {
-      el.click();
-      el.classList.remove("simulator-highlight");
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      await this.wait(800);
+      await this._sendCommand({ command: "click", selector });
+    } else {
+      const el = await this.highlight(selector);
+      await this.wait(800);
+
+      if (el) {
+        el.click();
+        el.classList.remove("simulator-highlight");
+      }
     }
 
     await this.waitForLoad();
@@ -100,17 +180,24 @@ export class SimulatorJourney {
    */
   async clickByText(selector, text, description) {
     this.updateStatus(description);
-    const el = this.findByText(selector, text);
 
-    if (el) {
-      el.classList.add("simulator-highlight");
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlightByText", selector, text });
       await this.wait(800);
-      el.click();
-      el.classList.remove("simulator-highlight");
+      await this._sendCommand({ command: "clickByText", selector, text });
     } else {
-      console.warn(`Element not found by text: ${selector} containing "${text}"`);
-      await this.wait(800);
+      const el = this.findByText(selector, text);
+
+      if (el) {
+        el.classList.add("simulator-highlight");
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        await this.wait(800);
+        el.click();
+        el.classList.remove("simulator-highlight");
+      } else {
+        console.warn(`Element not found by text: ${selector} containing "${text}"`);
+        await this.wait(800);
+      }
     }
 
     await this.waitForLoad();
@@ -121,6 +208,14 @@ export class SimulatorJourney {
    */
   async fill(selector, value, description) {
     this.updateStatus(description);
+
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      await this.wait(500);
+      await this._sendCommand({ command: "fill", selector, value });
+      return;
+    }
+
     const el = await this.highlight(selector);
     await this.wait(500);
 
@@ -158,6 +253,15 @@ export class SimulatorJourney {
    */
   async select(selector, value, description) {
     this.updateStatus(description);
+
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      await this.wait(500);
+      await this._sendCommand({ command: "select", selector, value });
+      await this.wait(300);
+      return;
+    }
+
     const el = await this.highlight(selector);
     await this.wait(500);
 
@@ -168,6 +272,39 @@ export class SimulatorJourney {
     }
 
     await this.wait(300);
+  }
+
+  /**
+   * Query an element's state (works cross-origin)
+   */
+  async query(selector) {
+    if (this.crossOrigin) {
+      return await this._sendCommand({ command: "query", selector });
+    }
+    const doc = this.getDocument();
+    const el = doc ? doc.querySelector(selector) : null;
+    return {
+      found: !!el,
+      disabled: el ? !!el.disabled : false,
+      checked: el ? !!el.checked : false,
+      value: el ? el.value : undefined,
+      textContent: el ? (el.textContent || "").trim().substring(0, 200) : undefined,
+    };
+  }
+
+  /**
+   * Set a checkbox to checked (works cross-origin)
+   */
+  async check(selector) {
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "check", selector });
+      return;
+    }
+    const doc = this.getDocument();
+    if (doc) {
+      const el = doc.querySelector(selector);
+      if (el) el.checked = true;
+    }
   }
 
   /**
@@ -212,6 +349,11 @@ export class SimulatorJourney {
    * Scroll to the bottom of the iframe document to show results
    */
   scrollToResults() {
+    if (this.crossOrigin) {
+      this._sendCommand({ command: "scrollToBottom" });
+      return;
+    }
+
     const doc = this.getDocument();
     if (!doc) return;
     const body = doc.body || doc.documentElement;
@@ -244,9 +386,8 @@ async function ensureTestBundle(journey) {
   await journey.wait(3000);
 
   // Check if test bundle button exists and whether it's already added
-  const doc = journey.getDocument();
-  const testBtn = doc ? doc.querySelector('button[data-bundle-id="test"]') : null;
-  if (testBtn && !testBtn.disabled) {
+  const result = await journey.query('button[data-bundle-id="test"]');
+  if (result.found && !result.disabled) {
     // Test bundle not yet added - click to request it
     await journey.click('button[data-bundle-id="test"]', "Requesting Test bundle...");
     // Wait for the bundle request to complete
@@ -309,11 +450,7 @@ export async function journeySubmitVat(journey) {
   await journey.fill("#totalAcquisitionsExVAT", "0", "Entering acquisitions from EU (Box 9)...");
 
   // Check declaration
-  const doc = journey.getDocument();
-  if (doc) {
-    const declaration = doc.querySelector("#declaration");
-    if (declaration) declaration.checked = true;
-  }
+  await journey.check("#declaration");
 
   // Submit the return
   await journey.click("#submitBtn", "Submitting VAT return to HMRC...");
