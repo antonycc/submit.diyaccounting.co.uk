@@ -338,6 +338,20 @@ function buildSimulator() {
     "utf-8",
   );
 
+  // Copy Lambda server entry point for Lambda Web Adapter deployment
+  console.log("  Adding Lambda server files...");
+  const lambdaServerSrc = path.join(projectRoot, "scripts/simulator-lambda-server.mjs");
+  const lambdaServerDest = path.join(targetDir, "lambda-server.mjs");
+  fs.copyFileSync(lambdaServerSrc, lambdaServerDest);
+
+  // Create run.sh - Lambda Web Adapter entrypoint
+  const runSh = `#!/bin/bash\nexec node lambda-server.mjs\n`;
+  fs.writeFileSync(path.join(targetDir, "run.sh"), runSh, { mode: 0o755 });
+
+  // Create minimal package.json for Node.js module resolution
+  const packageJson = JSON.stringify({ type: "module" }, null, 2) + "\n";
+  fs.writeFileSync(path.join(targetDir, "package.json"), packageJson, "utf-8");
+
   console.log("Simulator build complete!");
   console.log(`  Total HTML files: ${htmlFiles.length}`);
   console.log(`  Total CSS files: ${cssFiles.length}`);
