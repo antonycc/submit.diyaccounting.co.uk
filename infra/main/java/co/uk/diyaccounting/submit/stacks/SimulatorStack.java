@@ -151,7 +151,7 @@ public class SimulatorStack extends Stack {
                 .timeout(Duration.seconds(30))
                 .environment(Map.of(
                         "AWS_LAMBDA_EXEC_WRAPPER", "/opt/bootstrap",
-                        "AWS_LWA_INVOKE_MODE", "response_stream",
+                        "AWS_LWA_INVOKE_MODE", "buffered",
                         "AWS_LWA_PORT", "8080",
                         "PORT", "8080",
                         "NODE_ENV", "production",
