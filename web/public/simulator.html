@@ -212,6 +212,7 @@
         <button type="button" class="simulator-expand-btn" id="simulatorExpandBtn" aria-label="Expand simulator">
           <span id="expandIcon">&#x26F6;</span> <span id="expandLabel">Expand</span>
         </button>
+        <a href="#" id="simulatorOpenLink" class="simulator-open-btn" target="_blank" rel="noopener noreferrer" aria-label="Open simulator in new tab" title="Open simulator in new tab">&#x2197;</a>
         <div class="simulator-overlay-label" aria-hidden="true">SIMULATOR</div>
         <iframe
           id="simulatorFrame"
@@ -276,6 +277,7 @@
       // which switches the iframe to the same-origin /sim/ path
       if (window.__simulatorLocal) window.__simulatorFrameSrc = "/sim/";
       document.getElementById("simulatorFrame").src = window.__simulatorFrameSrc;
+      document.getElementById("simulatorOpenLink").href = window.__simulatorFrameSrc;
     </script>
 
     <script>
@@ -326,14 +328,9 @@
           // Disable all journey buttons during playback
           document.querySelectorAll(".journey-btn").forEach((b) => (b.disabled = true));
 
-          // Reset iframe to home
+          // Reset iframe to simulator home
           statusEl.textContent = "Loading simulator...";
-          const simBase = window.__simulatorLocal ? "/sim/" : "/";
-          try {
-            iframe.contentWindow.location.href = simBase + "index.html";
-          } catch (e) {
-            // Cross-origin - can't reset, just proceed
-          }
+          iframe.src = window.__simulatorFrameSrc;
           await new Promise((r) => setTimeout(r, 2000));
 
           activeJourney = new SimulatorJourney(iframe, statusEl);
