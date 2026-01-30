@@ -255,6 +255,9 @@ public class SubmitEnvironment {
                             .sharedNames(sharedNames)
                             .simulatorCodePath(simulatorCodePath)
                             .simulatorBaseUrl(simulatorBaseUrl)
+                            .hostedZoneName(appProps.hostedZoneName)
+                            .hostedZoneId(appProps.hostedZoneId)
+                            .certificateArn(appProps.certificateArn)
                             .build());
         } else {
             warnf(
