@@ -145,11 +145,12 @@ public class SimulatorStack extends Stack {
                 .description("Public simulator for DIY Accounting Submit - demo mode only")
                 .runtime(Runtime.NODEJS_20_X)
                 .architecture(Architecture.X86_64)
-                .handler("lambda-server.handler") // Module starts HTTP server at import time; Lambda Web Adapter proxies requests
+                .handler("run.sh") // Lambda Web Adapter entrypoint - starts web server via run.sh
                 .code(Code.fromAsset(props.simulatorCodePath()))
                 .memorySize(512)
                 .timeout(Duration.seconds(30))
                 .environment(Map.of(
+                        "AWS_LAMBDA_EXEC_WRAPPER", "/opt/bootstrap",
                         "AWS_LWA_INVOKE_MODE", "response_stream",
                         "AWS_LWA_PORT", "8080",
                         "PORT", "8080",

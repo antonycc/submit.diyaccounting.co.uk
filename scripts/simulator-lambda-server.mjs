@@ -496,8 +496,3 @@ server.listen(PORT, () => {
   console.log(`[simulator-lambda] Listening on port ${PORT}`);
   console.log(`[simulator-lambda] Base URL: ${BASE_URL}`);
 });
-
-// Lambda handler export - required for managed Node.js runtime to load this module.
-// The actual request handling is done by the HTTP server above; Lambda Web Adapter
-// intercepts invocations and proxies them to port 8080.
-export const handler = async () => ({ statusCode: 200, body: "OK" });
