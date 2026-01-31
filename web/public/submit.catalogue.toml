@@ -14,9 +14,11 @@ display = "on-pass"
 # on-pass
 # =======
 # Hide until a pass has been accecpted, once we have implemented pass generation and acceptance via a form.
-# 1. Generate and persist passes
-# 2. Test pass validity via API
-# 3. Add pass validation to the bundle.html as what 3 words populated by typing, or from a url opening bundles.html
+# 1. Generate and persist passes via GitHub Actions for test users
+# 2. Test pass validity via API in system tests
+# 3. Test pass validity via API in behaviour tests
+# 4. Add pass validation to the bundle.html as what 3 words populated by typing, or from a url opening bundles.html and add to behaviour test
+# 5. Change all behaviour tests to use passes to get test bundlesand turn on on-pass enforcement
 allocation = "on-request"
 timeout = "P1D"
 
