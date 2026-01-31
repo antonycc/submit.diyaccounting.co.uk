@@ -27,6 +27,7 @@ public class DataStack extends Stack {
     public ITable hmrcVatReturnGetAsyncRequestsTable;
     public ITable hmrcVatObligationGetAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
+    public ITable passesTable;
 
     @Value.Immutable
     public interface DataStackProps extends StackProps, SubmitStackProps {
@@ -155,6 +156,17 @@ public class DataStack extends Stack {
         infof("Ensured HMRC API Requests DynamoDB table with name %s",
                 props.sharedNames().hmrcApiRequestsTableName);
 
+        // Passes table for storing invitation pass codes
+        // Pass codes are four-word passphrases that grant bundle access when redeemed.
+        // PK-only table (no sort key) - passes are looked up by code.
+        this.passesTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-PassesTable",
+                props.sharedNames().passesTableName,
+                "pk",
+                null);
+        infof("Ensured passes DynamoDB table with name %s", props.sharedNames().passesTableName);
+
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
@@ -182,6 +194,8 @@ public class DataStack extends Stack {
                 this.hmrcVatObligationGetAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
+        cfnOutput(this, "PassesTableName", this.passesTable.getTableName());
+        cfnOutput(this, "PassesTableArn", this.passesTable.getTableArn());
 
         infof(
                 "DataStack %s created successfully for %s",

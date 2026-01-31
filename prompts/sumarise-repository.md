@@ -40,7 +40,7 @@ repository-contents.txt:
 .github/actions/set-origins/action.yml
 .github/actions/get-names/action.yml
 ./jsconfig.json
-./product-subscribers.subs
+./submit.passes.toml
 ./infra/test/resources/fake-self-destruct-lambda.jar
 ./infra/test/resources/log4j2.yml
 ./infra/test/java/co/uk/diyaccounting/submit/SubmitEnvironmentCdkResourceTest.java

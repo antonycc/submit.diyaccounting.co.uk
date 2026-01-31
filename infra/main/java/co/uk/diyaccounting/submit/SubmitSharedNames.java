@@ -83,6 +83,7 @@ public class SubmitSharedNames {
     public String hmrcVatReturnGetAsyncRequestsTableName;
     public String hmrcVatObligationGetAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
+    public String passesTableName;
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -333,6 +334,7 @@ public class SubmitSharedNames {
         this.hmrcVatObligationGetAsyncRequestsTableName =
                 "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
+        this.passesTableName = "%s-passes".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);

@@ -86,6 +86,15 @@ allocation = "on-email-match"
 tokensGranted = 3
 tokenRefreshInterval = "P1M"
 
+# Complimentary pro access for specific users via a pass (beta testers, partners)
+[[bundles]]
+id = "resident-pro-comp"
+name = "Resident Pro (Complimentary)"
+display = "on-pass"
+allocation = "on-email-match"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+
 # Access to all authenticated activities including VAT submission for specfic users on subscription
 [[bundles]]
 id = "resident-pro"
@@ -142,7 +151,7 @@ name = "Submit VAT (HMRC)"
 display = "always-with-upsell"
 # display: always-with-upsell
 # shows upsell prompt if not entitled
-bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokens = 1
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 
@@ -150,7 +159,7 @@ paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokens = 1
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 
@@ -158,7 +167,7 @@ paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokens = 1
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 

@@ -409,54 +409,130 @@ The campaign system turns passes into a commodity that subscribed users spend to
 Campaigner subscribes (resident-pro, 100 tokens/month)
         │
         ▼
-Issues campaign pass (costs 10 tokens, pass valid for 3 days)
+Issues campaign pass (3 free/month included, then 10 tokens each)
+        │
+        ▼
+Pass grants invited-guest bundle (1 month, 3 tokens/month)
+but must be redeemed within 3 days (urgency)
         │
         ▼
 Shares pass via URL, QR code, social media, word-of-mouth
         │
         ▼
-Recipient redeems pass → gets invited-guest bundle (3 tokens/month)
+Recipient redeems pass → referrer gets 2 tokens back immediately
         │
         ▼
-Recipient uses the service, finds value
+Recipient submits first VAT return → referrer gets 5 tokens
         │
         ▼
-Recipient subscribes (resident-pro) ← referral tracked
-        │
-        ▼
-Campaigner earns reward (1 free month, capped at 12)
+Recipient subscribes (resident-pro) → referrer gets 1 free month
 ```
 
-**Economics**: A resident-pro user (100 tokens/month) can issue up to 10 campaign passes per month (10 tokens each = 100 tokens). Each pass is valid for 3 days, so a campaigner can maintain a steady cadence of fresh invitations. If even one referral converts, the free month reward covers the subscription cost.
+### Economics & Value Proposition
+
+| Item | Value | Notes |
+|------|-------|-------|
+| Pro subscription | ~£129/year | £10.75/month |
+| Campaign pass gift value | ~£10.75 | Full month of invited-guest access |
+| Campaign pass cost (after 3 free) | 10 tokens | ~£1.08 worth |
+| Day pass comparison | ~£0.36 | Too small to drive engagement |
+
+**Key insight**: The recipient gets a **full month** of access (£10.75 value) but must redeem within 3 days. The urgency drives redemption; the generous value drives conversion. This is substantially more compelling than a 1-day/£0.36 gift.
+
+**Pass scarcity**: Pro users get 3 free campaign passes per month as part of their subscription. Additional passes cost 10 tokens each. This makes passes feel valuable ("I'm giving you one of my 3 monthly invites") rather than cheap.
+
+**Progressive referrer rewards**:
+- **Immediate**: 2 tokens back when pass is redeemed (not just created)
+- **Engagement**: +5 tokens when recipient submits first VAT return
+- **Conversion**: +1 free month when recipient subscribes
+- **Commission**: 20% of first year (~£25) after 3 conversions (see §6.4)
+
+This layered reward structure provides gratification at every stage of the funnel, not just at final conversion.
+
+### Ambassador Tiers
+
+High-volume referrers unlock better rates through a visible progression system:
+
+| Tier | Threshold | Perk |
+|------|-----------|------|
+| **Starter** | 0 redemptions | 3 free passes/month |
+| **Silver** | 5 redemptions | 5 free passes/month |
+| **Gold** | 15 redemptions | 8 free passes/month, 20% more tokens per pass |
+
+Tier progress is shown in the UI: "You've had 3 passes redeemed. 2 more to unlock Silver (5 free passes/month)."
+
+### Target Segments
+
+The flywheel spins faster with the right referrers:
+
+| Segment | Why | Volume | Strategy |
+|---------|-----|--------|----------|
+| **Accountants** | Trusted recommendation, multiple clients | 1 accountant → 10-50 clients | Dedicated `accountant-partner` pass type, bulk issuance |
+| **Bookkeeping communities** | Peer recommendation | Moderate | Community passes via forum/group leaders |
+| **Small business forums** | Organic discovery | Low but genuine | Campaign passes from enthusiastic users |
+| **Social media** | Broad reach | Variable | Standard campaign passes |
+
+An accountant with 50 clients is worth more than 50 individual social media posts. Consider a future `accountant-partner` pass type with higher maxUses and longer validity.
+
+### Product Stickiness Considerations
+
+VAT submission is quarterly (4x/year) — low engagement. To keep the flywheel spinning:
+
+**A. Expand touchpoints** (future phases):
+- VAT obligations reminders (monthly touchpoint)
+- MTD record keeping (weekly touchpoint)
+- Bank feed integration (daily touchpoint)
+
+**B. Make the quarterly moment delightful**:
+- "Your VAT return took 47 seconds. The average accountant charges £150 for this."
+- Celebration UI after successful submission
+- Year-on-year comparisons and savings tracking
+
+**C. Measure the right metric**: Track VAT submissions per referred user, not just pass redemptions. A referral that doesn't submit is a vanity metric.
+
+### Alternative: Affiliate Track (Deferred)
+
+If organic referral velocity is too low, a separate affiliate model could complement campaigns:
+- Anyone signs up as an affiliate (free, no subscription needed)
+- Affiliates get unique tracking codes
+- Affiliates earn 20% of first-year subscription per conversion
+- No token cost — they're marketing partners, not users
+
+This separates "users who love the product" from "marketers who want commission". Deferred until referral data shows whether organic growth is sufficient.
 
 ### 6.1 Campaign pass issuance (Backend)
 
 - [ ] Create `app/functions/account/passIssuePost.js`
   - Authenticated endpoint (any user with a token-bearing bundle)
   - Input: `{ notes? }` (pass type is always `campaign`)
-  - Validates caller has >= 10 tokens remaining
-  - Consumes 10 tokens from the issuing user
+  - Check free passes remaining this month (3/month for Starter, more for Silver/Gold)
+  - If free passes exhausted: validate caller has >= 10 tokens, consume 10 tokens
   - Creates a campaign pass:
     - `passTypeId = "campaign"`
     - `bundleId = "invited-guest"`
     - `maxUses = 1`
-    - `validUntil = now + P3D` (3-day expiry)
+    - `validUntil = now + P3D` (3-day redemption window)
     - `issuedBy = callerHashedSub`
-  - Returns: `{ code, url, validUntil, tokensRemaining }`
+  - Returns: `{ code, url, validUntil, tokensRemaining, freePassesRemaining }`
+- [ ] Track monthly pass issuance per user (counter with monthly reset, same lazy-eval pattern as token refresh)
 - [ ] Add API Gateway route: `POST /api/v1/pass/issue`
 - [ ] Add Express server route for local development
 - [ ] Wire Lambda in `AccountStack.java`
 
-### 6.2 Referral tracking (Backend)
+### 6.2 Referral tracking & progressive rewards (Backend)
 
 - [ ] Add `issuedBy` field to pass record (set when a user issues a campaign pass)
 - [ ] On pass redemption, if `issuedBy` is set:
   - Record referral: `{ referrerId: issuedBy, referredUserId: redeemer, passCode, redeemedAt }`
   - Store in bundles table or a dedicated referral GSI
+  - **Immediate reward**: Credit referrer with 2 tokens (small gratification for sharing)
+- [ ] On referred user's first VAT return submission:
+  - **Engagement reward**: Credit referrer with 5 tokens
+  - This confirms the referral created real value (someone actually used the product)
 - [ ] On subscription purchase (when referred user upgrades to resident-pro):
-  - Check if user was referred (has a referral record)
-  - If so, credit the referrer with 1 free month
+  - **Conversion reward**: Credit the referrer with 1 free month
   - Cap referral credits at 12 months per referrer
+- [ ] Track cumulative redemptions per referrer for ambassador tier progression
 
 ### 6.3 Referral rewards (Backend)
 
@@ -468,21 +544,24 @@ Campaigner earns reward (1 free month, capped at 12)
 - [ ] Referral reward trigger: credited after the referred user's first VAT return submission (not just sign-up)
   - This aligns with campaign.md recommendation to reward real value creation, not just sign-ups
 
-### 6.4 Commission (deferred)
+### 6.4 Commission (deferred until payment integration)
 
 Per `_developers/archive/campaign.md`, once there are enough referrals:
 - 20% of first year's subscription value (e.g., ~£25 at £129/year)
 - Payable only after referrer has >= 3 converted users
 - Payable as account credit by default, cash payout above £50 threshold
+- **Visible threshold**: "2 of your referrals have converted. 1 more to unlock the Ambassador Commission program (20% of future conversions)."
 - This is deferred until subscription payments are implemented
+- See "Alternative: Affiliate Track" in the Design section for a complementary model
 
 ### 6.5 Campaign pass UI (Frontend)
 
-- [ ] Add "Issue Invitation" section to bundles.html (visible only if user has >= 10 tokens)
+- [ ] Add "Issue Invitation" section to bundles.html (visible to users with token-bearing bundles)
+  - Show free passes remaining: "2 of 3 free invitations remaining this month"
+  - If free passes exhausted: "Additional invitations cost 10 tokens (N remaining)"
   - "Issue Pass" button
-  - Shows cost: "This will use 10 tokens (N remaining)"
   - On success: display the pass URL, copy-to-clipboard button, share links
-  - Show pass expiry: "Valid for 3 days"
+  - Show pass expiry: "Your guest gets a full month of access — they just need to redeem within 3 days"
 - [ ] Add "My Issued Passes" section
   - List of passes the user has issued
   - Status: active, expired, redeemed
@@ -490,6 +569,10 @@ Per `_developers/archive/campaign.md`, once there are enough referrals:
 - [ ] Add "Referral Rewards" section
   - Number of successful referrals
   - Free months earned / applied / remaining
+  - Ambassador tier progress: "3 passes redeemed — 2 more to Silver (5 free passes/month)"
+- [ ] Post-submission delight messaging
+  - "Your VAT return took 47 seconds. The average accountant charges £150 for this."
+  - "Share a free invitation with someone who would find this useful"
 
 ### 6.6 QR code generation
 
@@ -501,11 +584,13 @@ Per `_developers/archive/campaign.md`, once there are enough referrals:
 
 ### 6.7 Abuse controls
 
-- [ ] Rate limit pass issuance: max 3 passes per user per day
+- [ ] Free pass allowance: 3/month (Starter), 5/month (Silver), 8/month (Gold) — tracked with monthly reset
+- [ ] Rate limit additional (paid) pass issuance: max 5 passes per user per day beyond free allowance
 - [ ] No self-referral: pass issuer cannot redeem their own passes
 - [ ] One referrer per account: first referral is immutable
 - [ ] Campaign passes cannot be issued with email restriction (they must be shareable)
 - [ ] Expired campaign passes are auto-deleted via DynamoDB TTL (validUntil + 30 days)
+- [ ] Token rewards only for genuine referrals — tokens credited after confirmed actions (redemption, VAT submission), not pass creation
 
 ### 6.8 Tests
 
@@ -616,13 +701,13 @@ Phases 4 and 5.2-5.3 can run in parallel after Phase 3 completes. Phase 6 requir
 | `web/public/bundles.html` | 3, 5, 6 | Pass entry form, on-pass filtering, token display, campaign UI |
 | `web/public/submit.catalogue.toml` | - | Already configured (source of truth) |
 
-## Open Questions
+## Resolved Questions
 
-1. **Email hash secret rotation**: How to handle secret rotation without invalidating existing email-restricted passes? Consider storing the secret version on each pass record.
-2. **Token consumption granularity**: Should viewing obligations cost a token, or only submissions? The catalogue currently assigns `tokens = 1` to all HMRC activities.
-3. **Campaign pass validity period**: 3 days is short enough to create urgency but long enough to act. Adjust based on conversion data.
-4. **Subscription payment provider**: Campaign referral rewards (Phase 6.3) require a payment system. Defer until Stripe/similar is integrated.
-5. **DIY legacy bundle**: How to verify PayPal transaction IDs for existing DIY customers who should get resident-guest access? (Deferred)
+1. **Email hash secret rotation**: Store the secret version on each pass record (`emailHashSecretVersion` field). When rotating secrets, old passes remain validatable by looking up the secret version they were created with.
+2. **Token consumption granularity**: All HMRC API activities cost 1 token each (viewing obligations, viewing VAT returns, submitting VAT returns). The model is that getting approved by HMRC has a cost and operating a compliant business has a cost - tokens are applied at every HMRC interaction.
+3. **Campaign pass validity period**: 3 days. Short enough to create urgency, long enough to act. Not an open question.
+4. **Subscription payment provider**: Defer commission/payout functionality until a payment system (Stripe or similar) is integrated. Referral tracking and free-month credits can proceed without external payments.
+5. **DIY legacy bundle**: Existing DIY customers email support, admin sends them an `invited-guest` or `resident-guest` pass manually via the GitHub Actions workflow. No PayPal transaction verification needed.
 
 ---
 

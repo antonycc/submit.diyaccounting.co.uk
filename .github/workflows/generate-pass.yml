@@ -1,0 +1,227 @@
+name: Generate Pass
+
+on:
+  workflow_dispatch:
+    inputs:
+      pass-type:
+        description: 'Pass type (from submit.passes.toml)'
+        required: true
+        type: choice
+        options:
+          - test-access
+          - day-trial
+          - invited-guest
+          - resident-guest
+          - resident-pro-comp
+          - group-invite
+      email:
+        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
+        required: false
+        type: string
+      max-uses:
+        description: 'Maximum uses (overrides default from pass type)'
+        required: false
+        type: number
+      validity-period:
+        description: 'Validity period as ISO 8601 duration (overrides default, e.g. P7D, P1M, P1Y)'
+        required: false
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+        default: ci
+      quantity:
+        description: 'Number of passes to generate'
+        required: false
+        type: number
+        default: 1
+      notes:
+        description: 'Admin notes for this pass'
+        required: false
+        type: string
+
+env:
+  AWS_REGION: eu-west-2
+  ACTIONS_ROLE_ARN: arn:aws:iam::887764105431:role/submit-github-actions-role
+  DEPLOY_ROLE_ARN: arn:aws:iam::887764105431:role/submit-deployment-role
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  generate:
+    name: 'Generate ${{ inputs.pass-type }} pass'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read pass type defaults from submit.passes.toml
+        id: pass-type
+        run: |
+          # Extract defaults for the selected pass type from submit.passes.toml
+          PASS_TYPE="${{ inputs.pass-type }}"
+
+          # Use node to parse TOML and extract defaults
+          node -e "
+            const fs = require('fs');
+            const TOML = require('@iarna/toml');
+            const catalog = TOML.parse(fs.readFileSync('submit.passes.toml', 'utf-8'));
+            const passType = catalog.passTypes.find(p => p.id === '${PASS_TYPE}');
+            if (!passType) {
+              console.error('Pass type not found: ${PASS_TYPE}');
+              process.exit(1);
+            }
+            console.log('BUNDLE_ID=' + passType.bundleId);
+            console.log('DEFAULT_VALIDITY_PERIOD=' + (passType.defaultValidityPeriod || ''));
+            console.log('DEFAULT_MAX_USES=' + (passType.defaultMaxUses || 1));
+            console.log('REQUIRES_EMAIL=' + (passType.requiresEmailRestriction || false));
+            console.log('PASS_TYPE_NAME=' + passType.name);
+          " >> "$GITHUB_OUTPUT"
+
+      - name: Validate inputs
+        run: |
+          if [[ "${{ steps.pass-type.outputs.REQUIRES_EMAIL }}" == "true" ]] && [[ -z "${{ inputs.email }}" ]]; then
+            echo "::error::Pass type '${{ inputs.pass-type }}' requires an email address"
+            exit 1
+          fi
+
+      - name: Generate passes
+        id: generate
+        run: |
+          ENV_NAME="${{ inputs.environment }}"
+          TABLE_NAME="${ENV_NAME}-env-passes"
+          BUNDLE_ID="${{ steps.pass-type.outputs.BUNDLE_ID }}"
+          MAX_USES="${{ inputs.max-uses || steps.pass-type.outputs.DEFAULT_MAX_USES }}"
+          VALIDITY_PERIOD="${{ inputs.validity-period || steps.pass-type.outputs.DEFAULT_VALIDITY_PERIOD }}"
+          QUANTITY="${{ inputs.quantity || 1 }}"
+          EMAIL="${{ inputs.email }}"
+          NOTES="${{ inputs.notes }}"
+          CREATED_BY="github-actions-run#${{ github.run_id }}"
+
+          echo "Generating ${QUANTITY} ${{ inputs.pass-type }} pass(es)..."
+          echo "  Bundle: ${BUNDLE_ID}"
+          echo "  Max uses: ${MAX_USES}"
+          echo "  Validity: ${VALIDITY_PERIOD}"
+          echo "  Table: ${TABLE_NAME}"
+
+          # Fetch email hash secret from Secrets Manager
+          EMAIL_HASH_SECRET=""
+          if [[ -n "${EMAIL}" ]]; then
+            EMAIL_HASH_SECRET=$(aws secretsmanager get-secret-value \
+              --secret-id "${ENV_NAME}/submit/email-hash-secret" \
+              --query SecretString --output text 2>/dev/null || echo "")
+            if [[ -z "${EMAIL_HASH_SECRET}" ]]; then
+              echo "::warning::Email hash secret not found, creating pass without email restriction"
+              EMAIL=""
+            fi
+          fi
+
+          # Generate passes using Node.js
+          PASSES_DYNAMODB_TABLE_NAME="${TABLE_NAME}" \
+          EMAIL_HASH_SECRET="${EMAIL_HASH_SECRET}" \
+          node -e "
+            import { createPass } from './app/services/passService.js';
+            import { initializeEmailHashSecret } from './app/lib/emailHash.js';
+
+            const quantity = parseInt('${QUANTITY}', 10);
+            const results = [];
+
+            if ('${EMAIL_HASH_SECRET}') {
+              process.env.EMAIL_HASH_SECRET = '${EMAIL_HASH_SECRET}';
+              await initializeEmailHashSecret();
+            }
+
+            for (let i = 0; i < quantity; i++) {
+              const pass = await createPass({
+                passTypeId: '${{ inputs.pass-type }}',
+                bundleId: '${BUNDLE_ID}',
+                validityPeriod: '${VALIDITY_PERIOD}' || undefined,
+                maxUses: parseInt('${MAX_USES}', 10),
+                restrictedToEmail: '${EMAIL}' || undefined,
+                createdBy: '${CREATED_BY}',
+                notes: '${NOTES}' || undefined,
+              });
+              results.push({
+                code: pass.code,
+                bundleId: pass.bundleId,
+                validFrom: pass.validFrom,
+                validUntil: pass.validUntil,
+                maxUses: pass.maxUses,
+              });
+            }
+
+            // Write results
+            const fs = await import('fs');
+            fs.writeFileSync('passes-output.json', JSON.stringify(results, null, 2));
+
+            for (const pass of results) {
+              console.log('---');
+              console.log('Code: ' + pass.code);
+              console.log('URL: https://${{ inputs.environment == \"prod\" && \"submit.diyaccounting.co.uk\" || \"ci.submit.diyaccounting.co.uk\" }}/bundles.html?pass=' + pass.code);
+              console.log('Bundle: ' + pass.bundleId);
+              console.log('Valid until: ' + (pass.validUntil || 'unlimited'));
+              console.log('Max uses: ' + pass.maxUses);
+            }
+          "
+
+      - name: Upload passes artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: passes-${{ inputs.pass-type }}-${{ github.run_id }}
+          path: passes-output.json
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "## Pass Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Type | ${{ inputs.pass-type }} (${{ steps.pass-type.outputs.PASS_TYPE_NAME }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quantity | ${{ inputs.quantity || 1 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bundle | ${{ steps.pass-type.outputs.BUNDLE_ID }} |" >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ inputs.email }}" ]]; then
+            echo "| Email restricted | Yes |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pass codes are available in the workflow artifacts." >> $GITHUB_STEP_SUMMARY

@@ -134,17 +134,17 @@ describe("System journeys: bundleManagement", () => {
 
     // 2) Add qualifying bundle and succeed
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await bm.updateUserBundles(sub, [{ bundleId: "guest", expiry }]);
+    await bm.updateUserBundles(sub, [{ bundleId: "day-guest", expiry }]);
     // Verify persisted in DynamoDB directly
     const itemsAfterAdd = await queryBundlesForUser(sub);
-    expect(itemsAfterAdd.find((it) => it.bundleId === "guest")).toBeTruthy();
+    expect(itemsAfterAdd.find((it) => it.bundleId === "day-guest")).toBeTruthy();
     await bm.enforceBundles(event); // should pass now
 
     // 3) Remove bundle and fail again
     await bm.updateUserBundles(sub, []);
     // Verify removal persisted
     const itemsAfterRemove = await queryBundlesForUser(sub);
-    expect(itemsAfterRemove.find((it) => it.bundleId === "guest")).toBeUndefined();
+    expect(itemsAfterRemove.find((it) => it.bundleId === "day-guest")).toBeUndefined();
     await expect(bm.enforceBundles(event)).rejects.toThrow();
   });
 });
