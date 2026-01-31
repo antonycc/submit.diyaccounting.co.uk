@@ -39,46 +39,63 @@ tokens = 3
 # The tokens are credited to the user and expire after the period matching the timeout
 # Activities such as submitting VAT returns consume 1 token
 # There us a user token activity counter shown in the UI
-#
-# Screens showing the user's token balance and activities driven by more advanced APIs
-# GET /api/v1/tokens/ [ { "bundle": "day-guest", "tokens": 2, "expires": "2024-06-30T12:34:56Z" } ]
-# GET /api/v1/activities/ [ { "activity": "submit-vat", "tokens": 1, "started": "2024-05-30T12:34:56Z", "completed": "2024-05-30T12:34:56Z", requestId: "abc-123-def-456" } ]
+# Add to GET /api/v1/bundles/
+#{
+#  "bundles": [{
+#    "createdAt": "2026-01-31T20:52:50.772Z",
+#    "hashedSub": "a530dcdd1c77138dfd052736fc0790499abec9ae0ccbe63bcacb9cbc050471f7",
+#    "ttl": 1772323200,
+#    "expiry": "2026-02-01T00:00:00.000Z",
+#    "ttl_datestamp": "2026-03-01T00:00:00.000Z",
+#    "bundleId": "test"
+#  }],
+#  "tokensRemaining": 1
+#}
 
-# Access to free authenticated activities including VAT submission for users with a pass
+# Access to free authenticated activities including VAT submission for specfic users with a pass for a longer time
 [[bundles]]
 id = "invited-guest"
 name = "Invited Guest"
 display = "on-pass"
-allocation = "on-request"
+allocation = "on-email-match"
+# on-email-match
+# ==============
+# Allocate this bundle only if the user's email address matches one of those listed in restrictedToEmailHash on the pass
 timeout = "P1M"
 tokensGranted = 3
 tokenRefreshInterval = "P1M"
 # tokenRefreshInterval
 # ====================
-# Interval after which tokens are replenished to the users account
+# Interval after which tokens are replenished to the users account (ideally the same as the timeout otherwise they will stack or have gaps)
+#
+# To do (later) screens showing the user's token balance and activities driven by more advanced APIs
+# GET /api/v1/tokens/ [ { "bundle": "day-guest", "tokens": 2, "expires": "2024-06-30T12:34:56Z" } ]
+# GET /api/v1/activities/ [ { "activity": "submit-vat", "tokens": 1, "started": "2024-05-30T12:34:56Z", "completed": "2024-05-30T12:34:56Z", requestId: "abc-123-def-456" } ]
 
+# Access to free authenticated activities including VAT submission for specfic users with a pass without time limit
+[[bundles]]
+id = "resident-guest"
+name = "Resident Guest"
+display = "on-pass"
+allocation = "on-email-match"
+# on-email-match
+# ==============
+# Allocate this bundle only if the user's email address matches one of those listed in restrictedToEmailHash on the pass
+tokensGranted = 3
+tokenRefreshInterval = "P1M"
 
-# TODO: Link active subscriptions to a bundle entitlement and continually re-set expiry to now+timeout if there is an active subscription
-# Access to business tier activities including VAT submission for subscribers
-# TODO: rename "Pro"
-#[[bundles]]
-#id = "business"
-#name = "Business"
-#allocation = "subscription"
-#cap = 100
-#timeout = "P1M"
-#listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
-#subscriptionTier = "business"
-
-# TODO: Grant the DIY Legacy bundle upon supply of a PayPal Transaction ID for a payment to one of the email addresses in 2025 or earlier
-#[[bundles]]
-#id = "diylegacy"
-#name = "DIY Legacy (existing 2025 customers)"
-#allocation = "transaction-id"
-#cap = 10
-#timeout = "P1Y"
-#listedInEnvironments = ["ci"]
-#grantedWithTransactionIdFor = ["terrycartwright@hotmail.com", "admin@diyaccounting.co.uk"]
+# Access to all authenticated activities including VAT submission for specfic users on subscription
+[[bundles]]
+id = "resident-pro"
+name = "Resident Pro"
+display = "always"
+allocation = "on-subscription"
+# on-email-match
+# ==============
+# Allocate this bundle only if the user's email address matches one of those listed in restrictedToEmailHash on the pass
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 [[activities]]
 id = "bundle"
@@ -92,6 +109,10 @@ id = "submit-vat-sandbox"
 name = "Submit VAT (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
+tokens = 1
+# tokens
+# ======
+# Number of Activity API tokens consumed by this activity when completed
 paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -99,6 +120,7 @@ id = "vat-obligations-sandbox"
 name = "VAT Obligations (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
+tokens = 1
 paths = ["hmrc/vat/vatObligations.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -106,28 +128,33 @@ id = "view-vat-return-sandbox"
 name = "View VAT Return (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
+tokens = 1
 paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
-# display: always-with-upsell shows upsell prompt if not entitled
 [[activities]]
 id = "submit-vat"
 name = "Submit VAT (HMRC)"
 display = "always-with-upsell"
-bundles = ["guest", "business", "diylegacy"]
+# display: always-with-upsell
+# shows upsell prompt if not entitled
+bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro"]
+tokens = 1
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
-bundles = ["guest", "business", "diylegacy"]
+bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro"]
+tokens = 1
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
-bundles = ["guest", "business", "diylegacy"]
+bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro"]
+tokens = 1
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -143,3 +170,36 @@ name = "Learn about DIY Accounting Submit"
 display = "always"
 bundles = ["default"]
 paths = ["about.html"]
+
+# Passes:
+# Example invite pass record in DynamoDB:
+# Do I need a pass admin screen?
+#
+# {
+#    pk: 'invite#correct-horse-battery-staple',
+#    code: 'correct-horse-battery-staple',
+#
+#    // Bundle granted by this invite
+#    bundleId: 'invited-guest',
+#
+#    // Validity window (when the invite can be used)
+#    validFrom: '2026-02-01T00:00:00Z',
+#    validUntil: '2026-02-14T23:59:59Z',
+#
+#    // DynamoDB TTL (auto-delete 1 month after validity ends)
+#    ttl: 1742169599,  // Unix timestamp: validUntil + 30 days
+#
+#    // Audit timestamps
+#    createdAt: '2026-01-31T12:00:00Z',
+#    updatedAt: '2026-01-31T12:00:00Z',
+#
+#    // Usage controls
+#    maxUses: 5,
+#    useCount: 0,
+#    revokedAt: null,
+#
+#    // Optional: restrict to specific email (null = anyone)
+#    restrictedToEmailHash: 'Ks7d9fJ2mNpQr...',  // or null
+#
+#    createdBy: 'user#abc123',
+# }
