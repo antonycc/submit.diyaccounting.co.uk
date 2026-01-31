@@ -57,7 +57,7 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
         viewSrc.setAttribute("data-href-initialized", "true");
       }
       if (tests) tests.href = "/tests/index.html";
-      if (apiDocs) apiDocs.href = "/docs/index.html";
+      if (apiDocs) apiDocs.href = "/docs/api/index.html";
 
       // Apply initial visibility based on developer mode state
       setDisplay(entitlement, developerModeEnabled ? "inline" : "none");

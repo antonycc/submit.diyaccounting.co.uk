@@ -139,7 +139,7 @@ Users need access to production HMRC APIs, but we can't offer unlimited free acc
 | Bundle timeout/expiry | ✅ Exists | ISO 8601 duration (P1D, P1M) |
 | Bundle cap | ✅ Exists | Max concurrent users |
 | Environment-specific listing | ✅ Exists | `listedInEnvironments` field |
-| Display rules for activities | ✅ Exists | `never`, `onEntitlement`, `alwaysWithUpsell`, `always`. `alwaysWithUpsell` shows activity name to all users: not logged in → "Login and add bundle to access"; logged in without bundle → "Requires: Guest or Business"; logged in with bundle → active button |
+| Display rules for activities | ✅ Exists | `never`, `on-entitlement`, `always-with-upsell`, `always`. `always-with-upsell` shows activity name to all users: not logged in → "Login and add bundle to access"; logged in without bundle → "Requires: Guest or Business"; logged in with bundle → active button |
 | Bundles DynamoDB table | ✅ Exists | User bundle assignments |
 | Bundle management UI | ✅ Exists | `/account/bundles.html` |
 | Navigation to Bundles | ✅ Exists | Main nav bar link |

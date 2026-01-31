@@ -13,7 +13,7 @@
  *
  * Protected PII patterns (sources in parentheses):
  *
- * TAX IDENTIFIERS (from web/public/hmrc-form-field-standards/validation.js):
+ * TAX IDENTIFIERS (from web/public/docs/hmrc-form-field-standards/validation.js):
  * - VRN (VAT Registration Number): 9 digits, optional GB prefix e.g., "GB123456789"
  * - UTR (Unique Taxpayer Reference): 10 digits e.g., "1234567890"
  * - NINO (National Insurance Number): 2 letters + 6 digits + 1 letter e.g., "AB123456C"

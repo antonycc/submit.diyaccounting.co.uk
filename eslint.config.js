@@ -116,7 +116,7 @@ export default [
       // Generated test reports (Playwright HTML reports contain bundled JS)
       "web/public/tests/",
       // Reference examples for UK Government form field standards
-      "web/public/hmrc-form-field-standards/",
+      "web/public/docs/hmrc-form-field-standards/",
     ],
   },
 ];

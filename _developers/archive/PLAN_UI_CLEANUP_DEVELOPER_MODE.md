@@ -212,7 +212,7 @@ Currently, tests click "Show Developer Options" on each form individually. These
 #### 7.4 Activity rendering (`web/public/index.html`)
 - Line 280: Fetches `/submit.catalogue.toml`
 - Line 287: Parses TOML, line 288: gets user bundles
-- Lines 300-354: Display rule processing — activities with `display: "onEntitlement"` (default) only show if user has the bundle
+- Lines 300-354: Display rule processing — activities with `display: "on-entitlement"` (default) only show if user has the bundle
 - No special test-bundle filtering exists — test activities are treated generically
 - To hide test-bundle activities: add a check at ~line 303 that skips activities where ALL required bundles are `"test"` unless `sessionStorage.showDeveloperOptions` is set
 

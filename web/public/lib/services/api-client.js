@@ -27,7 +27,7 @@ export async function handle403Error(response) {
           if (lastMessage && lastMessage.classList.contains("status-error")) {
             lastMessage.style.cursor = "pointer";
             lastMessage.onclick = () => {
-              window.location.href = "/account/bundles.html";
+              window.location.href = "/bundles.html";
             };
           }
         }

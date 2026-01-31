@@ -10,18 +10,16 @@ Allow: /about.html
 Allow: /privacy.html
 Allow: /terms.html
 Allow: /accessibility.html
-Allow: /guide/
-Allow: /help/
+Allow: /guide.html
+Allow: /help.html
 
 # Block authenticated/functional areas
-Disallow: /account/
 Disallow: /hmrc/
 Disallow: /auth/
 Disallow: /activities/
 Disallow: /errors/
 Disallow: /tests/
 Disallow: /docs/
-Disallow: /hmrc-form-field-standards/
 
 # Block embedded simulator content (duplicate of main site, served at /sim/ in local dev)
 Disallow: /sim/

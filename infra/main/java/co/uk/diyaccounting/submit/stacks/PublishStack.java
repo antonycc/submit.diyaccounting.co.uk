@@ -226,13 +226,10 @@ public class PublishStack extends Stack {
                 .destinationBucket(originBucket)
                 .distribution(distribution)
                 .distributionPaths(List.of(
-                        "/account/*",
                         "/activities/*",
                         "/auth/*",
                         "/docs/*",
                         "/errors/*",
-                        "/guide/*",
-                        "/hmrc-form-field-standards/*",
                         "/hmrc/*",
                         "/images/*",
                         "/lib/*",
@@ -241,6 +238,11 @@ public class PublishStack extends Stack {
                         "/widgets/*",
                         "/about.html",
                         "/accessibility.html",
+                        "/bundles.html",
+                        "/faqs.toml",
+                        "/guide.html",
+                        "/help.html",
+                        "/mcp.html",
                         "/favicon.ico",
                         "/index.html",
                         "/privacy.html",
