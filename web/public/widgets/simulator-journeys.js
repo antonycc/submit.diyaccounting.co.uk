@@ -3,6 +3,7 @@
 
 // web/public/widgets/simulator-journeys.js
 // Guided journey automation for simulator iframe - like Playwright running in the browser
+// Supports both same-origin (direct DOM) and cross-origin (postMessage bridge) modes.
 
 /**
  * SimulatorJourney class - automates click-through demos inside the simulator iframe
@@ -15,20 +16,71 @@ export class SimulatorJourney {
     this.totalSteps = 0;
     this.paused = false;
     this.aborted = false;
+    this.crossOrigin = false;
+    this._pendingResponses = new Map();
+    this._messageHandler = null;
 
     // Try to access iframe document (may fail for cross-origin)
     try {
       this.doc = iframe.contentDocument || iframe.contentWindow.document;
     } catch (e) {
-      console.warn("Cannot access iframe document (cross-origin). Using postMessage instead.");
+      console.warn("Cross-origin iframe detected. Using postMessage bridge.");
       this.doc = null;
+      this.crossOrigin = true;
+      this._setupMessageListener();
     }
+  }
+
+  /**
+   * Set up listener for postMessage responses from the iframe bridge
+   */
+  _setupMessageListener() {
+    this._messageHandler = (event) => {
+      const msg = event.data;
+      if (!msg || msg.type !== "simulator-response") return;
+      const resolve = this._pendingResponses.get(msg.id);
+      if (resolve) {
+        this._pendingResponses.delete(msg.id);
+        resolve(msg);
+      }
+    };
+    window.addEventListener("message", this._messageHandler);
+  }
+
+  /**
+   * Send a command to the iframe bridge via postMessage and wait for response
+   */
+  _sendCommand(command) {
+    return new Promise((resolve) => {
+      const id = Math.random().toString(36).substring(2);
+      this._pendingResponses.set(id, resolve);
+      this.iframe.contentWindow.postMessage({ type: "simulator-command", id, ...command }, "*");
+      // Timeout after 10s (fill with typewriter can take a while)
+      setTimeout(() => {
+        if (this._pendingResponses.has(id)) {
+          this._pendingResponses.delete(id);
+          resolve({ success: false, error: "timeout" });
+        }
+      }, 10000);
+    });
+  }
+
+  /**
+   * Clean up message listener
+   */
+  destroy() {
+    if (this._messageHandler) {
+      window.removeEventListener("message", this._messageHandler);
+      this._messageHandler = null;
+    }
+    this._pendingResponses.clear();
   }
 
   /**
    * Get the iframe document, handling cross-origin restrictions
    */
   getDocument() {
+    if (this.crossOrigin) return null;
     try {
       return this.iframe.contentDocument || this.iframe.contentWindow.document;
     } catch (e) {
@@ -37,9 +89,37 @@ export class SimulatorJourney {
   }
 
   /**
+   * Find an element by CSS selector matching text content
+   */
+  findByText(selector, text) {
+    const doc = this.getDocument();
+    if (!doc) return null;
+    for (const el of doc.querySelectorAll(selector)) {
+      if (el.textContent.trim().includes(text)) return el;
+    }
+    return null;
+  }
+
+  /**
+   * Check if an element matching text exists (works cross-origin)
+   */
+  async findByTextExists(selector, text) {
+    if (this.crossOrigin) {
+      const result = await this._sendCommand({ command: "findByText", selector, text });
+      return result.found || false;
+    }
+    return this.findByText(selector, text) !== null;
+  }
+
+  /**
    * Highlight an element in the iframe
    */
   async highlight(selector) {
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      return null; // No direct element reference in cross-origin mode
+    }
+
     const doc = this.getDocument();
     if (!doc) return null;
 
@@ -58,6 +138,11 @@ export class SimulatorJourney {
    * Remove highlight from an element
    */
   unhighlight(selector) {
+    if (this.crossOrigin) {
+      this._sendCommand({ command: "unhighlight", selector });
+      return;
+    }
+
     const doc = this.getDocument();
     if (!doc) return;
 
@@ -72,40 +157,91 @@ export class SimulatorJourney {
    */
   async click(selector, description) {
     this.updateStatus(description);
-    const el = await this.highlight(selector);
-    await this.wait(800);
 
-    if (el) {
-      el.click();
-      el.classList.remove("simulator-highlight");
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      await this.wait(800);
+      await this._sendCommand({ command: "click", selector });
+    } else {
+      const el = await this.highlight(selector);
+      await this.wait(800);
+
+      if (el) {
+        el.click();
+        el.classList.remove("simulator-highlight");
+      }
     }
 
     await this.waitForLoad();
   }
 
   /**
-   * Fill a form field with typewriter effect
+   * Click an element matched by text content with visual feedback
+   */
+  async clickByText(selector, text, description) {
+    this.updateStatus(description);
+
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlightByText", selector, text });
+      await this.wait(800);
+      await this._sendCommand({ command: "clickByText", selector, text });
+    } else {
+      const el = this.findByText(selector, text);
+
+      if (el) {
+        el.classList.add("simulator-highlight");
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        await this.wait(800);
+        el.click();
+        el.classList.remove("simulator-highlight");
+      } else {
+        console.warn(`Element not found by text: ${selector} containing "${text}"`);
+        await this.wait(800);
+      }
+    }
+
+    await this.waitForLoad();
+  }
+
+  /**
+   * Fill a form field with typewriter effect (or direct set for date/number inputs)
    */
   async fill(selector, value, description) {
     this.updateStatus(description);
+
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      await this.wait(500);
+      await this._sendCommand({ command: "fill", selector, value });
+      return;
+    }
+
     const el = await this.highlight(selector);
     await this.wait(500);
 
     if (el) {
-      el.value = "";
       el.focus();
 
-      // Typewriter effect
-      for (const char of String(value)) {
-        if (this.aborted) throw new Error("Journey aborted");
-        while (this.paused) {
-          await new Promise((r) => setTimeout(r, 100));
-        }
-
-        el.value += char;
+      // Date and number inputs don't support character-by-character entry;
+      // set value directly and dispatch change event
+      if (el.type === "date" || el.type === "number" || el.type === "datetime-local") {
+        el.value = String(value);
         el.dispatchEvent(new Event("input", { bubbles: true }));
         el.dispatchEvent(new Event("change", { bubbles: true }));
-        await new Promise((r) => setTimeout(r, 50)); // 50ms per character
+      } else {
+        el.value = "";
+        // Typewriter effect for text inputs
+        for (const char of String(value)) {
+          if (this.aborted) throw new Error("Journey aborted");
+          while (this.paused) {
+            await new Promise((r) => setTimeout(r, 100));
+          }
+
+          el.value += char;
+          el.dispatchEvent(new Event("input", { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 50)); // 50ms per character
+        }
       }
 
       el.classList.remove("simulator-highlight");
@@ -117,6 +253,15 @@ export class SimulatorJourney {
    */
   async select(selector, value, description) {
     this.updateStatus(description);
+
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "highlight", selector });
+      await this.wait(500);
+      await this._sendCommand({ command: "select", selector, value });
+      await this.wait(300);
+      return;
+    }
+
     const el = await this.highlight(selector);
     await this.wait(500);
 
@@ -127,6 +272,39 @@ export class SimulatorJourney {
     }
 
     await this.wait(300);
+  }
+
+  /**
+   * Query an element's state (works cross-origin)
+   */
+  async query(selector) {
+    if (this.crossOrigin) {
+      return await this._sendCommand({ command: "query", selector });
+    }
+    const doc = this.getDocument();
+    const el = doc ? doc.querySelector(selector) : null;
+    return {
+      found: !!el,
+      disabled: el ? !!el.disabled : false,
+      checked: el ? !!el.checked : false,
+      value: el ? el.value : undefined,
+      textContent: el ? (el.textContent || "").trim().substring(0, 200) : undefined,
+    };
+  }
+
+  /**
+   * Set a checkbox to checked (works cross-origin)
+   */
+  async check(selector) {
+    if (this.crossOrigin) {
+      await this._sendCommand({ command: "check", selector });
+      return;
+    }
+    const doc = this.getDocument();
+    if (doc) {
+      const el = doc.querySelector(selector);
+      if (el) el.checked = true;
+    }
   }
 
   /**
@@ -168,6 +346,24 @@ export class SimulatorJourney {
   }
 
   /**
+   * Scroll to the bottom of the iframe document to show results
+   */
+  scrollToResults() {
+    if (this.crossOrigin) {
+      this._sendCommand({ command: "scrollToBottom" });
+      return;
+    }
+
+    const doc = this.getDocument();
+    if (!doc) return;
+    const body = doc.body || doc.documentElement;
+    if (body) {
+      body.scrollTop = body.scrollHeight;
+      doc.documentElement.scrollTop = doc.documentElement.scrollHeight;
+    }
+  }
+
+  /**
    * Complete the journey
    */
   complete(message) {
@@ -178,68 +374,92 @@ export class SimulatorJourney {
 }
 
 /**
+ * Ensure the test bundle is available before proceeding with a journey.
+ * Navigates to the bundles page, requests the test bundle if not already added,
+ * then navigates back to the activities page.
+ */
+async function ensureTestBundle(journey) {
+  // Navigate to bundles page via nav link
+  await journey.clickByText("a", "Bundles", "Navigating to Bundles page...");
+
+  // Wait for bundles page to load (fetches catalog and user bundles from API)
+  await journey.wait(3000);
+
+  // Check if test bundle button exists and whether it's already added
+  const result = await journey.query('button[data-bundle-id="test"]');
+  if (result.found && !result.disabled) {
+    // Test bundle not yet added - click to request it
+    await journey.click('button[data-bundle-id="test"]', "Requesting Test bundle...");
+    // Wait for the bundle request to complete
+    await journey.wait(2000);
+  } else {
+    // Bundle already added or button not found - log and continue
+    journey.updateStatus("Test bundle already added");
+    await journey.wait(500);
+  }
+
+  // Navigate back to activities page
+  await journey.clickByText("a", "Activities", "Returning to Activities page...");
+
+  // Wait for activities page to render dynamic buttons
+  await journey.wait(2000);
+}
+
+/**
  * Journey: Submit VAT Return
  * Demonstrates the full VAT return submission flow
  */
 export async function journeySubmitVat(journey) {
-  journey.setTotalSteps(12);
+  journey.setTotalSteps(15);
 
-  // Navigate to Submit VAT Return page
-  await journey.click('a[href*="submitVat"], button:has-text("Submit VAT")', "Selecting Submit VAT Return activity...");
+  // Ensure test bundle is available for sandbox API access
+  await ensureTestBundle(journey);
+
+  // Navigate to Submit VAT Return page (activity buttons are dynamically rendered)
+  await journey.clickByText("button", "Submit VAT", "Selecting Submit VAT Return activity (sandbox)...");
 
   // Wait for page to load
   await journey.wait(2000);
 
-  // Fill VRN
-  await journey.fill("#vrn, input[name='vrn']", "123456789", "Entering VAT Registration Number...");
+  // Fill VRN (submitVat uses #vatNumber, not #vrn)
+  await journey.fill("#vatNumber", "123456789", "Entering VAT Registration Number...");
 
-  // Click fetch obligations or similar button if present
-  const doc = journey.getDocument();
-  if (doc) {
-    const fetchBtn = doc.querySelector("#fetchObligationsBtn, button:has-text('Fetch')");
-    if (fetchBtn) {
-      await journey.click("#fetchObligationsBtn, button:has-text('Fetch')", "Fetching VAT obligations...");
-      await journey.wait(2000);
-    }
-  }
+  // Fill period dates
+  await journey.fill("#periodStart", "2017-01-01", "Entering period start date...");
+  await journey.fill("#periodEnd", "2017-03-31", "Entering period end date...");
 
   // Fill Box 1 - VAT due on sales
-  await journey.fill("#vatDueSales, input[name='vatDueSales']", "1250.00", "Entering VAT due on sales (Box 1)...");
+  await journey.fill("#vatDueSales", "1250.00", "Entering VAT due on sales (Box 1)...");
 
   // Fill Box 2 - VAT due on acquisitions
-  await journey.fill("#vatDueAcquisitions, input[name='vatDueAcquisitions']", "0.00", "Entering VAT due on acquisitions (Box 2)...");
+  await journey.fill("#vatDueAcquisitions", "0.00", "Entering VAT due on acquisitions (Box 2)...");
 
   // Fill Box 4 - VAT reclaimed
-  await journey.fill("#vatReclaimedCurrPeriod, input[name='vatReclaimedCurrPeriod']", "350.00", "Entering VAT reclaimed (Box 4)...");
+  await journey.fill("#vatReclaimedCurrPeriod", "350.00", "Entering VAT reclaimed (Box 4)...");
 
   // Fill Box 6 - Total sales ex VAT
-  await journey.fill("#totalValueSalesExVAT, input[name='totalValueSalesExVAT']", "6250", "Entering total sales excluding VAT (Box 6)...");
+  await journey.fill("#totalValueSalesExVAT", "6250", "Entering total sales excluding VAT (Box 6)...");
 
   // Fill Box 7 - Total purchases ex VAT
-  await journey.fill(
-    "#totalValuePurchasesExVAT, input[name='totalValuePurchasesExVAT']",
-    "1750",
-    "Entering total purchases excluding VAT (Box 7)...",
-  );
+  await journey.fill("#totalValuePurchasesExVAT", "1750", "Entering total purchases excluding VAT (Box 7)...");
 
   // Fill Box 8 - Goods supplied to EU
-  await journey.fill(
-    "#totalValueGoodsSuppliedExVAT, input[name='totalValueGoodsSuppliedExVAT']",
-    "0",
-    "Entering goods supplied to EU (Box 8)...",
-  );
+  await journey.fill("#totalValueGoodsSuppliedExVAT", "0", "Entering goods supplied to EU (Box 8)...");
 
   // Fill Box 9 - Acquisitions from EU
-  await journey.fill("#totalAcquisitionsExVAT, input[name='totalAcquisitionsExVAT']", "0", "Entering acquisitions from EU (Box 9)...");
+  await journey.fill("#totalAcquisitionsExVAT", "0", "Entering acquisitions from EU (Box 9)...");
+
+  // Check declaration
+  await journey.check("#declaration");
 
   // Submit the return
-  await journey.click(
-    "#submitVatBtn, button[type='submit']:has-text('Submit'), .btn:has-text('Submit')",
-    "Submitting VAT return to HMRC...",
-  );
+  await journey.click("#submitBtn", "Submitting VAT return to HMRC...");
 
   // Wait for submission response
   await journey.wait(3000);
+
+  // Scroll to show the receipt
+  journey.scrollToResults();
 
   journey.complete("VAT return submitted successfully! Receipt is displayed above.");
 }
@@ -249,22 +469,28 @@ export async function journeySubmitVat(journey) {
  * Demonstrates viewing VAT obligations from HMRC
  */
 export async function journeyViewObligations(journey) {
-  journey.setTotalSteps(4);
+  journey.setTotalSteps(6);
 
-  // Navigate to Obligations page
-  await journey.click('a[href*="vatObligations"], button:has-text("Obligations")', "Selecting View Obligations activity...");
+  // Ensure test bundle is available for sandbox API access
+  await ensureTestBundle(journey);
+
+  // Navigate to Obligations page (activity buttons are dynamically rendered)
+  await journey.clickByText("button", "Obligations", "Selecting View Obligations activity (sandbox)...");
 
   // Wait for page to load
   await journey.wait(2000);
 
   // Fill VRN
-  await journey.fill("#vrn, input[name='vrn']", "123456789", "Entering VAT Registration Number...");
+  await journey.fill("#vrn", "123456789", "Entering VAT Registration Number...");
 
-  // Click fetch button
-  await journey.click("#fetchObligationsBtn, button:has-text('Fetch'), .btn:has-text('Fetch')", "Fetching obligations from HMRC...");
+  // Click retrieve button
+  await journey.click("#retrieveBtn", "Fetching obligations from HMRC...");
 
   // Wait for results
   await journey.wait(2500);
+
+  // Scroll down to show the results
+  journey.scrollToResults();
 
   journey.complete("Obligations fetched! You can see which periods need VAT returns and their due dates.");
 }
@@ -274,25 +500,32 @@ export async function journeyViewObligations(journey) {
  * Demonstrates retrieving a previously submitted VAT return
  */
 export async function journeyViewReturn(journey) {
-  journey.setTotalSteps(5);
+  journey.setTotalSteps(8);
 
-  // Navigate to View Return page
-  await journey.click('a[href*="viewVatReturn"], button:has-text("View Return")', "Selecting View VAT Return activity...");
+  // Ensure test bundle is available for sandbox API access
+  await ensureTestBundle(journey);
+
+  // Navigate to View Return page (activity buttons are dynamically rendered)
+  await journey.clickByText("button", "View VAT Return", "Selecting View VAT Return activity (sandbox)...");
 
   // Wait for page to load
   await journey.wait(2000);
 
   // Fill VRN
-  await journey.fill("#vrn, input[name='vrn']", "123456789", "Entering VAT Registration Number...");
+  await journey.fill("#vrn", "123456789", "Entering VAT Registration Number...");
 
-  // Fill period key
-  await journey.fill("#periodKey, input[name='periodKey']", "24A1", "Entering period key...");
+  // Fill period dates (viewVatReturn now uses date inputs, not periodKey dropdown)
+  await journey.fill("#periodStart", "2017-01-01", "Entering period start date...");
+  await journey.fill("#periodEnd", "2017-03-31", "Entering period end date...");
 
-  // Click fetch button
-  await journey.click("#fetchReturnBtn, button:has-text('Fetch'), .btn:has-text('Fetch')", "Fetching VAT return from HMRC...");
+  // Click retrieve button
+  await journey.click("#retrieveBtn", "Fetching VAT return from HMRC...");
 
   // Wait for results
   await journey.wait(2500);
+
+  // Scroll to show the return details
+  journey.scrollToResults();
 
   journey.complete("VAT return details retrieved! All 9 boxes are displayed as recorded by HMRC.");
 }

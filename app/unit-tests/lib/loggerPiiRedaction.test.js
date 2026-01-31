@@ -5,7 +5,7 @@
 // Tests for PII redaction in the logger
 
 import { describe, test, expect } from "vitest";
-import { sanitiseString, sanitiseData, createSafeLogger } from "@app/lib/logger.js";
+import { sanitiseString, sanitiseData, createSafeLogger, containsSensitiveData } from "@app/lib/logger.js";
 
 describe("lib/logger PII redaction", () => {
   describe("sanitiseString", () => {
@@ -37,7 +37,8 @@ describe("lib/logger PII redaction", () => {
     });
 
     test("redacts Bearer tokens in strings", () => {
-      expect(sanitiseString("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig")).toBe("Authorization: [TOKEN]");
+      // SECRET pattern catches Authorization: [TOKEN] after TOKEN redacts the Bearer value
+      expect(sanitiseString("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig")).toBe("[SECRET]");
       expect(sanitiseString("bearer abc123def456")).toBe("[TOKEN]");
     });
 
@@ -169,6 +170,82 @@ describe("lib/logger PII redaction", () => {
       const safeLog = createSafeLogger(mockLogger);
 
       expect(safeLog.raw).toBe(mockLogger);
+    });
+  });
+
+  describe("SECRET key=value redaction", () => {
+    test("redacts client_secret=value patterns", () => {
+      expect(sanitiseString("client_secret=abc123-def456")).toBe("[SECRET]");
+      expect(sanitiseString("CLIENT_SECRET=my-secret-value")).toBe("[SECRET]");
+      expect(sanitiseString("clientSecret=some-uuid-here")).toBe("[SECRET]");
+    });
+
+    test("redacts client_secret in query strings", () => {
+      expect(sanitiseString("grant_type=authorization_code&client_secret=abc123&redirect_uri=http://localhost")).toBe(
+        "grant_type=authorization_code&[SECRET]&redirect_uri=http://localhost",
+      );
+    });
+
+    test("redacts api_key and apiKey patterns", () => {
+      expect(sanitiseString("api_key=sk-123456789")).toBe("[SECRET]");
+      expect(sanitiseString("API_KEY=prod-key-value")).toBe("[SECRET]");
+      expect(sanitiseString("apiKey=test-key")).toBe("[SECRET]");
+    });
+
+    test("redacts password patterns", () => {
+      expect(sanitiseString("password=MyP@ssw0rd!")).toBe("[SECRET]");
+      expect(sanitiseString("PASSWORD=hunter2")).toBe("[SECRET]");
+    });
+
+    test("redacts access_token and refresh_token patterns", () => {
+      expect(sanitiseString("access_token=eyJhbGciOiJSUzI1NiJ9")).toBe("[SECRET]");
+      expect(sanitiseString("refresh_token=dGhpcyBpcyBhIHRva2Vu")).toBe("[SECRET]");
+      expect(sanitiseString("accessToken=some-token")).toBe("[SECRET]");
+    });
+
+    test("redacts authorization header values", () => {
+      expect(sanitiseString("authorization=Bearer eyJtoken")).toBe("[SECRET]");
+      expect(sanitiseString("Authorization: Bearer eyJtoken")).toBe("[SECRET]");
+    });
+
+    test("redacts hmrcAccessToken patterns", () => {
+      expect(sanitiseString("hmrcAccessToken=abc-123-def")).toBe("[SECRET]");
+    });
+
+    test("redacts client.secret (dot notation)", () => {
+      expect(sanitiseString("client.secret=my-secret")).toBe("[SECRET]");
+    });
+
+    test("preserves non-secret key=value pairs", () => {
+      expect(sanitiseString("periodKey=24A1")).toBe("periodKey=24A1");
+      expect(sanitiseString("grant_type=authorization_code")).toBe("grant_type=authorization_code");
+      expect(sanitiseString("redirect_uri=http://localhost:3000")).toBe("redirect_uri=http://localhost:3000");
+    });
+  });
+
+  describe("containsSensitiveData", () => {
+    test("detects client_secret in strings", () => {
+      expect(containsSensitiveData("client_secret=abc123")).toBe(true);
+      expect(containsSensitiveData("CLIENT_SECRET=value")).toBe(true);
+      expect(containsSensitiveData("clientSecret=value")).toBe(true);
+    });
+
+    test("detects other sensitive patterns", () => {
+      expect(containsSensitiveData("password=hunter2")).toBe(true);
+      expect(containsSensitiveData("access_token=eyJ")).toBe(true);
+      expect(containsSensitiveData("api_key=sk-123")).toBe(true);
+    });
+
+    test("returns false for non-sensitive strings", () => {
+      expect(containsSensitiveData("Hello world")).toBe(false);
+      expect(containsSensitiveData("periodKey=24A1")).toBe(false);
+      expect(containsSensitiveData("status=200")).toBe(false);
+    });
+
+    test("returns false for non-string values", () => {
+      expect(containsSensitiveData(123)).toBe(false);
+      expect(containsSensitiveData(null)).toBe(false);
+      expect(containsSensitiveData(undefined)).toBe(false);
     });
   });
 

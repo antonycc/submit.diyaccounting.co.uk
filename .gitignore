@@ -367,4 +367,5 @@ web/public/submit.bundle.js
 
 # Generated simulator build output
 web/public-simulator/
+web/public/simulator-local.js
 /getVatObligationsBehaviour.output.txt

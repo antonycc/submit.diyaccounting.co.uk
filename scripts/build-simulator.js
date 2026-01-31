@@ -35,11 +35,95 @@ const SIMULATOR_META_TAGS = `
   <meta name="simulator" content="true">
 `;
 
+// Storage namespace proxy - isolates simulator storage from parent page
+// Must run before any other script to intercept all storage access
+const SIMULATOR_STORAGE_PROXY = `
+  <script>
+    // Simulator Storage Namespace Proxy - Injected by build-simulator.js
+    // Prefixes all localStorage/sessionStorage keys with "simulator." so the
+    // simulator iframe's storage does not conflict with the parent page.
+    (function() {
+      var PREFIX = 'simulator.';
+      var realLocalStorage = window.localStorage;
+      var realSessionStorage = window.sessionStorage;
+
+      function createPrefixedStorage(real) {
+        var wrapper = {
+          getItem: function(key) {
+            return real.getItem(PREFIX + key);
+          },
+          setItem: function(key, value) {
+            real.setItem(PREFIX + key, value);
+          },
+          removeItem: function(key) {
+            real.removeItem(PREFIX + key);
+          },
+          clear: function() {
+            var keysToRemove = [];
+            for (var i = 0; i < real.length; i++) {
+              var k = real.key(i);
+              if (k && k.indexOf(PREFIX) === 0) keysToRemove.push(k);
+            }
+            for (var j = 0; j < keysToRemove.length; j++) {
+              real.removeItem(keysToRemove[j]);
+            }
+          },
+          key: function(index) {
+            var count = 0;
+            for (var i = 0; i < real.length; i++) {
+              var k = real.key(i);
+              if (k && k.indexOf(PREFIX) === 0) {
+                if (count === index) return k.substring(PREFIX.length);
+                count++;
+              }
+            }
+            return null;
+          },
+          get length() {
+            var count = 0;
+            for (var i = 0; i < real.length; i++) {
+              var k = real.key(i);
+              if (k && k.indexOf(PREFIX) === 0) count++;
+            }
+            return count;
+          }
+        };
+        return wrapper;
+      }
+
+      var prefixedLocal = createPrefixedStorage(realLocalStorage);
+      var prefixedSession = createPrefixedStorage(realSessionStorage);
+
+      Object.defineProperty(window, 'localStorage', {
+        get: function() { return prefixedLocal; },
+        configurable: true
+      });
+      Object.defineProperty(window, 'sessionStorage', {
+        get: function() { return prefixedSession; },
+        configurable: true
+      });
+    })();
+  </script>
+`;
+
 // robots.txt content for simulator subdomain
 const ROBOTS_TXT = `# Simulator subdomain - do not index
 User-agent: *
 Disallow: /
 `;
+
+// Simulator demo user identity
+const SIMULATOR_DEMO_USER = {
+  sub: "demo-user-12345",
+  email: "demo@simulator.diyaccounting.co.uk",
+  name: "Demo User",
+  given_name: "Demo",
+};
+
+// Build proper JWT-format tokens (unsigned) so decodeJwtNoVerify can extract claims
+const JWT_HEADER = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" })).toString("base64url");
+const SIMULATOR_ID_TOKEN = `${JWT_HEADER}.${Buffer.from(JSON.stringify(SIMULATOR_DEMO_USER)).toString("base64url")}.`;
+const SIMULATOR_ACCESS_TOKEN = `${JWT_HEADER}.${Buffer.from(JSON.stringify({ sub: SIMULATOR_DEMO_USER.sub, token_use: "access" })).toString("base64url")}.`;
 
 /**
  * Recursively copy directory
@@ -72,8 +156,9 @@ function transformHtmlFile(filePath) {
   // Add data-simulator="true" to <html> tag
   content = content.replace(/<html(\s+lang="[^"]*")?>/i, '<html$1 data-simulator="true">');
 
-  // Inject meta tags after <head>
-  content = content.replace(/<head>/i, "<head>" + SIMULATOR_META_TAGS);
+  // Inject meta tags and storage namespace proxy after <head>
+  // Storage proxy must run before any other script to intercept all storage access
+  content = content.replace(/<head>/i, "<head>" + SIMULATOR_META_TAGS + SIMULATOR_STORAGE_PROXY);
 
   // Inject simulator banner after <body>
   content = content.replace(/<body>/i, "<body>" + SIMULATOR_BANNER);
@@ -88,15 +173,9 @@ function transformHtmlFile(filePath) {
     (function() {
       if (document.documentElement.dataset.simulator === 'true') {
         // Set up demo user session
-        const demoUser = {
-          sub: 'demo-user-12345',
-          email: 'demo@simulator.diyaccounting.co.uk',
-          name: 'Demo User',
-          given_name: 'Demo'
-        };
-        localStorage.setItem('userInfo', JSON.stringify(demoUser));
-        localStorage.setItem('cognitoIdToken', 'simulator-demo-token');
-        localStorage.setItem('cognitoAccessToken', 'simulator-demo-access-token');
+        localStorage.setItem('userInfo', ${JSON.stringify(JSON.stringify(SIMULATOR_DEMO_USER))});
+        localStorage.setItem('cognitoIdToken', '${SIMULATOR_ID_TOKEN}');
+        localStorage.setItem('cognitoAccessToken', '${SIMULATOR_ACCESS_TOKEN}');
 
         // Set HMRC token in sessionStorage
         sessionStorage.setItem('hmrcAccessToken', 'simulator-hmrc-token');
@@ -106,8 +185,12 @@ function transformHtmlFile(filePath) {
   </script>
 `;
 
-  // Insert simulator script before closing </body>
-  content = content.replace(/<\/body>/i, simulatorScript + "</body>");
+  // Remove old localstorage-viewer widget (replaced by developer floats)
+  content = content.replace(/<script src="[^"]*localstorage-viewer\.js"><\/script>\s*/g, "");
+
+  // Insert simulator script and postMessage bridge before closing </body>
+  const bridgeScript = `  <script src="/widgets/simulator-bridge.js"></script>\n`;
+  content = content.replace(/<\/body>/i, simulatorScript + bridgeScript + "</body>");
 
   fs.writeFileSync(filePath, content, "utf-8");
 }
@@ -244,6 +327,31 @@ function buildSimulator() {
   // Create robots.txt
   console.log("  Creating robots.txt...");
   fs.writeFileSync(path.join(targetDir, "robots.txt"), ROBOTS_TXT, "utf-8");
+
+  // Create simulator-local.js signal file in web/public/
+  // This git-ignored file tells simulator.html to use the local /sim/ path
+  // instead of the production simulator URL
+  const signalFilePath = path.join(sourceDir, "simulator-local.js");
+  console.log("  Creating simulator-local.js signal file...");
+  fs.writeFileSync(
+    signalFilePath,
+    "// Generated by build-simulator.js — do not commit\nwindow.__simulatorLocal = true;\n",
+    "utf-8",
+  );
+
+  // Copy Lambda server entry point for Lambda Web Adapter deployment
+  console.log("  Adding Lambda server files...");
+  const lambdaServerSrc = path.join(projectRoot, "scripts/simulator-lambda-server.mjs");
+  const lambdaServerDest = path.join(targetDir, "lambda-server.mjs");
+  fs.copyFileSync(lambdaServerSrc, lambdaServerDest);
+
+  // Create run.sh - Lambda Web Adapter entrypoint
+  const runSh = `#!/bin/bash\nexec node lambda-server.mjs\n`;
+  fs.writeFileSync(path.join(targetDir, "run.sh"), runSh, { mode: 0o755 });
+
+  // Create minimal package.json for Node.js module resolution
+  const packageJson = JSON.stringify({ type: "module" }, null, 2) + "\n";
+  fs.writeFileSync(path.join(targetDir, "package.json"), packageJson, "utf-8");
 
   console.log("Simulator build complete!");
   console.log(`  Total HTML files: ${htmlFiles.length}`);

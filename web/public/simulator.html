@@ -173,6 +173,7 @@
         <a href="help/index.html">Help & FAQs</a>
         <a href="guide/index.html">User Guide</a>
         <a href="about.html">About</a>
+        <a href="mcp/index.html">MCP Server (coming soon)</a>
       </nav>
 
       <!-- Demo Notice -->
@@ -207,15 +208,17 @@
       </div>
 
       <!-- Simulator Container -->
-      <div class="simulator-container" role="region" aria-label="DIY Accounting Submit Simulator">
+      <div class="simulator-container" id="simulatorContainer" role="region" aria-label="DIY Accounting Submit Simulator">
+        <button type="button" class="simulator-expand-btn" id="simulatorExpandBtn" aria-label="Expand simulator">
+          <span id="expandIcon">&#x26F6;</span> <span id="expandLabel">Expand</span>
+        </button>
+        <a href="#" id="simulatorOpenLink" class="simulator-open-btn" target="_blank" rel="noopener noreferrer" aria-label="Open simulator in new tab" title="Open simulator in new tab">&#x2197; Open the simulator in a new tab</a>
         <div class="simulator-overlay-label" aria-hidden="true">SIMULATOR</div>
         <iframe
           id="simulatorFrame"
-          src="https://simulator.submit.diyaccounting.co.uk/"
           class="simulator-frame"
           title="DIY Accounting Submit Simulator - Demo Mode"
           sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
-          loading="lazy"
         >
           <p>
             Your browser does not support iframes. Please visit
@@ -251,6 +254,57 @@
       </div>
     </footer>
 
+    <script>
+      // Compute simulator URL from current hostname using {env}-simulator.submit.diyaccounting.co.uk pattern
+      // (matches Cognito pattern: {env}-auth.submit.diyaccounting.co.uk)
+      //   submit.diyaccounting.co.uk     → https://prod-simulator.submit.diyaccounting.co.uk/
+      //   ci.submit.diyaccounting.co.uk  → https://ci-simulator.submit.diyaccounting.co.uk/
+      //   localhost / other              → production fallback
+      var host = window.location.hostname;
+      var baseDomain = "submit.diyaccounting.co.uk";
+      if (host === baseDomain) {
+        window.__simulatorFrameSrc = "https://prod-simulator." + baseDomain + "/";
+      } else if (host.endsWith("." + baseDomain)) {
+        var env = host.slice(0, host.length - baseDomain.length - 1);
+        window.__simulatorFrameSrc = "https://" + env + "-simulator." + baseDomain + "/";
+      } else {
+        window.__simulatorFrameSrc = "https://prod-simulator." + baseDomain + "/";
+      }
+    </script>
+    <script src="./simulator-local.js" onerror="void(0)"></script>
+    <script>
+      // If build-simulator has been run, simulator-local.js sets __simulatorLocal = true
+      // which switches the iframe to the same-origin /sim/ path
+      if (window.__simulatorLocal) window.__simulatorFrameSrc = "/sim/";
+      document.getElementById("simulatorFrame").src = window.__simulatorFrameSrc;
+      document.getElementById("simulatorOpenLink").href = window.__simulatorFrameSrc;
+    </script>
+
+    <script>
+      // Lightbox expand/collapse for simulator iframe
+      document.getElementById("simulatorExpandBtn").addEventListener("click", function () {
+        var container = document.getElementById("simulatorContainer");
+        var icon = document.getElementById("expandIcon");
+        var label = document.getElementById("expandLabel");
+        var isExpanded = container.classList.toggle("simulator-expanded");
+        icon.textContent = isExpanded ? "\u2716" : "\u26F6";
+        label.textContent = isExpanded ? "Close" : "Expand";
+        this.setAttribute("aria-label", isExpanded ? "Close expanded simulator" : "Expand simulator");
+      });
+      // ESC key to close lightbox
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          var container = document.getElementById("simulatorContainer");
+          if (container.classList.contains("simulator-expanded")) {
+            container.classList.remove("simulator-expanded");
+            document.getElementById("expandIcon").textContent = "\u26F6";
+            document.getElementById("expandLabel").textContent = "Expand";
+            document.getElementById("simulatorExpandBtn").setAttribute("aria-label", "Expand simulator");
+          }
+        }
+      });
+    </script>
+
     <script type="module" src="./widgets/simulator-journeys.js"></script>
     <script type="module">
       import { SimulatorJourney, journeySubmitVat, journeyViewObligations, journeyViewReturn } from "./widgets/simulator-journeys.js";
@@ -274,13 +328,9 @@
           // Disable all journey buttons during playback
           document.querySelectorAll(".journey-btn").forEach((b) => (b.disabled = true));
 
-          // Reset iframe to home
+          // Reset iframe to simulator home
           statusEl.textContent = "Loading simulator...";
-          try {
-            iframe.contentWindow.location.href = "/index.html";
-          } catch (e) {
-            // Cross-origin - can't reset, just proceed
-          }
+          iframe.src = window.__simulatorFrameSrc;
           await new Promise((r) => setTimeout(r, 2000));
 
           activeJourney = new SimulatorJourney(iframe, statusEl);
@@ -296,6 +346,7 @@
           }
 
           controlsEl.style.display = "none";
+          if (activeJourney) activeJourney.destroy();
           activeJourney = null;
 
           // Re-enable journey buttons

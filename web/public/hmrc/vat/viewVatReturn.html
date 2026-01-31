@@ -48,17 +48,6 @@
     <main id="mainContent">
       <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
 
-      <div id="testDataLink" class="test-data-link">
-        <a
-          href="#"
-          onclick="
-            event.preventDefault();
-            window.testDataGenerator.populateViewVatReturnForm();
-          "
-          >add test data</a
-        >
-      </div>
-
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -110,6 +99,16 @@
 
           <!-- Developer Test Scenario Section -->
           <div id="developerSection" class="form-group" style="display: none">
+            <div id="testDataLink" class="test-data-link">
+              <a
+                href="#"
+                onclick="
+                  event.preventDefault();
+                  window.testDataGenerator.populateViewVatReturnForm();
+                "
+                >add test data</a
+              >
+            </div>
             <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
             <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">

@@ -66,6 +66,7 @@ public class SubmitSharedNames {
     public String envDomainName;
     public String cognitoDomainName;
     public String holdingDomainName;
+    public String simulatorDomainName;
     public String baseUrl;
     public String envBaseUrl;
     public String dashedDeploymentDomainName;
@@ -297,6 +298,8 @@ public class SubmitSharedNames {
                 : "%s.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.cognitoDomainName = "%s-auth.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.holdingDomainName = "%s-holding.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
+        this.simulatorDomainName =
+                "%s-simulator.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
                 .formatted(
                         props.deploymentName,

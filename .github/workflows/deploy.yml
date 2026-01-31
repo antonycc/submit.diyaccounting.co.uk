@@ -1838,6 +1838,31 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-simulator:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'simulatorBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   disable-native-auth:
     if: ${{ !cancelled() }}
     name: 'disable native auth after behaviour tests'
@@ -1854,6 +1879,7 @@ jobs:
       - web-test-help-sandbox
       - web-test-vatValidation-sandbox
       - web-test-vatSchemes-sandbox
+      - web-test-simulator
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:

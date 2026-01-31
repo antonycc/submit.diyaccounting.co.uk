@@ -382,6 +382,8 @@ public class EdgeStack extends Stack {
                                         + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com; "
                                         + "img-src 'self' data: https://avatars.githubusercontent.com; "
                                         + "style-src 'self' 'unsafe-inline'; "
+                                        + "frame-src 'self' https://"
+                                        + props.sharedNames().simulatorDomainName + "; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)

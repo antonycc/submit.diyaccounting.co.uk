@@ -190,11 +190,21 @@
       }
 
       // Get user's active bundles (automatic + granted non-expired)
+      // Automatic bundles are only granted to authenticated users
       function getActiveBundles(catalog, userBundles) {
         const active = new Set();
+        const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
 
-        // Add automatic bundles
-        if (catalog.bundles) {
+        // In simulator mode, grant all bundles so all activities are accessible
+        if (document.documentElement.dataset.simulator === "true" && catalog.bundles) {
+          for (const bundle of catalog.bundles) {
+            active.add(bundle.id);
+          }
+          return Array.from(active);
+        }
+
+        // Add automatic bundles for authenticated users
+        if (catalog.bundles && isLoggedIn) {
           for (const bundle of catalog.bundles) {
             if (bundle.allocation === "automatic") {
               active.add(bundle.id);
@@ -336,21 +346,38 @@
                 </div>
               `);
             } else if (displayRule === "alwaysWithUpsell") {
-              // User doesn't have access - show upsell button linking to bundles page
+              // User doesn't have access - show activity with upsell annotation
+              const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
               const requiredBundleNames = activity.bundles
                 .filter((id) => id !== "default") // Don't show "default" bundle in requirements
                 .map((id) => bundleNameMap[id] || id)
                 .join(" or ");
-              buttons.push(`
-                <div style="margin: 1em 0">
-                  <button type="button" class="btn" onclick="window.location.href='account/bundles.html'">
-                    Get access to: ${activity.name}
-                  </button>
-                  <p style="font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;">
-                    Requires: ${requiredBundleNames}
-                  </p>
-                </div>
-              `);
+
+              if (isLoggedIn) {
+                // Logged in but missing bundle - link to bundles page
+                buttons.push(`
+                  <div style="margin: 1em 0">
+                    <button type="button" class="btn" onclick="window.location.href='account/bundles.html'">
+                      ${activity.name}
+                    </button>
+                    <p style="font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;">
+                      Requires: ${requiredBundleNames}
+                    </p>
+                  </div>
+                `);
+              } else {
+                // Not logged in - prompt to log in
+                buttons.push(`
+                  <div style="margin: 1em 0">
+                    <button type="button" class="btn" onclick="window.location.href='auth/login.html'">
+                      ${activity.name}
+                    </button>
+                    <p style="font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;">
+                      Login and add bundle to access
+                    </p>
+                  </div>
+                `);
+              }
             }
             // For displayRule === "onEntitlement" with no access, don't show anything
           }

@@ -438,20 +438,19 @@
       body.developer-mode #developerSection {
         position: relative;
         display: block !important;
-        background: rgba(0, 15, 0, 0.92);
+        background: rgba(0, 15, 0, 0.5);
         border: 1px solid rgba(0, 255, 0, 0.3);
         border-radius: 6px;
-        padding: 20px;
-        margin: 20px 0;
+        padding: 12px;
+        margin: 16px 0;
         font-family: "Courier New", Consolas, Monaco, monospace;
+        font-size: 0.85em;
         color: #00ff00;
-        box-shadow:
-          0 0 10px rgba(0, 255, 0, 0.2),
-          inset 0 0 60px rgba(0, 20, 0, 0.3);
+        box-shadow: 0 0 8px rgba(0, 255, 0, 0.15);
         overflow: hidden;
       }
 
-      /* CRT scanline effect */
+      /* Subtle scanline effect */
       body.developer-mode #developerSection::before {
         content: "";
         position: absolute;
@@ -463,8 +462,8 @@
           0deg,
           transparent,
           transparent 2px,
-          rgba(0, 0, 0, 0.15) 2px,
-          rgba(0, 0, 0, 0.15) 4px
+          rgba(0, 0, 0, 0.05) 2px,
+          rgba(0, 0, 0, 0.05) 4px
         );
         pointer-events: none;
         z-index: 1;
@@ -472,36 +471,38 @@
 
       /* Terminal header bar (decorative) */
       body.developer-mode #developerSection::after {
-        content: "DEVELOPER TERMINAL";
+        content: "developer";
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        background: linear-gradient(180deg, rgba(0, 40, 0, 0.9) 0%, rgba(0, 20, 0, 0.9) 100%);
-        border-bottom: 1px solid rgba(0, 255, 0, 0.3);
-        padding: 4px 12px;
-        font-size: 10px;
-        letter-spacing: 2px;
-        color: rgba(0, 255, 0, 0.7);
-        text-transform: uppercase;
+        background: rgba(0, 20, 0, 0.6);
+        border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+        padding: 2px 12px;
+        font-size: 9px;
+        letter-spacing: 1px;
+        color: rgba(0, 255, 0, 0.5);
+        text-transform: lowercase;
       }
 
       /* Adjust content to account for terminal header */
       body.developer-mode #developerSection > * {
         position: relative;
         z-index: 2;
-        margin-top: 24px;
+        margin-top: 8px;
       }
 
       body.developer-mode #developerSection > *:first-child {
-        margin-top: 28px;
+        margin-top: 20px;
       }
 
       /* Terminal text styling */
       body.developer-mode #developerSection label {
         color: #00ff00;
-        font-weight: bold;
-        text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+        font-weight: normal;
+        font-family: "Courier New", Consolas, Monaco, monospace;
+        text-shadow: 0 0 3px rgba(0, 255, 0, 0.3);
+        text-transform: lowercase;
       }
 
       body.developer-mode #developerSection .hint {
@@ -536,14 +537,29 @@
         accent-color: #00ff00;
       }
 
-      /* Pulsing cursor/glow effect for active state */
-      @keyframes terminalGlow {
-        0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.2), inset 0 0 60px rgba(0, 20, 0, 0.3); }
-        50% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.3), inset 0 0 60px rgba(0, 20, 0, 0.3); }
+      /* Test data link inside developer section */
+      body.developer-mode #developerSection .test-data-link {
+        display: block;
+        text-align: left;
+        margin-bottom: 8px;
       }
 
+      body.developer-mode #developerSection .test-data-link a {
+        color: #00ff00;
+        border-color: rgba(0, 255, 0, 0.4);
+        font-family: "Courier New", Consolas, Monaco, monospace;
+        text-transform: lowercase;
+        font-size: 0.9em;
+      }
+
+      body.developer-mode #developerSection .test-data-link a:hover {
+        background-color: rgba(0, 255, 0, 0.15);
+        color: #00ff00;
+      }
+
+      /* Subtle hover glow */
       body.developer-mode #developerSection:hover {
-        animation: terminalGlow 2s ease-in-out infinite;
+        box-shadow: 0 0 12px rgba(0, 255, 0, 0.2);
       }
 
       /* Sandbox obligations option - nested terminal styling */
