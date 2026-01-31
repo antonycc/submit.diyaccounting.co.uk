@@ -32,14 +32,17 @@ listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials
-tokensGranted = 3
-# tokensGranted
-# =============
+tokens = 3
+# tokens
+# ======
 # Number of HMRC API tokens allocated with this bundle
 # The tokens are credited to the user and expire after the period matching the timeout
 # Activities such as submitting VAT returns consume 1 token
 # There us a user token activity counter shown in the UI
-# GET /api/v1/users/
+#
+# Screens showing the user's token balance and activities driven by more advanced APIs
+# GET /api/v1/tokens/ [ { "bundle": "day-guest", "tokens": 2, "expires": "2024-06-30T12:34:56Z" } ]
+# GET /api/v1/activities/ [ { "activity": "submit-vat", "tokens": 1, "started": "2024-05-30T12:34:56Z", "completed": "2024-05-30T12:34:56Z", requestId: "abc-123-def-456" } ]
 
 # Access to free authenticated activities including VAT submission for users with a pass
 [[bundles]]
