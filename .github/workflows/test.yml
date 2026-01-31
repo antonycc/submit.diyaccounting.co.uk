@@ -69,7 +69,7 @@ on:
       - 'pom.xml'
       - 'web/public/submit.catalogue.toml'
       - '.github/actions/get-names'
-      - '.github/workflows/test.yml'
+      - '.github/workflows/*.yml'
       - '.prettierignore'
       - '.prettierrc'
       - 'eslint.config.js'
