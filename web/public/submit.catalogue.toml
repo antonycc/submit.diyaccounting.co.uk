@@ -28,7 +28,7 @@ id = "day-guest"
 name = "Day Guest"
 display = "always"
 allocation = "on-request"
-cap = 1
+cap = 10
 timeout = "P1D"
 listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments

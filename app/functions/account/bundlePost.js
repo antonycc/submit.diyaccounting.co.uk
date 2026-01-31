@@ -369,7 +369,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   // on-request: enforce cap and expiry
   const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
   if (typeof cap === "number") {
-    const currentCount = currentBundles.length;
+    const currentCount = currentBundles.filter((b) => b.bundleId === requestedBundle).length;
     if (currentCount >= cap) {
       logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
       const result = { status: "cap_reached", error: "cap_reached", statusCode: 403 };

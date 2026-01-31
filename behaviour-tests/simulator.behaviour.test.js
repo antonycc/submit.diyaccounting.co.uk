@@ -84,11 +84,11 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
       dynamoDbProcess = await runLocalDynamoDb(testDynamoDb);
 
       // Seed demo user bundles so simulator activities are accessible
-      // The demo user (sub: "demo-user-12345") needs "test" and "guest" bundles
+      // The demo user (sub: "demo-user-12345") needs "test" and "day-guest" bundles
       // to access VAT form activities which require these entitlements
       await initializeSalt();
       const demoUserSub = "demo-user-12345";
-      for (const bundleId of ["test", "guest"]) {
+      for (const bundleId of ["test", "day-guest"]) {
         await putBundle(demoUserSub, { bundleId, expiry: "2099-12-31" });
       }
       console.log("  Seeded demo user bundles in DynamoDB");

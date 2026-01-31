@@ -176,11 +176,11 @@ Run `npm test` - all pass generation and validation unit tests pass. Run GitHub 
 
 ---
 
-## Phase 2: Pass Validation API (Backend + System Tests)
+## Phase 2: Pass Validation API & Token Tracking (Backend + System Tests)
 
-**Goal**: Passes can be validated and redeemed via API. System tests verify the full flow.
+**Goal**: Passes can be validated and redeemed via API. Token balances are tracked on bundle records and returned in the bundle API. System tests verify pass flows and token tracking.
 
-**Risk mitigated**: Does the atomic redeem-and-grant-bundle flow work under concurrency?
+**Risk mitigated**: Does the atomic redeem-and-grant-bundle flow work under concurrency? Are token balances correctly initialised, refreshed, and returned?
 
 ### 2.1 Pass API endpoints
 
@@ -216,14 +216,57 @@ Run `npm test` - all pass generation and validation unit tests pass. Run GitHub 
   - When a pass has `restrictedToEmailHash`, the authenticated user's email hash must match
   - Reuse `hashEmail()` from Phase 1
 
-### 2.4 System tests
+### 2.4 Token balance tracking
+
+Token balances are tracked alongside bundles so the data layer is ready before enforcement is turned on. This avoids a later migration and lets the UI show token info immediately.
+
+- [ ] Extend bundle record in DynamoDB with token fields:
+  ```
+  tokensGranted      Number   Tokens allocated for this bundle period
+  tokensConsumed     Number   Tokens used so far
+  tokenResetAt       String   ISO8601 when tokens next replenish
+  ```
+- [ ] Update `dynamoDbBundleRepository.js`
+  - `getTokenBalance(userId)` - aggregate remaining across all bundles
+  - `resetTokens(userId, bundleId, tokensGranted, nextResetAt)` - replenish on interval
+- [ ] Update `bundlePost.js` - when granting a bundle, set `tokensGranted` from catalogue `tokens` or `tokensGranted` field, set `tokensConsumed = 0`, calculate `tokenResetAt` from `tokenRefreshInterval`
+
+### 2.5 Token refresh (lazy evaluation)
+
+- [ ] On each token balance check, if `now >= tokenResetAt`:
+  - Reset `tokensConsumed = 0`
+  - Calculate next `tokenResetAt` from `tokenRefreshInterval`
+  - This is lazy evaluation - no background job needed
+- [ ] Handle bundles without `tokenRefreshInterval` (e.g., `day-guest`): tokens expire with the bundle, no refresh
+
+### 2.6 Token balance in bundle API
+
+- [ ] Update `GET /api/v1/bundle` response to include token info:
+  ```json
+  {
+    "bundles": [{
+      "bundleId": "day-guest",
+      "expiry": "2026-02-01T00:00:00.000Z",
+      "tokensGranted": 3,
+      "tokensConsumed": 0,
+      "tokensRemaining": 3,
+      "tokenResetAt": null
+    }],
+    "tokensRemaining": 3
+  }
+  ```
+- [ ] Aggregate `tokensRemaining` across all active bundles for the top-level field
+- [ ] Tokens are **tracked but not enforced** — HMRC calls still succeed regardless of token balance (enforcement comes in Phase 4)
+
+### 2.7 System tests
 
 - [ ] `app/system-tests/pass/passCreation.test.js` - create pass via admin endpoint, verify DynamoDB record
-- [ ] `app/system-tests/pass/passRedemption.test.js` - redeem pass, verify bundle granted
+- [ ] `app/system-tests/pass/passRedemption.test.js` - redeem pass, verify bundle granted with token fields
 - [ ] `app/system-tests/pass/passValidation.test.js` - check expired, exhausted, revoked, wrong-email passes
 - [ ] `app/system-tests/pass/passEmailMatch.test.js` - verify email-restricted passes
+- [ ] `app/system-tests/tokens/tokenTracking.test.js` - verify tokens initialised on bundle grant, returned in API, lazy refresh works
 
-### 2.5 Express server routes
+### 2.8 Express server routes
 
 - [ ] Add `GET /api/v1/pass` route to local Express server
 - [ ] Add `POST /api/v1/pass` route to local Express server
@@ -231,15 +274,15 @@ Run `npm test` - all pass generation and validation unit tests pass. Run GitHub 
 
 ### Validation
 
-Run `npm run test:system` - all pass API system tests pass against Docker/dynalite.
+Run `npm run test:system` - all pass API and token tracking system tests pass against Docker/dynalite. `GET /api/v1/bundle` returns token fields.
 
 ---
 
-## Phase 3: Pass Redemption UI & Behaviour Tests (Frontend)
+## Phase 3: Pass Redemption UI, Token Display & Behaviour Tests (Frontend)
 
-**Goal**: Users can enter a pass on bundles.html (typed or from URL). Behaviour tests validate the end-to-end flow.
+**Goal**: Users can enter a pass on bundles.html (typed or from URL). Basic token information is displayed. Behaviour tests validate the end-to-end flow.
 
-**Risk mitigated**: Does the UI correctly handle all pass states (valid, expired, wrong email, exhausted)?
+**Risk mitigated**: Does the UI correctly handle all pass states (valid, expired, wrong email, exhausted)? Does token info display correctly from the bundle API?
 
 ### 3.1 bundles.html pass entry
 
@@ -263,7 +306,17 @@ Run `npm run test:system` - all pass API system tests pass against Docker/dynali
   - Once a user holds an on-pass bundle (via redemption), it appears in their "My Bundles" section
   - Pass-only bundles show "Requires an invitation pass" in the upsell prompt
 
-### 3.3 Behaviour tests for passes
+### 3.3 Basic token display
+
+Token info is already returned by `GET /api/v1/bundle` from Phase 2. Display it:
+
+- [ ] Show token balance in the "My Bundles" section for each bundle that has tokens:
+  - `"N tokens remaining"` (from `tokensRemaining`)
+  - `"Tokens refresh on DATE"` (from `tokenResetAt`, if set)
+- [ ] Show aggregate token count in a summary line or navigation indicator
+- [ ] No enforcement messaging yet — tokens are informational only at this stage
+
+### 3.4 Behaviour tests for passes
 
 - [ ] `behaviour-tests/pass/passRedemption.spec.js`
   - Generate a test pass via admin API
@@ -271,98 +324,59 @@ Run `npm run test:system` - all pass API system tests pass against Docker/dynali
   - Verify pass auto-populates
   - Verify bundle granted after redemption
   - Verify activity becomes accessible
+  - Verify token balance displayed for granted bundle
 - [ ] `behaviour-tests/pass/passErrors.spec.js`
   - Attempt to redeem expired pass - verify error message
   - Attempt to redeem exhausted pass - verify error message
 
 ### Validation
 
-Run `npm run test:submitVatBehaviour-proxy` - pass redemption behaviour tests pass.
+Run `npm run test:submitVatBehaviour-proxy` - pass redemption behaviour tests pass. Token balance visible on bundles page.
 
 ---
 
-## Phase 4: Token Tracking & Enforcement (Backend)
+## Phase 4: Token Enforcement (Backend)
 
-**Goal**: HMRC API calls consume tokens. Users can see their remaining balance. Exhausted tokens block further calls.
+**Goal**: HMRC API calls consume tokens. Exhausted tokens block further calls.
 
-**Risk mitigated**: Can we atomically track and enforce per-user token consumption across concurrent requests?
+**Risk mitigated**: Can we atomically enforce per-user token consumption across concurrent requests without disrupting users who already have tracked balances?
 
-### 4.1 Token balance tracking
+### 4.1 Token consumption service
 
-- [ ] Extend bundle record in DynamoDB with token fields:
-  ```
-  tokensGranted      Number   Tokens allocated for this bundle period
-  tokensConsumed     Number   Tokens used so far
-  tokenResetAt       String   ISO8601 when tokens next replenish
-  ```
 - [ ] Update `dynamoDbBundleRepository.js`
   - `consumeToken(userId, bundleId)` - atomic decrement with condition `tokensConsumed < tokensGranted`
-  - `getTokenBalance(userId)` - aggregate remaining across all bundles
-  - `resetTokens(userId, bundleId, tokensGranted, nextResetAt)` - replenish on interval
-- [ ] Update `bundlePost.js` - when granting a bundle, set `tokensGranted` from catalogue `tokens` or `tokensGranted` field, set `tokensConsumed = 0`, calculate `tokenResetAt` from `tokenRefreshInterval`
-
-### 4.2 Token consumption in HMRC Lambdas
-
 - [ ] Create `app/services/tokenEnforcement.js`
   - `consumeTokenForActivity(userId, activityId, catalog)` - find the user's qualifying bundle, consume 1 token
   - Returns `{ consumed: true, tokensRemaining }` or `{ consumed: false, reason: "tokens_exhausted" }`
   - Activities with `tokens = 0` or no `tokens` field are free (no consumption)
-- [ ] Wire token enforcement into HMRC API Lambdas:
-  - `hmrcVatReturnPost.js` - consume 1 token before submitting
-  - `hmrcVatObligationsGet.js` - consume 1 token
-  - `hmrcVatReturnGet.js` - consume 1 token
-  - On `tokens_exhausted`: return JSON error `{ error: "tokens_exhausted", tokensRemaining: 0 }`
 
-### 4.3 Token balance in bundle API
+### 4.2 Wire enforcement into HMRC Lambdas
 
-- [ ] Update `GET /api/v1/bundle` response to include token info:
-  ```json
-  {
-    "bundles": [{
-      "bundleId": "day-guest",
-      "expiry": "2026-02-01T00:00:00.000Z",
-      "tokensGranted": 3,
-      "tokensConsumed": 1,
-      "tokensRemaining": 2,
-      "tokenResetAt": "2026-02-01T00:00:00.000Z"
-    }],
-    "tokensRemaining": 2
-  }
-  ```
-- [ ] Aggregate `tokensRemaining` across all active bundles for the top-level field
+- [ ] `hmrcVatReturnPost.js` - consume 1 token before submitting
+- [ ] `hmrcVatObligationsGet.js` - consume 1 token
+- [ ] `hmrcVatReturnGet.js` - consume 1 token
+- [ ] On `tokens_exhausted`: return JSON error `{ error: "tokens_exhausted", tokensRemaining: 0 }`
 
-### 4.4 Token refresh (lazy evaluation)
-
-- [ ] On each token balance check, if `now >= tokenResetAt`:
-  - Reset `tokensConsumed = 0`
-  - Calculate next `tokenResetAt` from `tokenRefreshInterval`
-  - This is lazy evaluation - no background job needed
-- [ ] Handle bundles without `tokenRefreshInterval` (e.g., `day-guest`): tokens expire with the bundle, no refresh
-
-### 4.5 Tests
+### 4.3 Tests
 
 - [ ] `app/unit-tests/services/tokenEnforcement.test.js`
 - [ ] `app/system-tests/tokens/tokenConsumption.test.js` - consume tokens, verify decrement
 - [ ] `app/system-tests/tokens/tokenExhaustion.test.js` - verify API blocked when tokens exhausted
-- [ ] `app/system-tests/tokens/tokenRefresh.test.js` - verify lazy reset
 
 ### Validation
 
-Run `npm run test:system` - token enforcement system tests pass. API calls correctly consume and enforce token limits.
+Run `npm run test:system` - token enforcement system tests pass. HMRC API calls correctly consume and enforce token limits.
 
 ---
 
-## Phase 5: Token UI & Full Pass Enforcement (Frontend + Testing)
+## Phase 5: Token Enforcement UI & Full Pass Enforcement (Frontend + Testing)
 
-**Goal**: Users see their token balance. All behaviour tests use passes. on-pass enforcement is active.
+**Goal**: UI shows token costs before actions, handles exhaustion errors. All behaviour tests use passes. on-pass enforcement is active.
 
 **Risk mitigated**: Does the full end-to-end pass + token flow work in behaviour tests?
 
-### 5.1 Token display in UI
+### 5.1 Token enforcement UI
 
-- [ ] Add token counter to navigation bar or activity pages
-  - Show `"N tokens remaining"` when user has token-consuming bundles
-  - Show `"Tokens refresh on DATE"` for bundles with tokenRefreshInterval
 - [ ] Update activity pages (submitVat.html, vatObligations.html, viewVatReturn.html)
   - Show token cost before action: `"This will use 1 token (N remaining)"`
   - On `tokens_exhausted` error: show `"No tokens remaining. Tokens refresh on DATE or upgrade to Pro."`
@@ -385,7 +399,6 @@ Run `npm run test:system` - token enforcement system tests pass. API calls corre
 
 ### 5.4 Behaviour tests for tokens
 
-- [ ] `behaviour-tests/tokens/tokenCounter.spec.js` - verify token count shown in UI
 - [ ] `behaviour-tests/tokens/tokenConsumption.spec.js` - submit VAT, verify count decrements
 - [ ] `behaviour-tests/tokens/tokenExhaustion.spec.js` - exhaust tokens, verify error shown
 
@@ -645,19 +658,21 @@ Production deployment stable. day-guest available to all users. Passes and token
 Phase 1: Pass Data & Generation
     │
     ▼
-Phase 2: Pass Validation API + System Tests
+Phase 2: Pass Validation API + Token Tracking + System Tests
     │
     ▼
-Phase 3: Pass Redemption UI + Behaviour Tests
+Phase 3: Pass Redemption UI + Token Display + Behaviour Tests
     │
-    ├──────────────────┐
-    ▼                  ▼
-Phase 4: Tokens    Phase 5.2-5.3: Pass Enforcement
-    │                  │
-    ▼                  │
-Phase 5.1,5.4: Token UI│
-    │                  │
-    └──────────────────┘
+    ├──────────────────────┐
+    ▼                      ▼
+Phase 4: Token          Phase 5.2-5.3: Pass
+  Enforcement              Enforcement
+    │                      │
+    ▼                      │
+Phase 5.1,5.4:             │
+  Enforcement UI           │
+    │                      │
+    └──────────────────────┘
              │
              ▼
 Phase 6: Campaign Passes & Referrals
@@ -666,14 +681,13 @@ Phase 6: Campaign Passes & Referrals
 Phase 7: Production Readiness
 ```
 
-Phases 4 and 5.2-5.3 can run in parallel after Phase 3 completes. Phase 6 requires both token enforcement (Phase 4) and pass enforcement (Phase 5) to be complete.
+Token tracking and display are built early (Phases 2-3) so the data layer is ready before enforcement. Phases 4 and 5.2-5.3 can run in parallel after Phase 3 completes. Phase 6 requires both token enforcement (Phase 4) and pass enforcement (Phase 5) to be complete.
 
 ## Files to Create
 
 | File | Phase | Purpose |
 |------|-------|---------|
 | `app/lib/passphrase.js` | 1 | Four-word passphrase generator |
-| `app/lib/eff_large_wordlist.txt` | 1 | EFF wordlist for passphrase generation |
 | `app/lib/emailHash.js` | 1 | HMAC-SHA256 email hashing |
 | `app/data/dynamoDbPassRepository.js` | 1 | DynamoDB CRUD for passes |
 | `app/services/passService.js` | 1 | Pass creation, validation, redemption logic |
@@ -692,9 +706,10 @@ Phases 4 and 5.2-5.3 can run in parallel after Phase 3 completes. Phase 6 requir
 | `infra/main/java/.../AccountStack.java` | 2 | Add pass Lambda functions, API routes |
 | `app/services/productCatalog.js` | 2 | Recognise `on-pass` display, `on-email-match` allocation |
 | `app/services/bundleManagement.js` | 2 | Email-match enforcement |
-| `app/data/dynamoDbBundleRepository.js` | 4 | Token fields, consumeToken, resetTokens |
-| `app/functions/account/bundleGet.js` | 4 | Return tokensRemaining in response |
-| `app/functions/account/bundlePost.js` | 4 | Set tokensGranted on bundle creation |
+| `app/data/dynamoDbBundleRepository.js` | 2 | Token fields (tracking), getTokenBalance, resetTokens |
+| `app/functions/account/bundleGet.js` | 2 | Return tokensRemaining in response |
+| `app/functions/account/bundlePost.js` | 2 | Set tokensGranted on bundle creation |
+| `app/data/dynamoDbBundleRepository.js` | 4 | consumeToken (atomic enforcement) |
 | `app/functions/hmrc/hmrcVatReturnPost.js` | 4 | Token consumption before HMRC call |
 | `app/functions/hmrc/hmrcVatObligationsGet.js` | 4 | Token consumption before HMRC call |
 | `app/functions/hmrc/hmrcVatReturnGet.js` | 4 | Token consumption before HMRC call |
