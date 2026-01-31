@@ -344,7 +344,7 @@ repository-contents.txt:
 ./web/public/errors/404-error-origin.html
 ./web/public/account/bundles.html
 ./web/public/submit.build-number.txt
-./web/public/data/faqs.json
+./web/public/faqs.json
 ./web/public/error/403.html
 ./web/public/error/500.html
 ./web/public/error/404.html

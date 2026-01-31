@@ -23,5 +23,8 @@ Disallow: /tests/
 Disallow: /docs/
 Disallow: /hmrc-form-field-standards/
 
+# Block embedded simulator content (duplicate of main site, served at /sim/ in local dev)
+Disallow: /sim/
+
 # Sitemap location
 Sitemap: https://submit.diyaccounting.co.uk/sitemap.xml

@@ -3,37 +3,50 @@ version = "1.1.0"
 [[bundles]]
 id = "default"
 name = "Default"
+display = "never"
 allocation = "automatic"
 
 # Access to Sandbox APIs for testing
 [[bundles]]
 id = "test"
 name = "Test"
+display = "onPass"
 allocation = "on-request"
-cap = 10
+#cap = 10
 timeout = "P1D"
+#listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
-id = "guest"
-name = "Guest"
+id = "day-guest"
+name = "Day Guest"
+display = "always"
 allocation = "on-request"
-cap = 10
-# TODO: 1x timeout for visiblility, then a grace period for apis of 1 day.
+cap = 1
 timeout = "P1D"
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+
+## Access to free authenticated activities including VAT submission for users with a pass
+#[[bundles]]
+#id = "invited-guest"
+#name = "Invited Guest"
+#display = "onPass"
+#allocation = "on-request"
+##cap = 10
+## TODO: 1x timeout for visiblility, then a grace period for apis of 1 day.
+#timeout = "P3M"
+##listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 
 # TODO: Link active subscriptions to a bundle entitlement and continually re-set expiry to now+timeout if there is an active subscription
 # Access to business tier activities including VAT submission for subscribers
 # TODO: rename "Pro"
-[[bundles]]
-id = "business"
-name = "Business"
-allocation = "subscription"
-cap = 100
-timeout = "P1M"
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
-subscriptionTier = "business"
+#[[bundles]]
+#id = "business"
+#name = "Business"
+#allocation = "subscription"
+#cap = 100
+#timeout = "P1M"
+#listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+#subscriptionTier = "business"
 
 # TODO: Grant the DIY Legacy bundle upon supply of a PayPal Transaction ID for a payment to one of the email addresses in 2025 or earlier
 #[[bundles]]

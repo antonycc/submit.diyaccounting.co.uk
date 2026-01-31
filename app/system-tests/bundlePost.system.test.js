@@ -97,7 +97,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
       method: "POST",
       path: "/api/v1/bundle",
       headers: { Authorization: `Bearer ${token}` },
-      body: { bundleId: "guest", qualifiers: { foo: "bar" } },
+      body: { bundleId: "day-guest", qualifiers: { foo: "bar" } },
     });
     const res = await ingestHandler(event);
     expect(res.statusCode).toBe(400);
@@ -112,7 +112,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
       method: "POST",
       path: "/api/v1/bundle",
       headers: { Authorization: `Bearer ${token}` },
-      body: { bundleId: "guest" },
+      body: { bundleId: "day-guest" },
     });
     const res = await ingestHandler(event);
     expect(res.statusCode).toBe(201);

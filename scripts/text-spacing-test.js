@@ -62,6 +62,7 @@ const PAGES = [
   "/hmrc/receipt/receipts.html",
   "/guide/index.html",
   "/help/index.html",
+  "/mcp/index.html",
   "/errors/404-error-distribution.html",
   "/errors/404-error-origin.html",
   "/error/403.html",
