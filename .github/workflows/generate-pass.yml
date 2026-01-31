@@ -101,9 +101,9 @@ jobs:
           PASS_TYPE="${{ inputs.pass-type }}"
 
           # Use node to parse TOML and extract defaults
-          node -e "
-            const fs = require('fs');
-            const TOML = require('@iarna/toml');
+          node --input-type=module -e "
+            import fs from 'fs';
+            import TOML from '@iarna/toml';
             const catalog = TOML.parse(fs.readFileSync('submit.passes.toml', 'utf-8'));
             const passType = catalog.passTypes.find(p => p.id === '${PASS_TYPE}');
             if (!passType) {
@@ -156,17 +156,17 @@ jobs:
           fi
 
           # Generate passes using Node.js
-          PASSES_DYNAMODB_TABLE_NAME="${TABLE_NAME}" \
-          EMAIL_HASH_SECRET="${EMAIL_HASH_SECRET}" \
-          node -e "
+          export PASSES_DYNAMODB_TABLE_NAME="${TABLE_NAME}"
+          export EMAIL_HASH_SECRET="${EMAIL_HASH_SECRET}"
+          node --input-type=module -e "
             import { createPass } from './app/services/passService.js';
             import { initializeEmailHashSecret } from './app/lib/emailHash.js';
+            import fs from 'fs';
 
             const quantity = parseInt('${QUANTITY}', 10);
             const results = [];
 
-            if ('${EMAIL_HASH_SECRET}') {
-              process.env.EMAIL_HASH_SECRET = '${EMAIL_HASH_SECRET}';
+            if (process.env.EMAIL_HASH_SECRET) {
               await initializeEmailHashSecret();
             }
 
@@ -190,13 +190,12 @@ jobs:
             }
 
             // Write results
-            const fs = await import('fs');
             fs.writeFileSync('passes-output.json', JSON.stringify(results, null, 2));
 
             for (const pass of results) {
               console.log('---');
               console.log('Code: ' + pass.code);
-              console.log('URL: https://${{ inputs.environment == \"prod\" && \"submit.diyaccounting.co.uk\" || \"ci.submit.diyaccounting.co.uk\" }}/bundles.html?pass=' + pass.code);
+              console.log('URL: https://${{ inputs.environment == 'prod' && 'submit.diyaccounting.co.uk' || 'ci.submit.diyaccounting.co.uk' }}/bundles.html?pass=' + pass.code);
               console.log('Bundle: ' + pass.bundleId);
               console.log('Valid until: ' + (pass.validUntil || 'unlimited'));
               console.log('Max uses: ' + pass.maxUses);
