@@ -81,7 +81,7 @@ The `OpenApiGenerator.java` has been completely refactored to introspect the CDK
 
 ## Generated Output
 
-The generator produces three files in `web/public/docs/`:
+The generator produces three files in `web/public/docs/api/`:
 
 1. **openapi.json** - Complete OpenAPI 3.0.3 specification
 2. **openapi.yaml** - Simplified YAML version (summary only)

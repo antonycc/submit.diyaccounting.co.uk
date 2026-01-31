@@ -398,7 +398,7 @@ public class OpsStack extends Stack {
                 // Step 1: Check OpenAPI documentation is accessible
                 log.info('Step 1: Checking OpenAPI docs endpoint...');
                 try {
-                    const docsResponse = await makeRequest(baseUrl + 'docs/openapi.json');
+                    const docsResponse = await makeRequest(baseUrl + 'docs/api/openapi.json');
                     if (docsResponse.status !== 200) {
                         throw new Error(`OpenAPI docs returned status ${docsResponse.status}`);
                     }

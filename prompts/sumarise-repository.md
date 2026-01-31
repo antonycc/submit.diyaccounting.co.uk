@@ -300,9 +300,9 @@ repository-contents.txt:
 ./web/public/tests/test-reports/web-test-local/html-report/data/87c27c5e388b3082fd25ac63d7239a8826e08d21.zip
 ./web/public/tests/test-reports/web-test-local/html-report/data/c53e1faee527ca0b5321568d803397cc285661a1.zip
 ./web/public/tests/test-reports/web-test-local/html-report/data/8e34faa6c0c52d05ef51b9c9259c93a20997248b.md
-./web/public/docs/index.html
-./web/public/docs/openapi.yaml
-./web/public/docs/openapi.json
+./web/public/docs/api/index.html
+./web/public/docs/api/openapi.yaml
+./web/public/docs/api/openapi.json
 ./web/public/prefetch/prefetch-catalog-head.js
 ./web/public/prefetch/prefetch-cognito-token-head.js
 ./web/public/prefetch/prefetch-hmrc-vat-return-get-head.js

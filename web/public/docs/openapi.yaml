@@ -1,6 +1,0 @@
-openapi: 3.0.3
-info:
-  title: DIY Accounting Submit API
-  description: DIY Accounting Submit API documentation
-  version: 1.0.0
-# Full specification available in openapi.json
