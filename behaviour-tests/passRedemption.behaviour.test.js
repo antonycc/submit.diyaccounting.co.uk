@@ -225,10 +225,10 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   await page.waitForTimeout(3000);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
 
-  // --- Step 6: Verify the Test bundle is now granted ---
-  const addedTestBtn = page.getByRole("button", { name: "Added ✓ Test" });
-  await expect(addedTestBtn).toBeVisible({ timeout: 15000 });
-  console.log("[pass-test]: Test bundle shows as Added ✓");
+  // --- Step 6: Verify the Test bundle is now granted (on-pass bundles appear in Current Bundles section with Remove button) ---
+  const removeTestBtn = page.locator('button[data-remove-bundle-id="test"]');
+  await expect(removeTestBtn).toBeVisible({ timeout: 15000 });
+  console.log("[pass-test]: Test bundle shows in Current Bundles with Remove button");
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
 
   // --- Step 7: Verify via API that the bundle is allocated ---

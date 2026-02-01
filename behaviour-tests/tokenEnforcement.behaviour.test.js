@@ -20,7 +20,7 @@ import {
   runLocalSslProxy,
   saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
-import { consentToDataCollection, goToHomePage, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePage, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
@@ -179,11 +179,11 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log("STEP 1: Login");
     console.log("=".repeat(60));
 
-    await goToHomePage(page, testUrl, screenshotPath);
-    await consentToDataCollection(page, screenshotPath);
+    await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
     await clickLogIn(page, screenshotPath);
-    await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, testAuthPassword, screenshotPath);
+    await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
     await verifyLoggedInStatus(page, screenshotPath);
+    await consentToDataCollection(page, screenshotPath);
   });
 
   // ============================================================
