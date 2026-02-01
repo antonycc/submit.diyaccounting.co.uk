@@ -12,6 +12,14 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
+      skipDeploy:
+        description: 'Skip deploy (run tests only, no deployment)'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
       forceAllStackDeployment:
         description: 'Force re-deploy of all stacks even if they already exist or pass comparison checks'
         type: choice
@@ -20,14 +28,6 @@ on:
           - 'false'
         required: false
         default: 'true'
-      skipDeploy:
-        description: 'Skip deploy (run tests only, no deployment)'
-        type: choice
-        options:
-            - 'true'
-            - 'false'
-        required: false
-        default: 'false'
       environment-name:
         type: choice
         description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
@@ -129,9 +129,9 @@ jobs:
         run: ":"
       - name: "github.sha=[${{ github.sha }}]"
         run: ":"
-      - name: "inputs.forceAllStackDeployment=[${{ inputs.forceAllStackDeployment }}]"
-        run: ":"
       - name: "inputs.skipDeploy=[${{ inputs.skipDeploy }}]"
+        run: ":"
+      - name: "inputs.forceAllStackDeployment=[${{ inputs.forceAllStackDeployment }}]"
         run: ":"
       - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
         run: ":"
@@ -176,8 +176,8 @@ jobs:
             echo "isSkippingDeploy=false" | tee -a "$GITHUB_OUTPUT"
           fi
     outputs:
-      forceAllStackDeployment: ${{ steps.normalise.outputs.forceAllStackDeployment }}
       skipDeploy: ${{ steps.normalise.outputs.skipDeploy }}
+      forceAllStackDeployment: ${{ steps.normalise.outputs.forceAllStackDeployment }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       selfDestructDelayHours: ${{ steps.normalise.outputs.selfDestructDelayHours }}
