@@ -19,7 +19,7 @@ on:
           - 'true'
           - 'false'
         required: false
-        default: 'false'
+        default: 'true'
       skipDeploy:
         description: 'Skip deploy (run tests only, no deployment)'
         type: choice
@@ -42,10 +42,6 @@ on:
         description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
         required: false
         default: ''
-      loadTestDuration:
-        description: 'Duration for load test (e.g. 30s, 10m, 1h)'
-        required: false
-        default: '30s'
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
@@ -113,11 +109,10 @@ env:
   AWS_ACCOUNT_ID: '887764105431'
   AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
-  loadTestDuration: ${{ inputs.loadTestDuration || '30s' }}
   GITHUB_ACTOR: ${{ github.actor }}
   SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '2' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
-  FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'false' }}
+  FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'true' }}
   COMMIT_HASH: ${{ github.sha }}
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
@@ -142,8 +137,6 @@ jobs:
         run: ":"
       - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
         run: ":"
-      - name: "inputs.loadTestDuration=[${{ inputs.loadTestDuration }}]"
-        run: ":"
       - name: "inputs.selfDestructDelayHours=[${{ inputs.selfDestructDelayHours }}]"
         run: ":"
       - name: "inputs.skipTestScenarios=[${{ inputs.skipTestScenarios }}]"
@@ -158,13 +151,12 @@ jobs:
         env:
           RAW_COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          X='${{ inputs.forceAllStackDeployment }}' ; echo "forceAllStackDeployment=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.forceAllStackDeployment }}' ; echo "forceAllStackDeployment=${X:-true}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipDeploy }}' ; echo "skipDeploy=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.loadTestDuration }}' ; echo "loadTestDuration=${X:-30s}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
@@ -185,7 +177,6 @@ jobs:
       skipDeploy: ${{ steps.normalise.outputs.skipDeploy }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
-      loadTestDuration: ${{ steps.normalise.outputs.loadTestDuration }}
       selfDestructDelayHours: ${{ steps.normalise.outputs.selfDestructDelayHours }}
       skipTestScenarios: ${{ steps.normalise.outputs.skipTestScenarios }}
       runProxyBehaviourTests: ${{ steps.normalise.outputs.runProxyBehaviourTests }}
