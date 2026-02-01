@@ -599,9 +599,11 @@ Run `npm run test:submitVatBehaviour-proxy` - pass redemption behaviour tests pa
 
 ### 4.2 Wire enforcement into HMRC Lambdas
 
-- [ ] `hmrcVatReturnPost.js` - consume 1 token before submitting
-- [ ] `hmrcVatObligationsGet.js` - consume 1 token
-- [ ] `hmrcVatReturnGet.js` - consume 1 token
+Token consumption follows a "value action" model: viewing information is free, submitting is the cost event.
+
+- [ ] `hmrcVatReturnPost.js` - consume 1 token before submitting (this is the value action)
+- [ ] `hmrcVatObligationsGet.js` - **free** (viewing deadlines is informational, users need this to decide whether to submit)
+- [ ] `hmrcVatReturnGet.js` - **free** (reviewing submitted data is informational)
 - [ ] On `tokens_exhausted`: return JSON error `{ error: "tokens_exhausted", tokensRemaining: 0 }`
 
 ### 4.3 Tests
@@ -624,9 +626,11 @@ Run `npm run test:system` - token enforcement system tests pass. HMRC API calls 
 
 ### 5.1 Token enforcement UI
 
-- [ ] Update activity pages (submitVat.html, vatObligations.html, viewVatReturn.html)
-  - Show token cost before action: `"This will use 1 token (N remaining)"`
-  - On `tokens_exhausted` error: show `"No tokens remaining. Tokens refresh on DATE or upgrade to Pro."`
+- [ ] Update activity pages
+  - `submitVat.html` - show token cost before submission: `"This will use 1 token (N remaining)"`
+  - `vatObligations.html` - free (no token messaging needed, viewing deadlines is informational)
+  - `viewVatReturn.html` - free (no token messaging needed, reviewing submitted data is informational)
+  - On `tokens_exhausted` error (submitVat only): show `"No tokens remaining. Tokens refresh on DATE or upgrade to Pro."`
 
 ### 5.2 Migrate behaviour tests to passes
 
@@ -859,6 +863,47 @@ Per `_developers/archive/campaign.md`, once there are enough referrals:
 - [ ] `app/system-tests/campaign/referralTracking.test.js` - issue, redeem, verify referral recorded
 - [ ] `behaviour-tests/campaign/issuePass.spec.js` - UI flow for issuing and sharing passes
 
+### 6.9 Accountant partner pass type
+
+One accountant can drive 50 subscriptions — a higher-value channel than individual social media shares. This pass type enables bulk issuance with a longer redemption window.
+
+```toml
+[[passTypes]]
+id = "accountant-partner"
+bundleId = "invited-guest"
+defaultValidityPeriod = "P3M"        # 3-month redemption window (vs 3 days for campaign)
+defaultMaxUses = 50                   # Bulk issuance for client base
+requiresEmailRestriction = false      # Shareable across clients
+```
+
+- [ ] Add `accountant-partner` to pass type registry in `passService.js`
+- [ ] Admin-only issuance (via `passAdminPost` or a dedicated partner onboarding flow)
+- [ ] Manual review before issuing: verify the accountant is legitimate (no self-serve)
+- [ ] Track referrals back to the accountant's partner pass for commission attribution (§6.4)
+- [ ] Partner-specific dashboard showing: passes issued, redemptions, client submissions, commission earned
+
+### 6.10 Pass admin UI
+
+**Essential** (needed to operate at any scale):
+
+- [ ] Pass list view — search/filter by status (active, expired, revoked), passTypeId, bundleId, creator
+- [ ] Pass detail view — code, type, bundle, validity, usage (useCount/maxUses), creation metadata
+- [ ] Revoke pass — single-click revocation with confirmation
+- [ ] Create pass form — mirrors `passAdminPost` API: passTypeId, bundleId, email (optional), maxUses, validityPeriod, notes
+
+**Nice-to-have** (useful as volume grows):
+
+- [ ] Bulk pass creation — CSV upload or quantity input for creating multiple passes at once
+- [ ] Pass analytics — redemption rate, time-to-redemption, conversion funnel (redeemed → submitted VAT → subscribed)
+- [ ] Export — CSV export of pass data for reporting
+- [ ] Audit log — who created/revoked which passes and when
+
+**Deferred** (only needed at significant scale):
+
+- [ ] Partner management UI — onboard/offboard accountant partners, view their pass usage
+- [ ] Automated partner pass provisioning — self-serve partner signup with verification workflow
+- [ ] Real-time capacity dashboard — live view of bundle cap usage across all pass types
+
 ### Validation
 
 A resident-pro user can issue a campaign pass, share the URL, another user redeems it and gets invited-guest access. Referral is tracked. After the referred user subscribes and submits a VAT return, the referrer receives a free month credit.
@@ -959,9 +1004,9 @@ Token tracking and display are built early (Phases 2-3) so the data layer is rea
 | `app/functions/account/bundleGet.js` | 2, 2.9 | Return tokensRemaining; merge catalogue + capacity availability |
 | `app/functions/account/bundlePost.js` | 2, 2.9 | Set tokensGranted; replace per-user cap with atomic counter check |
 | `app/data/dynamoDbBundleRepository.js` | 4 | consumeToken (atomic enforcement) |
-| `app/functions/hmrc/hmrcVatReturnPost.js` | 4 | Token consumption before HMRC call |
-| `app/functions/hmrc/hmrcVatObligationsGet.js` | 4 | Token consumption before HMRC call |
-| `app/functions/hmrc/hmrcVatReturnGet.js` | 4 | Token consumption before HMRC call |
+| `app/functions/hmrc/hmrcVatReturnPost.js` | 4 | Token consumption before HMRC submission (1 token per submit) |
+| `app/functions/hmrc/hmrcVatObligationsGet.js` | - | Free (no token consumption — viewing deadlines is informational) |
+| `app/functions/hmrc/hmrcVatReturnGet.js` | - | Free (no token consumption — reviewing submitted data is informational) |
 | `web/public/bundles.html` | 2.9, 3, 5, 6 | Capacity availability messaging, pass entry form, on-pass filtering, token display, campaign UI |
 | `web/public/submit.catalogue.toml` | - | Already configured (source of truth) |
 | `app/services/productCatalog.js` | 2.9 | Helper to get catalogue bundle IDs with caps |
@@ -973,7 +1018,7 @@ Token tracking and display are built early (Phases 2-3) so the data layer is rea
 ## Resolved Questions
 
 1. **Email hash secret rotation**: Store the secret version on each pass record (`emailHashSecretVersion` field). When rotating secrets, old passes remain validatable by looking up the secret version they were created with.
-2. **Token consumption granularity**: All HMRC API activities cost 1 token each (viewing obligations, viewing VAT returns, submitting VAT returns). The model is that getting approved by HMRC has a cost and operating a compliant business has a cost - tokens are applied at every HMRC interaction.
+2. **Token consumption granularity**: Only VAT submission (`hmrcVatReturnPost`) costs 1 token. Viewing obligations and viewing VAT returns are free — users need to see their deadlines and review submitted data before deciding whether to act. Charging for informational views feels punitive and discourages exploration. The value action is the submission itself.
 3. **Campaign pass validity period**: 3 days. Short enough to create urgency, long enough to act. Not an open question.
 4. **Subscription payment provider**: Defer commission/payout functionality until a payment system (Stripe or similar) is integrated. Referral tracking and free-month credits can proceed without external payments.
 5. **DIY legacy bundle**: Existing DIY customers email support, admin sends them an `invited-guest` or `resident-guest` pass manually via the GitHub Actions workflow. No PayPal transaction verification needed.
