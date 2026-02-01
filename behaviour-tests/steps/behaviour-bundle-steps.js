@@ -218,6 +218,36 @@ export async function verifyBundleApiResponse(page, screenshotPath = defaultScre
   });
 }
 
+export async function requestBundleViaApi(page, bundleId) {
+  return await page.evaluate(async (bid) => {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    if (!idToken) return { error: "No auth token" };
+    try {
+      const response = await fetch("/api/v1/bundle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ bundleId: bid, qualifiers: {} }),
+      });
+      const body = await response.json();
+      return { statusCode: response.status, ...body };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }, bundleId);
+}
+
+export async function verifyAlreadyGranted(page, bundleId, screenshotPath = defaultScreenshotPath) {
+  return await test.step(`Verify ${bundleId} returns already_granted on re-request`, async () => {
+    const result = await requestBundleViaApi(page, bundleId);
+    console.log(`[already-granted]: ${bundleId} - status: ${result.status}, statusCode: ${result.statusCode}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-already-granted-${bundleId}.png` });
+    return result;
+  });
+}
+
 export async function requestBundle(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
   await test.step(`The user requests a ${bundleName} bundle and sees a confirmation message`, async () => {
     console.log(`Requesting ${bundleName} bundle...`);

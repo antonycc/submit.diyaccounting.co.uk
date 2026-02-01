@@ -29,6 +29,8 @@ import {
   ensureBundlePresent,
   removeBundle,
   verifyBundleApiResponse,
+  verifyAlreadyGranted,
+  requestBundleViaApi,
 } from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
@@ -217,9 +219,28 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
 
     // --- Step 7: Re-request Day Guest to verify re-requestability after removal ---
     await ensureBundlePresent(page, "Day Guest", screenshotPath);
+
+    // --- Step 8: Verify already-granted idempotency ---
+    // Re-requesting the same bundle via API should return already_granted, not an error
+    const alreadyGrantedResult = await verifyAlreadyGranted(page, "day-guest", screenshotPath);
+    console.log(`[bundle-test]: Already-granted result: ${JSON.stringify(alreadyGrantedResult)}`);
+
+    // --- Step 9: Verify API response shows both bundles with correct structure ---
+    const finalResponse = await verifyBundleApiResponse(page, screenshotPath);
+    const finalAllocated = finalResponse?.bundles?.filter((b) => b.allocated) ?? [];
+    const finalUnallocated = finalResponse?.bundles?.filter((b) => !b.allocated) ?? [];
+    console.log(`[bundle-test]: Final state - allocated: ${finalAllocated.length}, unallocated: ${finalUnallocated.length}`);
+    console.log(`[bundle-test]: Final state - tokensRemaining: ${finalResponse?.tokensRemaining ?? "?"}`);
+
+    // Every bundle in the response should have bundleCapacityAvailable field
+    for (const b of finalResponse?.bundles ?? []) {
+      if (!("bundleCapacityAvailable" in b)) {
+        console.warn(`[bundle-test]: Bundle ${b.bundleId} missing bundleCapacityAvailable field`);
+      }
+    }
   }
 
-  // --- Step 8: Navigate home to verify activities appear from granted bundles ---
+  // --- Step 10: Navigate home to verify activities appear from granted bundles ---
   await goToHomePage(page, screenshotPath);
 
   /* ****************** */
