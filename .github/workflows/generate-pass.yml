@@ -1,4 +1,5 @@
 name: Generate Pass
+run-name: "generate ${{ inputs.pass-type || 'test-access' }} pass for ${{ inputs.environment || inputs.environment-name || 'ci' }}"
 
 on:
   workflow_dispatch:
@@ -43,6 +44,48 @@ on:
         description: 'Admin notes for this pass'
         required: false
         type: string
+  workflow_call:
+    inputs:
+      environment-name:
+        type: string
+        description: 'Target environment (ci or prod)'
+        required: true
+      pass-type:
+        type: string
+        description: 'Pass type from submit.passes.toml'
+        required: false
+        default: 'test-access'
+      email:
+        type: string
+        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
+        required: false
+      max-uses:
+        type: string
+        description: 'Maximum uses (overrides default from pass type)'
+        required: false
+      validity-period:
+        type: string
+        description: 'Validity period as ISO 8601 duration (overrides default, e.g. P7D, P1M, P1Y)'
+        required: false
+      quantity:
+        type: string
+        description: 'Number of passes to generate'
+        required: false
+        default: '1'
+      notes:
+        type: string
+        description: 'Admin notes for this pass'
+        required: false
+  schedule:
+    - cron: '0 9 * * *'
+  push:
+    branches:
+      - '**'
+    paths:
+      - '.github/workflows/generate-pass.yml'
+      - 'submit.passes.toml'
+      - 'app/services/passService.js'
+      - 'app/lib/emailHash.js'
 
 env:
   AWS_REGION: eu-west-2
@@ -54,10 +97,89 @@ permissions:
   contents: read
 
 jobs:
-  generate:
-    name: 'Generate ${{ inputs.pass-type }} pass'
+
+  params:
     runs-on: ubuntu-24.04
-    environment: ${{ inputs.environment }}
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
+      - name: "github.sha=[${{ github.sha }}]"
+        run: ":"
+      - name: "inputs.pass-type=[${{ inputs.pass-type }}]"
+        run: ":"
+      - name: "inputs.environment=[${{ inputs.environment }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.email=[${{ inputs.email }}]"
+        run: ":"
+      - name: "inputs.max-uses=[${{ inputs.max-uses }}]"
+        run: ":"
+      - name: "inputs.validity-period=[${{ inputs.validity-period }}]"
+        run: ":"
+      - name: "inputs.quantity=[${{ inputs.quantity }}]"
+        run: ":"
+      - name: "inputs.notes=[${{ inputs.notes }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        run: |
+          # environment: workflow_dispatch uses 'environment', workflow_call uses 'environment-name', schedule/push default to 'ci'
+          ENV='${{ inputs.environment }}'
+          ENV_NAME='${{ inputs.environment-name }}'
+          echo "environment=${ENV:-${ENV_NAME:-ci}}" | tee -a "$GITHUB_OUTPUT"
+          # pass-type: default to test-access for schedule/push
+          X='${{ inputs.pass-type }}' ; echo "pass-type=${X:-test-access}" | tee -a "$GITHUB_OUTPUT"
+          # quantity: default to 1
+          X='${{ inputs.quantity }}' ; echo "quantity=${X:-1}" | tee -a "$GITHUB_OUTPUT"
+          # Pass through optional inputs
+          echo 'email=${{ inputs.email }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'max-uses=${{ inputs.max-uses }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'validity-period=${{ inputs.validity-period }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'notes=${{ inputs.notes }}' | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      environment: ${{ steps.normalise.outputs.environment }}
+      pass-type: ${{ steps.normalise.outputs.pass-type }}
+      quantity: ${{ steps.normalise.outputs.quantity }}
+      email: ${{ steps.normalise.outputs.email }}
+      max-uses: ${{ steps.normalise.outputs.max-uses }}
+      validity-period: ${{ steps.normalise.outputs.validity-period }}
+      notes: ${{ steps.normalise.outputs.notes }}
+
+  names:
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "needs.params.outputs.environment=[${{ needs.params.outputs.environment }}]"
+        run: ":"
+      - name: "needs.params.outputs.pass-type=[${{ needs.params.outputs.pass-type }}]"
+        run: ":"
+      - name: "needs.params.outputs.quantity=[${{ needs.params.outputs.quantity }}]"
+        run: ":"
+      - name: Resolve names
+        id: resolve
+        run: |
+          ENV_NAME="${{ needs.params.outputs.environment }}"
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          if [ "$ENV_NAME" = "prod" ]; then
+            echo "pass-url-host=submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "pass-url-host=${ENV_NAME}.submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      environment-name: ${{ steps.resolve.outputs.environment-name }}
+      pass-url-host: ${{ steps.resolve.outputs.pass-url-host }}
+
+  generate:
+    needs:
+      - params
+      - names
+    name: 'Generate ${{ needs.params.outputs.pass-type }} pass for ${{ needs.names.outputs.environment-name }}'
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -98,7 +220,7 @@ jobs:
         id: pass-type
         run: |
           # Extract defaults for the selected pass type from submit.passes.toml
-          PASS_TYPE="${{ inputs.pass-type }}"
+          PASS_TYPE="${{ needs.params.outputs.pass-type }}"
 
           # Use node to parse TOML and extract defaults
           node --input-type=module -e "
@@ -119,25 +241,25 @@ jobs:
 
       - name: Validate inputs
         run: |
-          if [[ "${{ steps.pass-type.outputs.REQUIRES_EMAIL }}" == "true" ]] && [[ -z "${{ inputs.email }}" ]]; then
-            echo "::error::Pass type '${{ inputs.pass-type }}' requires an email address"
+          if [[ "${{ steps.pass-type.outputs.REQUIRES_EMAIL }}" == "true" ]] && [[ -z "${{ needs.params.outputs.email }}" ]]; then
+            echo "::error::Pass type '${{ needs.params.outputs.pass-type }}' requires an email address"
             exit 1
           fi
 
       - name: Generate passes
         id: generate
         run: |
-          ENV_NAME="${{ inputs.environment }}"
+          ENV_NAME="${{ needs.names.outputs.environment-name }}"
           TABLE_NAME="${ENV_NAME}-env-passes"
           BUNDLE_ID="${{ steps.pass-type.outputs.BUNDLE_ID }}"
-          MAX_USES="${{ inputs.max-uses || steps.pass-type.outputs.DEFAULT_MAX_USES }}"
-          VALIDITY_PERIOD="${{ inputs.validity-period || steps.pass-type.outputs.DEFAULT_VALIDITY_PERIOD }}"
-          QUANTITY="${{ inputs.quantity || 1 }}"
-          EMAIL="${{ inputs.email }}"
-          NOTES="${{ inputs.notes }}"
+          MAX_USES="${{ needs.params.outputs.max-uses || steps.pass-type.outputs.DEFAULT_MAX_USES }}"
+          VALIDITY_PERIOD="${{ needs.params.outputs.validity-period || steps.pass-type.outputs.DEFAULT_VALIDITY_PERIOD }}"
+          QUANTITY="${{ needs.params.outputs.quantity }}"
+          EMAIL="${{ needs.params.outputs.email }}"
+          NOTES="${{ needs.params.outputs.notes }}"
           CREATED_BY="github-actions-run#${{ github.run_id }}"
 
-          echo "Generating ${QUANTITY} ${{ inputs.pass-type }} pass(es)..."
+          echo "Generating ${QUANTITY} ${{ needs.params.outputs.pass-type }} pass(es)..."
           echo "  Bundle: ${BUNDLE_ID}"
           echo "  Max uses: ${MAX_USES}"
           echo "  Validity: ${VALIDITY_PERIOD}"
@@ -172,7 +294,7 @@ jobs:
 
             for (let i = 0; i < quantity; i++) {
               const pass = await createPass({
-                passTypeId: '${{ inputs.pass-type }}',
+                passTypeId: '${{ needs.params.outputs.pass-type }}',
                 bundleId: '${BUNDLE_ID}',
                 validityPeriod: '${VALIDITY_PERIOD}' || undefined,
                 maxUses: parseInt('${MAX_USES}', 10),
@@ -195,7 +317,7 @@ jobs:
             for (const pass of results) {
               console.log('---');
               console.log('Code: ' + pass.code);
-              console.log('URL: https://${{ inputs.environment == 'prod' && 'submit.diyaccounting.co.uk' || 'ci.submit.diyaccounting.co.uk' }}/bundles.html?pass=' + pass.code);
+              console.log('URL: https://${{ needs.names.outputs.pass-url-host }}/bundles.html?pass=' + pass.code);
               console.log('Bundle: ' + pass.bundleId);
               console.log('Valid until: ' + (pass.validUntil || 'unlimited'));
               console.log('Max uses: ' + pass.maxUses);
@@ -205,7 +327,7 @@ jobs:
       - name: Upload passes artifact
         uses: actions/upload-artifact@v4
         with:
-          name: passes-${{ inputs.pass-type }}-${{ github.run_id }}
+          name: passes-${{ needs.params.outputs.pass-type }}-${{ github.run_id }}
           path: passes-output.json
           retention-days: 30
 
@@ -215,11 +337,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Pass Type | ${{ inputs.pass-type }} (${{ steps.pass-type.outputs.PASS_TYPE_NAME }}) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Environment | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quantity | ${{ inputs.quantity || 1 }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Type | ${{ needs.params.outputs.pass-type }} (${{ steps.pass-type.outputs.PASS_TYPE_NAME }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ needs.names.outputs.environment-name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quantity | ${{ needs.params.outputs.quantity }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bundle | ${{ steps.pass-type.outputs.BUNDLE_ID }} |" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ inputs.email }}" ]]; then
+          if [[ -n "${{ needs.params.outputs.email }}" ]]; then
             echo "| Email restricted | Yes |" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
