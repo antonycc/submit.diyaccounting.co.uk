@@ -653,13 +653,80 @@ Run `npm run test:system` - token enforcement system tests pass. HMRC API calls 
 - [ ] `behaviour-tests/tokens/tokenConsumption.spec.js` - submit VAT, verify count decrements
 - [ ] `behaviour-tests/tokens/tokenExhaustion.spec.js` - exhaust tokens, verify error shown
 
+### 5.5 Pass admin UI (essential only)
+
+Needed to operate passes at any scale — an admin must be able to view, create, and revoke passes without the GitHub Actions workflow.
+
+- [ ] Create `web/public/admin/passes.html`
+  - Pass list view: table of passes sorted by createdAt, filterable by status (active/expired/revoked)
+  - Pass detail view: click a row to see code, type, bundle, validity, usage, creation metadata
+  - Revoke button: single-click revocation with confirmation dialog
+  - Create pass form: passTypeId, bundleId, email (optional), maxUses, validityPeriod, notes
+  - Calls `POST /api/v1/pass/admin` and `GET /api/v1/pass/admin/list` endpoints
+- [ ] Create `app/functions/account/passAdminListGet.js` — paginated pass listing for admin UI
+- [ ] Wire admin UI route in Express server and API Gateway
+- [ ] Admin authentication: reuse existing JWT auth, add admin role check (e.g. specific email or Cognito group)
+
+### 5.6 QR code generation for admin passes
+
+The GitHub Actions workflow and admin UI should produce a QR code alongside the four-word passphrase.
+
+- [ ] Add QR code generation library (e.g. `qrcode` npm package, small footprint)
+- [ ] Generate QR code PNG encoding the pass URL on pass creation
+- [ ] GitHub Actions workflow: attach QR code image as workflow artifact
+- [ ] Admin UI: display QR code inline with download button
+
+### 5.7 Production readiness (go-live checklist)
+
+Items from Phase 7 that must be complete before day-guest is available to real users.
+
+**Production credentials gate:**
+- [ ] Validate HMRC production credentials: trial user submits real VAT return, HMRC confirms no issues
+- [ ] Remove `listedInEnvironments` restriction from `day-guest` bundle in `submit.catalogue.toml`
+- [ ] `resident-pro` remains hidden until subscription payment flow exists
+
+**Monitoring and alarms:**
+- [ ] CloudWatch alarms for:
+  - Pass redemption failures (spike in `exhausted`, `expired`, `wrong_email` reasons)
+  - Token exhaustion rate (users hitting zero tokens)
+  - Bundle capacity counter drift (reconciled count differs by >10% from counter)
+  - Lambda errors on pass/bundle endpoints
+- [ ] Review the ObservabilityStack dashboard: ensure Bundle Capacity Metrics row shows meaningful data
+
+**Documentation:**
+- [ ] Update `about.html` with pass and token information
+- [ ] Add pass FAQ to help pages: "What is a pass?", "How do tokens work?", "When do tokens refresh?"
+- [ ] Document the GitHub Actions `generate-pass.yml` workflow for admin use (inputs, outputs, environment selection)
+
+### 5.8 Go-live validation
+
+- [ ] Deploy all Phase 1-5 changes to production
+- [ ] Admin generates a `day-guest` pass via GitHub Actions workflow
+- [ ] Test user redeems pass and receives `day-guest` bundle with 3 tokens
+- [ ] Test user submits a VAT return (consumes 1 token, 2 remaining)
+- [ ] Test user views obligations and VAT returns (free, no token consumed)
+- [ ] Verify token display is accurate on the bundles page
+- [ ] Verify bundle expiry at end of day (P1D timeout)
+- [ ] Remove `listedInEnvironments` restriction from day-guest
+- [ ] Confirm day-guest appears to unauthenticated users on bundles page
+
 ### Validation
 
-Run `npm run test:submitVatBehaviour-proxy` - all tests pass using pass-based bundle allocation and token enforcement. Token counter visible and accurate.
+Run `npm run test:submitVatBehaviour-proxy` - all tests pass using pass-based bundle allocation and token enforcement. Token counter visible and accurate. Admin UI operational for pass management.
+
+---
+
+******
+
+DONE at this point: Generate an invitation to add a bundle (conditions may apply). Passes can be created, redeemed, and managed. Tokens enforce HMRC submission costs. Day-guest is live in production.
+
+******
 
 ---
 
 ## Phase 6: Campaign Passes & Referral System (Backend + Frontend)
+
+**Deferred** until day-guest passes are being used regularly and organic growth data is available. Campaign mechanics are the growth engine, but they require a proven base product first.
 
 **Goal**: Subscribed users can issue short-lived passes to recruit new users. Referrals are tracked. Successful referrals earn rewards.
 
@@ -910,37 +977,30 @@ A resident-pro user can issue a campaign pass, share the URL, another user redee
 
 ---
 
-## Phase 7: Production Readiness
+## Phase 7: Campaign Production Readiness
 
-**Goal**: All features live in production with monitoring and correct environment gating.
+**Note**: Core production readiness (credentials, monitoring, documentation) has been pulled forward to §5.7-5.8 so the product can go live at end of Phase 5. This phase covers campaign-specific production concerns.
 
-### 7.1 Production credentials gate
+**Goal**: Campaign features live in production with campaign-specific monitoring.
 
-- [ ] `day-guest` bundle: remove `listedInEnvironments` restriction once HMRC production credentials are validated
-  - Currently hidden in prod: `listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]`
-  - Validation requires: trial user submits real VAT return, HMRC confirms no issues
-- [ ] `resident-pro` bundle: remove `listedInEnvironments` restriction once subscription payment flow exists
-
-### 7.2 Monitoring
+### 7.1 Campaign monitoring
 
 - [ ] CloudWatch alarms for:
-  - Pass redemption failures (spike in `exhausted` or `expired` reasons)
-  - Token exhaustion rate (users hitting zero)
-  - Campaign pass abuse (unusual issuance volume)
-- [ ] Admin dashboard (or CloudWatch dashboard):
-  - Total passes created / redeemed / expired
-  - Token consumption rate across all users
-  - Referral conversion funnel
+  - Campaign pass abuse (unusual issuance volume per user)
+  - Referral reward fraud (self-referral attempts, duplicate referrals)
+- [ ] Admin dashboard additions:
+  - Campaign passes created / redeemed / expired
+  - Referral conversion funnel (redeemed → submitted VAT → subscribed)
+  - Ambassador tier distribution
 
-### 7.3 Documentation
+### 7.2 Campaign documentation
 
-- [ ] Update `about.html` with pass and token information
-- [ ] Add pass FAQ to help pages
-- [ ] Document GitHub Actions pass generation workflow for admin use
+- [ ] Add campaign/referral FAQ to help pages
+- [ ] Document ambassador tiers and rewards for users
 
 ### Validation
 
-Production deployment stable. day-guest available to all users. Passes and tokens enforced. Campaign system operational.
+Campaign system operational. Ambassador tiers visible. Referral rewards credited correctly.
 
 ---
 
@@ -967,13 +1027,19 @@ Phase 5.1,5.4:             │
     └──────────────────────┘
              │
              ▼
+Phase 5.5-5.8: Admin UI + QR + Production Readiness + Go-live
+             │
+             ▼
+    *** LIVE: day-guest available to real users ***
+             │
+             ▼ (deferred until organic usage data available)
 Phase 6: Campaign Passes & Referrals
              │
              ▼
-Phase 7: Production Readiness
+Phase 7: Campaign Production Readiness
 ```
 
-Token tracking and display are built early (Phases 2-3) so the data layer is ready before enforcement. Phases 4 and 5.2-5.3 can run in parallel after Phase 3 completes. Phase 6 requires both token enforcement (Phase 4) and pass enforcement (Phase 5) to be complete.
+Token tracking and display are built early (Phases 2-3) so the data layer is ready before enforcement. Phases 4 and 5.2-5.3 can run in parallel after Phase 3 completes. The product goes live at the end of Phase 5 with admin UI, monitoring, and documentation. Phase 6 (campaigns) is deferred until day-guest pass usage demonstrates organic demand.
 
 ## Files to Create
 
