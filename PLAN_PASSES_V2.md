@@ -282,23 +282,100 @@ Token balances are tracked alongside bundles so the data layer is ready before e
 - Each user can hold at most **one** of each bundle type — the `already_granted` check in `bundlePost.js` prevents duplicates
 - Bundle renewal refreshes the existing allocation's expiry rather than creating a new record
 
-#### 2.9.1 Global allocation counting
+#### 2.9.1 Counting approach decision
 
-The current cap check in `bundlePost.js` is a per-user placeholder that is effectively a no-op (the already_granted check catches duplicates before the cap check runs). Replace with global counting:
+The current cap check in `bundlePost.js` is a per-user placeholder that is effectively a no-op (the already_granted check catches duplicates before the cap check runs). Replace with global counting using a **counter table + EventBridge reconciliation** (Option C).
 
-- [ ] Add a **GSI or dedicated counter** for efficient global cap queries without full table scans
-  - Option A: GSI on `bundleId` (PK) + `ttl` (SK) — query active allocations where `ttl > now`
-  - Option B: Atomic counter record per bundleId (`pk = "cap#day-guest"`, `activeCount: N`) updated on grant/expiry
-  - Option A preferred for accuracy (expired records auto-cleaned by DynamoDB TTL);
-- [ ] Update `grantBundle()` in `bundlePost.js`: before granting, query active allocation count for the requested bundleId; if `count >= cap`, return `cap_reached` (403)
-- [ ] Add `DataStack.java` changes if GSI approach chosen (add GSI to bundles table)
-- [ ] Handle race conditions: use `ConditionExpression` on the counter increment or accept eventual consistency on the GSI query (cap is soft — a brief over-allocation during high concurrency is acceptable)
+**Approaches evaluated:**
 
-#### 2.9.2 GET /api/v1/bundle response changes
+| Approach | Hot path | Accuracy | Cap guarantee | Infrastructure |
+|----------|----------|----------|---------------|----------------|
+| **A1: GSI + FilterExpression** | O(partition) | Real-time | Soft (race) | GSI on bundleId |
+| **A2: GSI + expiry Sort Key** | O(cap) | Real-time | Soft (TOCTOU race) | GSI on bundleId+expiry |
+| **B: DynamoDB Streams + counter** | O(1) | Real-time | Hard | Streams + Lambda |
+| **C: Counter table + reconciliation** | O(1) | 5-min eventual | **Hard** | Table + EventBridge + Lambda |
+| D: Full table Scan | O(table) | Real-time | Soft | None |
+
+**Why Option C:**
+
+- **Hard cap guarantee**: Atomic `ConditionExpression: activeCount < :cap` on a single counter item. Two concurrent grants cannot both succeed when only one slot remains. No TOCTOU race.
+- **O(1) on every hot-path request**: Grant = conditional `UpdateItem` on counter (1 WCU). GET availability = `GetItem` on counter (0.5 RCU). Both constant-time regardless of user count.
+- **Reuses existing patterns**: EventBridge Rule + Lambda (established in `SelfDestructStack.java`), atomic counter with `ConditionExpression` (established in `dynamoDbPassRepository.js`).
+- **Conservative drift is safe**: Between reconciliations, the counter may over-count (expired allocations still counted). Worst case: a user sees "try again tomorrow" when a slot just freed up. Reconciliation corrects within 5 minutes.
+- **Reconciliation Scan is cheap**: Runs 288×/day (every 5 min), not per-request. At 10K users (20K items, ~4MB): ~$0.0001/run. At 1M users (2M items, 400MB): ~$0.03/day.
+
+**Why not GSI with expiry Sort Key (A2)?** The GSI with `bundleId` PK + `expiry` SK achieves O(cap) reads using `KeyConditionExpression: expiry > :now` (skips expired items at the index level, <5ms, 0.5 RCU). Cost-competitive with Option C. However, granting requires two operations — Query the GSI then PutItem to the base table — with a race window between them. Two concurrent requests can both see `count = 9` (under cap 10) and both proceed to grant, exceeding the cap. There is no DynamoDB primitive to atomically "query a GSI and conditionally write to the base table." Adding a lock to fix this converges on Option C anyway.
+
+**Why not GSI with FilterExpression only (A1)?** `FilterExpression` runs **after** DynamoDB reads the full GSI partition — you pay RCUs for every item including expired ones awaiting TTL cleanup (up to 1 month + 48h). At 1K users/day over a month: ~30K items, 22 RCUs per query, 50-100ms latency. At 10K users/day: 300K items, 6,375 RCUs, 500ms+ latency. Cost and latency grow linearly with user churn. Rejected.
+
+**Why not DynamoDB Streams (B)?** New infrastructure pattern for this codebase (shard management, iterator age monitoring). The 5-minute eventual consistency of Option C is acceptable for a soft daily allocation cap.
+
+**EventBridge Pipe without Lambda?** Pipes require transformation logic for count-and-put which needs a Lambda enrichment step anyway. No simpler than a plain EventBridge Rule + Lambda.
+
+#### 2.9.2 Counter table infrastructure
+
+**New DynamoDB table**: `{env}-submit-bundle-capacity`
+
+```
+PK: bundleId (String)  — e.g. "day-guest"
+No Sort Key
+```
+
+Item structure:
+```json
+{
+  "bundleId": "day-guest",
+  "activeCount": 7,
+  "reconciledAt": "2026-02-01T00:05:00Z"
+}
+```
+
+Separate table (not records in the bundles table) because:
+- No risk of counter records appearing in user bundle queries
+- Independent scaling and backup policies
+- Simple table with just PK (no SK needed)
+- Clean separation of concerns
+
+CDK in `DataStack.java`:
+- [ ] New table with `RemovalPolicy.DESTROY`, PAY_PER_REQUEST billing
+- [ ] PITR not needed (reconciliation rebuilds from source of truth — the bundles table)
+- [ ] Grant read/write to bundlePost, bundleGet, and reconciliation Lambdas
+- [ ] Add `BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME` environment variable
+
+#### 2.9.3 Grant enforcement (bundlePost.js)
+
+Replace the per-user cap placeholder with an atomic global counter check:
+
+- [ ] Before granting: atomic conditional increment on the counter table
+  ```javascript
+  // Atomic: increment counter only if under cap
+  UpdateCommand({
+    TableName: capacityTableName,
+    Key: { bundleId: { S: requestedBundle } },
+    UpdateExpression: "SET activeCount = if_not_exists(activeCount, :zero) + :inc",
+    ConditionExpression: "if_not_exists(activeCount, :zero) < :cap",
+    ExpressionAttributeValues: { ":inc": 1, ":zero": 0, ":cap": cap }
+  })
+  ```
+- [ ] On `ConditionalCheckFailedException` → return `{ status: "cap_reached" }` with HTTP 403
+- [ ] On success → proceed to PutItem the bundle allocation as before
+- [ ] If the PutItem fails after the counter increment → decrement the counter (compensating write)
+- [ ] Bundles without a `cap` field skip the counter check entirely
+- [ ] The `already_granted` check runs **before** the cap check (no counter increment for renewals)
+
+Grant flow order:
+1. Extract JWT, validate request
+2. Check `already_granted` (per-user uniqueness) → return 201 `already_granted` if duplicate
+3. Check cap: atomic conditional increment on counter → return 403 `cap_reached` if full
+4. PutItem bundle allocation → if fails, decrement counter
+5. Return 201 `granted`
+
+#### 2.9.4 Availability API (bundleGet.js)
 
 Extend the bundles API response to include **all catalogue bundles** (not just the user's allocations), so the UI can show availability:
 
-- [ ] `bundleGet.js`: load the catalogue (`loadCatalogFromRoot()`) and merge with user's current bundles
+- [ ] Load catalogue (`loadCatalogFromRoot()`), load user's bundles, load counter records for capped bundles
+- [ ] Counter lookup: `BatchGetItem` on the capacity table for all bundleIds that have a `cap` in the catalogue (single round-trip)
 - [ ] Response becomes the **union** of user's allocated bundles and catalogue bundles:
   ```json
   {
@@ -325,54 +402,76 @@ Extend the bundles API response to include **all catalogue bundles** (not just t
   ```
 - [ ] User's allocated bundles: full record (createdAt, hashedSub, ttl, expiry, ttl_datestamp) + `bundleCapacityAvailable`
 - [ ] Unallocated catalogue bundles: only `bundleId` and `bundleCapacityAvailable: true/false`
-- [ ] `bundleCapacityAvailable` is a boolean — no exact count exposed (the catalogue is public so the cap number can be inferred, but real-time take-up should not encourage scraping)
-- [ ] Bundles with no `cap` field always have `bundleCapacityAvailable: true`
+- [ ] `bundleCapacityAvailable` = `activeCount < cap` (from counter table) or `true` if no cap defined
+- [ ] No exact count exposed — the catalogue is public so the cap number can be inferred, but real-time take-up should not encourage scraping
 - [ ] Consumer filtering: existing code that consumes the bundles response and only cares about the user's current bundles should filter on `expiry` being in the future and `hashedSub` matching the logged-in user's session
 
-#### 2.9.3 UI availability messaging
+#### 2.9.5 Reconciliation Lambda + EventBridge schedule
 
-- [ ] `bundles.html`: use `bundleCapacityAvailable` to control button state
+A scheduled Lambda corrects counter drift from expired allocations that haven't been accounted for:
+
+- [ ] Create `app/functions/account/bundleCapacityReconcile.js`
+  - Load catalogue to discover which bundleIds have caps
+  - For each capped bundleId: Scan the bundles table with `FilterExpression: bundleId = :bid AND expiry > :now`
+    - Note: this scans the full bundles table but runs only 288×/day, not per-request
+    - At 10K users (~4MB): ~$0.0001 per run. At 1M users (~400MB): ~$0.10 per run, ~$29/day
+  - PutItem to counter table with correct `activeCount` and `reconciledAt` timestamp
+  - Idempotent: safe to re-run at any time
+- [ ] EventBridge Rule: `rate(5 minutes)` targeting the reconciliation Lambda
+- [ ] CDK: add Lambda + EventBridge Rule in a new `CapacityStack.java` or extend `AccountStack.java`
+  - Lambda: 128MB, 30s timeout, Node.js runtime
+  - Grant read on bundles table, read/write on capacity table
+  - Include catalogue TOML in Lambda bundle (or read from S3/environment)
+- [ ] The reconciliation is the **source of truth correction** — the counter's hot-path increments are the fast path, and reconciliation corrects for:
+  - Expired allocations (counter was incremented but allocation has since expired)
+  - Failed compensating writes (counter incremented but PutItem failed, decrement didn't happen)
+  - Any other drift
+
+#### 2.9.6 UI availability messaging (bundles.html)
+
+- [ ] Use `bundleCapacityAvailable` from the GET response to control button state:
   - `true` + not allocated → show "Request {BundleName}" button as normal
   - `false` + not allocated → show "{BundleName}" button disabled with annotation: "Global user limit reached, please try again tomorrow"
   - Already allocated → show "Added ✓ {BundleName}" (existing behaviour)
 - [ ] No change needed for activities — they are gated by bundle entitlement, not capacity
 
-#### 2.9.4 DynamoDB table changes
+#### 2.9.7 System tests
 
-- [ ] If GSI approach: add GSI `bundleId-ttl-index` to bundles table in `DataStack.java`
-- [ ] If counter approach: no table change needed (counter records use existing PK)
-- [ ] Ensure `SubmitEnvironmentCdkResourceTest.java` resource count is updated if GSI added
-
-#### 2.9.5 System tests
-
-- [ ] `app/system-tests/bundleCapacity.system.test.js`:
-  - Allocate bundles to multiple users up to cap, verify next allocation returns `cap_reached`
-  - Verify expired allocations don't count against cap (set past expiry, re-query)
-  - Verify `bundleCapacityAvailable` is `true`/`false` in GET response based on global count
+- [ ] `app/system-tests/bundleCapacity.system.test.js` (extends existing file):
+  - Allocate `day-guest` to `cap` (10) different users, verify user #11 gets `cap_reached` (403)
+  - Verify expired allocations don't count against cap (set past expiry, reconcile, re-query)
+  - Verify `bundleCapacityAvailable` is `true`/`false` in GET response based on counter
   - Verify bundles with no cap always show `bundleCapacityAvailable: true`
-  - Verify uniqueness: same user requesting same bundle twice gets `already_granted`
+  - Verify uniqueness: same user requesting same bundle twice gets `already_granted` (no counter increment)
   - Verify response includes unallocated catalogue bundles with just `bundleId` and `bundleCapacityAvailable`
+  - Test reconciliation: manually expire allocations, run reconciliation, verify counter decremented
+- [ ] System test setup: create a local capacity table alongside the bundles table in dynalite
 
-#### 2.9.6 Performance considerations
+#### 2.9.8 Performance considerations
 
-- The GET /api/v1/bundle endpoint has **provisioned concurrency**, so the extra catalogue merge and capacity check are acceptable
-- A whole-table count is expensive — the GSI or counter approach avoids scanning the entire bundles table
-- Cap enforcement is **soft** — a brief over-allocation during concurrent requests is acceptable; the TTL-based expiry ensures slots eventually free up
-- The capacity boolean is computed per-request (not cached) to ensure freshness
+- The GET /api/v1/bundle endpoint has **provisioned concurrency**, so the extra catalogue merge and `BatchGetItem` on the capacity table are acceptable
+- Grant path adds one conditional `UpdateItem` (1 WCU, <5ms) — negligible overhead
+- Reconciliation Scan cost is proportional to table size but runs only 288×/day
+- The capacity boolean is computed per-request from the counter table (not cached) to ensure freshness within the 5-minute reconciliation window
+- Cap enforcement is **hard** — the atomic conditional update prevents over-allocation even under high concurrency
 
-#### Files changed
+#### 2.9.9 Files changed
 
 | File | Change |
 |------|--------|
-| `app/functions/account/bundlePost.js` | Replace per-user cap check with global allocation query |
-| `app/functions/account/bundleGet.js` | Merge catalogue bundles into response, add `bundleCapacityAvailable` |
-| `app/services/productCatalog.js` | May need helper to get all catalogue bundle IDs with caps |
-| `app/data/dynamoDbBundleRepository.js` | Add `getActiveAllocationCount(bundleId)` query (GSI or counter) |
+| `app/functions/account/bundlePost.js` | Replace per-user cap placeholder with atomic counter check |
+| `app/functions/account/bundleGet.js` | Merge catalogue bundles into response, add `bundleCapacityAvailable` from counter |
+| `app/functions/account/bundleCapacityReconcile.js` | **New** — reconciliation Lambda |
+| `app/services/productCatalog.js` | Helper to get catalogue bundle IDs with caps |
+| `app/data/dynamoDbBundleRepository.js` | (no change — counter uses separate table) |
+| `app/data/dynamoDbCapacityRepository.js` | **New** — CRUD for capacity counter table |
 | `web/public/submit.catalogue.toml` | Comments updated (already done) |
 | `web/public/bundles.html` | Show capacity availability messaging |
-| `infra/.../DataStack.java` | Add GSI if chosen (or no change for counter approach) |
-| `infra/.../SubmitEnvironmentCdkResourceTest.java` | Update resource count if GSI added |
-| `app/system-tests/bundleCapacity.system.test.js` | New system test file |
+| `infra/.../DataStack.java` | Add `{env}-submit-bundle-capacity` table |
+| `infra/.../AccountStack.java` | Add reconciliation Lambda + EventBridge Rule, wire capacity table to bundlePost/bundleGet |
+| `infra/.../SubmitEnvironmentCdkResourceTest.java` | Update resource count for new table + Lambda + EventBridge Rule |
+| `app/system-tests/bundleCapacity.system.test.js` | Extend with global cap, reconciliation, and availability tests |
+| `app/bin/dynamodb.js` | Add `ensureCapacityTableExists()` for system test setup |
 
 ### Validation
 
@@ -798,25 +897,31 @@ Token tracking and display are built early (Phases 2-3) so the data layer is rea
 | `app/functions/account/passPost.js` | 2 | Authenticated pass redemption Lambda |
 | `app/services/tokenEnforcement.js` | 4 | Token consumption and enforcement |
 | `app/functions/account/passIssuePost.js` | 6 | User-issued campaign passes Lambda |
+| `app/functions/account/bundleCapacityReconcile.js` | 2.9 | Reconciliation Lambda for cap counters |
+| `app/data/dynamoDbCapacityRepository.js` | 2.9 | CRUD for capacity counter table |
 | `.github/workflows/generate-pass.yml` | 1 | Manual pass generation workflow |
 
 ## Files to Modify
 
 | File | Phase | Changes |
 |------|-------|---------|
-| `infra/main/java/.../DataStack.java` | 1 | Add passes DynamoDB table |
-| `infra/main/java/.../AccountStack.java` | 2 | Add pass Lambda functions, API routes |
+| `infra/main/java/.../DataStack.java` | 1, 2.9 | Add passes table; add bundle-capacity table |
+| `infra/main/java/.../AccountStack.java` | 2, 2.9 | Add pass Lambda functions, API routes; add reconciliation Lambda + EventBridge Rule |
 | `app/services/productCatalog.js` | 2 | Recognise `on-pass` display, `on-email-match` allocation |
 | `app/services/bundleManagement.js` | 2 | Email-match enforcement |
 | `app/data/dynamoDbBundleRepository.js` | 2 | Token fields (tracking), getTokenBalance, resetTokens |
-| `app/functions/account/bundleGet.js` | 2 | Return tokensRemaining in response |
-| `app/functions/account/bundlePost.js` | 2 | Set tokensGranted on bundle creation |
+| `app/functions/account/bundleGet.js` | 2, 2.9 | Return tokensRemaining; merge catalogue + capacity availability |
+| `app/functions/account/bundlePost.js` | 2, 2.9 | Set tokensGranted; replace per-user cap with atomic counter check |
 | `app/data/dynamoDbBundleRepository.js` | 4 | consumeToken (atomic enforcement) |
 | `app/functions/hmrc/hmrcVatReturnPost.js` | 4 | Token consumption before HMRC call |
 | `app/functions/hmrc/hmrcVatObligationsGet.js` | 4 | Token consumption before HMRC call |
 | `app/functions/hmrc/hmrcVatReturnGet.js` | 4 | Token consumption before HMRC call |
-| `web/public/bundles.html` | 3, 5, 6 | Pass entry form, on-pass filtering, token display, campaign UI |
+| `web/public/bundles.html` | 2.9, 3, 5, 6 | Capacity availability messaging, pass entry form, on-pass filtering, token display, campaign UI |
 | `web/public/submit.catalogue.toml` | - | Already configured (source of truth) |
+| `app/services/productCatalog.js` | 2.9 | Helper to get catalogue bundle IDs with caps |
+| `infra/.../SubmitEnvironmentCdkResourceTest.java` | 2.9 | Update resource count for capacity table + reconciliation Lambda |
+| `app/system-tests/bundleCapacity.system.test.js` | 2.9 | Extend with global cap, reconciliation, availability tests |
+| `app/bin/dynamodb.js` | 2.9 | Add `ensureCapacityTableExists()` for system test setup |
 
 ## Resolved Questions
 
@@ -828,5 +933,5 @@ Token tracking and display are built early (Phases 2-3) so the data layer is rea
 
 ---
 
-*Last updated: 2026-01-31*
+*Last updated: 2026-02-01*
 *GitHub Issue: #560*
