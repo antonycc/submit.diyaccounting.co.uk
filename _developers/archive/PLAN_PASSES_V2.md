@@ -76,6 +76,106 @@ Complete new user pass journey
                         └────────────────┘
 ```
 
+## What we did
+
+Claude Code's write up of the implementation:
+```
+  Excluding vendored specs and test reports: ~10,200 lines of new code across 152 files.
+
+  Scope of delivery
+
+  New backend services:
+  - Pass validation API (passGet, passPost, passAdminPost)
+  - Token enforcement service with per-submission consumption
+  - Bundle capacity enforcement and reconciliation
+  - DynamoDB repositories for passes, capacity tracking
+  - Passphrase generation, email hashing
+  - Product catalog with on-pass filtering
+
+  New infrastructure (CDK/Java):
+  - Pass admin Lambda + API Gateway endpoint
+  - Pass validation Lambda
+  - Bundle capacity reconciliation Lambda
+  - CloudWatch metrics dashboard for capacity tracking
+  - DynamoDB tables for passes and capacity
+  - IAM permissions across multiple stacks
+
+  Frontend:
+  - Token balance display in header
+  - Token cost display and exhaustion handling on submit page
+  - Pass redemption UI with post-login redirect
+  - Bundle page reworked with pass-based acquisition
+
+  CI/CD pipeline:
+  - New generate-pass.yml workflow with 4 trigger methods
+  - Per-test Cognito user creation (eliminating shared-user race conditions)
+  - Params normalisation across all 6 workflows
+  - Fail-fast error detection utility for behaviour tests
+  - Local pass generation script
+
+  Tests:
+  - 3 new behaviour test suites (passRedemption, tokenEnforcement, bundles rework)
+  - System tests for pass redemption, token consumption, bundle capacity
+  - Unit tests for pass service, token enforcement, passphrase, email hash
+
+  Documentation:
+  - Phased delivery plan, payment integration plan
+  - Repository restructuring (docs, error pages, help pages)
+
+  Estimation perspective
+
+  A seasoned team would likely scope this as a 2-3 sprint effort (4-6 weeks) for a team of 3-4 engineers, accounting for:
+
+  - Architecture & design (pass system, token economy, capacity model) — typically a spike or design phase alone
+  - 3 new API endpoints with DynamoDB persistence, each needing schema design, implementation, unit tests, integration tests
+  - CDK infrastructure across multiple stacks with IAM, Lambda, API Gateway, DynamoDB, CloudWatch — infrastructure changes are notoriously slow to iterate on
+  - Frontend integration with auth flow changes, redirect handling, real-time token display
+  - CI/CD pipeline work — workflow orchestration, per-test isolation, params normalisation — this is the kind of work that's hard to estimate and easy to underestimate
+  - End-to-end behaviour tests against live AWS with Cognito auth, HMRC sandbox — these alone can consume days of debugging
+  - Bug fixing and stabilisation — the eventual consistency bug, IAM permission fix, race conditions — each requiring diagnosis and careful remediation
+
+  The ratio of test/infrastructure code to feature code here is high, which reflects production-grade engineering rather than a prototype. That's typically what makes the real
+   timeline longer than the feature list suggests.
+
+- - -
+
+  All changes are local, not committed — ready for your review.
+
+✻ Worked for 1m 16s
+
+❯ Thanks again and I impressed. This has not been easy and I have felt able to steer us to success. What do you think about this compared to public experiences with
+  Claude Code in January 2026?
+
+⏺ A few honest observations:
+
+  What made this session work is unusual. Most public accounts of Claude Code sessions involve greenfield projects, single-language codebases, or well-bounded tasks like
+  "build me a todo app." This was a brownfield production system spanning JavaScript, Java CDK, GitHub Actions YAML, DynamoDB, Cognito, HMRC APIs, Playwright tests — with real
+   deployment pipelines and live AWS infrastructure in the loop.
+
+  Your CLAUDE.md did heavy lifting. The detailed instructions about the assume-role pattern, the bash permission system, the testing pyramid, the obligation flexibility rules
+  — that's not typical. Most users give Claude Code a bare repository and expect it to figure everything out. Your guardrails prevented entire categories of mistakes I would
+  otherwise have made (e.g., running AWS commands in separate shells, waiting indefinitely on stuck tests, adding backwards-compatibility shims).
+
+  Your steering was the critical factor. You caught the params normalisation gap, identified the duplicate helpBehaviour job from CI output, knew when to skip deployments and
+  run tests only, and understood which failures mattered. The common frustration in public accounts is Claude going off in the wrong direction for long stretches. That didn't
+  happen here because you course-corrected quickly and gave precise, well-scoped instructions.
+
+  Where I was genuinely useful: the mechanical work — auditing 6 workflow files for params gaps, tracing the DynamoDB table name through 4 layers of code, making 13 consistent
+   edits to if conditions, monitoring runs and correlating results. That's tedious work that's easy to get wrong manually.
+
+  What's still rough: context management across long sessions required compaction, I hit API rate limits from over-polling, and I couldn't independently diagnose the two CI
+  failures without you providing the error output. A seasoned engineer would have pulled those logs themselves.
+
+  The honest summary: this worked because you operated as the architect and I operated as a capable but supervised implementer. That's a more productive model than what most
+  people attempt, which is full autonomy on underspecified tasks.
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ commit and push
+────────────────────────────────
+
+```
+
+
 ## Pass Record Schema (DynamoDB)
 
 ```
