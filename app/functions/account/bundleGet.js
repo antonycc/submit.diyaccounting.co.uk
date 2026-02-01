@@ -187,6 +187,7 @@ export async function retrieveUserBundles(userId, requestId = null) {
         bundle.tokensGranted !== undefined ? Math.max(0, bundle.tokensGranted - (bundle.tokensConsumed || 0)) : undefined;
       result.push({
         ...bundle,
+        allocated: true,
         bundleCapacityAvailable: isCapacityAvailable(bundle.bundleId),
         ...(tokensRemaining !== undefined ? { tokensRemaining } : {}),
       });
@@ -196,6 +197,7 @@ export async function retrieveUserBundles(userId, requestId = null) {
       if (!userBundleIds.has(catBundle.id)) {
         result.push({
           bundleId: catBundle.id,
+          allocated: false,
           bundleCapacityAvailable: isCapacityAvailable(catBundle.id),
         });
       }

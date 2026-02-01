@@ -131,7 +131,7 @@
             }
 
             if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-              __userBundles = bundlesData.bundles.map((b) => b.bundleId);
+              __userBundles = bundlesData.bundles.filter((b) => b.allocated).map((b) => b.bundleId);
             } else {
               __userBundles = [];
             }
