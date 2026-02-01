@@ -85,7 +85,7 @@ jobs:
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
-          echo 'force-identity-refresh=${{ inputs.force-identity-refresh }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.force-identity-refresh }}' ; echo "force-identity-refresh=${X:-false}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       force-identity-refresh: ${{ steps.normalise.outputs.force-identity-refresh }}
@@ -371,6 +371,7 @@ jobs:
   deploy-identity:
     name: 'deploy identity'
     needs:
+      - params
       - names
       - create-secrets
       - deploy-apex
@@ -457,7 +458,7 @@ jobs:
         shell: bash
 
       - name: Force refresh Google Identity Provider (after secret rotation)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.force-identity-refresh == true }}
+        if: ${{ needs.params.outputs.force-identity-refresh == 'true' }}
         run: |
           echo "Force refreshing Google Identity Provider to pick up rotated secret..."
           COGNITO_USER_POOL_ID=$(jq -r '.["${{ needs.names.outputs.environment-name }}-env-IdentityStack"].UserPoolId' cdk-submit-environment.out/cdk-outputs-identity.json)
