@@ -824,7 +824,7 @@ Status as of 2026-02-01. Branch: `first-pass`.
 | 2.9.3 Grant enforcement (bundlePost.js atomic counter) | Done | Pre-existing on `first-pass` |
 | 2.9.4 Availability API (bundleGet.js union response) | Done | Pre-existing on `first-pass` |
 | 2.9.5 Reconciliation Lambda + EventBridge | Done | Pre-existing on `first-pass` |
-| 2.9.6 UI availability messaging (bundles.html) | Done | Pre-existing on `first-pass` |
+| 2.9.6 UI availability messaging (bundles.html) | Done | API field pre-existing; UI check for `bundleCapacityAvailable` added in `second-pass` |
 | 2.9.7 System tests (bundleCapacity) | Done | Pre-existing on `first-pass` |
 | 2.9.8 Metrics and dashboard | Done | `82fb7c10` |
 
@@ -854,9 +854,26 @@ Note: Plan mentions separate `passErrors.spec.js` — the error cases (exhausted
 | 5.1 Token enforcement UI (submitVat.html token cost + 403 handling) | Done | `f7e37a1e` |
 | 5.2 Migrate behaviour tests to passes | Done | `34ef7da8` — clearBundles uses API verification, ensureBundlePresent falls back to pass API |
 | 5.3 Turn on on-pass enforcement | Done | Effective — `test` bundle is `display = "on-pass"`, UI filters it, behaviour tests use passes |
-| 5.4 Behaviour tests for tokens | **Not done** | No standalone tokenConsumption/tokenExhaustion behaviour tests |
-| 5.7 Production readiness (go-live checklist) | **Not done** | HMRC prod credential validation, CloudWatch alarms, documentation |
+| 5.4 Behaviour tests for tokens | Done | `1701b295` — tokenEnforcement.behaviour.test.js covers token consumption and exhaustion end-to-end |
+| 5.7 Production readiness (go-live checklist) | **Partially done** | See details below |
 | 5.8 Go-live validation | **Not done** | End-to-end production validation |
+
+#### 5.7 Production readiness detail
+
+| Item | Status | Notes |
+|------|--------|-------|
+| CloudWatch alarm for BundleCapReached | Done | ObservabilityStack.java — alarm on `Submit/BundleCapacity` / `BundleCapReached` metric |
+| Update about.html with passes/tokens info | Done | Free Guest Tier section updated with Day Guest, 10 tokens, pass codes |
+| Bundle capacity UI (bundleCapacityAvailable) | Done | bundles.html disables button with "Global user limit reached" when `bundleCapacityAvailable === false` |
+| Token exhaustion link to bundles page | Done | submitVat.html shows "View Bundles" link on `tokens_exhausted` 403 |
+| Pass redemption failure alarms | Not done | Spike detection for exhausted/expired/wrong_email reasons |
+| Token exhaustion rate alarm | Not done | Users hitting zero tokens |
+| Counter drift alarm | Not done | Reconciled count differs >10% from counter |
+| Lambda error alarms on pass/bundle endpoints | Not done | Standard error rate alarms |
+| Pass FAQ on help pages | Not done | "What is a pass?", "How do tokens work?" |
+| Document generate-pass.yml for admin use | Not done | Workflow inputs/outputs/environment selection |
+| Validate HMRC production credentials | Not done | Trial user submits real VAT return |
+| Remove `listedInEnvironments` from day-guest | Not done | Blocked by HMRC credential validation |
 
 Sections 5.5 (Pass admin UI) and 5.6 (QR code generation) moved to `_developers/backlog/PLAN_PASSES_V2-PART-2.md`.
 
@@ -876,6 +893,8 @@ Sections 5.5 (Pass admin UI) and 5.6 (QR code generation) moved to `_developers/
 | `9a000583` | Phase 4: token enforcement for VAT submissions (consumeToken, tokenEnforcement.js) |
 | `f7e37a1e` | Phase 5.1: token cost display and exhaustion handling on submitVat.html |
 | `34ef7da8` | Phase 5.2–5.3: migrate behaviour tests to passes, add passRedemption behaviour test |
+| `1701b295` | Phase 5.4: token count 3→10 for test/day-guest bundles, tokenEnforcement behaviour test assertions |
+| `965e4a63` | Phase 1.5/5.7: generate-pass.yml with 4 triggers, params/names jobs; deploy.yml calls generate-pass |
 
 ---
 

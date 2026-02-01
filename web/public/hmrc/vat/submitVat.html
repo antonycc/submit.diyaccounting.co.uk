@@ -954,11 +954,11 @@
           if (response.status === 403 && responseJson?.error?.reason === "tokens_exhausted") {
             const tokenInfoEl = document.getElementById("tokenCostInfo");
             if (tokenInfoEl) {
-              tokenInfoEl.textContent = "No tokens remaining.";
+              tokenInfoEl.innerHTML = 'No tokens remaining. <a href="/bundles.html" style="color:#c00;">View Bundles</a>';
               tokenInfoEl.style.display = "";
               tokenInfoEl.style.color = "#c00";
             }
-            throw new Error("No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period, or upgrade your bundle for more.");
+            throw new Error("No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.");
           }
           const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
           console.error(message);

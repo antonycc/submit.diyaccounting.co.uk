@@ -652,6 +652,22 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
+        // Alarms for bundle capacity and pass/token events (EMF custom metrics)
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-BundleCapReachedAlarm")
+                .alarmName(props.resourceNamePrefix() + "-bundle-cap-reached")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/BundleCapacity")
+                        .metricName("BundleCapReached")
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Bundle capacity cap reached >= 1 in 5 minutes")
+                .build();
+
         // Row 6: Lambda Errors across all deployments (was Row 5)
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()

@@ -292,6 +292,17 @@
         // Ensure we always work with strings and avoid using String.replaceAll for broader compatibility
         const rawName = (b && (b.name || b.id)) || "";
         const safeName = String(rawName).replace(/\"/g, "&quot;");
+        // Check capacity availability from API response (for bundles with a cap)
+        const fullEntry = __fullBundleData.find((fb) => fb.bundleId === b.id);
+        const capacityAvailable = fullEntry?.bundleCapacityAvailable !== false;
+        if (!capacityAvailable) {
+          return `
+          <div class="service-item" style="text-align:left">
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" disabled
+              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}</button>
+            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Global user limit reached, please try again tomorrow.</p>
+          </div>`;
+        }
         return `
           <div class="service-item" style="text-align:left">
             <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}">Request ${rawName}</button>
