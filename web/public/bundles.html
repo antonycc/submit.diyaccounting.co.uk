@@ -54,6 +54,19 @@
         <div class="bundles-list" id="catalogBundles"></div>
 
         <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
+          <h3>Have a Pass?</h3>
+          <p style="color: #666; font-size: 0.9em;">Enter a four-word passphrase to redeem your invitation.</p>
+          <div id="passEntryForm" style="margin: 1em auto; max-width: 440px; text-align: left;">
+            <input type="text" id="passInput" placeholder="word-word-word-word" autocomplete="off" spellcheck="false"
+              style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
+            <div style="margin-top: 0.75em; text-align: center;">
+              <button type="button" id="redeemPassBtn" class="btn" style="min-width: 160px;">Redeem Pass</button>
+            </div>
+            <div id="passStatus" role="alert" aria-live="polite" style="margin-top: 0.75em; display: none; padding: 0.6em; border-radius: 4px; font-size: 0.9em;"></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
           <h3>Your Current Bundles</h3>
           <div id="currentBundles" style="margin: 1em 0"></div>
         </div>
@@ -131,6 +144,7 @@
 
       // In-memory bundles state for this page
       let __userBundles = [];
+      let __fullBundleData = []; // Full bundle objects from API (with token info, allocated flag, etc.)
       let __fetchBundlesController = null;
 
       const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
@@ -171,6 +185,7 @@
             init: { headers: { Authorization: `Bearer ${idToken}` }, signal },
           });
           if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
+            __fullBundleData = bundlesData.bundles;
             __userBundles = bundlesData.bundles.filter((b) => b.allocated).map((b) => b.bundleId);
             if (userId) {
               await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000); // 5 minutes TTL
@@ -363,6 +378,8 @@
 
           const cards = (catalog.bundles || [])
             .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
+            // Hide on-pass bundles from the requestable list (they require an invitation pass)
+            .filter((b) => b["display"] !== "on-pass")
             // If the bundle specifies listedInEnvironments, only list it when current env is included
             .filter((b) => {
               const listed = b?.listedInEnvironments;
@@ -387,20 +404,37 @@
         const container = document.getElementById("currentBundles");
         const bundles = parseUserBundles();
 
-        //if (bundles.length === 0) {
-        //  container.innerHTML = '<p style="color: #666; font-style: italic;">No bundles added yet.</p>';
-        //  return;
-        //}
-
         const bundleCards = bundles
           .map((bundleEntry) => {
             const bundleId = typeof bundleEntry === "string" ? bundleEntry : bundleEntry.bundleId;
-            const expiryInfo =
-              typeof bundleEntry === "string"
-                ? bundleEntry.includes("EXPIRY=")
-                  ? bundleEntry.split("EXPIRY=")[1]
-                  : ""
-                : bundleEntry.expiry || "";
+
+            // Look up full bundle data for token info
+            const fullData = __fullBundleData.find((b) => b.bundleId === bundleId && b.allocated);
+            const tokensRemaining = fullData?.tokensRemaining;
+            const tokenResetAt = fullData?.tokenResetAt;
+
+            // Build info fragments
+            const fragments = [];
+            if (tokensRemaining !== undefined) {
+              fragments.push(`${tokensRemaining} token${tokensRemaining !== 1 ? "s" : ""} remaining`);
+            }
+            if (tokenResetAt) {
+              const resetDate = new Date(tokenResetAt);
+              if (!isNaN(resetDate.getTime())) {
+                fragments.push(`refreshes ${resetDate.toLocaleDateString()}`);
+              }
+            }
+            const expiryStr = fullData?.expiry;
+            if (expiryStr) {
+              const expiryDate = new Date(expiryStr);
+              if (!isNaN(expiryDate.getTime())) {
+                fragments.push(`expires ${expiryDate.toLocaleDateString()}`);
+              }
+            }
+
+            const infoLine = fragments.length > 0
+              ? `<div style="font-size: 0.85em; color: #666; margin-top: 0.25em;">${fragments.join(" · ")}</div>`
+              : "";
 
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
@@ -410,8 +444,8 @@
                   style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.15em 0.5em; min-width: unset; width:auto; display:inline-flex; align-items:center;">
                     Remove
                 </button>
-                ${expiryInfo ? `<span>(expires: ${expiryInfo})</span>` : ""}
               </span>
+              ${infoLine}
             </div>`;
           })
           .join("");
@@ -479,6 +513,97 @@
         }
       }
 
+      // --- pass redemption ---
+      const passReasonMessages = {
+        not_found: "Pass not found. Please check the code and try again.",
+        expired: "This pass has expired.",
+        exhausted: "This pass has been fully used.",
+        revoked: "This pass has been revoked.",
+        wrong_email: "This pass is restricted to a different email address.",
+        email_required: "This pass requires email verification.",
+        not_yet_valid: "This pass is not yet valid.",
+      };
+
+      function showPassStatus(message, type) {
+        const el = document.getElementById("passStatus");
+        if (!el) return;
+        el.textContent = message;
+        el.style.display = "block";
+        el.style.backgroundColor = type === "success" ? "var(--color-success-bg, #d4edda)" : type === "error" ? "var(--color-error-bg, #f8d7da)" : "var(--color-info-bg, #d1ecf1)";
+        el.style.color = type === "success" ? "var(--color-success-text, #155724)" : type === "error" ? "var(--color-error-text, #721c24)" : "var(--color-info-text, #0c5460)";
+        el.style.border = `1px solid ${type === "success" ? "var(--color-success-border, #c3e6cb)" : type === "error" ? "var(--color-error-border, #f5c6cb)" : "var(--color-info-border, #bee5eb)"}`;
+      }
+
+      async function redeemPassCode(code) {
+        const idToken = getIdToken();
+        if (!idToken) {
+          try { sessionStorage.setItem("pendingPass", code); } catch {}
+          showPassStatus("Please log in to redeem your pass.", "info");
+          return false;
+        }
+
+        const btn = document.getElementById("redeemPassBtn");
+        if (btn) { btn.textContent = "Redeeming..."; btn.disabled = true; }
+
+        try {
+          const response = await window.fetchWithIdToken("/api/v1/pass", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code }),
+          });
+          const body = await response.json().catch(() => ({}));
+
+          if (body.redeemed) {
+            showPassStatus(`Pass redeemed! Bundle "${body.bundleId}" has been added.`, "success");
+            // Update local state
+            if (!hasBundle(__userBundles, body.bundleId)) {
+              __userBundles.push(body.bundleId);
+            }
+            invalidate("/api/v1/bundle");
+            // Refresh full bundle data
+            await fetchUserBundles();
+            try { renderCurrentBundles(); } catch {}
+            try { updateBundleStatus(); } catch {}
+            window.dispatchEvent(new CustomEvent("bundle-changed"));
+            // Clear pending pass
+            try { sessionStorage.removeItem("pendingPass"); } catch {}
+            // Remove ?pass= from URL without reload
+            const url = new URL(window.location);
+            url.searchParams.delete("pass");
+            window.history.replaceState({}, "", url);
+            return true;
+          } else {
+            const msg = passReasonMessages[body.reason] || `Pass redemption failed: ${body.reason || "unknown error"}`;
+            showPassStatus(msg, "error");
+            return false;
+          }
+        } catch (err) {
+          showPassStatus(`Failed to redeem pass: ${err?.message || err}`, "error");
+          return false;
+        } finally {
+          if (btn) { btn.textContent = "Redeem Pass"; btn.disabled = false; }
+        }
+      }
+
+      // Pass form click handler
+      document.getElementById("redeemPassBtn")?.addEventListener("click", async () => {
+        const input = document.getElementById("passInput");
+        const code = (input?.value || "").trim().toLowerCase();
+        if (!code) {
+          showPassStatus("Please enter a passphrase.", "error");
+          return;
+        }
+        await redeemPassCode(code);
+      });
+
+      // Allow Enter key to submit
+      document.getElementById("passInput")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.getElementById("redeemPassBtn")?.click();
+        }
+      });
+
       // --- initialize current bundles display
       setTimeout(() => {
         renderCurrentBundles();
@@ -492,6 +617,31 @@
       // Initialize page - wait for submit.js module to be ready
       function initPage() {
         checkAuthStatus();
+
+        // Handle ?pass= URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const passFromUrl = urlParams.get("pass");
+        if (passFromUrl) {
+          const input = document.getElementById("passInput");
+          if (input) input.value = passFromUrl;
+          // Auto-submit if authenticated
+          if (getIdToken()) {
+            redeemPassCode(passFromUrl.trim().toLowerCase());
+          } else {
+            try { sessionStorage.setItem("pendingPass", passFromUrl); } catch {}
+            showPassStatus("Please log in to redeem your pass.", "info");
+          }
+        } else {
+          // Check for pending pass from previous session (saved before login redirect)
+          try {
+            const pendingPass = sessionStorage.getItem("pendingPass");
+            if (pendingPass && getIdToken()) {
+              const input = document.getElementById("passInput");
+              if (input) input.value = pendingPass;
+              redeemPassCode(pendingPass.trim().toLowerCase());
+            }
+          } catch {}
+        }
       }
 
       if (window.__submitReady__) {

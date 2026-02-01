@@ -92,26 +92,31 @@ export function buildPassRecord({
     }
   }
 
-  return {
+  // Only include fields with values — omit null/undefined fields that participate
+  // in DynamoDB ConditionExpressions (revokedAt, validUntil) so that
+  // attribute_not_exists() evaluates correctly.
+  const record = {
     pk: `pass#${code}`,
     code,
     bundleId,
     passTypeId,
     validFrom: effectiveValidFrom,
-    validUntil: effectiveValidUntil,
     ttl,
     ttl_datestamp,
     createdAt: now,
     updatedAt: now,
     maxUses,
     useCount: 0,
-    revokedAt: null,
-    restrictedToEmailHash,
-    emailHashSecretVersion,
-    createdBy: createdBy || null,
-    issuedBy: issuedBy || null,
-    notes: notes || null,
   };
+  if (effectiveValidUntil) record.validUntil = effectiveValidUntil;
+  if (restrictedToEmailHash) {
+    record.restrictedToEmailHash = restrictedToEmailHash;
+    record.emailHashSecretVersion = emailHashSecretVersion;
+  }
+  if (createdBy) record.createdBy = createdBy;
+  if (issuedBy) record.issuedBy = issuedBy;
+  if (notes) record.notes = notes;
+  return record;
 }
 
 /**

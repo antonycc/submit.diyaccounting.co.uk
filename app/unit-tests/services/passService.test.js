@@ -70,8 +70,8 @@ describe("passService", () => {
       expect(pass.passTypeId).toBe("test-access");
       expect(pass.maxUses).toBe(1);
       expect(pass.useCount).toBe(0);
-      expect(pass.revokedAt).toBeNull();
-      expect(pass.restrictedToEmailHash).toBeNull();
+      expect(pass.revokedAt).toBeUndefined();
+      expect(pass.restrictedToEmailHash).toBeUndefined();
       expect(pass.createdBy).toBe("admin");
       expect(pass.validFrom).toBeTruthy();
       expect(pass.validUntil).toBeTruthy();
@@ -102,7 +102,7 @@ describe("passService", () => {
         createdBy: "admin",
       });
 
-      expect(pass.validUntil).toBeNull();
+      expect(pass.validUntil).toBeUndefined();
       // TTL should still be set (1 year + 30 days from now)
       expect(pass.ttl).toBeTypeOf("number");
     });
