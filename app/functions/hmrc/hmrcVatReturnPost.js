@@ -10,6 +10,7 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
+  http403ForbiddenResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
@@ -387,6 +388,32 @@ export async function ingestHandler(event) {
       request,
       headers: { ...responseHeaders },
       message: `Failed to resolve period key: ${error.message}`,
+    });
+  }
+
+  // Token enforcement: consume 1 token for VAT submission (the "value action")
+  const activityId = hmrcAccount === "sandbox" ? "submit-vat-sandbox" : "submit-vat";
+  try {
+    const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
+    const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
+    const catalog = loadCatalogFromRoot();
+    const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
+    if (!tokenResult.consumed) {
+      logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
+      return http403ForbiddenResponse({
+        request,
+        headers: responseHeaders,
+        message: "Token limit reached",
+        error: { reason: "tokens_exhausted", tokensRemaining: 0 },
+      });
+    }
+    logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
+  } catch (error) {
+    logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
+    return http500ServerErrorResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Token enforcement failed",
     });
   }
 

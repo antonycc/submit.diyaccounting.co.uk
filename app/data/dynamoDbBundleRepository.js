@@ -184,6 +184,42 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
   }
 }
 
+export async function consumeToken(userId, bundleId) {
+  logger.info({ message: `consumeToken [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
+
+  try {
+    const hashedSub = hashSub(userId);
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    const result = await docClient.send(
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { hashedSub, bundleId },
+        UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc",
+        ConditionExpression: "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
+        ExpressionAttributeValues: {
+          ":zero": 0,
+          ":inc": 1,
+        },
+        ReturnValues: "ALL_NEW",
+      }),
+    );
+
+    const updated = result.Attributes;
+    const tokensRemaining = Math.max(0, (updated.tokensGranted || 0) - (updated.tokensConsumed || 0));
+    logger.info({ message: "Token consumed", hashedSub, bundleId, tokensRemaining });
+    return { consumed: true, tokensRemaining, bundle: updated };
+  } catch (error) {
+    if (error.name === "ConditionalCheckFailedException") {
+      logger.info({ message: "Token consumption blocked - tokens exhausted", userId, bundleId });
+      return { consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 };
+    }
+    logger.error({ message: "Error consuming token", error: error.message, userId, bundleId });
+    throw error;
+  }
+}
+
 export async function getUserBundles(userId) {
   logger.info({ message: `getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
 
