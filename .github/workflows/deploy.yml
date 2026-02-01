@@ -1594,9 +1594,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-auth:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
+      - params
       - names
       - set-origins
       - enable-native-auth
@@ -1616,9 +1617,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-bundle:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
     name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
+      - params
       - names
       - set-origins
       - enable-native-auth
@@ -1639,9 +1641,10 @@ jobs:
 
 
   web-test-pass-redemption:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
     name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
+      - params
       - names
       - set-origins
       - enable-native-auth
@@ -1661,9 +1664,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-token-enforcement:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
     name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
+      - params
       - names
       - set-origins
       - enable-native-auth
