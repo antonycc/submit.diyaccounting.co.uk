@@ -147,9 +147,17 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     } else {
       console.log(`${bundleName} bundle not present, requesting...`);
     }
-    // Otherwise request the bundle once.
+    // Check if the "Request" button exists (it won't for on-pass bundles).
+    // If the button exists, use the UI flow. Otherwise, fall back to pass API.
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
-    await requestBundle(page, bundleName, screenshotPath);
+    const requestBtnLocator = page.getByRole("button", { name: `Request ${bundleName}` });
+    if (await requestBtnLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await requestBundle(page, bundleName, screenshotPath);
+    } else {
+      console.log(`"Request ${bundleName}" button not visible (on-pass bundle), using pass API...`);
+      const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+      await ensureBundleViaPassApi(page, bundleId, screenshotPath);
+    }
   });
 }
 
@@ -215,6 +223,70 @@ export async function verifyBundleApiResponse(page, screenshotPath = defaultScre
     });
     console.log(`Bundle API response: ${JSON.stringify(apiResponse)}`);
     return apiResponse;
+  });
+}
+
+export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = defaultScreenshotPath) {
+  return await test.step(`Ensure ${bundleId} bundle via pass API`, async () => {
+    console.log(`Creating and redeeming pass for bundle ${bundleId}...`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-creating.png` });
+
+    // Step 1: Create a pass via admin API (no auth required)
+    const createResult = await page.evaluate(async (bid) => {
+      try {
+        const response = await fetch("/api/v1/pass/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            passTypeId: bid,
+            bundleId: bid,
+            validityPeriod: "P1D",
+            maxUses: 1,
+            createdBy: "behaviour-test",
+          }),
+        });
+        const body = await response.json();
+        return { ok: response.ok, code: body?.data?.code || body?.code, body };
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }, bundleId);
+
+    console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
+    if (!createResult.ok || !createResult.code) {
+      throw new Error(`Failed to create pass for ${bundleId}: ${JSON.stringify(createResult)}`);
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-02-created.png` });
+
+    // Step 2: Redeem the pass (authenticated)
+    const redeemResult = await page.evaluate(async (code) => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { ok: false, error: "No auth token" };
+      try {
+        const response = await fetch("/api/v1/pass", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ code }),
+        });
+        return await response.json();
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }, createResult.code);
+
+    console.log(`Pass redemption result: ${JSON.stringify(redeemResult)}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png` });
+
+    // Reload page to reflect bundle changes
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04-reloaded.png` });
+
+    return redeemResult;
   });
 }
 
