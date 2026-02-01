@@ -156,6 +156,34 @@ export async function deleteAllBundles(userId) {
   }
 }
 
+export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) {
+  logger.info({ message: `resetTokens [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
+
+  try {
+    const hashedSub = hashSub(userId);
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    await docClient.send(
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { hashedSub, bundleId },
+        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt",
+        ExpressionAttributeValues: {
+          ":zero": 0,
+          ":granted": tokensGranted,
+          ":resetAt": nextResetAt,
+        },
+      }),
+    );
+
+    logger.info({ message: "Tokens reset", hashedSub, bundleId, tokensGranted, nextResetAt });
+  } catch (error) {
+    logger.error({ message: "Error resetting tokens", error: error.message, userId, bundleId });
+    throw error;
+  }
+}
+
 export async function getUserBundles(userId) {
   logger.info({ message: `getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
 

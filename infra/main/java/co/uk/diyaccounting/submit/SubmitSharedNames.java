@@ -84,6 +84,7 @@ public class SubmitSharedNames {
     public String hmrcVatObligationGetAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
+    public String bundleCapacityTableName;
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -251,6 +252,38 @@ public class SubmitSharedNames {
     public boolean supportTicketPostLambdaJwtAuthorizer;
     public boolean supportTicketPostLambdaCustomAuthorizer;
 
+    public String passGetIngestLambdaHandler;
+    public String passGetIngestLambdaFunctionName;
+    public String passGetIngestLambdaArn;
+    public String passGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod passGetLambdaHttpMethod;
+    public String passGetLambdaUrlPath;
+    public boolean passGetLambdaJwtAuthorizer;
+    public boolean passGetLambdaCustomAuthorizer;
+
+    public String passPostIngestLambdaHandler;
+    public String passPostIngestLambdaFunctionName;
+    public String passPostIngestLambdaArn;
+    public String passPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod passPostLambdaHttpMethod;
+    public String passPostLambdaUrlPath;
+    public boolean passPostLambdaJwtAuthorizer;
+    public boolean passPostLambdaCustomAuthorizer;
+
+    public String passAdminPostIngestLambdaHandler;
+    public String passAdminPostIngestLambdaFunctionName;
+    public String passAdminPostIngestLambdaArn;
+    public String passAdminPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod passAdminPostLambdaHttpMethod;
+    public String passAdminPostLambdaUrlPath;
+    public boolean passAdminPostLambdaJwtAuthorizer;
+    public boolean passAdminPostLambdaCustomAuthorizer;
+
+    public String bundleCapacityReconcileLambdaHandler;
+    public String bundleCapacityReconcileLambdaFunctionName;
+    public String bundleCapacityReconcileLambdaArn;
+    public String bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn;
+
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
     public String selfDestructLambdaArn;
@@ -335,6 +368,7 @@ public class SubmitSharedNames {
                 "%s-hmrc-vat-obligation-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
         this.passesTableName = "%s-passes".formatted(this.envResourceNamePrefix);
+        this.bundleCapacityTableName = "%s-bundle-capacity".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);
@@ -751,6 +785,86 @@ public class SubmitSharedNames {
                 "Submit a support ticket",
                 "Creates a GitHub issue for the authenticated user's support request",
                 "submitSupportTicket"));
+
+        // Pass GET Lambda (public, no auth)
+        this.passGetLambdaHttpMethod = HttpMethod.GET;
+        this.passGetLambdaUrlPath = "/api/v1/pass";
+        this.passGetLambdaJwtAuthorizer = false;
+        this.passGetLambdaCustomAuthorizer = false;
+        var passGetLambdaHandlerName = "passGet.ingestHandler";
+        var passGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(passGetLambdaHandlerName);
+        this.passGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, passGetLambdaHandlerDashed);
+        this.passGetIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, passGetLambdaHandlerName);
+        this.passGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, passGetLambdaHandlerDashed);
+        this.passGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.passGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.passGetLambdaHttpMethod,
+                this.passGetLambdaUrlPath,
+                "Validate a pass code",
+                "Checks if a pass code is valid and returns its details",
+                "validatePass",
+                List.of(new ApiParameter("code", "query", true, "The four-word pass code to validate"))));
+
+        // Pass POST Lambda (JWT auth)
+        this.passPostLambdaHttpMethod = HttpMethod.POST;
+        this.passPostLambdaUrlPath = "/api/v1/pass";
+        this.passPostLambdaJwtAuthorizer = true;
+        this.passPostLambdaCustomAuthorizer = false;
+        var passPostLambdaHandlerName = "passPost.ingestHandler";
+        var passPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(passPostLambdaHandlerName);
+        this.passPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, passPostLambdaHandlerDashed);
+        this.passPostIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, passPostLambdaHandlerName);
+        this.passPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, passPostLambdaHandlerDashed);
+        this.passPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.passPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.passPostLambdaHttpMethod,
+                this.passPostLambdaUrlPath,
+                "Redeem a pass code",
+                "Redeems a pass code and grants the associated bundle to the authenticated user",
+                "redeemPass"));
+
+        // Pass Admin POST Lambda (JWT auth)
+        this.passAdminPostLambdaHttpMethod = HttpMethod.POST;
+        this.passAdminPostLambdaUrlPath = "/api/v1/pass/admin";
+        this.passAdminPostLambdaJwtAuthorizer = true;
+        this.passAdminPostLambdaCustomAuthorizer = false;
+        var passAdminPostLambdaHandlerName = "passAdminPost.ingestHandler";
+        var passAdminPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(passAdminPostLambdaHandlerName);
+        this.passAdminPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, passAdminPostLambdaHandlerDashed);
+        this.passAdminPostIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, passAdminPostLambdaHandlerName);
+        this.passAdminPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, passAdminPostLambdaHandlerDashed);
+        this.passAdminPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.passAdminPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.passAdminPostLambdaHttpMethod,
+                this.passAdminPostLambdaUrlPath,
+                "Generate a new pass",
+                "Generates a new pass code for a specified bundle type (admin only)",
+                "generatePass"));
+
+        // Bundle Capacity Reconciliation Lambda (scheduled, not API)
+        var bundleCapacityReconcileLambdaHandlerName = "bundleCapacityReconcile.handler";
+        var bundleCapacityReconcileLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(bundleCapacityReconcileLambdaHandlerName);
+        this.bundleCapacityReconcileLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, bundleCapacityReconcileLambdaHandlerDashed);
+        this.bundleCapacityReconcileLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, bundleCapacityReconcileLambdaHandlerName);
+        this.bundleCapacityReconcileLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, bundleCapacityReconcileLambdaHandlerDashed);
+        this.bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.bundleCapacityReconcileLambdaArn, this.provisionedConcurrencyAliasName);
 
         var appSelfDestructLambdaHandlerName = "selfDestruct.ingestHandler";
         var appSelfDestructLambdaHandlerDashed =

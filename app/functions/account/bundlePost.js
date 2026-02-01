@@ -26,6 +26,29 @@ import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
+function emitCapMetric(metricName, bundleId) {
+  try {
+    console.log(
+      JSON.stringify({
+        _aws: {
+          Timestamp: Date.now(),
+          CloudWatchMetrics: [
+            {
+              Namespace: "Submit/BundleCapacity",
+              Dimensions: [["bundleId"]],
+              Metrics: [{ Name: metricName, Unit: "Count" }],
+            },
+          ],
+        },
+        bundleId,
+        [metricName]: 1,
+      }),
+    );
+  } catch {
+    // EMF emission is best-effort
+  }
+}
+
 const MAX_WAIT_MS = 25_000;
 const DEFAULT_WAIT_MS = 0;
 
@@ -302,6 +325,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const hasBundle = currentBundles.some((bundle) => bundle?.bundleId === requestedBundle);
   if (hasBundle) {
     logger.info({ message: "User already has requested bundle:", requestedBundle });
+    emitCapMetric("BundleAlreadyGranted", requestedBundle);
     const result = {
       status: "already_granted",
       message: "Bundle already granted to user",
@@ -367,31 +391,27 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
     logger.info({ message: "[Catalog bundle] Bundle requires manual allocation, proceeding:", requestedBundle });
   }
 
-  // on-request: enforce global bundle capacity cap
-  // The cap field represents a GLOBAL limit on the total number of active (non-expired)
-  // allocations of this bundle across ALL users. When all cap slots are taken, the bundle
-  // is unavailable until an allocation expires and returns to the pool.
-  // Each user can hold at most one of each bundle (enforced by the already_granted check above).
-  // Renewal refreshes the existing allocation's expiry rather than creating a duplicate.
-  //
-  // TODO (Phase 2.9): Replace this per-user placeholder with a global count.
-  // The current check is per-user and effectively a no-op (already_granted catches duplicates).
-  // Phase 2.9 will implement an efficient global allocation counter (GSI or atomic counter)
-  // and expose bundleCapacityAvailable in the GET /api/v1/bundle response.
+  // Global bundle capacity cap enforcement via atomic counter table.
+  // The cap field is a GLOBAL limit on active (non-expired) allocations across ALL users.
+  // The already_granted check above prevents duplicates, so this only fires for new allocations.
   const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
-  if (typeof cap === "number") {
-    // Placeholder: per-user count. Phase 2.9 replaces with global active allocation count.
-    const currentCount = currentBundles.filter((b) => b.bundleId === requestedBundle).length;
-    if (currentCount >= cap) {
-      logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
+  let capIncremented = false;
+  if (typeof cap === "number" && process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME) {
+    const { incrementCounter } = await import("../../data/dynamoDbCapacityRepository.js");
+    const granted = await incrementCounter(requestedBundle, cap);
+    if (!granted) {
+      logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
+      emitCapMetric("BundleCapReached", requestedBundle);
       const result = { status: "cap_reached", error: "cap_reached", statusCode: 403 };
       if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
         await putAsyncRequest(userId, requestId, "failed", result);
       }
       return result;
-    } else {
-      logger.info({ message: "[Catalog bundle] Bundle cap not yet reached:", requestedBundle, currentCount, cap });
     }
+    capIncremented = true;
+    logger.info({ message: "[Catalog bundle] Cap slot reserved:", requestedBundle, cap });
+  } else if (typeof cap === "number") {
+    logger.info({ message: "[Catalog bundle] Cap defined but no capacity table configured, skipping:", requestedBundle });
   } else {
     logger.info({ message: "[Catalog bundle] No cap defined for bundle:", requestedBundle });
   }
@@ -400,14 +420,42 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
   const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
+
+  // Token tracking: set token fields from catalogue
+  const tokensGranted = catalogBundle.tokensGranted ?? catalogBundle.tokens ?? undefined;
+  if (tokensGranted !== undefined) {
+    newBundle.tokensGranted = tokensGranted;
+    newBundle.tokensConsumed = 0;
+    if (catalogBundle.tokenRefreshInterval && expiry) {
+      newBundle.tokenResetAt = parseIsoDurationToDate(new Date(), catalogBundle.tokenRefreshInterval).toISOString();
+    } else {
+      newBundle.tokenResetAt = null;
+    }
+  }
+
   logger.info({ message: "New bundle details:", newBundle });
   currentBundles.push(newBundle);
   logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
   // Persist the updated bundles to the primary store (DynamoDB)
-  const { updateUserBundles } = await import("../../services/bundleManagement.js");
-  await updateUserBundles(userId, currentBundles);
+  try {
+    const { updateUserBundles } = await import("../../services/bundleManagement.js");
+    await updateUserBundles(userId, currentBundles);
+  } catch (error) {
+    // Compensating write: if PutItem fails after cap counter increment, decrement the counter
+    if (capIncremented) {
+      try {
+        const { decrementCounter } = await import("../../data/dynamoDbCapacityRepository.js");
+        await decrementCounter(requestedBundle);
+        logger.info({ message: "Compensating counter decrement after failed bundle persist", requestedBundle });
+      } catch (decrementError) {
+        logger.error({ message: "Failed compensating counter decrement", error: decrementError.message, requestedBundle });
+      }
+    }
+    throw error;
+  }
 
+  emitCapMetric("BundleGranted", requestedBundle);
   logger.info({ message: "Bundle granted to user:", userId, newBundle });
   const result = {
     status: "granted",

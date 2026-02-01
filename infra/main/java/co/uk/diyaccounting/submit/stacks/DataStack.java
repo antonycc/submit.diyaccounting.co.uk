@@ -28,6 +28,7 @@ public class DataStack extends Stack {
     public ITable hmrcVatObligationGetAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
+    public ITable bundleCapacityTable;
 
     @Value.Immutable
     public interface DataStackProps extends StackProps, SubmitStackProps {
@@ -167,6 +168,18 @@ public class DataStack extends Stack {
                 null);
         infof("Ensured passes DynamoDB table with name %s", props.sharedNames().passesTableName);
 
+        // Bundle capacity counter table for tracking global cap enforcement
+        // PK-only table (no sort key) - counters are looked up by bundleId.
+        // Reconciliation Lambda overwrites with correct count every 5 minutes.
+        // No PITR needed - reconciliation rebuilds from source of truth (bundles table).
+        this.bundleCapacityTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-BundleCapacityTable",
+                props.sharedNames().bundleCapacityTableName,
+                "bundleId",
+                null);
+        infof("Ensured bundle capacity DynamoDB table with name %s", props.sharedNames().bundleCapacityTableName);
+
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
@@ -196,6 +209,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
         cfnOutput(this, "PassesTableName", this.passesTable.getTableName());
         cfnOutput(this, "PassesTableArn", this.passesTable.getTableArn());
+        cfnOutput(this, "BundleCapacityTableName", this.bundleCapacityTable.getTableName());
+        cfnOutput(this, "BundleCapacityTableArn", this.bundleCapacityTable.getTableArn());
 
         infof(
                 "DataStack %s created successfully for %s",

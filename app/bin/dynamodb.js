@@ -221,6 +221,76 @@ export async function ensureReceiptsTableExists(tableName, endpoint) {
   }
 }
 
+// Create passes table if it doesn't exist
+export async function ensurePassesTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring passes table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [{ AttributeName: "pk", KeyType: "HASH" }],
+          AttributeDefinitions: [{ AttributeName: "pk", AttributeType: "S" }],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
+// Create bundle capacity counter table if it doesn't exist
+export async function ensureCapacityTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring capacity table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [{ AttributeName: "bundleId", KeyType: "HASH" }],
+          AttributeDefinitions: [{ AttributeName: "bundleId", AttributeType: "S" }],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Only start the server if this file is being run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const bundleTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
@@ -245,6 +315,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     if (receiptsTableName) {
       await ensureReceiptsTableExists(receiptsTableName, endpoint);
+    }
+    const passesTableName = process.env.PASSES_DYNAMODB_TABLE_NAME;
+    if (passesTableName) {
+      await ensurePassesTableExists(passesTableName, endpoint);
+    }
+    const capacityTableName = process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME;
+    if (capacityTableName) {
+      await ensureCapacityTableExists(capacityTableName, endpoint);
     }
     const bundlePostAsyncRequestsTableName = process.env.BUNDLE_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (bundlePostAsyncRequestsTableName) {

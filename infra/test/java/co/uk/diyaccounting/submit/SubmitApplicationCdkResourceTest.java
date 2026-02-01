@@ -69,7 +69,9 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 8);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 5);
+        // 9 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), passGet(1), passPost(1),
+        // passAdminPost(1), bundleCapacityReconcile(1)
+        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 9);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -106,9 +108,8 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
-        // Note: Changed from 20 to 19 after fixing hmrcVatReturnGet route from
-        // /api/v1/hmrc/vat/return/{periodKey} to /api/v1/hmrc/vat/return (query params)
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 19);
+        // 24 routes: 19 original + 5 new (passGet GET+HEAD, passPost POST, passAdminPost POST+HEAD)
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 24);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

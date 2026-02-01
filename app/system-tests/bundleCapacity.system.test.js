@@ -10,9 +10,8 @@
 // - Each user can hold at most one of each bundle type
 // - Renewal refreshes the existing allocation's expiry (not a new record)
 //
-// NOTE: The current cap implementation is a per-user placeholder (Phase 2.9 will
-// implement global counting). These tests verify the uniqueness rule and the cap
-// response contract, and will be extended when global counting is implemented.
+// Global cap enforcement uses an atomic counter table with
+// ConditionExpression: if_not_exists(activeCount, :zero) < :cap
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
@@ -22,6 +21,7 @@ let stopDynalite;
 let bundleRepository;
 
 const tableName = "bundles-system-test-capacity";
+const capacityTableName = "bundle-capacity-system-test";
 
 function base64UrlEncode(obj) {
   const json = JSON.stringify(obj);
@@ -60,7 +60,7 @@ function buildGetEvent(token) {
 }
 
 beforeAll(async () => {
-  const { ensureBundleTableExists } = await import("../bin/dynamodb.js");
+  const { ensureBundleTableExists, ensureCapacityTableExists } = await import("../bin/dynamodb.js");
   const { default: dynalite } = await import("dynalite");
 
   const host = "127.0.0.1";
@@ -81,12 +81,14 @@ beforeAll(async () => {
   process.env.AWS_ENDPOINT_URL = endpoint;
   process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
   process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
+  process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME = capacityTableName;
   process.env.USER_SUB_HASH_SALT = "test-salt-for-capacity-tests";
 
   const { initializeSalt } = await import("../services/subHasher.js");
   await initializeSalt();
 
   await ensureBundleTableExists(tableName, endpoint);
+  await ensureCapacityTableExists(capacityTableName, endpoint);
 
   bundleRepository = await import("../data/dynamoDbBundleRepository.js");
 });
@@ -142,31 +144,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
     });
   });
 
-  describe("cap response contract", () => {
-    it("should return cap_reached status with correct shape when cap is exceeded", async () => {
-      // The current cap check is per-user and won't trigger because already_granted
-      // catches duplicates first. This test verifies the response contract for when
-      // Phase 2.9 implements global cap enforcement.
-      // For now, we verify the cap_reached response shape by testing with a synthetic scenario.
-
-      // Directly seed a user with a bundle to test the already_granted path
-      const userId = "cap-contract-user";
-      const token = makeJWT(userId);
-      const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
-
-      // Grant once
-      const res1 = await bundlePostHandler(event);
-      expect(JSON.parse(res1.body).status).toBe("granted");
-
-      // The already_granted check prevents reaching cap_reached for same user.
-      // When Phase 2.9 global counting is implemented, this test should be updated
-      // to allocate day-guest to cap number of different users, then verify the
-      // (cap+1)th user gets cap_reached.
-      const res2 = await bundlePostHandler(event);
-      const body2 = JSON.parse(res2.body);
-      expect(body2.status).toBe("already_granted");
-    });
-
+  describe("global cap enforcement via atomic counter", () => {
     it("should grant bundle when cap is defined and not yet reached", async () => {
       // day-guest has cap=10 in catalogue; a fresh user should get granted
       const token = makeJWT("cap-fresh-user");
@@ -186,10 +164,67 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       expect(res.statusCode).toBe(201);
       expect(body.status).toBe("granted");
     });
+
+    it("should increment counter on grant and return cap_reached when cap is exceeded", async () => {
+      // Use a capped bundle. day-guest has cap=10. Allocate to 10 distinct users,
+      // then verify user #11 gets cap_reached (403).
+      // Note: earlier tests in this file already consumed some of the cap, so we
+      // use the counter directly to verify behaviour.
+      const { getCounter, putCounter } = await import("../data/dynamoDbCapacityRepository.js");
+
+      // Set counter to cap-1 (9) so the next grant is the last allowed
+      await putCounter("day-guest", 9);
+
+      const token10 = makeJWT("cap-user-10");
+      const res10 = await bundlePostHandler(buildPostEvent(token10, { bundleId: "day-guest", qualifiers: {} }));
+      const body10 = JSON.parse(res10.body);
+      expect(res10.statusCode).toBe(201);
+      expect(body10.status).toBe("granted");
+
+      // Counter should now be at 10 (cap)
+      const counter = await getCounter("day-guest");
+      expect(counter).toBeDefined();
+      expect(counter.activeCount).toBe(10);
+
+      // User #11 should get cap_reached
+      const token11 = makeJWT("cap-user-11");
+      const res11 = await bundlePostHandler(buildPostEvent(token11, { bundleId: "day-guest", qualifiers: {} }));
+      const body11 = JSON.parse(res11.body);
+      expect(res11.statusCode).toBe(403);
+      expect(body11.status).toBe("cap_reached");
+    });
+  });
+
+  describe("bundleGet availability", () => {
+    it("should return bundleCapacityAvailable in GET response", async () => {
+      const token = makeJWT("cap-get-user");
+      const getRes = await bundleGetHandler(buildGetEvent(token));
+      expect(getRes.statusCode).toBe(200);
+      const body = JSON.parse(getRes.body);
+      expect(body.bundles).toBeDefined();
+
+      // All bundles should have bundleCapacityAvailable field
+      for (const bundle of body.bundles) {
+        expect(bundle).toHaveProperty("bundleCapacityAvailable");
+      }
+    });
+
+    it("should report tokensRemaining in GET response", async () => {
+      const token = makeJWT("cap-tokens-user");
+      const getRes = await bundleGetHandler(buildGetEvent(token));
+      expect(getRes.statusCode).toBe(200);
+      const body = JSON.parse(getRes.body);
+      expect(body).toHaveProperty("tokensRemaining");
+      expect(typeof body.tokensRemaining).toBe("number");
+    });
   });
 
   describe("multiple users allocating same bundle", () => {
-    it("should allow different users to each get the same bundle type", async () => {
+    it("should allow different users to each get the same bundle type (under cap)", async () => {
+      // Reset the counter to allow allocations
+      const { putCounter } = await import("../data/dynamoDbCapacityRepository.js");
+      await putCounter("day-guest", 0);
+
       const users = ["cap-multi-user-a", "cap-multi-user-b", "cap-multi-user-c"];
       for (const userId of users) {
         const token = makeJWT(userId);
@@ -207,9 +242,23 @@ describe("System: bundle capacity and per-user uniqueness", () => {
         expect(dayGuest).toBeDefined();
       }
     });
+  });
 
-    // Phase 2.9 TODO: Add test that allocates day-guest to cap (10) different users,
-    // then verifies user #11 gets cap_reached (403). This requires global counting
-    // which is not yet implemented.
+  describe("reconciliation Lambda", () => {
+    it("should reconcile counter to correct active allocation count", async () => {
+      const { putCounter, getCounter } = await import("../data/dynamoDbCapacityRepository.js");
+      const { handler: reconcileHandler } = await import("../functions/account/bundleCapacityReconcile.js");
+
+      // Set counter to an incorrect value
+      await putCounter("day-guest", 999);
+
+      // Run reconciliation
+      await reconcileHandler({});
+
+      // Counter should now reflect actual active allocations (not 999)
+      const counter = await getCounter("day-guest");
+      expect(counter).toBeDefined();
+      expect(counter.activeCount).toBeLessThan(999);
+    });
   });
 });

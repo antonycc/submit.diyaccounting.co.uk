@@ -379,6 +379,13 @@
         }
       }
     },
+    "/pass/admin" : {
+      "post" : {
+        "summary" : "Generate a new pass",
+        "description" : "Generates a new pass code for a specified bundle type (admin only)",
+        "operationId" : "generatePass"
+      }
+    },
     "/hmrc/receipt/{name}" : {
       "get" : {
         "summary" : "Retrieve a stored receipt by name",
@@ -403,6 +410,27 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/pass" : {
+      "get" : {
+        "summary" : "Validate a pass code",
+        "description" : "Checks if a pass code is valid and returns its details",
+        "operationId" : "validatePass",
+        "parameters" : [ {
+          "name" : "code",
+          "in" : "query",
+          "required" : true,
+          "description" : "The four-word pass code to validate",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "post" : {
+        "summary" : "Redeem a pass code",
+        "description" : "Redeems a pass code and grants the associated bundle to the authenticated user",
+        "operationId" : "redeemPass"
       }
     },
     "/hmrc/vat/obligation" : {
