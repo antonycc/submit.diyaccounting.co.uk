@@ -320,33 +320,15 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   const currentBundles = await getUserBundles(userId);
 
-  // Hard rule: each bundle can only be allocated once per user.
-  // Exception: if the existing bundle is expired, delete it and grant a fresh one.
+  // If the user already has this bundle, remove it and grant a fresh one.
+  // This handles: expired bundles, partially consumed tokens from previous passes,
+  // and re-redemption of a new pass for the same bundle type.
   const existingBundle = currentBundles.find((bundle) => bundle?.bundleId === requestedBundle);
   if (existingBundle) {
-    const now = new Date();
-    const isExpired = existingBundle.expiry && new Date(existingBundle.expiry) < now;
-
-    if (isExpired) {
-      logger.info({ message: "Existing bundle is expired, removing before fresh grant", requestedBundle, expiry: existingBundle.expiry });
-      await deleteBundle(userId, requestedBundle);
-      const idx = currentBundles.indexOf(existingBundle);
-      if (idx !== -1) currentBundles.splice(idx, 1);
-    } else {
-      logger.info({ message: "User already has requested bundle (not expired):", requestedBundle });
-      emitCapMetric("BundleAlreadyGranted", requestedBundle);
-      const result = {
-        status: "already_granted",
-        message: "Bundle already granted to user",
-        bundles: currentBundles,
-        granted: false,
-        statusCode: 201,
-      };
-      if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-        await putAsyncRequest(userId, requestId, "completed", result);
-      }
-      return result;
-    }
+    logger.info({ message: "Removing existing bundle before fresh grant", requestedBundle, expiry: existingBundle.expiry });
+    await deleteBundle(userId, requestedBundle);
+    const idx = currentBundles.indexOf(existingBundle);
+    if (idx !== -1) currentBundles.splice(idx, 1);
   }
 
   const catalogBundle = getCatalogBundle(requestedBundle);
@@ -403,7 +385,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   // Global bundle capacity cap enforcement via atomic counter table.
   // The cap field is a GLOBAL limit on active (non-expired) allocations across ALL users.
-  // The already_granted check above prevents duplicates, so this only fires for new allocations.
+  // Existing bundles are deleted and re-granted above, so this fires for every allocation.
   const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
   let capIncremented = false;
   if (typeof cap === "number" && process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME) {

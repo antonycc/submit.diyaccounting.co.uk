@@ -110,7 +110,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       expect(body.status).toBe("granted");
     });
 
-    it("should return already_granted when same user requests same bundle again", async () => {
+    it("should re-grant when same user requests same bundle again", async () => {
       const token = makeJWT("cap-unique-user-2");
       const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
 
@@ -118,12 +118,12 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       const res1 = await bundlePostHandler(event);
       expect(JSON.parse(res1.body).status).toBe("granted");
 
-      // Second request - already_granted (not a duplicate allocation)
+      // Second request - existing bundle deleted and re-granted with fresh tokens
       const res2 = await bundlePostHandler(event);
       const body2 = JSON.parse(res2.body);
       expect(res2.statusCode).toBe(201);
-      expect(body2.status).toBe("already_granted");
-      expect(body2.granted).toBe(false);
+      expect(body2.status).toBe("granted");
+      expect(body2.granted).toBe(true);
     });
 
     it("should allow same user to have different bundle types", async () => {

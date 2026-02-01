@@ -234,8 +234,16 @@
           // Clear URL parameters
           window.history.replaceState({}, document.title, window.location.pathname);
 
-          // Redirect to bundles page or home
-          window.location.href = "../index.html";
+          // Redirect to stored return URL (e.g. bundles.html?pass=CODE) or home
+          let redirectUrl = "../index.html";
+          try {
+            const postLoginRedirect = sessionStorage.getItem("postLoginRedirect");
+            if (postLoginRedirect) {
+              sessionStorage.removeItem("postLoginRedirect");
+              redirectUrl = "../" + postLoginRedirect;
+            }
+          } catch {}
+          window.location.href = redirectUrl;
         } catch (error) {
           console.error("Authentication callback error:", error);
           showStatus(`Authentication failed: ${error.message}`, "error");

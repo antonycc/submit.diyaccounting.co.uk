@@ -645,7 +645,10 @@
           if (getIdToken()) {
             redeemPassCode(passFromUrl.trim().toLowerCase());
           } else {
-            try { sessionStorage.setItem("pendingPass", passFromUrl); } catch {}
+            try {
+              sessionStorage.setItem("pendingPass", passFromUrl);
+              sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(passFromUrl));
+            } catch {}
             showPassStatus("Please log in to redeem your pass.", "info");
           }
         } else {

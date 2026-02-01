@@ -197,7 +197,7 @@ describe("System: pass creation and redemption", () => {
       expect(res.statusCode).toBe(200);
       expect(body.redeemed).toBe(true);
       expect(body.bundleId).toBe("test");
-      expect(body.grantStatus).toMatch(/granted|already_granted/);
+      expect(body.grantStatus).toBe("granted");
     });
 
     it("should verify bundle appears in user bundles after redemption", async () => {

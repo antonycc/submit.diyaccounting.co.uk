@@ -189,6 +189,8 @@
     sessionStorage.removeItem("cognito_oauth_state");
     sessionStorage.removeItem("traceparent");
     sessionStorage.removeItem("mfaMetadata");
+    sessionStorage.removeItem("pendingPass");
+    sessionStorage.removeItem("postLoginRedirect");
 
     // Update login status
     updateLoginStatus();

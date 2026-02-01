@@ -71,23 +71,23 @@ describe("System: account/bundlePost high-level behaviours", () => {
     expect(body.error).toMatch(/Missing bundleId/i);
   });
 
-  it("returns already_granted when user already has the bundle", async () => {
+  it("re-grants bundle when user already has it (fresh tokens)", async () => {
     const { ingestHandler } = await import("@app/functions/account/bundlePost.js");
     const { updateUserBundles } = await import("@app/services/bundleManagement.js");
     const token = makeIdToken("test-sub");
     const expiry = new Date(Date.now() + 3600_000).toISOString();
-    await updateUserBundles("test-sub", [{ bundleId: "guest", expiry }]);
+    await updateUserBundles("test-sub", [{ bundleId: "test", expiry }]);
     const event = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/bundle",
       headers: { Authorization: `Bearer ${token}` },
-      body: { bundleId: "guest" },
+      body: { bundleId: "test" },
     });
     const res = await ingestHandler(event);
     expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.body);
-    expect(body.status).toBe("already_granted");
-    expect(body.granted).toBe(false);
+    expect(body.status).toBe("granted");
+    expect(body.granted).toBe(true);
   });
 
   it("returns 400 unknown_qualifier when unexpected qualifier is provided", async () => {
