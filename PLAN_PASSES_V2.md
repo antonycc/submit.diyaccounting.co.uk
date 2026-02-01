@@ -447,7 +447,52 @@ A scheduled Lambda corrects counter drift from expired allocations that haven't 
   - Test reconciliation: manually expire allocations, run reconciliation, verify counter decremented
 - [ ] System test setup: create a local capacity table alongside the bundles table in dynalite
 
-#### 2.9.8 Performance considerations
+#### 2.9.8 Metrics and dashboard
+
+Custom CloudWatch metrics emitted from application code to a `Submit/BundleCapacity` namespace, displayed in the existing `{resourceNamePrefix}-operations` dashboard (ObservabilityStack).
+
+**Metrics emitted from `bundlePost.js`:**
+
+| Metric | Type | Dimensions | When |
+|--------|------|------------|------|
+| `BundleGranted` | Count | bundleId | New allocation granted |
+| `BundleAlreadyGranted` | Count | bundleId | Duplicate request (renewal) |
+| `BundleCapReached` | Count | bundleId | Rejected — cap full |
+
+**Metrics emitted from reconciliation Lambda:**
+
+| Metric | Type | Dimensions | When |
+|--------|------|------------|------|
+| `BundleActiveAllocations` | Gauge | bundleId | Every reconciliation run (per capped bundle) |
+
+**Dashboard changes** (`ObservabilityStack.java`):
+
+- [ ] Add new Row 5 (shift existing rows 5-7 down): "Bundle Allocations (all deployments)"
+  - Left widget: `BundleGranted` vs `BundleCapReached` stacked area chart (1-hour sum)
+  - Right widget: `BundleActiveAllocations` line chart per bundleId (5-minute period) with horizontal annotation at cap value
+- [ ] Use `Metric.Builder` with the `Submit/BundleCapacity` namespace and `bundleId` dimension
+
+**Implementation in bundlePost.js:**
+
+- [ ] Use `@aws-sdk/client-cloudwatch` `PutMetricDataCommand` to emit metrics
+  - Or use embedded metric format (EMF) via structured `console.log` for zero-latency emission (CloudWatch extracts metrics from logs automatically)
+  - EMF preferred: no extra API call on the hot path, no added latency
+  ```javascript
+  console.log(JSON.stringify({
+    "_aws": { "Timestamp": Date.now(), "CloudWatchMetrics": [{
+      "Namespace": "Submit/BundleCapacity",
+      "Dimensions": [["bundleId"]],
+      "Metrics": [{ "Name": "BundleGranted", "Unit": "Count" }]
+    }]},
+    "bundleId": "day-guest",
+    "BundleGranted": 1
+  }));
+  ```
+- [ ] EMF requires no SDK import, no async call, and costs ~$0.30/month for 4 custom metrics
+
+**Cost**: ~$0.30/month for 4 custom metrics (first 10 metrics free in most regions), $0 additional for EMF log-based extraction.
+
+#### 2.9.9 Performance considerations
 
 - The GET /api/v1/bundle endpoint has **provisioned concurrency**, so the extra catalogue merge and `BatchGetItem` on the capacity table are acceptable
 - Grant path adds one conditional `UpdateItem` (1 WCU, <5ms) — negligible overhead
@@ -455,13 +500,13 @@ A scheduled Lambda corrects counter drift from expired allocations that haven't 
 - The capacity boolean is computed per-request from the counter table (not cached) to ensure freshness within the 5-minute reconciliation window
 - Cap enforcement is **hard** — the atomic conditional update prevents over-allocation even under high concurrency
 
-#### 2.9.9 Files changed
+#### 2.9.10 Files changed
 
 | File | Change |
 |------|--------|
-| `app/functions/account/bundlePost.js` | Replace per-user cap placeholder with atomic counter check |
+| `app/functions/account/bundlePost.js` | Replace per-user cap placeholder with atomic counter check; emit EMF metrics |
 | `app/functions/account/bundleGet.js` | Merge catalogue bundles into response, add `bundleCapacityAvailable` from counter |
-| `app/functions/account/bundleCapacityReconcile.js` | **New** — reconciliation Lambda |
+| `app/functions/account/bundleCapacityReconcile.js` | **New** — reconciliation Lambda; emit `BundleActiveAllocations` metric |
 | `app/services/productCatalog.js` | Helper to get catalogue bundle IDs with caps |
 | `app/data/dynamoDbBundleRepository.js` | (no change — counter uses separate table) |
 | `app/data/dynamoDbCapacityRepository.js` | **New** — CRUD for capacity counter table |
@@ -469,6 +514,7 @@ A scheduled Lambda corrects counter drift from expired allocations that haven't 
 | `web/public/bundles.html` | Show capacity availability messaging |
 | `infra/.../DataStack.java` | Add `{env}-submit-bundle-capacity` table |
 | `infra/.../AccountStack.java` | Add reconciliation Lambda + EventBridge Rule, wire capacity table to bundlePost/bundleGet |
+| `infra/.../ObservabilityStack.java` | Add "Bundle Allocations" dashboard row with grant/reject and capacity widgets |
 | `infra/.../SubmitEnvironmentCdkResourceTest.java` | Update resource count for new table + Lambda + EventBridge Rule |
 | `app/system-tests/bundleCapacity.system.test.js` | Extend with global cap, reconciliation, and availability tests |
 | `app/bin/dynamodb.js` | Add `ensureCapacityTableExists()` for system test setup |
@@ -919,6 +965,7 @@ Token tracking and display are built early (Phases 2-3) so the data layer is rea
 | `web/public/bundles.html` | 2.9, 3, 5, 6 | Capacity availability messaging, pass entry form, on-pass filtering, token display, campaign UI |
 | `web/public/submit.catalogue.toml` | - | Already configured (source of truth) |
 | `app/services/productCatalog.js` | 2.9 | Helper to get catalogue bundle IDs with caps |
+| `infra/.../ObservabilityStack.java` | 2.9 | Add "Bundle Allocations" dashboard row |
 | `infra/.../SubmitEnvironmentCdkResourceTest.java` | 2.9 | Update resource count for capacity table + reconciliation Lambda |
 | `app/system-tests/bundleCapacity.system.test.js` | 2.9 | Extend with global cap, reconciliation, availability tests |
 | `app/bin/dynamodb.js` | 2.9 | Add `ensureCapacityTableExists()` for system test setup |
