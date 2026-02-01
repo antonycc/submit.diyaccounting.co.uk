@@ -151,21 +151,24 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     //    addedLocator = specificAdded;
     //  }
     //}
-    if (await addedLocator.isVisible({ timeout: 32000 })) {
-      console.log(`${bundleName} bundle already present, skipping request.`);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
-      return;
-    } else {
-      console.log(`${bundleName} bundle not present, requesting...`);
-    }
     // Check if the "Request" button exists (it won't for on-pass bundles).
-    // If the button exists, use the UI flow. Otherwise, fall back to pass API.
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
     const requestBtnLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-    if (await requestBtnLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const isRequestable = await requestBtnLocator.isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (isRequestable) {
+      // Requestable bundles: skip if already present
+      if (await addedLocator.isVisible({ timeout: 32000 })) {
+        console.log(`${bundleName} bundle already present, skipping request.`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
+        return;
+      }
+      console.log(`${bundleName} bundle not present, requesting via UI...`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
       await requestBundle(page, bundleName, screenshotPath);
     } else {
-      console.log(`"Request ${bundleName}" button not visible (on-pass bundle), using pass API...`);
+      // On-pass bundles: always re-grant via pass API to ensure fresh tokens
+      console.log(`"Request ${bundleName}" button not visible (on-pass bundle), using pass API for fresh grant...`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
       const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
       await ensureBundleViaPassApi(page, bundleId, screenshotPath);
     }
