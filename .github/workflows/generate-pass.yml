@@ -345,4 +345,19 @@ jobs:
             echo "| Email restricted | Yes |" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Pass codes are available in the workflow artifacts." >> $GITHUB_STEP_SUMMARY
+
+          # Read generated passes and display actual codes with clickable URLs
+          echo "### Generated Passes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Code | URL | Valid Until | Max Uses |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----|-------------|----------|" >> $GITHUB_STEP_SUMMARY
+          node --input-type=module -e "
+            import fs from 'fs';
+            const passes = JSON.parse(fs.readFileSync('passes-output.json', 'utf-8'));
+            const host = '${{ needs.names.outputs.pass-url-host }}';
+            for (const pass of passes) {
+              const url = 'https://' + host + '/bundles.html?pass=' + pass.code;
+              const validUntil = pass.validUntil || 'unlimited';
+              console.log('| \`' + pass.code + '\` | [' + url + '](' + url + ') | ' + validUntil + ' | ' + pass.maxUses + ' |');
+            }
+          " >> $GITHUB_STEP_SUMMARY
