@@ -391,30 +391,34 @@ export async function ingestHandler(event) {
     });
   }
 
-  // Token enforcement: consume 1 token for VAT submission (the "value action")
-  const activityId = hmrcAccount === "sandbox" ? "submit-vat-sandbox" : "submit-vat";
-  try {
-    const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
-    const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
-    const catalog = loadCatalogFromRoot();
-    const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
-    if (!tokenResult.consumed) {
-      logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
-      return http403ForbiddenResponse({
+  const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
+
+  // Token enforcement: consume 1 token for VAT submission (the "value action") — initial request only
+  if (isInitialRequest) {
+    const activityId = hmrcAccount === "sandbox" ? "submit-vat-sandbox" : "submit-vat";
+    try {
+      const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
+      const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
+      const catalog = loadCatalogFromRoot();
+      const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
+      if (!tokenResult.consumed) {
+        logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
+        return http403ForbiddenResponse({
+          request,
+          headers: responseHeaders,
+          message: "Token limit reached",
+          error: { reason: "tokens_exhausted", tokensRemaining: 0 },
+        });
+      }
+      logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
+    } catch (error) {
+      logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
+      return http500ServerErrorResponse({
         request,
-        headers: responseHeaders,
-        message: "Token limit reached",
-        error: { reason: "tokens_exhausted", tokensRemaining: 0 },
+        headers: { ...responseHeaders },
+        message: "Token enforcement failed",
       });
     }
-    logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
-  } catch (error) {
-    logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Token enforcement failed",
-    });
   }
 
   const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
@@ -435,8 +439,6 @@ export async function ingestHandler(event) {
     traceparent,
     correlationId,
   };
-
-  const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
   let persistedRequest = null;
   if (!isInitialRequest) {
     persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);

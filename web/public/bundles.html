@@ -560,6 +560,12 @@
               __userBundles.push(body.bundleId);
             }
             invalidate("/api/v1/bundle");
+            // Clear persistent bundle cache so fetchUserBundles hits the API
+            try {
+              const uij = localStorage.getItem("userInfo");
+              const uid = uij && JSON.parse(uij)?.sub;
+              if (uid) await window.bundleCache.clearBundles(uid);
+            } catch {}
             // Refresh full bundle data
             await fetchUserBundles();
             try { renderCurrentBundles(); } catch {}
