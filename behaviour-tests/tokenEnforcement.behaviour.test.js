@@ -199,16 +199,16 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 3: Verify initial token count (3)
+  // STEP 3: Verify initial token count (10 — from catalogue)
   // ============================================================
-  await test.step("Verify initial token count is 3", async () => {
+  await test.step("Verify initial token count is 10", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 3: Verify initial tokens = 3");
+    console.log("STEP 3: Verify initial tokens = 10");
     console.log("=".repeat(60));
 
     const initialTokens = await getTokensRemaining(page, "test");
     console.log(`Initial tokens remaining: ${initialTokens}`);
-    expect(initialTokens).toBe(3);
+    expect(initialTokens).toBe(10);
 
     // Also extract userSub for later use
     userSub = await extractUserSub(page);
@@ -257,11 +257,11 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 5: Verify token consumed (2 remaining)
+  // STEP 5: Verify token consumed (9 remaining)
   // ============================================================
-  await test.step("Verify token consumed - 2 remaining", async () => {
+  await test.step("Verify token consumed - 9 remaining", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 5: Verify tokens = 2");
+    console.log("STEP 5: Verify tokens = 9");
     console.log("=".repeat(60));
 
     await goToHomePageUsingMainNav(page, screenshotPath);
@@ -269,7 +269,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
 
     const tokensAfterSubmission = await getTokensRemaining(page, "test");
     console.log(`Tokens remaining after submission: ${tokensAfterSubmission}`);
-    expect(tokensAfterSubmission).toBe(2);
+    expect(tokensAfterSubmission).toBe(9);
 
     // UI token display may be stale due to ~5 min bundleCache TTL; log but don't assert
     const bundleInfo = page.locator("#currentBundles");
@@ -287,14 +287,17 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log("STEP 6: Exhaust remaining tokens");
     console.log("=".repeat(60));
 
-    // Consume remaining 2 tokens directly via the repository
-    const result1 = await consumeToken(userSub, "test");
-    console.log(`Consumed token 2: remaining=${result1.tokensRemaining}`);
-    expect(result1.consumed).toBe(true);
-
-    const result2 = await consumeToken(userSub, "test");
-    console.log(`Consumed token 3: remaining=${result2.tokensRemaining}`);
-    expect(result2.consumed).toBe(true);
+    // Consume all remaining tokens directly via the repository
+    let remaining = 9; // 10 initial minus 1 consumed by VAT submission
+    let consumed = 0;
+    while (remaining > 0) {
+      const result = await consumeToken(userSub, "test");
+      consumed++;
+      remaining = result.tokensRemaining;
+      console.log(`Consumed token ${consumed + 1}: remaining=${remaining}`);
+      expect(result.consumed).toBe(true);
+    }
+    console.log(`Exhausted all tokens (consumed ${consumed} directly)`);
 
     // Verify 0 tokens remaining via API
     const tokensAfterExhaust = await getTokensRemaining(page, "test");

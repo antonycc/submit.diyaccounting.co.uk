@@ -21,7 +21,7 @@ display = "on-pass"
 # 5. Change all behaviour tests to use passes to get test bundlesand turn on on-pass enforcement
 allocation = "on-request"
 timeout = "P1D"
-tokens = 3
+tokens = 10
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
@@ -45,7 +45,7 @@ listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC
-tokens = 3
+tokens = 10
 # tokens
 # ======
 # Number of HMRC API tokens allocated with this bundle
