@@ -309,6 +309,10 @@ header {
   font-size: var(--font-size-sm);
 }
 
+.auth-section > .entitlement-status {
+  display: none;
+}
+
 .entitlement-status.status-granted {
   color: var(--color-success);
 }

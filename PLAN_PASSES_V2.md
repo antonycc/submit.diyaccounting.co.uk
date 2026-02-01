@@ -15,6 +15,17 @@ This plan delivers three interrelated features in layered phases, building from 
 | **Tokens** | `tokens`, `tokensGranted`, `tokenRefreshInterval` | Metered HMRC API usage per bundle |
 | **Campaign** | (new) | User-issued passes, referral tracking, sign-up incentives |
 
+Complete new user pass journey
+
+1. User clicks pass URL → bundles.html?pass=alpha-bravo-charlie-delta
+2. Not logged in → pendingPass + postLoginRedirect stored in sessionStorage
+3. Message: "Please log in to redeem your pass."
+4. User clicks "Log in" → Cognito OAuth flow
+5. Callback checks postLoginRedirect → redirects to bundles.html?pass=alpha-bravo-charlie-delta
+6. bundles.html loads, user now authenticated, ?pass=CODE detected → auto-redeems
+7. Bundle granted, pass code cleared from URL and sessionStorage
+
+
 ## What Already Exists
 
 | Component | Status |
@@ -874,6 +885,16 @@ Note: Plan mentions separate `passErrors.spec.js` — the error cases (exhausted
 | Document generate-pass.yml for admin use | Not done | Workflow inputs/outputs/environment selection |
 | Validate HMRC production credentials | Not done | Trial user submits real VAT return |
 | Remove `listedInEnvironments` from day-guest | Not done | Blocked by HMRC credential validation |
+
+#### Token usage screen (planned)
+
+A dedicated token usage area will replace the header token count with:
+- **Token sources table**: Bundles that provide tokens (bundle name, tokens granted, tokens remaining, expiry)
+- **Token consumption table**: Activities that consumed tokens (activity, timestamp, tokens used)
+- A reload button to refresh token data
+- This will be a section on bundles.html or a standalone page
+
+Currently, the header shows a simple "N tokens" count with a refresh button. This is a temporary measure until the full token usage screen is built.
 
 Sections 5.5 (Pass admin UI) and 5.6 (QR code generation) moved to `_developers/backlog/PLAN_PASSES_V2-PART-2.md`.
 
