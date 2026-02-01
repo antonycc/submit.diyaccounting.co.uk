@@ -32,6 +32,7 @@ on:
         options:
           - 'bundleBehaviour'
           - 'passRedemptionBehaviour'
+          - 'tokenEnforcementBehaviour'
           - 'postVatReturnBehaviour'
           - 'getVatObligationsBehaviour'
           - 'getVatReturnBehaviour'

@@ -17,6 +17,7 @@ export default defineConfig({
         "**/postVatReturnFraudPreventionHeaders.behaviour.test.js",
         "**/getVatObligations.behaviour.test.js",
         "**/passRedemption.behaviour.test.js",
+        "**/tokenEnforcement.behaviour.test.js",
       ],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
@@ -117,6 +118,14 @@ export default defineConfig({
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 300_000,
+    },
+    {
+      name: "tokenEnforcementBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/tokenEnforcement.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 600_000,
     },
     {
       name: "simulatorBehaviour",
