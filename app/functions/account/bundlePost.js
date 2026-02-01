@@ -297,7 +297,8 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   const currentBundles = await getUserBundles(userId);
 
-  // currentBundles are objects like { bundleId, expiry }. Ensure we compare by bundleId
+  // Hard rule: each bundle can only be allocated once per user.
+  // Renewal refreshes the existing allocation's expiry rather than creating a duplicate.
   const hasBundle = currentBundles.some((bundle) => bundle?.bundleId === requestedBundle);
   if (hasBundle) {
     logger.info({ message: "User already has requested bundle:", requestedBundle });
@@ -366,9 +367,20 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
     logger.info({ message: "[Catalog bundle] Bundle requires manual allocation, proceeding:", requestedBundle });
   }
 
-  // on-request: enforce cap and expiry
+  // on-request: enforce global bundle capacity cap
+  // The cap field represents a GLOBAL limit on the total number of active (non-expired)
+  // allocations of this bundle across ALL users. When all cap slots are taken, the bundle
+  // is unavailable until an allocation expires and returns to the pool.
+  // Each user can hold at most one of each bundle (enforced by the already_granted check above).
+  // Renewal refreshes the existing allocation's expiry rather than creating a duplicate.
+  //
+  // TODO (Phase 2.9): Replace this per-user placeholder with a global count.
+  // The current check is per-user and effectively a no-op (already_granted catches duplicates).
+  // Phase 2.9 will implement an efficient global allocation counter (GSI or atomic counter)
+  // and expose bundleCapacityAvailable in the GET /api/v1/bundle response.
   const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
   if (typeof cap === "number") {
+    // Placeholder: per-user count. Phase 2.9 replaces with global active allocation count.
     const currentCount = currentBundles.filter((b) => b.bundleId === requestedBundle).length;
     if (currentCount >= cap) {
       logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });

@@ -27,6 +27,8 @@ This plan delivers three interrelated features in layered phases, building from 
 | `DataStack.java` - Bundles table in DynamoDB | Implemented |
 | `bundles.html` - bundle management UI | Implemented |
 | `allocation = "on-request"` and `"automatic"` flows | Implemented |
+| Per-user bundle uniqueness (one of each type per user) | Implemented |
+| Bundle `cap` field (global capacity limit) | Placeholder (per-user no-op); Phase 2.9 |
 | Token/credit fields in catalogue | Documented but not enforced |
 | `display = "on-pass"` in catalogue | Documented but not enforced |
 | `allocation = "on-email-match"` in catalogue | Documented but not enforced |
@@ -271,6 +273,106 @@ Token balances are tracked alongside bundles so the data layer is ready before e
 - [ ] Add `GET /api/v1/pass` route to local Express server
 - [ ] Add `POST /api/v1/pass` route to local Express server
 - [ ] Add `POST /api/v1/pass/admin` route to local Express server (admin-only)
+
+### 2.9 Bundle capacity (global cap enforcement & availability API)
+
+**Intent**: The `cap` field on a catalogue bundle is a **global** limit — the maximum number of active (non-expired) allocations of that bundle across **all** users at any point in time. When a bundle's timeout expires, that slot returns to the pool for another user.
+
+**Hard-wired rules** (already implemented):
+- Each user can hold at most **one** of each bundle type — the `already_granted` check in `bundlePost.js` prevents duplicates
+- Bundle renewal refreshes the existing allocation's expiry rather than creating a new record
+
+#### 2.9.1 Global allocation counting
+
+The current cap check in `bundlePost.js` is a per-user placeholder that is effectively a no-op (the already_granted check catches duplicates before the cap check runs). Replace with global counting:
+
+- [ ] Add a **GSI or dedicated counter** for efficient global cap queries without full table scans
+  - Option A: GSI on `bundleId` (PK) + `ttl` (SK) — query active allocations where `ttl > now`
+  - Option B: Atomic counter record per bundleId (`pk = "cap#day-guest"`, `activeCount: N`) updated on grant/expiry
+  - Option A preferred for accuracy (expired records auto-cleaned by DynamoDB TTL);
+- [ ] Update `grantBundle()` in `bundlePost.js`: before granting, query active allocation count for the requested bundleId; if `count >= cap`, return `cap_reached` (403)
+- [ ] Add `DataStack.java` changes if GSI approach chosen (add GSI to bundles table)
+- [ ] Handle race conditions: use `ConditionExpression` on the counter increment or accept eventual consistency on the GSI query (cap is soft — a brief over-allocation during high concurrency is acceptable)
+
+#### 2.9.2 GET /api/v1/bundle response changes
+
+Extend the bundles API response to include **all catalogue bundles** (not just the user's allocations), so the UI can show availability:
+
+- [ ] `bundleGet.js`: load the catalogue (`loadCatalogFromRoot()`) and merge with user's current bundles
+- [ ] Response becomes the **union** of user's allocated bundles and catalogue bundles:
+  ```json
+  {
+    "bundles": [
+      {
+        "bundleId": "test",
+        "expiry": "2026-02-01T00:00:00.000Z",
+        "hashedSub": "abc...",
+        "createdAt": "2026-01-31T20:52:50.772Z",
+        "ttl": 1772323200,
+        "ttl_datestamp": "2026-03-01T00:00:00.000Z",
+        "bundleCapacityAvailable": true
+      },
+      {
+        "bundleId": "day-guest",
+        "bundleCapacityAvailable": false
+      },
+      {
+        "bundleId": "invited-guest",
+        "bundleCapacityAvailable": true
+      }
+    ]
+  }
+  ```
+- [ ] User's allocated bundles: full record (createdAt, hashedSub, ttl, expiry, ttl_datestamp) + `bundleCapacityAvailable`
+- [ ] Unallocated catalogue bundles: only `bundleId` and `bundleCapacityAvailable: true/false`
+- [ ] `bundleCapacityAvailable` is a boolean — no exact count exposed (the catalogue is public so the cap number can be inferred, but real-time take-up should not encourage scraping)
+- [ ] Bundles with no `cap` field always have `bundleCapacityAvailable: true`
+- [ ] Consumer filtering: existing code that consumes the bundles response and only cares about the user's current bundles should filter on `expiry` being in the future and `hashedSub` matching the logged-in user's session
+
+#### 2.9.3 UI availability messaging
+
+- [ ] `bundles.html`: use `bundleCapacityAvailable` to control button state
+  - `true` + not allocated → show "Request {BundleName}" button as normal
+  - `false` + not allocated → show "{BundleName}" button disabled with annotation: "Global user limit reached, please try again tomorrow"
+  - Already allocated → show "Added ✓ {BundleName}" (existing behaviour)
+- [ ] No change needed for activities — they are gated by bundle entitlement, not capacity
+
+#### 2.9.4 DynamoDB table changes
+
+- [ ] If GSI approach: add GSI `bundleId-ttl-index` to bundles table in `DataStack.java`
+- [ ] If counter approach: no table change needed (counter records use existing PK)
+- [ ] Ensure `SubmitEnvironmentCdkResourceTest.java` resource count is updated if GSI added
+
+#### 2.9.5 System tests
+
+- [ ] `app/system-tests/bundleCapacity.system.test.js`:
+  - Allocate bundles to multiple users up to cap, verify next allocation returns `cap_reached`
+  - Verify expired allocations don't count against cap (set past expiry, re-query)
+  - Verify `bundleCapacityAvailable` is `true`/`false` in GET response based on global count
+  - Verify bundles with no cap always show `bundleCapacityAvailable: true`
+  - Verify uniqueness: same user requesting same bundle twice gets `already_granted`
+  - Verify response includes unallocated catalogue bundles with just `bundleId` and `bundleCapacityAvailable`
+
+#### 2.9.6 Performance considerations
+
+- The GET /api/v1/bundle endpoint has **provisioned concurrency**, so the extra catalogue merge and capacity check are acceptable
+- A whole-table count is expensive — the GSI or counter approach avoids scanning the entire bundles table
+- Cap enforcement is **soft** — a brief over-allocation during concurrent requests is acceptable; the TTL-based expiry ensures slots eventually free up
+- The capacity boolean is computed per-request (not cached) to ensure freshness
+
+#### Files changed
+
+| File | Change |
+|------|--------|
+| `app/functions/account/bundlePost.js` | Replace per-user cap check with global allocation query |
+| `app/functions/account/bundleGet.js` | Merge catalogue bundles into response, add `bundleCapacityAvailable` |
+| `app/services/productCatalog.js` | May need helper to get all catalogue bundle IDs with caps |
+| `app/data/dynamoDbBundleRepository.js` | Add `getActiveAllocationCount(bundleId)` query (GSI or counter) |
+| `web/public/submit.catalogue.toml` | Comments updated (already done) |
+| `web/public/bundles.html` | Show capacity availability messaging |
+| `infra/.../DataStack.java` | Add GSI if chosen (or no change for counter approach) |
+| `infra/.../SubmitEnvironmentCdkResourceTest.java` | Update resource count if GSI added |
+| `app/system-tests/bundleCapacity.system.test.js` | New system test file |
 
 ### Validation
 

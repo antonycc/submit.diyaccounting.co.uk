@@ -1613,6 +1613,33 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-bundle:
+    if: ${{ !cancelled() }}
+    name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - names
+      - set-origins
+      - deploy-publish
+      - enable-native-auth
+      - verify-api
+      - web-test-auth
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'bundleBehaviour'
+      generate-test-reports: 'true'
+      skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+
   web-test:
     if: ${{ !cancelled() }}
     name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
@@ -1621,7 +1648,7 @@ jobs:
       - set-origins
       - deploy-publish
       - enable-native-auth
-      - web-test-auth
+      - web-test-bundle
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1831,6 +1858,31 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'vatSchemesBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-toggle: 'true'
+      test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
+      test-auth-password: ${{ needs.enable-native-auth.outputs.test-auth-password }}
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-help:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'helpBehaviour'
       generate-test-reports: 'false'
       skip-native-auth-toggle: 'true'
       test-auth-username: ${{ needs.enable-native-auth.outputs.test-auth-username }}
