@@ -1,0 +1,1999 @@
+# Stripe API - Payment Integration Subset
+# This is a lightweight subset of the full Stripe OpenAPI 3.0 spec containing
+# ONLY the endpoints and schemas relevant to our payment integration.
+#
+# Full spec (161K lines): stripe-api-spec3.yaml
+# See https://stripe.com/docs/api for complete documentation.
+#
+# Endpoints included:
+#   - POST   /v1/checkout/sessions          (create checkout session)
+#   - GET    /v1/checkout/sessions/{session} (retrieve checkout session - combined in /v1/checkout/sessions)
+#   - POST   /v1/billing_portal/sessions    (create portal session)
+#   - GET    /v1/subscriptions/{subscription_exposed_id} (retrieve subscription)
+#   - GET    /v1/subscriptions              (list subscriptions)
+#   - POST   /v1/webhook_endpoints          (register webhook endpoint)
+#
+# Webhook events covered:
+#   checkout.session.completed, invoice.paid, invoice.payment_failed,
+#   customer.subscription.updated, customer.subscription.deleted,
+#   charge.refunded, charge.dispute.created
+
+openapi: 3.0.3
+info:
+  title: Stripe API - Payment Integration Subset
+  description: >-
+    Subset of the Stripe REST API covering checkout sessions, billing portal,
+    subscriptions, and webhook endpoints used by our payment integration.
+    See https://stripe.com/docs/api for complete details.
+  version: 2026-01-28.clover
+  contact:
+    email: dev-platform@stripe.com
+    name: Stripe Dev Platform Team
+    url: https://stripe.com
+  termsOfService: https://stripe.com/us/terms/
+
+servers:
+  - url: https://api.stripe.com/
+
+security:
+  - basicAuth: []
+  - bearerAuth: []
+
+paths:
+  # ──────────────────────────────────────────────────────────────────────
+  # Checkout Sessions
+  # ──────────────────────────────────────────────────────────────────────
+  /v1/checkout/sessions:
+    get:
+      summary: List all Checkout Sessions
+      operationId: GetCheckoutSessions
+      description: <p>Returns a list of Checkout Sessions.</p>
+      parameters:
+        - name: customer
+          in: query
+          description: Only return the Checkout Sessions for the Customer specified.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: subscription
+          in: query
+          description: Only return the Checkout Session for the subscription specified.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: payment_intent
+          in: query
+          description: Only return the Checkout Session for the PaymentIntent specified.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: status
+          in: query
+          description: Only return the Checkout Sessions matching the given status.
+          required: false
+          schema:
+            enum: [complete, expired, open]
+            type: string
+        - name: limit
+          in: query
+          description: A limit on the number of objects to be returned (1-100, default 10).
+          required: false
+          schema:
+            type: integer
+        - name: starting_after
+          in: query
+          description: Cursor for pagination - object ID to start after.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: ending_before
+          in: query
+          description: Cursor for pagination - object ID to end before.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: expand
+          in: query
+          description: Specifies which fields in the response should be expanded.
+          required: false
+          explode: true
+          schema:
+            type: array
+            items:
+              maxLength: 5000
+              type: string
+          style: deepObject
+        - name: created
+          in: query
+          description: Only return Checkout Sessions created during the given date interval.
+          required: false
+          schema:
+            anyOf:
+              - properties:
+                  gt: { type: integer }
+                  gte: { type: integer }
+                  lt: { type: integer }
+                  lte: { type: integer }
+                type: object
+              - type: integer
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                title: PaymentPagesCheckoutSessionList
+                required: [data, has_more, object, url]
+                properties:
+                  object:
+                    type: string
+                    enum: [list]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/checkout.session'
+                  has_more:
+                    type: boolean
+                    description: True if this list has another page of items.
+                  url:
+                    type: string
+                    maxLength: 5000
+        default:
+          description: Error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+    post:
+      summary: Create a Checkout Session
+      operationId: PostCheckoutSessions
+      description: <p>Creates a Checkout Session object.</p>
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            encoding:
+              line_items: { explode: true, style: deepObject }
+              metadata: { explode: true, style: deepObject }
+              subscription_data: { explode: true, style: deepObject }
+              expand: { explode: true, style: deepObject }
+              payment_method_types: { explode: true, style: deepObject }
+              discounts: { explode: true, style: deepObject }
+              automatic_tax: { explode: true, style: deepObject }
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                mode:
+                  description: >-
+                    The mode of the Checkout Session. Pass `subscription` if the
+                    Checkout Session includes at least one recurring item.
+                  enum: [payment, setup, subscription]
+                  type: string
+                success_url:
+                  description: >-
+                    URL the customer is redirected to after successful payment. Use
+                    `{CHECKOUT_SESSION_ID}` template variable to include the session ID.
+                  type: string
+                cancel_url:
+                  description: >-
+                    URL the customer is redirected to if they cancel. Not required
+                    for `ui_mode: embedded`.
+                  type: string
+                return_url:
+                  description: >-
+                    URL to redirect after payment for `ui_mode: embedded` or
+                    `ui_mode: custom`.
+                  type: string
+                customer:
+                  description: ID of an existing Customer, if one exists.
+                  maxLength: 5000
+                  type: string
+                customer_email:
+                  description: >-
+                    Pre-fill the customer's email address. If `customer` is set,
+                    this is ignored.
+                  type: string
+                customer_creation:
+                  description: Whether to create a Customer when the Session completes.
+                  enum: [always, if_required]
+                  type: string
+                client_reference_id:
+                  description: >-
+                    Unique string to reference the Checkout Session (e.g. cart ID,
+                    customer ID in your system).
+                  maxLength: 200
+                  type: string
+                line_items:
+                  description: >-
+                    A list of items the customer is purchasing. Required for
+                    `payment` and `subscription` modes.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      price:
+                        description: The ID of the Price object.
+                        maxLength: 5000
+                        type: string
+                      price_data:
+                        description: Data used to generate a new Price object inline.
+                        type: object
+                        properties:
+                          currency:
+                            type: string
+                          product:
+                            maxLength: 5000
+                            type: string
+                          product_data:
+                            type: object
+                            properties:
+                              name:
+                                maxLength: 5000
+                                type: string
+                              description:
+                                maxLength: 500
+                                type: string
+                              images:
+                                type: array
+                                items:
+                                  type: string
+                              metadata:
+                                type: object
+                                additionalProperties:
+                                  type: string
+                            required: [name]
+                          unit_amount:
+                            type: integer
+                          unit_amount_decimal:
+                            type: string
+                          recurring:
+                            type: object
+                            properties:
+                              interval:
+                                enum: [day, month, week, year]
+                                type: string
+                              interval_count:
+                                type: integer
+                            required: [interval]
+                        required: [currency]
+                      quantity:
+                        type: integer
+                      adjustable_quantity:
+                        type: object
+                        properties:
+                          enabled:
+                            type: boolean
+                          minimum:
+                            type: integer
+                          maximum:
+                            type: integer
+                        required: [enabled]
+                subscription_data:
+                  description: >-
+                    Configuration for subscription mode sessions. Applied to the
+                    subscription created.
+                  type: object
+                  properties:
+                    trial_period_days:
+                      type: integer
+                    metadata:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    description:
+                      maxLength: 500
+                      type: string
+                metadata:
+                  description: >-
+                    Key-value pairs attached to the Checkout Session. Appears in
+                    the `checkout.session.completed` webhook event.
+                  type: object
+                  additionalProperties:
+                    type: string
+                payment_method_types:
+                  description: >-
+                    A list of the types of payment methods (e.g., `card`) this
+                    Session is allowed to accept. If omitted, Stripe dynamically
+                    determines payment methods.
+                  type: array
+                  items:
+                    maxLength: 5000
+                    type: string
+                allow_promotion_codes:
+                  description: Enables user redeemable promotion codes.
+                  type: boolean
+                automatic_tax:
+                  description: Settings for automatic tax lookup for this session.
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                  required: [enabled]
+                billing_address_collection:
+                  description: Specify whether Checkout should collect the customer's billing address.
+                  enum: [auto, required]
+                  type: string
+                locale:
+                  description: >-
+                    The IETF language tag for the locale Checkout displays in.
+                    If blank or `auto`, the browser's locale is used.
+                  type: string
+                  # Full enum list in source spec - includes en, en-GB, fr, de, etc.
+                discounts:
+                  description: Coupons or promotion codes to apply.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      coupon:
+                        maxLength: 5000
+                        type: string
+                      promotion_code:
+                        maxLength: 5000
+                        type: string
+                ui_mode:
+                  description: The UI mode of the Session.
+                  enum: [custom, embedded, hosted]
+                  type: string
+                expand:
+                  description: Specifies which fields in the response should be expanded.
+                  type: array
+                  items:
+                    maxLength: 5000
+                    type: string
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/checkout.session'
+        default:
+          description: Error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  # Note: The full spec puts list + create on /v1/checkout/sessions.
+  # Retrieve is at /v1/checkout/sessions/{session} but the full spec
+  # combines GET on /v1/checkout/sessions (list). Retrieve by ID is here:
+  '/v1/checkout/sessions/{session}':
+    get:
+      summary: Retrieve a Checkout Session
+      operationId: GetCheckoutSessionsSession
+      description: <p>Retrieves a Checkout Session object.</p>
+      parameters:
+        - name: session
+          in: path
+          required: true
+          schema:
+            maxLength: 5000
+            type: string
+          style: simple
+        - name: expand
+          in: query
+          description: Specifies which fields in the response should be expanded.
+          required: false
+          explode: true
+          schema:
+            type: array
+            items:
+              maxLength: 5000
+              type: string
+          style: deepObject
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/checkout.session'
+        default:
+          description: Error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Billing Portal Sessions
+  # ──────────────────────────────────────────────────────────────────────
+  /v1/billing_portal/sessions:
+    post:
+      summary: Create a portal session
+      operationId: PostBillingPortalSessions
+      description: <p>Creates a session of the customer portal.</p>
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            encoding:
+              expand: { explode: true, style: deepObject }
+              flow_data: { explode: true, style: deepObject }
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                customer:
+                  description: The ID of an existing customer.
+                  maxLength: 5000
+                  type: string
+                configuration:
+                  description: >-
+                    The ID of an existing portal configuration to use. If not
+                    specified, the session uses the default configuration.
+                  maxLength: 5000
+                  type: string
+                return_url:
+                  description: >-
+                    The default URL to redirect customers to when they click on
+                    the portal's link to return to your website.
+                  type: string
+                locale:
+                  description: >-
+                    The IETF language tag. If blank or auto, the customer's
+                    `preferred_locales` or browser's locale is used.
+                  type: string
+                  # Full locale enum in source spec
+                on_behalf_of:
+                  description: The `on_behalf_of` account to use for this session.
+                  type: string
+                flow_data:
+                  description: >-
+                    Information about a specific flow for the customer to go through.
+                    See the docs for portal deep links and flows.
+                  type: object
+                  properties:
+                    type:
+                      enum:
+                        - payment_method_update
+                        - subscription_cancel
+                        - subscription_update
+                        - subscription_update_confirm
+                      type: string
+                    after_completion:
+                      type: object
+                      properties:
+                        type:
+                          enum: [hosted_confirmation, portal_homepage, redirect]
+                          type: string
+                        redirect:
+                          type: object
+                          properties:
+                            return_url:
+                              type: string
+                          required: [return_url]
+                      required: [type]
+                    subscription_cancel:
+                      type: object
+                      properties:
+                        subscription:
+                          maxLength: 5000
+                          type: string
+                      required: [subscription]
+                    subscription_update:
+                      type: object
+                      properties:
+                        subscription:
+                          maxLength: 5000
+                          type: string
+                      required: [subscription]
+                  required: [type]
+                expand:
+                  description: Specifies which fields in the response should be expanded.
+                  type: array
+                  items:
+                    maxLength: 5000
+                    type: string
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/billing_portal.session'
+        default:
+          description: Error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Subscriptions
+  # ──────────────────────────────────────────────────────────────────────
+  /v1/subscriptions:
+    get:
+      summary: List subscriptions
+      operationId: GetSubscriptions
+      description: >-
+        <p>By default, returns a list of subscriptions that have not been
+        canceled. In order to list canceled subscriptions, specify
+        <code>status=canceled</code>.</p>
+      parameters:
+        - name: customer
+          in: query
+          description: The ID of the customer whose subscriptions you're retrieving.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: price
+          in: query
+          description: Filter for subscriptions that contain this recurring price ID.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: status
+          in: query
+          description: >-
+            The status of the subscriptions to retrieve. Pass `all` for all
+            statuses. If no value is supplied, all non-canceled are returned.
+          required: false
+          schema:
+            enum:
+              - active
+              - all
+              - canceled
+              - ended
+              - incomplete
+              - incomplete_expired
+              - past_due
+              - paused
+              - trialing
+              - unpaid
+            type: string
+        - name: created
+          in: query
+          description: Only return subscriptions created during the given date interval.
+          required: false
+          schema:
+            anyOf:
+              - properties:
+                  gt: { type: integer }
+                  gte: { type: integer }
+                  lt: { type: integer }
+                  lte: { type: integer }
+                type: object
+              - type: integer
+        - name: current_period_end
+          in: query
+          description: Filter by current_period_end date interval.
+          required: false
+          schema:
+            anyOf:
+              - properties:
+                  gt: { type: integer }
+                  gte: { type: integer }
+                  lt: { type: integer }
+                  lte: { type: integer }
+                type: object
+              - type: integer
+        - name: current_period_start
+          in: query
+          description: Filter by current_period_start date interval.
+          required: false
+          schema:
+            anyOf:
+              - properties:
+                  gt: { type: integer }
+                  gte: { type: integer }
+                  lt: { type: integer }
+                  lte: { type: integer }
+                type: object
+              - type: integer
+        - name: collection_method
+          in: query
+          description: The collection method of the subscriptions to retrieve.
+          required: false
+          schema:
+            enum: [charge_automatically, send_invoice]
+            type: string
+        - name: limit
+          in: query
+          description: A limit on the number of objects to be returned (1-100, default 10).
+          required: false
+          schema:
+            type: integer
+        - name: starting_after
+          in: query
+          description: Cursor for pagination - object ID to start after.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: ending_before
+          in: query
+          description: Cursor for pagination - object ID to end before.
+          required: false
+          schema:
+            maxLength: 5000
+            type: string
+        - name: expand
+          in: query
+          description: Specifies which fields in the response should be expanded.
+          required: false
+          explode: true
+          schema:
+            type: array
+            items:
+              maxLength: 5000
+              type: string
+          style: deepObject
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                type: object
+                title: SubscriptionsSubscriptionList
+                required: [data, has_more, object, url]
+                properties:
+                  object:
+                    type: string
+                    enum: [list]
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/subscription'
+                  has_more:
+                    type: boolean
+                  url:
+                    type: string
+                    maxLength: 5000
+                    pattern: ^/v1/subscriptions
+        default:
+          description: Error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  '/v1/subscriptions/{subscription_exposed_id}':
+    get:
+      summary: Retrieve a subscription
+      operationId: GetSubscriptionsSubscriptionExposedId
+      description: <p>Retrieves the subscription with the given ID.</p>
+      parameters:
+        - name: subscription_exposed_id
+          in: path
+          required: true
+          schema:
+            maxLength: 5000
+            type: string
+          style: simple
+        - name: expand
+          in: query
+          description: Specifies which fields in the response should be expanded.
+          required: false
+          explode: true
+          schema:
+            type: array
+            items:
+              maxLength: 5000
+              type: string
+          style: deepObject
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/subscription'
+        default:
+          description: Error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Webhook Endpoints
+  # ──────────────────────────────────────────────────────────────────────
+  /v1/webhook_endpoints:
+    post:
+      summary: Create a webhook endpoint
+      operationId: PostWebhookEndpoints
+      description: >-
+        <p>A webhook endpoint must have a <code>url</code> and a list of
+        <code>enabled_events</code>. You may optionally specify the Boolean
+        <code>connect</code> parameter. If set to true, then a Connect webhook
+        endpoint that notifies the specified <code>url</code> about events from
+        all connected accounts is created; otherwise an account webhook endpoint
+        that notifies the specified <code>url</code> only about events from your
+        account is created.</p>
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            encoding:
+              enabled_events: { explode: true, style: deepObject }
+              expand: { explode: true, style: deepObject }
+              metadata: { explode: true, style: deepObject }
+            schema:
+              type: object
+              additionalProperties: false
+              required: [enabled_events, url]
+              properties:
+                url:
+                  description: The URL of the webhook endpoint.
+                  type: string
+                enabled_events:
+                  description: >-
+                    The list of events to enable. Use `['*']` to enable all
+                    events except those requiring explicit selection.
+                    Our integration uses: checkout.session.completed,
+                    invoice.paid, invoice.payment_failed,
+                    customer.subscription.updated,
+                    customer.subscription.deleted, charge.refunded,
+                    charge.dispute.created
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      # Subset - our integration events only.
+                      # Full list has 200+ events in source spec.
+                      - '*'
+                      - checkout.session.completed
+                      - checkout.session.async_payment_succeeded
+                      - checkout.session.async_payment_failed
+                      - checkout.session.expired
+                      - invoice.created
+                      - invoice.finalized
+                      - invoice.paid
+                      - invoice.payment_failed
+                      - invoice.payment_succeeded
+                      - invoice.upcoming
+                      - invoice.updated
+                      - customer.subscription.created
+                      - customer.subscription.updated
+                      - customer.subscription.deleted
+                      - customer.subscription.paused
+                      - customer.subscription.resumed
+                      - customer.subscription.trial_will_end
+                      - charge.captured
+                      - charge.failed
+                      - charge.refunded
+                      - charge.succeeded
+                      - charge.dispute.created
+                      - charge.dispute.closed
+                      - charge.dispute.updated
+                      - charge.dispute.funds_reinstated
+                      - charge.dispute.funds_withdrawn
+                description:
+                  description: An optional description of what the webhook is used for.
+                  anyOf:
+                    - maxLength: 5000
+                      type: string
+                    - enum: ['']
+                      type: string
+                connect:
+                  description: >-
+                    Whether this endpoint should receive events from connected
+                    accounts (`true`), or from your account (`false`). Defaults
+                    to `false`.
+                  type: boolean
+                api_version:
+                  description: >-
+                    Events sent to this endpoint will be generated with this
+                    Stripe Version instead of your account's default.
+                  maxLength: 5000
+                  type: string
+                metadata:
+                  description: Key-value pairs attached to the object.
+                  anyOf:
+                    - type: object
+                      additionalProperties:
+                        type: string
+                    - enum: ['']
+                      type: string
+                expand:
+                  description: Specifies which fields in the response should be expanded.
+                  type: array
+                  items:
+                    maxLength: 5000
+                    type: string
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/webhook_endpoint'
+        default:
+          description: Error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+
+# ════════════════════════════════════════════════════════════════════════
+# Components
+# ════════════════════════════════════════════════════════════════════════
+components:
+  securitySchemes:
+    basicAuth:
+      description: >-
+        Basic HTTP authentication. Allowed headers-- Authorization: Basic
+        <api_key> | Authorization: Basic <base64 hash of `api_key:`>
+      scheme: basic
+      type: http
+    bearerAuth:
+      bearerFormat: auth-scheme
+      description: >-
+        Bearer HTTP authentication. Allowed headers-- Authorization: Bearer
+        <api_key>
+      scheme: bearer
+      type: http
+
+  schemas:
+    # ────────────────────────────────────────────────────────────────────
+    # Error
+    # ────────────────────────────────────────────────────────────────────
+    error:
+      description: An error response from the Stripe API.
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/api_errors'
+
+    api_errors:
+      description: Stripe API error object.
+      type: object
+      required: [type]
+      properties:
+        type:
+          description: >-
+            The type of error returned. One of `api_error`, `card_error`,
+            `idempotency_error`, or `invalid_request_error`.
+          enum: [api_error, card_error, idempotency_error, invalid_request_error]
+          type: string
+        code:
+          description: Short string error code.
+          maxLength: 5000
+          type: string
+        decline_code:
+          description: Card issuer's reason for the decline.
+          maxLength: 5000
+          type: string
+        message:
+          description: Human-readable error message.
+          maxLength: 40000
+          type: string
+        param:
+          description: Parameter related to the error.
+          maxLength: 5000
+          type: string
+        doc_url:
+          description: URL to more information about the error code.
+          maxLength: 5000
+          type: string
+        charge:
+          description: For card errors, the ID of the failed charge.
+          maxLength: 5000
+          type: string
+        payment_method_type:
+          description: Payment method type that had a problem (invoice-related).
+          maxLength: 5000
+          type: string
+
+    # ────────────────────────────────────────────────────────────────────
+    # Checkout Session
+    # ────────────────────────────────────────────────────────────────────
+    checkout.session:
+      description: >-
+        A Checkout Session represents your customer's session as they pay for
+        one-time purchases or subscriptions through Checkout or Payment Links.
+      type: object
+      title: Session
+      required:
+        - automatic_tax
+        - created
+        - custom_fields
+        - custom_text
+        - expires_at
+        - id
+        - livemode
+        - mode
+        - object
+        - payment_method_types
+        - payment_status
+        - shipping_options
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [checkout.session]
+          type: string
+        livemode:
+          description: True if the object exists in live mode.
+          type: boolean
+        mode:
+          description: The mode of the Checkout Session.
+          enum: [payment, setup, subscription]
+          type: string
+        status:
+          description: The status of the Checkout Session.
+          enum: [complete, expired, open]
+          nullable: true
+          type: string
+        payment_status:
+          description: >-
+            The payment status of the Checkout Session, one of `paid`,
+            `unpaid`, or `no_payment_required`.
+          enum: [no_payment_required, paid, unpaid]
+          type: string
+        url:
+          description: >-
+            The URL to the Checkout Session. Redirect customers to this URL.
+            Only present when the session is active.
+          maxLength: 5000
+          nullable: true
+          type: string
+        success_url:
+          description: URL the customer is directed to after successful payment.
+          maxLength: 5000
+          nullable: true
+          type: string
+        cancel_url:
+          description: URL the customer is directed to if they cancel.
+          maxLength: 5000
+          nullable: true
+          type: string
+        return_url:
+          description: URL for embedded/custom UI mode return.
+          maxLength: 5000
+          nullable: true
+          type: string
+        client_reference_id:
+          description: Unique string to reference the Session with your internal systems.
+          maxLength: 5000
+          nullable: true
+          type: string
+        client_secret:
+          description: Client secret for embedded/custom UI mode Checkout.
+          maxLength: 5000
+          nullable: true
+          type: string
+        customer:
+          description: >-
+            The ID of the customer for this Session (string or expanded
+            Customer object).
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+            - $ref: '#/components/schemas/customer_stub'
+        customer_email:
+          description: Customer's email address.
+          maxLength: 5000
+          nullable: true
+          type: string
+        customer_creation:
+          description: Whether the Session creates a Customer on completion.
+          enum: [always, if_required]
+          nullable: true
+          type: string
+        customer_details:
+          description: Customer details (email, name, phone, tax_exempt, tax_ids).
+          nullable: true
+          type: object
+          properties:
+            email:
+              type: string
+              nullable: true
+            name:
+              type: string
+              nullable: true
+            phone:
+              type: string
+              nullable: true
+            tax_exempt:
+              enum: [exempt, none, reverse]
+              nullable: true
+              type: string
+        subscription:
+          description: >-
+            The ID of the Subscription for sessions in `subscription` mode
+            (string or expanded Subscription object).
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+            - $ref: '#/components/schemas/subscription'
+        payment_intent:
+          description: >-
+            The ID of the PaymentIntent for sessions in `payment` mode.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+            # PaymentIntent is a complex object; see full spec for expanded schema
+        invoice:
+          description: ID of the invoice created by the Checkout Session.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+            # Invoice is a complex object; see full spec for expanded schema
+        line_items:
+          description: The line items purchased by the customer.
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/line_item'
+            has_more:
+              type: boolean
+            object:
+              type: string
+              enum: [list]
+            url:
+              type: string
+              maxLength: 5000
+          required: [data, has_more, object, url]
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+        expires_at:
+          description: The timestamp at which the Checkout Session will expire.
+          format: unix-time
+          type: integer
+        currency:
+          description: Three-letter ISO currency code, in lowercase.
+          format: currency
+          nullable: true
+          type: string
+        amount_subtotal:
+          description: Total of all items before discounts or taxes are applied.
+          nullable: true
+          type: integer
+        amount_total:
+          description: Total of all items after discounts and taxes are applied.
+          nullable: true
+          type: integer
+        metadata:
+          description: Key-value pairs attached to the object.
+          nullable: true
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+        payment_method_types:
+          description: Types of payment methods this Session accepts.
+          type: array
+          items:
+            maxLength: 5000
+            type: string
+        allow_promotion_codes:
+          description: Whether promotion codes are enabled.
+          nullable: true
+          type: boolean
+        automatic_tax:
+          description: Results of automatic tax computation.
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            status:
+              enum: [complete, failed, requires_location_inputs]
+              nullable: true
+              type: string
+        billing_address_collection:
+          description: Whether billing address was collected.
+          enum: [auto, required]
+          nullable: true
+          type: string
+        locale:
+          description: Locale the Checkout was displayed in.
+          nullable: true
+          type: string
+        ui_mode:
+          description: The UI mode of the Session.
+          enum: [custom, embedded, hosted]
+          nullable: true
+          type: string
+        recovered_from:
+          description: ID of the original expired Checkout Session that triggered recovery.
+          maxLength: 5000
+          nullable: true
+          type: string
+        custom_fields:
+          type: array
+          items:
+            type: object
+        custom_text:
+          type: object
+        shipping_options:
+          type: array
+          items:
+            type: object
+        discounts:
+          description: Coupons and promotion codes attached to the Session.
+          nullable: true
+          type: array
+          items:
+            type: object
+
+    # ────────────────────────────────────────────────────────────────────
+    # Billing Portal Session
+    # ────────────────────────────────────────────────────────────────────
+    billing_portal.session:
+      description: >-
+        A portal session for a customer to manage subscriptions and billing.
+      type: object
+      title: PortalSession
+      required: [configuration, created, customer, id, livemode, object, url]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [billing_portal.session]
+          type: string
+        livemode:
+          description: True if the object exists in live mode.
+          type: boolean
+        configuration:
+          description: The configuration used by this session.
+          anyOf:
+            - maxLength: 5000
+              type: string
+            # Can be expanded to full billing_portal.configuration object
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+        customer:
+          description: The ID of the customer for this session.
+          maxLength: 5000
+          type: string
+        customer_account:
+          description: The ID of the account for this session.
+          maxLength: 5000
+          nullable: true
+          type: string
+        url:
+          description: The short-lived URL that gives customers access to the portal.
+          maxLength: 5000
+          type: string
+        return_url:
+          description: URL to redirect customers when they click the return link.
+          maxLength: 5000
+          nullable: true
+          type: string
+        locale:
+          description: The IETF language tag of the portal locale.
+          nullable: true
+          type: string
+        on_behalf_of:
+          description: The on_behalf_of account for this session.
+          maxLength: 5000
+          nullable: true
+          type: string
+        flow:
+          description: Information about the specific flow the customer goes through.
+          nullable: true
+          type: object
+          properties:
+            type:
+              enum:
+                - payment_method_update
+                - subscription_cancel
+                - subscription_update
+                - subscription_update_confirm
+              type: string
+            after_completion:
+              type: object
+              properties:
+                type:
+                  enum: [hosted_confirmation, portal_homepage, redirect]
+                  type: string
+
+    # ────────────────────────────────────────────────────────────────────
+    # Subscription
+    # ────────────────────────────────────────────────────────────────────
+    subscription:
+      description: Subscriptions allow you to charge a customer on a recurring basis.
+      type: object
+      title: Subscription
+      required:
+        - automatic_tax
+        - billing_cycle_anchor
+        - billing_mode
+        - cancel_at_period_end
+        - collection_method
+        - created
+        - currency
+        - customer
+        - discounts
+        - id
+        - invoice_settings
+        - items
+        - livemode
+        - metadata
+        - object
+        - start_date
+        - status
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [subscription]
+          type: string
+        livemode:
+          description: True if the object exists in live mode.
+          type: boolean
+        status:
+          description: >-
+            Possible values: incomplete, incomplete_expired, trialing,
+            active, past_due, canceled, unpaid, or paused.
+          enum:
+            - active
+            - canceled
+            - incomplete
+            - incomplete_expired
+            - past_due
+            - paused
+            - trialing
+            - unpaid
+          type: string
+        customer:
+          description: ID of the customer who owns the subscription (string or expanded).
+          anyOf:
+            - maxLength: 5000
+              type: string
+            - $ref: '#/components/schemas/customer_stub'
+        currency:
+          description: Three-letter ISO currency code, in lowercase.
+          format: currency
+          type: string
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+        start_date:
+          description: Date when the subscription was first created.
+          format: unix-time
+          type: integer
+        current_period_start:
+          description: Start of the current period.
+          format: unix-time
+          type: integer
+        current_period_end:
+          description: End of the current period.
+          format: unix-time
+          type: integer
+        ended_at:
+          description: If the subscription has ended, the date it ended.
+          format: unix-time
+          nullable: true
+          type: integer
+        cancel_at:
+          description: Future date at which the subscription will automatically get canceled.
+          format: unix-time
+          nullable: true
+          type: integer
+        cancel_at_period_end:
+          description: Whether subscription will cancel at the end of the current billing period.
+          type: boolean
+        canceled_at:
+          description: Date of cancellation.
+          format: unix-time
+          nullable: true
+          type: integer
+        cancellation_details:
+          description: Details about why this subscription was cancelled (comment, feedback, reason).
+          nullable: true
+          type: object
+        collection_method:
+          description: Either `charge_automatically` or `send_invoice`.
+          enum: [charge_automatically, send_invoice]
+          type: string
+        billing_cycle_anchor:
+          description: Reference point that aligns future billing cycle dates (Unix timestamp).
+          format: unix-time
+          type: integer
+        billing_mode:
+          description: Billing mode configuration.
+          type: object
+        items:
+          description: List of subscription items, each with an attached price.
+          type: object
+          required: [data, has_more, object, url]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/subscription_item'
+            has_more:
+              type: boolean
+            object:
+              type: string
+              enum: [list]
+            url:
+              type: string
+              maxLength: 5000
+        latest_invoice:
+          description: The most recent invoice this subscription has generated.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+            # Can be expanded to full invoice object
+        default_payment_method:
+          description: ID of the default payment method for the subscription.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+            # Can be expanded to full payment_method object
+        metadata:
+          description: Key-value pairs attached to the object.
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+        description:
+          description: Description of the subscription.
+          maxLength: 500
+          nullable: true
+          type: string
+        days_until_due:
+          description: Number of days a customer has to pay invoices.
+          nullable: true
+          type: integer
+        trial_start:
+          description: Beginning of the trial period.
+          format: unix-time
+          nullable: true
+          type: integer
+        trial_end:
+          description: End of the trial period.
+          format: unix-time
+          nullable: true
+          type: integer
+        automatic_tax:
+          description: Automatic tax configuration for this subscription.
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            disabled_reason:
+              type: string
+              nullable: true
+        invoice_settings:
+          description: Invoice settings for the subscription.
+          type: object
+        discounts:
+          description: The discounts applied to the subscription.
+          type: array
+          items:
+            anyOf:
+              - maxLength: 5000
+                type: string
+              - type: object
+        payment_settings:
+          description: Payment settings for invoices created by the subscription.
+          nullable: true
+          type: object
+        application_fee_percent:
+          description: Percentage of subscription invoice transferred to application owner.
+          nullable: true
+          type: number
+        pending_update:
+          description: Pending updates that will be applied after latest_invoice is paid.
+          nullable: true
+          type: object
+        schedule:
+          description: The schedule attached to the subscription.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+
+    # ────────────────────────────────────────────────────────────────────
+    # Subscription Item
+    # ────────────────────────────────────────────────────────────────────
+    subscription_item:
+      description: An item within a subscription (a price + quantity).
+      type: object
+      title: SubscriptionItem
+      required: [id, metadata, object]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [subscription_item]
+          type: string
+        price:
+          $ref: '#/components/schemas/price'
+        quantity:
+          description: The quantity of the plan to which the customer should be subscribed.
+          type: integer
+        metadata:
+          description: Key-value pairs attached to the object.
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+
+    # ────────────────────────────────────────────────────────────────────
+    # Price (simplified)
+    # ────────────────────────────────────────────────────────────────────
+    price:
+      description: >-
+        Prices define the unit cost, currency, and billing cycle for products.
+        See full spec for complete schema.
+      type: object
+      title: Price
+      required: [active, currency, id, livemode, object, type]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [price]
+          type: string
+        active:
+          description: Whether the price can be used for new purchases.
+          type: boolean
+        currency:
+          description: Three-letter ISO currency code.
+          type: string
+        unit_amount:
+          description: The unit amount in the smallest currency unit (e.g. cents).
+          nullable: true
+          type: integer
+        unit_amount_decimal:
+          description: The unit amount in decimal string for precision.
+          nullable: true
+          type: string
+        type:
+          description: One of `one_time` or `recurring`.
+          enum: [one_time, recurring]
+          type: string
+        recurring:
+          description: Recurring pricing details.
+          nullable: true
+          type: object
+          properties:
+            interval:
+              enum: [day, month, week, year]
+              type: string
+            interval_count:
+              type: integer
+            usage_type:
+              enum: [licensed, metered]
+              type: string
+        product:
+          description: The ID of the product this price is associated with.
+          anyOf:
+            - maxLength: 5000
+              type: string
+            # Can be expanded to full product object
+        nickname:
+          description: Brief description of the price.
+          maxLength: 5000
+          nullable: true
+          type: string
+        lookup_key:
+          description: Lookup key used to retrieve prices dynamically from a price table.
+          maxLength: 200
+          nullable: true
+          type: string
+        livemode:
+          description: True if the object exists in live mode.
+          type: boolean
+        metadata:
+          description: Key-value pairs attached to the object.
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+
+    # ────────────────────────────────────────────────────────────────────
+    # Line Item (simplified)
+    # ────────────────────────────────────────────────────────────────────
+    line_item:
+      description: >-
+        A line item within a checkout session. See full spec for complete
+        schema (item schema).
+      type: object
+      title: Item
+      required: [id, object]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [item]
+          type: string
+        amount_subtotal:
+          description: Total before discounts and taxes.
+          type: integer
+        amount_total:
+          description: Total after discounts and taxes.
+          type: integer
+        amount_discount:
+          description: Total discount amount.
+          type: integer
+        amount_tax:
+          description: Total tax amount.
+          type: integer
+        currency:
+          description: Three-letter ISO currency code.
+          type: string
+        description:
+          description: Description of the line item.
+          maxLength: 5000
+          nullable: true
+          type: string
+        quantity:
+          description: Quantity of the item.
+          nullable: true
+          type: integer
+        price:
+          $ref: '#/components/schemas/price'
+
+    # Customer stub - full schema is massive; see stripe-api-spec3.yaml
+    customer_stub:
+      description: Simplified Customer object. See full spec for complete schema.
+      type: object
+      title: Customer
+      required: [id, livemode, object]
+      properties:
+        id:
+          maxLength: 5000
+          type: string
+        object:
+          enum: [customer]
+          type: string
+        livemode:
+          type: boolean
+        email:
+          maxLength: 5000
+          nullable: true
+          type: string
+        name:
+          maxLength: 5000
+          nullable: true
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        created:
+          format: unix-time
+          type: integer
+
+    # ────────────────────────────────────────────────────────────────────
+    # Webhook Endpoint
+    # ────────────────────────────────────────────────────────────────────
+    webhook_endpoint:
+      description: Webhook endpoints configured to receive event notifications.
+      type: object
+      title: NotificationWebhookEndpoint
+      required: [created, enabled_events, id, livemode, metadata, object, status, url]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [webhook_endpoint]
+          type: string
+        livemode:
+          description: True if the object exists in live mode.
+          type: boolean
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+        url:
+          description: The URL of the webhook endpoint.
+          maxLength: 5000
+          type: string
+        status:
+          description: The status of the webhook (`enabled` or `disabled`).
+          maxLength: 5000
+          type: string
+        enabled_events:
+          description: >-
+            The list of events to enable for this endpoint.
+            `['*']` indicates all events are enabled.
+          type: array
+          items:
+            maxLength: 5000
+            type: string
+        secret:
+          description: >-
+            The endpoint's secret, used to generate webhook signatures.
+            Only returned at creation.
+          maxLength: 5000
+          type: string
+        description:
+          description: An optional description of what the webhook is used for.
+          maxLength: 5000
+          nullable: true
+          type: string
+        api_version:
+          description: The API version events are rendered as for this webhook endpoint.
+          maxLength: 5000
+          nullable: true
+          type: string
+        application:
+          description: The ID of the associated Connect application.
+          maxLength: 5000
+          nullable: true
+          type: string
+        metadata:
+          description: Key-value pairs attached to the object.
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+
+    # ────────────────────────────────────────────────────────────────────
+    # Event (webhook delivery payload)
+    # ────────────────────────────────────────────────────────────────────
+    event:
+      description: >-
+        Stripe creates an Event object when the state of an API resource
+        changes. Events are retained for 30 days.
+      type: object
+      title: NotificationEvent
+      required: [created, data, id, livemode, object, pending_webhooks, type]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [event]
+          type: string
+        livemode:
+          description: True if the object exists in live mode.
+          type: boolean
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+        type:
+          description: >-
+            Description of the event (e.g., `checkout.session.completed`,
+            `invoice.paid`, `charge.refunded`).
+            Our integration listens for: checkout.session.completed,
+            invoice.paid, invoice.payment_failed,
+            customer.subscription.updated, customer.subscription.deleted,
+            charge.refunded, charge.dispute.created
+          maxLength: 5000
+          type: string
+        api_version:
+          description: The Stripe API version used to render data for this event.
+          maxLength: 5000
+          nullable: true
+          type: string
+        pending_webhooks:
+          description: Number of webhooks not yet successfully delivered.
+          type: integer
+        data:
+          $ref: '#/components/schemas/notification_event_data'
+        request:
+          description: Information on the API request that triggered the event.
+          nullable: true
+          type: object
+          properties:
+            id:
+              description: ID of the API request that caused the event.
+              maxLength: 5000
+              nullable: true
+              type: string
+            idempotency_key:
+              description: The idempotency key transmitted during the request.
+              maxLength: 5000
+              nullable: true
+              type: string
+        account:
+          description: The connected account that originates the event.
+          maxLength: 5000
+          type: string
+
+    notification_event_data:
+      description: Event data payload.
+      type: object
+      title: NotificationEventData
+      required: [object]
+      properties:
+        object:
+          description: >-
+            Object containing the API resource relevant to the event.
+            For example, a `checkout.session.completed` event contains
+            a full checkout.session object. An `invoice.paid` event
+            contains a full invoice object. A `charge.refunded` event
+            contains a full charge object.
+          type: object
+          # The actual object type depends on the event type:
+          #   checkout.session.completed       -> checkout.session
+          #   invoice.paid                     -> invoice
+          #   invoice.payment_failed           -> invoice
+          #   customer.subscription.updated    -> subscription
+          #   customer.subscription.deleted    -> subscription
+          #   charge.refunded                  -> charge
+          #   charge.dispute.created           -> dispute
+        previous_attributes:
+          description: >-
+            Object containing the names of the updated attributes and their
+            values prior to the event (only in `*.updated` events).
+          type: object
+
+    # Webhook event data objects (stubs for event.data.object).
+    # See full spec (stripe-api-spec3.yaml) for complete schemas.
+    invoice:
+      description: >-
+        Invoices are statements of amounts owed by a customer. Our integration
+        listens for invoice.paid and invoice.payment_failed events.
+        See full spec for complete schema.
+      type: object
+      title: Invoice
+      required: [id, livemode, object]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [invoice]
+          type: string
+        livemode:
+          type: boolean
+        status:
+          description: >-
+            The status of the invoice: draft, open, paid, uncollectible, void.
+          enum: [draft, open, paid, uncollectible, void]
+          nullable: true
+          type: string
+        customer:
+          description: ID of the customer who is billed.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+        subscription:
+          description: ID of the subscription this invoice was prepared for.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+        amount_due:
+          description: Final amount due in the smallest currency unit.
+          type: integer
+        amount_paid:
+          description: Amount that was paid.
+          type: integer
+        amount_remaining:
+          description: Amount remaining to be paid.
+          type: integer
+        currency:
+          description: Three-letter ISO currency code.
+          type: string
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+        hosted_invoice_url:
+          description: URL for the hosted invoice page.
+          maxLength: 5000
+          nullable: true
+          type: string
+        invoice_pdf:
+          description: URL for the invoice PDF.
+          maxLength: 5000
+          nullable: true
+          type: string
+        paid:
+          description: Whether payment was successfully collected.
+          type: boolean
+        billing_reason:
+          description: >-
+            Why this invoice was created. Values include: subscription_create,
+            subscription_cycle, subscription_update, manual, and others.
+          nullable: true
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+        period_start:
+          format: unix-time
+          type: integer
+        period_end:
+          format: unix-time
+          type: integer
+
+    charge:
+      description: >-
+        The Charge object represents a single attempt to move money.
+        Our integration listens for charge.refunded events.
+        See full spec for complete schema.
+      type: object
+      title: Charge
+      required: [amount, id, livemode, object]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [charge]
+          type: string
+        livemode:
+          type: boolean
+        amount:
+          description: Amount charged in the smallest currency unit.
+          type: integer
+        amount_refunded:
+          description: Amount refunded in the smallest currency unit.
+          type: integer
+        currency:
+          description: Three-letter ISO currency code.
+          type: string
+        status:
+          description: The status of the payment.
+          enum: [failed, pending, succeeded]
+          type: string
+        paid:
+          description: True if the charge succeeded.
+          type: boolean
+        refunded:
+          description: Whether the charge has been fully refunded.
+          type: boolean
+        captured:
+          description: Whether the charge was captured.
+          type: boolean
+        customer:
+          description: ID of the customer.
+          maxLength: 5000
+          nullable: true
+          type: string
+        invoice:
+          description: ID of the invoice this charge is for.
+          maxLength: 5000
+          nullable: true
+          type: string
+        payment_intent:
+          description: ID of the PaymentIntent.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+        dispute:
+          description: Details about the dispute if the charge has been disputed.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
+            - $ref: '#/components/schemas/dispute'
+        failure_code:
+          description: Error code explaining reason for charge failure.
+          maxLength: 5000
+          nullable: true
+          type: string
+        failure_message:
+          description: Message to user further explaining reason for charge failure.
+          maxLength: 5000
+          nullable: true
+          type: string
+        metadata:
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+        created:
+          format: unix-time
+          type: integer
+
+    dispute:
+      description: >-
+        A dispute occurs when a customer questions a charge with their card
+        issuer. Our integration listens for charge.dispute.created events.
+        See full spec for complete schema.
+      type: object
+      title: Dispute
+      required: [amount, charge, currency, id, livemode, object, reason, status]
+      properties:
+        id:
+          description: Unique identifier for the object.
+          maxLength: 5000
+          type: string
+        object:
+          description: String representing the object's type.
+          enum: [dispute]
+          type: string
+        livemode:
+          type: boolean
+        amount:
+          description: Disputed amount in the smallest currency unit.
+          type: integer
+        currency:
+          description: Three-letter ISO currency code.
+          type: string
+        charge:
+          description: ID of the charge that is disputed.
+          anyOf:
+            - maxLength: 5000
+              type: string
+        status:
+          description: Current status of the dispute.
+          enum:
+            - charge_refunded
+            - lost
+            - needs_response
+            - under_review
+            - warning_closed
+            - warning_needs_response
+            - warning_under_review
+            - won
+          type: string
+        reason:
+          description: >-
+            Reason given by cardholder for dispute. Values include:
+            fraudulent, duplicate, subscription_canceled,
+            product_not_received, product_unacceptable, and others.
+          type: string
+        is_charge_refundable:
+          description: Whether the charge is refundable.
+          type: boolean
+        created:
+          description: Time at which the object was created (Unix timestamp).
+          format: unix-time
+          type: integer
+        metadata:
+          type: object
+          additionalProperties:
+            maxLength: 500
+            type: string
+        payment_intent:
+          description: ID of the PaymentIntent that is disputed.
+          nullable: true
+          anyOf:
+            - maxLength: 5000
+              type: string
