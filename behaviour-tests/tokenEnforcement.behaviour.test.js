@@ -6,6 +6,7 @@
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import fs from "node:fs";
+import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
@@ -160,7 +161,9 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
       currentTestUsername = testUser.userId;
       currentTestPassword = testUser.password;
       testVatNumber = testUser.vrn;
-      saveHmrcTestUserToFiles(testInfo, testUser);
+      const outputDir = testInfo.outputPath("");
+      const repoRoot = path.resolve(process.cwd());
+      saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
     }
   }
 

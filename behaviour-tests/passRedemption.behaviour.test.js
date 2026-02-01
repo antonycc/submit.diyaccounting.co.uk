@@ -3,7 +3,8 @@
 
 // behaviour-tests/passRedemption.behaviour.test.js
 
-import { test, expect } from "./helpers/playwrightTestWithout.js";
+import { test } from "./helpers/playwrightTestWithout.js";
+import { expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
