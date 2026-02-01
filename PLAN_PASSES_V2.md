@@ -792,6 +792,93 @@ Token tracking and display are built early (Phases 2-3) so the data layer is rea
 | `app/system-tests/bundleCapacity.system.test.js` | 2.9 | Extend with global cap, reconciliation, availability tests |
 | `app/bin/dynamodb.js` | 2.9 | Add `ensureCapacityTableExists()` for system test setup |
 
+## Implementation Progress
+
+Status as of 2026-02-01. Branch: `first-pass`.
+
+### Phase 1: Pass Data & Generation (Backend) — DONE
+
+| Section | Status | Commit/Notes |
+|---------|--------|--------------|
+| 1.1 Infrastructure (Passes DynamoDB table in DataStack.java) | Done | Pre-existing on `first-pass` |
+| 1.2 Pass generation library (passphrase.js, emailHash.js, EFF wordlist) | Done | Pre-existing on `first-pass` |
+| 1.3 Pass data service (dynamoDbPassRepository.js, passService.js) | Done | Pre-existing on `first-pass` |
+| 1.4 Admin pass creation Lambda (passAdminPost.js) | Done | Pre-existing on `first-pass` |
+| 1.5 GitHub Actions workflow (generate-pass.yml) | Done | Pre-existing on `first-pass` |
+| 1.6 Unit tests (passphrase, emailHash, passService) | Done | Pre-existing on `first-pass` |
+
+### Phase 2: Pass Validation API & Token Tracking — DONE
+
+| Section | Status | Commit/Notes |
+|---------|--------|--------------|
+| 2.1 Pass API endpoints (passGet.js, passPost.js) | Done | Pre-existing on `first-pass` |
+| 2.2 Infrastructure wiring (AccountStack, env vars, secrets) | Done | Pre-existing on `first-pass` |
+| 2.3 Catalogue enforcement (on-pass display, on-email-match) | Done | Pre-existing on `first-pass` |
+| 2.4 Token balance tracking (bundle record token fields) | Done | Pre-existing on `first-pass` |
+| 2.5 Token refresh (lazy evaluation in bundleGet.js) | Done | Pre-existing on `first-pass` |
+| 2.6 Token balance in bundle API | Done | Pre-existing on `first-pass` |
+| 2.7 System tests (pass + token tracking) | Done | Pre-existing on `first-pass` |
+| 2.8 Express server routes | Done | Pre-existing on `first-pass` |
+| 2.9.1 Counting approach decision | Done | Pre-existing on `first-pass` |
+| 2.9.2 Counter table infrastructure | Done | Pre-existing on `first-pass` |
+| 2.9.3 Grant enforcement (bundlePost.js atomic counter) | Done | Pre-existing on `first-pass` |
+| 2.9.4 Availability API (bundleGet.js union response) | Done | Pre-existing on `first-pass` |
+| 2.9.5 Reconciliation Lambda + EventBridge | Done | Pre-existing on `first-pass` |
+| 2.9.6 UI availability messaging (bundles.html) | Done | Pre-existing on `first-pass` |
+| 2.9.7 System tests (bundleCapacity) | Done | Pre-existing on `first-pass` |
+| 2.9.8 Metrics and dashboard | Done | `82fb7c10` |
+
+### Phase 3: Pass Redemption UI, Token Display & Behaviour Tests — DONE
+
+| Section | Status | Commit/Notes |
+|---------|--------|--------------|
+| 3.1 bundles.html pass entry (form, URL param, auto-submit) | Done | `415688b4` |
+| 3.2 `display = "on-pass"` UI filtering | Done | `415688b4` |
+| 3.3 Basic token display | Done | `415688b4` |
+| 3.4 Behaviour tests for passes | Done | `34ef7da8` — passRedemption.behaviour.test.js covers redemption, exhausted, and invalid pass cases |
+
+Note: Plan mentions separate `passErrors.spec.js` — the error cases (exhausted, invalid) are covered within `passRedemption.behaviour.test.js` rather than a separate file.
+
+### Phase 4: Token Enforcement (Backend) — DONE
+
+| Section | Status | Commit/Notes |
+|---------|--------|--------------|
+| 4.1 Token consumption service (consumeToken, tokenEnforcement.js) | Done | `9a000583` |
+| 4.2 Wire into HMRC Lambdas (hmrcVatReturnPost.js) | Done | `9a000583` |
+| 4.3 Tests (unit + system) | Done | `9a000583` |
+
+### Phase 5: Token Enforcement UI & Full Pass Enforcement — PARTIALLY DONE
+
+| Section | Status | Commit/Notes |
+|---------|--------|--------------|
+| 5.1 Token enforcement UI (submitVat.html token cost + 403 handling) | Done | `f7e37a1e` |
+| 5.2 Migrate behaviour tests to passes | Done | `34ef7da8` — clearBundles uses API verification, ensureBundlePresent falls back to pass API |
+| 5.3 Turn on on-pass enforcement | Done | Effective — `test` bundle is `display = "on-pass"`, UI filters it, behaviour tests use passes |
+| 5.4 Behaviour tests for tokens | **Not done** | No standalone tokenConsumption/tokenExhaustion behaviour tests |
+| 5.7 Production readiness (go-live checklist) | **Not done** | HMRC prod credential validation, CloudWatch alarms, documentation |
+| 5.8 Go-live validation | **Not done** | End-to-end production validation |
+
+Sections 5.5 (Pass admin UI) and 5.6 (QR code generation) moved to `_developers/backlog/PLAN_PASSES_V2-PART-2.md`.
+
+### Phase 7: Campaign Production Readiness — NOT DONE (deferred)
+
+| Section | Status |
+|---------|--------|
+| 7.1 Campaign monitoring | Not done |
+| 7.2 Campaign documentation | Not done |
+
+### Key commits on `first-pass` branch
+
+| Commit | Description |
+|--------|-------------|
+| `415688b4` | Phase 3: pass redemption UI, on-pass filtering, token display, pass system tests |
+| `82fb7c10` | Phase 2.9.8: CloudWatch metrics and dashboard for bundle capacity |
+| `9a000583` | Phase 4: token enforcement for VAT submissions (consumeToken, tokenEnforcement.js) |
+| `f7e37a1e` | Phase 5.1: token cost display and exhaustion handling on submitVat.html |
+| `34ef7da8` | Phase 5.2–5.3: migrate behaviour tests to passes, add passRedemption behaviour test |
+
+---
+
 ## Resolved Questions
 
 1. **Email hash secret rotation**: Store the secret version on each pass record (`emailHashSecretVersion` field). When rotating secrets, old passes remain validatable by looking up the secret version they were created with.
