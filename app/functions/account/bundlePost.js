@@ -429,10 +429,13 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   currentBundles.push(newBundle);
   logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
-  // Persist the updated bundles to the primary store (DynamoDB)
+  // Persist the new bundle directly to DynamoDB.
+  // We use putBundle directly (not updateUserBundles) because updateUserBundles
+  // re-queries DynamoDB with eventually-consistent reads, which can miss the
+  // delete we just performed above, causing it to skip writing the new bundle.
   try {
-    const { updateUserBundles } = await import("../../services/bundleManagement.js");
-    await updateUserBundles(userId, currentBundles);
+    const { putBundle } = await import("../../data/dynamoDbBundleRepository.js");
+    await putBundle(userId, newBundle);
   } catch (error) {
     // Compensating write: if PutItem fails after cap counter increment, decrement the counter
     if (capIncremented) {
