@@ -700,11 +700,9 @@ Run `npm run test:submitVatBehaviour-proxy` - all tests pass using pass-based bu
 
 - [ ] CloudWatch alarms for:
   - Campaign pass abuse (unusual issuance volume per user)
-  - Referral reward fraud (self-referral attempts, duplicate referrals)
 - [ ] Admin dashboard additions:
   - Campaign passes created / redeemed / expired
   - Referral conversion funnel (redeemed → submitted VAT → subscribed)
-  - Ambassador tier distribution
 
 ### 7.2 Campaign documentation
 
