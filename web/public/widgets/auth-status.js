@@ -62,7 +62,9 @@
 
     const idToken = localStorage.getItem("cognitoIdToken");
     if (!idToken) {
-      tokenBalanceEl.style.display = "none";
+      const tokenCountEl2 = tokenBalanceEl.querySelector(".token-count");
+      if (tokenCountEl2) tokenCountEl2.textContent = "0 tokens";
+      tokenBalanceEl.style.display = "inline-flex";
       return;
     }
 
@@ -87,14 +89,17 @@
         });
         if (hasTokenBundles && typeof data.tokensRemaining === "number") {
           tokenCountEl.textContent = data.tokensRemaining + " token" + (data.tokensRemaining !== 1 ? "s" : "");
-          tokenBalanceEl.style.display = "inline-flex";
-          return;
+        } else {
+          tokenCountEl.textContent = "0 tokens";
         }
+      } else {
+        tokenCountEl.textContent = "0 tokens";
       }
-      tokenBalanceEl.style.display = "none";
+      tokenBalanceEl.style.display = "inline-flex";
     } catch (err) {
       console.warn("Failed to fetch token balance:", err);
-      tokenBalanceEl.style.display = "none";
+      tokenCountEl.textContent = "0 tokens";
+      tokenBalanceEl.style.display = "inline-flex";
     }
   }
 

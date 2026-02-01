@@ -27,7 +27,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import { ensureBundlePresent, getTokensRemaining, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { fillInVat, initSubmitVat, submitFormVat } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
@@ -108,22 +108,6 @@ test.afterEach(async ({ page }, testInfo) => {
     await page.screenshot({ path: `${outputDir}/test-failed-${Date.now()}.png`, fullPage: true });
   }
 });
-
-/**
- * Helper to get token count from the bundle API
- */
-async function getTokensRemaining(page, bundleId) {
-  return page.evaluate(async (bid) => {
-    const idToken = localStorage.getItem("cognitoIdToken");
-    if (!idToken) return null;
-    const response = await fetch("/api/v1/bundle", {
-      headers: { Authorization: `Bearer ${idToken}` },
-    });
-    const data = await response.json();
-    const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
-    return bundle?.tokensRemaining ?? null;
-  }, bundleId);
-}
 
 /**
  * Helper to extract user sub from browser localStorage

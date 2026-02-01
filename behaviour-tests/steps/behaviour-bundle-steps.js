@@ -304,6 +304,19 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
   });
 }
 
+export async function getTokensRemaining(page, bundleId) {
+  return page.evaluate(async (bid) => {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    if (!idToken) return null;
+    const response = await fetch("/api/v1/bundle", {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = await response.json();
+    const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
+    return bundle?.tokensRemaining ?? null;
+  }, bundleId);
+}
+
 export async function requestBundleViaApi(page, bundleId) {
   return await page.evaluate(async (bid) => {
     const idToken = localStorage.getItem("cognitoIdToken");
