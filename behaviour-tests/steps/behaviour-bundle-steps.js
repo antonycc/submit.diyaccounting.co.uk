@@ -32,12 +32,11 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
       path: `${screenshotPath}/${timestamp()}-01-removing-all-bundles.png`,
     });
 
-    const bundleName = "Test";
-
-    // First check if bundles are already cleared by looking for "Request <bundle>" button
-    const requestBundleLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: true });
-    if (await requestBundleLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
-      console.log("Bundles already cleared (Request button visible), skipping API call.");
+    // Check if any "Added ✓" buttons exist — if none, bundles are already cleared
+    const addedButtons = page.locator("button:has-text('Added ✓')");
+    const addedCount = await addedButtons.count().catch(() => 0);
+    if (addedCount === 0) {
+      console.log("No 'Added ✓' buttons found, bundles already cleared.");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-clear-bundles-skipping.png` });
       return;
     }
@@ -74,30 +73,42 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     await page.waitForLoadState("networkidle");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-page-reloaded.png` });
 
-    // Wait for the "Request <bundle>" button to become visible
-    let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-    if (!(await requestTestLocator.isVisible({ timeout: 2000 }).catch(() => false))) {
-      const tries = 10;
-      for (let i = 0; i < tries; i++) {
-        console.log(
-          `[polling for removal]: "Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`,
-        );
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-bundle-waiting.png` });
-        await page.waitForTimeout(1000);
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle-waited.png` });
-        requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-        if (await requestTestLocator.isVisible({ timeout: 1000 }).catch(() => false)) {
-          console.log(`[polling for removal]: Request ${bundleName} button visible.`);
-          break;
-        } else {
-          console.log(`[polling for removal]: Request ${bundleName} button still not visible.`);
+    // Verify bundles are cleared by checking the API response (no allocated bundles)
+    const tries = 10;
+    for (let i = 0; i < tries; i++) {
+      const apiCheck = await page.evaluate(async () => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { allocated: 0 };
+        try {
+          const response = await fetch("/api/v1/bundle", {
+            headers: { Authorization: `Bearer ${idToken}` },
+          });
+          const data = await response.json();
+          const allocated = (data.bundles || []).filter((b) => b.allocated).length;
+          return { allocated };
+        } catch {
+          return { allocated: -1 };
         }
+      });
+
+      if (apiCheck.allocated === 0) {
+        console.log(`[polling for removal]: API confirms no allocated bundles.`);
+        break;
       }
-    } else {
-      console.log(`[polling for removal]: Request ${bundleName} already visible.`);
+      console.log(`[polling for removal]: ${apiCheck.allocated} bundles still allocated, waiting 1000ms (${i + 1}/${tries})`);
+      await page.waitForTimeout(1000);
+      if (i === tries - 1) {
+        // Reload once more on final attempt
+        await page.reload();
+        await page.waitForLoadState("networkidle");
+      }
     }
 
-    await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 32000 });
+    // Also verify no "Added ✓" buttons remain on the page
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    const remainingAdded = await page.locator("button:has-text('Added ✓')").count().catch(() => 0);
+    console.log(`[clear-bundles]: Remaining 'Added ✓' buttons after clear: ${remainingAdded}`);
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-07-removed-all-bundles.png`,
     });

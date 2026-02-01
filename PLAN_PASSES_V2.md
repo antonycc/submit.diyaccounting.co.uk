@@ -653,29 +653,6 @@ Run `npm run test:system` - token enforcement system tests pass. HMRC API calls 
 - [ ] `behaviour-tests/tokens/tokenConsumption.spec.js` - submit VAT, verify count decrements
 - [ ] `behaviour-tests/tokens/tokenExhaustion.spec.js` - exhaust tokens, verify error shown
 
-### 5.5 Pass admin UI (essential only)
-
-Needed to operate passes at any scale — an admin must be able to view, create, and revoke passes without the GitHub Actions workflow.
-
-- [ ] Create `web/public/admin/passes.html`
-  - Pass list view: table of passes sorted by createdAt, filterable by status (active/expired/revoked)
-  - Pass detail view: click a row to see code, type, bundle, validity, usage, creation metadata
-  - Revoke button: single-click revocation with confirmation dialog
-  - Create pass form: passTypeId, bundleId, email (optional), maxUses, validityPeriod, notes
-  - Calls `POST /api/v1/pass/admin` and `GET /api/v1/pass/admin/list` endpoints
-- [ ] Create `app/functions/account/passAdminListGet.js` — paginated pass listing for admin UI
-- [ ] Wire admin UI route in Express server and API Gateway
-- [ ] Admin authentication: reuse existing JWT auth, add admin role check (e.g. specific email or Cognito group)
-
-### 5.6 QR code generation for admin passes
-
-The GitHub Actions workflow and admin UI should produce a QR code alongside the four-word passphrase.
-
-- [ ] Add QR code generation library (e.g. `qrcode` npm package, small footprint)
-- [ ] Generate QR code PNG encoding the pass URL on pass creation
-- [ ] GitHub Actions workflow: attach QR code image as workflow artifact
-- [ ] Admin UI: display QR code inline with download button
-
 ### 5.7 Production readiness (go-live checklist)
 
 Items from Phase 7 that must be complete before day-guest is available to real users.

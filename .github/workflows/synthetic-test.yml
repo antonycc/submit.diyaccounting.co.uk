@@ -31,6 +31,7 @@ on:
         required: false
         options:
           - 'bundleBehaviour'
+          - 'passRedemptionBehaviour'
           - 'postVatReturnBehaviour'
           - 'getVatObligationsBehaviour'
           - 'getVatReturnBehaviour'
