@@ -307,8 +307,7 @@ jobs:
           # If credentials were passed in, use them instead of creating a new user
           if [ -n "${{ needs.params.outputs.test-auth-username }}" ] && [ -n "${{ needs.params.outputs.test-auth-password }}" ]; then
             echo "Using provided test credentials (skipping user creation)"
-            # Mask the password to prevent it appearing in logs
-            echo "::add-mask::${{ needs.params.outputs.test-auth-password }}"
+            # Test system password - intentionally not masked so it appears in job summary
             echo "test-auth-username=${{ needs.params.outputs.test-auth-username }}" >> "$GITHUB_OUTPUT"
             echo "test-auth-password=${{ needs.params.outputs.test-auth-password }}" >> "$GITHUB_OUTPUT"
             echo "user-created-here=false" >> "$GITHUB_OUTPUT"

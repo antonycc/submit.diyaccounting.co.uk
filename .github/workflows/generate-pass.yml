@@ -423,7 +423,7 @@ jobs:
             echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
             echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
             echo "| User ID | \`${{ steps.hmrc-user.outputs.hmrc-user-id }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| Password | \`${{ steps.hmrc-user.outputs.hmrc-password }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Test Sandbox Password | \`${{ steps.hmrc-user.outputs.hmrc-password }}\` |" >> $GITHUB_STEP_SUMMARY
             echo "| VAT Number (VRN) | \`${{ steps.hmrc-user.outputs.hmrc-vat-number }}\` |" >> $GITHUB_STEP_SUMMARY
             echo "| Organisation | ${{ steps.hmrc-user.outputs.hmrc-org-name }} |" >> $GITHUB_STEP_SUMMARY
           fi
@@ -438,6 +438,6 @@ jobs:
             echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
             echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
             echo "| Username | \`${{ steps.cognito-user.outputs.test-auth-username }}\` |" >> $GITHUB_STEP_SUMMARY
-            echo "| Password | \`${{ steps.cognito-user.outputs.test-auth-password }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Test System Password | \`${{ steps.cognito-user.outputs.test-auth-password }}\` |" >> $GITHUB_STEP_SUMMARY
             echo "| Login URL | [https://${{ needs.names.outputs.pass-url-host }}](https://${{ needs.names.outputs.pass-url-host }}) |" >> $GITHUB_STEP_SUMMARY
           fi
