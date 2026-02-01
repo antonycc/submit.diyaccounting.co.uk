@@ -457,7 +457,7 @@ This repository is **public on GitHub**. The security model is "secure by design
 | Secret ARNs | Just references to secrets, not the secrets themselves. |
 | Infrastructure code (CDK) | Reveals architecture but not access credentials. |
 | `.env.ci`, `.env.prod` | No secrets, only configuration and ARN references. |
-| `product-subscribers.subs` | Contains hashed user subs, not raw identifiers. |
+| `submit.passes.toml` | Pass type definitions only, no secrets or user data. |
 
 ### 10.2 What Is Kept Private
 

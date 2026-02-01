@@ -614,7 +614,61 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
-        // Row 5: Lambda Errors across all deployments
+        // Row 5: Bundle Capacity Metrics (EMF from bundlePost and reconciliation Lambda)
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Bundle Grants & Cap Enforcement")
+                        .left(List.of(
+                                Metric.Builder.create()
+                                        .namespace("Submit/BundleCapacity")
+                                        .metricName("BundleGranted")
+                                        .statistic("Sum")
+                                        .period(Duration.hours(1))
+                                        .build(),
+                                Metric.Builder.create()
+                                        .namespace("Submit/BundleCapacity")
+                                        .metricName("BundleCapReached")
+                                        .statistic("Sum")
+                                        .period(Duration.hours(1))
+                                        .build(),
+                                Metric.Builder.create()
+                                        .namespace("Submit/BundleCapacity")
+                                        .metricName("BundleAlreadyGranted")
+                                        .statistic("Sum")
+                                        .period(Duration.hours(1))
+                                        .build()))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Active Bundle Allocations (reconciled)")
+                        .left(List.of(MathExpression.Builder.create()
+                                .expression(
+                                        "SEARCH('{Submit/BundleCapacity,bundleId} MetricName=\"BundleActiveAllocations\"', 'Maximum', 300)")
+                                .label("Active allocations by bundle")
+                                .period(Duration.minutes(5))
+                                .build()))
+                        .width(12)
+                        .height(6)
+                        .build()));
+
+        // Alarms for bundle capacity and pass/token events (EMF custom metrics)
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-BundleCapReachedAlarm")
+                .alarmName(props.resourceNamePrefix() + "-bundle-cap-reached")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/BundleCapacity")
+                        .metricName("BundleCapReached")
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Bundle capacity cap reached >= 1 in 5 minutes")
+                .build();
+
+        // Row 6: Lambda Errors across all deployments (was Row 5)
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()
                         .title("Lambda Errors (all functions, all deployments)")
@@ -641,7 +695,7 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
-        // Row 6: Lambda Performance across all deployments
+        // Row 7: Lambda Performance across all deployments (was Row 6)
         dashboardRows.add(List.of(GraphWidget.Builder.create()
                 .title("Lambda p95 Duration (all functions, all deployments)")
                 .left(List.of(MathExpression.Builder.create()
@@ -655,7 +709,7 @@ public class ObservabilityStack extends Stack {
                 .height(6)
                 .build()));
 
-        // Row 7: Help text for deployment annotations
+        // Row 8: Help text for deployment annotations (was Row 7)
         dashboardRows.add(List.of(TextWidget.Builder.create()
                 .markdown(
                         """

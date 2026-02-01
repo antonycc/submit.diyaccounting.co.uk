@@ -12,7 +12,7 @@ test.describe("Bundles page client-side filtering by listedInEnvironments", () =
   let bundlesHtmlContent;
 
   test.beforeAll(async () => {
-    bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/account/bundles.html"), "utf-8");
+    bundlesHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/bundles.html"), "utf-8");
   });
 
   test("shows only bundles allowed in current environment or with no restriction", async ({ page }) => {
@@ -99,7 +99,7 @@ allocation = "automatic"
 
     // Load the modified bundles page HTML
     await page.setContent(modifiedHtml, {
-      url: "http://localhost:3000/account/bundles.html",
+      url: "http://localhost:3000/bundles.html",
       waitUntil: "domcontentloaded",
     });
 

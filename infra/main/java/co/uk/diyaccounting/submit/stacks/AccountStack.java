@@ -14,10 +14,13 @@ import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
+import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -25,6 +28,9 @@ import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -48,6 +54,22 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps supportTicketPostLambdaProps;
     public Function supportTicketPostLambda;
     public ILogGroup supportTicketPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps passGetLambdaProps;
+    public Function passGetLambda;
+    public ILogGroup passGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps passPostLambdaProps;
+    public Function passPostLambda;
+    public ILogGroup passPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps passAdminPostLambdaProps;
+    public Function passAdminPostLambda;
+    public ILogGroup passAdminPostLambdaLogGroup;
+
+    public Function bundleCapacityReconcileLambda;
+    public ILogGroup bundleCapacityReconcileLambdaLogGroup;
+    public Rule bundleCapacityReconcileSchedule;
 
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
@@ -109,6 +131,18 @@ public class AccountStack extends Stack {
         IUserPool userPool = UserPool.fromUserPoolArn(
                 this, "ImportedUserPool-%s".formatted(props.deploymentName()), props.cognitoUserPoolArn());
 
+        // Lookup existing DynamoDB Passes Table
+        ITable passesTable = Table.fromTableName(
+                this,
+                "ImportedPassesTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().passesTableName);
+
+        // Lookup existing DynamoDB Bundle Capacity Table
+        ITable bundleCapacityTable = Table.fromTableName(
+                this,
+                "ImportedBundleCapacityTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().bundleCapacityTableName);
+
         // Lookup existing DynamoDB Bundles Table
         ITable bundlesTable = Table.fromTableName(
                 this,
@@ -140,6 +174,7 @@ public class AccountStack extends Stack {
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
         // .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
         var getBundlesAsyncLambda = new ApiLambda(
@@ -186,9 +221,10 @@ public class AccountStack extends Stack {
 
         // Grant DynamoDB permissions to both API and Worker Lambdas
         bundlesTable.grantReadData(this.bundleGetLambda);
+        bundleCapacityTable.grantReadData(this.bundleGetLambda);
 
         infof(
-                "Granted DynamoDB permissions to %s and its worker for Bundles and Async Requests Tables",
+                "Granted DynamoDB permissions to %s for Bundles and Bundle Capacity Tables",
                 this.bundleGetLambda.getFunctionName());
 
         // Grant access to user sub hash salt secret in Secrets Manager
@@ -198,6 +234,7 @@ public class AccountStack extends Stack {
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundlePostAsyncRequestsTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
@@ -259,6 +296,7 @@ public class AccountStack extends Stack {
             // Grant DynamoDB permissions
             bundlesTable.grantReadWriteData(fn);
             bundlePostAsyncRequestsTable.grantReadWriteData(fn);
+            bundleCapacityTable.grantReadWriteData(fn);
 
             // Grant access to user sub hash salt secret in Secrets Manager
             SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -416,9 +454,162 @@ public class AccountStack extends Stack {
             infof("Skipping Support Ticket Lambda - no GitHub token secret ARN provided");
         }
 
+        // ============================================================================
+        // Pass GET Lambda (public, no auth)
+        // ============================================================================
+        var passGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().passGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().passGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().passGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().passGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().passGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().passGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().passGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().passGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().passGetLambdaCustomAuthorizer)
+                        .environment(passGetLambdaEnv)
+                        .build());
+        this.passGetLambdaProps = passGetApiLambda.apiProps;
+        this.passGetLambda = passGetApiLambda.ingestLambda;
+        this.passGetLambdaLogGroup = passGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passGetLambdaProps);
+        passesTable.grantReadData(this.passGetLambda);
+        infof("Created Pass GET Lambda %s", this.passGetLambda.getNode().getId());
+
+        // ============================================================================
+        // Pass POST Lambda (JWT auth - redeems pass and grants bundle)
+        // ============================================================================
+        var passPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().passPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().passPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().passPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().passPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().passPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().passPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().passPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().passPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().passPostLambdaCustomAuthorizer)
+                        .environment(passPostLambdaEnv)
+                        .build());
+        this.passPostLambdaProps = passPostApiLambda.apiProps;
+        this.passPostLambda = passPostApiLambda.ingestLambda;
+        this.passPostLambdaLogGroup = passPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passPostLambdaProps);
+        passesTable.grantReadWriteData(this.passPostLambda);
+        bundlesTable.grantReadWriteData(this.passPostLambda);
+        bundleCapacityTable.grantReadWriteData(this.passPostLambda);
+        SubHashSaltHelper.grantSaltAccess(this.passPostLambda, region, account, props.envName());
+        infof("Created Pass POST Lambda %s", this.passPostLambda.getNode().getId());
+
+        // ============================================================================
+        // Pass Admin POST Lambda (JWT auth - generates pass codes)
+        // ============================================================================
+        var passAdminPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passAdminPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().passAdminPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().passAdminPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().passAdminPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().passAdminPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().passAdminPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().passAdminPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().passAdminPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().passAdminPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().passAdminPostLambdaCustomAuthorizer)
+                        .environment(passAdminPostLambdaEnv)
+                        .build());
+        this.passAdminPostLambdaProps = passAdminPostApiLambda.apiProps;
+        this.passAdminPostLambda = passAdminPostApiLambda.ingestLambda;
+        this.passAdminPostLambdaLogGroup = passAdminPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passAdminPostLambdaProps);
+        passesTable.grantReadWriteData(this.passAdminPostLambda);
+        infof("Created Pass Admin POST Lambda %s", this.passAdminPostLambda.getNode().getId());
+
+        // ============================================================================
+        // Bundle Capacity Reconciliation Lambda (EventBridge scheduled, every 5 minutes)
+        // ============================================================================
+        var reconcileLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var reconcileLambda = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().bundleCapacityReconcileLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().bundleCapacityReconcileLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().bundleCapacityReconcileLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().bundleCapacityReconcileLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.minutes(5))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(reconcileLambdaEnv)
+                        .build());
+        this.bundleCapacityReconcileLambda = reconcileLambda.ingestLambda;
+        this.bundleCapacityReconcileLambdaLogGroup = reconcileLambda.logGroup;
+        bundlesTable.grantReadData(this.bundleCapacityReconcileLambda);
+        bundleCapacityTable.grantReadWriteData(this.bundleCapacityReconcileLambda);
+
+        // EventBridge Rule: trigger reconciliation every 5 minutes
+        this.bundleCapacityReconcileSchedule = Rule.Builder.create(
+                        this, props.sharedNames().bundleCapacityReconcileLambdaFunctionName + "-Schedule")
+                .ruleName(props.sharedNames().bundleCapacityReconcileLambdaFunctionName + "-schedule")
+                .description("Reconcile bundle capacity counters every 5 minutes")
+                .schedule(Schedule.rate(Duration.minutes(5)))
+                .targets(List.of(LambdaFunction.Builder.create(this.bundleCapacityReconcileLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Bundle Capacity Reconciliation Lambda %s with 5-minute schedule",
+                this.bundleCapacityReconcileLambda.getNode().getId());
+
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());
         cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());
+        cfnOutput(this, "PassGetLambdaArn", this.passGetLambda.getFunctionArn());
+        cfnOutput(this, "PassPostLambdaArn", this.passPostLambda.getFunctionArn());
+        cfnOutput(this, "PassAdminPostLambdaArn", this.passAdminPostLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "BundleCapacityReconcileLambdaArn",
+                this.bundleCapacityReconcileLambda.getFunctionArn());
 
         infof(
                 "AccountStack %s created successfully for %s",

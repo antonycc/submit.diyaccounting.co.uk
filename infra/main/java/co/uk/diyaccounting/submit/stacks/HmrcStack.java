@@ -304,9 +304,10 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler);
 
         // Grant the VAT submission Lambda and its worker permission to access DynamoDB Bundles Table
+        // Read+Write needed: bundle enforcement reads bundles, token enforcement updates tokensConsumed
         List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
+                    bundlesTable.grantReadWriteData(fn);
                     hmrcApiRequestsTable.grantWriteData(fn);
                     receiptsTable.grantWriteData(fn);
                     hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);

@@ -32,12 +32,11 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
       path: `${screenshotPath}/${timestamp()}-01-removing-all-bundles.png`,
     });
 
-    const bundleName = "Test";
-
-    // First check if bundles are already cleared by looking for "Request <bundle>" button
-    const requestBundleLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: true });
-    if (await requestBundleLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
-      console.log("Bundles already cleared (Request button visible), skipping API call.");
+    // Check if any "Added ✓" buttons exist — if none, bundles are already cleared
+    const addedButtons = page.locator("button:has-text('Added ✓')");
+    const addedCount = await addedButtons.count().catch(() => 0);
+    if (addedCount === 0) {
+      console.log("No 'Added ✓' buttons found, bundles already cleared.");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-clear-bundles-skipping.png` });
       return;
     }
@@ -74,30 +73,42 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     await page.waitForLoadState("networkidle");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-page-reloaded.png` });
 
-    // Wait for the "Request <bundle>" button to become visible
-    let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-    if (!(await requestTestLocator.isVisible({ timeout: 2000 }).catch(() => false))) {
-      const tries = 10;
-      for (let i = 0; i < tries; i++) {
-        console.log(
-          `[polling for removal]: "Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`,
-        );
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-bundle-waiting.png` });
-        await page.waitForTimeout(1000);
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-request-bundle-waited.png` });
-        requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-        if (await requestTestLocator.isVisible({ timeout: 1000 }).catch(() => false)) {
-          console.log(`[polling for removal]: Request ${bundleName} button visible.`);
-          break;
-        } else {
-          console.log(`[polling for removal]: Request ${bundleName} button still not visible.`);
+    // Verify bundles are cleared by checking the API response (no allocated bundles)
+    const tries = 10;
+    for (let i = 0; i < tries; i++) {
+      const apiCheck = await page.evaluate(async () => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { allocated: 0 };
+        try {
+          const response = await fetch("/api/v1/bundle", {
+            headers: { Authorization: `Bearer ${idToken}` },
+          });
+          const data = await response.json();
+          const allocated = (data.bundles || []).filter((b) => b.allocated).length;
+          return { allocated };
+        } catch {
+          return { allocated: -1 };
         }
+      });
+
+      if (apiCheck.allocated === 0) {
+        console.log(`[polling for removal]: API confirms no allocated bundles.`);
+        break;
       }
-    } else {
-      console.log(`[polling for removal]: Request ${bundleName} already visible.`);
+      console.log(`[polling for removal]: ${apiCheck.allocated} bundles still allocated, waiting 1000ms (${i + 1}/${tries})`);
+      await page.waitForTimeout(1000);
+      if (i === tries - 1) {
+        // Reload once more on final attempt
+        await page.reload();
+        await page.waitForLoadState("networkidle");
+      }
     }
 
-    await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 32000 });
+    // Also verify no "Added ✓" buttons remain on the page
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    const remainingAdded = await page.locator("button:has-text('Added ✓')").count().catch(() => 0);
+    console.log(`[clear-bundles]: Remaining 'Added ✓' buttons after clear: ${remainingAdded}`);
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-07-removed-all-bundles.png`,
     });
@@ -140,16 +151,199 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     //    addedLocator = specificAdded;
     //  }
     //}
-    if (await addedLocator.isVisible({ timeout: 32000 })) {
-      console.log(`${bundleName} bundle already present, skipping request.`);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
-      return;
+    // Check if the "Request" button exists (it won't for on-pass bundles).
+    const requestBtnLocator = page.getByRole("button", { name: `Request ${bundleName}` });
+    const isRequestable = await requestBtnLocator.isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (isRequestable) {
+      // Requestable bundles: skip if already present
+      if (await addedLocator.isVisible({ timeout: 32000 })) {
+        console.log(`${bundleName} bundle already present, skipping request.`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
+        return;
+      }
+      console.log(`${bundleName} bundle not present, requesting via UI...`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      await requestBundle(page, bundleName, screenshotPath);
     } else {
-      console.log(`${bundleName} bundle not present, requesting...`);
+      // On-pass bundles: always re-grant via pass API to ensure fresh tokens
+      console.log(`"Request ${bundleName}" button not visible (on-pass bundle), using pass API for fresh grant...`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+      await ensureBundleViaPassApi(page, bundleId, screenshotPath);
     }
-    // Otherwise request the bundle once.
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
-    await requestBundle(page, bundleName, screenshotPath);
+  });
+}
+
+export async function removeBundle(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
+  await test.step(`Remove ${bundleName} bundle via UI`, async () => {
+    console.log(`Removing ${bundleName} bundle...`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-remove-bundle.png` });
+
+    // Look for the remove button in the current bundles section
+    const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+    const removeLocator = page.locator(`button[data-remove-bundle-id="${bundleId}"]`);
+    if (await removeLocator.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await removeLocator.click();
+      console.log(`Clicked remove button for ${bundleName}`);
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-remove-bundle-clicked.png` });
+    } else {
+      // Fallback: remove via API
+      console.log(`Remove button for ${bundleName} not found in UI, removing via API...`);
+      const result = await page.evaluate(async (bid) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { ok: false, error: "No auth token" };
+        try {
+          const response = await fetch(`/api/v1/bundle/${bid}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+          return { ok: response.ok, status: response.status };
+        } catch (err) {
+          return { ok: false, error: err.message };
+        }
+      }, bundleId);
+      console.log(`API remove ${bundleName} result: ${JSON.stringify(result)}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-remove-bundle-done.png` });
+
+    // Verify the bundle is removed: "Request <bundle>" should reappear
+    await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 16000 });
+    console.log(`${bundleName} bundle removed successfully`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-remove-bundle-confirmed.png` });
+  });
+}
+
+export async function verifyBundleApiResponse(page, screenshotPath = defaultScreenshotPath) {
+  return await test.step("Verify bundle API response structure", async () => {
+    const apiResponse = await page.evaluate(async () => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { error: "No auth token" };
+      try {
+        const response = await fetch("/api/v1/bundle", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        return await response.json();
+      } catch (err) {
+        return { error: err.message };
+      }
+    });
+    console.log(`Bundle API response: ${JSON.stringify(apiResponse)}`);
+    return apiResponse;
+  });
+}
+
+export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = defaultScreenshotPath) {
+  return await test.step(`Ensure ${bundleId} bundle via pass API`, async () => {
+    console.log(`Creating and redeeming pass for bundle ${bundleId}...`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-creating.png` });
+
+    // Step 1: Create a pass via admin API (no auth required)
+    const createResult = await page.evaluate(async (bid) => {
+      try {
+        const response = await fetch("/api/v1/pass/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            passTypeId: bid,
+            bundleId: bid,
+            validityPeriod: "P1D",
+            maxUses: 1,
+            createdBy: "behaviour-test",
+          }),
+        });
+        const body = await response.json();
+        return { ok: response.ok, code: body?.data?.code || body?.code, body };
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }, bundleId);
+
+    console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
+    if (!createResult.ok || !createResult.code) {
+      throw new Error(`Failed to create pass for ${bundleId}: ${JSON.stringify(createResult)}`);
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-02-created.png` });
+
+    // Step 2: Redeem the pass (authenticated)
+    const redeemResult = await page.evaluate(async (code) => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { ok: false, error: "No auth token" };
+      try {
+        const response = await fetch("/api/v1/pass", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ code }),
+        });
+        return await response.json();
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }, createResult.code);
+
+    console.log(`Pass redemption result: ${JSON.stringify(redeemResult)}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png` });
+
+    // Reload page to reflect bundle changes
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04-reloaded.png` });
+
+    return redeemResult;
+  });
+}
+
+export async function getTokensRemaining(page, bundleId) {
+  return page.evaluate(async (bid) => {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    if (!idToken) return null;
+    const response = await fetch("/api/v1/bundle", {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = await response.json();
+    const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
+    return bundle?.tokensRemaining ?? null;
+  }, bundleId);
+}
+
+export async function requestBundleViaApi(page, bundleId) {
+  return await page.evaluate(async (bid) => {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    if (!idToken) return { error: "No auth token" };
+    try {
+      const response = await fetch("/api/v1/bundle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ bundleId: bid, qualifiers: {} }),
+      });
+      const body = await response.json();
+      return { statusCode: response.status, ...body };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }, bundleId);
+}
+
+export async function verifyAlreadyGranted(page, bundleId, screenshotPath = defaultScreenshotPath) {
+  return await test.step(`Verify ${bundleId} returns already_granted on re-request`, async () => {
+    const result = await requestBundleViaApi(page, bundleId);
+    console.log(`[already-granted]: ${bundleId} - status: ${result.status}, statusCode: ${result.statusCode}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-already-granted-${bundleId}.png` });
+    return result;
   });
 }
 

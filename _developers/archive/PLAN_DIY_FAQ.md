@@ -576,7 +576,7 @@ export function debounce(fn, delay) {
 
 import { FAQSearch, debounce } from './faq-search.js';
 import { submitSupportTicket } from './support-api.js';
-import faqData from '../data/faqs.json'; // Built from TOML
+import faqData from '../faqs.json'; // Built from TOML
 
 class HelpPage {
   constructor() {
@@ -801,7 +801,7 @@ import { readFileSync, writeFileSync } from 'fs';
 
 const toml = readFileSync('web/public/help/faqs.toml', 'utf-8');
 const data = parse(toml);
-writeFileSync('src/data/faqs.json', JSON.stringify(data, null, 2));
+writeFileSync('src/faqs.json', JSON.stringify(data, null, 2));
 console.log(`Built ${data.faq.length} FAQs`);
 ```
 

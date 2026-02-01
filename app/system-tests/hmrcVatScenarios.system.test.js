@@ -90,7 +90,7 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
     // Grant test bundle for all tests
     const testUserSub = "test-user";
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await bm.updateUserBundles(testUserSub, [{ bundleId: "guest", expiry }]);
+    await bm.updateUserBundles(testUserSub, [{ bundleId: "day-guest", expiry }]);
 
     // Traditional mocking for HMRC HTTP to avoid real network and drive scenarios
     vi.spyOn(hmrcHelper, "hmrcHttpGet").mockImplementation(

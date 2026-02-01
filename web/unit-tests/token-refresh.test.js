@@ -258,11 +258,13 @@ describe("Token refresh on 401 errors", () => {
     storageMock.cognitoAccessToken = validToken;
 
     // Mock 403 response
-    fetchMock.mockResolvedValueOnce({
+    const mock403Response = {
       ok: false,
       status: 403,
       json: async () => ({ message: "Bundle entitlement required" }),
-    });
+      clone: function () { return { ...this, json: async () => ({ message: "Bundle entitlement required" }) }; },
+    };
+    fetchMock.mockResolvedValueOnce(mock403Response);
 
     const result = await window.fetchWithIdToken("/api/v1/test", {});
 
@@ -278,11 +280,13 @@ describe("Token refresh on 401 errors", () => {
     storageMock.cognitoAccessToken = validToken;
 
     // Mock 403 response
-    fetchMock.mockResolvedValueOnce({
+    const mock403Response = {
       ok: false,
       status: 403,
       json: async () => ({ message: "Access forbidden" }),
-    });
+      clone: function () { return { ...this, json: async () => ({ message: "Access forbidden" }) }; },
+    };
+    fetchMock.mockResolvedValueOnce(mock403Response);
 
     const result = await window.authorizedFetch("/api/v1/test", {});
 

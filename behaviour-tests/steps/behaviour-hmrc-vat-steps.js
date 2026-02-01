@@ -13,6 +13,7 @@ import {
   timestamp,
   isSandboxMode,
 } from "../helpers/behaviour-helpers.js";
+import { waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-vat-steps";
 
@@ -479,7 +480,12 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           }
         }
 
-        await page.waitForSelector("#receiptDisplay", { state: "visible", timeout: 1_000_000 });
+        await waitForSuccessOrError(page, {
+          successSelector: "#receiptDisplay",
+          description: "VAT submission receipt",
+          timeout: 1_000_000,
+          screenshotPath,
+        });
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
         await page.waitForTimeout(500);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
@@ -713,7 +719,12 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       }
       return;
     }
-    await page.waitForSelector("#obligationsResults", { state: "visible", timeout: 450_000 });
+    await waitForSuccessOrError(page, {
+      successSelector: "#obligationsResults",
+      description: "VAT obligations results",
+      timeout: 450_000,
+      screenshotPath,
+    });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
     const resultsContainer = page.locator("#obligationsResults");
     await expect(resultsContainer).toBeVisible();
@@ -1107,7 +1118,12 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
   } else {
     await test.step("The user sees VAT return details displayed", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-return-results-waiting.png` });
-      await page.waitForSelector("#returnResults", { state: "visible", timeout: 450_000 });
+      await waitForSuccessOrError(page, {
+        successSelector: "#returnResults",
+        description: "VAT return results",
+        timeout: 450_000,
+        screenshotPath,
+      });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png` });
       const resultsContainer = page.locator("#returnResults");
       await expect(resultsContainer).toBeVisible();

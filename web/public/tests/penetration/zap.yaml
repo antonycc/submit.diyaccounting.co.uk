@@ -3,7 +3,7 @@ env:
   - excludePaths: []
     name: baseline
     urls:
-    - https://submit.diyaccounting.co.uk
+    - https://wanted-finally-anteater.ngrok-free.app
   parameters:
     failOnError: true
     progressToStdout: false
@@ -14,11 +14,11 @@ jobs:
   type: passiveScan-config
 - parameters:
     maxDuration: 2
-    url: https://submit.diyaccounting.co.uk
+    url: https://wanted-finally-anteater.ngrok-free.app
   type: spider
 - parameters:
     maxDuration: 2
-    url: https://submit.diyaccounting.co.uk
+    url: https://wanted-finally-anteater.ngrok-free.app
   type: spiderAjax
 - parameters:
     maxDuration: 0

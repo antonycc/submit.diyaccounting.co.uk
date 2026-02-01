@@ -19,12 +19,35 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+import { getUserBundles, deleteBundle } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
+
+function emitCapMetric(metricName, bundleId) {
+  try {
+    console.log(
+      JSON.stringify({
+        _aws: {
+          Timestamp: Date.now(),
+          CloudWatchMetrics: [
+            {
+              Namespace: "Submit/BundleCapacity",
+              Dimensions: [["bundleId"]],
+              Metrics: [{ Name: metricName, Unit: "Count" }],
+            },
+          ],
+        },
+        bundleId,
+        [metricName]: 1,
+      }),
+    );
+  } catch {
+    // EMF emission is best-effort
+  }
+}
 
 const MAX_WAIT_MS = 25_000;
 const DEFAULT_WAIT_MS = 0;
@@ -297,21 +320,15 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   const currentBundles = await getUserBundles(userId);
 
-  // currentBundles are objects like { bundleId, expiry }. Ensure we compare by bundleId
-  const hasBundle = currentBundles.some((bundle) => bundle?.bundleId === requestedBundle);
-  if (hasBundle) {
-    logger.info({ message: "User already has requested bundle:", requestedBundle });
-    const result = {
-      status: "already_granted",
-      message: "Bundle already granted to user",
-      bundles: currentBundles,
-      granted: false,
-      statusCode: 201,
-    };
-    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-      await putAsyncRequest(userId, requestId, "completed", result);
-    }
-    return result;
+  // If the user already has this bundle, remove it and grant a fresh one.
+  // This handles: expired bundles, partially consumed tokens from previous passes,
+  // and re-redemption of a new pass for the same bundle type.
+  const existingBundle = currentBundles.find((bundle) => bundle?.bundleId === requestedBundle);
+  if (existingBundle) {
+    logger.info({ message: "Removing existing bundle before fresh grant", requestedBundle, expiry: existingBundle.expiry });
+    await deleteBundle(userId, requestedBundle);
+    const idx = currentBundles.indexOf(existingBundle);
+    if (idx !== -1) currentBundles.splice(idx, 1);
   }
 
   const catalogBundle = getCatalogBundle(requestedBundle);
@@ -366,20 +383,27 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
     logger.info({ message: "[Catalog bundle] Bundle requires manual allocation, proceeding:", requestedBundle });
   }
 
-  // on-request: enforce cap and expiry
+  // Global bundle capacity cap enforcement via atomic counter table.
+  // The cap field is a GLOBAL limit on active (non-expired) allocations across ALL users.
+  // Existing bundles are deleted and re-granted above, so this fires for every allocation.
   const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
-  if (typeof cap === "number") {
-    const currentCount = currentBundles.length;
-    if (currentCount >= cap) {
-      logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, currentCount, cap });
+  let capIncremented = false;
+  if (typeof cap === "number" && process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME) {
+    const { incrementCounter } = await import("../../data/dynamoDbCapacityRepository.js");
+    const granted = await incrementCounter(requestedBundle, cap);
+    if (!granted) {
+      logger.info({ message: "[Catalog bundle] Bundle cap reached:", requestedBundle, cap });
+      emitCapMetric("BundleCapReached", requestedBundle);
       const result = { status: "cap_reached", error: "cap_reached", statusCode: 403 };
       if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
         await putAsyncRequest(userId, requestId, "failed", result);
       }
       return result;
-    } else {
-      logger.info({ message: "[Catalog bundle] Bundle cap not yet reached:", requestedBundle, currentCount, cap });
     }
+    capIncremented = true;
+    logger.info({ message: "[Catalog bundle] Cap slot reserved:", requestedBundle, cap });
+  } else if (typeof cap === "number") {
+    logger.info({ message: "[Catalog bundle] Cap defined but no capacity table configured, skipping:", requestedBundle });
   } else {
     logger.info({ message: "[Catalog bundle] No cap defined for bundle:", requestedBundle });
   }
@@ -388,14 +412,45 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
   const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
+
+  // Token tracking: set token fields from catalogue
+  const tokensGranted = catalogBundle.tokensGranted ?? catalogBundle.tokens ?? undefined;
+  if (tokensGranted !== undefined) {
+    newBundle.tokensGranted = tokensGranted;
+    newBundle.tokensConsumed = 0;
+    if (catalogBundle.tokenRefreshInterval && expiry) {
+      newBundle.tokenResetAt = parseIsoDurationToDate(new Date(), catalogBundle.tokenRefreshInterval).toISOString();
+    } else {
+      newBundle.tokenResetAt = null;
+    }
+  }
+
   logger.info({ message: "New bundle details:", newBundle });
   currentBundles.push(newBundle);
   logger.info({ message: "Updated user bundles:", userId, currentBundles });
 
-  // Persist the updated bundles to the primary store (DynamoDB)
-  const { updateUserBundles } = await import("../../services/bundleManagement.js");
-  await updateUserBundles(userId, currentBundles);
+  // Persist the new bundle directly to DynamoDB.
+  // We use putBundle directly (not updateUserBundles) because updateUserBundles
+  // re-queries DynamoDB with eventually-consistent reads, which can miss the
+  // delete we just performed above, causing it to skip writing the new bundle.
+  try {
+    const { putBundle } = await import("../../data/dynamoDbBundleRepository.js");
+    await putBundle(userId, newBundle);
+  } catch (error) {
+    // Compensating write: if PutItem fails after cap counter increment, decrement the counter
+    if (capIncremented) {
+      try {
+        const { decrementCounter } = await import("../../data/dynamoDbCapacityRepository.js");
+        await decrementCounter(requestedBundle);
+        logger.info({ message: "Compensating counter decrement after failed bundle persist", requestedBundle });
+      } catch (decrementError) {
+        logger.error({ message: "Failed compensating counter decrement", error: decrementError.message, requestedBundle });
+      }
+    }
+    throw error;
+  }
 
+  emitCapMetric("BundleGranted", requestedBundle);
   logger.info({ message: "Bundle granted to user:", userId, newBundle });
   const result = {
     status: "granted",

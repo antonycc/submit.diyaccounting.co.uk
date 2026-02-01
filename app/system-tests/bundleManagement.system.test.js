@@ -123,7 +123,7 @@ describe("System: bundleManagement with local dynalite", () => {
     const userId = "bm-sys-add";
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     const bundlesToSet = [
-      { bundleId: "guest", expiry },
+      { bundleId: "day-guest", expiry },
       { bundleId: "test", expiry },
     ];
 
@@ -131,7 +131,7 @@ describe("System: bundleManagement with local dynalite", () => {
 
     const after = await bundleRepository.getUserBundles(userId);
     const ids = after.map((b) => b.bundleId);
-    expect(new Set(ids)).toEqual(new Set(["guest", "test"]));
+    expect(new Set(ids)).toEqual(new Set(["day-guest", "test"]));
   });
 
   it("updateUserBundles should remove bundles not present in next update (Dynamo mode)", async () => {
@@ -139,15 +139,15 @@ describe("System: bundleManagement with local dynalite", () => {
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
     await bm.updateUserBundles(userId, [
-      { bundleId: "guest", expiry },
+      { bundleId: "day-guest", expiry },
       { bundleId: "test", expiry },
     ]);
 
-    await bm.updateUserBundles(userId, [{ bundleId: "guest", expiry }]);
+    await bm.updateUserBundles(userId, [{ bundleId: "day-guest", expiry }]);
 
     const after = await bundleRepository.getUserBundles(userId);
     const ids = after.map((b) => b.bundleId);
-    expect(ids).toContain("guest");
+    expect(ids).toContain("day-guest");
     expect(ids).not.toContain("test");
   });
 
@@ -186,7 +186,7 @@ describe("System: bundleManagement with local dynalite", () => {
 
     // Grant a qualifying bundle and try again
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await bm.updateUserBundles(sub, [{ bundleId: "guest", expiry }]);
+    await bm.updateUserBundles(sub, [{ bundleId: "day-guest", expiry }]);
 
     await bm.enforceBundles(event); // should not throw now
   });

@@ -46,7 +46,6 @@ dist
 
 # Mock servers and test data
 mock-oauth2-server.json
-product-subscribers.subs
 
 # CDK and infrastructure code (not needed in Lambda runtime)
 infra

@@ -31,6 +31,8 @@ on:
         required: false
         options:
           - 'bundleBehaviour'
+          - 'passRedemptionBehaviour'
+          - 'tokenEnforcementBehaviour'
           - 'postVatReturnBehaviour'
           - 'getVatObligationsBehaviour'
           - 'getVatReturnBehaviour'
@@ -132,6 +134,14 @@ jobs:
         run: ":"
       - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
         run: ":"
+      - name: "inputs.skip-cleanup=[${{ inputs.skip-cleanup }}]"
+        run: ":"
+      - name: "inputs.skip-native-auth-toggle=[${{ inputs.skip-native-auth-toggle }}]"
+        run: ":"
+      - name: "inputs.test-auth-username=[${{ inputs.test-auth-username }}]"
+        run: ":"
+      - name: "inputs.test-auth-password=[***]"
+        run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
@@ -142,11 +152,19 @@ jobs:
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.skip-cleanup }}' ; echo "skip-cleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.skip-native-auth-toggle }}' ; echo "skip-native-auth-toggle=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          echo 'test-auth-username=${{ inputs.test-auth-username }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'test-auth-password=${{ inputs.test-auth-password }}' | tee -a "$GITHUB_OUTPUT"
     outputs:
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
       generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+      skip-cleanup: ${{ steps.normalise.outputs.skip-cleanup }}
+      skip-native-auth-toggle: ${{ steps.normalise.outputs.skip-native-auth-toggle }}
+      test-auth-username: ${{ steps.normalise.outputs.test-auth-username }}
+      test-auth-password: ${{ steps.normalise.outputs.test-auth-password }}
 
   names:
     needs:
@@ -271,7 +289,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Enable native auth on Cognito Hosted UI
-        if: ${{ inputs.skip-native-auth-toggle != 'true' }}
+        if: ${{ needs.params.outputs.skip-native-auth-toggle != 'true' }}
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
@@ -287,12 +305,11 @@ jobs:
         shell: bash
         run: |
           # If credentials were passed in, use them instead of creating a new user
-          if [ -n "${{ inputs.test-auth-username }}" ] && [ -n "${{ inputs.test-auth-password }}" ]; then
+          if [ -n "${{ needs.params.outputs.test-auth-username }}" ] && [ -n "${{ needs.params.outputs.test-auth-password }}" ]; then
             echo "Using provided test credentials (skipping user creation)"
-            # Mask the password to prevent it appearing in logs
-            echo "::add-mask::${{ inputs.test-auth-password }}"
-            echo "test-auth-username=${{ inputs.test-auth-username }}" >> "$GITHUB_OUTPUT"
-            echo "test-auth-password=${{ inputs.test-auth-password }}" >> "$GITHUB_OUTPUT"
+            # Test system password - intentionally not masked so it appears in job summary
+            echo "test-auth-username=${{ needs.params.outputs.test-auth-username }}" >> "$GITHUB_OUTPUT"
+            echo "test-auth-password=${{ needs.params.outputs.test-auth-password }}" >> "$GITHUB_OUTPUT"
             echo "user-created-here=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -349,14 +366,14 @@ jobs:
           retry-max-attempts: 3
 
       - name: Delete Cognito test user
-        if: ${{ !cancelled() && inputs.skip-cleanup != 'true' && steps.cognito-test-user.outputs.test-auth-username != '' && steps.cognito-test-user.outputs.user-created-here == 'true' }}
+        if: ${{ !cancelled() && needs.params.outputs.skip-cleanup != 'true' && steps.cognito-test-user.outputs.test-auth-username != '' && steps.cognito-test-user.outputs.user-created-here == 'true' }}
         shell: bash
         run: |
           echo "Deleting test user created by this workflow..."
           node scripts/delete-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" "${{ steps.cognito-test-user.outputs.test-auth-username }}"
 
       - name: Disable native auth on Cognito Hosted UI
-        if: ${{ !cancelled() && inputs.skip-native-auth-toggle != 'true' && inputs.skip-cleanup != 'true' }}
+        if: ${{ !cancelled() && needs.params.outputs.skip-native-auth-toggle != 'true' && needs.params.outputs.skip-cleanup != 'true' }}
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"

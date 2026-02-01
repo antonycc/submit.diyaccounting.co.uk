@@ -27,7 +27,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import { ensureBundlePresent, getTokensRemaining, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingMainNav, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
@@ -334,6 +334,16 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   // }
   await goToHomePage(page, screenshotPath);
 
+  /* ************************ */
+  /*  TOKEN BALANCE (BEFORE)  */
+  /* ************************ */
+
+  const tokensBefore = isSandboxMode() ? await getTokensRemaining(page, "test") : null;
+  if (tokensBefore !== null) {
+    console.log(`[Token check] Tokens before submission: ${tokensBefore}`);
+    expect(tokensBefore).toBeGreaterThan(0);
+  }
+
   /* *********** */
   /* `SUBMIT VAT */
   /* *********** */
@@ -368,6 +378,16 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   await completeVat(page, baseUrl, null, screenshotPath);
   await verifyVatSubmission(page, null, screenshotPath);
+
+  /* *********************** */
+  /*  TOKEN BALANCE (AFTER)  */
+  /* *********************** */
+
+  if (tokensBefore !== null) {
+    const tokensAfter = await getTokensRemaining(page, "test");
+    console.log(`[Token check] Tokens after submission: ${tokensAfter}`);
+    expect(tokensAfter).toBe(tokensBefore - 1);
+  }
 
   /* ********** */
   /*  RECEIPTS  */

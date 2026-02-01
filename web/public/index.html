@@ -57,7 +57,7 @@
       <nav class="main-nav" aria-label="Main navigation">
         <a href="index.html" class="active">Activities</a>
         <a href="hmrc/receipt/receipts.html">Receipts</a>
-        <a href="account/bundles.html">Bundles</a>
+        <a href="bundles.html">Bundles</a>
       </nav>
     </header>
 
@@ -76,7 +76,7 @@
         <div class="footer-left">
           <a href="#" id="viewSourceLink" style="display: none">view source</a>
           <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
-          <a id="apiDocsLink" style="display: inline" target="_blank" href="./docs/index.html"> api </a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="docs/api/index.html"> api </a>
           <a href="privacy.html">privacy</a>
           <a href="terms.html">terms</a>
           <a href="accessibility.html">accessibility</a>
@@ -131,7 +131,7 @@
             }
 
             if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-              __userBundles = bundlesData.bundles.map((b) => b.bundleId);
+              __userBundles = bundlesData.bundles.filter((b) => b.allocated).map((b) => b.bundleId);
             } else {
               __userBundles = [];
             }
@@ -279,8 +279,8 @@
       // Generate dynamic activity buttons based on display rules from catalogue
       // Display rules:
       //   - "never": don't show the button
-      //   - "onEntitlement": show only if user has an active bundle (default)
-      //   - "alwaysWithUpsell": always show; if not entitled, show as call-to-action linking to bundles page
+      //   - "on-entitlement": show only if user has an active bundle (default)
+      //   - "always-with-upsell": always show; if not entitled, show as call-to-action linking to bundles page
       //   - "always": always show the button regardless of entitlement
       async function renderDynamicActivities() {
         const dynamicContainer = document.getElementById("dynamicActivities");
@@ -311,7 +311,7 @@
           for (const activity of catalog.activities || []) {
             if (!activity.bundles || !Array.isArray(activity.bundles)) continue;
 
-            const displayRule = activity.display || "onEntitlement";
+            const displayRule = activity.display || "on-entitlement";
 
             // Skip activities with display="never"
             if (displayRule === "never") continue;
@@ -345,7 +345,7 @@
                   </button>
                 </div>
               `);
-            } else if (displayRule === "alwaysWithUpsell") {
+            } else if (displayRule === "always-with-upsell") {
               // User doesn't have access - show activity with upsell annotation
               const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
               const requiredBundleNames = activity.bundles
@@ -357,7 +357,7 @@
                 // Logged in but missing bundle - link to bundles page
                 buttons.push(`
                   <div style="margin: 1em 0">
-                    <button type="button" class="btn" onclick="window.location.href='account/bundles.html'">
+                    <button type="button" class="btn" onclick="window.location.href='bundles.html'">
                       ${activity.name}
                     </button>
                     <p style="font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;">
@@ -379,7 +379,7 @@
                 `);
               }
             }
-            // For displayRule === "onEntitlement" with no access, don't show anything
+            // For displayRule === "on-entitlement" with no access, don't show anything
           }
 
           // If no activities to show, display message

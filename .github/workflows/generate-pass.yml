@@ -1,0 +1,443 @@
+name: Generate Pass
+run-name: "generate ${{ inputs.pass-type || 'test-access' }} pass for ${{ inputs.environment || inputs.environment-name || 'ci' }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      pass-type:
+        description: 'Pass type (from submit.passes.toml)'
+        required: true
+        type: choice
+        options:
+          - test-access
+          - day-trial
+          - invited-guest
+          - resident-guest
+          - resident-pro-comp
+          - group-invite
+      email:
+        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
+        required: false
+        type: string
+      max-uses:
+        description: 'Maximum uses (overrides default from pass type)'
+        required: false
+        type: number
+      validity-period:
+        description: 'Validity period as ISO 8601 duration (overrides default, e.g. P7D, P1M, P1Y)'
+        required: false
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+        default: ci
+      quantity:
+        description: 'Number of passes to generate'
+        required: false
+        type: number
+        default: 1
+      notes:
+        description: 'Admin notes for this pass'
+        required: false
+        type: string
+      generate-hmrc-user:
+        description: 'Generate HMRC sandbox test user (always uses sandbox API)'
+        type: boolean
+        required: false
+        default: true
+      generate-cognito-user:
+        description: 'Generate Cognito native test user (for manual testing)'
+        type: boolean
+        required: false
+        default: false
+  workflow_call:
+    inputs:
+      environment-name:
+        type: string
+        description: 'Target environment (ci or prod)'
+        required: true
+      pass-type:
+        type: string
+        description: 'Pass type from submit.passes.toml'
+        required: false
+        default: 'test-access'
+      email:
+        type: string
+        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
+        required: false
+      max-uses:
+        type: string
+        description: 'Maximum uses (overrides default from pass type)'
+        required: false
+      validity-period:
+        type: string
+        description: 'Validity period as ISO 8601 duration (overrides default, e.g. P7D, P1M, P1Y)'
+        required: false
+      quantity:
+        type: string
+        description: 'Number of passes to generate'
+        required: false
+        default: '1'
+      notes:
+        type: string
+        description: 'Admin notes for this pass'
+        required: false
+      generate-hmrc-user:
+        type: string
+        description: 'Generate HMRC sandbox test user (true/false)'
+        required: false
+        default: 'true'
+      generate-cognito-user:
+        type: string
+        description: 'Generate Cognito native test user (true/false)'
+        required: false
+        default: 'false'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET:
+        required: false
+  schedule:
+    - cron: '0 9 * * *'
+  push:
+    branches:
+      - '**'
+    paths:
+      - '.github/workflows/generate-pass.yml'
+      - 'submit.passes.toml'
+      - 'app/services/passService.js'
+      - 'app/lib/emailHash.js'
+
+env:
+  AWS_REGION: eu-west-2
+  ACTIONS_ROLE_ARN: arn:aws:iam::887764105431:role/submit-github-actions-role
+  DEPLOY_ROLE_ARN: arn:aws:iam::887764105431:role/submit-deployment-role
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+
+  params:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
+      - name: "github.sha=[${{ github.sha }}]"
+        run: ":"
+      - name: "inputs.pass-type=[${{ inputs.pass-type }}]"
+        run: ":"
+      - name: "inputs.environment=[${{ inputs.environment }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.email=[${{ inputs.email }}]"
+        run: ":"
+      - name: "inputs.max-uses=[${{ inputs.max-uses }}]"
+        run: ":"
+      - name: "inputs.validity-period=[${{ inputs.validity-period }}]"
+        run: ":"
+      - name: "inputs.quantity=[${{ inputs.quantity }}]"
+        run: ":"
+      - name: "inputs.notes=[${{ inputs.notes }}]"
+        run: ":"
+      - name: "inputs.generate-hmrc-user=[${{ inputs.generate-hmrc-user }}]"
+        run: ":"
+      - name: "inputs.generate-cognito-user=[${{ inputs.generate-cognito-user }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        run: |
+          # environment: workflow_dispatch uses 'environment', workflow_call uses 'environment-name', schedule/push default to 'ci'
+          ENV='${{ inputs.environment }}'
+          ENV_NAME='${{ inputs.environment-name }}'
+          echo "environment=${ENV:-${ENV_NAME:-ci}}" | tee -a "$GITHUB_OUTPUT"
+          # pass-type: default to test-access for schedule/push
+          X='${{ inputs.pass-type }}' ; echo "pass-type=${X:-test-access}" | tee -a "$GITHUB_OUTPUT"
+          # quantity: default to 1
+          X='${{ inputs.quantity }}' ; echo "quantity=${X:-1}" | tee -a "$GITHUB_OUTPUT"
+          # Pass through optional inputs
+          echo 'email=${{ inputs.email }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'max-uses=${{ inputs.max-uses }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'validity-period=${{ inputs.validity-period }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'notes=${{ inputs.notes }}' | tee -a "$GITHUB_OUTPUT"
+          # generate-hmrc-user: default to true
+          X='${{ inputs.generate-hmrc-user }}' ; echo "generate-hmrc-user=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          # generate-cognito-user: default to false
+          X='${{ inputs.generate-cognito-user }}' ; echo "generate-cognito-user=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      environment: ${{ steps.normalise.outputs.environment }}
+      pass-type: ${{ steps.normalise.outputs.pass-type }}
+      quantity: ${{ steps.normalise.outputs.quantity }}
+      email: ${{ steps.normalise.outputs.email }}
+      max-uses: ${{ steps.normalise.outputs.max-uses }}
+      validity-period: ${{ steps.normalise.outputs.validity-period }}
+      notes: ${{ steps.normalise.outputs.notes }}
+      generate-hmrc-user: ${{ steps.normalise.outputs.generate-hmrc-user }}
+      generate-cognito-user: ${{ steps.normalise.outputs.generate-cognito-user }}
+
+  names:
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "needs.params.outputs.environment=[${{ needs.params.outputs.environment }}]"
+        run: ":"
+      - name: "needs.params.outputs.pass-type=[${{ needs.params.outputs.pass-type }}]"
+        run: ":"
+      - name: "needs.params.outputs.quantity=[${{ needs.params.outputs.quantity }}]"
+        run: ":"
+      - name: Resolve names
+        id: resolve
+        run: |
+          ENV_NAME="${{ needs.params.outputs.environment }}"
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          if [ "$ENV_NAME" = "prod" ]; then
+            echo "pass-url-host=submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "pass-url-host=${ENV_NAME}.submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      environment-name: ${{ steps.resolve.outputs.environment-name }}
+      pass-url-host: ${{ steps.resolve.outputs.pass-url-host }}
+
+  generate:
+    needs:
+      - params
+      - names
+    name: 'Generate ${{ needs.params.outputs.pass-type }} pass for ${{ needs.names.outputs.environment-name }}'
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read pass type defaults from submit.passes.toml
+        id: pass-type
+        run: |
+          # Extract defaults for the selected pass type from submit.passes.toml
+          PASS_TYPE="${{ needs.params.outputs.pass-type }}"
+
+          # Use node to parse TOML and extract defaults
+          node --input-type=module -e "
+            import fs from 'fs';
+            import TOML from '@iarna/toml';
+            const catalog = TOML.parse(fs.readFileSync('submit.passes.toml', 'utf-8'));
+            const passType = catalog.passTypes.find(p => p.id === '${PASS_TYPE}');
+            if (!passType) {
+              console.error('Pass type not found: ${PASS_TYPE}');
+              process.exit(1);
+            }
+            console.log('BUNDLE_ID=' + passType.bundleId);
+            console.log('DEFAULT_VALIDITY_PERIOD=' + (passType.defaultValidityPeriod || ''));
+            console.log('DEFAULT_MAX_USES=' + (passType.defaultMaxUses || 1));
+            console.log('REQUIRES_EMAIL=' + (passType.requiresEmailRestriction || false));
+            console.log('PASS_TYPE_NAME=' + passType.name);
+          " >> "$GITHUB_OUTPUT"
+
+      - name: Validate inputs
+        run: |
+          if [[ "${{ steps.pass-type.outputs.REQUIRES_EMAIL }}" == "true" ]] && [[ -z "${{ needs.params.outputs.email }}" ]]; then
+            echo "::error::Pass type '${{ needs.params.outputs.pass-type }}' requires an email address"
+            exit 1
+          fi
+
+      - name: Generate passes
+        id: generate
+        run: |
+          ENV_NAME="${{ needs.names.outputs.environment-name }}"
+          TABLE_NAME="${ENV_NAME}-env-passes"
+          BUNDLE_ID="${{ steps.pass-type.outputs.BUNDLE_ID }}"
+          MAX_USES="${{ needs.params.outputs.max-uses || steps.pass-type.outputs.DEFAULT_MAX_USES }}"
+          VALIDITY_PERIOD="${{ needs.params.outputs.validity-period || steps.pass-type.outputs.DEFAULT_VALIDITY_PERIOD }}"
+          QUANTITY="${{ needs.params.outputs.quantity }}"
+          EMAIL="${{ needs.params.outputs.email }}"
+          NOTES="${{ needs.params.outputs.notes }}"
+          CREATED_BY="github-actions-run#${{ github.run_id }}"
+
+          echo "Generating ${QUANTITY} ${{ needs.params.outputs.pass-type }} pass(es)..."
+          echo "  Bundle: ${BUNDLE_ID}"
+          echo "  Max uses: ${MAX_USES}"
+          echo "  Validity: ${VALIDITY_PERIOD}"
+          echo "  Table: ${TABLE_NAME}"
+
+          # Fetch email hash secret from Secrets Manager
+          EMAIL_HASH_SECRET=""
+          if [[ -n "${EMAIL}" ]]; then
+            EMAIL_HASH_SECRET=$(aws secretsmanager get-secret-value \
+              --secret-id "${ENV_NAME}/submit/email-hash-secret" \
+              --query SecretString --output text 2>/dev/null || echo "")
+            if [[ -z "${EMAIL_HASH_SECRET}" ]]; then
+              echo "::warning::Email hash secret not found, creating pass without email restriction"
+              EMAIL=""
+            fi
+          fi
+
+          # Generate passes using Node.js
+          export PASSES_DYNAMODB_TABLE_NAME="${TABLE_NAME}"
+          export EMAIL_HASH_SECRET="${EMAIL_HASH_SECRET}"
+          node --input-type=module -e "
+            import { createPass } from './app/services/passService.js';
+            import { initializeEmailHashSecret } from './app/lib/emailHash.js';
+            import fs from 'fs';
+
+            const quantity = parseInt('${QUANTITY}', 10);
+            const results = [];
+
+            if (process.env.EMAIL_HASH_SECRET) {
+              await initializeEmailHashSecret();
+            }
+
+            for (let i = 0; i < quantity; i++) {
+              const pass = await createPass({
+                passTypeId: '${{ needs.params.outputs.pass-type }}',
+                bundleId: '${BUNDLE_ID}',
+                validityPeriod: '${VALIDITY_PERIOD}' || undefined,
+                maxUses: parseInt('${MAX_USES}', 10),
+                restrictedToEmail: '${EMAIL}' || undefined,
+                createdBy: '${CREATED_BY}',
+                notes: '${NOTES}' || undefined,
+              });
+              results.push({
+                code: pass.code,
+                bundleId: pass.bundleId,
+                validFrom: pass.validFrom,
+                validUntil: pass.validUntil,
+                maxUses: pass.maxUses,
+              });
+            }
+
+            // Write results
+            fs.writeFileSync('passes-output.json', JSON.stringify(results, null, 2));
+
+            for (const pass of results) {
+              console.log('---');
+              console.log('Code: ' + pass.code);
+              console.log('URL: https://${{ needs.names.outputs.pass-url-host }}/bundles.html?pass=' + pass.code);
+              console.log('Bundle: ' + pass.bundleId);
+              console.log('Valid until: ' + (pass.validUntil || 'unlimited'));
+              console.log('Max uses: ' + pass.maxUses);
+            }
+          "
+
+      - name: Create HMRC sandbox test user
+        id: hmrc-user
+        if: ${{ needs.params.outputs.generate-hmrc-user == 'true' }}
+        run: |
+          # HMRC_SANDBOX_CLIENT_ID is a public test credential (not a secret)
+          export HMRC_SANDBOX_CLIENT_ID=$(grep -E '^HMRC_SANDBOX_CLIENT_ID=' .env.ci | cut -d'=' -f2)
+          node scripts/create-hmrc-test-user.js
+        env:
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+      - name: Create Cognito test user
+        id: cognito-user
+        if: ${{ needs.params.outputs.generate-cognito-user == 'true' }}
+        run: |
+          node scripts/create-cognito-test-user.js "${{ needs.names.outputs.environment-name }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Upload passes artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: passes-${{ needs.params.outputs.pass-type }}-${{ github.run_id }}
+          path: passes-output.json
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "## Pass Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Type | ${{ needs.params.outputs.pass-type }} (${{ steps.pass-type.outputs.PASS_TYPE_NAME }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ needs.names.outputs.environment-name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quantity | ${{ needs.params.outputs.quantity }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bundle | ${{ steps.pass-type.outputs.BUNDLE_ID }} |" >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ needs.params.outputs.email }}" ]]; then
+            echo "| Email restricted | Yes |" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Read generated passes and display actual codes with clickable URLs
+          echo "### Generated Passes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Code | URL | Valid Until | Max Uses |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----|-------------|----------|" >> $GITHUB_STEP_SUMMARY
+          node --input-type=module -e "
+            import fs from 'fs';
+            const passes = JSON.parse(fs.readFileSync('passes-output.json', 'utf-8'));
+            const host = '${{ needs.names.outputs.pass-url-host }}';
+            for (const pass of passes) {
+              const url = 'https://' + host + '/bundles.html?pass=' + pass.code;
+              const validUntil = pass.validUntil || 'unlimited';
+              console.log('| \`' + pass.code + '\` | [' + url + '](' + url + ') | ' + validUntil + ' | ' + pass.maxUses + ' |');
+            }
+          " >> $GITHUB_STEP_SUMMARY
+
+          # HMRC sandbox test user credentials
+          if [[ -f "hmrc-test-user.json" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### HMRC Sandbox Test User" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Use these credentials when redirected to HMRC login (sandbox mode):" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| User ID | \`${{ steps.hmrc-user.outputs.hmrc-user-id }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Test Sandbox Password | \`${{ steps.hmrc-user.outputs.hmrc-password }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| VAT Number (VRN) | \`${{ steps.hmrc-user.outputs.hmrc-vat-number }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Organisation | ${{ steps.hmrc-user.outputs.hmrc-org-name }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Cognito native test user credentials (when debugging mode enabled)
+          if [[ -n "${{ steps.cognito-user.outputs.test-auth-username }}" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Cognito Test User (debugging)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Native auth is enabled. Use these credentials to log in:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Username | \`${{ steps.cognito-user.outputs.test-auth-username }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Test System Password | \`${{ steps.cognito-user.outputs.test-auth-password }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Login URL | [https://${{ needs.names.outputs.pass-url-host }}](https://${{ needs.names.outputs.pass-url-host }}) |" >> $GITHUB_STEP_SUMMARY
+          fi

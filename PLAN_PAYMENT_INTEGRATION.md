@@ -1,0 +1,958 @@
+# Payment Integration - Phased Delivery Plan
+
+> **Prerequisite**: `PLAN_PASSES_V2.md` (passes, tokens, bundles, capacity) must be stable before starting.
+> **Provider**: Stripe (see [Provider Decision](#provider-decision) below)
+> **Target bundle**: `resident-pro` subscription via Stripe Checkout
+> **Branch strategy**: Feature branch deployed to CI environment, validated per phase before merging.
+
+## Overview
+
+This plan delivers Stripe-based subscription payments in layered phases, building from infrastructure outward so each phase provides a testable, deployable increment without breaking changes.
+
+Each phase is a checkpoint: deploy to CI, validate, then proceed. No phase introduces breaking changes to existing functionality.
+
+### Testing philosophy: early and deep
+
+Lessons from PLAN_PASSES_V2: phasing without behaviour tests only catches regressions and deployment problems. Real integration issues surface late and are expensive to fix. This plan addresses that by:
+
+1. **Stripe simulator** — A local Stripe API simulator (based on the Stripe OpenAPI spec at `_developers/reference/stripe-api-spec3.json`) that our system tests and behaviour tests can hit without a real Stripe account. This lets us test the full checkout → webhook → bundle-grant flow locally and in CI from Phase 2 onward.
+2. **Skeletal behaviour tests from the first UI-visible feature** — As soon as a feature is exposed on the web (a button, a page, a link), a behaviour test exists to verify it. Initially these may hit mocked or simulated APIs, graduating to real CI APIs as infrastructure arrives.
+3. **System tests at every backend phase** — Every Lambda gets system tests running against dynalite + Stripe simulator before any CI deployment.
+4. **Local → simulator → CI → prod** — Failures are cheapest to fix locally, then against the simulator, then deployed to CI. Each phase validates at all available levels before proceeding.
+
+| Feature | Purpose |
+|---------|---------|
+| **Token usage page** | Replace header token count with full usage tables (sources + consumption) |
+| **Stripe Checkout** | Redirect users to Stripe for card payment, zero PII on our servers |
+| **Webhook handling** | Stripe notifies us of payment events, we grant/manage bundles |
+| **Customer Portal** | Self-service billing management via Stripe's hosted portal |
+| **Subscription recovery** | Recover paid subscriptions after database loss using Stripe metadata |
+| **Compliance uplift** | Scan new paths, update help/guide/about for payment features |
+
+---
+
+## Provider Decision
+
+**Recommended: Stripe**
+
+| Criterion | Stripe | GoCardless | Paddle | LemonSqueezy |
+|-----------|--------|------------|--------|--------------|
+| API-first, no sales call | Yes | Yes | No (MoR complexity) | Yes |
+| UK trust/presence | High | High | Yes | US-based |
+| Webhook reliability | Excellent | Good | Good | Good |
+| Customer portal (self-serve) | Built-in | No | Limited | Limited |
+| Fraud/abuse detection | Radar AI | DD only | Yes | Basic |
+| Subscription management | Full | DD focused | MoR | Yes |
+| Payout delay control | Configurable | N/A (DD) | No (MoR) | No (MoR) |
+| No PCI burden | Checkout/Elements | Yes | Yes | Yes |
+
+**Why not Paddle/LemonSqueezy (Merchant of Record)?** They handle VAT, but DIY Accounting is already VAT-registered and wants merchant control for audit trail clarity. Less flexibility on refund policies and payout timing.
+
+**Why not GoCardless?** No card payments, slower setup, less fraud protection. Consider as secondary option for annual subscriptions later.
+
+**Why not PayPal?** Poor API quality, inconsistent webhook delivery, higher dispute rates.
+
+---
+
+## Stripe API Reference
+
+The Stripe OpenAPI v3 specification is stored at `_developers/reference/stripe-api-spec3.json` and `_developers/reference/stripe-api-spec3.yaml` (source: [stripe/openapi](https://github.com/stripe/openapi)). The YAML version renders in IntelliJ's Swagger viewer. This spec is used to:
+
+- Build a local Stripe API simulator for system tests and behaviour tests
+- Validate request/response shapes in unit tests
+- Generate TypeScript types or JSDoc annotations if needed
+
+The simulator needs to support only the endpoints we use:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /v1/checkout/sessions` | Create checkout session |
+| `GET /v1/subscriptions/:id` | Retrieve subscription details |
+| `GET /v1/subscriptions` | List/search subscriptions (for recovery) |
+| `POST /v1/billing_portal/sessions` | Create portal session |
+| `POST /v1/webhooks` | (simulated event delivery) |
+
+---
+
+## Architecture Overview
+
+```
+User Journey:
+
+  bundles.html                    Stripe Checkout
+  +---------------+               +---------------------+
+  | "Subscribe"   |-- redirect -->| stripe.com/checkout  |
+  | button        |               |                      |
+  | (must be      |               | - Card entry         |
+  |  logged in)   |               | - Name/email         |
+  +---------------+               | - All PII here       |
+                                  +----------+-----------+
+                                             |
+                                             | success
+                                             v
+                                  +---------------------+
+                                  | Stripe Webhook       |
+                                  | (fires BEFORE user   |
+                                  |  returns to site)    |
+                                  +----------+----------+
+                                             |
+                                             v
+                                  +---------------------+
+                                  | billingWebhookPost   |
+                                  | Lambda               |
+                                  |                      |
+                                  | 1. Verify signature  |
+                                  | 2. Extract hashedSub |
+                                  |    from metadata     |
+                                  | 3. Allocate bundle   |
+                                  | 4. Store subscription|
+                                  |    reference         |
+                                  +----------+----------+
+                                             |
+                                             v
+                                  +---------------------+
+                                  | DynamoDB: bundles    |
+                                  |                      |
+                                  | bundleId: resident-  |
+                                  |   pro                |
+                                  | stripeSubscriptionId |
+                                  | stripeCustomerId     |
+                                  +---------------------+
+
+  User returns to bundles.html (bundle already active!)
+```
+
+---
+
+## Data Model Changes
+
+### Bundle Record (Extended)
+
+Existing bundle records gain Stripe integration fields when allocated via subscription:
+
+```
+hashedSub               String   (existing)
+bundleId                String   (existing) "resident-pro"
+expiry                  String   (existing) null for active subscriptions
+tokensGranted           Number   (existing) 100
+tokensConsumed          Number   (existing) 0
+tokenResetAt            String   (existing) ISO8601
+
+stripeSubscriptionId    String   NEW - "sub_1ABC..." for status checks
+stripeCustomerId        String   NEW - "cus_XYZ..." for portal access
+subscriptionStatus      String   NEW - active|past_due|canceled|unpaid
+currentPeriodEnd        String   NEW - ISO8601 when tokens next refresh
+cancelAtPeriodEnd       Boolean  NEW - user requested cancellation
+```
+
+### Subscriptions Table (New - for audit trail and recovery)
+
+```
+Table: {env}-submit-subscriptions
+PK: pk = "stripe#sub_1ABC..."
+
+Fields:
+  hashedSub               String
+  stripeCustomerId        String   "cus_XYZ..."
+  productId               String   "prod_ResidentPro"
+  priceId                 String   "price_Monthly"
+  status                  String   active|past_due|canceled|unpaid
+  currentPeriodStart      String   ISO8601
+  currentPeriodEnd        String   ISO8601
+  canceledAt              String   ISO8601 or null
+  createdAt               String   ISO8601
+  updatedAt               String   ISO8601
+```
+
+---
+
+## Webhook Events to Handle
+
+| Event | Handler | Purpose |
+|-------|---------|---------|
+| `checkout.session.completed` | `handleCheckoutComplete` | Initial purchase - grant bundle |
+| `invoice.paid` | `handleInvoicePaid` | Renewal - refresh tokens |
+| `customer.subscription.updated` | `handleSubscriptionUpdated` | Status changes (past_due, etc.) |
+| `customer.subscription.deleted` | `handleSubscriptionDeleted` | Cancellation complete |
+| `invoice.payment_failed` | `handlePaymentFailed` | Card declined |
+| `charge.refunded` | `handleRefund` | Refund issued - log for audit |
+| `charge.dispute.created` | `handleDispute` | Chargeback - log and alert |
+
+---
+
+## API Endpoints (New)
+
+| Endpoint | Method | Lambda | Auth | Purpose |
+|----------|--------|--------|------|---------|
+| `/api/v1/billing/checkout-session` | POST | billingCheckoutPost | JWT | Create Stripe Checkout session |
+| `/api/v1/billing/portal` | GET | billingPortalGet | JWT | Get Customer Portal URL |
+| `/api/v1/billing/recover` | POST | billingRecoverPost | JWT | Recover subscription after DB loss |
+| `/api/v1/billing/webhook` | POST | billingWebhookPost | Stripe signature | Handle Stripe webhooks |
+
+---
+
+## New Frontend Paths
+
+| Path | Purpose | Phase |
+|------|---------|-------|
+| `/usage.html` | Token usage page (sources + consumption tables) | 1 |
+
+Note: Stripe Checkout and Customer Portal are hosted on stripe.com (no new DIY Accounting pages for payment entry).
+
+---
+
+## Phase 1: Token Usage Page
+
+**Goal**: Replace the header token count + refresh button with a dedicated token usage page showing tabulated sources and consumption.
+
+**Risk mitigated**: Is the token data structure sufficient for a detailed usage view? Does the existing bundle API return enough information?
+
+### 1.1 Token usage page
+
+- [ ] Create `web/public/usage.html`
+  - **Token sources table** (top of page): bundles providing tokens
+    - Columns: Bundle Name, Tokens Granted, Tokens Remaining, Expiry/Refresh Date
+    - Most users will have 1-2 rows
+  - **Token consumption table** (below): activities that consumed tokens
+    - Columns: Activity, Date/Time, Tokens Used
+    - Populated from a new API field or dedicated endpoint
+  - Reload button to invalidate bundles cache and re-fetch
+  - Navigation link from header token count to this page
+  - Standard header/footer/navigation consistent with other pages
+
+### 1.2 Token consumption tracking (backend)
+
+- [ ] Extend bundle/token data to record consumption events
+  - Option A: Add `tokenEvents` array to bundle record (simple, limited history)
+  - Option B: Separate token events table (scalable, queryable)
+  - Decision: Option A for initial implementation (last N events), migrate to Option B if needed
+- [ ] Update `tokenEnforcement.js` to record consumption event when a token is consumed
+  - Event: `{ activity, timestamp, tokensUsed: 1 }`
+- [ ] Update `GET /api/v1/bundle` response to include token consumption events
+
+### 1.3 Header token count link
+
+- [ ] Update `web/public/widgets/auth-status.js`
+  - Token count in header becomes a link to `/usage.html`
+  - Remove the temporary refresh button from header (refresh lives on usage page now)
+
+### 1.4 Unit tests
+
+- [ ] `web/unit-tests/billing/usage.test.js` - token usage page rendering
+- [ ] `app/unit-tests/services/tokenEnforcement.test.js` - consumption event recording
+
+### 1.5 Compliance scanning uplift (usage page)
+
+- [ ] Add `/usage.html` to `.pa11yci.proxy.json`, `.pa11yci.ci.json`, `.pa11yci.prod.json`
+- [ ] Add `/usage.html` to axe-core scan URL lists in `package.json`
+- [ ] Add `/usage.html` to Lighthouse scan in `package.json`
+- [ ] Add `/usage.html` to text-spacing test in `scripts/text-spacing-test.js`
+
+### Validation
+
+Deploy to CI. `npm test` passes. Token usage page loads at `/usage.html` with sources and consumption tables. Pa11y, axe, Lighthouse pass for the new path.
+
+---
+
+## Phase 2: Stripe SDK & Infrastructure Foundation
+
+**Goal**: CDK infrastructure for billing Lambdas, Stripe SDK available, secrets wired. No API endpoints yet.
+
+**Risk mitigated**: Can we deploy the billing infrastructure without breaking existing stacks? Are secrets accessible from Lambda?
+
+### 2.1 Stripe npm dependency
+
+- [ ] Add `stripe` package to `package.json` dependencies
+- [ ] Verify `npm test` passes with new dependency
+
+### 2.2 Secrets Manager entries
+
+- [ ] Add Stripe secret key to Secrets Manager: `{env}/submit/stripe/secret_key`
+- [ ] Add Stripe webhook secret to Secrets Manager: `{env}/submit/stripe/webhook_secret`
+- [ ] Add Stripe price ID to Secrets Manager: `{env}/submit/stripe/price_id`
+- [ ] Script to create secrets: `scripts/stripe-setup-secrets.sh`
+
+### 2.3 Stripe product and price setup
+
+- [ ] Create Stripe test mode product: "Resident Pro" with metadata `bundleId=resident-pro`
+- [ ] Create monthly price: GBP 9.99/month with metadata `bundleId=resident-pro`
+- [ ] Create annual price (optional): GBP 99.00/year (2 months free)
+- [ ] Script: `scripts/stripe-setup-products.sh`
+- [ ] Script: `scripts/stripe-setup-webhooks.sh` (registers webhook endpoint URL)
+
+### 2.4 CDK infrastructure (BillingStack)
+
+- [ ] Create `infra/main/java/.../BillingStack.java` (or extend AccountStack)
+  - Placeholder Lambdas for: billingCheckoutPost, billingPortalGet, billingRecoverPost, billingWebhookPost
+  - Environment variables: STRIPE_SECRET_KEY_ARN, STRIPE_WEBHOOK_SECRET_ARN, STRIPE_PRICE_ID, BUNDLES_TABLE_NAME, SUBSCRIPTIONS_TABLE_NAME
+  - Grant Secrets Manager read to all billing Lambdas
+  - Grant DynamoDB read/write on bundles table and subscriptions table
+  - billingWebhookPost: skip JWT authorizer (uses Stripe signature verification)
+- [ ] Add subscriptions DynamoDB table to DataStack.java
+  - Table name: `{env}-submit-subscriptions`
+  - PK: `pk` (String)
+  - PITR enabled
+  - RemovalPolicy.DESTROY
+- [ ] Wire API Gateway routes for billing endpoints
+- [ ] Update `SubmitSharedNames.java` with billing Lambda configuration
+
+### 2.5 Stripe SDK helper
+
+- [ ] Create `app/lib/stripeClient.js`
+  - Initialise Stripe client from Secrets Manager ARN
+  - Lazy initialisation (create client on first use, cache for Lambda warm starts)
+  - Export: `getStripeClient()`
+
+### 2.6 Stripe API simulator
+
+- [ ] Create `app/test-support/stripeSimulator.js`
+  - Lightweight Express server implementing the Stripe endpoints we use (see Stripe API Reference above)
+  - Based on `_developers/reference/stripe-api-spec3.json` for response shapes
+  - Supports: `POST /v1/checkout/sessions`, `GET /v1/subscriptions/:id`, `GET /v1/subscriptions`, `POST /v1/billing_portal/sessions`
+  - Supports: simulated webhook delivery (call a local endpoint with a signed event)
+  - Returns realistic test data (Stripe object IDs, metadata passthrough, timestamps)
+  - Configurable: can inject failures, delays, specific responses
+  - Used by system tests and behaviour tests (replaces real Stripe in local/simulator environments)
+- [ ] Wire simulator into `.env.test` and `.env.proxy` configurations
+  - `STRIPE_API_BASE_URL` points to simulator when running locally
+  - `stripeClient.js` respects this override for test/proxy environments
+
+### 2.7 Express server routes (local dev)
+
+- [ ] Add billing API routes to local Express server
+  - `POST /api/v1/billing/checkout-session`
+  - `GET /api/v1/billing/portal`
+  - `POST /api/v1/billing/recover`
+  - `POST /api/v1/billing/webhook`
+
+### 2.8 System tests (infrastructure foundation)
+
+- [ ] `app/system-tests/billing/billingInfrastructure.system.test.js`
+  - Verify billing Lambdas can be imported and invoked
+  - Verify Stripe simulator starts and responds to health check
+  - Verify subscription table CRUD works against dynalite
+  - These tests run locally and catch wiring issues before any CI deployment
+
+### 2.9 Maven build verification
+
+- [ ] `./mvnw clean verify` passes with new CDK constructs
+- [ ] CDK synth produces expected CloudFormation templates
+
+### Validation
+
+Deploy to CI. All existing stacks deploy without issues. New BillingStack deploys with placeholder Lambdas. Secrets accessible from Lambda environment. Stripe simulator starts and responds. `npm test` and `./mvnw clean verify` pass.
+
+---
+
+## Phase 3: Checkout Session API
+
+**Goal**: Authenticated users can create a Stripe Checkout session. Redirect URL returned for frontend use.
+
+**Risk mitigated**: Does Stripe Checkout session creation work with our hashedSub metadata approach? Does the redirect flow work end-to-end?
+
+### 3.1 billingCheckoutPost Lambda
+
+- [ ] Create `app/functions/billing/billingCheckoutPost.js`
+  - Extract hashedSub from JWT (via custom authorizer)
+  - Extract user email from JWT
+  - Create Stripe Checkout Session:
+    - `mode: "subscription"`
+    - `customer_email`: user's email
+    - `client_reference_id`: hashedSub
+    - `metadata`: `{ hashedSub, bundleId: "resident-pro" }`
+    - `subscription_data.metadata`: `{ hashedSub, bundleId }`
+    - `success_url`: `{baseUrl}/bundles.html?checkout=success`
+    - `cancel_url`: `{baseUrl}/bundles.html?checkout=canceled`
+    - `consent_collection.terms_of_service`: `"required"`
+    - Custom text for UK distance selling regulations waiver
+  - Return: `{ checkoutUrl: "https://checkout.stripe.com/..." }`
+
+### 3.2 Unit tests
+
+- [ ] `app/unit-tests/functions/billingCheckoutPost.test.js`
+  - Mock Stripe SDK, verify session creation params
+  - Verify hashedSub and bundleId in metadata
+  - Verify error handling for missing auth
+
+### 3.3 System tests (against Stripe simulator)
+
+- [ ] `app/system-tests/billing/billingCheckout.system.test.js`
+  - Use Stripe simulator (not real Stripe) for fast, reliable local testing
+  - Create checkout session via Lambda handler, verify URL returned
+  - Verify metadata contains hashedSub and bundleId
+  - Verify simulator recorded the checkout session creation
+
+### 3.4 Behaviour test: skeletal checkout flow (simulator)
+
+- [ ] `behaviour-tests/billing/billingCheckout.behaviour.test.js`
+  - Run against local proxy with Stripe simulator
+  - Navigate to `bundles.html`, verify "Subscribe" button appears for `resident-pro`
+  - Click "Subscribe" → verify redirect to checkout URL (intercepted, not followed to Stripe)
+  - Verify the checkout session was created with correct metadata
+  - This tests the full frontend → API → Stripe flow using the simulator
+  - Marked as `simulator` environment initially, graduates to `ci` when deployed
+
+### Validation
+
+Deploy to CI. `POST /api/v1/billing/checkout-session` returns a valid Stripe Checkout URL with correct metadata. Unit tests, system tests (against simulator), and skeletal behaviour test pass locally. CI deployment verified.
+
+---
+
+## Phase 4: Webhook Handler & Bundle Grant
+
+**Goal**: Stripe webhooks are received, signature-verified, and `checkout.session.completed` grants a `resident-pro` bundle with tokens.
+
+**Risk mitigated**: Does webhook signature verification work with API Gateway's request format? Does the bundle grant flow integrate correctly with existing bundlePost logic?
+
+### 4.1 billingWebhookPost Lambda
+
+- [ ] Create `app/functions/billing/billingWebhookPost.js`
+  - Verify Stripe webhook signature using raw request body
+  - Route events to handlers based on event type
+  - Return 200 for handled events, 400 for invalid signature
+  - Log unhandled event types (don't fail)
+
+### 4.2 handleCheckoutComplete
+
+- [ ] On `checkout.session.completed`:
+  - Extract `hashedSub` and `bundleId` from session metadata
+  - Retrieve subscription details from Stripe
+  - Grant bundle via existing `addBundles()` / bundlePost logic:
+    - `bundleId`: from metadata
+    - `tokensGranted`: from catalogue
+    - `stripeSubscriptionId`: from session
+    - `stripeCustomerId`: from session
+    - `subscriptionStatus`: `"active"`
+    - `currentPeriodEnd`: from subscription
+  - Write subscription record to subscriptions table
+
+### 4.3 Webhook signature verification
+
+- [ ] Handle API Gateway request format (raw body for signature verification)
+- [ ] Verify `stripe-signature` header against webhook secret
+- [ ] Return 400 with JSON error for invalid signatures
+
+### 4.4 Unit tests
+
+- [ ] `app/unit-tests/functions/billingWebhookPost.test.js`
+  - Mock Stripe SDK, verify signature check
+  - Verify bundle grant on checkout.session.completed
+  - Verify 400 on invalid signature
+  - Verify subscription record written
+
+### 4.5 System tests (against Stripe simulator + dynalite)
+
+- [ ] `app/system-tests/billing/billingWebhook.system.test.js`
+  - Stripe simulator delivers `checkout.session.completed` event to webhook handler
+  - Verify bundle appears in DynamoDB (dynalite) with Stripe fields
+  - Verify subscription record in subscriptions table
+  - Verify tokens initialised from catalogue
+  - Test invalid signature rejection
+  - Full checkout → webhook → bundle flow against simulator
+
+### 4.6 Behaviour test: checkout-to-bundle flow (simulator)
+
+- [ ] Extend `behaviour-tests/billing/billingCheckout.behaviour.test.js`
+  - After checkout redirect (intercepted), simulator delivers webhook to local API
+  - Navigate back to `bundles.html` (simulating success return)
+  - Verify `resident-pro` bundle now appears as active
+  - Verify token count shows 100 tokens
+  - This exercises the complete subscribe → webhook → bundle → UI flow end-to-end
+
+### Validation
+
+Deploy to CI. Full checkout → webhook → bundle-grant flow works end-to-end against simulator. Bundle granted on successful checkout. Subscription record stored. Unit tests, system tests, and behaviour tests pass locally and against CI.
+
+---
+
+## Phase 5: Subscription Lifecycle Events
+
+**Goal**: Handle renewal, cancellation, payment failure. Tokens refresh on renewal, access continues until period end on cancellation.
+
+**Risk mitigated**: Does token refresh work correctly on renewal? Does graceful degradation work when payment fails?
+
+### 5.1 handleInvoicePaid (renewal)
+
+- [ ] On `invoice.paid`:
+  - Retrieve subscription from Stripe
+  - Extract hashedSub from subscription metadata
+  - Refresh tokens: reset `tokensConsumed = 0`, update `tokenResetAt`
+  - Update `currentPeriodEnd` on bundle record
+  - Update subscription record
+
+### 5.2 handleSubscriptionUpdated
+
+- [ ] On `customer.subscription.updated`:
+  - Update `subscriptionStatus` on bundle record
+  - Update `cancelAtPeriodEnd` if user requested cancellation
+  - Handle `past_due` status (log, potentially alert)
+
+### 5.3 handleSubscriptionDeleted (cancellation complete)
+
+- [ ] On `customer.subscription.deleted`:
+  - Mark bundle `subscriptionStatus = "canceled"`
+  - Bundle remains usable until `currentPeriodEnd`
+  - After `currentPeriodEnd`, standard expiry logic handles removal
+
+### 5.4 handlePaymentFailed
+
+- [ ] On `invoice.payment_failed`:
+  - Update `subscriptionStatus = "past_due"` on bundle record
+  - Log for monitoring (Stripe handles retry automatically)
+  - Emit CloudWatch metric for alerting
+
+### 5.5 handleRefund and handleDispute
+
+- [ ] On `charge.refunded`: log for audit, don't revoke access (subscription status drives access)
+- [ ] On `charge.dispute.created`: log and emit CloudWatch alarm metric
+
+### 5.6 Unit tests
+
+- [ ] `app/unit-tests/functions/billingWebhookLifecycle.test.js`
+  - Verify token refresh on invoice.paid
+  - Verify status update on subscription.updated
+  - Verify graceful handling on subscription.deleted
+  - Verify logging on payment_failed, refund, dispute
+
+### 5.7 System tests (full lifecycle against simulator)
+
+- [ ] `app/system-tests/billing/billingLifecycle.system.test.js`
+  - Stripe simulator delivers events in sequence: checkout → invoice.paid → subscription.deleted
+  - Verify token counts at each stage (100 → consumed some → refreshed to 100 → still accessible until period end)
+  - Verify bundle status transitions: active → active (renewed) → canceled
+  - Verify payment failure logging
+
+### 5.8 Behaviour test: subscription lifecycle (simulator)
+
+- [ ] `behaviour-tests/billing/billingLifecycle.behaviour.test.js`
+  - Full lifecycle via the browser against local proxy + Stripe simulator:
+    1. Subscribe → verify bundle active with 100 tokens
+    2. Consume tokens via VAT submission
+    3. Simulator delivers `invoice.paid` (renewal) → verify tokens refreshed
+    4. Simulator delivers `subscription.deleted` → verify bundle shows "ending on DATE"
+  - This catches UI-level integration issues that system tests miss
+
+### Validation
+
+Deploy to CI. Full subscription lifecycle works end-to-end against simulator. Tokens refresh on renewal. Cancellation preserves access until period end. Payment failure logged and alerted. Unit tests, system tests, and behaviour tests pass locally and against CI.
+
+---
+
+## Phase 6: Customer Portal & Subscription Recovery
+
+**Goal**: Users can manage their subscription via Stripe's hosted portal. Subscriptions can be recovered after database loss.
+
+**Risk mitigated**: Does the portal redirect flow work? Can we reliably match Stripe subscriptions to users after DB loss?
+
+### 6.1 billingPortalGet Lambda
+
+- [ ] Create `app/functions/billing/billingPortalGet.js`
+  - Extract hashedSub from JWT
+  - Look up `stripeCustomerId` from user's resident-pro bundle
+  - Create Stripe Billing Portal session
+  - Return: `{ portalUrl: "https://billing.stripe.com/..." }`
+  - Return 404 if no subscription found
+
+### 6.2 billingRecoverPost Lambda
+
+- [ ] Create `app/functions/billing/billingRecoverPost.js`
+  - Extract hashedSub from JWT, email from JWT
+  - Query Stripe API: search subscriptions by `metadata.hashedSub`
+  - Fallback: search by customer email
+  - For each active subscription found:
+    - Re-create bundle record in DynamoDB
+    - Re-create subscription record
+    - Calculate tokensGranted based on current period
+  - Return: `{ recovered: true, bundles: [...] }` or `{ recovered: false }`
+
+### 6.3 Unit tests
+
+- [ ] `app/unit-tests/functions/billingPortalGet.test.js`
+- [ ] `app/unit-tests/functions/billingRecoverPost.test.js`
+
+### 6.4 System tests (against simulator + dynalite)
+
+- [ ] `app/system-tests/billing/billingPortal.system.test.js`
+  - Request portal session via handler, verify URL returned from simulator
+  - Verify 404 when user has no subscription
+- [ ] `app/system-tests/billing/billingRecovery.system.test.js`
+  - Grant bundle via webhook, delete from DynamoDB, call recover handler
+  - Simulator returns the subscription when queried by hashedSub metadata
+  - Verify bundle restored in DynamoDB with correct fields
+
+### 6.5 Behaviour test: portal and recovery (simulator)
+
+- [ ] Extend `behaviour-tests/billing/billingManagement.behaviour.test.js`
+  - Navigate to bundles.html with active subscription
+  - Click "Manage Subscription" → verify portal redirect (intercepted)
+  - Test recovery: clear bundle from DynamoDB, refresh page, verify recovery prompt or automatic recovery
+
+### Validation
+
+Deploy to CI. Portal URL opens Stripe billing management. Recovery endpoint restores bundles from Stripe data. All tests pass locally against simulator, then verified on CI.
+
+---
+
+## Phase 7: Frontend Integration & Behaviour Tests
+
+**Goal**: Users can subscribe from bundles.html, manage subscription, see checkout results. Full end-to-end behaviour tests.
+
+**Risk mitigated**: Does the complete user journey work from bundles page through Stripe and back?
+
+### 7.1 bundles.html subscription UI
+
+- [ ] Add "Subscribe" button for `resident-pro` bundle
+  - Only shown when user is authenticated and does not hold resident-pro
+  - Calls `POST /api/v1/billing/checkout-session`
+  - Redirects to Stripe Checkout URL
+- [ ] Handle `?checkout=success` URL parameter
+  - Show success message: "Subscription activated!"
+  - Refresh bundle list (bundle should already be active from webhook)
+- [ ] Handle `?checkout=canceled` URL parameter
+  - Show info message: "Checkout canceled. No charges were made."
+- [ ] Add "Manage Subscription" button for active resident-pro subscribers
+  - Calls `GET /api/v1/billing/portal`
+  - Redirects to Stripe Customer Portal
+
+### 7.2 Catalogue update
+
+- [ ] Update `submit.catalogue.toml` for resident-pro:
+  - `allocation = "on-subscription"` (new allocation type)
+  - `subscriptionRequired = true` (UI hint: show "Subscribe" not "Request")
+  - `price = "9.99/month"` (display only)
+
+### 7.3 Bundle display logic
+
+- [ ] Update `bundles.html` to handle `allocation = "on-subscription"`:
+  - Show price and "Subscribe" button instead of "Request" button
+  - Show "Manage Subscription" for active subscribers
+  - Show "Renew" or "Resubscribe" for canceled/expired subscriptions
+
+### 7.4 Behaviour tests
+
+- [ ] `behaviour-tests/billing/subscriptionCheckout.behaviour.test.js`
+  - Verify "Subscribe" button appears for resident-pro
+  - Verify checkout redirect (mock Stripe in test mode)
+  - Verify success/cancel URL handling
+- [ ] `behaviour-tests/billing/subscriptionManagement.behaviour.test.js`
+  - Verify "Manage Subscription" button for active subscribers
+  - Verify portal redirect
+
+### Validation
+
+Deploy to CI. Complete subscription flow works end-to-end in CI. Behaviour tests pass. Existing behaviour tests unaffected.
+
+---
+
+## Phase 8: Compliance & Documentation Uplift
+
+**Goal**: All new frontend paths scanned for accessibility and security. Help, guide, and about pages updated to cover payments and token relationship.
+
+**Risk mitigated**: Are new pages WCAG 2.2 AA compliant? Do help/guide pages accurately describe the payment flow?
+
+### 8.1 Accessibility scanning configuration
+
+- [ ] Add `/usage.html` to all Pa11y config files (`.pa11yci.proxy.json`, `.pa11yci.ci.json`, `.pa11yci.prod.json`) — if not already done in Phase 1.5
+- [ ] Verify axe-core WCAG 2.1 and 2.2 scans include new path
+- [ ] Verify Lighthouse scan includes new path
+- [ ] Verify text-spacing test includes new path
+- [ ] Run accessibility suite: `npm run accessibility:pa11y-proxy` etc.
+
+### 8.2 Penetration testing configuration
+
+- [ ] Verify OWASP ZAP baseline scan covers new billing API paths
+- [ ] Verify ESLint security scan covers new billing Lambda files
+- [ ] Verify npm audit and retire.js scan include the `stripe` dependency
+- [ ] Run penetration suite and verify no new findings
+
+### 8.3 Help page updates (faqs.toml)
+
+- [ ] Add FAQ entries for payments:
+  - "How do I subscribe to Resident Pro?" — Stripe Checkout flow, pricing
+  - "How do I cancel my subscription?" — Customer Portal link, access until period end
+  - "What happens if my payment fails?" — Stripe retry, past_due status
+  - "How do tokens relate to my subscription?" — Monthly token allocation, refresh cycle
+  - "What if I lose access to my account?" — Subscription recovery flow
+- [ ] Add FAQ category: "Payments" (or extend "Bundles" category)
+- [ ] Update existing token FAQs to mention subscription token refresh
+
+### 8.4 Guide page updates (guide.html)
+
+- [ ] Add section: "Subscribing to Resident Pro"
+  - Step-by-step with screenshots of Stripe Checkout
+  - Explain token allocation and monthly refresh
+  - Link to manage subscription
+- [ ] Update existing sections to mention token costs where relevant
+  - Step 2 (Submit VAT Return): mention "This uses 1 token"
+
+### 8.5 About page updates (about.html)
+
+- [ ] Update "Free Guest Tier" benefit to contrast with Resident Pro
+- [ ] Add "Resident Pro" benefit card:
+  - 100 tokens/month
+  - Monthly refresh
+  - Stripe-powered secure payments
+  - Self-service billing management
+- [ ] Update pricing information
+
+### 8.6 Accessibility statement update (accessibility.html)
+
+- [ ] Add `/usage.html` to the list of tested pages
+- [ ] Update page count
+- [ ] Note any Stripe-hosted pages (Checkout, Portal) are outside accessibility scope
+
+### 8.7 Compliance behaviour tests
+
+- [ ] Update `behaviour-tests/compliance.behaviour.test.js`
+  - Add check for payment-related content on help page
+  - Add check for subscription info on about page
+  - Verify `/usage.html` loads and is accessible
+
+### Validation
+
+Deploy to CI. Run `npm run test:complianceBehaviour-ci`. All accessibility tools (Pa11y, axe, Lighthouse) pass for new paths. ZAP finds no new security issues. Help and guide pages include payment information.
+
+---
+
+## Phase 9: Abuse Protection & Hardening
+
+**Goal**: Stripe Radar configured, repeat refund detection active, payout delays set, CloudWatch alarms for billing events.
+
+**Risk mitigated**: Are we protected against payment fraud, serial refunders, and billing anomalies?
+
+### 9.1 Stripe Radar configuration
+
+- [ ] Enable Stripe Radar (included free)
+- [ ] Configure rules via Stripe Dashboard:
+  - Require 3D Secure for transactions over threshold
+  - Block high-risk countries if applicable
+
+### 9.2 Repeat refund detection
+
+- [ ] In `handleRefund`: query Stripe for customer's recent refund history
+- [ ] If 2+ refunds in 90 days: emit CloudWatch metric `RepeatRefunder`
+- [ ] CloudWatch alarm on RepeatRefunder metric
+
+### 9.3 Payout schedule
+
+- [ ] Configure weekly payouts in Stripe Dashboard (7-10 day buffer for chargebacks)
+
+### 9.4 UK Distance Selling compliance
+
+- [ ] Stripe Checkout consent collection configured (terms of service required)
+- [ ] Custom submit text: waiver of 14-day cooling-off period for immediate digital access
+
+### 9.5 CloudWatch metrics and alarms
+
+- [ ] Emit EMF metrics from billing Lambdas:
+  - `BillingCheckoutCreated` (count per bundleId)
+  - `BillingBundleGranted` (count per bundleId)
+  - `BillingPaymentFailed` (count)
+  - `BillingSubscriptionCanceled` (count)
+  - `BillingDisputeCreated` (count)
+- [ ] CloudWatch alarms:
+  - Payment failure rate spike
+  - Dispute created (any)
+  - Webhook delivery failures (Stripe dashboard)
+- [ ] Add billing metrics row to ObservabilityStack dashboard
+
+### 9.6 System tests
+
+- [ ] Verify EMF metrics are emitted correctly in system tests
+
+### Validation
+
+Deploy to CI. Stripe Radar active. CloudWatch metrics visible on dashboard. Alarm thresholds configured. Weekly payout schedule confirmed.
+
+---
+
+## Phase 10: Production Go-Live
+
+**Goal**: Switch from Stripe test mode to live mode. End-to-end production validation.
+
+**Risk mitigated**: Does live mode work identically to test mode? Are all secrets rotated?
+
+### 10.1 Stripe live mode setup
+
+- [ ] Create live mode product and price in Stripe (matching test mode config)
+- [ ] Register live webhook endpoint URL
+- [ ] Update Secrets Manager with live mode keys:
+  - `prod/submit/stripe/secret_key` (live secret key)
+  - `prod/submit/stripe/webhook_secret` (live webhook secret)
+  - `prod/submit/stripe/price_id` (live price ID)
+
+### 10.2 Production deployment
+
+- [ ] Deploy all billing infrastructure to production
+- [ ] Verify webhook endpoint is reachable from Stripe
+- [ ] Verify Lambda has access to live secrets
+
+### 10.3 Production validation
+
+- [ ] Create test subscription with a real card (use Stripe's test clock or a real low-value transaction)
+- [ ] Verify bundle granted after payment
+- [ ] Verify Customer Portal access
+- [ ] Verify webhook events received and processed
+- [ ] Cancel subscription, verify access until period end
+
+### 10.4 Catalogue update
+
+- [ ] Update `submit.catalogue.toml`: add `resident-pro` to `listedInEnvironments` for production
+- [ ] Verify resident-pro appears on bundles.html in production
+
+### 10.5 Monitoring
+
+- [ ] Watch CloudWatch dashboard for first real transactions
+- [ ] Verify Stripe Dashboard shows webhook deliveries succeeding
+- [ ] Check Stripe Radar is scoring transactions
+
+### Validation
+
+Production subscription flow works end-to-end. Real payment processed, bundle granted, portal accessible. All monitoring active.
+
+---
+
+## User Journeys
+
+### Journey 1: New Business (Cold Start)
+
+1. User visits `submit.diyaccounting.co.uk`, sees "Submit VAT" activity
+2. Not authenticated → redirected to login (postLoginRedirect preserves context)
+3. After login, `bundles.html` loads → `GET /api/v1/bundle` returns no bundles, fetches `/submit.catalogue.toml` for available bundle types
+4. UI shows `day-guest` (if capacity available) and `resident-pro` with price
+5. User clicks "Subscribe to Resident Pro"
+6. `POST /api/v1/billing/checkout-session` → redirect to Stripe Checkout
+7. User enters card details on Stripe's domain (DIY Accounting never sees card data)
+8. Payment succeeds → Stripe webhook fires → bundle granted
+9. User returns to `bundles.html?checkout=success` → bundle already active, 100 tokens
+
+### Journey 2: Upgrade from Guest
+
+1. User has `day-guest`, tokens exhausted, tries to submit VAT
+2. API returns 403 `tokens_exhausted`
+3. UI shows "No tokens remaining. [View Bundles]"
+4. User clicks → `bundles.html` shows `resident-pro` "Subscribe" button
+5. Same flow as Journey 1, steps 5-9
+6. resident-pro bundle active with 100 tokens
+
+### Journey 3: Database Loss Recovery
+
+1. Database wiped, Stripe data intact
+2. User authenticates (Cognito/Google unchanged)
+3. `bundles.html` loads → empty bundles → triggers recovery check
+4. `POST /api/v1/billing/recover` → queries Stripe by hashedSub metadata
+5. Finds active subscription → re-creates bundle in DynamoDB
+6. User sees resident-pro restored, can submit VAT immediately
+
+---
+
+## Cost Analysis
+
+| Item | Cost |
+|------|------|
+| Stripe fee (UK card) | 1.5% + 20p per transaction |
+| Stripe Radar | Free (basic) |
+| Stripe Billing | Free (included) |
+| AWS Lambda | Negligible (webhook calls) |
+
+Example: GBP 9.99/month subscription
+- Stripe fee: GBP 0.15 (1.5%) + GBP 0.20 = GBP 0.35
+- Net to DIY Accounting: GBP 9.64
+- Annual equivalent: GBP 115.68 (vs GBP 119.88 gross)
+
+---
+
+## Phase Dependencies
+
+```
+Phase 1: Token Usage Page
+    |
+    v
+Phase 2: Stripe SDK & Infrastructure Foundation
+    |
+    v
+Phase 3: Checkout Session API
+    |
+    v
+Phase 4: Webhook Handler & Bundle Grant
+    |
+    v
+Phase 5: Subscription Lifecycle Events
+    |
+    +-------------------+
+    v                   v
+Phase 6: Portal &    Phase 7: Frontend
+  Recovery             Integration
+    |                   |
+    +-------------------+
+              |
+              v
+Phase 8: Compliance & Documentation Uplift
+              |
+              v
+Phase 9: Abuse Protection & Hardening
+              |
+              v
+Phase 10: Production Go-Live
+```
+
+Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should include all new paths from previous phases.
+
+---
+
+## Files to Create
+
+| File | Phase | Purpose |
+|------|-------|---------|
+| `web/public/usage.html` | 1 | Token usage page with sources + consumption tables |
+| `app/lib/stripeClient.js` | 2 | Stripe SDK initialisation helper |
+| `app/test-support/stripeSimulator.js` | 2 | Local Stripe API simulator for tests |
+| `app/functions/billing/billingCheckoutPost.js` | 3 | Create Stripe Checkout session |
+| `app/functions/billing/billingWebhookPost.js` | 4 | Handle Stripe webhook events |
+| `app/functions/billing/billingPortalGet.js` | 6 | Get Customer Portal URL |
+| `app/functions/billing/billingRecoverPost.js` | 6 | Recover subscriptions after DB loss |
+| `app/data/dynamoDbSubscriptionRepository.js` | 2 | CRUD for subscriptions table |
+| `infra/main/java/.../BillingStack.java` | 2 | CDK billing infrastructure |
+| `scripts/stripe-setup-products.sh` | 2 | Create Stripe products and prices |
+| `scripts/stripe-setup-webhooks.sh` | 2 | Register Stripe webhook endpoint |
+| `scripts/stripe-setup-secrets.sh` | 2 | Create Secrets Manager entries |
+| `behaviour-tests/billing/billingCheckout.behaviour.test.js` | 3 | Skeletal checkout flow behaviour test |
+| `behaviour-tests/billing/billingLifecycle.behaviour.test.js` | 5 | Subscription lifecycle behaviour test |
+| `behaviour-tests/billing/billingManagement.behaviour.test.js` | 6 | Portal and recovery behaviour test |
+| `app/system-tests/billing/billingInfrastructure.system.test.js` | 2 | Infrastructure wiring system tests |
+| `app/system-tests/billing/billingCheckout.system.test.js` | 3 | Checkout session system tests |
+| `app/system-tests/billing/billingWebhook.system.test.js` | 4 | Webhook handling system tests |
+| `app/system-tests/billing/billingLifecycle.system.test.js` | 5 | Full lifecycle system tests |
+| `app/system-tests/billing/billingPortal.system.test.js` | 6 | Portal session system tests |
+| `app/system-tests/billing/billingRecovery.system.test.js` | 6 | Subscription recovery system tests |
+
+## Files to Modify
+
+| File | Phase | Changes |
+|------|-------|---------|
+| `web/public/widgets/auth-status.js` | 1 | Token count links to usage page, remove temp refresh button |
+| `app/services/tokenEnforcement.js` | 1 | Record consumption events |
+| `app/functions/account/bundleGet.js` | 1 | Return token consumption events |
+| `package.json` | 2 | Add `stripe` dependency |
+| `infra/.../DataStack.java` | 2 | Add subscriptions table |
+| `infra/.../SubmitSharedNames.java` | 2 | Billing Lambda configuration |
+| `app/functions/account/bundlePost.js` | 4 | Accept Stripe fields on bundle grant |
+| `app/data/dynamoDbBundleRepository.js` | 4 | Store Stripe subscription fields |
+| `web/public/bundles.html` | 7 | Subscribe button, checkout result handling, manage subscription |
+| `web/public/submit.catalogue.toml` | 7, 10 | `on-subscription` allocation, listedInEnvironments |
+| `.pa11yci.*.json` | 1, 8 | Add new frontend paths |
+| `web/public/faqs.toml` | 8 | Payment FAQs |
+| `web/public/guide.html` | 8 | Subscription guide section |
+| `web/public/about.html` | 8 | Resident Pro benefit card |
+| `web/public/accessibility.html` | 8 | Update tested pages list |
+| `behaviour-tests/compliance.behaviour.test.js` | 8 | Payment content checks |
+| `infra/.../ObservabilityStack.java` | 9 | Billing metrics dashboard row |
+| `scripts/generate-compliance-report.js` | 8 | Include new paths in report |
+
+## Implementation Progress
+
+No implementation started. This plan will be executed after `PLAN_PASSES_V2.md` reaches stability on CI.
+
+---
+
+*Document restructured: 2026-02-01. Original proposal date: 2026-02-01.*

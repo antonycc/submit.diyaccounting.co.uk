@@ -277,15 +277,19 @@ describe("bundlePost ingestHandler", () => {
     }
   });
 
-  test("returns 201 with already_granted status on duplicate request", async () => {
+  test("returns 201 with granted status when re-granting existing bundle", async () => {
     const token = makeIdToken("user-duplicate");
     const event = buildEventWithToken(token, { bundleId: "test" });
     event.headers["x-wait-time-ms"] = "30000";
 
-    // Mock first call already granted
+    // Mock: first query returns existing bundle, subsequent calls succeed
+    let queryCallCount = 0;
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
-        return { Items: [{ bundleId: "test" }], Count: 1 };
+        queryCallCount++;
+        // First query: existing bundle found (triggers delete + re-grant)
+        // Second query (from updateUserBundles): no bundles after delete
+        return queryCallCount === 1 ? { Items: [{ bundleId: "test" }], Count: 1 } : { Items: [], Count: 0 };
       }
       return {};
     });
@@ -297,7 +301,7 @@ describe("bundlePost ingestHandler", () => {
 
     expect(response.statusCode).toBe(201);
     const body = parseResponseBody(response);
-    expect(body.status).toBe("already_granted");
+    expect(body.status).toBe("granted");
   });
 
   test("skips async request lookup when x-initial-request header is true", async () => {

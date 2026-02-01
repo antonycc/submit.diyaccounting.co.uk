@@ -214,7 +214,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   await goToBundlesPage(page, screenshotPath);
   if (isSandboxMode()) await ensureBundlePresent(page, "Test", screenshotPath);
   if (envName !== "prod") {
-    await ensureBundlePresent(page, "Guest", screenshotPath);
+    await ensureBundlePresent(page, "Day Guest", screenshotPath);
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
   }

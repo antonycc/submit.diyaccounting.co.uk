@@ -18,6 +18,9 @@ import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/h
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
+import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
+import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
+import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 
@@ -173,6 +176,9 @@ hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
+passGetApiEndpoint(app);
+passPostApiEndpoint(app);
+passAdminPostApiEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {

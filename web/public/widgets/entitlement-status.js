@@ -89,7 +89,7 @@
         }
 
         if (data && data.bundles && Array.isArray(data.bundles)) {
-          bundlesCache = data.bundles.map((b) => (typeof b === "string" ? b : b.bundleId));
+          bundlesCache = data.bundles.filter((b) => b.allocated).map((b) => (typeof b === "string" ? b : b.bundleId));
           return bundlesCache;
         }
       } catch (err) {

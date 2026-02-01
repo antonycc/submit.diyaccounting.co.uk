@@ -20,5 +20,5 @@ app/index.js/exports/
 cdk/cdk.out/
 infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java
 web/public/tests/
-web/public/docs/
-web/public/hmrc-form-field-standards/
+web/public/docs/api/
+web/public/docs/hmrc-form-field-standards/

@@ -10,6 +10,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
+  isSandboxMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -22,7 +23,15 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { clearBundles, goToBundlesPage, ensureBundlePresent } from "./steps/behaviour-bundle-steps.js";
+import {
+  clearBundles,
+  goToBundlesPage,
+  ensureBundlePresent,
+  removeBundle,
+  verifyBundleApiResponse,
+  verifyAlreadyGranted,
+  requestBundleViaApi,
+} from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   appendTraceparentTxt,
@@ -171,19 +180,67 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   /*  BUNDLES  */
   /* ********* */
 
+  // --- Step 1: Clear all bundles and verify clean state ---
   await goToBundlesPage(page, screenshotPath);
   await clearBundles(page, screenshotPath);
-  // Add a 10 second sleep
-  await page.waitForTimeout(10_000);
+  await page.waitForTimeout(2_000);
+
+  // --- Step 2: Verify API response structure with no allocated bundles ---
+  const emptyResponse = await verifyBundleApiResponse(page, screenshotPath);
+  console.log(`[bundle-test]: Empty state - allocated bundles: ${emptyResponse?.bundles?.filter((b) => b.allocated)?.length ?? "?"}`);
+  console.log(`[bundle-test]: Empty state - tokensRemaining: ${emptyResponse?.tokensRemaining ?? "?"}`);
+
+  // --- Step 3: Request Test bundle (uncapped, on-request) ---
   await ensureBundlePresent(page, "Test", screenshotPath);
-  await goToHomePage(page, screenshotPath);
-  await goToBundlesPage(page, screenshotPath);
-  // // TODO: Support testing in non-sandbox mode with production credentials
-  // if (envName !== "prod") {
-  //   await ensureBundlePresent(page, "Guest", screenshotPath);
-  //   await goToHomePage(page, screenshotPath);
-  //   await goToBundlesPage(page, screenshotPath);
-  // }
+
+  // --- Step 4: Request Day Guest bundle (capped, on-request, with tokens) ---
+  if (isSandboxMode()) {
+    await ensureBundlePresent(page, "Day Guest", screenshotPath);
+
+    // Verify API response includes allocated bundles with correct structure
+    const afterGrantResponse = await verifyBundleApiResponse(page, screenshotPath);
+    const allocatedBundles = afterGrantResponse?.bundles?.filter((b) => b.allocated) ?? [];
+    console.log(`[bundle-test]: After grants - allocated bundles: ${allocatedBundles.length}`);
+    console.log(`[bundle-test]: After grants - tokensRemaining: ${afterGrantResponse?.tokensRemaining ?? "?"}`);
+    console.log(`[bundle-test]: After grants - bundle IDs: ${allocatedBundles.map((b) => b.bundleId).join(", ")}`);
+
+    // --- Step 5: Navigate away and back to verify persistence ---
+    await goToHomePage(page, screenshotPath);
+    await goToBundlesPage(page, screenshotPath);
+
+    // --- Step 6: Remove Day Guest bundle and verify it can be re-requested ---
+    await removeBundle(page, "Day Guest", screenshotPath);
+
+    // Verify only Test remains allocated
+    const afterRemoveResponse = await verifyBundleApiResponse(page, screenshotPath);
+    const remainingAllocated = afterRemoveResponse?.bundles?.filter((b) => b.allocated) ?? [];
+    console.log(`[bundle-test]: After remove - allocated bundles: ${remainingAllocated.length}`);
+    console.log(`[bundle-test]: After remove - bundle IDs: ${remainingAllocated.map((b) => b.bundleId).join(", ")}`);
+
+    // --- Step 7: Re-request Day Guest to verify re-requestability after removal ---
+    await ensureBundlePresent(page, "Day Guest", screenshotPath);
+
+    // --- Step 8: Verify already-granted idempotency ---
+    // Re-requesting the same bundle via API should return already_granted, not an error
+    const alreadyGrantedResult = await verifyAlreadyGranted(page, "day-guest", screenshotPath);
+    console.log(`[bundle-test]: Already-granted result: ${JSON.stringify(alreadyGrantedResult)}`);
+
+    // --- Step 9: Verify API response shows both bundles with correct structure ---
+    const finalResponse = await verifyBundleApiResponse(page, screenshotPath);
+    const finalAllocated = finalResponse?.bundles?.filter((b) => b.allocated) ?? [];
+    const finalUnallocated = finalResponse?.bundles?.filter((b) => !b.allocated) ?? [];
+    console.log(`[bundle-test]: Final state - allocated: ${finalAllocated.length}, unallocated: ${finalUnallocated.length}`);
+    console.log(`[bundle-test]: Final state - tokensRemaining: ${finalResponse?.tokensRemaining ?? "?"}`);
+
+    // Every bundle in the response should have bundleCapacityAvailable field
+    for (const b of finalResponse?.bundles ?? []) {
+      if (!("bundleCapacityAvailable" in b)) {
+        console.warn(`[bundle-test]: Bundle ${b.bundleId} missing bundleCapacityAvailable field`);
+      }
+    }
+  }
+
+  // --- Step 10: Navigate home to verify activities appear from granted bundles ---
   await goToHomePage(page, screenshotPath);
 
   /* ****************** */
@@ -227,7 +284,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       userSub,
       observedTraceparent,
       testUrl,
-      bundlesTested: envName === "prod" ? ["Test"] : ["Test"],
+      bundlesTested: isSandboxMode() ? ["Test", "Day Guest"] : ["Test"],
     },
     artefactsDir: outputDir,
     screenshotPath,
@@ -249,14 +306,16 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     "02.*removing.*all.*bundles.*clicked",
     "01.*request.*bundle",
     "05.*ensure.*bundle.*adding",
+    "04.*remove.*bundle.*confirmed",
     "00.*focus.*clicking.*bundles.*in.*main.*nav",
   ];
 
   const screenshotDescriptions = {
     "04.*home.*page": "The home page with no bundles",
     "02.*removing.*all.*bundles.*clicked": "Removing all bundles",
-    "01.*request.*bundle": "The request the Test bundle",
-    "05.*ensure.*bundle.*adding": "Added the Test bundle",
+    "01.*request.*bundle": "Requesting a bundle",
+    "05.*ensure.*bundle.*adding": "Added a bundle",
+    "04.*remove.*bundle.*confirmed": "Removed a bundle and verified Request button reappears",
     "00.*focus.*clicking.*bundles.*in.*main.*nav": "The home page with activities from bundles",
   };
 

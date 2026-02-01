@@ -148,7 +148,7 @@ describe("bundleGet ingestHandler", () => {
   // Happy Path Tests (200)
   // ============================================================================
 
-  test("returns 200 with empty bundles array for new user", async () => {
+  test("returns 200 with catalogue bundles for new user (no allocated bundles)", async () => {
     const token = makeIdToken("user-no-bundles");
     const event = buildEventWithToken(token, {});
     event.headers["x-wait-time-ms"] = "2000";
@@ -158,7 +158,15 @@ describe("bundleGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(Array.isArray(body.bundles)).toBe(true);
-    expect(body.bundles.length).toBe(0);
+    // Catalogue bundles appear as unallocated entries (bundleId + bundleCapacityAvailable only)
+    expect(body.bundles.length).toBeGreaterThan(0);
+    for (const bundle of body.bundles) {
+      expect(bundle).toHaveProperty("bundleId");
+      expect(bundle).toHaveProperty("bundleCapacityAvailable");
+      // No hashedSub since these are catalogue-only entries, not user allocations
+      expect(bundle).not.toHaveProperty("hashedSub");
+    }
+    expect(body).toHaveProperty("tokensRemaining", 0);
   });
 
   test("skips async request lookup when x-initial-request header is true", async () => {

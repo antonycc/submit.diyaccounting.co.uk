@@ -8,7 +8,7 @@ Purpose: Manage the complex logic of user bundles, entitlements, and subscriptio
 
 ## Scope and Inputs
 
-- Key files: `web/public/submit.catalogue.toml`, `product-subscribers.subs`.
+- Key files: `web/public/submit.catalogue.toml`, `submit.passes.toml`.
 - Domain knowledge:
   - Bundle types (Default, Test, Guest, Business).
   - Allocation methods (automatic, on-request, subscription).

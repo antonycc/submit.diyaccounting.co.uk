@@ -218,7 +218,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await importedBundleManagement.updateUserBundles(testUserSub, [{ bundleId: "guest", expiry }]);
+    await importedBundleManagement.updateUserBundles(testUserSub, [{ bundleId: "day-guest", expiry, tokensGranted: 3, tokensConsumed: 0 }]);
   });
 
   it("should complete full VAT submission journey: Auth → Token → Submit → PostReceipt → GetReceipt", async () => {
@@ -311,12 +311,12 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     const bundles = await waitFor(
       async () => {
         const items = await queryBundlesForUser(testUserSub);
-        return items && items.find((b) => b.bundleId === "guest") ? items : null;
+        return items && items.find((b) => b.bundleId === "day-guest") ? items : null;
       },
       { timeoutMs: 15000, intervalMs: 250 },
     );
     expect(Array.isArray(bundles)).toBe(true);
-    expect(bundles.find((b) => b.bundleId === "guest")).toBeTruthy();
+    expect(bundles.find((b) => b.bundleId === "day-guest")).toBeTruthy();
 
     // 2) HMRC API request logs should be present
     // Token exchange may be logged with an unknown UUID user when userSub not provided

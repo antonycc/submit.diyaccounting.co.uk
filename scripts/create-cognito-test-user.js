@@ -103,8 +103,7 @@ async function main() {
 
     // Output for GitHub Actions
     if (process.env.GITHUB_OUTPUT) {
-      // Mask the password so it doesn't appear in logs
-      console.log(`::add-mask::${testPassword}`);
+      // Test system password - intentionally not masked so it appears in job summary
       fs.appendFileSync(process.env.GITHUB_OUTPUT, `test-auth-username=${testEmail}\ntest-auth-password=${testPassword}\n`);
     }
 

@@ -32,3 +32,13 @@ export function isActivityAvailable(catalog, activityId, bundleId) {
   const bundles = bundlesForActivity(catalog, activityId);
   return bundles.includes(bundleId);
 }
+
+export function getCappedBundleIds(catalog) {
+  if (!catalog?.bundles) return [];
+  return catalog.bundles.filter((b) => Number.isFinite(b.cap)).map((b) => b.id);
+}
+
+export function getCatalogBundleById(catalog, bundleId) {
+  if (!catalog?.bundles) return null;
+  return catalog.bundles.find((b) => b.id === bundleId) || null;
+}

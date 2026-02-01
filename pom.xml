@@ -490,7 +490,7 @@
                         <configuration>
                             <mainClass>co.uk.diyaccounting.submit.swagger.OpenApiGenerator</mainClass>
                             <classpathScope>compile</classpathScope>
-                            <commandlineArgs>${baseUrl} ${project.version} ${project.basedir}/web/public/docs</commandlineArgs>
+                            <commandlineArgs>${baseUrl} ${project.version} ${project.basedir}/web/public/docs/api</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

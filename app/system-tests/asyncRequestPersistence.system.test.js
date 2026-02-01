@@ -156,7 +156,7 @@ describe("System: async request persistence with dynalite", () => {
 
     // Call grantBundle directly with requestId
     const decodedToken = { sub: "test-async-user" };
-    const result = await grantBundle("test-async-user", { bundleId: "guest" }, decodedToken, requestId);
+    const result = await grantBundle("test-async-user", { bundleId: "test" }, decodedToken, requestId);
     expect(result.statusCode).toBe(201);
 
     // Verify the result was stored
