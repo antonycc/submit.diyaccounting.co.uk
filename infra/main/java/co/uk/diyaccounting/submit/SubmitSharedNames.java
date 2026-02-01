@@ -834,7 +834,7 @@ public class SubmitSharedNames {
         // Pass Admin POST Lambda (JWT auth)
         this.passAdminPostLambdaHttpMethod = HttpMethod.POST;
         this.passAdminPostLambdaUrlPath = "/api/v1/pass/admin";
-        this.passAdminPostLambdaJwtAuthorizer = true;
+        this.passAdminPostLambdaJwtAuthorizer = false;
         this.passAdminPostLambdaCustomAuthorizer = false;
         var passAdminPostLambdaHandlerName = "passAdminPost.ingestHandler";
         var passAdminPostLambdaHandlerDashed =
