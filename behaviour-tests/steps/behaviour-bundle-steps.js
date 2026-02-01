@@ -153,6 +153,71 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
   });
 }
 
+export async function removeBundle(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
+  await test.step(`Remove ${bundleName} bundle via UI`, async () => {
+    console.log(`Removing ${bundleName} bundle...`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-remove-bundle.png` });
+
+    // Look for the remove button in the current bundles section
+    const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+    const removeLocator = page.locator(`button[data-remove-bundle-id="${bundleId}"]`);
+    if (await removeLocator.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await removeLocator.click();
+      console.log(`Clicked remove button for ${bundleName}`);
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-remove-bundle-clicked.png` });
+    } else {
+      // Fallback: remove via API
+      console.log(`Remove button for ${bundleName} not found in UI, removing via API...`);
+      const result = await page.evaluate(async (bid) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { ok: false, error: "No auth token" };
+        try {
+          const response = await fetch(`/api/v1/bundle/${bid}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+          return { ok: response.ok, status: response.status };
+        } catch (err) {
+          return { ok: false, error: err.message };
+        }
+      }, bundleId);
+      console.log(`API remove ${bundleName} result: ${JSON.stringify(result)}`);
+      await page.reload();
+      await page.waitForLoadState("networkidle");
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-remove-bundle-done.png` });
+
+    // Verify the bundle is removed: "Request <bundle>" should reappear
+    await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 16000 });
+    console.log(`${bundleName} bundle removed successfully`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-remove-bundle-confirmed.png` });
+  });
+}
+
+export async function verifyBundleApiResponse(page, screenshotPath = defaultScreenshotPath) {
+  return await test.step("Verify bundle API response structure", async () => {
+    const apiResponse = await page.evaluate(async () => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { error: "No auth token" };
+      try {
+        const response = await fetch("/api/v1/bundle", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        return await response.json();
+      } catch (err) {
+        return { error: err.message };
+      }
+    });
+    console.log(`Bundle API response: ${JSON.stringify(apiResponse)}`);
+    return apiResponse;
+  });
+}
+
 export async function requestBundle(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
   await test.step(`The user requests a ${bundleName} bundle and sees a confirmation message`, async () => {
     console.log(`Requesting ${bundleName} bundle...`);
