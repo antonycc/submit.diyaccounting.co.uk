@@ -160,8 +160,8 @@ export async function authorizedFetch(input, init = {}) {
 
   // Handle 403 Forbidden - likely missing bundle entitlement
   if (first.status === 403) {
-    await handle403Error(first);
-    return first; // Return the 403 response for caller to handle
+    await handle403Error(first.clone());
+    return first; // Return the 403 response with body still readable for caller
   }
 
   // Handle 401 Unauthorized - token expired or invalid
@@ -245,8 +245,8 @@ export async function fetchWithIdToken(input, init = {}) {
 
   // Handle 403 Forbidden - likely missing bundle entitlement
   if (response.status === 403) {
-    await handle403Error(response);
-    return response;
+    await handle403Error(response.clone());
+    return response; // Return the 403 response with body still readable for caller
   }
 
   // Handle 401 Unauthorized - token expired or invalid

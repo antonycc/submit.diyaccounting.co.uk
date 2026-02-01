@@ -21,6 +21,7 @@ display = "on-pass"
 # 5. Change all behaviour tests to use passes to get test bundlesand turn on on-pass enforcement
 allocation = "on-request"
 timeout = "P1D"
+tokens = 3
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
