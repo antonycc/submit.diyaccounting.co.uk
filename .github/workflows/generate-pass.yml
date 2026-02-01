@@ -44,6 +44,16 @@ on:
         description: 'Admin notes for this pass'
         required: false
         type: string
+      generate-hmrc-user:
+        description: 'Generate HMRC sandbox test user (always uses sandbox API)'
+        type: boolean
+        required: false
+        default: true
+      generate-cognito-user:
+        description: 'Generate Cognito native test user (for manual testing)'
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       environment-name:
@@ -75,6 +85,19 @@ on:
       notes:
         type: string
         description: 'Admin notes for this pass'
+        required: false
+      generate-hmrc-user:
+        type: string
+        description: 'Generate HMRC sandbox test user (true/false)'
+        required: false
+        default: 'true'
+      generate-cognito-user:
+        type: string
+        description: 'Generate Cognito native test user (true/false)'
+        required: false
+        default: 'false'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET:
         required: false
   schedule:
     - cron: '0 9 * * *'
@@ -123,6 +146,10 @@ jobs:
         run: ":"
       - name: "inputs.notes=[${{ inputs.notes }}]"
         run: ":"
+      - name: "inputs.generate-hmrc-user=[${{ inputs.generate-hmrc-user }}]"
+        run: ":"
+      - name: "inputs.generate-cognito-user=[${{ inputs.generate-cognito-user }}]"
+        run: ":"
       - name: Normalise Params
         id: normalise
         run: |
@@ -139,6 +166,10 @@ jobs:
           echo 'max-uses=${{ inputs.max-uses }}' | tee -a "$GITHUB_OUTPUT"
           echo 'validity-period=${{ inputs.validity-period }}' | tee -a "$GITHUB_OUTPUT"
           echo 'notes=${{ inputs.notes }}' | tee -a "$GITHUB_OUTPUT"
+          # generate-hmrc-user: default to true
+          X='${{ inputs.generate-hmrc-user }}' ; echo "generate-hmrc-user=${X:-true}" | tee -a "$GITHUB_OUTPUT"
+          # generate-cognito-user: default to false
+          X='${{ inputs.generate-cognito-user }}' ; echo "generate-cognito-user=${X:-false}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment: ${{ steps.normalise.outputs.environment }}
       pass-type: ${{ steps.normalise.outputs.pass-type }}
@@ -147,6 +178,8 @@ jobs:
       max-uses: ${{ steps.normalise.outputs.max-uses }}
       validity-period: ${{ steps.normalise.outputs.validity-period }}
       notes: ${{ steps.normalise.outputs.notes }}
+      generate-hmrc-user: ${{ steps.normalise.outputs.generate-hmrc-user }}
+      generate-cognito-user: ${{ steps.normalise.outputs.generate-cognito-user }}
 
   names:
     needs:
@@ -324,6 +357,24 @@ jobs:
             }
           "
 
+      - name: Create HMRC sandbox test user
+        id: hmrc-user
+        if: ${{ needs.params.outputs.generate-hmrc-user == 'true' }}
+        run: |
+          # HMRC_SANDBOX_CLIENT_ID is a public test credential (not a secret)
+          export HMRC_SANDBOX_CLIENT_ID=$(grep -E '^HMRC_SANDBOX_CLIENT_ID=' .env.ci | cut -d'=' -f2)
+          node scripts/create-hmrc-test-user.js
+        env:
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+      - name: Create Cognito test user
+        id: cognito-user
+        if: ${{ needs.params.outputs.generate-cognito-user == 'true' }}
+        run: |
+          node scripts/create-cognito-test-user.js "${{ needs.names.outputs.environment-name }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
       - name: Upload passes artifact
         uses: actions/upload-artifact@v4
         with:
@@ -361,3 +412,32 @@ jobs:
               console.log('| \`' + pass.code + '\` | [' + url + '](' + url + ') | ' + validUntil + ' | ' + pass.maxUses + ' |');
             }
           " >> $GITHUB_STEP_SUMMARY
+
+          # HMRC sandbox test user credentials
+          if [[ -f "hmrc-test-user.json" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### HMRC Sandbox Test User" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Use these credentials when redirected to HMRC login (sandbox mode):" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| User ID | \`${{ steps.hmrc-user.outputs.hmrc-user-id }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Password | \`${{ steps.hmrc-user.outputs.hmrc-password }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| VAT Number (VRN) | \`${{ steps.hmrc-user.outputs.hmrc-vat-number }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Organisation | ${{ steps.hmrc-user.outputs.hmrc-org-name }} |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Cognito native test user credentials (when debugging mode enabled)
+          if [[ -n "${{ steps.cognito-user.outputs.test-auth-username }}" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Cognito Test User (debugging)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Native auth is enabled. Use these credentials to log in:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Username | \`${{ steps.cognito-user.outputs.test-auth-username }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Password | \`${{ steps.cognito-user.outputs.test-auth-password }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Login URL | [https://${{ needs.names.outputs.pass-url-host }}](https://${{ needs.names.outputs.pass-url-host }}) |" >> $GITHUB_STEP_SUMMARY
+          fi
