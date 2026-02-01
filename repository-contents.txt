@@ -8,7 +8,6 @@
 ./REPORT_REPOSITORY_CONTENTS.md
 ./PLAN_SECURITY_DETECTION_UPLIFT.md
 ./jsconfig.json
-./submit.passes.toml
 ./infra/test/resources/fake-self-destruct-lambda.jar
 ./infra/test/resources/log4j2.yml
 ./infra/test/java/co/uk/diyaccounting/submit/SubmitEnvironmentCdkResourceTest.java
@@ -70,7 +69,9 @@
 ./infra/aws-accounts/setup-oidc-roles.sh
 ./infra/aws-accounts/create-member-account.sh
 ./infra/aws-accounts/setup-backup-roles.sh
+./PLAN_PASSES_V2.md
 ./hmrc-fraud-prevention.md
+./vatSchemesBehaviour-simulator.txt
 ./AWS_ARCHITECTURE.html
 ./app/bin/server.js
 ./app/bin/simulator-server.js
@@ -87,6 +88,8 @@
 ./app/unit-tests/input.webm
 ./app/unit-tests/lib/obligationFormatter.test.js
 ./app/unit-tests/lib/buildFraudHeaders.test.js
+./app/unit-tests/lib/passphrase.test.js
+./app/unit-tests/lib/emailHash.test.js
 ./app/unit-tests/lib/hmrcValidation.test.js
 ./app/unit-tests/lib/govClientTestHeader.js
 ./app/unit-tests/lib/vatReturnTypes.test.js
@@ -111,8 +114,11 @@
 ./app/unit-tests/services/subHasher.test.js
 ./app/unit-tests/services/productCatalog.test.js
 ./app/unit-tests/services/hmrcApi.test.js
+./app/unit-tests/services/passService.test.js
+./app/unit-tests/services/tokenEnforcement.test.js
 ./app/unit-tests/services/bundleManagement.test.js
 ./app/index.js
+./app/system-tests/bundleCapacity.system.test.js
 ./app/system-tests/hmrcVatScenarios.system.test.js
 ./app/system-tests/selfDestruct.system.test.js
 ./app/system-tests/hmrcAuth.system.test.js
@@ -121,9 +127,11 @@
 ./app/system-tests/dynamoDbBundleStore.system.test.js
 ./app/system-tests/dynamoDbReceiptStore.system.test.js
 ./app/system-tests/customAuthorizer.system.test.js
+./app/system-tests/passRedemption.system.test.js
 ./app/system-tests/hmrcVatObligationJourney.system.test.js
 ./app/system-tests/hmrcVatJourney.system.test.js
 ./app/system-tests/vatValidation.test.js
+./app/system-tests/tokenConsumption.system.test.js
 ./app/system-tests/rum-placeholders.system.test.js
 ./app/system-tests/provisionUser.system.test.js
 ./app/system-tests/accountBundles.system.test.js
@@ -139,7 +147,9 @@
 ./app/lib/logger.js
 ./app/lib/httpResponseHelper.js
 ./app/lib/hmrcValidation.js
+./app/lib/emailHash.js
 ./app/lib/buildFraudHeaders.js
+./app/lib/passphrase.js
 ./app/lib/obligationFormatter.js
 ./app/lib/jwtHelper.js
 ./app/lib/httpFetch.js
@@ -166,7 +176,11 @@
 ./app/functions/hmrc/hmrcVatReturnPost.js
 ./app/functions/account/bundleGet.js
 ./app/functions/account/bundleDelete.js
+./app/functions/account/passPost.js
+./app/functions/account/passGet.js
+./app/functions/account/passAdminPost.js
 ./app/functions/account/bundlePost.js
+./app/functions/account/bundleCapacityReconcile.js
 ./app/functions/non-lambda-mocks/mockTokenPost.js
 ./app/functions/non-lambda-mocks/mockAuthUrlGet.js
 ./app/http-simulator/server.js
@@ -183,17 +197,20 @@
 ./app/http-simulator/routes/vat-obligations.js
 ./app/http-simulator/routes/vat-returns.js
 ./app/data/dynamoDbHmrcApiRequestRepository.js
+./app/data/dynamoDbPassRepository.js
 ./app/data/dynamoDbAsyncRequestRepository.js
+./app/data/dynamoDbCapacityRepository.js
 ./app/data/dynamoDbBundleRepository.js
 ./app/data/dynamoDbReceiptRepository.js
 ./app/services/productCatalog.js
+./app/services/passService.js
 ./app/services/hmrcApi.js
+./app/services/tokenEnforcement.js
 ./app/services/asyncApiServices.js
 ./app/services/bundleManagement.js
 ./app/services/subHasher.js
 ./LICENSE
 ./REPORT_ACCESSIBILITY_PENETRATION.md
-./PLAN_PASSES.md
 ./ICO Registration Certificate - ZB070902 - Diy Accounting Limited.pdf
 ./Dockerfile
 ./web/unit-tests/vatFlow.frontend.test.js
@@ -444,6 +461,7 @@
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/6b0db4127bad6ddd8e3fb9c9e643aa62e9de3eb2.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/fab170a873af72c10cca82aab05713bd8f70e441.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/edd6a3c618a165ae02471778fb14e26c5180de0b.zip
+./web/public-simulator/tests/test-reports/web-test-local/html-report/data/b618e656738dff64f579c5651192c805eccbbb5b.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/27144a30301ffe1d3cc9f0ef7cf4030999bc3ce7.md
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/89d9c2d3b24547b6cd257b9a272014eff2edb093.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/77d368666a8fdd7c2c7d014cdb67b7da59c83eb1.zip
@@ -462,6 +480,7 @@
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/df82c7b4df77523c6651f6d3737a0b6e4d2f5fe3.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/91fbcb8498a749e5417f9c5e03e6c0db534313b1.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/a70c7b1ceff7f56e1faed660de67fe74758efb0d.zip
+./web/public-simulator/tests/test-reports/web-test-local/html-report/data/b035dbb7a9b81bd3904d5fc503bb13b94656f7b0.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/4f07aa00b092099f9143ffcc75436322878f52ea.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/c6c722138a49650518a91d92720a93390cfb8635.zip
 ./web/public-simulator/tests/test-reports/web-test-local/html-report/data/b915180cdfeea731e572e977bd82245b20fc4bca.zip
@@ -480,12 +499,9 @@
 ./web/public-simulator/tests/accessibility/text-spacing-results.json
 ./web/public-simulator/tests/accessibility/pa11y-report.txt
 ./web/public-simulator/faqs.toml
-./web/public-simulator/docs/index.html
 ./web/public-simulator/docs/api/index.html
 ./web/public-simulator/docs/api/openapi.yaml
 ./web/public-simulator/docs/api/openapi.json
-./web/public-simulator/docs/openapi.yaml
-./web/public-simulator/docs/openapi.json
 ./web/public-simulator/docs/hmrc-form-field-standards/index.html
 ./web/public-simulator/docs/hmrc-form-field-standards/styles.css
 ./web/public-simulator/docs/hmrc-form-field-standards/README.md
@@ -554,6 +570,7 @@
 ./web/public-simulator/privacy.html
 ./web/public-simulator/submit.bundle.js
 ./AWS_ARCHITECTURE.md
+./postVatReturnBehaviour-simulator.log
 ./RUNBOOK_INFORMATION_SECURITY.md
 ./.retireignore.json
 ./.pa11yci.proxy.json
@@ -569,6 +586,7 @@
 ./PLAN_AWS_ACCOUNTS.md
 ./.prettierignore
 ./.editorconfig
+./submitVatBehaviour-simulator.log
 ./README.md
 ./.zap-rules.tsv
 ./repository-contents.txt
@@ -578,10 +596,11 @@
 ./.pa11yci.prod.json
 ./.pa11yci.ci.json
 ./PLAN_BACKUP_STRATEGY.md
+./postVatReturnBehaviour-proxy.log
 ./package.json
+./submit.passes.toml
 ./scripts/setup-s3-replication.sh
 ./scripts/add-spdx-headers.js
-./scripts/add-subscriber.sh
 ./scripts/setup-backup-account.sh
 ./scripts/export-user-data.js
 ./scripts/playwright-video-reporter.js
@@ -626,6 +645,7 @@
 ./.prettierrc
 ./REPORT_SECURITY_REVIEW.md
 ./behaviour-tests/getVatReturn.behaviour.test.js
+./behaviour-tests/passRedemption.behaviour.test.js
 ./behaviour-tests/help.behaviour.test.js
 ./behaviour-tests/bundles.behaviour.test.js
 ./behaviour-tests/vatValidation.behaviour.test.js
@@ -643,6 +663,7 @@
 ./behaviour-tests/submitVat.behaviour.test.js
 ./behaviour-tests/postVatReturn.behaviour.test.js
 ./behaviour-tests/getVatObligations.behaviour.test.js
+./behaviour-tests/tokenEnforcement.behaviour.test.js
 ./behaviour-tests/helpers/figures-helper.js
 ./behaviour-tests/helpers/dynamodb-export.js
 ./behaviour-tests/helpers/serverHelper.js

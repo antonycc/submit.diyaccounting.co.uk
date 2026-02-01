@@ -6,8 +6,8 @@ Use this prompt when the user-facing documentation needs refreshing after featur
 
 | File | Purpose |
 |------|---------|
-| `web/public/help/faqs.toml` | FAQ content (read directly by browser) |
-| `web/public/guide/index.html` | Step-by-step user guide with screenshots |
+| `web/public/faqs.toml` | FAQ content (read directly by browser) |
+| `web/public/guide.html` | Step-by-step user guide with screenshots |
 | `web/public/about.html` | Marketing/landing page with feature highlights |
 | `web/public/images/guide/*.png` | Screenshots used in guide and about pages |
 
