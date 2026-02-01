@@ -9,6 +9,7 @@ import {
   ensureReceiptsTableExists,
   ensureAsyncRequestsTableExists,
   ensurePassesTableExists,
+  ensureCapacityTableExists,
 } from "@app/bin/dynamodb.js";
 import { startNgrok, extractDomainFromUrl } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
@@ -95,6 +96,11 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const passesTable = process.env.PASSES_DYNAMODB_TABLE_NAME;
     if (passesTable) {
       await ensurePassesTableExists(passesTable, endpoint);
+    }
+
+    const capacityTable = process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME;
+    if (capacityTable) {
+      await ensureCapacityTableExists(capacityTable, endpoint);
     }
 
     const asyncTable = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;

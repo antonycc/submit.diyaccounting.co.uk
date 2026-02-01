@@ -19,7 +19,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
-import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+import { getUserBundles, deleteBundle } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -321,22 +321,32 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const currentBundles = await getUserBundles(userId);
 
   // Hard rule: each bundle can only be allocated once per user.
-  // Renewal refreshes the existing allocation's expiry rather than creating a duplicate.
-  const hasBundle = currentBundles.some((bundle) => bundle?.bundleId === requestedBundle);
-  if (hasBundle) {
-    logger.info({ message: "User already has requested bundle:", requestedBundle });
-    emitCapMetric("BundleAlreadyGranted", requestedBundle);
-    const result = {
-      status: "already_granted",
-      message: "Bundle already granted to user",
-      bundles: currentBundles,
-      granted: false,
-      statusCode: 201,
-    };
-    if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
-      await putAsyncRequest(userId, requestId, "completed", result);
+  // Exception: if the existing bundle is expired, delete it and grant a fresh one.
+  const existingBundle = currentBundles.find((bundle) => bundle?.bundleId === requestedBundle);
+  if (existingBundle) {
+    const now = new Date();
+    const isExpired = existingBundle.expiry && new Date(existingBundle.expiry) < now;
+
+    if (isExpired) {
+      logger.info({ message: "Existing bundle is expired, removing before fresh grant", requestedBundle, expiry: existingBundle.expiry });
+      await deleteBundle(userId, requestedBundle);
+      const idx = currentBundles.indexOf(existingBundle);
+      if (idx !== -1) currentBundles.splice(idx, 1);
+    } else {
+      logger.info({ message: "User already has requested bundle (not expired):", requestedBundle });
+      emitCapMetric("BundleAlreadyGranted", requestedBundle);
+      const result = {
+        status: "already_granted",
+        message: "Bundle already granted to user",
+        bundles: currentBundles,
+        granted: false,
+        statusCode: 201,
+      };
+      if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+        await putAsyncRequest(userId, requestId, "completed", result);
+      }
+      return result;
     }
-    return result;
   }
 
   const catalogBundle = getCatalogBundle(requestedBundle);

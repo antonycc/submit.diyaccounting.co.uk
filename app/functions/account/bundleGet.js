@@ -75,7 +75,7 @@ export async function ingestHandler(event) {
   // Extract and validate parameters
   const { userId } = extractAndValidateParameters(event, errorMessages);
 
-  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
 
   // Authentication errors - extractAndValidateParameters only adds JWT decode errors
   if (errorMessages.length > 0 || !userId) {

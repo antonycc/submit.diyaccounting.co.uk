@@ -322,6 +322,36 @@ header {
   font-size: var(--font-size-sm);
 }
 
+.token-balance {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-left: var(--spacing-sm);
+}
+
+.token-count {
+  white-space: nowrap;
+}
+
+.token-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  transition: color 0.2s;
+}
+
+.token-refresh-btn:hover {
+  color: var(--color-brand-primary);
+}
+
 .login-link {
   color: var(--color-brand-primary);
   text-decoration: none;
