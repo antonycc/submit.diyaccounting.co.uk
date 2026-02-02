@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Limited - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="About DIY Accounting Limited - company information, directors, history, and contact details. Founded by Terry Cartwright, now managed by his family."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/diy-accounting-limited.html" />
+    <link rel="stylesheet" href="submit.css" />
+    <style>
+      .company-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      .company-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .company-section h2 {
+        color: var(--color-brand-primary);
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+      }
+
+      .company-section p {
+        color: var(--color-text-primary);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+      }
+
+      .company-section p:last-child {
+        margin-bottom: 0;
+      }
+
+      .section-media {
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+      }
+
+      .section-media img {
+        border-radius: 6px;
+        flex-shrink: 0;
+      }
+
+      .section-media .team-photo {
+        max-width: 220px;
+        height: auto;
+      }
+
+      .section-media .logo-img {
+        max-width: 140px;
+        height: auto;
+      }
+
+      .section-media .founder-photo {
+        max-width: 200px;
+        height: auto;
+      }
+
+      .section-media .original-logo {
+        max-width: 160px;
+        height: auto;
+        image-rendering: auto;
+      }
+
+      .section-media-text {
+        flex: 1;
+      }
+
+      .section-media-text p:first-child {
+        margin-top: 0;
+      }
+
+      .directors-list {
+        list-style: none;
+        padding: 0;
+        margin: 0.75rem 0;
+      }
+
+      .directors-list li {
+        padding: 0.25rem 0;
+        color: var(--color-text-primary);
+        line-height: 1.5;
+      }
+
+      .directors-list li strong {
+        color: var(--color-brand-primary);
+      }
+
+      details {
+        margin-top: 0.75rem;
+      }
+
+      details summary {
+        cursor: pointer;
+        color: var(--color-brand-primary);
+        font-weight: 600;
+        padding: 0.5rem 0;
+        user-select: none;
+      }
+
+      details summary:hover {
+        text-decoration: underline;
+      }
+
+      details[open] summary {
+        margin-bottom: 0.5rem;
+      }
+
+      .contact-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+      }
+
+      .contact-section h2 {
+        color: var(--color-brand-primary);
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+      }
+
+      .contact-details {
+        color: var(--color-text-primary);
+        line-height: 1.8;
+      }
+
+      .contact-details p {
+        margin: 0 0 0.75rem 0;
+      }
+
+      .contact-details .address {
+        font-style: normal;
+      }
+
+      .contact-details .company-reg {
+        color: var(--color-text-secondary);
+        font-size: 0.9rem;
+        margin-top: 1rem;
+      }
+
+      @media (max-width: 600px) {
+        .company-page {
+          padding: 0.5rem;
+        }
+
+        .section-media {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .section-media img {
+          max-width: 80% !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="index.html" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>DIY Accounting Limited</h1>
+      <p class="subtitle">Company information, history and contact details</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html">Activities</a>
+        <a href="hmrc/receipt/receipts.html">Receipts</a>
+        <a href="bundles.html">Bundles</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div class="company-page">
+        <!-- About: Current Directors -->
+        <div class="company-section">
+          <h2>About DIY Accounting</h2>
+          <div class="section-media">
+            <img
+              src="images/company/four-diyaccounting-shareholders.png"
+              alt="The current DIY Accounting directors: Samantha, Jane, Antony and Lindsey Cartwright"
+              class="team-photo"
+            />
+            <img
+              src="images/company/diyaccounting-label-logo-white-bk.png"
+              alt="DIY Accounting logo"
+              class="logo-img"
+            />
+          </div>
+          <p>
+            DIY Accounting Limited is managed by the family of founder Terry Cartwright. Since January 2010, the team has taken
+            over day-to-day operations while maintaining the standards of ease of use and personal customer service that Terry
+            established.
+          </p>
+          <p>
+            The company is known for straightforward accounting spreadsheets designed by a Chartered Management Accountant,
+            providing small businesses with the tools they need without unnecessary complexity.
+          </p>
+          <ul class="directors-list">
+            <li><strong>Antony Cartwright</strong> &mdash; Director</li>
+            <li><strong>Jane Grundy</strong> &mdash; Director</li>
+            <li><strong>Samantha Cartwright</strong> &mdash; Director</li>
+          </ul>
+          <details>
+            <summary>Read more about DIY Accounting</summary>
+            <p>
+              DIY Accounting has always been recognised for its ease of use and personal customer service. The current team
+              includes a dedicated marketing executive and customer service support, along with an online marketing consultant
+              and accounts assistant providing technical support.
+            </p>
+            <p>
+              All accounting and payroll software was personally designed by Terry Cartwright. He would answer every customer
+              question about accounting software, bookkeeping, or payroll software himself. The team now aims to provide the
+              same high quality of care and expertise that Terry provided, and success is measured by customer feedback.
+            </p>
+            <p>
+              If you think we can improve our product or service, we welcome suggestions. We are committed to continuing
+              the legacy of accessible, reliable accounting tools for UK small businesses.
+            </p>
+          </details>
+        </div>
+
+        <!-- History: The Founder -->
+        <div class="company-section">
+          <h2>History</h2>
+          <div class="section-media">
+            <img
+              src="images/company/diyaccounting-founder.jpg"
+              alt="Terry Cartwright, founder of DIY Accounting"
+              class="founder-photo"
+            />
+            <img
+              src="images/company/diyaccounting-frontpage-logo.gif"
+              alt="Original DIY Accounting website logo"
+              class="original-logo"
+            />
+          </div>
+          <p>
+            DIY Accounting was founded by Terry Cartwright, a Chartered Management Accountant (ACMA) and Chartered Company
+            Secretary (ACIS), who began designing payroll and accounting systems on Excel spreadsheets in 2006.
+          </p>
+          <p>
+            Terry passed away in December 2009 and the company is now managed by his children: Antony, Jane, Samantha,
+            Lindsey, and Daniel.
+          </p>
+          <details>
+            <summary>Read more about the founder</summary>
+            <p>
+              Terry Cartwright qualified as a Chartered Management Accountant (ACMA) in 1971 and went on to design a revenue
+              budgeting system for British Rail. He served as Management and Works Accountant at New World Gas Cookers before
+              qualifying as a Chartered Company Secretary (ACIS).
+            </p>
+            <p>
+              At British Steel he was promoted to Head of Finance and Administration for the Refractories division. He later
+              worked in Saudi Arabia as Chief Accountant for an American corporation, and on returning to the UK became Chief
+              Accountant at Dunlop Industrial Hose.
+            </p>
+            <p>
+              In the early 1980s Terry started his own retail and wholesale company, growing it to multiple outlets with turnover
+              approaching &pound;1 million. In the early 1990s he returned to accountancy, working on a European sales accounting
+              system, Oracle software implementations, and a treasury management system for a UK bank, before serving as Finance
+              Director for a communications company.
+            </p>
+            <p>
+              Semi-retiring around 2000, Terry pursued ornithology alongside maintaining financial accounts for industrial
+              companies. In 2006 he started DIY Accounting, applying his decades of experience to designing practical payroll
+              and accounting systems on Excel spreadsheets. As a Chartered Company Secretary he also acted as a company
+              formation agent.
+            </p>
+          </details>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="contact-section">
+          <h2>Contact</h2>
+          <div class="contact-details">
+            <address class="address">
+              <p>
+                <strong>DIY Accounting Limited</strong><br />
+                37 Sutherland Avenue<br />
+                Leeds<br />
+                LS8 1BY<br />
+                United Kingdom
+              </p>
+            </address>
+            <p>
+              Phone: 0845 0756015 (UK)<br />
+              Phone: +44 845 075 6015 (International)<br />
+              <small>Messages are transcribed for part-time staff</small>
+            </p>
+            <p class="company-reg">
+              Registered in England and Wales &mdash; Company Number: 06846849
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="#" id="viewSourceLink" style="display: none">view source</a>
+          <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="docs/api/index.html">api</a>
+          <a href="privacy.html">privacy</a>
+          <a href="terms.html">terms</a>
+          <a href="accessibility.html">accessibility</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+        <div class="footer-right" id="localstorageContainer"></div>
+      </div>
+    </footer>
+
+    <script type="module" src="submit.js"></script>
+    <script src="developer-mode.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script src="widgets/status-messages.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>
+    <script src="widgets/localstorage-viewer.js"></script>
+  </body>
+</html>

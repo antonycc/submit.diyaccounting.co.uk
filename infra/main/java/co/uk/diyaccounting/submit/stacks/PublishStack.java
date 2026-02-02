@@ -242,6 +242,8 @@ public class PublishStack extends Stack {
                         "/guide.html",
                         "/help.html",
                         "/mcp.html",
+                        "/spreadsheets.html",
+                        "/diy-accounting-limited.html",
                         "/favicon.ico",
                         "/index.html",
                         "/privacy.html",

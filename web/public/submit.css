@@ -287,6 +287,7 @@ header::after {
 /* About page navigation links (Help / User Guide) */
 .about-nav-links {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: var(--spacing-xl);
   margin: var(--spacing-xl) 0 var(--spacing-lg) 0;
@@ -303,6 +304,7 @@ header::after {
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
+  flex: 1 1 28%;
 }
 
 .about-nav-link:hover {
@@ -314,9 +316,6 @@ header::after {
 }
 
 @media (orientation: portrait) {
-  .about-nav-links {
-    flex-wrap: wrap;
-  }
   .about-nav-link {
     flex: 1 1 40%;
   }

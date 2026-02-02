@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Spreadsheets - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="DIY Accounting spreadsheet products - Excel bookkeeping and accounting spreadsheets for UK small businesses. Sole trader, self employed, company accounts, payroll and taxi driver software."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/spreadsheets.html" />
+    <link rel="stylesheet" href="submit.css" />
+    <style>
+      .spreadsheets-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+      }
+
+      .spreadsheets-intro {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .spreadsheets-intro h2 {
+        color: var(--color-brand-primary);
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+      }
+
+      .spreadsheets-intro p {
+        color: var(--color-text-primary);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+      }
+
+      .spreadsheets-intro p:last-child {
+        margin-bottom: 0;
+      }
+
+      .product-grid-image {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+      }
+
+      .product-grid-image img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .product-grid-image img:hover {
+        opacity: 0.9;
+      }
+
+      .product-grid-image p {
+        color: var(--color-text-secondary);
+        font-size: 0.875rem;
+        margin: 0.75rem 0 0 0;
+      }
+
+      .products {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .product {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1.25rem;
+      }
+
+      .product h3 {
+        color: var(--color-brand-primary);
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+      }
+
+      .product p {
+        color: var(--color-text-secondary);
+        margin: 0;
+        line-height: 1.5;
+        font-size: 0.95rem;
+      }
+
+      .gallery-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .gallery-section h2 {
+        color: var(--color-brand-primary);
+        margin-top: 0;
+        margin-bottom: 1rem;
+      }
+
+      .gallery-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .gallery-stack img {
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+        border: 1px solid #eee;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+
+      .gallery-stack img:hover {
+        opacity: 0.9;
+      }
+
+      /* Lightbox modal styles */
+      .lightbox-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        cursor: pointer;
+        justify-content: center;
+        align-items: center;
+      }
+      .lightbox-overlay.active {
+        display: flex;
+      }
+      .lightbox-overlay img {
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      .lightbox-close {
+        position: absolute;
+        top: 20px;
+        right: 30px;
+        color: white;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 10000;
+        line-height: 1;
+      }
+      .lightbox-close:hover {
+        color: #ccc;
+      }
+      .lightbox-hint {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+      }
+
+      @media (max-width: 600px) {
+        .spreadsheets-page {
+          padding: 0.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="index.html" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>DIY Accounting Spreadsheets</h1>
+      <p class="subtitle">Excel bookkeeping and accounting software for UK small businesses</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html">Activities</a>
+        <a href="hmrc/receipt/receipts.html">Receipts</a>
+        <a href="bundles.html">Bundles</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div class="spreadsheets-page">
+        <div class="spreadsheets-intro">
+          <h2>Accounting &amp; Payroll Spreadsheets</h2>
+          <p>
+            DIY Accounting provides Excel bookkeeping and accounting spreadsheets for the UK small business market. Designed by
+            a Chartered Management Accountant, these spreadsheets offer a straightforward approach to managing your business
+            finances without the complexity of traditional accounting software.
+          </p>
+          <p>
+            Each product is a self-contained set of Excel workbooks covering sales, purchases, profit and loss, and tax calculations
+            appropriate to your business type. The spreadsheets produce the figures you need for your tax returns and financial
+            accounts.
+          </p>
+        </div>
+
+        <div class="product-grid-image">
+          <img
+            src="images/spreadsheets/diyaccounting-spreadsheets-product-grid.png"
+            alt="Feature comparison table showing which features are included in each DIY Accounting product: Basic Sole Trader, Self Employed, Company Accounts, Taxi Driver, and Payslip"
+            class="lightbox-img"
+          />
+          <p>Feature comparison across the DIY Accounting product range</p>
+        </div>
+
+        <div class="products">
+          <div class="product">
+            <h3>Basic Sole Trader</h3>
+            <p>
+              The simplest personal accounting software for sole traders who are not VAT registered and have no employees.
+              Includes a sales spreadsheet, purchases spreadsheet, and financial accounts producing a profit and loss account
+              and self employed short tax return figures.
+            </p>
+          </div>
+          <div class="product">
+            <h3>Self Employed</h3>
+            <p>
+              For self-employed individuals and partnerships, with or without VAT registration. Covers sales and purchase
+              accounting, profit and loss statements, fixed assets tracking, VAT calculations, and bank reconciliation.
+              Produces the figures needed for your self assessment tax return.
+            </p>
+          </div>
+          <div class="product">
+            <h3>Company Accounts</h3>
+            <p>
+              For limited liability companies, whether VAT registered or not, with or without employees. Uses double-entry
+              bookkeeping integrated with payroll software. Produces VAT returns, profit and loss accounts, balance sheets,
+              year-end accounts for Companies House, and CT600 corporation tax calculations.
+            </p>
+          </div>
+          <div class="product">
+            <h3>Taxi Driver</h3>
+            <p>
+              Specialised accounting software designed for taxi driver businesses. Covers the specific income and expense
+              categories relevant to taxi and private hire work, producing the figures needed for your self assessment tax return.
+            </p>
+          </div>
+          <div class="product">
+            <h3>Payslips</h3>
+            <p>
+              Payslip software for producing employee payslips. Available in versions supporting up to 5, 10, or 20 employees,
+              and integrated with the Company Accounts product.
+            </p>
+          </div>
+        </div>
+
+        <div class="gallery-section">
+          <h2>Spreadsheet Screenshots</h2>
+          <div class="gallery-stack">
+            <img
+              src="images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Profit and Loss.png"
+              alt="Basic Sole Trader profit and loss spreadsheet showing monthly breakdown of sales turnover, cost of sales, expenses, and net taxable profit"
+              class="lightbox-img"
+            />
+            <img
+              src="images/spreadsheets/diyaccounting-spreadsheets-vat.jpg"
+              alt="VAT return spreadsheet in Excel showing the 9-box VAT return format with entry fields for each VAT period"
+              class="lightbox-img"
+            />
+            <img
+              src="images/spreadsheets/diyaccounting-spreadsheets-Payroll-Payslips.png"
+              alt="Payroll payslips spreadsheet showing monthly payroll calculations with gross pay, income tax, National Insurance deductions, and net pay for multiple employees"
+              class="lightbox-img"
+            />
+            <img
+              src="images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Fixed Assets.png"
+              alt="Fixed assets spreadsheet tracking computers, motor vehicles, purchase dates, original costs, and capital allowances calculations"
+              class="lightbox-img"
+            />
+            <img
+              src="images/spreadsheets/diyaccounting-spreadsheets-corporationtax1.jpg"
+              alt="Corporation tax computation spreadsheet showing operating profit, capital allowances, and amount chargeable to corporation tax"
+              class="lightbox-img"
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="#" id="viewSourceLink" style="display: none">view source</a>
+          <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="docs/api/index.html">api</a>
+          <a href="privacy.html">privacy</a>
+          <a href="terms.html">terms</a>
+          <a href="accessibility.html">accessibility</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+        <div class="footer-right" id="localstorageContainer"></div>
+      </div>
+    </footer>
+
+    <!-- Lightbox modal for expandable images -->
+    <div class="lightbox-overlay" id="lightbox">
+      <span class="lightbox-close" aria-label="Close">&times;</span>
+      <img src="" alt="" id="lightbox-image" />
+      <span class="lightbox-hint">Click anywhere to close</span>
+    </div>
+
+    <script type="module" src="submit.js"></script>
+    <script src="developer-mode.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script src="widgets/status-messages.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>
+    <script src="widgets/localstorage-viewer.js"></script>
+    <script>
+      // Lightbox functionality for images
+      (function () {
+        const lightbox = document.getElementById("lightbox");
+        const lightboxImg = document.getElementById("lightbox-image");
+        const images = document.querySelectorAll(".lightbox-img");
+
+        images.forEach((img) => {
+          img.addEventListener("click", function () {
+            lightboxImg.src = this.src;
+            lightboxImg.alt = this.alt;
+            lightbox.classList.add("active");
+            document.body.style.overflow = "hidden";
+          });
+        });
+
+        lightbox.addEventListener("click", function () {
+          lightbox.classList.remove("active");
+          document.body.style.overflow = "";
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && lightbox.classList.contains("active")) {
+            lightbox.classList.remove("active");
+            document.body.style.overflow = "";
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
