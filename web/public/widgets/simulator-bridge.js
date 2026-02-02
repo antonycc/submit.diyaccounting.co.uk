@@ -11,15 +11,15 @@
   if (window.parent === window) return;
 
   window.addEventListener("message", async function (event) {
-    var msg = event.data;
+    const msg = event.data;
     if (!msg || msg.type !== "simulator-command") return;
 
-    var id = msg.id;
-    var command = msg.command;
-    var selector = msg.selector;
-    var text = msg.text;
-    var value = msg.value;
-    var result = { type: "simulator-response", id: id, success: true };
+    const id = msg.id;
+    const command = msg.command;
+    const selector = msg.selector;
+    const text = msg.text;
+    const value = msg.value;
+    const result = { type: "simulator-response", id: id, success: true };
 
     try {
       switch (command) {
@@ -95,7 +95,7 @@
               el.dispatchEvent(new Event("change", { bubbles: true }));
             } else {
               el.value = "";
-              var chars = String(value);
+              const chars = String(value);
               for (var i = 0; i < chars.length; i++) {
                 el.value += chars[i];
                 el.dispatchEvent(new Event("input", { bubbles: true }));
@@ -156,7 +156,7 @@
         }
 
         case "scrollToBottom": {
-          var body = document.body || document.documentElement;
+          const body = document.body || document.documentElement;
           if (body) {
             body.scrollTop = body.scrollHeight;
             document.documentElement.scrollTop = document.documentElement.scrollHeight;

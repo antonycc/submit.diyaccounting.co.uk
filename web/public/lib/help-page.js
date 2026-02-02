@@ -7,8 +7,8 @@
  * Initialises FAQ search, handles accordion, manages support form modal
  */
 
-import { FAQSearch, debounce } from "../lib/faq-search.js";
-import { submitSupportTicket } from "../lib/support-api.js";
+import { FAQSearch, debounce } from "./faq-search.js";
+import { submitSupportTicket } from "./support-api.js";
 
 /**
  * Help Page class managing the FAQ display and support form

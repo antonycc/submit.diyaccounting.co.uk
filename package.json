@@ -263,6 +263,7 @@
     "retire": "^5.4.2",
     "supertest": "^7.2.2",
     "toml": "^3.0.0",
+    "ts-api-utils": "^2.4.0",
     "vitest": "^3.2.4"
   },
   "engines": {

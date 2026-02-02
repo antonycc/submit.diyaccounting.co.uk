@@ -111,9 +111,9 @@
     }
     // Clear L2 IndexedDB bundle cache
     try {
-      var userInfoJson = localStorage.getItem("userInfo");
+      const userInfoJson = localStorage.getItem("userInfo");
       if (userInfoJson && window.bundleCache) {
-        var user = JSON.parse(userInfoJson);
+        const user = JSON.parse(userInfoJson);
         if (user && user.sub) {
           window.bundleCache.clearBundles(user.sub);
         }
@@ -157,7 +157,7 @@
     } else {
       loginStatusElement.textContent = "Not logged in";
       // Hide token balance when not logged in
-      var tokenBalanceEl = document.querySelector(".token-balance");
+      const tokenBalanceEl = document.querySelector(".token-balance");
       if (tokenBalanceEl) tokenBalanceEl.style.display = "none";
 
       const currentPage = window.location.pathname.split("/").pop();

@@ -438,7 +438,7 @@ jobs:
     name: 'simulator - submitVatBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -472,7 +472,7 @@ jobs:
     name: 'simulator - postVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -506,7 +506,7 @@ jobs:
     name: 'simulator - getVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -540,7 +540,7 @@ jobs:
     name: 'simulator - getVatObligationsBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -574,7 +574,7 @@ jobs:
     name: 'simulator - fraudPreventionHeadersBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -608,7 +608,7 @@ jobs:
     name: 'simulator - complianceBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -642,7 +642,7 @@ jobs:
     name: 'simulator - vatValidationBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -676,7 +676,7 @@ jobs:
     name: 'simulator - vatSchemesBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -710,7 +710,7 @@ jobs:
     name: 'simulator - authBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -744,7 +744,7 @@ jobs:
     name: 'simulator - bundleBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -778,7 +778,7 @@ jobs:
     name: 'simulator - helpBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -812,7 +812,7 @@ jobs:
     name: 'simulator - passRedemptionBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -846,7 +846,7 @@ jobs:
     name: 'simulator - tokenEnforcementBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:
@@ -880,7 +880,7 @@ jobs:
     name: 'simulator - simulatorBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.57.0-jammy
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
     needs:
       - names
     steps:

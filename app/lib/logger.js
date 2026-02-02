@@ -135,7 +135,7 @@ const PII_PATTERNS = [
   // Key=value pairs for secrets in query strings, form bodies, URLs, and log messages
   // Covers: client_secret=xxx, CLIENT_SECRET=xxx, clientSecret=xxx, api_key=xxx, apiKey=xxx,
   //         password=xxx, access_token=xxx, refresh_token=xxx, authorization=xxx
-  // eslint-disable-next-line security/detect-unsafe-regex -- linear alternation, no backtracking risk
+
   {
     name: "SECRET",
     pattern:
@@ -264,7 +264,6 @@ if (logToConsole && logToFile) {
   // Ensure directory exists
   const dir = path.dirname(logFilePath);
   try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- path from env var or safe default
     fs.mkdirSync(dir, { recursive: true });
   } catch {
     // ignore mkdir errors; pino will throw on write if truly unusable
@@ -283,7 +282,6 @@ if (logToConsole && logToFile) {
 
   const dir = path.dirname(logFilePath);
   try {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- path from env var or safe default
     fs.mkdirSync(dir, { recursive: true });
   } catch (error) {
     console.error(`Failed to create log directory ${dir}:`, error);
