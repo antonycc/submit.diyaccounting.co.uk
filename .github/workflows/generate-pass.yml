@@ -279,7 +279,7 @@ jobs:
             exit 1
           fi
 
-      - name: Generate passes
+      - name: Generate passes with QR codes
         id: generate
         run: |
           ENV_NAME="${{ needs.names.outputs.environment-name }}"
@@ -292,7 +292,7 @@ jobs:
           NOTES="${{ needs.params.outputs.notes }}"
           CREATED_BY="github-actions-run#${{ github.run_id }}"
 
-          echo "Generating ${QUANTITY} ${{ needs.params.outputs.pass-type }} pass(es)..."
+          echo "Generating ${QUANTITY} ${{ needs.params.outputs.pass-type }} pass(es) with QR codes..."
           echo "  Bundle: ${BUNDLE_ID}"
           echo "  Max uses: ${MAX_USES}"
           echo "  Validity: ${VALIDITY_PERIOD}"
@@ -310,52 +310,20 @@ jobs:
             fi
           fi
 
-          # Generate passes using Node.js
+          # Generate passes with QR codes using dedicated script
           export PASSES_DYNAMODB_TABLE_NAME="${TABLE_NAME}"
           export EMAIL_HASH_SECRET="${EMAIL_HASH_SECRET}"
-          node --input-type=module -e "
-            import { createPass } from './app/services/passService.js';
-            import { initializeEmailHashSecret } from './app/lib/emailHash.js';
-            import fs from 'fs';
-
-            const quantity = parseInt('${QUANTITY}', 10);
-            const results = [];
-
-            if (process.env.EMAIL_HASH_SECRET) {
-              await initializeEmailHashSecret();
-            }
-
-            for (let i = 0; i < quantity; i++) {
-              const pass = await createPass({
-                passTypeId: '${{ needs.params.outputs.pass-type }}',
-                bundleId: '${BUNDLE_ID}',
-                validityPeriod: '${VALIDITY_PERIOD}' || undefined,
-                maxUses: parseInt('${MAX_USES}', 10),
-                restrictedToEmail: '${EMAIL}' || undefined,
-                createdBy: '${CREATED_BY}',
-                notes: '${NOTES}' || undefined,
-              });
-              results.push({
-                code: pass.code,
-                bundleId: pass.bundleId,
-                validFrom: pass.validFrom,
-                validUntil: pass.validUntil,
-                maxUses: pass.maxUses,
-              });
-            }
-
-            // Write results
-            fs.writeFileSync('passes-output.json', JSON.stringify(results, null, 2));
-
-            for (const pass of results) {
-              console.log('---');
-              console.log('Code: ' + pass.code);
-              console.log('URL: https://${{ needs.names.outputs.pass-url-host }}/bundles.html?pass=' + pass.code);
-              console.log('Bundle: ' + pass.bundleId);
-              console.log('Valid until: ' + (pass.validUntil || 'unlimited'));
-              console.log('Max uses: ' + pass.maxUses);
-            }
-          "
+          export PASS_TYPE="${{ needs.params.outputs.pass-type }}"
+          export BUNDLE_ID="${BUNDLE_ID}"
+          export MAX_USES="${MAX_USES}"
+          export VALIDITY_PERIOD="${VALIDITY_PERIOD}"
+          export QUANTITY="${QUANTITY}"
+          export EMAIL="${EMAIL}"
+          export NOTES="${NOTES}"
+          export CREATED_BY="${CREATED_BY}"
+          export PASS_URL_HOST="${{ needs.names.outputs.pass-url-host }}"
+          
+          node scripts/generate-pass-with-qr.js
 
       - name: Create HMRC sandbox test user
         id: hmrc-user
@@ -379,7 +347,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: passes-${{ needs.params.outputs.pass-type }}-${{ github.run_id }}
-          path: passes-output.json
+          path: |
+            passes-output.json
+            qr-codes/*.png
           retention-days: 30
 
       - name: Summary
@@ -393,26 +363,34 @@ jobs:
           echo "| Quantity | ${{ needs.params.outputs.quantity }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Bundle | ${{ steps.pass-type.outputs.BUNDLE_ID }} |" >> $GITHUB_STEP_SUMMARY
           if [[ -n "${{ needs.params.outputs.email }}" ]]; then
-            echo "| Email restricted | Yes |" >> $GITHUB_STEP_SUMMARY
+            echo "| Email restricted | Yes (${{ needs.params.outputs.email }}) |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ -n "${{ needs.params.outputs.notes }}" ]]; then
+            echo "| Notes | ${{ needs.params.outputs.notes }} |" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Read generated passes and display actual codes with clickable URLs
-          echo "### Generated Passes" >> $GITHUB_STEP_SUMMARY
+          # Read generated passes and display with QR code info
+          echo "### Generated Passes with QR Codes" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Pass Code | URL | Valid Until | Max Uses |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|-----|-------------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "Each pass includes a scannable QR code that redirects to the bundle redemption page." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Code | URL | Valid Until | Max Uses | QR Code |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----|-------------|----------|---------|" >> $GITHUB_STEP_SUMMARY
           node --input-type=module -e "
             import fs from 'fs';
             const passes = JSON.parse(fs.readFileSync('passes-output.json', 'utf-8'));
-            const host = '${{ needs.names.outputs.pass-url-host }}';
             for (const pass of passes) {
-              const url = 'https://' + host + '/bundles.html?pass=' + pass.code;
               const validUntil = pass.validUntil || 'unlimited';
-              console.log('| \`' + pass.code + '\` | [' + url + '](' + url + ') | ' + validUntil + ' | ' + pass.maxUses + ' |');
+              const qrFile = pass.qrCodeFile || 'N/A';
+              console.log('| \`' + pass.code + '\` | [' + pass.url + '](' + pass.url + ') | ' + validUntil + ' | ' + pass.maxUses + ' | ' + qrFile + ' |');
             }
           " >> $GITHUB_STEP_SUMMARY
 
+          # Add note about downloading QR codes
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Download QR codes**: Download the workflow artifact \`passes-${{ needs.params.outputs.pass-type }}-${{ github.run_id }}\` to get PNG QR codes for each pass." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           # HMRC sandbox test user credentials
           if [[ -f "hmrc-test-user.json" ]]; then
             echo "" >> $GITHUB_STEP_SUMMARY
