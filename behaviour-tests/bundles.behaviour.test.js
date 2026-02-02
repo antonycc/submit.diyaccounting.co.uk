@@ -195,8 +195,11 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   // --- Step 4: Request Day Guest bundle (capped, on-request, with tokens) ---
   // Day Guest has listedInEnvironments that excludes prod, so check runtime availability
   // rather than relying on isSandboxMode() which returns true for prod sandbox tests
-  const isDayGuestAvailable = await page.locator("button:has-text('Day Guest')").first()
-    .isVisible({ timeout: 3000 }).catch(() => false);
+  const isDayGuestAvailable = await page
+    .locator("button:has-text('Day Guest')")
+    .first()
+    .isVisible({ timeout: 3000 })
+    .catch(() => false);
   console.log(`[bundle-test]: Day Guest availability check: ${isDayGuestAvailable}`);
   if (isDayGuestAvailable) {
     await ensureBundlePresent(page, "Day Guest", screenshotPath);

@@ -5,12 +5,7 @@
 
 import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
-import {
-  extractRequest,
-  http200OkResponse,
-  http400BadRequestResponse,
-  http500ServerErrorResponse,
-} from "../../lib/httpResponseHelper.js";
+import { extractRequest, http200OkResponse, http400BadRequestResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { checkPass } from "../../services/passService.js";
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";

@@ -265,12 +265,11 @@ public class ApexStack extends Stack {
                                 .build())
                         .build())
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(
-                                ResponseCustomHeader.builder()
-                                        .header("Server")
-                                        .value("DIY-Accounting")
-                                        .override(true)
-                                        .build()))
+                        .customHeaders(List.of(ResponseCustomHeader.builder()
+                                .header("Server")
+                                .value("DIY-Accounting")
+                                .override(true)
+                                .build()))
                         .build())
                 .build();
 

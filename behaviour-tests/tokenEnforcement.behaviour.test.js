@@ -216,7 +216,15 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
 
     await goToHomePageUsingMainNav(page, screenshotPath);
     await initSubmitVat(page, screenshotPath);
-    await fillInVat(page, hmrcVatNumber, { periodStart, periodEnd }, hmrcVatDueAmount, undefined, runFraudPreventionHeaderValidation, screenshotPath);
+    await fillInVat(
+      page,
+      hmrcVatNumber,
+      { periodStart, periodEnd },
+      hmrcVatDueAmount,
+      undefined,
+      runFraudPreventionHeaderValidation,
+      screenshotPath,
+    );
 
     // Submit the form
     await page.locator("#submitBtn").click();
@@ -224,7 +232,10 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await page.waitForTimeout(1000);
 
     // Handle HMRC OAuth if redirected
-    const isHmrcAuthPage = await page.locator("#appNameParagraph").isVisible().catch(() => false);
+    const isHmrcAuthPage = await page
+      .locator("#appNameParagraph")
+      .isVisible()
+      .catch(() => false);
     if (isHmrcAuthPage) {
       await acceptCookiesHmrc(page, screenshotPath);
       await goToHmrcAuth(page, screenshotPath);
@@ -239,7 +250,10 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await receiptOrError.first().waitFor({ state: "visible", timeout: 120_000 });
 
     // Verify submission succeeded
-    const receiptVisible = await page.locator("#receiptDisplay").isVisible().catch(() => false);
+    const receiptVisible = await page
+      .locator("#receiptDisplay")
+      .isVisible()
+      .catch(() => false);
     expect(receiptVisible).toBeTruthy();
     console.log("VAT return submitted successfully");
 
@@ -315,14 +329,25 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
 
     await goToHomePageUsingMainNav(page, screenshotPath);
     await initSubmitVat(page, screenshotPath);
-    await fillInVat(page, hmrcVatNumber, { periodStart, periodEnd }, hmrcVatDueAmount, undefined, runFraudPreventionHeaderValidation, screenshotPath);
+    await fillInVat(
+      page,
+      hmrcVatNumber,
+      { periodStart, periodEnd },
+      hmrcVatDueAmount,
+      undefined,
+      runFraudPreventionHeaderValidation,
+      screenshotPath,
+    );
 
     // Submit the form
     await page.locator("#submitBtn").click();
     await page.waitForLoadState("networkidle");
 
     // Handle HMRC OAuth if redirected (cached token may still be valid)
-    const isHmrcAuthPage = await page.locator("#appNameParagraph").isVisible({ timeout: 3000 }).catch(() => false);
+    const isHmrcAuthPage = await page
+      .locator("#appNameParagraph")
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
     if (isHmrcAuthPage) {
       await acceptCookiesHmrc(page, screenshotPath);
       await goToHmrcAuth(page, screenshotPath);
@@ -338,7 +363,10 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log("Token exhaustion error displayed correctly");
 
     // Verify no receipt is shown
-    const receiptVisible = await page.locator("#receiptDisplay").isVisible().catch(() => false);
+    const receiptVisible = await page
+      .locator("#receiptDisplay")
+      .isVisible()
+      .catch(() => false);
     expect(receiptVisible).toBeFalsy();
 
     await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-error.png` });

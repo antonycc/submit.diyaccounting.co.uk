@@ -107,7 +107,10 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     // Also verify no "Added ✓" buttons remain on the page
     await page.reload();
     await page.waitForLoadState("networkidle");
-    const remainingAdded = await page.locator("button:has-text('Added ✓')").count().catch(() => 0);
+    const remainingAdded = await page
+      .locator("button:has-text('Added ✓')")
+      .count()
+      .catch(() => 0);
     console.log(`[clear-bundles]: Remaining 'Added ✓' buttons after clear: ${remainingAdded}`);
     await page.screenshot({
       path: `${screenshotPath}/${timestamp()}-07-removed-all-bundles.png`,
@@ -199,7 +202,7 @@ export async function removeBundle(page, bundleName = "Test", screenshotPath = d
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${idToken}`,
+              "Authorization": `Bearer ${idToken}`,
             },
           });
           return { ok: response.ok, status: response.status };
@@ -326,7 +329,7 @@ export async function requestBundleViaApi(page, bundleId) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${idToken}`,
+          "Authorization": `Bearer ${idToken}`,
         },
         body: JSON.stringify({ bundleId: bid, qualifiers: {} }),
       });

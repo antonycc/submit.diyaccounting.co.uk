@@ -18,11 +18,9 @@ import software.amazon.awscdk.customresources.AwsCustomResource;
 import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.dynamodb.Attribute;
-import software.amazon.awscdk.services.dynamodb.AttributeType;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.s3.Bucket;
@@ -148,9 +146,8 @@ public class KindCdk {
         if ("us-east-1".equals(region)) {
             createBucketParams = Map.of("Bucket", bucketName);
         } else {
-            createBucketParams = Map.of(
-                    "Bucket", bucketName,
-                    "CreateBucketConfiguration", Map.of("LocationConstraint", region));
+            createBucketParams =
+                    Map.of("Bucket", bucketName, "CreateBucketConfiguration", Map.of("LocationConstraint", region));
         }
 
         AwsSdkCall createBucketCall = AwsSdkCall.builder()

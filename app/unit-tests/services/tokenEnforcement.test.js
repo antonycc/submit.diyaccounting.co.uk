@@ -58,9 +58,7 @@ describe("tokenEnforcement", () => {
 
   describe("consumeTokenForActivity", () => {
     it("should consume a token for a costed activity", async () => {
-      getUserBundles.mockResolvedValueOnce([
-        { bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 0 },
-      ]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 0 }]);
       consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 2 });
 
       const result = await consumeTokenForActivity("user-1", "submit-vat", baseCatalog);
@@ -72,9 +70,7 @@ describe("tokenEnforcement", () => {
     });
 
     it("should return tokens_exhausted when no qualifying bundle has tokens", async () => {
-      getUserBundles.mockResolvedValueOnce([
-        { bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 3 },
-      ]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 3 }]);
 
       const result = await consumeTokenForActivity("user-1", "submit-vat", baseCatalog);
 
@@ -85,9 +81,7 @@ describe("tokenEnforcement", () => {
     });
 
     it("should return tokens_exhausted when user has no matching bundles", async () => {
-      getUserBundles.mockResolvedValueOnce([
-        { bundleId: "unrelated-bundle", tokensGranted: 10, tokensConsumed: 0 },
-      ]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "unrelated-bundle", tokensGranted: 10, tokensConsumed: 0 }]);
 
       const result = await consumeTokenForActivity("user-1", "submit-vat", baseCatalog);
 
@@ -131,9 +125,7 @@ describe("tokenEnforcement", () => {
     });
 
     it("should consume from sandbox bundle for sandbox activity", async () => {
-      getUserBundles.mockResolvedValueOnce([
-        { bundleId: "test", tokensGranted: 3, tokensConsumed: 1 },
-      ]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "test", tokensGranted: 3, tokensConsumed: 1 }]);
       consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 1 });
 
       const result = await consumeTokenForActivity("user-1", "submit-vat-sandbox", baseCatalog);
@@ -143,9 +135,7 @@ describe("tokenEnforcement", () => {
     });
 
     it("should propagate atomic failure from consumeToken", async () => {
-      getUserBundles.mockResolvedValueOnce([
-        { bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 2 },
-      ]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 2 }]);
       // The pre-check sees 1 remaining, but atomic update fails (race condition)
       consumeToken.mockResolvedValueOnce({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
 

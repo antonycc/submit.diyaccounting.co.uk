@@ -44,11 +44,16 @@
 
   // Copy to clipboard helper
   function copyToClipboard(text, element) {
-    navigator.clipboard?.writeText?.(text).then(() => {
-      const original = element.style.color;
-      element.style.color = "#00ff00";
-      setTimeout(() => { element.style.color = original; }, 200);
-    }).catch(err => console.warn("Copy failed:", err));
+    navigator.clipboard
+      ?.writeText?.(text)
+      .then(() => {
+        const original = element.style.color;
+        element.style.color = "#00ff00";
+        setTimeout(() => {
+          element.style.color = original;
+        }, 200);
+      })
+      .catch((err) => console.warn("Copy failed:", err));
   }
 
   // Get deployment name from meta tag or URL
@@ -99,8 +104,7 @@
       traceparentEl.style.cursor = "pointer";
       body.appendChild(traceparentEl);
     }
-    const traceparent = sessionStorage.getItem("traceparent") ||
-      (window.__correlation?.getTraceparent?.()) || "-";
+    const traceparent = sessionStorage.getItem("traceparent") || window.__correlation?.getTraceparent?.() || "-";
     const tpShort = traceparent.length > 20 ? traceparent.substring(0, 20) + "..." : traceparent;
     traceparentEl.innerHTML = `trace: ${tpShort} ${copyIconSvg}`;
     traceparentEl.title = traceparent;
@@ -115,8 +119,7 @@
       requestIdEl.style.cursor = "pointer";
       body.appendChild(requestIdEl);
     }
-    const requestId = (window.__correlation?.getLastXRequestId?.()) ||
-      (window.getLastXRequestId?.()) || "-";
+    const requestId = window.__correlation?.getLastXRequestId?.() || window.getLastXRequestId?.() || "-";
     const ridShort = requestId.length > 20 ? requestId.substring(0, 20) + "..." : requestId;
     requestIdEl.innerHTML = `req-id: ${ridShort} ${copyIconSvg}`;
     requestIdEl.title = requestId;
@@ -124,8 +127,7 @@
 
     // Update request ID on correlation changes
     window.addEventListener("correlation:update", () => {
-      const rid = (window.__correlation?.getLastXRequestId?.()) ||
-        (window.getLastXRequestId?.()) || "-";
+      const rid = window.__correlation?.getLastXRequestId?.() || window.getLastXRequestId?.() || "-";
       const short = rid.length > 20 ? rid.substring(0, 20) + "..." : rid;
       requestIdEl.innerHTML = `req-id: ${short} ${copyIconSvg}`;
       requestIdEl.title = rid;
@@ -135,7 +137,7 @@
 
   // Remove dev float elements
   function removeDevFloats() {
-    ["dev-datetime", "dev-deployment", "dev-traceparent", "dev-requestid"].forEach(id => {
+    ["dev-datetime", "dev-deployment", "dev-traceparent", "dev-requestid"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.remove();
     });

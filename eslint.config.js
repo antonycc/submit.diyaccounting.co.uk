@@ -117,6 +117,8 @@ export default [
       "web/public/tests/",
       // Reference examples for UK Government form field standards
       "web/public/docs/hmrc-form-field-standards/",
+      // Developer documentation and archive (not application code)
+      "_developers/",
     ],
   },
 ];

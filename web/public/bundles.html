@@ -55,14 +55,25 @@
 
         <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
           <h3>Have a Pass?</h3>
-          <p style="color: #666; font-size: 0.9em;">Enter a four-word passphrase to redeem your invitation.</p>
-          <div id="passEntryForm" style="margin: 1em auto; max-width: 440px; text-align: left;">
-            <input type="text" id="passInput" placeholder="word-word-word-word" autocomplete="off" spellcheck="false"
-              style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;" />
-            <div style="margin-top: 0.75em; text-align: center;">
-              <button type="button" id="redeemPassBtn" class="btn" style="min-width: 160px;">Redeem Pass</button>
+          <p style="color: #666; font-size: 0.9em">Enter a four-word passphrase to redeem your invitation.</p>
+          <div id="passEntryForm" style="margin: 1em auto; max-width: 440px; text-align: left">
+            <input
+              type="text"
+              id="passInput"
+              placeholder="word-word-word-word"
+              autocomplete="off"
+              spellcheck="false"
+              style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box"
+            />
+            <div style="margin-top: 0.75em; text-align: center">
+              <button type="button" id="redeemPassBtn" class="btn" style="min-width: 160px">Redeem Pass</button>
             </div>
-            <div id="passStatus" role="alert" aria-live="polite" style="margin-top: 0.75em; display: none; padding: 0.6em; border-radius: 4px; font-size: 0.9em;"></div>
+            <div
+              id="passStatus"
+              role="alert"
+              aria-live="polite"
+              style="margin-top: 0.75em; display: none; padding: 0.6em; border-radius: 4px; font-size: 0.9em"
+            ></div>
           </div>
         </div>
 
@@ -446,9 +457,8 @@
               }
             }
 
-            const infoLine = fragments.length > 0
-              ? `<div style="font-size: 0.85em; color: #666; margin-top: 0.25em;">${fragments.join(" · ")}</div>`
-              : "";
+            const infoLine =
+              fragments.length > 0 ? `<div style="font-size: 0.85em; color: #666; margin-top: 0.25em;">${fragments.join(" · ")}</div>` : "";
 
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
@@ -543,21 +553,36 @@
         if (!el) return;
         el.textContent = message;
         el.style.display = "block";
-        el.style.backgroundColor = type === "success" ? "var(--color-success-bg, #d4edda)" : type === "error" ? "var(--color-error-bg, #f8d7da)" : "var(--color-info-bg, #d1ecf1)";
-        el.style.color = type === "success" ? "var(--color-success-text, #155724)" : type === "error" ? "var(--color-error-text, #721c24)" : "var(--color-info-text, #0c5460)";
+        el.style.backgroundColor =
+          type === "success"
+            ? "var(--color-success-bg, #d4edda)"
+            : type === "error"
+              ? "var(--color-error-bg, #f8d7da)"
+              : "var(--color-info-bg, #d1ecf1)";
+        el.style.color =
+          type === "success"
+            ? "var(--color-success-text, #155724)"
+            : type === "error"
+              ? "var(--color-error-text, #721c24)"
+              : "var(--color-info-text, #0c5460)";
         el.style.border = `1px solid ${type === "success" ? "var(--color-success-border, #c3e6cb)" : type === "error" ? "var(--color-error-border, #f5c6cb)" : "var(--color-info-border, #bee5eb)"}`;
       }
 
       async function redeemPassCode(code) {
         const idToken = getIdToken();
         if (!idToken) {
-          try { sessionStorage.setItem("pendingPass", code); } catch {}
+          try {
+            sessionStorage.setItem("pendingPass", code);
+          } catch {}
           showPassStatus("Please log in to redeem your pass.", "info");
           return false;
         }
 
         const btn = document.getElementById("redeemPassBtn");
-        if (btn) { btn.textContent = "Redeeming..."; btn.disabled = true; }
+        if (btn) {
+          btn.textContent = "Redeeming...";
+          btn.disabled = true;
+        }
 
         try {
           const response = await window.fetchWithIdToken("/api/v1/pass", {
@@ -582,11 +607,17 @@
             } catch {}
             // Refresh full bundle data
             await fetchUserBundles();
-            try { renderCurrentBundles(); } catch {}
-            try { updateBundleStatus(); } catch {}
+            try {
+              renderCurrentBundles();
+            } catch {}
+            try {
+              updateBundleStatus();
+            } catch {}
             window.dispatchEvent(new CustomEvent("bundle-changed"));
             // Clear pending pass
-            try { sessionStorage.removeItem("pendingPass"); } catch {}
+            try {
+              sessionStorage.removeItem("pendingPass");
+            } catch {}
             // Remove ?pass= from URL without reload
             const url = new URL(window.location);
             url.searchParams.delete("pass");
@@ -601,7 +632,10 @@
           showPassStatus(`Failed to redeem pass: ${err?.message || err}`, "error");
           return false;
         } finally {
-          if (btn) { btn.textContent = "Redeem Pass"; btn.disabled = false; }
+          if (btn) {
+            btn.textContent = "Redeem Pass";
+            btn.disabled = false;
+          }
         }
       }
 

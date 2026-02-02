@@ -7,7 +7,6 @@ package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.buildDashedDomainName;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.convertDotSeparatedToDashSeparated;
-import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateResourceNamePrefix;
 
 import co.uk.diyaccounting.submit.utils.ResourceNameUtils;
 import java.util.ArrayList;
@@ -359,7 +358,8 @@ public class SubmitSharedNames {
         this.receiptsTableName = "%s-receipts".formatted(this.envResourceNamePrefix);
         this.bundlesTableName = "%s-bundles".formatted(this.envResourceNamePrefix);
         this.bundlePostAsyncRequestsTableName = "%s-bundle-post-async-requests".formatted(this.envResourceNamePrefix);
-        this.bundleDeleteAsyncRequestsTableName = "%s-bundle-delete-async-requests".formatted(this.envResourceNamePrefix);
+        this.bundleDeleteAsyncRequestsTableName =
+                "%s-bundle-delete-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcVatReturnPostAsyncRequestsTableName =
                 "%s-hmrc-vat-return-post-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcVatReturnGetAsyncRequestsTableName =
@@ -792,12 +792,10 @@ public class SubmitSharedNames {
         this.passGetLambdaJwtAuthorizer = false;
         this.passGetLambdaCustomAuthorizer = false;
         var passGetLambdaHandlerName = "passGet.ingestHandler";
-        var passGetLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(passGetLambdaHandlerName);
+        var passGetLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(passGetLambdaHandlerName);
         this.passGetIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, passGetLambdaHandlerDashed);
-        this.passGetIngestLambdaHandler =
-                "%s/account/%s".formatted(appLambdaHandlerPrefix, passGetLambdaHandlerName);
+        this.passGetIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, passGetLambdaHandlerName);
         this.passGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, passGetLambdaHandlerDashed);
         this.passGetIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.passGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
@@ -815,12 +813,10 @@ public class SubmitSharedNames {
         this.passPostLambdaJwtAuthorizer = true;
         this.passPostLambdaCustomAuthorizer = false;
         var passPostLambdaHandlerName = "passPost.ingestHandler";
-        var passPostLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(passPostLambdaHandlerName);
+        var passPostLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(passPostLambdaHandlerName);
         this.passPostIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, passPostLambdaHandlerDashed);
-        this.passPostIngestLambdaHandler =
-                "%s/account/%s".formatted(appLambdaHandlerPrefix, passPostLambdaHandlerName);
+        this.passPostIngestLambdaHandler = "%s/account/%s".formatted(appLambdaHandlerPrefix, passPostLambdaHandlerName);
         this.passPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, passPostLambdaHandlerDashed);
         this.passPostIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.passPostIngestLambdaArn, this.provisionedConcurrencyAliasName);

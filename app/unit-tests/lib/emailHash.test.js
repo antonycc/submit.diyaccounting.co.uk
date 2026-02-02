@@ -2,7 +2,13 @@
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { hashEmail, _setTestEmailHashSecret, _clearEmailHashSecret, hashEmailWithEnvSecret, getEmailHashSecretVersion } from "../../lib/emailHash.js";
+import {
+  hashEmail,
+  _setTestEmailHashSecret,
+  _clearEmailHashSecret,
+  hashEmailWithEnvSecret,
+  getEmailHashSecretVersion,
+} from "../../lib/emailHash.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });

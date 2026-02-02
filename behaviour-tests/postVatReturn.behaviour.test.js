@@ -145,7 +145,10 @@ async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScena
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1000);
   // Check whether we landed on the HMRC OAuth consent page
-  const isHmrcAuthPage = await page.locator("#appNameParagraph").isVisible().catch(() => false);
+  const isHmrcAuthPage = await page
+    .locator("#appNameParagraph")
+    .isVisible()
+    .catch(() => false);
   if (isHmrcAuthPage) {
     // Token was cleared by a previous failed submission - re-authenticate
     await acceptCookiesHmrc(page, screenshotPath);

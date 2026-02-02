@@ -133,9 +133,7 @@ public class AccountStack extends Stack {
 
         // Lookup existing DynamoDB Passes Table
         ITable passesTable = Table.fromTableName(
-                this,
-                "ImportedPassesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().passesTableName);
+                this, "ImportedPassesTable-%s".formatted(props.deploymentName()), props.sharedNames().passesTableName);
 
         // Lookup existing DynamoDB Bundle Capacity Table
         ITable bundleCapacityTable = Table.fromTableName(
@@ -556,7 +554,9 @@ public class AccountStack extends Stack {
         this.passAdminPostLambdaLogGroup = passAdminPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passAdminPostLambdaProps);
         passesTable.grantReadWriteData(this.passAdminPostLambda);
-        infof("Created Pass Admin POST Lambda %s", this.passAdminPostLambda.getNode().getId());
+        infof(
+                "Created Pass Admin POST Lambda %s",
+                this.passAdminPostLambda.getNode().getId());
 
         // ============================================================================
         // Bundle Capacity Reconciliation Lambda (EventBridge scheduled, every 5 minutes)
@@ -606,10 +606,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassGetLambdaArn", this.passGetLambda.getFunctionArn());
         cfnOutput(this, "PassPostLambdaArn", this.passPostLambda.getFunctionArn());
         cfnOutput(this, "PassAdminPostLambdaArn", this.passAdminPostLambda.getFunctionArn());
-        cfnOutput(
-                this,
-                "BundleCapacityReconcileLambdaArn",
-                this.bundleCapacityReconcileLambda.getFunctionArn());
+        cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());
 
         infof(
                 "AccountStack %s created successfully for %s",

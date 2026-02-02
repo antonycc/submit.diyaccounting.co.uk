@@ -18,7 +18,12 @@ import {
   timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
-import { clickLogIn, loginWithCognitoOrMockAuth, logOutAndExpectToBeLoggedOut, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
+import {
+  clickLogIn,
+  loginWithCognitoOrMockAuth,
+  logOutAndExpectToBeLoggedOut,
+  verifyLoggedInStatus,
+} from "./steps/behaviour-login-steps.js";
 import { goToBundlesPage, clearBundles, verifyBundleApiResponse } from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {

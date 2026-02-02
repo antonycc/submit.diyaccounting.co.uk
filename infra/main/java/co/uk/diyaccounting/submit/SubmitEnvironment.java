@@ -114,8 +114,8 @@ public class SubmitEnvironment {
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
-        var securityServicesEnabled = Boolean.parseBoolean(
-                envOr("SECURITY_SERVICES_ENABLED", appProps.securityServicesEnabled, "true"));
+        var securityServicesEnabled =
+                Boolean.parseBoolean(envOr("SECURITY_SERVICES_ENABLED", appProps.securityServicesEnabled, "true"));
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -234,8 +234,7 @@ public class SubmitEnvironment {
                         .build());
 
         // Create SimulatorStack for public demo simulator (only if the code path exists)
-        var simulatorCodePath =
-                envOr("SIMULATOR_CODE_PATH", appProps.simulatorCodePath, "web/public-simulator");
+        var simulatorCodePath = envOr("SIMULATOR_CODE_PATH", appProps.simulatorCodePath, "web/public-simulator");
         var simulatorBaseUrl = "https://%s".formatted(sharedNames.simulatorDomainName);
         var simulatorCodeDir = Paths.get(simulatorCodePath).toFile();
         if (simulatorCodeDir.exists() && simulatorCodeDir.isDirectory()) {

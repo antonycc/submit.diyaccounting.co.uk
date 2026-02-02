@@ -93,7 +93,8 @@ public class DataStack extends Stack {
                 "bundleId");
         infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().bundlesTableName);
 
-        // Async request tables use ensureTable() for idempotent creation - deployments succeed whether table exists or not.
+        // Async request tables use ensureTable() for idempotent creation - deployments succeed whether table exists or
+        // not.
         // Note: TTL must be enabled manually on pre-existing tables if not already configured.
 
         // Bundle POST async request storage
@@ -103,7 +104,8 @@ public class DataStack extends Stack {
                 props.sharedNames().bundlePostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
-        infof("Ensured bundle POST async requests DynamoDB table with name %s",
+        infof(
+                "Ensured bundle POST async requests DynamoDB table with name %s",
                 props.sharedNames().bundlePostAsyncRequestsTableName);
 
         // Bundle DELETE async request storage
@@ -113,7 +115,8 @@ public class DataStack extends Stack {
                 props.sharedNames().bundleDeleteAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
-        infof("Ensured bundle DELETE async requests DynamoDB table with name %s",
+        infof(
+                "Ensured bundle DELETE async requests DynamoDB table with name %s",
                 props.sharedNames().bundleDeleteAsyncRequestsTableName);
 
         // HMRC VAT Return POST async request storage
@@ -123,7 +126,8 @@ public class DataStack extends Stack {
                 props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
-        infof("Ensured HMRC VAT Return POST async requests DynamoDB table with name %s",
+        infof(
+                "Ensured HMRC VAT Return POST async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName);
 
         // HMRC VAT Return GET async request storage
@@ -133,7 +137,8 @@ public class DataStack extends Stack {
                 props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
-        infof("Ensured HMRC VAT Return GET async requests DynamoDB table with name %s",
+        infof(
+                "Ensured HMRC VAT Return GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName);
 
         // HMRC VAT Obligation GET async request storage
@@ -143,7 +148,8 @@ public class DataStack extends Stack {
                 props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
-        infof("Ensured HMRC VAT Obligation GET async requests DynamoDB table with name %s",
+        infof(
+                "Ensured HMRC VAT Obligation GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
 
         // HMRC API requests storage - audit trail for HMRC interactions
@@ -154,18 +160,13 @@ public class DataStack extends Stack {
                 props.sharedNames().hmrcApiRequestsTableName,
                 "hashedSub",
                 "id");
-        infof("Ensured HMRC API Requests DynamoDB table with name %s",
-                props.sharedNames().hmrcApiRequestsTableName);
+        infof("Ensured HMRC API Requests DynamoDB table with name %s", props.sharedNames().hmrcApiRequestsTableName);
 
         // Passes table for storing invitation pass codes
         // Pass codes are four-word passphrases that grant bundle access when redeemed.
         // PK-only table (no sort key) - passes are looked up by code.
         this.passesTable = ensureTable(
-                this,
-                props.resourceNamePrefix() + "-PassesTable",
-                props.sharedNames().passesTableName,
-                "pk",
-                null);
+                this, props.resourceNamePrefix() + "-PassesTable", props.sharedNames().passesTableName, "pk", null);
         infof("Ensured passes DynamoDB table with name %s", props.sharedNames().passesTableName);
 
         // Bundle capacity counter table for tracking global cap enforcement

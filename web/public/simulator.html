@@ -212,7 +212,16 @@
         <button type="button" class="simulator-expand-btn" id="simulatorExpandBtn" aria-label="Expand simulator">
           <span id="expandIcon">&#x26F6;</span> <span id="expandLabel">Expand</span>
         </button>
-        <a href="#" id="simulatorOpenLink" class="simulator-open-btn" target="_blank" rel="noopener noreferrer" aria-label="Open simulator in new tab" title="Open simulator in new tab">&#x2197; Open the simulator in a new tab</a>
+        <a
+          href="#"
+          id="simulatorOpenLink"
+          class="simulator-open-btn"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open simulator in new tab"
+          title="Open simulator in new tab"
+          >&#x2197; Open the simulator in a new tab</a
+        >
         <div class="simulator-overlay-label" aria-hidden="true">SIMULATOR</div>
         <iframe
           id="simulatorFrame"
@@ -271,7 +280,7 @@
         window.__simulatorFrameSrc = "https://prod-simulator." + baseDomain + "/";
       }
     </script>
-    <script src="./simulator-local.js" onerror="void(0)"></script>
+    <script src="./simulator-local.js" onerror="void 0"></script>
     <script>
       // If build-simulator has been run, simulator-local.js sets __simulatorLocal = true
       // which switches the iframe to the same-origin /sim/ path
