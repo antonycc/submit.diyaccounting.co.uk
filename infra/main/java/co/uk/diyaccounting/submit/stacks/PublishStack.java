@@ -245,7 +245,13 @@ public class PublishStack extends Stack {
                         "/diy-accounting-spreadsheets.html",
                         "/diy-accounting-limited.html",
                         "/spreadsheets.html",
+                        "/android-chrome-192.png",
+                        "/android-chrome-512.png",
+                        "/apple-touch-icon.png",
                         "/favicon.ico",
+                        "/favicon.svg",
+                        "/favicon-16.png",
+                        "/favicon-32.png",
                         "/index.html",
                         "/privacy.html",
                         "/submit.catalogue.toml",
@@ -258,6 +264,7 @@ public class PublishStack extends Stack {
                         "/submit.js",
                         "/submit.version.txt",
                         "/terms.html",
+                        "/site.webmanifest",
                         "/simulator.html",
                         "/developer-mode.js"))
                 .retainOnDelete(true)
