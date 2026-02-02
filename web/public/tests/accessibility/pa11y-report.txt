@@ -1,26 +1,15 @@
 Running Pa11y on 23 URLs:
- > https://wanted-finally-anteater.ngrok-free.app/ - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/index.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/privacy.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/terms.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/about.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/accessibility.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/auth/login.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/bundles.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/submitVat.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/vatObligations.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/vat/viewVatReturn.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/hmrc/receipt/receipts.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/guide.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/help.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/mcp.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/404-error-distribution.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/404-error-origin.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/403.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/404.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/500.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/502.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/503.html - 0 errors
- > https://wanted-finally-anteater.ngrok-free.app/errors/504.html - 0 errors
-
-✔ 23/23 URLs passed
+ > https://submit.diyaccounting.co.uk/ - 0 errors
+ > https://submit.diyaccounting.co.uk/index.html - 0 errors
+ > https://submit.diyaccounting.co.uk/privacy.html - 0 errors
+ > https://submit.diyaccounting.co.uk/terms.html - 0 errors
+ > https://submit.diyaccounting.co.uk/about.html - 0 errors
+ > https://submit.diyaccounting.co.uk/accessibility.html - 0 errors
+ > https://submit.diyaccounting.co.uk/auth/login.html - 0 errors
+ > https://submit.diyaccounting.co.uk/bundles.html - 2 errors
+ > https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html - 0 errors
+ > https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html - 0 errors
+ > https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html - 0 errors
+ > https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html - 0 errors
+ > https://submit.diyaccounting.co.uk/guide.html - 0 errors
+ > https://submit.diyaccounting.co.uk/help.html - 0 errors

@@ -118,7 +118,7 @@
           window.bundleCache.clearBundles(user.sub);
         }
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     // Also reset the entitlement-status widget's in-memory cache
@@ -126,7 +126,7 @@
       // Trigger a fresh entitlement check on next call
       try {
         window.EntitlementStatus.update();
-      } catch (e) {
+      } catch {
         // ignore
       }
     }

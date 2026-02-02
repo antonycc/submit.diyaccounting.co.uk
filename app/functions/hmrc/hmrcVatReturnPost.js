@@ -61,6 +61,7 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
   const {
@@ -270,7 +271,6 @@ export async function ingestHandler(event) {
     hmrcAccount,
     runFraudPreventionHeaderValidation,
     allowSandboxObligations,
-    declarationConfirmed,
   } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors

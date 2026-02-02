@@ -23,7 +23,7 @@ export class SimulatorJourney {
     // Try to access iframe document (may fail for cross-origin)
     try {
       this.doc = iframe.contentDocument || iframe.contentWindow.document;
-    } catch (e) {
+    } catch {
       console.warn("Cross-origin iframe detected. Using postMessage bridge.");
       this.doc = null;
       this.crossOrigin = true;
@@ -52,6 +52,7 @@ export class SimulatorJourney {
    */
   _sendCommand(command) {
     return new Promise((resolve) => {
+      // eslint-disable-next-line sonarjs/pseudo-random
       const id = Math.random().toString(36).substring(2);
       this._pendingResponses.set(id, resolve);
       this.iframe.contentWindow.postMessage({ type: "simulator-command", id, ...command }, "*");
@@ -83,7 +84,7 @@ export class SimulatorJourney {
     if (this.crossOrigin) return null;
     try {
       return this.iframe.contentDocument || this.iframe.contentWindow.document;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -234,13 +235,13 @@ export class SimulatorJourney {
         for (const char of String(value)) {
           if (this.aborted) throw new Error("Journey aborted");
           while (this.paused) {
-            await new Promise((r) => setTimeout(r, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
 
           el.value += char;
           el.dispatchEvent(new Event("input", { bubbles: true }));
           el.dispatchEvent(new Event("change", { bubbles: true }));
-          await new Promise((r) => setTimeout(r, 50)); // 50ms per character
+          await new Promise((resolve) => setTimeout(resolve, 50)); // 50ms per character
         }
       }
 
@@ -315,9 +316,9 @@ export class SimulatorJourney {
     while (Date.now() - start < ms) {
       if (this.aborted) throw new Error("Journey aborted");
       while (this.paused && !this.aborted) {
-        await new Promise((r) => setTimeout(r, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      await new Promise((r) => setTimeout(r, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }
 

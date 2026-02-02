@@ -130,6 +130,7 @@ const PII_PATTERNS = [
   { name: "EMAIL", pattern: /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g },
 
   // Bearer tokens in strings (e.g., in error messages)
+  // eslint-disable-next-line sonarjs/duplicates-in-character-class
   { name: "TOKEN", pattern: /Bearer\s+([A-Za-z0-9_-]+\.?[A-Za-z0-9_-]*\.?[A-Za-z0-9_-]*)/gi },
 
   // Key=value pairs for secrets in query strings, form bodies, URLs, and log messages
@@ -139,7 +140,8 @@ const PII_PATTERNS = [
   {
     name: "SECRET",
     pattern:
-      /\b(client_secret|CLIENT_SECRET|clientSecret|client\.secret|api_key|API_KEY|apiKey|password|PASSWORD|access_token|ACCESS_TOKEN|accessToken|refresh_token|REFRESH_TOKEN|refreshToken|authorization|Authorization|AUTHORIZATION|id_token|idToken|hmrcAccessToken)[\s]*[=:]\s*([^\s&,;'"(){}]+)/gi,
+      // eslint-disable-next-line sonarjs/regex-complexity
+      /\b(client_secret|CLIENT_SECRET|clientSecret|client\.secret|api_key|API_KEY|apiKey|password|PASSWORD|access_token|ACCESS_TOKEN|accessToken|refresh_token|REFRESH_TOKEN|refreshToken|authorization|Authorization|AUTHORIZATION|id_token|idToken|hmrcAccessToken)\s*[=:]\s*([^\s&,;'"(){}]+)/gi,
   },
 ];
 
@@ -156,8 +158,10 @@ const PII_PATTERNS = [
  */
 export function containsSensitiveData(value) {
   if (typeof value !== "string") return false;
+
   const secretPattern =
-    /\b(client_secret|CLIENT_SECRET|clientSecret|client\.secret|api_key|API_KEY|apiKey|password|PASSWORD|access_token|ACCESS_TOKEN|accessToken|refresh_token|REFRESH_TOKEN|refreshToken|authorization|Authorization|AUTHORIZATION|id_token|idToken|hmrcAccessToken)[\s]*[=:]\s*[^\s&,;'"){}\]]+/gi;
+    // eslint-disable-next-line sonarjs/regex-complexity
+    /\b(client_secret|CLIENT_SECRET|clientSecret|client\.secret|api_key|API_KEY|apiKey|password|PASSWORD|access_token|ACCESS_TOKEN|accessToken|refresh_token|REFRESH_TOKEN|refreshToken|authorization|Authorization|AUTHORIZATION|id_token|idToken|hmrcAccessToken)\s*[=:]\s*[^\s&,;'"){}\]]+/gi;
   secretPattern.lastIndex = 0;
   return secretPattern.test(value);
 }

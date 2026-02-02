@@ -105,18 +105,7 @@ export function validateVatReturnBody(body) {
     return { valid: false, code: "INVALID_REQUEST", message: "Request body is required" };
   }
 
-  const {
-    periodKey,
-    vatDueSales,
-    vatDueAcquisitions,
-    totalVatDue,
-    vatReclaimedCurrPeriod,
-    netVatDue,
-    totalValueSalesExVAT,
-    totalValuePurchasesExVAT,
-    totalValueGoodsSuppliedExVAT,
-    totalAcquisitionsExVAT,
-  } = body;
+  const { periodKey, netVatDue } = body;
 
   // Check required fields are present
   if (!periodKey) {

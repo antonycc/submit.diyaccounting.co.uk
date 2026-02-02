@@ -10,6 +10,7 @@
   // Only activate inside an iframe
   if (window.parent === window) return;
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   window.addEventListener("message", async function (event) {
     const msg = event.data;
     if (!msg || msg.type !== "simulator-command") return;
@@ -24,7 +25,7 @@
     try {
       switch (command) {
         case "highlight": {
-          var el = selector ? document.querySelector(selector) : null;
+          const el = selector ? document.querySelector(selector) : null;
           if (el) {
             el.classList.add("simulator-highlight");
             el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -34,13 +35,13 @@
         }
 
         case "unhighlight": {
-          var el = selector ? document.querySelector(selector) : null;
+          const el = selector ? document.querySelector(selector) : null;
           if (el) el.classList.remove("simulator-highlight");
           break;
         }
 
         case "click": {
-          var el = selector ? document.querySelector(selector) : null;
+          const el = selector ? document.querySelector(selector) : null;
           if (el) {
             el.click();
             el.classList.remove("simulator-highlight");
@@ -52,9 +53,9 @@
         }
 
         case "clickByText": {
-          var els = document.querySelectorAll(selector);
-          var found = false;
-          for (var i = 0; i < els.length; i++) {
+          const els = document.querySelectorAll(selector);
+          let found = false;
+          for (let i = 0; i < els.length; i++) {
             if (els[i].textContent.trim().indexOf(text) !== -1) {
               els[i].click();
               els[i].classList.remove("simulator-highlight");
@@ -71,9 +72,9 @@
         }
 
         case "highlightByText": {
-          var els = document.querySelectorAll(selector);
-          var found = false;
-          for (var i = 0; i < els.length; i++) {
+          const els = document.querySelectorAll(selector);
+          let found = false;
+          for (let i = 0; i < els.length; i++) {
             if (els[i].textContent.trim().indexOf(text) !== -1) {
               els[i].classList.add("simulator-highlight");
               els[i].scrollIntoView({ behavior: "smooth", block: "center" });
@@ -86,7 +87,7 @@
         }
 
         case "fill": {
-          var el = selector ? document.querySelector(selector) : null;
+          const el = selector ? document.querySelector(selector) : null;
           if (el) {
             el.focus();
             if (el.type === "date" || el.type === "number" || el.type === "datetime-local") {
@@ -96,11 +97,11 @@
             } else {
               el.value = "";
               const chars = String(value);
-              for (var i = 0; i < chars.length; i++) {
+              for (let i = 0; i < chars.length; i++) {
                 el.value += chars[i];
                 el.dispatchEvent(new Event("input", { bubbles: true }));
-                await new Promise(function (r) {
-                  setTimeout(r, 50);
+                await new Promise(function (resolve) {
+                  setTimeout(resolve, 50);
                 });
               }
               el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -114,7 +115,7 @@
         }
 
         case "select": {
-          var el = selector ? document.querySelector(selector) : null;
+          const el = selector ? document.querySelector(selector) : null;
           if (el) {
             el.value = value;
             el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -124,9 +125,9 @@
         }
 
         case "findByText": {
-          var els = document.querySelectorAll(selector);
-          var found = false;
-          for (var i = 0; i < els.length; i++) {
+          const els = document.querySelectorAll(selector);
+          let found = false;
+          for (let i = 0; i < els.length; i++) {
             if (els[i].textContent.trim().indexOf(text) !== -1) {
               found = true;
               break;
@@ -137,7 +138,7 @@
         }
 
         case "query": {
-          var el = selector ? document.querySelector(selector) : null;
+          const el = selector ? document.querySelector(selector) : null;
           result.found = !!el;
           if (el) {
             result.disabled = !!el.disabled;
@@ -149,7 +150,7 @@
         }
 
         case "check": {
-          var el = selector ? document.querySelector(selector) : null;
+          const el = selector ? document.querySelector(selector) : null;
           if (el) el.checked = true;
           result.found = !!el;
           break;

@@ -49,7 +49,7 @@
       .then(() => {
         const original = element.style.color;
         element.style.color = "#00ff00";
-        setTimeout(() => {
+        return setTimeout(() => {
           element.style.color = original;
         }, 200);
       })

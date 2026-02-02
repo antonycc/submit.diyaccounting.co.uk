@@ -15,7 +15,7 @@ import { putCounter } from "../../data/dynamoDbCapacityRepository.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleCapacityReconcile.js" });
 
-export async function handler(event) {
+export async function handler(_event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME"]);
 
   const bundlesTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
