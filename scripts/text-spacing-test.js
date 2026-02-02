@@ -63,7 +63,7 @@ const PAGES = [
   "/guide.html",
   "/help.html",
   "/mcp.html",
-  "/spreadsheets.html",
+  "/diy-accounting-spreadsheets.html",
   "/diy-accounting-limited.html",
   "/errors/404-error-distribution.html",
   "/errors/404-error-origin.html",
