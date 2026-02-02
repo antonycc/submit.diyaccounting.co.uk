@@ -11,62 +11,33 @@
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/about.html" />
     <link rel="stylesheet" href="./submit.css" />
     <style>
-      /* Override body styles for full-page design */
-      body {
+      /* Purple gradient backdrop contained within the portrait frame */
+      #mainContent {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        background-attachment: fixed;
-        padding: 0;
-        margin: 0;
-        max-width: 100%;
-        min-height: 100vh;
-        overflow-x: hidden;
+        border-radius: var(--radius-lg);
+        padding: 1em;
       }
-
-      /* Header styling for about page */
-      header {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 1em 2em;
-        margin: 0;
-        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-      }
-
-      header h1 {
-        font-size: 1.8em;
-        margin: 0.3em 0;
-      }
-
       header .subtitle {
         display: none;
-      }
-
-      /* Main content styling */
-      #mainContent {
-        padding: 0;
-        margin: 0;
-        max-width: 100%;
       }
 
       /* Hero section */
       .hero-section {
         text-align: center;
-        padding: 3em 2em;
+        padding: 2em 0;
         color: white;
       }
-
       .hero-section h2 {
-        font-size: 2.5em;
+        font-size: 2em;
         font-weight: 700;
         margin: 0 0 0.5em 0;
         color: white;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         line-height: 1.2;
       }
-
       .hero-section p {
-        font-size: 1.3em;
+        font-size: 1.1em;
         font-weight: 300;
-        max-width: 700px;
         margin: 0 auto;
         opacity: 0.95;
         line-height: 1.6;
@@ -76,33 +47,20 @@
       .feature-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 2em;
-        max-width: 1000px;
-        margin: 2em auto;
-        padding: 0 2em;
+        gap: 1.5em;
+        margin: 1.5em 0;
       }
-
-      @media (min-width: 768px) {
-        .feature-grid {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
-
       .feature-card {
         background: white;
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        transition:
-          transform 0.3s ease,
-          box-shadow 0.3s ease;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
-
       .feature-card:hover {
-        transform: translateY(-8px);
+        transform: translateY(-4px);
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
       }
-
       .feature-card img {
         width: 100%;
         height: auto;
@@ -114,6 +72,20 @@
       .feature-card img:hover {
         opacity: 0.9;
       }
+      .feature-card-content {
+        padding: 1.5em;
+      }
+      .feature-card-content h3 {
+        margin: 0 0 0.5em 0;
+        color: #2c5aa0;
+        font-size: 1.2em;
+      }
+      .feature-card-content p {
+        margin: 0;
+        color: #666;
+        line-height: 1.6;
+      }
+
       /* Lightbox modal styles */
       .lightbox-overlay {
         display: none;
@@ -161,58 +133,35 @@
         font-size: 14px;
       }
 
-      .feature-card-content {
-        padding: 1.5em;
-      }
-
-      .feature-card-content h3 {
-        margin: 0 0 0.5em 0;
-        color: #2c5aa0;
-        font-size: 1.2em;
-      }
-
-      .feature-card-content p {
-        margin: 0;
-        color: #666;
-        line-height: 1.6;
-      }
-
       /* Benefits section */
       .benefits-section {
         background: white;
-        padding: 3em 2em;
-        margin-top: 2em;
+        padding: 2em 1.5em;
+        margin-top: 1.5em;
+        border-radius: 16px;
       }
-
       .benefits-section h2 {
         text-align: center;
         color: #2c5aa0;
-        margin: 0 0 1.5em 0;
+        margin: 0 0 1em 0;
       }
-
       .benefits-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2em;
-        max-width: 1000px;
-        margin: 0 auto;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5em;
       }
-
       .benefit-item {
         text-align: center;
-        padding: 1em;
+        padding: 0.5em;
       }
-
       .benefit-icon {
         font-size: 2.5em;
         margin-bottom: 0.5em;
       }
-
       .benefit-item h3 {
         margin: 0 0 0.5em 0;
         color: #333;
       }
-
       .benefit-item p {
         margin: 0;
         color: #666;
@@ -222,33 +171,27 @@
       /* CTA section */
       .cta-section {
         background: white;
-        padding: 3em 2em;
+        padding: 2em 1.5em;
         text-align: center;
-        border-top: 1px solid #eee;
+        border-radius: 16px;
+        margin-top: 1.5em;
       }
-
       .cta-section h2 {
-        font-size: 2em;
+        font-size: 1.8em;
         margin: 0 0 0.5em 0;
         color: #2c5aa0;
       }
-
       .cta-section p {
         font-size: 1.1em;
         color: #666;
         margin: 0 0 1.5em 0;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
       }
-
       .button-group {
         display: flex;
         gap: 1em;
         justify-content: center;
         flex-wrap: wrap;
       }
-
       .button-group .btn {
         font-size: 1.1em;
         padding: 1em 2em;
@@ -256,24 +199,13 @@
         font-weight: 600;
         transition: all 0.3s ease;
       }
-
       .button-group .btn:hover {
         transform: scale(1.05);
         box-shadow: 0 10px 30px rgba(44, 90, 160, 0.3);
       }
-
       .btn-secondary {
         background: #6c757d;
         border-color: #6c757d;
-      }
-
-      /* Footer styling */
-      footer {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        margin: 0;
-        padding: 2em;
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
       }
     </style>
   </head>
