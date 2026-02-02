@@ -1,36 +1,4 @@
 
-/Users/antony/projects/submit.diyaccounting.co.uk/_developers/backlog/battery-pack/app/lib/battery-pack/cli.js
-  102:3   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  103:3   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  132:8   warning  Found existsSync from package "fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
-  138:8   warning  Found existsSync from package "fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
-  143:21  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
-  167:5   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  181:7   warning  Found existsSync from package "fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
-  182:17  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
-  221:21  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
-  242:12  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
-  246:7   warning  Found existsSync from package "fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
-  247:12  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
-
-/Users/antony/projects/submit.diyaccounting.co.uk/_developers/backlog/battery-pack/app/lib/battery-pack/crypto.js
-  126:21  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
-  131:8   warning  Found existsSync from package "fs" with non literal argument at index 0     security/detect-non-literal-fs-filename
-  132:5   warning  Found mkdirSync from package "fs" with non literal argument at index 0      security/detect-non-literal-fs-filename
-  135:3   warning  Found writeFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  147:21  warning  Found readFileSync from package "fs" with non literal argument at index 0   security/detect-non-literal-fs-filename
-
-/Users/antony/projects/submit.diyaccounting.co.uk/_developers/backlog/battery-pack/app/lib/battery-pack/loader.js
-   57:24  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-   70:9   warning  Found existsSync from package "fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
-   71:26  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  124:25  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  167:14  error    eval with argument of type Identifier                                      security/detect-eval-with-expression
-  183:14  error    eval with argument of type Identifier                                      security/detect-eval-with-expression
-  249:25  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  307:20  error    eval with argument of type Identifier                                      security/detect-eval-with-expression
-  323:20  error    eval with argument of type Identifier                                      security/detect-eval-with-expression
-
 /Users/antony/projects/submit.diyaccounting.co.uk/app/lib/buildFraudHeaders.js
   9:70  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
 
@@ -45,73 +13,8 @@
 /Users/antony/projects/submit.diyaccounting.co.uk/app/services/bundleManagement.js
   214:19  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
 
-/Users/antony/projects/submit.diyaccounting.co.uk/web/public-simulator/lambda-server.mjs
-  167:28  warning  Found stat from package "node:fs/promises" with non literal argument at index 0      security/detect-non-literal-fs-filename
-  176:27  warning  Found readFile from package "node:fs/promises" with non literal argument at index 0  security/detect-non-literal-fs-filename
-
-/Users/antony/projects/submit.diyaccounting.co.uk/web/public-simulator/tests/test-reports/web-test-local/html-report/trace/assets/codeMirrorModule-Bucv2d7q.js
-   1:1005    warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-   4:9346    warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  12:10319   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  24:38690   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:39014   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:39211   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:39991   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:40734   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:45787   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:56310   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  24:56475   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  24:58587   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  24:61133   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:61375   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:66348   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:68092   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:72386   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  24:74296   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:79429   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:100619  error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:104674  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  24:108012  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  24:109519  error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:111675  error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:111731  error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:112428  error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  24:117529  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-
-/Users/antony/projects/submit.diyaccounting.co.uk/web/public-simulator/tests/test-reports/web-test-local/html-report/trace/assets/defaultSettingsView-BEpdCv1S.js
-   52:10028  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-   52:17133  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-   52:38329  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-   52:41251  error    Unsafe Regular Expression                         security/detect-unsafe-regex
-   59:10148  error    Unsafe Regular Expression                         security/detect-unsafe-regex
-   69:13     error    Unsafe Regular Expression (new RegExp)            security/detect-unsafe-regex
-  114:4597   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  114:4929   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  115:413    warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  115:685    warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  115:27071  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  115:34510  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  115:35125  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  115:46952  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  124:7721   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  124:8786   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  128:3670   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  128:3704   warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-  155:14     error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  160:391    error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  178:5074   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  178:6917   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  181:2465   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  181:2726   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  181:5941   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  181:6128   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-  181:6831   error    Unsafe Regular Expression                         security/detect-unsafe-regex
-
-/Users/antony/projects/submit.diyaccounting.co.uk/web/public-simulator/tests/test-reports/web-test-local/html-report/trace/uiMode.BWTwXl41.js
-  2:8496  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-
 /Users/antony/projects/submit.diyaccounting.co.uk/web/public/widgets/entitlement-status.js
   123:21  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
 
-✖ 90 problems (33 errors, 57 warnings)
+✖ 7 problems (0 errors, 7 warnings)
 

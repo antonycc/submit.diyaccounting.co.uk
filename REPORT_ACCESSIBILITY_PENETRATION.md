@@ -3,8 +3,8 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-02-02T03:21:14.420Z
-**Overall Status**: ❌ FAIL
+**Generated**: 2026-02-02T19:20:18.569Z
+**Overall Status**: ✅ PASS
 
 **Source Files**:
 ```
@@ -19,33 +19,20 @@
   ✅ web/public/tests/accessibility/text-spacing-results.json
 ```
 
- Here's a summary of where we left off:                                                                                                                           
-                                                                                                                                                                               
-  Completed this session:                                                                                                                                                      
-  - Fixed the submission-submit.png image (was nearly blank, now shows all 9 VAT boxes + declaration checkbox with dev tools removed)                                          
-  - Committed and pushed all refresh changes to refresf branch (commit 6794a0cb)                                                                                               
-  - All 685 tests passing                                                                                                                                                      
-                                                                                                                                                                               
-  Next time:                                                                                                                                                                   
-  - Run the local accessibility/penetration tests that contributed to REPORT_ACCESSIBILITY_PENETRATION.md and verify the fixes (Pa11y, axe-core, ESLint security, Lighthouse,  
-  text-spacing, npm audit, etc.)            
-
-
-
 ---
 
 ## Summary
 
 | Check | Status | Summary |
 |-------|--------|---------|
-| npm audit | ❌ | 0 critical, 29 high, 2 moderate |
-| ESLint Security | ❌ | 33 errors, 57 warnings |
+| npm audit | ✅ | 0 critical, 0 high, 0 moderate |
+| ESLint Security | ✅ | 0 errors, 7 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
 | OWASP ZAP | ✅ | 0 high, 0 medium, 11 low |
-| Pa11y (WCAG AA) | ❌ | 22/23 pages passed |
-| axe-core | ❌ | 25 violations, 551 passes |
-| axe-core (WCAG 2.2) | ❌ | 22 violations, 340 passes |
-| Lighthouse | ✅ | A11y: 100%, Perf: 98%, BP: 100% |
+| Pa11y (WCAG AA) | ✅ | 23/23 pages passed |
+| axe-core | ✅ | 0 violations, 762 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 449 passes |
+| Lighthouse | ✅ | A11y: 100%, Perf: 99%, BP: 100% |
 | Text Spacing (1.4.12) | ✅ | 22/22 pages passed |
 
 ---
@@ -57,21 +44,21 @@
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High | 29 |
-| Moderate | 2 |
+| High | 0 |
+| Moderate | 0 |
 | Low | 0 |
-| **Total** | **31** |
+| **Total** | **0** |
 
-**Status**: ❌ Critical/high vulnerabilities require attention
+**Status**: ✅ No critical/high vulnerabilities
 
 ### 1.2 ESLint Security Analysis
 
 | Metric | Count |
 |--------|-------|
-| Errors | 33 |
-| Warnings | 57 |
+| Errors | 0 |
+| Warnings | 7 |
 
-**Status**: ❌ Security errors require attention
+**Status**: ✅ No security errors
 
 ### 1.3 retire.js (Known Vulnerabilities)
 
@@ -90,7 +77,7 @@
 | High | 0 |
 | Medium | 0 |
 | Low | 11 |
-| Informational | 34 |
+| Informational | 35 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -103,7 +90,7 @@
 | Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
 | Modern Web Application | Informational (Medium) | 5 |
 | Non-Storable Content | Informational (Medium) | 3 |
-| Re-examine Cache-control Directives | Informational (Low) | 4 |
+| Re-examine Cache-control Directives | Informational (Low) | 5 |
 | Retrieved from Cache | Informational (Medium) | 5 |
 | Storable and Cacheable Content | Informational (Medium) | 5 |
 
@@ -123,10 +110,10 @@
 | Metric | Value |
 |--------|-------|
 | Pages Tested | 23 |
-| Pages Passed | 22 |
-| Pages Failed | 1 |
+| Pages Passed | 23 |
+| Pages Failed | 0 |
 
-**Status**: ❌ Some pages have accessibility issues
+**Status**: ✅ All pages comply with WCAG AA
 
 #### Page Results
 
@@ -139,7 +126,7 @@
 | /about.html | 0 |
 | /accessibility.html | 0 |
 | /auth/login.html | 0 |
-| /bundles.html | 2 |
+| /bundles.html | 0 |
 | /hmrc/vat/submitVat.html | 0 |
 | /hmrc/vat/vatObligations.html | 0 |
 | /hmrc/vat/viewVatReturn.html | 0 |
@@ -160,85 +147,30 @@
 
 | Metric | Count |
 |--------|-------|
-| Violations | 25 |
-| Passes | 551 |
-| Incomplete | 0 |
+| Violations | 0 |
+| Passes | 762 |
+| Incomplete | 22 |
 
-**Status**: ❌ Accessibility violations require attention
+**Status**: ✅ No accessibility violations
 
-#### Violations
-
-| Rule | Impact | Description | Nodes |
-|------|--------|-------------|-------|
-| document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
-| landmark-one-main | moderate | Ensure the document has a main landmark | 1 |
-| page-has-heading-one | moderate | Ensure that the page, or at least one of its frames contains a level-one heading | 1 |
-| document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
 
 | Metric | Count |
 |--------|-------|
-| Violations | 22 |
-| Passes | 340 |
-| Incomplete | 0 |
+| Violations | 0 |
+| Passes | 449 |
+| Incomplete | 22 |
 
-**Status**: ❌ WCAG 2.2 violations detected
+**Status**: ✅ No WCAG 2.2 violations
 
-#### Violations
-
-| Rule | Impact | Description | Nodes |
-|------|--------|-------------|-------|
-| document-title | serious | Ensure each HTML document contains a non-empty <title> element | 1 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
-| link-in-text-block | serious | Ensure links are distinguished from surrounding text in a way that does not rely on color | 2 |
 
 ### 2.4 Lighthouse
 
 | Category | Score |
 |----------|-------|
 | Accessibility | 100% |
-| Performance | 98% |
+| Performance | 99% |
 | Best Practices | 100% |
 | SEO | 100% |
 

@@ -275,5 +275,16 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "homepage": "https://submit.diyaccounting.co.uk/"
+  "homepage": "https://submit.diyaccounting.co.uk/",
+  "overrides": {
+    "fast-xml-parser": "5.3.4",
+    "@microsoft/eslint-formatter-sarif": {
+      "eslint": "$eslint"
+    },
+    "pa11y": {
+      "bfj": {
+        "jsonpath": "npm:jsonpath-plus@^10.3.0"
+      }
+    }
+  }
 }

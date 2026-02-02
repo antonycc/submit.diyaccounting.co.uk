@@ -74,6 +74,10 @@ export default [
       "web/public/lib/test-data-generator.js",
       // Note: bundleManagement.js and hmrcApi.js have eslint-disable for sonarjs (code quality)
       // but are now included in security scanning since this config only uses security plugin
+      // Exclude non-production directories
+      "_developers/",
+      // Simulator is auto-generated from web/public/ - never edit directly
+      "web/public-simulator/",
     ],
   },
 ];

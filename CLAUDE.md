@@ -210,6 +210,10 @@ When implementing features that require infrastructure validation:
 - Always capture and analyze full logs when debugging infrastructure issues
 - Infrastructure errors are often in CloudFormation events or Lambda initialization logs
 
+## Simulator Website (CRITICAL)
+
+**Never edit files in `web/public-simulator/` directly.** This directory is an automated export/build of the main site in `web/public/`. All changes must be made in `web/public/` and the simulator version will be regenerated from it. Editing the simulator files directly will result in changes being overwritten on the next build.
+
 ## Code Quality Rules
 
 - **Trace code paths** before running tests - follow both test execution and AWS deployment paths
