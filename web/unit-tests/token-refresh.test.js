@@ -262,7 +262,9 @@ describe("Token refresh on 401 errors", () => {
       ok: false,
       status: 403,
       json: async () => ({ message: "Bundle entitlement required" }),
-      clone: function () { return { ...this, json: async () => ({ message: "Bundle entitlement required" }) }; },
+      clone: function () {
+        return { ...this, json: async () => ({ message: "Bundle entitlement required" }) };
+      },
     };
     fetchMock.mockResolvedValueOnce(mock403Response);
 
@@ -284,7 +286,9 @@ describe("Token refresh on 401 errors", () => {
       ok: false,
       status: 403,
       json: async () => ({ message: "Access forbidden" }),
-      clone: function () { return { ...this, json: async () => ({ message: "Access forbidden" }) }; },
+      clone: function () {
+        return { ...this, json: async () => ({ message: "Access forbidden" }) };
+      },
     };
     fetchMock.mockResolvedValueOnce(mock403Response);
 

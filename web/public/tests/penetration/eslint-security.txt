@@ -31,13 +31,19 @@
   307:20  error    eval with argument of type Identifier                                      security/detect-eval-with-expression
   323:20  error    eval with argument of type Identifier                                      security/detect-eval-with-expression
 
-/Users/antony/projects/submit.diyaccounting.co.uk/cdk-submit-environment.out/asset.bc8ef58951f4c88e641dd23090e9d2e2e61c7530a07960e767522941e959b625/index.js
-  1:128634  warning  Found non-literal argument in require             security/detect-non-literal-require
-  1:131050  warning  Found non-literal argument in require             security/detect-non-literal-require
-  1:131203  warning  Found non-literal argument in require             security/detect-non-literal-require
-  1:131226  warning  Found non-literal argument in require             security/detect-non-literal-require
-  1:131262  warning  Found non-literal argument in require             security/detect-non-literal-require
-  1:134115  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/buildFraudHeaders.js
+  9:70  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/env.js
+  10:8   warning  Found existsSync from package "fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
+  18:31  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/logger.js
+  271:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  289:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+
+/Users/antony/projects/submit.diyaccounting.co.uk/app/services/bundleManagement.js
+  214:19  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
 
 /Users/antony/projects/submit.diyaccounting.co.uk/web/public-simulator/lambda-server.mjs
   167:28  warning  Found stat from package "node:fs/promises" with non literal argument at index 0      security/detect-non-literal-fs-filename
@@ -104,5 +110,8 @@
 /Users/antony/projects/submit.diyaccounting.co.uk/web/public-simulator/tests/test-reports/web-test-local/html-report/trace/uiMode.BWTwXl41.js
   2:8496  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
 
-✖ 89 problems (33 errors, 56 warnings)
+/Users/antony/projects/submit.diyaccounting.co.uk/web/public/widgets/entitlement-status.js
+  123:21  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+
+✖ 90 problems (33 errors, 57 warnings)
 

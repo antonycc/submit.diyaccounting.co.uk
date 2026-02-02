@@ -58,17 +58,7 @@ export async function ingestHandler(event) {
     });
   }
 
-  const {
-    passTypeId,
-    bundleId,
-    validFrom,
-    validUntil,
-    validityPeriod,
-    maxUses,
-    restrictedToEmail,
-    createdBy,
-    notes,
-  } = requestBody;
+  const { passTypeId, bundleId, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
 
   logger.info({ message: "Creating admin pass", passTypeId, bundleId });
 

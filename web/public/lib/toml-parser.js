@@ -12,7 +12,7 @@
       let i = 0;
 
       while (i < lines.length) {
-        let line = lines[i].trim();
+        const line = lines[i].trim();
 
         // Skip empty lines and comments
         if (!line || line.startsWith("#")) {
@@ -44,12 +44,12 @@
         if (line.indexOf("=") !== -1) {
           const eqIdx = line.indexOf("=");
           const key = line.substring(0, eqIdx).trim();
-          let value = line.substring(eqIdx + 1).trim();
+          const value = line.substring(eqIdx + 1).trim();
 
           // Check for multi-line string start
           if (value.startsWith('"""')) {
             // Multi-line string
-            let multiLineValue = value.substring(3);
+            const multiLineValue = value.substring(3);
             if (multiLineValue.endsWith('"""')) {
               // Single line with """..."""
               currentSection[key] = multiLineValue.substring(0, multiLineValue.length - 3);

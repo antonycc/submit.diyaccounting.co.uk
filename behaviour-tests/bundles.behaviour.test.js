@@ -10,7 +10,6 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
-  isSandboxMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -194,7 +193,15 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   await ensureBundlePresent(page, "Test", screenshotPath);
 
   // --- Step 4: Request Day Guest bundle (capped, on-request, with tokens) ---
-  if (isSandboxMode()) {
+  // Day Guest has listedInEnvironments that excludes prod, so check runtime availability
+  // rather than relying on isSandboxMode() which returns true for prod sandbox tests
+  const isDayGuestAvailable = await page
+    .locator("button:has-text('Day Guest')")
+    .first()
+    .isVisible({ timeout: 3000 })
+    .catch(() => false);
+  console.log(`[bundle-test]: Day Guest availability check: ${isDayGuestAvailable}`);
+  if (isDayGuestAvailable) {
     await ensureBundlePresent(page, "Day Guest", screenshotPath);
 
     // Verify API response includes allocated bundles with correct structure
@@ -284,7 +291,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       userSub,
       observedTraceparent,
       testUrl,
-      bundlesTested: isSandboxMode() ? ["Test", "Day Guest"] : ["Test"],
+      bundlesTested: isDayGuestAvailable ? ["Test", "Day Guest"] : ["Test"],
     },
     artefactsDir: outputDir,
     screenshotPath,

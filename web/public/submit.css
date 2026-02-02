@@ -201,6 +201,25 @@ header {
   position: relative;
 }
 
+/* Faint spreadsheet heritage background behind header area.
+   Shows a DIY Accounting tax return spreadsheet at very low opacity,
+   hinting at the product's spreadsheet heritage. */
+header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.06;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("./images/spreadsheet-bg.png");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+}
+
 /* Header navigation */
 .header-nav {
   display: flex;

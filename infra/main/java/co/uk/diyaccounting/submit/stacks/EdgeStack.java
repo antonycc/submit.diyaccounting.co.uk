@@ -24,7 +24,6 @@ import software.amazon.awscdk.services.cloudfront.AllowedMethods;
 import software.amazon.awscdk.services.cloudfront.BehaviorOptions;
 import software.amazon.awscdk.services.cloudfront.CachePolicy;
 import software.amazon.awscdk.services.cloudfront.Distribution;
-import software.amazon.awscdk.services.cloudfront.ErrorResponse;
 import software.amazon.awscdk.services.cloudfront.HeadersFrameOption;
 import software.amazon.awscdk.services.cloudfront.IOrigin;
 import software.amazon.awscdk.services.cloudfront.OriginProtocolPolicy;
@@ -50,6 +49,10 @@ import software.amazon.awscdk.services.cloudfront.ViewerProtocolPolicy;
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOrigin;
 import software.amazon.awscdk.services.cloudfront.origins.S3BucketOriginWithOACProps;
+import software.amazon.awscdk.services.cloudwatch.Alarm;
+import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.Metric;
+import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
@@ -61,10 +64,6 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
-import software.amazon.awscdk.services.cloudwatch.Alarm;
-import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.constructs.Construct;
 
 public class EdgeStack extends Stack {
@@ -287,7 +286,8 @@ public class EdgeStack extends Stack {
         // Common Rule Set alarm - SQL injection, XSS attacks
         Alarm commonRuleAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CommonRuleAlarm")
                 .alarmName(props.resourceNamePrefix() + "-waf-attack-signatures")
-                .alarmDescription("WAF detected attack patterns (SQLi/XSS) - 5+ blocks in 5min - review sampled requests")
+                .alarmDescription(
+                        "WAF detected attack patterns (SQLi/XSS) - 5+ blocks in 5min - review sampled requests")
                 .metric(Metric.Builder.create()
                         .namespace("AWS/WAFV2")
                         .metricName("BlockedRequests")

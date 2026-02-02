@@ -9,10 +9,9 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
-import co.uk.diyaccounting.submit.utils.KindCdk.EnsuredLogGroup;
-
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
+import co.uk.diyaccounting.submit.utils.KindCdk.EnsuredLogGroup;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.CfnOutput;
@@ -39,7 +38,6 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.lambda.Permission;
-import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
 
 public class ApiStack extends Stack {
@@ -125,8 +123,8 @@ public class ApiStack extends Stack {
         // Create HTTP API Gateway v2
         this.httpApi = HttpApi.Builder.create(this, props.resourceNamePrefix() + "-HttpApi")
                 .apiName(props.resourceNamePrefix() + "-api")
-                .description("API Gateway v2 for " + props.resourceNamePrefix() + " (build "
-                        + props.buildNumber() + ")")
+                .description(
+                        "API Gateway v2 for " + props.resourceNamePrefix() + " (build " + props.buildNumber() + ")")
                 .build();
 
         // Enable access logging for the default stage - ensure log group exists (idempotent creation)

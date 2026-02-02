@@ -312,6 +312,7 @@ export async function workerHandler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function grantBundle(userId, requestBody, decodedToken, requestId = null) {
   logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId });
 

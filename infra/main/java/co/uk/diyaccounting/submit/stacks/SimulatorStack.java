@@ -215,8 +215,7 @@ public class SimulatorStack extends Stack {
                 .build();
 
         // CloudFront distribution
-        this.distribution = Distribution.Builder.create(
-                        this, props.resourceNamePrefix() + "-SimulatorDistribution")
+        this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-SimulatorDistribution")
                 .defaultBehavior(BehaviorOptions.builder()
                         .origin(lambdaOrigin)
                         .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
@@ -246,7 +245,9 @@ public class SimulatorStack extends Stack {
         // Compute relative record name from the simulator domain name
         // e.g., "ci-simulator.submit.diyaccounting.co.uk" relative to "diyaccounting.co.uk" → "ci-simulator.submit"
         String recordName = simulatorDomainName.endsWith("." + props.hostedZoneName())
-                ? simulatorDomainName.substring(0, simulatorDomainName.length() - (props.hostedZoneName().length() + 1))
+                ? simulatorDomainName.substring(
+                        0,
+                        simulatorDomainName.length() - (props.hostedZoneName().length() + 1))
                 : simulatorDomainName;
 
         Route53AliasUpsert.upsertAliasToCloudFront(
@@ -264,7 +265,6 @@ public class SimulatorStack extends Stack {
 
         infof(
                 "SimulatorStack %s created with CloudFront distribution at %s",
-                this.getNode().getId(),
-                simulatorDomainName);
+                this.getNode().getId(), simulatorDomainName);
     }
 }

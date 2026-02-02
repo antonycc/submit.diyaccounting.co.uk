@@ -115,8 +115,12 @@ export default [
       "web/browser-tests/",
       // Generated test reports (Playwright HTML reports contain bundled JS)
       "web/public/tests/",
+      // Generated simulator build (gitignored, copied from web/public at build time)
+      "web/public-simulator/",
       // Reference examples for UK Government form field standards
       "web/public/docs/hmrc-form-field-standards/",
+      // Developer documentation and archive (not application code)
+      "_developers/",
     ],
   },
 ];

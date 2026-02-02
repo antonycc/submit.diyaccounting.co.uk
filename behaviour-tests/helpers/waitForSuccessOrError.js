@@ -51,9 +51,7 @@ export async function waitForSuccessOrError(page, options = {}) {
   while (true) {
     const elapsed = Date.now() - startTime;
     if (elapsed > timeout) {
-      throw new Error(
-        `[waitForSuccessOrError] Timed out after ${Math.round(elapsed / 1000)}s waiting for "${description}"`,
-      );
+      throw new Error(`[waitForSuccessOrError] Timed out after ${Math.round(elapsed / 1000)}s waiting for "${description}"`);
     }
 
     pollCount++;
@@ -83,11 +81,13 @@ export async function waitForSuccessOrError(page, options = {}) {
     }
 
     // 2. Check for success condition
-    const successVisible = await page.locator(successSelector).isVisible().catch(() => false);
+    const successVisible = await page
+      .locator(successSelector)
+      .isVisible()
+      .catch(() => false);
     if (successVisible) {
       console.log(
-        `[waitForSuccessOrError] SUCCESS: "${description}" detected after ` +
-          `${Math.round(elapsed / 1000)}s (poll #${pollCount})`,
+        `[waitForSuccessOrError] SUCCESS: "${description}" detected after ` + `${Math.round(elapsed / 1000)}s (poll #${pollCount})`,
       );
       return;
     }
@@ -97,7 +97,10 @@ export async function waitForSuccessOrError(page, options = {}) {
       .locator("#statusMessagesContainer")
       .innerText()
       .catch(() => "(empty)");
-    const spinnerVisible = await page.locator("#loadingSpinner").isVisible().catch(() => false);
+    const spinnerVisible = await page
+      .locator("#loadingSpinner")
+      .isVisible()
+      .catch(() => false);
     console.log(
       `[waitForSuccessOrError] Waiting for "${description}" ` +
         `(poll #${pollCount}, ${Math.round(elapsed / 1000)}s/${Math.round(timeout / 1000)}s, ` +

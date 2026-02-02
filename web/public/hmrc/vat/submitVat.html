@@ -367,7 +367,6 @@
           Your VAT return has been successfully submitted to HMRC. Please keep this receipt for your records.
         </p>
       </div>
-
     </main>
 
     <footer>
@@ -958,7 +957,9 @@
               tokenInfoEl.style.display = "";
               tokenInfoEl.style.color = "#c00";
             }
-            throw new Error("No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.");
+            throw new Error(
+              "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
+            );
           }
           const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
           console.error(message);
@@ -1086,7 +1087,13 @@
         if (!tokenInfoEl) return;
         try {
           // Only fetch token info if the user is authenticated
-          const idToken = (() => { try { return localStorage.getItem("cognitoIdToken"); } catch { return null; } })();
+          const idToken = (() => {
+            try {
+              return localStorage.getItem("cognitoIdToken");
+            } catch {
+              return null;
+            }
+          })();
           if (!idToken || !window.fetchWithIdToken) return;
           const res = await window.fetchWithIdToken("/api/v1/bundle", {
             method: "GET",
@@ -1097,9 +1104,7 @@
           if (!data || !data.bundles) return;
 
           // Find allocated bundles that have tokens
-          const bundlesWithTokens = (data.bundles || []).filter(
-            (b) => b.allocated && b.tokensRemaining !== undefined,
-          );
+          const bundlesWithTokens = (data.bundles || []).filter((b) => b.allocated && b.tokensRemaining !== undefined);
           if (bundlesWithTokens.length === 0) return;
 
           const totalRemaining = bundlesWithTokens.reduce((sum, b) => sum + (b.tokensRemaining || 0), 0);

@@ -172,10 +172,13 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     console.log(" Simulator iframe is visible");
 
     // Wait for the src to be set by the inline scripts
-    await page.waitForFunction(() => {
-      const frame = document.getElementById("simulatorFrame");
-      return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
-    }, { timeout: 10000 });
+    await page.waitForFunction(
+      () => {
+        const frame = document.getElementById("simulatorFrame");
+        return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
+      },
+      { timeout: 10000 },
+    );
 
     const iframeSrc = await iframe.getAttribute("src");
     console.log(` Iframe src: ${iframeSrc}`);
@@ -367,10 +370,13 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     await page.goto(simUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     // Wait for iframe to load
-    await page.waitForFunction(() => {
-      const frame = document.getElementById("simulatorFrame");
-      return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
-    }, { timeout: 10000 });
+    await page.waitForFunction(
+      () => {
+        const frame = document.getElementById("simulatorFrame");
+        return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
+      },
+      { timeout: 10000 },
+    );
     await page.waitForTimeout(3000);
 
     const statusText = page.locator("#journeyStatusText");
@@ -433,10 +439,13 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     await page.goto(simUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     // Wait for iframe to load
-    await page.waitForFunction(() => {
-      const frame = document.getElementById("simulatorFrame");
-      return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
-    }, { timeout: 10000 });
+    await page.waitForFunction(
+      () => {
+        const frame = document.getElementById("simulatorFrame");
+        return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
+      },
+      { timeout: 10000 },
+    );
     await page.waitForTimeout(3000);
 
     const statusText = page.locator("#journeyStatusText");
@@ -499,10 +508,13 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     await page.goto(simUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     // Wait for iframe to load
-    await page.waitForFunction(() => {
-      const frame = document.getElementById("simulatorFrame");
-      return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
-    }, { timeout: 10000 });
+    await page.waitForFunction(
+      () => {
+        const frame = document.getElementById("simulatorFrame");
+        return frame && frame.src && frame.src !== "" && frame.src !== window.location.href;
+      },
+      { timeout: 10000 },
+    );
     await page.waitForTimeout(3000);
 
     const statusText = page.locator("#journeyStatusText");

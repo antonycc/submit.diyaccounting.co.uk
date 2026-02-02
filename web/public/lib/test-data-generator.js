@@ -26,10 +26,12 @@ function generateTestPeriodKey() {
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
   // Last character can be digit (0-9) or letter (A-Z)
 
+  /* eslint-disable sonarjs/pseudo-random */
   const lastChar =
     Math.random() < 0.5
       ? String(Math.floor(Math.random() * 10)) // 0-9
       : String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+  /* eslint-enable sonarjs/pseudo-random */
   return `${year}${letter}${lastChar}`;
 }
 

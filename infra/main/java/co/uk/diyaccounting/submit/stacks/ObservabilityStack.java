@@ -20,6 +20,10 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.customresources.AwsCustomResource;
+import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
+import software.amazon.awscdk.customresources.AwsSdkCall;
+import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.cloudtrail.Trail;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -32,6 +36,10 @@ import software.amazon.awscdk.services.cloudwatch.TextWidget;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cognito.CfnIdentityPool;
 import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
+import software.amazon.awscdk.services.events.EventPattern;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.targets.SnsTopic;
+import software.amazon.awscdk.services.guardduty.CfnDetector;
 import software.amazon.awscdk.services.iam.FederatedPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
@@ -39,20 +47,12 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.rum.CfnAppMonitor;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.rum.CfnAppMonitor;
-import software.amazon.awscdk.services.guardduty.CfnDetector;
-import software.amazon.awscdk.services.events.Rule;
-import software.amazon.awscdk.services.events.EventPattern;
-import software.amazon.awscdk.services.sns.Topic;
-import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.securityhub.CfnHub;
-import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
-import software.amazon.awscdk.customresources.AwsSdkCall;
-import software.amazon.awscdk.customresources.PhysicalResourceId;
+import software.amazon.awscdk.services.sns.Topic;
 import software.constructs.Construct;
 
 public class ObservabilityStack extends Stack {
@@ -155,12 +155,11 @@ public class ObservabilityStack extends Stack {
                             .physicalResourceId(PhysicalResourceId.of(cloudTrailLogGroupName))
                             .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
                             .build())
-                    .policy(AwsCustomResourcePolicy.fromStatements(List.of(
-                            PolicyStatement.Builder.create()
-                                    .actions(List.of("logs:CreateLogGroup"))
-                                    .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
-                                            + ":log-group:" + cloudTrailLogGroupName + ":*"))
-                                    .build())))
+                    .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                            .actions(List.of("logs:CreateLogGroup"))
+                            .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
+                                    + ":log-group:" + cloudTrailLogGroupName + ":*"))
+                            .build())))
                     .build();
 
             // Import the LogGroup created by AwsCustomResource (don't use Builder.create which fails if it exists)
@@ -196,10 +195,11 @@ public class ObservabilityStack extends Stack {
             // Add event selectors for DynamoDB data plane operations (GetItem, PutItem, DeleteItem, Query, Scan)
             // This enables detection of bulk data access patterns indicating potential data breach
             software.amazon.awscdk.services.cloudtrail.CfnTrail cfnTrail =
-                    (software.amazon.awscdk.services.cloudtrail.CfnTrail) this.trail.getNode().getDefaultChild();
+                    (software.amazon.awscdk.services.cloudtrail.CfnTrail)
+                            this.trail.getNode().getDefaultChild();
 
-            cfnTrail.setEventSelectors(List.of(
-                    software.amazon.awscdk.services.cloudtrail.CfnTrail.EventSelectorProperty.builder()
+            cfnTrail.setEventSelectors(
+                    List.of(software.amazon.awscdk.services.cloudtrail.CfnTrail.EventSelectorProperty.builder()
                             .readWriteType("All")
                             .includeManagementEvents(true)
                             .dataResources(List.of(
@@ -225,7 +225,9 @@ public class ObservabilityStack extends Stack {
 
         // Log group for self-destruct operations (idempotent creation)
         this.selfDestructLogGroup = ensureLogGroup(
-                this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.sharedNames().ew2SelfDestructLogGroupName);
+                this,
+                props.resourceNamePrefix() + "-SelfDestructLogGroup",
+                props.sharedNames().ew2SelfDestructLogGroupName);
 
         // API Gateway access log group with env-stable name (idempotent creation)
         this.apiAccessLogGroup = ensureLogGroup(
@@ -354,11 +356,10 @@ public class ObservabilityStack extends Stack {
         if (props.securityServicesEnabled()) {
             // GuardDuty provides intelligent threat detection for compromised credentials,
             // unusual API patterns, cryptocurrency mining, and other security threats.
-            CfnDetector guardDutyDetector =
-                    CfnDetector.Builder.create(this, props.resourceNamePrefix() + "-GuardDuty")
-                            .enable(true)
-                            .findingPublishingFrequency("FIFTEEN_MINUTES")
-                            .build();
+            CfnDetector guardDutyDetector = CfnDetector.Builder.create(this, props.resourceNamePrefix() + "-GuardDuty")
+                    .enable(true)
+                    .findingPublishingFrequency("FIFTEEN_MINUTES")
+                    .build();
 
             // EventBridge rule to route HIGH and MEDIUM severity GuardDuty findings to SNS
             // Severity levels: 0.0-3.9 = LOW, 4.0-6.9 = MEDIUM, 7.0-8.9 = HIGH, 9.0+ = CRITICAL
@@ -415,20 +416,22 @@ public class ObservabilityStack extends Stack {
                 .eventPattern(EventPattern.builder()
                         .source(List.of("aws.iam"))
                         .detailType(List.of("AWS API Call via CloudTrail"))
-                        .detail(Map.of("eventName", List.of(
-                                "CreatePolicy",
-                                "CreatePolicyVersion",
-                                "DeletePolicy",
-                                "DeletePolicyVersion",
-                                "AttachUserPolicy",
-                                "AttachRolePolicy",
-                                "AttachGroupPolicy",
-                                "DetachUserPolicy",
-                                "DetachRolePolicy",
-                                "DetachGroupPolicy",
-                                "PutUserPolicy",
-                                "PutRolePolicy",
-                                "PutGroupPolicy")))
+                        .detail(Map.of(
+                                "eventName",
+                                List.of(
+                                        "CreatePolicy",
+                                        "CreatePolicyVersion",
+                                        "DeletePolicy",
+                                        "DeletePolicyVersion",
+                                        "AttachUserPolicy",
+                                        "AttachRolePolicy",
+                                        "AttachGroupPolicy",
+                                        "DetachUserPolicy",
+                                        "DetachRolePolicy",
+                                        "DetachGroupPolicy",
+                                        "PutUserPolicy",
+                                        "PutRolePolicy",
+                                        "PutGroupPolicy")))
                         .build())
                 .build();
         iamPolicyChangeRule.addTarget(new SnsTopic(securityFindingsTopic));
@@ -440,13 +443,15 @@ public class ObservabilityStack extends Stack {
                 .eventPattern(EventPattern.builder()
                         .source(List.of("aws.ec2"))
                         .detailType(List.of("AWS API Call via CloudTrail"))
-                        .detail(Map.of("eventName", List.of(
-                                "AuthorizeSecurityGroupIngress",
-                                "AuthorizeSecurityGroupEgress",
-                                "RevokeSecurityGroupIngress",
-                                "RevokeSecurityGroupEgress",
-                                "CreateSecurityGroup",
-                                "DeleteSecurityGroup")))
+                        .detail(Map.of(
+                                "eventName",
+                                List.of(
+                                        "AuthorizeSecurityGroupIngress",
+                                        "AuthorizeSecurityGroupEgress",
+                                        "RevokeSecurityGroupIngress",
+                                        "RevokeSecurityGroupEgress",
+                                        "CreateSecurityGroup",
+                                        "DeleteSecurityGroup")))
                         .build())
                 .build();
         securityGroupChangeRule.addTarget(new SnsTopic(securityFindingsTopic));
@@ -458,9 +463,7 @@ public class ObservabilityStack extends Stack {
                 .eventPattern(EventPattern.builder()
                         .source(List.of("aws.iam"))
                         .detailType(List.of("AWS API Call via CloudTrail"))
-                        .detail(Map.of("eventName", List.of(
-                                "CreateAccessKey",
-                                "UpdateAccessKey")))
+                        .detail(Map.of("eventName", List.of("CreateAccessKey", "UpdateAccessKey")))
                         .build())
                 .build();
         accessKeyCreationRule.addTarget(new SnsTopic(securityFindingsTopic));

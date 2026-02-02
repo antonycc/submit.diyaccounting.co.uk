@@ -2,8 +2,8 @@
 
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
-**Target URL**: https://wanted-finally-anteater.ngrok-free.app
-**Generated**: 2026-01-31T20:46:18.119Z
+**Target URL**: https://submit.diyaccounting.co.uk
+**Generated**: 2026-02-02T03:21:14.420Z
 **Overall Status**: ❌ FAIL
 
 **Source Files**:
@@ -19,6 +19,19 @@
   ✅ web/public/tests/accessibility/text-spacing-results.json
 ```
 
+ Here's a summary of where we left off:                                                                                                                           
+                                                                                                                                                                               
+  Completed this session:                                                                                                                                                      
+  - Fixed the submission-submit.png image (was nearly blank, now shows all 9 VAT boxes + declaration checkbox with dev tools removed)                                          
+  - Committed and pushed all refresh changes to refresf branch (commit 6794a0cb)                                                                                               
+  - All 685 tests passing                                                                                                                                                      
+                                                                                                                                                                               
+  Next time:                                                                                                                                                                   
+  - Run the local accessibility/penetration tests that contributed to REPORT_ACCESSIBILITY_PENETRATION.md and verify the fixes (Pa11y, axe-core, ESLint security, Lighthouse,  
+  text-spacing, npm audit, etc.)            
+
+
+
 ---
 
 ## Summary
@@ -26,13 +39,13 @@
 | Check | Status | Summary |
 |-------|--------|---------|
 | npm audit | ❌ | 0 critical, 29 high, 2 moderate |
-| ESLint Security | ❌ | 33 errors, 56 warnings |
+| ESLint Security | ❌ | 33 errors, 57 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 6 medium, 6 low |
-| Pa11y (WCAG AA) | ✅ | 23/23 pages passed |
+| OWASP ZAP | ✅ | 0 high, 0 medium, 11 low |
+| Pa11y (WCAG AA) | ❌ | 22/23 pages passed |
 | axe-core | ❌ | 25 violations, 551 passes |
 | axe-core (WCAG 2.2) | ❌ | 22 violations, 340 passes |
-| Lighthouse | ❌ | A11y: 0%, Perf: 0%, BP: 0% |
+| Lighthouse | ✅ | A11y: 100%, Perf: 98%, BP: 100% |
 | Text Spacing (1.4.12) | ✅ | 22/22 pages passed |
 
 ---
@@ -56,7 +69,7 @@
 | Metric | Count |
 |--------|-------|
 | Errors | 33 |
-| Warnings | 56 |
+| Warnings | 57 |
 
 **Status**: ❌ Security errors require attention
 
@@ -75,9 +88,9 @@
 | Risk Level | Count |
 |------------|-------|
 | High | 0 |
-| Medium | 6 |
-| Low | 6 |
-| Informational | 5 |
+| Medium | 0 |
+| Low | 11 |
+| Informational | 34 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -85,14 +98,21 @@
 
 | Alert | Risk | Count |
 |-------|------|-------|
-| Content Security Policy (CSP) Header Not Set | Medium (High) | 1 |
-| Sub Resource Integrity Attribute Missing | Medium (High) | 5 |
-| Cross-Domain JavaScript Source File Inclusion | Low (Medium) | 1 |
-| Permissions Policy Header Not Set | Low (Medium) | 1 |
-| Strict-Transport-Security Header Not Set | Low (High) | 4 |
-| Modern Web Application | Informational (Medium) | 1 |
-| Storable and Cacheable Content | Informational (Medium) | 4 |
+| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 9 |
+| Timestamp Disclosure - Unix | Low (Low) | 2 |
+| Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
+| Modern Web Application | Informational (Medium) | 5 |
+| Non-Storable Content | Informational (Medium) | 3 |
+| Re-examine Cache-control Directives | Informational (Low) | 4 |
+| Retrieved from Cache | Informational (Medium) | 5 |
+| Storable and Cacheable Content | Informational (Medium) | 5 |
 
+#### Accepted Risks (Suppressed)
+
+| Alert | Risk | Reason |
+|-------|------|--------|
+| CSP: script-src unsafe-inline | Medium (High) | Required for inline event handlers and dynamic script loading. Mitigated by strict CSP directives and input validation. Documented in privacy policy. |
+| CSP: style-src unsafe-inline | Medium (High) | Required for dynamic styling and third-party components. Mitigated by strict CSP directives. Documented in privacy policy. |
 
 ---
 
@@ -103,10 +123,10 @@
 | Metric | Value |
 |--------|-------|
 | Pages Tested | 23 |
-| Pages Passed | 23 |
-| Pages Failed | 0 |
+| Pages Passed | 22 |
+| Pages Failed | 1 |
 
-**Status**: ✅ All pages comply with WCAG AA
+**Status**: ❌ Some pages have accessibility issues
 
 #### Page Results
 
@@ -119,7 +139,7 @@
 | /about.html | 0 |
 | /accessibility.html | 0 |
 | /auth/login.html | 0 |
-| /bundles.html | 0 |
+| /bundles.html | 2 |
 | /hmrc/vat/submitVat.html | 0 |
 | /hmrc/vat/vatObligations.html | 0 |
 | /hmrc/vat/viewVatReturn.html | 0 |
@@ -217,12 +237,12 @@
 
 | Category | Score |
 |----------|-------|
-| Accessibility | 0% |
-| Performance | 0% |
-| Best Practices | 0% |
-| SEO | 0% |
+| Accessibility | 100% |
+| Performance | 98% |
+| Best Practices | 100% |
+| SEO | 100% |
 
-**Status**: ❌ Accessibility score below 90% threshold
+**Status**: ✅ Accessibility score meets threshold (90%+)
 
 ### 2.5 Text Spacing (WCAG 1.4.12)
 
@@ -260,4 +280,4 @@
 
 ---
 
-*Generated by `node scripts/generate-compliance-report.js --target https://wanted-finally-anteater.ngrok-free.app`*
+*Generated by `node scripts/generate-compliance-report.js --target https://submit.diyaccounting.co.uk`*

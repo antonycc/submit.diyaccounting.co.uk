@@ -245,70 +245,82 @@ export function createSimulatorServer() {
     };
 
     // Import and call the VAT returns route handler directly
-    import("../http-simulator/routes/vat-returns.js").then(({ apiEndpoint }) => {
-      // Create a mini express app to handle this single request
-      const miniApp = express();
-      miniApp.use(express.json());
-      apiEndpoint(miniApp);
+    import("../http-simulator/routes/vat-returns.js")
+      .then(({ apiEndpoint }) => {
+        // Create a mini express app to handle this single request
+        const miniApp = express();
+        miniApp.use(express.json());
+        apiEndpoint(miniApp);
 
-      // Find the POST handler
-      const postHandler = miniApp._router.stack.find(
-        (layer) => layer.route && layer.route.path === "/organisations/vat/:vrn/returns" && layer.route.methods.post,
-      );
+        // Find the POST handler
+        const postHandler = miniApp._router.stack.find(
+          (layer) => layer.route && layer.route.path === "/organisations/vat/:vrn/returns" && layer.route.methods.post,
+        );
 
-      if (postHandler) {
-        postHandler.route.stack[0].handle(mockReq, mockRes, () => {});
-      } else {
-        res.status(500).json({ error: "VAT return handler not found" });
-      }
-    });
+        if (postHandler) {
+          return postHandler.route.stack[0].handle(mockReq, mockRes, () => {});
+        } else {
+          return res.status(500).json({ error: "VAT return handler not found" });
+        }
+      })
+      .catch((err) => {
+        res.status(500).json({ error: err.message });
+      });
   });
 
   // VAT obligations endpoint
   app.get("/api/v1/hmrc/vat/obligation", (req, res) => {
-    const { vrn, from, to, status: statusFilter } = req.query;
+    const { status: statusFilter } = req.query;
 
     // Import and call the obligations handler
-    import("../http-simulator/scenarios/obligations.js").then(({ getObligationsForScenario }) => {
-      const result = getObligationsForScenario(null); // No test scenario
+    import("../http-simulator/scenarios/obligations.js")
+      .then(({ getObligationsForScenario }) => {
+        const result = getObligationsForScenario(null); // No test scenario
 
-      if (result.status) {
-        return res.status(result.status).json(result.body);
-      }
+        if (result.status) {
+          return res.status(result.status).json(result.body);
+        }
 
-      let obligations = result.obligations;
-      if (statusFilter) {
-        obligations = obligations.filter((o) => o.status === statusFilter);
-      }
+        let obligations = result.obligations;
+        if (statusFilter) {
+          obligations = obligations.filter((o) => o.status === statusFilter);
+        }
 
-      res.json({ obligations });
-    });
+        return res.json({ obligations });
+      })
+      .catch((err) => {
+        res.status(500).json({ error: err.message });
+      });
   });
 
   // VAT return GET endpoint
   app.get("/api/v1/hmrc/vat/return", (req, res) => {
     const { vrn, periodKey } = req.query;
 
-    import("../http-simulator/state/store.js").then(({ getReturn }) => {
-      const storedReturn = getReturn(vrn, periodKey);
-      if (storedReturn) {
-        return res.json(storedReturn);
-      }
+    import("../http-simulator/state/store.js")
+      .then(({ getReturn }) => {
+        const storedReturn = getReturn(vrn, periodKey);
+        if (storedReturn) {
+          return res.json(storedReturn);
+        }
 
-      // Return default test data
-      res.json({
-        periodKey,
-        vatDueSales: 1000,
-        vatDueAcquisitions: 0,
-        totalVatDue: 1000,
-        vatReclaimedCurrPeriod: 0,
-        netVatDue: 1000,
-        totalValueSalesExVAT: 0,
-        totalValuePurchasesExVAT: 0,
-        totalValueGoodsSuppliedExVAT: 0,
-        totalAcquisitionsExVAT: 0,
+        // Return default test data
+        return res.json({
+          periodKey,
+          vatDueSales: 1000,
+          vatDueAcquisitions: 0,
+          totalVatDue: 1000,
+          vatReclaimedCurrPeriod: 0,
+          netVatDue: 1000,
+          totalValueSalesExVAT: 0,
+          totalValuePurchasesExVAT: 0,
+          totalValueGoodsSuppliedExVAT: 0,
+          totalAcquisitionsExVAT: 0,
+        });
+      })
+      .catch((err) => {
+        res.status(500).json({ error: err.message });
       });
-    });
   });
 
   // Mount http-simulator routes for mock HMRC OAuth endpoints

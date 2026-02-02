@@ -120,7 +120,6 @@
    */
   function matchesRegexPattern(pattern, normalizedPath) {
     try {
-      // eslint-disable-next-line security/detect-non-literal-regexp -- pattern from our controlled product catalog, not user input
       const regex = new RegExp(pattern);
       return regex.test(normalizedPath) || regex.test("/" + normalizedPath);
     } catch (err) {

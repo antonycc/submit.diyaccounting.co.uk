@@ -163,9 +163,7 @@ describe("passService", () => {
     });
 
     it("should retry once on code collision", async () => {
-      putPass
-        .mockRejectedValueOnce(new Error("Pass code collision"))
-        .mockResolvedValueOnce(undefined);
+      putPass.mockRejectedValueOnce(new Error("Pass code collision")).mockResolvedValueOnce(undefined);
 
       const pass = await createPass({
         passTypeId: "test-access",

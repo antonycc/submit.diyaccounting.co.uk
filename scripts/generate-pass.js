@@ -137,9 +137,7 @@ async function main() {
     try {
       const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
       const client = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-      const response = await client.send(
-        new GetSecretValueCommand({ SecretId: `${args.environment}/submit/email-hash-secret` }),
-      );
+      const response = await client.send(new GetSecretValueCommand({ SecretId: `${args.environment}/submit/email-hash-secret` }));
       process.env.EMAIL_HASH_SECRET = response.SecretString;
       const { initializeEmailHashSecret } = await import("../app/lib/emailHash.js");
       await initializeEmailHashSecret();

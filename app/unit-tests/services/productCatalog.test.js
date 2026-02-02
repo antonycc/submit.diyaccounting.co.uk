@@ -28,7 +28,13 @@ describe("productCatalogHelper", () => {
 
   it("bundlesForActivity should return expected bundles", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "submit-vat")).toEqual(["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]);
+    expect(bundlesForActivity(catalog, "submit-vat")).toEqual([
+      "day-guest",
+      "invited-guest",
+      "resident-guest",
+      "resident-pro-comp",
+      "resident-pro",
+    ]);
     // expect(bundlesForActivity(catalog, "vat-obligations")).toEqual(["default"]);
   });
 

@@ -5,7 +5,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { generatePassphrase } from "../lib/passphrase.js";
-import { hashEmail, hashEmailWithEnvSecret, getEmailHashSecretVersion } from "../lib/emailHash.js";
+import { hashEmail, hashEmailWithEnvSecret } from "../lib/emailHash.js";
 import { calculateTtl } from "../lib/dateUtils.js";
 import * as passRepository from "../data/dynamoDbPassRepository.js";
 

@@ -55,10 +55,7 @@ bundles.set("demo-user-12345", [
 function generateRandomPeriodKey() {
   const year = String(17 + Math.floor(Math.random() * 10)).padStart(2, "0");
   const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-  const suffix =
-    Math.random() < 0.5
-      ? String(Math.floor(Math.random() * 10))
-      : String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  const suffix = Math.random() < 0.5 ? String(Math.floor(Math.random() * 10)) : String.fromCharCode(65 + Math.floor(Math.random() * 26));
   return `${year}${letter}${suffix}`;
 }
 

@@ -89,7 +89,13 @@ test.beforeAll(async () => {
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
   ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
-  await initializeSalt();
+  // initializeSalt needs AWS Secrets Manager access and is only required for
+  // direct DynamoDB token consumption (Step 6). Skip when table name is not set.
+  if (bundleTableName) {
+    await initializeSalt();
+  } else {
+    console.log("BUNDLE_DYNAMODB_TABLE_NAME not set; skipping initializeSalt (direct DynamoDB steps will be skipped)");
+  }
 });
 
 test.afterAll(async () => {
@@ -210,7 +216,15 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
 
     await goToHomePageUsingMainNav(page, screenshotPath);
     await initSubmitVat(page, screenshotPath);
-    await fillInVat(page, hmrcVatNumber, { periodStart, periodEnd }, hmrcVatDueAmount, undefined, runFraudPreventionHeaderValidation, screenshotPath);
+    await fillInVat(
+      page,
+      hmrcVatNumber,
+      { periodStart, periodEnd },
+      hmrcVatDueAmount,
+      undefined,
+      runFraudPreventionHeaderValidation,
+      screenshotPath,
+    );
 
     // Submit the form
     await page.locator("#submitBtn").click();
@@ -218,7 +232,10 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await page.waitForTimeout(1000);
 
     // Handle HMRC OAuth if redirected
-    const isHmrcAuthPage = await page.locator("#appNameParagraph").isVisible().catch(() => false);
+    const isHmrcAuthPage = await page
+      .locator("#appNameParagraph")
+      .isVisible()
+      .catch(() => false);
     if (isHmrcAuthPage) {
       await acceptCookiesHmrc(page, screenshotPath);
       await goToHmrcAuth(page, screenshotPath);
@@ -233,7 +250,10 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await receiptOrError.first().waitFor({ state: "visible", timeout: 120_000 });
 
     // Verify submission succeeded
-    const receiptVisible = await page.locator("#receiptDisplay").isVisible().catch(() => false);
+    const receiptVisible = await page
+      .locator("#receiptDisplay")
+      .isVisible()
+      .catch(() => false);
     expect(receiptVisible).toBeTruthy();
     console.log("VAT return submitted successfully");
 
@@ -271,6 +291,11 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log("STEP 6: Exhaust remaining tokens");
     console.log("=".repeat(60));
 
+    if (!bundleTableName) {
+      console.log("BUNDLE_DYNAMODB_TABLE_NAME not set; skipping direct token exhaustion (Steps 6-8 require DynamoDB access)");
+      return;
+    }
+
     // Consume all remaining tokens directly via the repository
     let remaining = 9; // 10 initial minus 1 consumed by VAT submission
     let consumed = 0;
@@ -297,16 +322,32 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log("STEP 7: Submit with exhausted tokens");
     console.log("=".repeat(60));
 
+    if (!bundleTableName) {
+      console.log("BUNDLE_DYNAMODB_TABLE_NAME not set; skipping exhaustion verification (requires DynamoDB access in Step 6)");
+      return;
+    }
+
     await goToHomePageUsingMainNav(page, screenshotPath);
     await initSubmitVat(page, screenshotPath);
-    await fillInVat(page, hmrcVatNumber, { periodStart, periodEnd }, hmrcVatDueAmount, undefined, runFraudPreventionHeaderValidation, screenshotPath);
+    await fillInVat(
+      page,
+      hmrcVatNumber,
+      { periodStart, periodEnd },
+      hmrcVatDueAmount,
+      undefined,
+      runFraudPreventionHeaderValidation,
+      screenshotPath,
+    );
 
     // Submit the form
     await page.locator("#submitBtn").click();
     await page.waitForLoadState("networkidle");
 
     // Handle HMRC OAuth if redirected (cached token may still be valid)
-    const isHmrcAuthPage = await page.locator("#appNameParagraph").isVisible({ timeout: 3000 }).catch(() => false);
+    const isHmrcAuthPage = await page
+      .locator("#appNameParagraph")
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
     if (isHmrcAuthPage) {
       await acceptCookiesHmrc(page, screenshotPath);
       await goToHmrcAuth(page, screenshotPath);
@@ -322,7 +363,10 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log("Token exhaustion error displayed correctly");
 
     // Verify no receipt is shown
-    const receiptVisible = await page.locator("#receiptDisplay").isVisible().catch(() => false);
+    const receiptVisible = await page
+      .locator("#receiptDisplay")
+      .isVisible()
+      .catch(() => false);
     expect(receiptVisible).toBeFalsy();
 
     await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-error.png` });
@@ -335,6 +379,11 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log("\n" + "=".repeat(60));
     console.log("STEP 8: Verify bundles page shows 0 tokens");
     console.log("=".repeat(60));
+
+    if (!bundleTableName) {
+      console.log("BUNDLE_DYNAMODB_TABLE_NAME not set; skipping zero-token verification (requires DynamoDB access in Step 6)");
+      return;
+    }
 
     await goToHomePageUsingMainNav(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
