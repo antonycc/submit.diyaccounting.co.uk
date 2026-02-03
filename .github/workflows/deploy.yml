@@ -1612,7 +1612,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'authBehaviour'
       generate-test-reports: 'true'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1635,7 +1635,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'bundleBehaviour'
       generate-test-reports: 'true'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1659,7 +1659,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'passRedemptionBehaviour'
       generate-test-reports: 'true'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1682,7 +1682,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'tokenEnforcementBehaviour'
       generate-test-reports: 'true'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1705,7 +1705,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'submitVatBehaviour'
       generate-test-reports: 'true'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1728,7 +1728,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'postVatReturnBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1751,7 +1751,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'getVatReturnBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1774,7 +1774,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'getVatObligationsBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1797,7 +1797,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'postVatReturnFraudPreventionHeadersBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1820,7 +1820,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'complianceBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1843,7 +1843,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'helpBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1866,7 +1866,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'vatValidationBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1889,7 +1889,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'vatSchemesBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
@@ -1912,7 +1912,7 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'simulatorBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-toggle: 'true'
+      skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 

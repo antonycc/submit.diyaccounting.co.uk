@@ -56,9 +56,9 @@ on:
         description: 'Keep test user and native auth enabled after test (for manual debugging)'
         required: false
         default: false
-      skip-native-auth-toggle:
+      skip-native-auth-disable:
         type: boolean
-        description: 'Skip enabling/disabling native auth (caller manages lifecycle)'
+        description: 'Skip disabling native auth after test (caller manages cleanup)'
         required: false
         default: false
   workflow_call:
@@ -83,9 +83,9 @@ on:
         type: string
         description: 'Keep test user and native auth enabled after test (for manual debugging)'
         required: false
-      skip-native-auth-toggle:
+      skip-native-auth-disable:
         type: string
-        description: 'Skip enabling/disabling native auth (caller manages lifecycle)'
+        description: 'Skip disabling native auth after test (caller manages cleanup)'
         required: false
       test-auth-username:
         type: string
@@ -136,7 +136,7 @@ jobs:
         run: ":"
       - name: "inputs.skip-cleanup=[${{ inputs.skip-cleanup }}]"
         run: ":"
-      - name: "inputs.skip-native-auth-toggle=[${{ inputs.skip-native-auth-toggle }}]"
+      - name: "inputs.skip-native-auth-disable=[${{ inputs.skip-native-auth-disable }}]"
         run: ":"
       - name: "inputs.test-auth-username=[${{ inputs.test-auth-username }}]"
         run: ":"
@@ -153,7 +153,7 @@ jobs:
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-cleanup }}' ; echo "skip-cleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.skip-native-auth-toggle }}' ; echo "skip-native-auth-toggle=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.skip-native-auth-disable }}' ; echo "skip-native-auth-disable=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-username=${{ inputs.test-auth-username }}' | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-password=${{ inputs.test-auth-password }}' | tee -a "$GITHUB_OUTPUT"
     outputs:
@@ -162,7 +162,7 @@ jobs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       skip-cleanup: ${{ steps.normalise.outputs.skip-cleanup }}
-      skip-native-auth-toggle: ${{ steps.normalise.outputs.skip-native-auth-toggle }}
+      skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
       test-auth-username: ${{ steps.normalise.outputs.test-auth-username }}
       test-auth-password: ${{ steps.normalise.outputs.test-auth-password }}
 
@@ -289,7 +289,6 @@ jobs:
           retry-max-attempts: 3
 
       - name: Enable native auth on Cognito Hosted UI
-        if: ${{ needs.params.outputs.skip-native-auth-toggle != 'true' }}
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
@@ -373,7 +372,7 @@ jobs:
           node scripts/delete-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" "${{ steps.cognito-test-user.outputs.test-auth-username }}"
 
       - name: Disable native auth on Cognito Hosted UI
-        if: ${{ !cancelled() && needs.params.outputs.skip-native-auth-toggle != 'true' && needs.params.outputs.skip-cleanup != 'true' }}
+        if: ${{ !cancelled() && needs.params.outputs.skip-native-auth-disable != 'true' && needs.params.outputs.skip-cleanup != 'true' }}
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"

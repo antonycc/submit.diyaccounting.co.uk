@@ -183,6 +183,7 @@ h1 {
   font-size: var(--font-size-5xl);
   margin-bottom: var(--spacing-sm);
   color: var(--color-brand-primary);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 h2 {
@@ -201,24 +202,32 @@ header {
   position: relative;
 }
 
-/* Faint spreadsheet heritage background behind header area.
-   Shows a DIY Accounting tax return spreadsheet at very low opacity,
-   hinting at the product's spreadsheet heritage. */
-header::before {
-  content: "";
+/* Spreadsheet grid receding behind the header into the horizon */
+header::after {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  opacity: 0.06;
+  left: -5%;
+  right: -5%;
+  top: 2em;
+  height: 20em;
+  background:
+    /* Two subtly shaded cells */
+    linear-gradient(rgba(44, 90, 160, 0.15), rgba(44, 90, 160, 0.15)) 2em 1.8em / 5em 1.5em no-repeat,
+    linear-gradient(rgba(44, 90, 160, 0.10), rgba(44, 90, 160, 0.10)) 14em 3.3em / 5em 1.5em no-repeat,
+    /* Column header tint (top row) */
+    linear-gradient(to bottom, rgba(44, 90, 160, 0.10) 0, rgba(44, 90, 160, 0.10) 1.5em, transparent 1.5em),
+    /* Column lines (diffuse - wider and softer) */
+    repeating-linear-gradient(90deg, rgba(44, 90, 160, 0.10) 0 3px, transparent 3px 5em),
+    /* Row lines */
+    repeating-linear-gradient(180deg, rgba(44, 90, 160, 0.17) 0 1px, transparent 1px 1.5em);
+  transform: perspective(600px) rotateX(50deg);
+  transform-origin: top center;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
   z-index: -1;
   pointer-events: none;
-  background-image: url("./images/spreadsheet-bg.png");
-  background-repeat: no-repeat;
-  background-position: center top;
-  background-size: cover;
 }
+
 
 /* Header navigation */
 .header-nav {
@@ -278,6 +287,7 @@ header::before {
 /* About page navigation links (Help / User Guide) */
 .about-nav-links {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: var(--spacing-xl);
   margin: var(--spacing-xl) 0 var(--spacing-lg) 0;
@@ -294,6 +304,7 @@ header::before {
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
+  flex: 1 1 28%;
 }
 
 .about-nav-link:hover {
@@ -305,9 +316,6 @@ header::before {
 }
 
 @media (orientation: portrait) {
-  .about-nav-links {
-    flex-wrap: wrap;
-  }
   .about-nav-link {
     flex: 1 1 40%;
   }
