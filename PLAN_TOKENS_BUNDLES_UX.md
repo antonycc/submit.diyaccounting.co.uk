@@ -797,9 +797,17 @@ npm run accessibility:axe-wcag22-ci-report
 
 ---
 
-### Phase 4: Annotated QR Codes (Task 7)
+### Phase 4: Annotated QR Codes (Task 7) — COMPLETED
 
 SVG-based annotated QR codes for pass generation.
+
+**Completed**: on branch `cleanup`. All 714 unit tests pass (7 new tests).
+
+Changes implemented:
+- `qrCodeGenerator.js`: Added `generateAnnotatedPassQrCodeSvg()` — generates self-contained SVG with embedded QR code and text annotations (pass code, URL, bundle, max uses, validity, email). Includes `escapeXml()` for safe SVG text insertion.
+- `qrCodeGenerator.test.js`: 7 new tests for annotated SVG generation (valid SVG structure, annotation content, optional fields, XML escaping, nested SVG for QR, error handling)
+- `generate-pass-with-qr.js`: Now generates annotated SVG alongside plain PNG; includes base64 PNG data URI in results for inline summary display
+- `generate-pass.yml`: Workflow summary now shows inline QR code images via `<img>` with data URI; artifact includes `*.svg` alongside `*.png`
 
 #### Changes
 
