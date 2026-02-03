@@ -10,15 +10,15 @@ allocation = "automatic"
 [[bundles]]
 id = "test"
 name = "Test"
+levelName = "Test"
 display = "on-pass"
 # on-pass
 # =======
-# Hide until a pass has been accecpted, once we have implemented pass generation and acceptance via a form.
-# 1. Generate and persist passes via GitHub Actions for test users
-# 2. Test pass validity via API in system tests
-# 3. Test pass validity via API in behaviour tests
-# 4. Add pass validation to the bundle.html as what 3 words populated by typing, or from a url opening bundles.html and add to behaviour test
-# 5. Change all behaviour tests to use passes to get test bundlesand turn on on-pass enforcement
+# Disable until a pass has been accecpted, once we have implemented pass generation and acceptance via a form.
+hidden = true
+# hidden
+# ======
+# Hide this bundle from the bundles page until allocated are implemented
 allocation = "on-request"
 timeout = "P1D"
 tokens = 10
@@ -27,7 +27,12 @@ tokens = 10
 [[bundles]]
 id = "day-guest"
 name = "Day Guest"
+levelName = "Guest"
 display = "always"
+hidden = false
+# hidden
+# ======
+# Show this bundle on the bundles page
 allocation = "on-request"
 cap = 10
 # cap (GLOBAL capacity limit)
@@ -45,7 +50,7 @@ listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC
-tokens = 10
+tokens = 3
 # tokens
 # ======
 # Number of HMRC API tokens allocated with this bundle
@@ -69,7 +74,9 @@ tokens = 10
 [[bundles]]
 id = "invited-guest"
 name = "Invited Guest"
+levelName = "Guest"
 display = "on-pass"
+hidden = true
 allocation = "on-email-match"
 # on-email-match
 # ==============
@@ -89,7 +96,9 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-guest"
 name = "Resident Guest"
+levelName = "Guest"
 display = "on-pass"
+hidden = true
 allocation = "on-email-match"
 # on-email-match
 # ==============
@@ -101,7 +110,9 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro-comp"
 name = "Resident Pro (Complimentary)"
+levelName = "Pro"
 display = "on-pass"
+hidden = true
 allocation = "on-email-match"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
@@ -110,7 +121,9 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
+levelName = "Pro"
 display = "always"
+hidden = false
 allocation = "on-subscription"
 # on-email-match
 # ==============
@@ -127,6 +140,10 @@ id = "bundle"
 name = "View and edit your bundles"
 display = "never"
 bundles = ["default"]
+metered = false
+# metered
+# =======
+# If false, this activity does not appear in the user's activity list and does not consume tokens
 paths = ["bundles.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 
 [[activities]]
@@ -138,6 +155,12 @@ tokens = 1
 # tokens
 # ======
 # Number of Activity API tokens consumed by this activity when completed
+metered = true
+# metered
+# =======
+# If true, this activity appears in the user's activity list and consumes tokens
+# and the activity buttons show te token cost
+# and if the token balance is insufficient (or zero) the activity is disabled similar to entitlement disabling
 paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -145,7 +168,11 @@ id = "vat-obligations-sandbox"
 name = "VAT Obligations (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 1
+tokens = 0
+metered = true
+# metered
+# =======
+# In this case the cost is zero but the activity is metered so when there are 0 avilable tokens the activty is disabled
 paths = ["hmrc/vat/vatObligations.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -153,7 +180,8 @@ id = "view-vat-return-sandbox"
 name = "View VAT Return (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 1
+tokens = 0
+metered = true
 paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -164,6 +192,7 @@ display = "always-with-upsell"
 # shows upsell prompt if not entitled
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokens = 1
+metered = true
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -171,7 +200,8 @@ id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 1
+tokens = 0
+metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -179,7 +209,8 @@ id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 1
+tokens = 0
+metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -187,6 +218,7 @@ id = "my-receipts"
 name = "View previously submitted receipts"
 display = "on-entitlement"
 bundles = ["default"]
+metered = false
 paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]
 
 [[activities]]
@@ -194,6 +226,7 @@ id = "help"
 name = "Learn about DIY Accounting Submit"
 display = "always"
 bundles = ["default"]
+metered = false
 paths = ["about.html"]
 
 # Passes:

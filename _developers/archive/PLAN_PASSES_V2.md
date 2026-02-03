@@ -210,7 +210,7 @@ Fields:
 | `resident-guest` | resident-guest | 3/mo | Yes | 1 | unlimited | Admin |
 | `resident-pro-comp` | resident-pro | 100/mo | Yes | 1 | P1Y | Admin |
 | `group-invite` | invited-guest | 3/mo | No | 10 | P1M | Admin |
-| `campaign` | invited-guest | 3/mo | No | 1 | P3D | Users (costs 10 tokens) |
+| `campaign` | invited-guest | 3/mo | No | 1 | P3D | Users (costs 3 tokens) |
 
 ## Pass Formats
 
@@ -974,7 +974,7 @@ Note: Plan mentions separate `passErrors.spec.js` — the error cases (exhausted
 | Item | Status | Notes |
 |------|--------|-------|
 | CloudWatch alarm for BundleCapReached | Done | ObservabilityStack.java — alarm on `Submit/BundleCapacity` / `BundleCapReached` metric |
-| Update about.html with passes/tokens info | Done | Free Guest Tier section updated with Day Guest, 10 tokens, pass codes |
+| Update about.html with passes/tokens info | Done | Free Guest Tier section updated with Day Guest, 3 tokens, pass codes |
 | Bundle capacity UI (bundleCapacityAvailable) | Done | bundles.html disables button with "Global user limit reached" when `bundleCapacityAvailable === false` |
 | Token exhaustion link to bundles page | Done | submitVat.html shows "View Bundles" link on `tokens_exhausted` 403 |
 | Pass redemption failure alarms | Not done | Spike detection for exhausted/expired/wrong_email reasons |

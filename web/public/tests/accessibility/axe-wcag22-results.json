@@ -5406,7 +5406,7 @@
             "all": [],
             "none": [],
             "impact": null,
-            "html": "<p>\n              Request a Day Guest bundle for free access with 10 tokens, valid for 24 hours. Each VAT submission uses 1 token. Invited\n              guests receive a pass code granting longer access. Visit the <a href=\"bundles.html\">Bundles</a> page to manage your access.\n            </p>",
+            "html": "<p>\n              Request a Day Guest bundle for free access with 3 tokens, valid for 24 hours. Each VAT submission uses 1 token. Invited\n              guests receive a pass code granting longer access. Visit the <a href=\"bundles.html\">Bundles</a> page to manage your access.\n            </p>",
             "target": [
               ".benefit-item:nth-child(1) > p"
             ]
@@ -5958,7 +5958,7 @@
                 "data": null,
                 "relatedNodes": [
                   {
-                    "html": "<p>\n              Request a Day Guest bundle for free access with 10 tokens, valid for 24 hours. Each VAT submission uses 1 token. Invited\n              guests receive a pass code granting longer access. Visit the <a href=\"bundles.html\">Bundles</a> page to manage your access.\n            </p>",
+                    "html": "<p>\n              Request a Day Guest bundle for free access with 3 tokens, valid for 24 hours. Each VAT submission uses 1 token. Invited\n              guests receive a pass code granting longer access. Visit the <a href=\"bundles.html\">Bundles</a> page to manage your access.\n            </p>",
                     "target": [
                       ".benefit-item:nth-child(1) > p"
                     ]
