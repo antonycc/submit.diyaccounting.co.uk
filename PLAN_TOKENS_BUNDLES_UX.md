@@ -564,7 +564,13 @@ Push to feature branch → `deploy.yml` deploys to CI → CI tests pass.
 
 Activity buttons show token costs and use distinct level names. Logout properly invalidates the Cognito session. Stale refresh tokens are cleared on failure.
 
-**Completed**: All 707 unit/system tests pass (1 new test added). Awaiting commit.
+**Completed**: commit `dacb0b64` on branch `cleanup`. All 707 unit/system tests pass (1 new test added).
+
+**Compliance verification** (run against CI after Phase 1 deployment `bd602827`):
+- ESLint security: 0 errors (7 pre-existing warnings)
+- Pa11y: 26/26 URLs passed, 0 errors
+- axe WCAG 2.2: 25/25 pages tested, 0 violations
+- Compliance behaviour tests: 1/1 passed
 
 Changes implemented:
 - `auth-status.js`: Replaced commented-out Cognito logout with working redirect via `window.__env`
