@@ -21,25 +21,25 @@ const { consumeTokenForActivity } = await import("../../services/tokenEnforcemen
 
 const baseCatalog = {
   bundles: [
-    { id: "day-guest", tokens: 3 },
-    { id: "test", tokens: 3 },
+    { id: "day-guest", tokensGranted: 3 },
+    { id: "test", tokensGranted: 3 },
   ],
   activities: [
     {
       id: "submit-vat",
-      tokens: 1,
+      tokenCost: 1,
       bundles: ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"],
       paths: ["^/api/v1/hmrc/vat.*"],
     },
     {
       id: "submit-vat-sandbox",
-      tokens: 1,
+      tokenCost: 1,
       bundles: ["test"],
       paths: ["^/api/v1/hmrc/vat.*"],
     },
     {
       id: "vat-obligations",
-      tokens: 0,
+      tokenCost: 0,
       bundles: ["day-guest"],
       paths: ["^/api/v1/hmrc/vat.*"],
     },
@@ -98,7 +98,7 @@ describe("tokenEnforcement", () => {
       expect(consumeToken).not.toHaveBeenCalled();
     });
 
-    it("should treat activity with tokens=0 as free", async () => {
+    it("should treat activity with tokenCost=0 as free", async () => {
       const result = await consumeTokenForActivity("user-1", "vat-obligations", baseCatalog);
 
       expect(result.consumed).toBe(true);
@@ -106,7 +106,7 @@ describe("tokenEnforcement", () => {
       expect(getUserBundles).not.toHaveBeenCalled();
     });
 
-    it("should treat activity without tokens field as free", async () => {
+    it("should treat activity without tokenCost field as free", async () => {
       const result = await consumeTokenForActivity("user-1", "free-activity", baseCatalog);
 
       expect(result.consumed).toBe(true);

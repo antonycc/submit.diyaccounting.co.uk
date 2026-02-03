@@ -56,16 +56,16 @@ afterAll(async () => {
 });
 
 const catalog = {
-  bundles: [{ id: "day-guest", tokens: 3 }],
+  bundles: [{ id: "day-guest", tokensGranted: 3 }],
   activities: [
     {
       id: "submit-vat",
-      tokens: 1,
+      tokenCost: 1,
       bundles: ["day-guest", "invited-guest"],
     },
     {
       id: "vat-obligations",
-      tokens: 0,
+      tokenCost: 0,
       bundles: ["day-guest"],
     },
   ],

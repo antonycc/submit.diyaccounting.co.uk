@@ -27,7 +27,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
     return { consumed: true, cost: 0 };
   }
 
-  const tokenCost = activity.tokens || 0;
+  const tokenCost = activity.tokenCost || 0;
   if (tokenCost === 0) {
     logger.info({ message: "Activity is free (no token cost)", activityId });
     return { consumed: true, cost: 0 };

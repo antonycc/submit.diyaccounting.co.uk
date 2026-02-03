@@ -412,7 +412,7 @@
           const cards = (catalog.bundles || [])
             .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
             // Hide on-pass bundles from the requestable list (they require an invitation pass)
-            .filter((b) => b["display"] !== "on-pass")
+            .filter((b) => b["enable"] !== "on-pass")
             // If the bundle specifies listedInEnvironments, only list it when current env is included
             .filter((b) => {
               const listed = b?.listedInEnvironments;

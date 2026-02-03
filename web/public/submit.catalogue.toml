@@ -3,7 +3,7 @@ version = "1.1.0"
 [[bundles]]
 id = "default"
 name = "Default"
-display = "never"
+enable = "never"
 allocation = "automatic"
 
 # Access to Sandbox APIs for testing
@@ -11,7 +11,7 @@ allocation = "automatic"
 id = "test"
 name = "Test"
 levelName = "Test"
-display = "on-pass"
+enable = "on-pass"
 # on-pass
 # =======
 # Disable until a pass has been accecpted, once we have implemented pass generation and acceptance via a form.
@@ -21,14 +21,14 @@ hidden = true
 # Hide this bundle from the bundles page until allocated are implemented
 allocation = "on-request"
 timeout = "P1D"
-tokens = 10
+tokensGranted = 10
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
 id = "day-guest"
 name = "Day Guest"
 levelName = "Guest"
-display = "always"
+enable = "always"
 hidden = false
 # hidden
 # ======
@@ -50,9 +50,9 @@ listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC
-tokens = 3
-# tokens
-# ======
+tokensGranted = 3
+# tokensGranted
+# =============
 # Number of HMRC API tokens allocated with this bundle
 # The tokens are credited to the user and expire after the period matching the timeout
 # Activities such as submitting VAT returns consume 1 token
@@ -75,7 +75,7 @@ tokens = 3
 id = "invited-guest"
 name = "Invited Guest"
 levelName = "Guest"
-display = "on-pass"
+enable = "on-pass"
 hidden = true
 allocation = "on-email-match"
 # on-email-match
@@ -97,7 +97,7 @@ tokenRefreshInterval = "P1M"
 id = "resident-guest"
 name = "Resident Guest"
 levelName = "Guest"
-display = "on-pass"
+enable = "on-pass"
 hidden = true
 allocation = "on-email-match"
 # on-email-match
@@ -111,7 +111,7 @@ tokenRefreshInterval = "P1M"
 id = "resident-pro-comp"
 name = "Resident Pro (Complimentary)"
 levelName = "Pro"
-display = "on-pass"
+enable = "on-pass"
 hidden = true
 allocation = "on-email-match"
 tokensGranted = 100
@@ -122,7 +122,7 @@ tokenRefreshInterval = "P1M"
 id = "resident-pro"
 name = "Resident Pro"
 levelName = "Pro"
-display = "always"
+enable = "always"
 hidden = false
 allocation = "on-subscription"
 # on-email-match
@@ -151,15 +151,15 @@ id = "submit-vat-sandbox"
 name = "Submit VAT (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 1
-# tokens
-# ======
+tokenCost = 1
+# tokenCost
+# =========
 # Number of Activity API tokens consumed by this activity when completed
 metered = true
 # metered
 # =======
 # If true, this activity appears in the user's activity list and consumes tokens
-# and the activity buttons show te token cost
+# and the activity buttons show the token cost
 # and if the token balance is insufficient (or zero) the activity is disabled similar to entitlement disabling
 paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
@@ -168,7 +168,7 @@ id = "vat-obligations-sandbox"
 name = "VAT Obligations (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 0
+tokenCost = 0
 metered = true
 # metered
 # =======
@@ -180,7 +180,7 @@ id = "view-vat-return-sandbox"
 name = "View VAT Return (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 0
+tokenCost = 0
 metered = true
 paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
@@ -191,7 +191,7 @@ display = "always-with-upsell"
 # display: always-with-upsell
 # shows upsell prompt if not entitled
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 1
+tokenCost = 1
 metered = true
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 
@@ -200,7 +200,7 @@ id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 0
+tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 
@@ -209,7 +209,7 @@ id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 0
+tokenCost = 0
 metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 
