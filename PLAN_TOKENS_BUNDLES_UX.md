@@ -494,9 +494,13 @@ These tests don't interact with the changed pages/flows and need no changes:
 
 ## Phased Delivery
 
-### Phase 1: Naming Standardisation (Tasks 3, 4)
+### Phase 1: Naming Standardisation (Tasks 3, 4) — COMPLETED
 
 Foundation rename that all subsequent phases depend on.
+
+**Completed**: commit `bd602827` on branch `cleanup`. All 706 unit/system tests pass.
+
+Additional change not in original plan: `app/functions/account/bundleGet.js:172` also had `?? catBundle.tokens` fallback — removed.
 
 #### Changes
 
@@ -556,9 +560,18 @@ Push to feature branch → `deploy.yml` deploys to CI → CI tests pass.
 
 ---
 
-### Phase 2: Home Page UX & Logout Fix (Tasks 1, 2, 5)
+### Phase 2: Home Page UX & Logout Fix (Tasks 1, 2, 5) — COMPLETED
 
 Activity buttons show token costs and use distinct level names. Logout properly invalidates the Cognito session. Stale refresh tokens are cleared on failure.
+
+**Completed**: All 707 unit/system tests pass (1 new test added). Awaiting commit.
+
+Changes implemented:
+- `auth-status.js`: Replaced commented-out Cognito logout with working redirect via `window.__env`
+- `auth-service.js`: `ensureSession()` now clears `cognitoRefreshToken` from localStorage on refresh failure
+- `index.html`: Activity buttons show `(N token/tokens)` for metered activities; disabled with annotation when insufficient tokens or no tokens available; upsell uses distinct `levelName` (e.g. "Guest or Pro") instead of listing all bundle names
+- `token-refresh.test.js`: New test verifying refresh failure clears stale refresh token
+- Behaviour tests unaffected: Playwright `:has-text()` uses substring matching, so added token text doesn't break existing selectors
 
 #### Changes
 

@@ -106,6 +106,8 @@
     <script>
       // In-memory user bundles state (list of bundleId strings)
       let __userBundles = [];
+      let __tokensRemaining = 0;
+      let __hasTokenBundles = false;
       let __fetchBundlesController = null;
 
       async function initializeBundles() {
@@ -139,8 +141,12 @@
 
             if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
               __userBundles = bundlesData.bundles.filter((b) => b.allocated).map((b) => b.bundleId);
+              __tokensRemaining = typeof bundlesData.tokensRemaining === "number" ? bundlesData.tokensRemaining : 0;
+              __hasTokenBundles = bundlesData.bundles.some((b) => b.allocated && b.tokensGranted !== undefined);
             } else {
               __userBundles = [];
+              __tokensRemaining = 0;
+              __hasTokenBundles = false;
             }
           } catch (err) {
             if (err.name === "AbortError") {
@@ -307,10 +313,10 @@
           const activeBundles = getActiveBundles(catalog, userBundles);
           const expiredBundles = getExpiredBundles(userBundles);
 
-          // Build a map of bundle id -> bundle name for upsell display
-          const bundleNameMap = {};
+          // Build a map of bundle id -> levelName for upsell display (distinct levels)
+          const bundleLevelNameMap = {};
           for (const bundle of catalog.bundles || []) {
-            bundleNameMap[bundle.id] = bundle.name || bundle.id;
+            bundleLevelNameMap[bundle.id] = bundle.levelName || bundle.name || bundle.id;
           }
 
           const buttons = [];
@@ -336,13 +342,45 @@
 
             if (hasNonExpiredAccess || displayRule === "always") {
               // User has access OR display="always" - show active button
-              buttons.push(`
-                <div style="margin: 1em 0">
-                  <button type="button" class="btn" onclick="window.location.href='${path}'">
-                    ${activity.name}
-                  </button>
-                </div>
-              `);
+              const tokenCost = activity.tokenCost || 0;
+              const isMetered = activity.metered === true;
+              const tokenLabel = isMetered ? ` (${tokenCost} token${tokenCost !== 1 ? "s" : ""})` : "";
+
+              // Check if user has insufficient tokens for metered activities
+              const insufficientTokens = isMetered && __hasTokenBundles && tokenCost > 0 && __tokensRemaining < tokenCost;
+              const noTokensForMetered = isMetered && __hasTokenBundles && tokenCost === 0 && __tokensRemaining === 0;
+
+              if (insufficientTokens) {
+                buttons.push(`
+                  <div style="margin: 1em 0">
+                    <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
+                      ${activity.name}${tokenLabel}
+                    </button>
+                    <p style="font-size: 0.85em; color: #856404; margin: 0.25em 0 0 0;">
+                      Insufficient tokens
+                    </p>
+                  </div>
+                `);
+              } else if (noTokensForMetered) {
+                buttons.push(`
+                  <div style="margin: 1em 0">
+                    <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
+                      ${activity.name}${tokenLabel}
+                    </button>
+                    <p style="font-size: 0.85em; color: #856404; margin: 0.25em 0 0 0;">
+                      No tokens available
+                    </p>
+                  </div>
+                `);
+              } else {
+                buttons.push(`
+                  <div style="margin: 1em 0">
+                    <button type="button" class="btn" onclick="window.location.href='${path}'">
+                      ${activity.name}${tokenLabel}
+                    </button>
+                  </div>
+                `);
+              }
             } else if (hasExpiredAccess) {
               // User had access but it expired - show disabled button
               buttons.push(`
@@ -355,10 +393,12 @@
             } else if (displayRule === "always-with-upsell") {
               // User doesn't have access - show activity with upsell annotation
               const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
-              const requiredBundleNames = activity.bundles
-                .filter((id) => id !== "default") // Don't show "default" bundle in requirements
-                .map((id) => bundleNameMap[id] || id)
-                .join(" or ");
+              const distinctLevelNames = [...new Set(
+                activity.bundles
+                  .filter((id) => id !== "default")
+                  .map((id) => bundleLevelNameMap[id] || id)
+              )];
+              const requiredBundleNames = distinctLevelNames.join(" or ");
 
               if (isLoggedIn) {
                 // Logged in but missing bundle - link to bundles page
