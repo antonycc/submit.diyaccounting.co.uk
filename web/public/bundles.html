@@ -168,6 +168,8 @@
       let __userBundles = [];
       let __fullBundleData = []; // Full bundle objects from API (with token info, allocated flag, etc.)
       let __fetchBundlesController = null;
+      let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
+      let __currentEnv = null; // Current environment name
 
       const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
 
@@ -236,7 +238,9 @@
         });
 
       const markToRequest = (btn, message = "Request bundle") => {
-        btn.textContent = message;
+        const tg = btn.getAttribute("data-tokens-granted");
+        const tokenLabel = tg ? ` (${tg} token${tg !== "1" ? "s" : ""})` : "";
+        btn.textContent = message + tokenLabel;
         btn.disabled = false;
         btn.style.backgroundColor = "#2c5aa0";
       };
@@ -311,36 +315,110 @@
 
       // --- render one catalog card
       const cardHtml = (b) => {
-        // Ensure we always work with strings and avoid using String.replaceAll for broader compatibility
         const rawName = (b && (b.name || b.id)) || "";
         const safeName = String(rawName).replace(/\"/g, "&quot;");
+        const tg = b.tokensGranted;
+        const tgAttr = tg !== undefined ? ` data-tokens-granted="${tg}"` : "";
+        const tokenLabel = tg !== undefined ? ` (${tg} token${tg !== 1 ? "s" : ""})` : "";
+        const enable = b.enable || "never";
+
         // Check capacity availability from API response (for bundles with a cap)
         const fullEntry = __fullBundleData.find((fb) => fb.bundleId === b.id);
         const capacityAvailable = fullEntry?.bundleCapacityAvailable !== false;
+
+        // Check if pass validation enables this bundle
+        let passCode = null;
+        try {
+          const pv = sessionStorage.getItem("passValidation");
+          if (pv) {
+            const parsed = JSON.parse(pv);
+            if (parsed.bundleId === b.id && parsed.valid) passCode = parsed.code;
+          }
+        } catch {}
+
+        // on-pass without valid pass: disabled with annotation
+        if (enable === "on-pass" && !passCode) {
+          return `
+          <div class="service-item" style="text-align:left">
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-requires-pass="true" data-disabled-reason="on-pass" disabled
+              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
+            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Requires a pass invitation</p>
+          </div>`;
+        }
+
+        // on-subscription: disabled with annotation
+        if (enable === "on-subscription") {
+          return `
+          <div class="service-item" style="text-align:left">
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="on-subscription" disabled
+              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
+            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Subscription required</p>
+          </div>`;
+        }
+
+        // Capacity full: disabled
         if (!capacityAvailable) {
           return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" disabled
-              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="capacity" disabled
+              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
             <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Global user limit reached, please try again tomorrow.</p>
           </div>`;
         }
+
+        // on-pass with valid pass: enabled, pass code attached
+        if (enable === "on-pass" && passCode) {
+          const safeCode = String(passCode).replace(/\"/g, "&quot;");
+          const isLoggedIn = !!getIdToken();
+          if (!isLoggedIn) {
+            return `
+            <div class="service-item" style="text-align:left">
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-pass-code="${safeCode}" disabled
+                style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
+              <p style="font-size:0.85em; color:#0c5460; margin:0.5em 0 0;">Log in to add this bundle</p>
+            </div>`;
+          }
+          return `
+          <div class="service-item" style="text-align:left">
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-pass-code="${safeCode}">Request ${rawName}${tokenLabel}</button>
+          </div>`;
+        }
+
+        // enable = "always": normal enabled button
         return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}">Request ${rawName}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr}>Request ${rawName}${tokenLabel}</button>
           </div>`;
       };
 
       // --- click handler for all request buttons
       document.addEventListener("click", async (e) => {
         const btn = e.target.closest("button[data-bundle-id]");
-        if (!btn) return;
+        if (!btn || btn.disabled) return;
 
         const bundleId = btn.getAttribute("data-bundle-id");
         const bundleName = btn.getAttribute("data-bundle-name") || bundleId;
-        const card = btn.closest(".service-item");
         const original = btn.textContent;
 
+        // Pass-enabled bundle: redeem the pass to grant the bundle
+        const passCode = btn.getAttribute("data-pass-code");
+        if (passCode) {
+          btn.textContent = "Redeeming...";
+          btn.disabled = true;
+          const success = await redeemPassCode(passCode);
+          if (success) {
+            markGranted(btn, `Added ✓ ${bundleName}`);
+            // Clear pass validation after successful redemption
+            try { sessionStorage.removeItem("passValidation"); } catch {}
+          } else {
+            btn.textContent = original;
+            btn.disabled = false;
+          }
+          return;
+        }
+
+        // Normal bundle request
+        const card = btn.closest(".service-item");
         const qualifiers = {};
         const tx = card?.querySelector('input[name="transactionId"]');
         if (tx?.value) qualifiers.transactionId = tx.value;
@@ -367,63 +445,69 @@
           const name = btn.getAttribute("data-bundle-name") || id;
           if (hasBundle(bundles, id)) {
             markGranted(btn, `Added ✓ ${name}`);
-          } else {
+          } else if (!btn.hasAttribute("data-disabled-reason")) {
+            // Re-enable buttons that are not structurally disabled (on-pass/on-subscription/capacity)
             markToRequest(btn, `Request ${name}`);
           }
         });
+      }
+
+      // --- render catalogue bundles (reusable, reads from __catalogueData)
+      function renderCatalogueBundles() {
+        const container = document.getElementById("catalogBundles");
+        if (!__catalogueData || !__catalogueData.bundles) {
+          container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
+          return;
+        }
+        const cards = (__catalogueData.bundles || [])
+          .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
+          .filter((b) => b["enable"] !== "never")
+          .filter((b) => {
+            const listed = b?.listedInEnvironments;
+            if (!Array.isArray(listed) || listed.length === 0) return true;
+            if (!__currentEnv) return false;
+            return listed.includes(__currentEnv);
+          })
+          .map(cardHtml)
+          .join("\n");
+        container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
+        updateBundleStatus();
+      }
+
+      // Read current environment from submit.environment-name.txt
+      async function readEnvironment() {
+        try {
+          const envRes = await fetch("submit.environment-name.txt", { cache: "no-store" });
+          if (envRes.ok) {
+            const text = (await envRes.text()).trim();
+            return text || null;
+          }
+        } catch {}
+        return null;
       }
 
       // --- bootstrap: fetch catalog and render
       (async function () {
         const container = document.getElementById("catalogBundles");
         try {
-          // Fetch user bundles first
           await fetchUserBundles();
-          // Ensure current bundles (with remove actions) are rendered immediately on page load
-          try {
-            renderCurrentBundles();
-          } catch {}
+          try { renderCurrentBundles(); } catch {}
 
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
-          const catalog = await fetchAndParse("/submit.catalogue.toml", {
+          __catalogueData = await fetchAndParse("/submit.catalogue.toml", {
             ttlMs: 300000,
             init: headers ? { headers } : undefined,
           });
-          if (!catalog || !catalog.bundles) {
+          if (!__catalogueData || !__catalogueData.bundles) {
             container.innerHTML = '<p class="service-description">Catalog unavailable.</p>';
             return;
           }
 
-          // Read current environment from submit.environment-name.txt in docroot (next to index.html)
-          async function readEnvironment() {
-            try {
-              const envRes = await fetch("submit.environment-name.txt", { cache: "no-store" });
-              if (envRes.ok) {
-                const text = (await envRes.text()).trim();
-                return text || null;
-              }
-            } catch {}
-            return null; // Unknown environment
-          }
-
-          const env = await readEnvironment();
-
-          const cards = (catalog.bundles || [])
-            .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
-            // Hide on-pass bundles from the requestable list (they require an invitation pass)
-            .filter((b) => b["enable"] !== "on-pass")
-            // If the bundle specifies listedInEnvironments, only list it when current env is included
-            .filter((b) => {
-              const listed = b?.listedInEnvironments;
-              if (!Array.isArray(listed) || listed.length === 0) return true; // visible everywhere by default
-              if (!env) return false; // if environment unknown, hide bundles that specify restrictions
-              return listed.includes(env);
-            })
-            .map(cardHtml)
-            .join("\n");
-          container.innerHTML = cards || '<p class="service-description">No bundles available.</p>';
-          updateBundleStatus();
+          __currentEnv = await readEnvironment();
+          renderCatalogueBundles();
+          // Re-render current bundles now that catalogue names are available
+          try { renderCurrentBundles(); } catch {}
         } catch (err) {
           try {
             console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
@@ -441,15 +525,23 @@
           .map((bundleEntry) => {
             const bundleId = typeof bundleEntry === "string" ? bundleEntry : bundleEntry.bundleId;
 
+            // Look up display name from catalogue
+            const catBundle = __catalogueData?.bundles?.find((cb) => cb.id === bundleId);
+            const displayName = catBundle?.name || bundleId;
+
             // Look up full bundle data for token info
             const fullData = __fullBundleData.find((b) => b.bundleId === bundleId && b.allocated);
             const tokensRemaining = fullData?.tokensRemaining;
+            const tokensGranted = fullData?.tokensGranted ?? catBundle?.tokensGranted;
             const tokenResetAt = fullData?.tokenResetAt;
 
             // Build info fragments
             const fragments = [];
+            if (tokensGranted !== undefined) {
+              fragments.push(`${tokensGranted} token${tokensGranted !== 1 ? "s" : ""} allocated`);
+            }
             if (tokensRemaining !== undefined) {
-              fragments.push(`${tokensRemaining} token${tokensRemaining !== 1 ? "s" : ""} remaining`);
+              fragments.push(`${tokensRemaining} remaining`);
             }
             if (tokenResetAt) {
               const resetDate = new Date(tokenResetAt);
@@ -471,7 +563,7 @@
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
               <span style="display:flex; align-items:center; gap:0.75em">
-                <span>${bundleId}</span>
+                <span>${displayName}</span>
                 <button type="button" class="btn" data-remove-bundle-id="${bundleId}"
                   style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.15em 0.5em; min-width: unset; width:auto; display:inline-flex; align-items:center;">
                     Remove
@@ -647,6 +739,61 @@
         }
       }
 
+      // --- validate pass code (GET, public, no auth needed)
+      async function validatePassCode(code) {
+        try {
+          const response = await fetch(`/api/v1/pass?code=${encodeURIComponent(code)}`);
+          return await response.json();
+        } catch (err) {
+          return { valid: false, reason: "network_error" };
+        }
+      }
+
+      // --- handle pass entry: validate first, then enable bundle or auto-redeem
+      async function handlePassEntry(code) {
+        const btn = document.getElementById("redeemPassBtn");
+        if (btn) { btn.textContent = "Checking..."; btn.disabled = true; }
+
+        try {
+          const result = await validatePassCode(code);
+
+          if (!result.valid) {
+            const msg = passReasonMessages[result.reason] || `Pass not valid: ${result.reason || "unknown"}`;
+            showPassStatus(msg, "error");
+            return;
+          }
+
+          // Pass is valid — store validation in sessionStorage
+          const bundleId = result.bundleId;
+          try {
+            sessionStorage.setItem("passValidation", JSON.stringify({ code, bundleId, valid: true }));
+          } catch {}
+
+          const isLoggedIn = !!getIdToken();
+
+          // Look up bundle name from catalogue
+          const catBundle = __catalogueData?.bundles?.find((cb) => cb.id === bundleId);
+          const bundleName = catBundle?.name || bundleId;
+
+          if (isLoggedIn) {
+            showPassStatus(`Pass valid! Click "Request ${bundleName}" to add the bundle.`, "success");
+          } else {
+            try {
+              sessionStorage.setItem("pendingPass", code);
+              sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
+            } catch {}
+            showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
+          }
+
+          // Re-render catalogue to enable the pass-unlocked bundle
+          renderCatalogueBundles();
+        } catch (err) {
+          showPassStatus(`Failed to check pass: ${err?.message || err}`, "error");
+        } finally {
+          if (btn) { btn.textContent = "Redeem Pass"; btn.disabled = false; }
+        }
+      }
+
       // Pass form click handler
       document.getElementById("redeemPassBtn")?.addEventListener("click", async () => {
         const input = document.getElementById("passInput");
@@ -655,7 +802,7 @@
           showPassStatus("Please enter a passphrase.", "error");
           return;
         }
-        await redeemPassCode(code);
+        await handlePassEntry(code);
       });
 
       // Allow Enter key to submit
@@ -686,15 +833,13 @@
         if (passFromUrl) {
           const input = document.getElementById("passInput");
           if (input) input.value = passFromUrl;
-          // Auto-submit if authenticated
-          if (getIdToken()) {
+          // Check for pending pass returning from login — auto-redeem directly
+          const pendingPass = sessionStorage.getItem("pendingPass");
+          if (pendingPass && getIdToken() && pendingPass === passFromUrl) {
             redeemPassCode(passFromUrl.trim().toLowerCase());
           } else {
-            try {
-              sessionStorage.setItem("pendingPass", passFromUrl);
-              sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(passFromUrl));
-            } catch {}
-            showPassStatus("Please log in to redeem your pass.", "info");
+            // New pass entry — validate first
+            handlePassEntry(passFromUrl.trim().toLowerCase());
           }
         } else {
           // Check for pending pass from previous session (saved before login redirect)

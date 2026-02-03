@@ -196,6 +196,7 @@
     sessionStorage.removeItem("mfaMetadata");
     sessionStorage.removeItem("pendingPass");
     sessionStorage.removeItem("postLoginRedirect");
+    sessionStorage.removeItem("passValidation");
 
     // Update login status
     updateLoginStatus();

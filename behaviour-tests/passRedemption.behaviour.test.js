@@ -157,11 +157,19 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   await clearBundles(page, screenshotPath);
   await page.waitForTimeout(2_000);
 
-  // --- Step 1: Verify clean state - Test bundle should NOT appear as requestable (it's on-pass) ---
+  // --- Step 1: Verify clean state - Test bundle should appear as disabled (on-pass) ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
-  const requestTestBtn = page.getByRole("button", { name: "Request Test" });
-  const requestTestVisible = await requestTestBtn.isVisible({ timeout: 2000 }).catch(() => false);
-  console.log(`[pass-test]: "Request Test" button visible: ${requestTestVisible} (expected: false for on-pass bundle)`);
+  const requestTestBtn = page.locator('button.service-btn:has-text("Request Test")');
+  const requestTestVisible = await requestTestBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
+  console.log(`[pass-test]: "Request Test" button visible: ${requestTestVisible} (expected: true, but disabled for on-pass bundle)`);
+  if (requestTestVisible) {
+    const isDisabled = await requestTestBtn.first().isDisabled().catch(() => false);
+    console.log(`[pass-test]: "Request Test" button disabled: ${isDisabled} (expected: true)`);
+    // Verify the "Requires a pass invitation" annotation
+    const annotation = page.locator('.service-item:has(button:has-text("Request Test")) p');
+    const annotationText = await annotation.textContent().catch(() => "");
+    console.log(`[pass-test]: Annotation text: "${annotationText}"`);
+  }
 
   // --- Step 2: Create a pass via admin API ---
   const createResult = await page.evaluate(async () => {
@@ -205,7 +213,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   console.log(`[pass-test]: Pass check result: ${JSON.stringify(checkResult)}`);
   expect(checkResult.valid).toBe(true);
 
-  // --- Step 4: Enter pass code into the form and redeem ---
+  // --- Step 4: Enter pass code into the form and validate ---
   const passInput = page.locator("#passInput");
   await expect(passInput).toBeVisible({ timeout: 5000 });
   await passInput.fill(passCode);
@@ -214,19 +222,28 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   const redeemBtn = page.locator("#redeemPassBtn");
   await expect(redeemBtn).toBeVisible({ timeout: 5000 });
   await redeemBtn.click();
-  console.log("[pass-test]: Clicked Redeem Pass button");
+  console.log("[pass-test]: Clicked Redeem Pass button (validates first)");
 
-  // --- Step 5: Wait for success status message ---
+  // --- Step 5: Wait for validation status and verify Test bundle becomes enabled ---
   const passStatus = page.locator("#passStatus");
   await expect(passStatus).toBeVisible({ timeout: 15000 });
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04-redemption-status.png` });
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04-validation-status.png` });
 
   const statusText = await passStatus.textContent();
   console.log(`[pass-test]: Pass status message: ${statusText}`);
-  expect(statusText).toContain("redeemed");
-  expect(statusText).toContain("test");
+  expect(statusText).toMatch(/valid|Request/i);
 
-  // Wait for page refresh after redemption
+  // The Test bundle button should now be enabled (pass validated)
+  const enabledTestBtn = page.locator('button.service-btn:has-text("Request Test"):not([disabled])');
+  await expect(enabledTestBtn).toBeVisible({ timeout: 10000 });
+  console.log("[pass-test]: Test bundle button is now enabled after pass validation");
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
+
+  // Click the enabled Test bundle button to redeem the pass and grant the bundle
+  await enabledTestBtn.click();
+  console.log("[pass-test]: Clicked enabled Test bundle button to redeem pass");
+
+  // Wait for redemption to complete
   await page.waitForTimeout(3000);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
 

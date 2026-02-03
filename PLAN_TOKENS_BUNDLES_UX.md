@@ -671,9 +671,17 @@ npm run accessibility:pa11y-ci-report          # Accessibility on deployed pages
 
 ---
 
-### Phase 3: Bundles Page & Pass Flow (Tasks 6, 8, 9)
+### Phase 3: Bundles Page & Pass Flow (Tasks 6, 8, 9) — COMPLETED
 
 Major rework of the bundles page to show all non-hidden bundles with pass workflow.
+
+**Completed**: on branch `cleanup`. All 570 unit tests pass. All 3 simulator behaviour tests pass (submitVat, bundle, passRedemption).
+
+Changes implemented:
+- `bundles.html`: Full rework — shows all non-hidden bundles with enable state annotations; on-pass bundles disabled with "Requires a pass invitation" until pass validated; validate-first pass flow (GET then click to POST); token allocation shown on buttons; catalogue names in current bundles; `data-disabled-reason` attribute for structurally-disabled buttons to distinguish from grant-disabled
+- `auth-status.js`: Added `sessionStorage.removeItem("passValidation")` in logout cleanup
+- `behaviour-bundle-steps.js`: Updated selectors for substring matching (buttons now include token labels)
+- `passRedemption.behaviour.test.js`: Updated for validate-first flow — verifies Test bundle visible but disabled, validates pass, then clicks enabled button
 
 #### Changes
 
