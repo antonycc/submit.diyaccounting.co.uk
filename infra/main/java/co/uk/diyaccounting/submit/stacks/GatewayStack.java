@@ -87,7 +87,7 @@ public class GatewayStack extends Stack {
         @Override
         @Value.Default
         default Boolean getCrossRegionReferences() {
-            return null;
+            return false;
         }
 
         String envName();
