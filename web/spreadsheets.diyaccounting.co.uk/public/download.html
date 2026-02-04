@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Download - DIY Accounting Spreadsheets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Download DIY Accounting Excel spreadsheets. Select your product, accounting period, and Excel format."
+    />
+    <link rel="stylesheet" href="spreadsheets.css" />
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+    <header>
+      <h1>DIY Accounting Spreadsheets</h1>
+      <p class="subtitle">Excel bookkeeping and accounting software for UK small businesses</p>
+    </header>
+
+    <main id="mainContent">
+      <nav class="nav-back" aria-label="Breadcrumb">
+        <a href="index.html">&larr; Back to products</a>
+      </nav>
+
+      <div class="download-section">
+        <h2 id="product-title">Download</h2>
+        <p id="product-description">Select your accounting period and Excel format below.</p>
+
+        <div class="download-form">
+          <div class="form-group">
+            <label for="product-select">Product</label>
+            <select id="product-select">
+              <option value="BasicSoleTrader">Basic Sole Trader</option>
+              <option value="SelfEmployed">Self Employed</option>
+              <option value="Company">Company Accounts</option>
+              <option value="TaxiDriver">Taxi Driver (Cabsmart)</option>
+              <option value="Payslip05">Payslips (5 employees)</option>
+              <option value="Payslip10">Payslips (10 employees)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="period-select">Accounting period (year-end)</label>
+            <select id="period-select">
+              <option value="2026-04-05">April 2026</option>
+              <option value="2025-04-05">April 2025</option>
+              <option value="2024-04-05">April 2024</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="format-select">Excel format</label>
+            <select id="format-select">
+              <option value="Excel 2007">Excel 2007 (.xlsx)</option>
+              <option value="Excel 2003">Excel 2003 (.xls)</option>
+            </select>
+          </div>
+
+          <div class="download-actions">
+            <a href="donate.html" id="download-donate-btn" class="btn-download btn-primary">
+              Download with optional donation
+            </a>
+            <a href="#" id="download-direct-btn" class="btn-download btn-secondary">
+              Download without donating
+            </a>
+          </div>
+        </div>
+
+        <div class="license-notice">
+          <p>
+            DIY Accounting spreadsheets are released under the
+            <a href="https://www.mozilla.org/en-US/MPL/2.0/" target="_blank" rel="noopener">Mozilla Public License 2.0</a>.
+            Source files are available on
+            <a href="https://github.com/antonycc/diy-accounting" target="_blank" rel="noopener">GitHub</a>.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="https://diyaccounting.co.uk">diyaccounting.co.uk</a>
+          <a href="https://submit.diyaccounting.co.uk/privacy.html">privacy</a>
+          <a href="https://submit.diyaccounting.co.uk/terms.html">terms</a>
+          <a href="https://submit.diyaccounting.co.uk/accessibility.html">accessibility</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Product metadata for building download filenames
+      var products = {
+        BasicSoleTrader: { name: "Basic Sole Trader", taxYearOnly: true },
+        SelfEmployed: { name: "Self Employed", taxYearOnly: true },
+        Company: { name: "Company", taxYearOnly: false },
+        TaxiDriver: { name: "Taxi Driver", taxYearOnly: true },
+        Payslip05: { name: "Payslip 05", taxYearOnly: true },
+        Payslip10: { name: "Payslip 10", taxYearOnly: true }
+      };
+
+      // Month short labels for filename construction
+      var monthLabels = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ];
+
+      function getShortLabel(dateStr) {
+        var parts = dateStr.split("-");
+        var month = parseInt(parts[1], 10);
+        var year = parts[0].substring(2);
+        return monthLabels[month - 1] + year;
+      }
+
+      function buildFilename() {
+        var productId = document.getElementById("product-select").value;
+        var period = document.getElementById("period-select").value;
+        var format = document.getElementById("format-select").value;
+        var product = products[productId];
+        var shortLabel = getShortLabel(period);
+        return "GB Accounts " + product.name + " " + period + " (" + shortLabel + ") " + format + ".zip";
+      }
+
+      function updateLinks() {
+        var filename = buildFilename();
+        var productId = document.getElementById("product-select").value;
+        var period = document.getElementById("period-select").value;
+        var format = document.getElementById("format-select").value;
+
+        // Donate link passes parameters
+        var donateBtn = document.getElementById("download-donate-btn");
+        donateBtn.href = "donate.html?product=" + encodeURIComponent(productId)
+          + "&period=" + encodeURIComponent(period)
+          + "&format=" + encodeURIComponent(format);
+
+        // Direct download link (Phase 1: external endpoint)
+        var directBtn = document.getElementById("download-direct-btn");
+        directBtn.href = "https://github.com/antonycc/diy-accounting/releases";
+        directBtn.target = "_blank";
+        directBtn.rel = "noopener";
+      }
+
+      function setProductFromUrl() {
+        var params = new URLSearchParams(window.location.search);
+        var product = params.get("product");
+        if (product && document.getElementById("product-select").querySelector('option[value="' + product + '"]')) {
+          document.getElementById("product-select").value = product;
+        }
+        var productInfo = products[document.getElementById("product-select").value];
+        if (productInfo) {
+          document.getElementById("product-title").textContent = "Download " + productInfo.name;
+        }
+      }
+
+      document.getElementById("product-select").addEventListener("change", function () {
+        var productInfo = products[this.value];
+        if (productInfo) {
+          document.getElementById("product-title").textContent = "Download " + productInfo.name;
+        }
+        updateLinks();
+      });
+      document.getElementById("period-select").addEventListener("change", updateLinks);
+      document.getElementById("format-select").addEventListener("change", updateLinks);
+
+      setProductFromUrl();
+      updateLinks();
+    </script>
+  </body>
+</html>

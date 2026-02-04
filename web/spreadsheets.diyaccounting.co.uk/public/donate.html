@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Donate - DIY Accounting Spreadsheets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Make a voluntary donation to support DIY Accounting's free Excel spreadsheets for UK small businesses."
+    />
+    <link rel="stylesheet" href="spreadsheets.css" />
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+    <header>
+      <h1>DIY Accounting Spreadsheets</h1>
+      <p class="subtitle">Excel bookkeeping and accounting software for UK small businesses</p>
+    </header>
+
+    <main id="mainContent">
+      <nav class="nav-back" aria-label="Breadcrumb">
+        <a href="index.html">&larr; Back to products</a>
+      </nav>
+
+      <div class="donate-section">
+        <h2>Support DIY Accounting</h2>
+        <p>
+          Thank you for choosing DIY Accounting. Our spreadsheets are free to download, but we rely on
+          voluntary donations to fund ongoing development, updates for new tax years, and customer support.
+        </p>
+        <p>
+          If you find our products useful, please consider making a donation of any amount. Every
+          contribution helps us continue providing free accounting tools to UK small businesses.
+        </p>
+
+        <div class="paypal-container">
+          <div id="paypal-donate-button"></div>
+        </div>
+
+        <p class="donate-skip">
+          <a href="https://github.com/antonycc/diy-accounting/releases" id="skip-donate-link" target="_blank" rel="noopener">
+            Download without donating
+          </a>
+        </p>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="https://diyaccounting.co.uk">diyaccounting.co.uk</a>
+          <a href="https://submit.diyaccounting.co.uk/privacy.html">privacy</a>
+          <a href="https://submit.diyaccounting.co.uk/terms.html">terms</a>
+          <a href="https://submit.diyaccounting.co.uk/accessibility.html">accessibility</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://www.paypalobjects.com/donate/sdk/donate-sdk.js" charset="UTF-8"></script>
+    <script>
+      PayPal.Donation.Button({
+        env: "production",
+        hosted_button_id: "XTEQ73HM52QQW",
+        onComplete: function () {
+          // After donation, redirect to GitHub releases for download
+          window.location = "https://github.com/antonycc/diy-accounting/releases";
+        }
+      }).render("#paypal-donate-button");
+    </script>
+  </body>
+</html>
