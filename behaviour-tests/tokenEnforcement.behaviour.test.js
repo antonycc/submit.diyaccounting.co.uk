@@ -344,8 +344,8 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     expect(buttonText).toContain("Insufficient tokens");
     console.log("Submit VAT button correctly shows 'Insufficient tokens' reason on the button");
 
-    // Verify the annotation paragraph below the button
-    const annotation = page.locator(`p:has-text("Insufficient tokens")`);
+    // Verify the annotation paragraph below the button (scoped to the same parent div)
+    const annotation = submitButton.locator('..').locator('p:has-text("Insufficient tokens")');
     await expect(annotation).toBeVisible({ timeout: 5_000 });
     console.log("Insufficient tokens annotation displayed correctly");
 
