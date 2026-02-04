@@ -32,6 +32,10 @@ jobs:
     runs-on: ubuntu-24.04
     permissions: {}
     steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
       - name: "inputs.ci-gateway-cloudfront-domain=[${{ inputs.ci-gateway-cloudfront-domain }}]"
         run: ":"
       - name: "inputs.prod-gateway-cloudfront-domain=[${{ inputs.prod-gateway-cloudfront-domain }}]"
@@ -46,10 +50,34 @@ jobs:
       ci-gateway-cloudfront-domain: ${{ steps.normalise.outputs.ci-gateway-cloudfront-domain }}
       prod-gateway-cloudfront-domain: ${{ steps.normalise.outputs.prod-gateway-cloudfront-domain }}
 
+  names:
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+
   deploy-root-dns:
     name: 'deploy root DNS records'
     needs:
       - params
+      - names
     runs-on: ubuntu-24.04
     environment: prod
     steps:

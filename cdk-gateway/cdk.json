@@ -6,7 +6,7 @@
     "@aws-cdk/core:newStyleStackSynthesis": true,
     "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
     "envName": "",
-    "certificateArn": "",
+    "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b",
     "docRootPath": "../web/www.diyaccounting.co.uk/public",
     "domainNames": ""
   }
