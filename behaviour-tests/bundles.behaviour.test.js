@@ -42,6 +42,7 @@ import {
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
+import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 // if (!process.env.DIY_SUBMIT_ENV_FILEPATH) {
 //   dotenvConfigIfNotBlank({ path: ".env.test" });
 // } else {
@@ -67,6 +68,14 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
+
+// Load catalogue to determine bundle properties (hidden, enable, cap, etc.)
+const catalogue = loadCatalogFromRoot();
+const getCatalogBundle = (bundleName) => {
+  const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+  return catalogue.bundles?.find((b) => b.id === bundleId) || null;
+};
+const isBundleHidden = (bundleName) => !!getCatalogBundle(bundleName)?.hidden;
 
 let mockOAuth2Process;
 let serverProcess;
@@ -191,7 +200,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   console.log(`[bundle-test]: Empty state - tokensRemaining: ${emptyResponse?.tokensRemaining ?? "?"}`);
 
   // --- Step 3: Request Test bundle (uncapped, on-request) ---
-  await ensureBundlePresent(page, "Test", screenshotPath);
+  await ensureBundlePresent(page, "Test", screenshotPath, { isHidden: isBundleHidden("Test") });
 
   // --- Step 4: Verify Day Guest bundle is locked down (on-pass, cap=0 in closed beta) ---
   // Day Guest requires a pass and has cap=0 — assert it's NOT available for allocation
@@ -220,7 +229,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
 
   const isDayGuestAvailable = dayGuestCapacity.capacityAvailable === true;
   if (isDayGuestAvailable) {
-    await ensureBundlePresent(page, "Day Guest", screenshotPath);
+    await ensureBundlePresent(page, "Day Guest", screenshotPath, { isHidden: isBundleHidden("Day Guest") });
 
     // Verify API response includes allocated bundles with correct structure
     const afterGrantResponse = await verifyBundleApiResponse(page, screenshotPath);
@@ -243,7 +252,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     console.log(`[bundle-test]: After remove - bundle IDs: ${remainingAllocated.map((b) => b.bundleId).join(", ")}`);
 
     // --- Step 7: Re-request Day Guest to verify re-requestability after removal ---
-    await ensureBundlePresent(page, "Day Guest", screenshotPath);
+    await ensureBundlePresent(page, "Day Guest", screenshotPath, { isHidden: isBundleHidden("Day Guest") });
 
     // --- Step 8: Verify already-granted idempotency ---
     // Re-requesting the same bundle via API should return already_granted, not an error

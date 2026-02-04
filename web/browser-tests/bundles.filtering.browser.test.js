@@ -77,6 +77,12 @@ allocation = "on-request"
 listedInEnvironments = ["prod"]
 
 [[bundles]]
+id = "hiddenBundle"
+name = "Hidden Bundle"
+allocation = "on-request"
+hidden = true
+
+[[bundles]]
 id = "auto"
 name = "Automatic"
 allocation = "automatic"
@@ -121,8 +127,9 @@ allocation = "automatic"
     const ids = await buttons.evaluateAll((nodes) => nodes.map((n) => n.getAttribute("data-bundle-id")));
     expect(ids.sort()).toEqual(["restrictedTest", "unrestricted"]);
 
-    // Ensure the "Prod Only" and "automatic" bundles are not shown
+    // Ensure the "Prod Only", "automatic", and "hidden" bundles are not shown
     await expect(page.locator('button[data-bundle-id="prodOnly"]')).toHaveCount(0);
     await expect(page.locator('button[data-bundle-id="auto"]')).toHaveCount(0);
+    await expect(page.locator('button[data-bundle-id="hiddenBundle"]')).toHaveCount(0);
   });
 });
