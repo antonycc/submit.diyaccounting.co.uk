@@ -336,33 +336,30 @@
           }
         } catch {}
 
-        // on-pass without valid pass: disabled with annotation
+        // on-pass without valid pass: disabled with reason on button
         if (enable === "on-pass" && !passCode) {
           return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-requires-pass="true" data-disabled-reason="on-pass" disabled
-              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
-            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Requires a pass invitation</p>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-requires-pass="true" data-disabled-reason="on-pass" disabled>Pass required \u2014 ${rawName}</button>
+            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Enter a pass invitation above to unlock this bundle</p>
           </div>`;
         }
 
-        // on-subscription: disabled with annotation
+        // on-subscription: disabled with reason on button
         if (enable === "on-subscription") {
           return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="on-subscription" disabled
-              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
-            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Subscription required</p>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="on-subscription" disabled>Subscription required \u2014 ${rawName}</button>
+            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">A subscription is needed for this bundle</p>
           </div>`;
         }
 
-        // Capacity full: disabled
+        // Capacity full: disabled with reason on button
         if (!capacityAvailable) {
           return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="capacity" disabled
-              style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
-            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Global user limit reached, please try again tomorrow.</p>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="capacity" disabled>Limit reached \u2014 ${rawName}</button>
+            <p style="font-size:0.85em; color:#856404; margin:0.5em 0 0;">Global user limit reached, please try again tomorrow</p>
           </div>`;
         }
 
@@ -373,8 +370,7 @@
           if (!isLoggedIn) {
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-pass-code="${safeCode}" disabled
-                style="opacity:0.6; cursor:not-allowed;">Request ${rawName}${tokenLabel}</button>
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-pass-code="${safeCode}" disabled>Log in to add \u2014 ${rawName}</button>
               <p style="font-size:0.85em; color:#0c5460; margin:0.5em 0 0;">Log in to add this bundle</p>
             </div>`;
           }

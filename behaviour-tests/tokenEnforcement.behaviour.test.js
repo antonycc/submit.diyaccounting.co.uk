@@ -333,15 +333,19 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await page.waitForTimeout(2000);
     await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-home.png` });
 
-    // The Submit VAT button should now be disabled because tokens are exhausted
+    // The Submit VAT button should now be disabled with "Insufficient tokens" in its text
     const activityButtonText = isSandboxMode() ? "Submit VAT (HMRC Sandbox)" : "Submit VAT (HMRC)";
     const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
     await expect(submitButton).toBeVisible({ timeout: 10_000 });
     await expect(submitButton).toBeDisabled({ timeout: 10_000 });
-    console.log("Submit VAT button is correctly disabled when tokens are exhausted");
+    // Verify the button itself states the reason for being disabled
+    const buttonText = await submitButton.textContent();
+    console.log(`Submit VAT button text: "${buttonText.trim()}"`);
+    expect(buttonText).toContain("Insufficient tokens");
+    console.log("Submit VAT button correctly shows 'Insufficient tokens' reason on the button");
 
-    // Verify the "Insufficient tokens" annotation is displayed
-    const annotation = page.locator(`text=Insufficient tokens`);
+    // Verify the annotation paragraph below the button
+    const annotation = page.locator(`p:has-text("Insufficient tokens")`);
     await expect(annotation).toBeVisible({ timeout: 5_000 });
     console.log("Insufficient tokens annotation displayed correctly");
 

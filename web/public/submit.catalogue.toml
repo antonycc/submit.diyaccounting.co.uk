@@ -28,13 +28,16 @@ tokensGranted = 10
 id = "day-guest"
 name = "Day Guest"
 levelName = "Guest"
-enable = "always"
+# TODO: 2. Switch to enable = "always" for "public" - AKA open public beta with production credentials recognised by HMRC
+enable = "on-pass"
+#enable = "always"
 hidden = false
 # hidden
 # ======
 # Show this bundle on the bundles page
 allocation = "on-request"
-cap = 10
+# TODO: 2. Switch to 10 for "public" - AKA open public beta with production credentials recognised by HMRC
+cap = 0
 # cap (GLOBAL capacity limit)
 # ===========================
 # Maximum number of active (non-expired) allocations of this bundle across ALL users.
@@ -46,7 +49,8 @@ cap = 10
 # catalog bundle so the UI can show availability without exposing exact take-up numbers.
 # Implementation: Phase 2.9 in PLAN_PASSES_V2.md
 timeout = "P1D"
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+# DONE: 1. Comment out for closed beta with production credentials validated by HMRC  <<<<---- WE ARE HERE 4th FEB 2026
+#listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC
@@ -122,15 +126,17 @@ tokenRefreshInterval = "P1M"
 id = "resident-pro"
 name = "Resident Pro"
 levelName = "Pro"
-enable = "always"
+enable = "on-pass"
 hidden = false
-allocation = "on-subscription"
-# on-email-match
-# ==============
-# Allocate this bundle only if the user's email address matches one of those listed in restrictedToEmailHash on the pass
+# TODO: 3. Switch to allocation = "on-subscription" for "launch" - AKA public launch with production credentials recognised by HMRC and subscription management
+allocation = "on-pass"
+# allocation = "on-subscription"
+# on-subscription
+# =========================== ????? Is the subscription just a way to get the pass for 1 bundle issued to subscribed users?
+# Allocate this bundle only if the user has an active subscription (subscription management not yet implemented)
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+#listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC

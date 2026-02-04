@@ -218,8 +218,8 @@ export async function removeBundle(page, bundleName = "Test", screenshotPath = d
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-remove-bundle-done.png` });
 
-    // Verify the bundle is removed: "Request <bundle>" should reappear (may include token label)
-    await expect(page.locator(`button.service-btn:has-text("Request ${bundleName}")`)).toBeVisible({ timeout: 16000 });
+    // Verify the bundle is removed: "Added ✓ <bundle>" should no longer be visible
+    await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).not.toBeVisible({ timeout: 16000 });
     console.log(`${bundleName} bundle removed successfully`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-remove-bundle-confirmed.png` });
   });

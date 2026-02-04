@@ -116,6 +116,7 @@ async function main() {
       qrCodeFile: qrFileName,
       qrCodeSvgFile: svgFileName,
       qrCodeBase64: `data:image/png;base64,${qrBase64}`,
+      qrCodeText: qrText,
     });
 
     // Print pass details with QR code in terminal

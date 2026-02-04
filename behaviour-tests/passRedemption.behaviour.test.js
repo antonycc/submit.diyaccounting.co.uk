@@ -159,14 +159,16 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
 
   // --- Step 1: Verify clean state - Test bundle should appear as disabled (on-pass) ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
-  const requestTestBtn = page.locator('button.service-btn:has-text("Request Test")');
+  const requestTestBtn = page.locator('button[data-bundle-id="test"]');
   const requestTestVisible = await requestTestBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
-  console.log(`[pass-test]: "Request Test" button visible: ${requestTestVisible} (expected: true, but disabled for on-pass bundle)`);
+  console.log(`[pass-test]: Test bundle button visible: ${requestTestVisible} (expected: true, but disabled for on-pass bundle)`);
   if (requestTestVisible) {
     const isDisabled = await requestTestBtn.first().isDisabled().catch(() => false);
-    console.log(`[pass-test]: "Request Test" button disabled: ${isDisabled} (expected: true)`);
-    // Verify the "Requires a pass invitation" annotation
-    const annotation = page.locator('.service-item:has(button:has-text("Request Test")) p');
+    console.log(`[pass-test]: Test bundle button disabled: ${isDisabled} (expected: true)`);
+    const btnText = await requestTestBtn.first().textContent().catch(() => "");
+    console.log(`[pass-test]: Button text: "${btnText}" (expected: "Pass required" prefix)`);
+    // Verify the annotation below the button
+    const annotation = page.locator('.service-item:has(button[data-bundle-id="test"]) p');
     const annotationText = await annotation.textContent().catch(() => "");
     console.log(`[pass-test]: Annotation text: "${annotationText}"`);
   }

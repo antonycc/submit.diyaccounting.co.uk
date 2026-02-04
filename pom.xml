@@ -287,6 +287,22 @@
                                         <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitEnvironment"></attribute>
                                     </manifest>
                                 </jar>
+
+                                <!-- Gateway account: S3 + CloudFront static site -->
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-gateway.jar"></copy>
+                                <jar jarfile="${project.build.directory}/submit-gateway.jar" update="true" zip64Mode="as-needed">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.GatewayEnvironment"></attribute>
+                                    </manifest>
+                                </jar>
+
+                                <!-- Root account: DNS management -->
+                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-root.jar"></copy>
+                                <jar jarfile="${project.build.directory}/submit-root.jar" update="true" zip64Mode="as-needed">
+                                    <manifest>
+                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.RootEnvironment"></attribute>
+                                    </manifest>
+                                </jar>
                             </target>
                         </configuration>
                     </execution>

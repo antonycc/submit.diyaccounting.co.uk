@@ -393,8 +393,12 @@ jobs:
                 console.log('| Email | ' + pass.restrictedToEmail + ' |');
               }
               console.log('');
-              if (pass.qrCodeBase64) {
-                console.log('<img src=\"' + pass.qrCodeBase64 + '\" alt=\"QR code for ' + pass.code + '\" width=\"200\" />');
+              if (pass.qrCodeText) {
+                console.log('**QR Code** (scan to redeem):');
+                console.log('');
+                console.log('\`\`\`');
+                console.log(pass.qrCodeText);
+                console.log('\`\`\`');
               }
               console.log('');
             }

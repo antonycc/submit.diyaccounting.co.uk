@@ -177,7 +177,11 @@ export async function generateAnnotatedPassQrCodeSvg({ code, url, bundleName, ma
   const lineHeight = 18;
   const textStartY = qrSize + 20;
   const totalHeight = textStartY + lines.length * lineHeight + 10;
-  const totalWidth = Math.max(qrSize, 400);
+  // Estimate width needed for longest annotation line (~7.2px per character in monospace 12pt)
+  const charWidth = 7.2;
+  const longestLine = Math.max(...lines.map((l) => `${l.label}: ${l.value}`.length));
+  const textWidth = 10 + longestLine * charWidth + 10; // 10px left margin + text + 10px right margin
+  const totalWidth = Math.max(qrSize, 400, Math.ceil(textWidth));
 
   // Centre the QR code horizontally
   const qrOffsetX = Math.max(0, (totalWidth - qrSize) / 2);

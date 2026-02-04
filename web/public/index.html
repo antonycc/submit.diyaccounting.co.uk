@@ -353,8 +353,8 @@
               if (insufficientTokens) {
                 buttons.push(`
                   <div style="margin: 1em 0">
-                    <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
-                      ${activity.name}${tokenLabel}
+                    <button type="button" class="btn" disabled>
+                      Insufficient tokens \u2014 ${activity.name}
                     </button>
                     <p style="font-size: 0.85em; color: #856404; margin: 0.25em 0 0 0;">
                       Insufficient tokens
@@ -364,8 +364,8 @@
               } else if (noTokensForMetered) {
                 buttons.push(`
                   <div style="margin: 1em 0">
-                    <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
-                      ${activity.name}${tokenLabel}
+                    <button type="button" class="btn" disabled>
+                      No tokens \u2014 ${activity.name}
                     </button>
                     <p style="font-size: 0.85em; color: #856404; margin: 0.25em 0 0 0;">
                       No tokens available
@@ -385,8 +385,8 @@
               // User had access but it expired - show disabled button
               buttons.push(`
                 <div style="margin: 1em 0">
-                  <button type="button" class="btn" disabled style="background-color: #ccc; border-color: #ccc; color: #666; cursor: not-allowed;">
-                    ${activity.name} (expired)
+                  <button type="button" class="btn" disabled>
+                    Expired \u2014 ${activity.name}
                   </button>
                 </div>
               `);
