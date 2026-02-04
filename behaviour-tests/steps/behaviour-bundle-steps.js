@@ -312,6 +312,15 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     console.log(`Pass redemption result: ${JSON.stringify(redeemResult)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png` });
 
+    // Clear bundle cache so fetchUserBundles hits the API fresh after reload
+    await page.evaluate(async () => {
+      try {
+        const uij = localStorage.getItem("userInfo");
+        const uid = uij && JSON.parse(uij)?.sub;
+        if (uid && window.bundleCache) await window.bundleCache.clearBundles(uid);
+      } catch {}
+    });
+
     // Reload page to reflect bundle changes
     await page.reload();
     await page.waitForLoadState("networkidle");
