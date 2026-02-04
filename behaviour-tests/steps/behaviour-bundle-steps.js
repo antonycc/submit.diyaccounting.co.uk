@@ -32,11 +32,13 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
       path: `${screenshotPath}/${timestamp()}-01-removing-all-bundles.png`,
     });
 
-    // Check if any "Added ✓" buttons exist — if none, bundles are already cleared
+    // Check if any allocated bundles exist — via catalogue "Added ✓" buttons OR current bundles "Remove" buttons
     const addedButtons = page.locator("button:has-text('Added ✓')");
+    const removeButtons = page.locator("button[data-remove-bundle-id]");
     const addedCount = await addedButtons.count().catch(() => 0);
-    if (addedCount === 0) {
-      console.log("No 'Added ✓' buttons found, bundles already cleared.");
+    const removeCount = await removeButtons.count().catch(() => 0);
+    if (addedCount === 0 && removeCount === 0) {
+      console.log("No 'Added ✓' or 'Remove' buttons found, bundles already cleared.");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-clear-bundles-skipping.png` });
       return;
     }
@@ -118,14 +120,34 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
   });
 }
 
-export async function ensureBundlePresent(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
+export async function ensureBundlePresent(page, bundleName = "Test", screenshotPath = defaultScreenshotPath, { isHidden = false } = {}) {
   await test.step(`Ensure ${bundleName} bundle is present (idempotent)`, async () => {
-    console.log(`Ensuring ${bundleName} bundle is present...`);
-    // If the confirmation text for an added bundle is already visible, do nothing.
+    const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+    console.log(`Ensuring ${bundleName} bundle is present (hidden=${isHidden})...`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-bundle.png` });
+
+    // For hidden bundles, check "Your Current Bundles" section (data-remove-bundle-id buttons)
+    // For visible bundles, check catalogue section ("Added ✓" buttons)
+    if (isHidden) {
+      // Hidden bundle: check if already in current bundles section
+      const removeLocator = page.locator(`button[data-remove-bundle-id="${bundleId}"]`);
+      if (await removeLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
+        console.log(`${bundleName} bundle already present in current bundles, skipping.`);
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
+        return;
+      }
+      // Hidden bundle not present — grant via pass API
+      console.log(`Hidden bundle ${bundleName} not in current bundles, granting via pass API...`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      await ensureBundleViaPassApi(page, bundleId, screenshotPath);
+      // Verify it now appears in current bundles
+      await expect(removeLocator).toBeVisible({ timeout: 32000 });
+      console.log(`${bundleName} bundle now present in current bundles.`);
+      return;
+    }
+
+    // Non-hidden bundle: existing logic
     let addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
-    // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
-    // If the "Added ✓" button is not visible, wait 1000ms and try again.
     if (!(await addedLocator.isVisible({ timeout: 1000 }))) {
       const tries = 5;
       for (let i = 0; i < tries; i++) {
@@ -146,14 +168,6 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     } else {
       console.log(`[polling to ensure present]: ${bundleName} bundle already present.`);
     }
-    // Fallback: look for the specific test bundle button by data attribute in case role+name fails (e.g., due to special characters)
-    //const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
-    //if (!(await addedLocator.isVisible())) {
-    //  const specificAdded = page.locator(`button.service-btn[data-bundle-id='${bundleId}']:has-text('Added ✓ ${bundleName}')`);
-    //  if (await specificAdded.isVisible()) {
-    //    addedLocator = specificAdded;
-    //  }
-    //}
     // Check if the "Request" button exists (it won't for on-pass bundles).
     const requestBtnLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: false });
     const isRequestVisible = await requestBtnLocator.first().isVisible({ timeout: 2000 }).catch(() => false);
@@ -173,7 +187,6 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
       // On-pass bundles (visible but disabled) or not visible: re-grant via pass API to ensure fresh tokens
       console.log(`"Request ${bundleName}" button not enabled (on-pass bundle), using pass API for fresh grant...`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
-      const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
       await ensureBundleViaPassApi(page, bundleId, screenshotPath);
     }
   });
@@ -298,6 +311,15 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
 
     console.log(`Pass redemption result: ${JSON.stringify(redeemResult)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png` });
+
+    // Clear bundle cache so fetchUserBundles hits the API fresh after reload
+    await page.evaluate(async () => {
+      try {
+        const uij = localStorage.getItem("userInfo");
+        const uid = uij && JSON.parse(uij)?.sub;
+        if (uid && window.bundleCache) await window.bundleCache.clearBundles(uid);
+      } catch {}
+    });
 
     // Reload page to reflect bundle changes
     await page.reload();

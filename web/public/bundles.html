@@ -458,6 +458,7 @@
         const cards = (__catalogueData.bundles || [])
           .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
           .filter((b) => b["enable"] !== "never")
+          .filter((b) => !b.hidden)
           .filter((b) => {
             const listed = b?.listedInEnvironments;
             if (!Array.isArray(listed) || listed.length === 0) return true;
@@ -767,22 +768,36 @@
 
           const isLoggedIn = !!getIdToken();
 
-          // Look up bundle name from catalogue
+          // Look up bundle from catalogue
           const catBundle = __catalogueData?.bundles?.find((cb) => cb.id === bundleId);
           const bundleName = catBundle?.name || bundleId;
+          const isHidden = !!catBundle?.hidden;
 
-          if (isLoggedIn) {
+          if (isHidden) {
+            // Hidden bundles have no catalogue card — auto-redeem directly
+            if (isLoggedIn) {
+              showPassStatus(`Pass valid! Adding "${bundleName}" bundle...`, "info");
+              await redeemPassCode(code);
+            } else {
+              try {
+                sessionStorage.setItem("pendingPass", code);
+                sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
+              } catch {}
+              showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
+            }
+          } else if (isLoggedIn) {
             showPassStatus(`Pass valid! Click "Request ${bundleName}" to add the bundle.`, "success");
+            // Re-render catalogue to enable the pass-unlocked bundle
+            renderCatalogueBundles();
           } else {
             try {
               sessionStorage.setItem("pendingPass", code);
               sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
             } catch {}
             showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
+            // Re-render catalogue to show the pass-unlocked bundle (disabled until login)
+            renderCatalogueBundles();
           }
-
-          // Re-render catalogue to enable the pass-unlocked bundle
-          renderCatalogueBundles();
         } catch (err) {
           showPassStatus(`Failed to check pass: ${err?.message || err}`, "error");
         } finally {

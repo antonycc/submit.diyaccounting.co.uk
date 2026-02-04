@@ -26,6 +26,7 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { goToBundlesPage, clearBundles, verifyBundleApiResponse } from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
+import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -37,6 +38,10 @@ import {
 } from "./helpers/fileHelper.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
+
+// Load catalogue to determine bundle properties (hidden, enable, cap, etc.)
+const catalogue = loadCatalogFromRoot();
+const isTestBundleHidden = !!catalogue.bundles?.find((b) => b.id === "test")?.hidden;
 
 const screenshotPath = "target/behaviour-test-results/screenshots/pass-redemption-behaviour-test";
 
@@ -157,20 +162,26 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   await clearBundles(page, screenshotPath);
   await page.waitForTimeout(2_000);
 
-  // --- Step 1: Verify clean state - Test bundle should appear as disabled (on-pass) ---
+  // --- Step 1: Verify clean state ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
   const requestTestBtn = page.locator('button[data-bundle-id="test"]');
   const requestTestVisible = await requestTestBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
-  console.log(`[pass-test]: Test bundle button visible: ${requestTestVisible} (expected: true, but disabled for on-pass bundle)`);
-  if (requestTestVisible) {
-    const isDisabled = await requestTestBtn.first().isDisabled().catch(() => false);
-    console.log(`[pass-test]: Test bundle button disabled: ${isDisabled} (expected: true)`);
-    const btnText = await requestTestBtn.first().textContent().catch(() => "");
-    console.log(`[pass-test]: Button text: "${btnText}" (expected: "Pass required" prefix)`);
-    // Verify the annotation below the button
-    const annotation = page.locator('.service-item:has(button[data-bundle-id="test"]) p');
-    const annotationText = await annotation.textContent().catch(() => "");
-    console.log(`[pass-test]: Annotation text: "${annotationText}"`);
+  if (isTestBundleHidden) {
+    // Hidden bundles should NOT appear in the catalogue
+    console.log(`[pass-test]: Test bundle hidden=true, button visible: ${requestTestVisible} (expected: false)`);
+    expect(requestTestVisible).toBe(false);
+  } else {
+    // Visible on-pass bundles appear as disabled cards
+    console.log(`[pass-test]: Test bundle button visible: ${requestTestVisible} (expected: true, but disabled for on-pass bundle)`);
+    if (requestTestVisible) {
+      const isDisabled = await requestTestBtn.first().isDisabled().catch(() => false);
+      console.log(`[pass-test]: Test bundle button disabled: ${isDisabled} (expected: true)`);
+      const btnText = await requestTestBtn.first().textContent().catch(() => "");
+      console.log(`[pass-test]: Button text: "${btnText}" (expected: "Pass required" prefix)`);
+      const annotation = page.locator('.service-item:has(button[data-bundle-id="test"]) p');
+      const annotationText = await annotation.textContent().catch(() => "");
+      console.log(`[pass-test]: Annotation text: "${annotationText}"`);
+    }
   }
 
   // --- Step 2: Create a pass via admin API ---
@@ -226,34 +237,43 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   await redeemBtn.click();
   console.log("[pass-test]: Clicked Redeem Pass button (validates first)");
 
-  // --- Step 5: Wait for validation status and verify Test bundle becomes enabled ---
+  // --- Step 5: Wait for validation/auto-redeem and verify Test bundle is granted ---
   const passStatus = page.locator("#passStatus");
   await expect(passStatus).toBeVisible({ timeout: 15000 });
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04-validation-status.png` });
 
   const statusText = await passStatus.textContent();
   console.log(`[pass-test]: Pass status message: ${statusText}`);
-  expect(statusText).toMatch(/valid|Request/i);
 
-  // The Test bundle button should now be enabled (pass validated)
-  const enabledTestBtn = page.locator('button.service-btn:has-text("Request Test"):not([disabled])');
-  await expect(enabledTestBtn).toBeVisible({ timeout: 10000 });
-  console.log("[pass-test]: Test bundle button is now enabled after pass validation");
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
+  if (isTestBundleHidden) {
+    // Hidden bundles auto-redeem: status shows adding/redeemed message
+    expect(statusText).toMatch(/valid|Adding|redeemed/i);
+    console.log("[pass-test]: Hidden bundle — auto-redeem triggered, waiting for bundle to appear...");
+    // Wait for auto-redeem to complete (Remove button appears in current bundles)
+    const removeTestBtn = page.locator('button[data-remove-bundle-id="test"]');
+    await expect(removeTestBtn).toBeVisible({ timeout: 30000 });
+    console.log("[pass-test]: Test bundle shows in Current Bundles with Remove button (auto-redeemed)");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
+  } else {
+    // Visible bundles: validate → enable Request button → click → verify
+    expect(statusText).toMatch(/valid|Request/i);
+    const enabledTestBtn = page.locator('button.service-btn:has-text("Request Test"):not([disabled])');
+    await expect(enabledTestBtn).toBeVisible({ timeout: 10000 });
+    console.log("[pass-test]: Test bundle button is now enabled after pass validation");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
 
-  // Click the enabled Test bundle button to redeem the pass and grant the bundle
-  await enabledTestBtn.click();
-  console.log("[pass-test]: Clicked enabled Test bundle button to redeem pass");
+    await enabledTestBtn.click();
+    console.log("[pass-test]: Clicked enabled Test bundle button to redeem pass");
 
-  // Wait for redemption to complete
-  await page.waitForTimeout(3000);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
 
-  // --- Step 6: Verify the Test bundle is now granted (on-pass bundles appear in Current Bundles section with Remove button) ---
-  const removeTestBtn = page.locator('button[data-remove-bundle-id="test"]');
-  await expect(removeTestBtn).toBeVisible({ timeout: 15000 });
-  console.log("[pass-test]: Test bundle shows in Current Bundles with Remove button");
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
+    // --- Step 6: Verify the Test bundle is now granted ---
+    const removeTestBtn = page.locator('button[data-remove-bundle-id="test"]');
+    await expect(removeTestBtn).toBeVisible({ timeout: 15000 });
+    console.log("[pass-test]: Test bundle shows in Current Bundles with Remove button");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
+  }
 
   // --- Step 7: Verify via API that the bundle is allocated ---
   const apiResponse = await verifyBundleApiResponse(page, screenshotPath);
