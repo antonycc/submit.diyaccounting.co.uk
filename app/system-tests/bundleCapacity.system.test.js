@@ -103,7 +103,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
   describe("per-user uniqueness (hard-wired rule)", () => {
     it("should grant a bundle to a new user", async () => {
       const token = makeJWT("cap-unique-user-1");
-      const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
+      const event = buildPostEvent(token, { bundleId: "test", qualifiers: {} });
       const res = await bundlePostHandler(event);
       const body = JSON.parse(res.body);
       expect(res.statusCode).toBe(201);
@@ -112,7 +112,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
 
     it("should re-grant when same user requests same bundle again", async () => {
       const token = makeJWT("cap-unique-user-2");
-      const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
+      const event = buildPostEvent(token, { bundleId: "test", qualifiers: {} });
 
       // First request - granted
       const res1 = await bundlePostHandler(event);
@@ -132,7 +132,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       const res1 = await bundlePostHandler(buildPostEvent(token, { bundleId: "test", qualifiers: {} }));
       expect(JSON.parse(res1.body).status).toBe("granted");
 
-      const res2 = await bundlePostHandler(buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} }));
+      const res2 = await bundlePostHandler(buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} }));
       expect(JSON.parse(res2.body).status).toBe("granted");
 
       // Verify user has both bundles
@@ -140,19 +140,19 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       const bundles = JSON.parse(getRes.body).bundles;
       const bundleIds = bundles.map((b) => b.bundleId);
       expect(bundleIds).toContain("test");
-      expect(bundleIds).toContain("day-guest");
+      expect(bundleIds).toContain("invited-guest");
     });
   });
 
   describe("global cap enforcement via atomic counter", () => {
-    it("should grant bundle when cap is defined and not yet reached", async () => {
-      // day-guest has cap=10 in catalogue; a fresh user should get granted
+    it("should reject allocation when cap is zero (closed beta day-guest)", async () => {
+      // day-guest has cap=0 in closed beta; allocation should always be rejected
       const token = makeJWT("cap-fresh-user");
       const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
       const res = await bundlePostHandler(event);
       const body = JSON.parse(res.body);
-      expect(res.statusCode).toBe(201);
-      expect(body.status).toBe("granted");
+      expect(res.statusCode).toBe(403);
+      expect(body.status).toBe("cap_reached");
     });
 
     it("should grant bundle when no cap is defined", async () => {
@@ -165,33 +165,25 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       expect(body.status).toBe("granted");
     });
 
-    it("should increment counter on grant and return cap_reached when cap is exceeded", async () => {
-      // Use a capped bundle. day-guest has cap=10. Allocate to 10 distinct users,
-      // then verify user #11 gets cap_reached (403).
-      // Note: earlier tests in this file already consumed some of the cap, so we
-      // use the counter directly to verify behaviour.
-      const { getCounter, putCounter } = await import("../data/dynamoDbCapacityRepository.js");
+    it("should reject all users when cap is zero regardless of counter state", async () => {
+      // day-guest has cap=0; even with counter reset to 0, allocations are rejected
+      const { putCounter } = await import("../data/dynamoDbCapacityRepository.js");
 
-      // Set counter to cap-1 (9) so the next grant is the last allowed
-      await putCounter("day-guest", 9);
+      // Reset counter to 0 — still rejected because cap=0 means 0 >= 0
+      await putCounter("day-guest", 0);
 
-      const token10 = makeJWT("cap-user-10");
-      const res10 = await bundlePostHandler(buildPostEvent(token10, { bundleId: "day-guest", qualifiers: {} }));
-      const body10 = JSON.parse(res10.body);
-      expect(res10.statusCode).toBe(201);
-      expect(body10.status).toBe("granted");
+      const token1 = makeJWT("cap-user-zero-1");
+      const res1 = await bundlePostHandler(buildPostEvent(token1, { bundleId: "day-guest", qualifiers: {} }));
+      const body1 = JSON.parse(res1.body);
+      expect(res1.statusCode).toBe(403);
+      expect(body1.status).toBe("cap_reached");
 
-      // Counter should now be at 10 (cap)
-      const counter = await getCounter("day-guest");
-      expect(counter).toBeDefined();
-      expect(counter.activeCount).toBe(10);
-
-      // User #11 should get cap_reached
-      const token11 = makeJWT("cap-user-11");
-      const res11 = await bundlePostHandler(buildPostEvent(token11, { bundleId: "day-guest", qualifiers: {} }));
-      const body11 = JSON.parse(res11.body);
-      expect(res11.statusCode).toBe(403);
-      expect(body11.status).toBe("cap_reached");
+      // A second user also rejected
+      const token2 = makeJWT("cap-user-zero-2");
+      const res2 = await bundlePostHandler(buildPostEvent(token2, { bundleId: "day-guest", qualifiers: {} }));
+      const body2 = JSON.parse(res2.body);
+      expect(res2.statusCode).toBe(403);
+      expect(body2.status).toBe("cap_reached");
     });
   });
 
@@ -220,15 +212,12 @@ describe("System: bundle capacity and per-user uniqueness", () => {
   });
 
   describe("multiple users allocating same bundle", () => {
-    it("should allow different users to each get the same bundle type (under cap)", async () => {
-      // Reset the counter to allow allocations
-      const { putCounter } = await import("../data/dynamoDbCapacityRepository.js");
-      await putCounter("day-guest", 0);
-
+    it("should allow different users to each get the same uncapped bundle type", async () => {
+      // test bundle has no cap — multiple users can each allocate it
       const users = ["cap-multi-user-a", "cap-multi-user-b", "cap-multi-user-c"];
       for (const userId of users) {
         const token = makeJWT(userId);
-        const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
+        const event = buildPostEvent(token, { bundleId: "test", qualifiers: {} });
         const res = await bundlePostHandler(event);
         const body = JSON.parse(res.body);
         expect(res.statusCode).toBe(201);
@@ -238,8 +227,8 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       // Verify each user independently has the bundle
       for (const userId of users) {
         const bundles = await bundleRepository.getUserBundles(userId);
-        const dayGuest = bundles.find((b) => b.bundleId === "day-guest");
-        expect(dayGuest).toBeDefined();
+        const testBundle = bundles.find((b) => b.bundleId === "test");
+        expect(testBundle).toBeDefined();
       }
     });
   });
