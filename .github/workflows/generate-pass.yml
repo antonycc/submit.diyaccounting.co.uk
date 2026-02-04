@@ -350,6 +350,7 @@ jobs:
           path: |
             passes-output.json
             qr-codes/*.png
+            qr-codes/*.svg
           retention-days: 30
 
       - name: Summary
@@ -370,26 +371,42 @@ jobs:
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Read generated passes and display with QR code info
+          # Read generated passes and display with inline QR codes
           echo "### Generated Passes with QR Codes" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Each pass includes a scannable QR code that redirects to the bundle redemption page." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Pass Code | URL | Valid Until | Max Uses | QR Code |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|-----|-------------|----------|---------|" >> $GITHUB_STEP_SUMMARY
           node --input-type=module -e "
             import fs from 'fs';
             const passes = JSON.parse(fs.readFileSync('passes-output.json', 'utf-8'));
             for (const pass of passes) {
               const validUntil = pass.validUntil || 'unlimited';
-              const qrFile = pass.qrCodeFile || 'N/A';
-              console.log('| \`' + pass.code + '\` | [' + pass.url + '](' + pass.url + ') | ' + validUntil + ' | ' + pass.maxUses + ' | ' + qrFile + ' |');
+              console.log('#### Pass: \`' + pass.code + '\`');
+              console.log('');
+              console.log('| Field | Value |');
+              console.log('|-------|-------|');
+              console.log('| URL | [' + pass.url + '](' + pass.url + ') |');
+              console.log('| Bundle | ' + pass.bundleId + ' |');
+              console.log('| Valid until | ' + validUntil + ' |');
+              console.log('| Max uses | ' + pass.maxUses + ' |');
+              if (pass.restrictedToEmail) {
+                console.log('| Email | ' + pass.restrictedToEmail + ' |');
+              }
+              console.log('');
+              if (pass.qrCodeText) {
+                console.log('**QR Code** (scan to redeem):');
+                console.log('');
+                console.log('\`\`\`');
+                console.log(pass.qrCodeText);
+                console.log('\`\`\`');
+              }
+              console.log('');
             }
           " >> $GITHUB_STEP_SUMMARY
 
           # Add note about downloading QR codes
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "💡 **Download QR codes**: Download the workflow artifact \`passes-${{ needs.params.outputs.pass-type }}-${{ github.run_id }}\` to get PNG QR codes for each pass." >> $GITHUB_STEP_SUMMARY
+          echo "**Download QR codes**: Download the workflow artifact \`passes-${{ needs.params.outputs.pass-type }}-${{ github.run_id }}\` to get PNG and annotated SVG QR codes for each pass." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           # HMRC sandbox test user credentials
           if [[ -f "hmrc-test-user.json" ]]; then

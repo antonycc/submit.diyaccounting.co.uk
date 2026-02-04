@@ -1,0 +1,141 @@
+name: deploy gateway
+run-name: "deploy gateway from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        type: choice
+        description: 'Environment name (ci or prod)'
+        required: true
+        options:
+          - 'ci'
+          - 'prod'
+        default: 'ci'
+      certificate-arn:
+        type: string
+        description: 'ACM certificate ARN in us-east-1 for the gateway CloudFront distribution'
+        required: true
+      domain-names:
+        type: string
+        description: 'Comma-separated domain names for CloudFront alternates (e.g. ci-gateway.diyaccounting.co.uk)'
+        required: false
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+
+  params:
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.certificate-arn=[${{ inputs.certificate-arn }}]"
+        run: ":"
+      - name: "inputs.domain-names=[${{ inputs.domain-names }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          ENV_NAME='${{ inputs.environment-name }}'
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          CERT_ARN='${{ inputs.certificate-arn }}'
+          echo "certificate-arn=${CERT_ARN}" | tee -a "$GITHUB_OUTPUT"
+          DOMAIN_NAMES='${{ inputs.domain-names }}'
+          if [ -z "$DOMAIN_NAMES" ]; then
+            DOMAIN_NAMES="${ENV_NAME}-gateway.diyaccounting.co.uk"
+          fi
+          echo "domain-names=${DOMAIN_NAMES}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+      certificate-arn: ${{ steps.normalise.outputs.certificate-arn }}
+      domain-names: ${{ steps.normalise.outputs.domain-names }}
+
+  deploy-gateway:
+    name: 'deploy gateway stack'
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.params.outputs.environment-name == 'prod' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Build CDK JARs
+        run: ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Deploy GatewayStack (CDK)
+        run: |
+          STACK_NAME="${{ needs.params.outputs.environment-name }}-gateway-GatewayStack"
+          echo "Deploying stack: $STACK_NAME"
+          cd cdk-gateway \
+            && npx cdk deploy \
+              "$STACK_NAME" \
+              --require-approval never \
+              --ci true \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../cdk-submit-gateway.out/cdk-outputs-gateway.json \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.params.outputs.environment-name }}
+          CERTIFICATE_ARN: ${{ needs.params.outputs.certificate-arn }}
+          DOC_ROOT_PATH: '../web/www.diyaccounting.co.uk/public'
+          DOMAIN_NAMES: ${{ needs.params.outputs.domain-names }}
+
+      - name: Show stack outputs
+        run: |
+          echo "=== Gateway Stack Outputs ==="
+          cat cdk-submit-gateway.out/cdk-outputs-gateway.json | jq '.'
+          echo ""
+          echo ">>> Copy the CloudFrontDomainName value above and use it as input to deploy-root.yml <<<"

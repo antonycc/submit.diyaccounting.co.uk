@@ -4,6 +4,7 @@
 // behaviour-tests/bundles.behaviour.test.js
 
 import { test } from "./helpers/playwrightTestWithout.js";
+import { expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -192,15 +193,32 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   // --- Step 3: Request Test bundle (uncapped, on-request) ---
   await ensureBundlePresent(page, "Test", screenshotPath);
 
-  // --- Step 4: Request Day Guest bundle (capped, on-request, with tokens) ---
-  // Day Guest has listedInEnvironments that excludes prod, so check runtime availability
-  // rather than relying on isSandboxMode() which returns true for prod sandbox tests
-  const isDayGuestAvailable = await page
-    .locator("button:has-text('Day Guest')")
-    .first()
-    .isVisible({ timeout: 3000 })
-    .catch(() => false);
-  console.log(`[bundle-test]: Day Guest availability check: ${isDayGuestAvailable}`);
+  // --- Step 4: Verify Day Guest bundle is locked down (on-pass, cap=0 in closed beta) ---
+  // Day Guest requires a pass and has cap=0 — assert it's NOT available for allocation
+  const dayGuestCapacity = await page
+    .evaluate(async () => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { found: false };
+      try {
+        const response = await fetch("/api/v1/bundle", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        const data = await response.json();
+        const dayGuest = (data.bundles || []).find((b) => b.bundleId === "day-guest");
+        return dayGuest
+          ? { found: true, capacityAvailable: dayGuest.bundleCapacityAvailable, allocated: !!dayGuest.allocated }
+          : { found: false };
+      } catch {
+        return { found: false };
+      }
+    })
+    .catch(() => ({ found: false }));
+  console.log(`[bundle-test]: Day Guest capacity check: ${JSON.stringify(dayGuestCapacity)}`);
+  // Closed beta: Day Guest should be in catalogue but NOT allocatable (cap=0)
+  expect(dayGuestCapacity.found).toBe(true);
+  expect(dayGuestCapacity.capacityAvailable).toBe(false);
+
+  const isDayGuestAvailable = dayGuestCapacity.capacityAvailable === true;
   if (isDayGuestAvailable) {
     await ensureBundlePresent(page, "Day Guest", screenshotPath);
 

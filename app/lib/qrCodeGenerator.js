@@ -106,6 +106,106 @@ export async function generatePassQrCodeText({ code, url, options = {} }) {
 }
 
 /**
+ * Escape a string for safe inclusion in SVG text elements.
+ *
+ * @param {string} str - Raw string
+ * @returns {string} XML-escaped string
+ */
+function escapeXml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+/**
+ * Generate an annotated QR code as an SVG string.
+ *
+ * The output is a self-contained SVG that includes the QR code and
+ * text annotations showing the pass code, URL, bundle, max uses,
+ * validity, and optional email restriction.
+ *
+ * @param {Object} params
+ * @param {string} params.code - The pass code (e.g., "tiger-happy-mountain-silver")
+ * @param {string} params.url - The full URL to the pass redemption page
+ * @param {string} [params.bundleName] - Human-readable bundle name
+ * @param {number} [params.maxUses] - Maximum number of uses
+ * @param {string} [params.email] - Restricted email address
+ * @param {string} [params.validUntil] - Validity expiry (ISO date string or "unlimited")
+ * @param {Object} [params.options] - QRCode generation options
+ * @returns {Promise<string>} SVG string
+ */
+export async function generateAnnotatedPassQrCodeSvg({ code, url, bundleName, maxUses, email, validUntil, options = {} }) {
+  if (!code) {
+    throw new Error("Pass code is required");
+  }
+  if (!url) {
+    throw new Error("Pass URL is required");
+  }
+
+  const qrSize = options.width || 200;
+  const errorCorrectionLevel = options.errorCorrectionLevel || "M";
+
+  // Generate the QR code as an SVG fragment
+  const qrSvg = await QRCode.toString(url, {
+    type: "svg",
+    width: qrSize,
+    margin: 2,
+    errorCorrectionLevel,
+  });
+
+  // Extract the inner content of the QR SVG (everything inside <svg>...</svg>)
+  const innerMatch = qrSvg.match(/<svg[^>]*>([\s\S]*)<\/svg>/);
+  const qrInner = innerMatch ? innerMatch[1] : qrSvg;
+
+  // Extract viewBox from the QR SVG to preserve coordinate system
+  const viewBoxMatch = qrSvg.match(/viewBox="([^"]*)"/);
+  const qrViewBox = viewBoxMatch ? viewBoxMatch[1] : `0 0 ${qrSize} ${qrSize}`;
+
+  // Build annotation lines
+  const lines = [];
+  lines.push({ label: "Pass code", value: code });
+  if (bundleName) lines.push({ label: "Bundle", value: bundleName });
+  if (maxUses !== undefined) lines.push({ label: "Max uses", value: String(maxUses) });
+  if (validUntil) lines.push({ label: "Valid until", value: validUntil });
+  if (email) lines.push({ label: "Email", value: email });
+  lines.push({ label: "URL", value: url });
+
+  const fontSize = 12;
+  const lineHeight = 18;
+  const textStartY = qrSize + 20;
+  const totalHeight = textStartY + lines.length * lineHeight + 10;
+  // Estimate width needed for longest annotation line (~7.2px per character in monospace 12pt)
+  const charWidth = 7.2;
+  const longestLine = Math.max(...lines.map((l) => `${l.label}: ${l.value}`.length));
+  const textWidth = 10 + longestLine * charWidth + 10; // 10px left margin + text + 10px right margin
+  const totalWidth = Math.max(qrSize, 400, Math.ceil(textWidth));
+
+  // Centre the QR code horizontally
+  const qrOffsetX = Math.max(0, (totalWidth - qrSize) / 2);
+
+  let textElements = "";
+  lines.forEach((line, i) => {
+    const y = textStartY + i * lineHeight;
+    textElements += `  <text x="10" y="${y}" font-family="monospace" font-size="${fontSize}" fill="#333">` +
+      `<tspan font-weight="bold">${escapeXml(line.label)}:</tspan> ${escapeXml(line.value)}</text>\n`;
+  });
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">\n` +
+    `  <rect width="${totalWidth}" height="${totalHeight}" fill="white"/>\n` +
+    `  <svg x="${qrOffsetX}" y="0" width="${qrSize}" height="${qrSize}" viewBox="${qrViewBox}">\n` +
+    `    ${qrInner}\n` +
+    `  </svg>\n` +
+    textElements +
+    `</svg>`;
+
+  return svg;
+}
+
+/**
  * Build pass details object with metadata for display.
  *
  * @param {Object} pass - Pass record from passService

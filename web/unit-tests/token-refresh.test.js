@@ -328,6 +328,25 @@ describe("Token refresh on 401 errors", () => {
     expect(expiryMs).toBe(0);
   });
 
+  it("ensureSession should clear cognitoRefreshToken when refresh fails", async () => {
+    // Mock an expired access token so ensureSession attempts refresh
+    const expiredToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.${b64url({ exp: 1 })}.test`;
+    storageMock.cognitoAccessToken = expiredToken;
+    storageMock.cognitoRefreshToken = "stale-refresh-token";
+
+    // Refresh endpoint returns 400 (invalid refresh token)
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: "invalid_grant" }),
+    });
+
+    await window.ensureSession({ force: true });
+
+    // Should have removed the stale refresh token
+    expect(localStorage.removeItem).toHaveBeenCalledWith("cognitoRefreshToken");
+  });
+
   it("fetchWithIdToken should be used in debugWidgetsGating for automatic retry", async () => {
     // This test verifies that fetchWithIdToken (which has retry logic) is used
     // instead of plain fetch when checking for test bundle in debugWidgetsGating

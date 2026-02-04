@@ -415,7 +415,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
 
   // Token tracking: set token fields from catalogue
-  const tokensGranted = catalogBundle.tokensGranted ?? catalogBundle.tokens ?? undefined;
+  const tokensGranted = catalogBundle.tokensGranted ?? undefined;
   if (tokensGranted !== undefined) {
     newBundle.tokensGranted = tokensGranted;
     newBundle.tokensConsumed = 0;

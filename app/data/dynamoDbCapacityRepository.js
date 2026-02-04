@@ -25,7 +25,7 @@ export async function incrementCounter(bundleId, cap) {
         TableName: tableName,
         Key: { bundleId },
         UpdateExpression: "SET activeCount = if_not_exists(activeCount, :zero) + :inc",
-        ConditionExpression: "attribute_not_exists(activeCount) OR activeCount < :cap",
+        ConditionExpression: "(attribute_not_exists(activeCount) AND :cap > :zero) OR activeCount < :cap",
         ExpressionAttributeValues: { ":inc": 1, ":zero": 0, ":cap": cap },
       }),
     );

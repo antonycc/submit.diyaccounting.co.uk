@@ -955,8 +955,15 @@ footer {
 }
 
 .btn:disabled {
-  background-color: #ccc;
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: #fff;
   cursor: not-allowed;
+  opacity: 1;
+}
+
+.btn:disabled:hover {
+  background-color: #6c757d;
 }
 
 /* ============================================

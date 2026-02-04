@@ -1,0 +1,117 @@
+name: deploy root DNS
+run-name: "deploy root DNS from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci-gateway-cloudfront-domain:
+        type: string
+        description: 'CloudFront domain for ci-gateway (e.g. d1234abcdef.cloudfront.net). Empty to skip.'
+        required: false
+        default: ''
+      prod-gateway-cloudfront-domain:
+        type: string
+        description: 'CloudFront domain for prod-gateway (e.g. d5678ghijkl.cloudfront.net). Empty to skip.'
+        required: false
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+
+  params:
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - name: "inputs.ci-gateway-cloudfront-domain=[${{ inputs.ci-gateway-cloudfront-domain }}]"
+        run: ":"
+      - name: "inputs.prod-gateway-cloudfront-domain=[${{ inputs.prod-gateway-cloudfront-domain }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          echo "ci-gateway-cloudfront-domain=${{ inputs.ci-gateway-cloudfront-domain }}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-gateway-cloudfront-domain=${{ inputs.prod-gateway-cloudfront-domain }}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      ci-gateway-cloudfront-domain: ${{ steps.normalise.outputs.ci-gateway-cloudfront-domain }}
+      prod-gateway-cloudfront-domain: ${{ steps.normalise.outputs.prod-gateway-cloudfront-domain }}
+
+  deploy-root-dns:
+    name: 'deploy root DNS records'
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    environment: prod
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Build CDK JARs
+        run: ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Deploy RootDnsStack (CDK)
+        run: |
+          echo "Deploying stack: root-RootDnsStack"
+          cd cdk-root \
+            && npx cdk deploy \
+              root-RootDnsStack \
+              --require-approval never \
+              --ci true \
+              --outputs-file ../cdk-submit-root.out/cdk-outputs-root-dns.json \
+          ;
+        env:
+          CI_GATEWAY_CLOUDFRONT_DOMAIN: ${{ needs.params.outputs.ci-gateway-cloudfront-domain }}
+          PROD_GATEWAY_CLOUDFRONT_DOMAIN: ${{ needs.params.outputs.prod-gateway-cloudfront-domain }}
+
+      - name: Show stack outputs
+        run: |
+          echo "=== Root DNS Stack Outputs ==="
+          cat cdk-submit-root.out/cdk-outputs-root-dns.json | jq '.'

@@ -169,7 +169,7 @@ export async function retrieveUserBundles(userId, requestId = null) {
         if (catBundle?.tokenRefreshInterval) {
           const { resetTokens } = await import("../../data/dynamoDbBundleRepository.js");
           const nextReset = addDurationSimple(new Date(), catBundle.tokenRefreshInterval);
-          const tokensGranted = catBundle.tokensGranted ?? catBundle.tokens ?? bundle.tokensGranted;
+          const tokensGranted = catBundle.tokensGranted ?? bundle.tokensGranted;
           await resetTokens(userId, bundle.bundleId, tokensGranted, nextReset.toISOString());
           bundle.tokensConsumed = 0;
           bundle.tokensGranted = tokensGranted;

@@ -155,11 +155,12 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     //  }
     //}
     // Check if the "Request" button exists (it won't for on-pass bundles).
-    const requestBtnLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-    const isRequestable = await requestBtnLocator.isVisible({ timeout: 2000 }).catch(() => false);
+    const requestBtnLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: false });
+    const isRequestVisible = await requestBtnLocator.first().isVisible({ timeout: 2000 }).catch(() => false);
+    const isRequestEnabled = isRequestVisible && !(await requestBtnLocator.first().isDisabled().catch(() => true));
 
-    if (isRequestable) {
-      // Requestable bundles: skip if already present
+    if (isRequestEnabled) {
+      // Requestable and enabled bundles: skip if already present
       if (await addedLocator.isVisible({ timeout: 32000 })) {
         console.log(`${bundleName} bundle already present, skipping request.`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
@@ -169,8 +170,8 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
       await requestBundle(page, bundleName, screenshotPath);
     } else {
-      // On-pass bundles: always re-grant via pass API to ensure fresh tokens
-      console.log(`"Request ${bundleName}" button not visible (on-pass bundle), using pass API for fresh grant...`);
+      // On-pass bundles (visible but disabled) or not visible: re-grant via pass API to ensure fresh tokens
+      console.log(`"Request ${bundleName}" button not enabled (on-pass bundle), using pass API for fresh grant...`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
       const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
       await ensureBundleViaPassApi(page, bundleId, screenshotPath);
@@ -217,8 +218,8 @@ export async function removeBundle(page, bundleName = "Test", screenshotPath = d
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-remove-bundle-done.png` });
 
-    // Verify the bundle is removed: "Request <bundle>" should reappear
-    await expect(page.getByRole("button", { name: `Request ${bundleName}`, exact: true })).toBeVisible({ timeout: 16000 });
+    // Verify the bundle is removed: "Added ✓ <bundle>" should no longer be visible
+    await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).not.toBeVisible({ timeout: 16000 });
     console.log(`${bundleName} bundle removed successfully`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-remove-bundle-confirmed.png` });
   });
@@ -353,12 +354,10 @@ export async function verifyAlreadyGranted(page, bundleId, screenshotPath = defa
 export async function requestBundle(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
   await test.step(`The user requests a ${bundleName} bundle and sees a confirmation message`, async () => {
     console.log(`Requesting ${bundleName} bundle...`);
-    // Request test bundle
+    // Use substring matching for button text (may include token label like "(3 tokens)")
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-request-bundle.png` });
-    let requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-    // await expect(page.getByText("Request test")).toBeVisible();
-    // If the "Request test" button is not visible, wait 1000ms and try again.
-    if (!(await requestTestLocator.isVisible({ timeout: 1000 }))) {
+    let requestBtnLocator = page.locator(`button.service-btn:has-text("Request ${bundleName}")`);
+    if (!(await requestBtnLocator.first().isVisible({ timeout: 1000 }))) {
       const tries = 5;
       for (let i = 0; i < tries; i++) {
         console.log(
@@ -367,8 +366,8 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-request-bundle-waiting.png` });
         await page.waitForTimeout(1000);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-request-bundle-waited.png` });
-        requestTestLocator = page.getByRole("button", { name: `Request ${bundleName}` });
-        if (await requestTestLocator.isVisible({ timeout: 1000 })) {
+        requestBtnLocator = page.locator(`button.service-btn:has-text("Request ${bundleName}")`);
+        if (await requestBtnLocator.first().isVisible({ timeout: 1000 })) {
           console.log(`[polling be ready to request]: ${bundleName} bundle request button visible.`);
           break;
         } else {
@@ -379,8 +378,8 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
       console.log(`[polling be ready to request]: ${bundleName} bundle request button already visible.`);
     }
 
-    // If the "Request <bundle>" button is not visible, check if "Added ✓" is visible instead and if so, skip the request.
-    if (!(await requestTestLocator.isVisible({ timeout: 1000 }))) {
+    // If the button is not visible, check if "Added ✓" is visible instead and if so, skip the request.
+    if (!(await requestBtnLocator.first().isVisible({ timeout: 1000 }))) {
       const addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
       if (await addedLocator.isVisible({ timeout: 1000 })) {
         console.log(`${bundleName} bundle already present, skipping request.`);
@@ -391,14 +390,12 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
       }
     }
 
-    // Request the bundle
+    // Request the bundle (has-text does substring match, works with token labels)
     await loggedClick(page, `button:has-text('Request ${bundleName}')`, `Request ${bundleName}`, { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-request-bundle-clicked.png` });
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-ensure-bundle.png` });
     let addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
-    // const isAddedVisible = await page.getByText("Added ✓").isVisible({ timeout: 16000 });
-    // If the "Added ✓" button is not visible, wait 1000ms and try again.
     if (!(await addedLocator.isVisible({ timeout: 1000 }))) {
       const tries = 20;
       for (let i = 0; i < tries; i++) {

@@ -3,33 +3,41 @@ version = "1.1.0"
 [[bundles]]
 id = "default"
 name = "Default"
-display = "never"
+enable = "never"
 allocation = "automatic"
 
 # Access to Sandbox APIs for testing
 [[bundles]]
 id = "test"
 name = "Test"
-display = "on-pass"
+levelName = "Test"
+enable = "on-pass"
 # on-pass
 # =======
-# Hide until a pass has been accecpted, once we have implemented pass generation and acceptance via a form.
-# 1. Generate and persist passes via GitHub Actions for test users
-# 2. Test pass validity via API in system tests
-# 3. Test pass validity via API in behaviour tests
-# 4. Add pass validation to the bundle.html as what 3 words populated by typing, or from a url opening bundles.html and add to behaviour test
-# 5. Change all behaviour tests to use passes to get test bundlesand turn on on-pass enforcement
+# Disable until a pass has been accecpted, once we have implemented pass generation and acceptance via a form.
+hidden = true
+# hidden
+# ======
+# Hide this bundle from the bundles page until allocated are implemented
 allocation = "on-request"
 timeout = "P1D"
-tokens = 10
+tokensGranted = 10
 
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
 id = "day-guest"
 name = "Day Guest"
-display = "always"
+levelName = "Guest"
+# TODO: 2. Switch to enable = "always" for "public" - AKA open public beta with production credentials recognised by HMRC
+enable = "on-pass"
+#enable = "always"
+hidden = false
+# hidden
+# ======
+# Show this bundle on the bundles page
 allocation = "on-request"
-cap = 10
+# TODO: 2. Switch to 10 for "public" - AKA open public beta with production credentials recognised by HMRC
+cap = 0
 # cap (GLOBAL capacity limit)
 # ===========================
 # Maximum number of active (non-expired) allocations of this bundle across ALL users.
@@ -41,13 +49,14 @@ cap = 10
 # catalog bundle so the UI can show availability without exposing exact take-up numbers.
 # Implementation: Phase 2.9 in PLAN_PASSES_V2.md
 timeout = "P1D"
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+# DONE: 1. Comment out for closed beta with production credentials validated by HMRC  <<<<---- WE ARE HERE 4th FEB 2026
+#listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC
-tokens = 10
-# tokens
-# ======
+tokensGranted = 3
+# tokensGranted
+# =============
 # Number of HMRC API tokens allocated with this bundle
 # The tokens are credited to the user and expire after the period matching the timeout
 # Activities such as submitting VAT returns consume 1 token
@@ -69,7 +78,9 @@ tokens = 10
 [[bundles]]
 id = "invited-guest"
 name = "Invited Guest"
-display = "on-pass"
+levelName = "Guest"
+enable = "on-pass"
+hidden = true
 allocation = "on-email-match"
 # on-email-match
 # ==============
@@ -89,7 +100,9 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-guest"
 name = "Resident Guest"
-display = "on-pass"
+levelName = "Guest"
+enable = "on-pass"
+hidden = true
 allocation = "on-email-match"
 # on-email-match
 # ==============
@@ -101,7 +114,9 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro-comp"
 name = "Resident Pro (Complimentary)"
-display = "on-pass"
+levelName = "Pro"
+enable = "on-pass"
+hidden = true
 allocation = "on-email-match"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
@@ -110,14 +125,18 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
-display = "always"
-allocation = "on-subscription"
-# on-email-match
-# ==============
-# Allocate this bundle only if the user's email address matches one of those listed in restrictedToEmailHash on the pass
+levelName = "Pro"
+enable = "on-pass"
+hidden = false
+# TODO: 3. Switch to allocation = "on-subscription" for "launch" - AKA public launch with production credentials recognised by HMRC and subscription management
+allocation = "on-pass"
+# allocation = "on-subscription"
+# on-subscription
+# =========================== ????? Is the subscription just a way to get the pass for 1 bundle issued to subscribed users?
+# Allocate this bundle only if the user has an active subscription (subscription management not yet implemented)
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+#listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC
@@ -127,6 +146,10 @@ id = "bundle"
 name = "View and edit your bundles"
 display = "never"
 bundles = ["default"]
+metered = false
+# metered
+# =======
+# If false, this activity does not appear in the user's activity list and does not consume tokens
 paths = ["bundles.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 
 [[activities]]
@@ -134,10 +157,16 @@ id = "submit-vat-sandbox"
 name = "Submit VAT (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 1
-# tokens
-# ======
+tokenCost = 1
+# tokenCost
+# =========
 # Number of Activity API tokens consumed by this activity when completed
+metered = true
+# metered
+# =======
+# If true, this activity appears in the user's activity list and consumes tokens
+# and the activity buttons show the token cost
+# and if the token balance is insufficient (or zero) the activity is disabled similar to entitlement disabling
 paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -145,7 +174,11 @@ id = "vat-obligations-sandbox"
 name = "VAT Obligations (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 1
+tokenCost = 0
+metered = true
+# metered
+# =======
+# In this case the cost is zero but the activity is metered so when there are 0 avilable tokens the activty is disabled
 paths = ["hmrc/vat/vatObligations.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -153,7 +186,8 @@ id = "view-vat-return-sandbox"
 name = "View VAT Return (HMRC Sandbox)"
 display = "on-entitlement"
 bundles = ["test"]
-tokens = 1
+tokenCost = 0
+metered = true
 paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -163,7 +197,8 @@ display = "always-with-upsell"
 # display: always-with-upsell
 # shows upsell prompt if not entitled
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 1
+tokenCost = 1
+metered = true
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -171,7 +206,8 @@ id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 1
+tokenCost = 0
+metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -179,7 +215,8 @@ id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
-tokens = 1
+tokenCost = 0
+metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 
 [[activities]]
@@ -187,13 +224,43 @@ id = "my-receipts"
 name = "View previously submitted receipts"
 display = "on-entitlement"
 bundles = ["default"]
+metered = false
 paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]
+
+[[activities]]
+id = "generate-pass-digital"
+name = "Generate Digital Pass"
+display = "on-entitlement"
+bundles = ["test", "resident-pro-comp", "resident-pro"]
+tokenCost = 10
+metered = true
+# generate-pass-digital
+# =====================
+# Time-limited (7 days), unlimited capacity (100 uses).
+# Encourages short digital campaigns (social media, email, messaging).
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
+
+[[activities]]
+id = "generate-pass-physical"
+name = "Generate Physical Pass"
+display = "on-entitlement"
+bundles = ["test", "resident-pro-comp", "resident-pro"]
+tokenCost = 10
+metered = true
+# generate-pass-physical
+# ======================
+# Usage-limited (10 uses), unlimited time.
+# Encourages continued display on merchandise (t-shirts, mugs).
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+paths = ["passes/generate-physical.html", "^/api/v1/pass/generate$"]
 
 [[activities]]
 id = "help"
 name = "Learn about DIY Accounting Submit"
 display = "always"
 bundles = ["default"]
+metered = false
 paths = ["about.html"]
 
 # Passes:

@@ -7,7 +7,7 @@
 
 import { createPass } from "../app/services/passService.js";
 import { initializeEmailHashSecret } from "../app/lib/emailHash.js";
-import { generatePassQrCodeBuffer, generatePassQrCodeText, buildPassDetails } from "../app/lib/qrCodeGenerator.js";
+import { generatePassQrCodeBuffer, generatePassQrCodeText, generateAnnotatedPassQrCodeSvg, buildPassDetails } from "../app/lib/qrCodeGenerator.js";
 import fs from "fs";
 import path from "path";
 
@@ -78,10 +78,25 @@ async function main() {
       url: passUrl,
     });
 
-    // Save QR code to file
+    // Save QR code PNG to file
     const qrFileName = `qr-${pass.code}.png`;
     const qrFilePath = path.join(qrCodesDir, qrFileName);
     fs.writeFileSync(qrFilePath, qrBuffer);
+
+    // Generate annotated SVG QR code
+    const annotatedSvg = await generateAnnotatedPassQrCodeSvg({
+      code: pass.code,
+      url: passUrl,
+      bundleName: bundleId,
+      maxUses,
+      email,
+      validUntil: pass.validUntil || undefined,
+    });
+
+    // Save annotated SVG to file
+    const svgFileName = `qr-${pass.code}-annotated.svg`;
+    const svgFilePath = path.join(qrCodesDir, svgFileName);
+    fs.writeFileSync(svgFilePath, annotatedSvg, "utf-8");
 
     // Generate terminal QR code for GitHub Actions output
     const qrText = await generatePassQrCodeText({
@@ -92,10 +107,16 @@ async function main() {
     // Build pass details
     const details = buildPassDetails(pass, passUrl, email);
 
+    // Build base64 data URI for inline display in workflow summary
+    const qrBase64 = qrBuffer.toString("base64");
+
     // Add QR code info to results
     results.push({
       ...details,
       qrCodeFile: qrFileName,
+      qrCodeSvgFile: svgFileName,
+      qrCodeBase64: `data:image/png;base64,${qrBase64}`,
+      qrCodeText: qrText,
     });
 
     // Print pass details with QR code in terminal

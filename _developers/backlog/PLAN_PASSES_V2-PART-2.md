@@ -99,7 +99,7 @@ Fields:
 | `resident-guest` | resident-guest | 3/mo | Yes | 1 | unlimited | Admin |
 | `resident-pro-comp` | resident-pro | 100/mo | Yes | 1 | P1Y | Admin |
 | `group-invite` | invited-guest | 3/mo | No | 10 | P1M | Admin |
-| `campaign` | invited-guest | 3/mo | No | 1 | P3D | Users (costs 10 tokens) |
+| `campaign` | invited-guest | 3/mo | No | 1 | P3D | Users (costs 3 tokens) |
 
 ## Pass Formats
 
@@ -152,7 +152,7 @@ The campaign system turns passes into a commodity that subscribed users spend to
 Campaigner subscribes (resident-pro, 100 tokens/month)
         │
         ▼
-Issues campaign pass (3 free/month included, then 10 tokens each)
+Issues campaign pass (3 free/month included, then 3 tokens each)
         │
         ▼
 Pass grants invited-guest bundle (1 month, 3 tokens/month)
@@ -177,12 +177,12 @@ Recipient subscribes (resident-pro) → referrer gets 1 free month
 |------|-------|-------|
 | Pro subscription | ~£129/year | £10.75/month |
 | Campaign pass gift value | ~£10.75 | Full month of invited-guest access |
-| Campaign pass cost (after 3 free) | 10 tokens | ~£1.08 worth |
+| Campaign pass cost (after 3 free) | 3 tokens | ~£1.08 worth |
 | Day pass comparison | ~£0.36 | Too small to drive engagement |
 
 **Key insight**: The recipient gets a **full month** of access (£10.75 value) but must redeem within 3 days. The urgency drives redemption; the generous value drives conversion. This is substantially more compelling than a 1-day/£0.36 gift.
 
-**Pass scarcity**: Pro users get 3 free campaign passes per month as part of their subscription. Additional passes cost 10 tokens each. This makes passes feel valuable ("I'm giving you one of my 3 monthly invites") rather than cheap.
+**Pass scarcity**: Pro users get 3 free campaign passes per month as part of their subscription. Additional passes cost 3 tokens each. This makes passes feel valuable ("I'm giving you one of my 3 monthly invites") rather than cheap.
 
 **Progressive referrer rewards**:
 - **Immediate**: 2 tokens back when pass is redeemed (not just created)

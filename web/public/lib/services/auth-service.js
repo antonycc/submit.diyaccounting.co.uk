@@ -147,7 +147,8 @@ export async function ensureSession({ minTTLms = 30000, force = false } = {}) {
           body,
         });
         if (!res.ok) {
-          // Backend may not support refresh yet; leave tokens as-is
+          console.warn("Refresh token failed, clearing stale refresh token");
+          localStorage.removeItem("cognitoRefreshToken");
           return accessToken;
         }
         const json = await res.json();

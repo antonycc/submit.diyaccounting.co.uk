@@ -196,6 +196,7 @@
     sessionStorage.removeItem("mfaMetadata");
     sessionStorage.removeItem("pendingPass");
     sessionStorage.removeItem("postLoginRedirect");
+    sessionStorage.removeItem("passValidation");
 
     // Update login status
     updateLoginStatus();
@@ -208,19 +209,17 @@
       return;
     }
 
-    // Check if COGNITO_CONFIG is available for logout URL
-    // if (typeof COGNITO_CONFIG !== "undefined") {
-    //  // Redirect to Cognito logout URL
-    //  const logoutUrl =
-    //    `https://${COGNITO_CONFIG.domain}/logout?` +
-    //    `client_id=${COGNITO_CONFIG.clientId}&` +
-    //    `logout_uri=${encodeURIComponent(window.location.origin + "/")}`;
-    //
-    //  window.location.href = logoutUrl;
-    // } else {
-    //  // Fallback: just reload the page if COGNITO_CONFIG is not available
-    window.location.reload();
-    // }
+    // Redirect to Cognito logout endpoint to invalidate session
+    var env = window.__env;
+    if (env && env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
+      var logoutUrl =
+        env.COGNITO_BASE_URI.replace(/\/$/, "") + "/logout?" +
+        "client_id=" + env.COGNITO_CLIENT_ID + "&" +
+        "logout_uri=" + encodeURIComponent(window.location.origin + "/");
+      window.location.href = logoutUrl;
+    } else {
+      window.location.reload();
+    }
   }
 
   // Initialize auth status

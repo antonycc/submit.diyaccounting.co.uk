@@ -315,11 +315,11 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 7: Attempt submission with exhausted tokens
+  // STEP 7: Verify activity button is disabled with exhausted tokens
   // ============================================================
-  await test.step("Verify exhaustion error on VAT submission", async () => {
+  await test.step("Verify activity button disabled when tokens exhausted", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 7: Submit with exhausted tokens");
+    console.log("STEP 7: Verify button disabled with exhausted tokens");
     console.log("=".repeat(60));
 
     if (!bundleTableName) {
@@ -328,48 +328,28 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     }
 
     await goToHomePageUsingMainNav(page, screenshotPath);
-    await initSubmitVat(page, screenshotPath);
-    await fillInVat(
-      page,
-      hmrcVatNumber,
-      { periodStart, periodEnd },
-      hmrcVatDueAmount,
-      undefined,
-      runFraudPreventionHeaderValidation,
-      screenshotPath,
-    );
 
-    // Submit the form
-    await page.locator("#submitBtn").click();
-    await page.waitForLoadState("networkidle");
+    // Wait for the page to render activity buttons (needs bundle API response)
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-home.png` });
 
-    // Handle HMRC OAuth if redirected (cached token may still be valid)
-    const isHmrcAuthPage = await page
-      .locator("#appNameParagraph")
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-    if (isHmrcAuthPage) {
-      await acceptCookiesHmrc(page, screenshotPath);
-      await goToHmrcAuth(page, screenshotPath);
-      await initHmrcAuth(page, screenshotPath);
-      await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
-      await submitHmrcAuth(page, screenshotPath);
-      await grantPermissionHmrcAuth(page, screenshotPath);
-    }
+    // The Submit VAT button should now be disabled with "Insufficient tokens" in its text
+    const activityButtonText = isSandboxMode() ? "Submit VAT (HMRC Sandbox)" : "Submit VAT (HMRC)";
+    const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
+    await expect(submitButton).toBeVisible({ timeout: 10_000 });
+    await expect(submitButton).toBeDisabled({ timeout: 10_000 });
+    // Verify the button itself states the reason for being disabled
+    const buttonText = await submitButton.textContent();
+    console.log(`Submit VAT button text: "${buttonText.trim()}"`);
+    expect(buttonText).toContain("Insufficient tokens");
+    console.log("Submit VAT button correctly shows 'Insufficient tokens' reason on the button");
 
-    // Wait for the error message to appear
-    const statusContainer = page.locator("#statusMessagesContainer");
-    await expect(statusContainer).toContainText(/Token limit reached|Submission failed/i, { timeout: 30_000 });
-    console.log("Token exhaustion error displayed correctly");
+    // Verify the annotation paragraph below the button (scoped to the same parent div)
+    const annotation = submitButton.locator('..').locator('p:has-text("Insufficient tokens")');
+    await expect(annotation).toBeVisible({ timeout: 5_000 });
+    console.log("Insufficient tokens annotation displayed correctly");
 
-    // Verify no receipt is shown
-    const receiptVisible = await page
-      .locator("#receiptDisplay")
-      .isVisible()
-      .catch(() => false);
-    expect(receiptVisible).toBeFalsy();
-
-    await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-error.png` });
+    await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-disabled.png` });
   });
 
   // ============================================================
