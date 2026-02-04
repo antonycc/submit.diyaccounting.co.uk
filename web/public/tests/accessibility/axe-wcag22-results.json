@@ -14,7 +14,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:41.848Z",
+    "timestamp": "2026-02-04T01:36:46.022Z",
     "url": "https://ci.submit.diyaccounting.co.uk/",
     "toolOptions": {
       "runOnly": {
@@ -1624,7 +1624,7 @@
             ],
             "none": [],
             "impact": null,
-            "html": "<div class=\"form-container\" style=\"text-align: center\">",
+            "html": "<div class=\"form-container\" style=\"text-align: center\">\n        <div id=\"dynamicActivities\" style=\"margin: 2em 0\"></div>\n\n        <!--div id=\"activitiesByBundle\" style=\"text-align: left; margin: 1.5em auto; max-width: 640px\"></div-->\n      </div>",
             "target": [
               ".form-container"
             ]
@@ -1656,233 +1656,9 @@
             ],
             "none": [],
             "impact": null,
-            "html": "<div id=\"dynamicActivities\" style=\"margin: 2em 0\">",
+            "html": "<div id=\"dynamicActivities\" style=\"margin: 2em 0\"></div>",
             "target": [
               "#dynamicActivities"
-            ]
-          },
-          {
-            "any": [],
-            "all": [
-              {
-                "id": "important-letter-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Letter-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-word-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "word-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-line-height",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "line-height in the style attribute is not set to !important, or meets the minimum"
-              }
-            ],
-            "none": [],
-            "impact": null,
-            "html": "<div style=\"margin: 1em 0\">",
-            "target": [
-              "#dynamicActivities > div:nth-child(1)"
-            ]
-          },
-          {
-            "any": [],
-            "all": [
-              {
-                "id": "important-letter-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Letter-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-word-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "word-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-line-height",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "line-height in the style attribute is not set to !important, or meets the minimum"
-              }
-            ],
-            "none": [],
-            "impact": null,
-            "html": "<p style=\"font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;\">\n                      Login and add bundle to access\n                    </p>",
-            "target": [
-              "div:nth-child(1) > p"
-            ]
-          },
-          {
-            "any": [],
-            "all": [
-              {
-                "id": "important-letter-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Letter-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-word-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "word-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-line-height",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "line-height in the style attribute is not set to !important, or meets the minimum"
-              }
-            ],
-            "none": [],
-            "impact": null,
-            "html": "<div style=\"margin: 1em 0\">",
-            "target": [
-              "#dynamicActivities > div:nth-child(2)"
-            ]
-          },
-          {
-            "any": [],
-            "all": [
-              {
-                "id": "important-letter-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Letter-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-word-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "word-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-line-height",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "line-height in the style attribute is not set to !important, or meets the minimum"
-              }
-            ],
-            "none": [],
-            "impact": null,
-            "html": "<p style=\"font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;\">\n                      Login and add bundle to access\n                    </p>",
-            "target": [
-              "#dynamicActivities > div:nth-child(2) > p"
-            ]
-          },
-          {
-            "any": [],
-            "all": [
-              {
-                "id": "important-letter-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Letter-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-word-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "word-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-line-height",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "line-height in the style attribute is not set to !important, or meets the minimum"
-              }
-            ],
-            "none": [],
-            "impact": null,
-            "html": "<div style=\"margin: 1em 0\">",
-            "target": [
-              "#dynamicActivities > div:nth-child(3)"
-            ]
-          },
-          {
-            "any": [],
-            "all": [
-              {
-                "id": "important-letter-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Letter-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-word-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "word-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-line-height",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "line-height in the style attribute is not set to !important, or meets the minimum"
-              }
-            ],
-            "none": [],
-            "impact": null,
-            "html": "<p style=\"font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;\">\n                      Login and add bundle to access\n                    </p>",
-            "target": [
-              "div:nth-child(3) > p"
-            ]
-          },
-          {
-            "any": [],
-            "all": [
-              {
-                "id": "important-letter-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Letter-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-word-spacing",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "word-spacing in the style attribute is not set to !important, or meets the minimum"
-              },
-              {
-                "id": "important-line-height",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "line-height in the style attribute is not set to !important, or meets the minimum"
-              }
-            ],
-            "none": [],
-            "impact": null,
-            "html": "<div style=\"margin: 1em 0\">\n                    <button type=\"button\" class=\"btn\" onclick=\"window.location.href='about.html'\">\n                      Learn about DIY Accounting Submit\n                    </button>\n                  </div>",
-            "target": [
-              "div:nth-child(4)"
             ]
           },
           {
@@ -2081,78 +1857,6 @@
             "all": [],
             "none": [],
             "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      Submit VAT (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(1) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "button-has-visible-text",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "critical",
-                "message": "Element has inner text that is visible to screen readers"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      VAT Obligations (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(2) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "button-has-visible-text",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "critical",
-                "message": "Element has inner text that is visible to screen readers"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      View VAT Return (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(3) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "button-has-visible-text",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "critical",
-                "message": "Element has inner text that is visible to screen readers"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='about.html'\">\n                      Learn about DIY Accounting Submit\n                    </button>",
-            "target": [
-              "div:nth-child(4) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "button-has-visible-text",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "critical",
-                "message": "Element has inner text that is visible to screen readers"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
             "html": "<button id=\"consent-accept\" class=\"btn\" style=\"padding:6px 10px\">Accept</button>",
             "target": [
               "#consent-accept"
@@ -2270,181 +1974,6 @@
               {
                 "id": "color-contrast",
                 "data": {
-                  "fgColor": "#ffffff",
-                  "bgColor": "#2c5aa0",
-                  "contrastRatio": 6.82,
-                  "fontSize": "13.2pt (17.6px)",
-                  "fontWeight": "normal",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element has sufficient color contrast of 6.82"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      Submit VAT (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(1) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
-                  "fgColor": "#666666",
-                  "bgColor": "#ffffff",
-                  "contrastRatio": 5.74,
-                  "fontSize": "10.2pt (13.6px)",
-                  "fontWeight": "normal",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element has sufficient color contrast of 5.74"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<p style=\"font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;\">\n                      Login and add bundle to access\n                    </p>",
-            "target": [
-              "div:nth-child(1) > p"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
-                  "fgColor": "#ffffff",
-                  "bgColor": "#2c5aa0",
-                  "contrastRatio": 6.82,
-                  "fontSize": "13.2pt (17.6px)",
-                  "fontWeight": "normal",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element has sufficient color contrast of 6.82"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      VAT Obligations (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(2) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
-                  "fgColor": "#666666",
-                  "bgColor": "#ffffff",
-                  "contrastRatio": 5.74,
-                  "fontSize": "10.2pt (13.6px)",
-                  "fontWeight": "normal",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element has sufficient color contrast of 5.74"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<p style=\"font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;\">\n                      Login and add bundle to access\n                    </p>",
-            "target": [
-              "#dynamicActivities > div:nth-child(2) > p"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
-                  "fgColor": "#ffffff",
-                  "bgColor": "#2c5aa0",
-                  "contrastRatio": 6.82,
-                  "fontSize": "13.2pt (17.6px)",
-                  "fontWeight": "normal",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element has sufficient color contrast of 6.82"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      View VAT Return (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(3) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
-                  "fgColor": "#666666",
-                  "bgColor": "#ffffff",
-                  "contrastRatio": 5.74,
-                  "fontSize": "10.2pt (13.6px)",
-                  "fontWeight": "normal",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element has sufficient color contrast of 5.74"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<p style=\"font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;\">\n                      Login and add bundle to access\n                    </p>",
-            "target": [
-              "div:nth-child(3) > p"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
-                  "fgColor": "#ffffff",
-                  "bgColor": "#2c5aa0",
-                  "contrastRatio": 6.82,
-                  "fontSize": "13.2pt (17.6px)",
-                  "fontWeight": "normal",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element has sufficient color contrast of 6.82"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='about.html'\">\n                      Learn about DIY Accounting Submit\n                    </button>",
-            "target": [
-              "div:nth-child(4) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
                   "fgColor": "#2c5aa0",
                   "bgColor": "#f9f9f9",
                   "contrastRatio": 6.48,
@@ -2538,6 +2067,31 @@
             "html": "<p>© 2025-2026 DIY Accounting Limited</p>",
             "target": [
               ".footer-center > p"
+            ]
+          },
+          {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "fgColor": "#111111",
+                  "bgColor": "#dddddd",
+                  "contrastRatio": 13.9,
+                  "fontSize": "10.5pt (14px)",
+                  "fontWeight": "normal",
+                  "expectedContrastRatio": "4.5:1"
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element has sufficient color contrast of 13.9"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": null,
+            "html": "<span>We use minimal analytics to improve performance (CloudWatch RUM). We'll only start after you consent. See our <a href=\"/privacy.html\" style=\"color:#316497\">privacy policy</a>.</span>",
+            "target": [
+              "#consent-banner > span"
             ]
           },
           {
@@ -2754,6 +2308,20 @@
         "nodes": [
           {
             "any": [
+              {
+                "id": "link-in-text-block",
+                "data": null,
+                "relatedNodes": [
+                  {
+                    "html": "<span>We use minimal analytics to improve performance (CloudWatch RUM). We'll only start after you consent. See our <a href=\"/privacy.html\" style=\"color:#316497\">privacy policy</a>.</span>",
+                    "target": [
+                      "#consent-banner > span"
+                    ]
+                  }
+                ],
+                "impact": "serious",
+                "message": "Links can be distinguished from surrounding text in some way other than by color"
+              },
               {
                 "id": "link-in-text-block-style",
                 "data": null,
@@ -3184,78 +2752,6 @@
             "all": [],
             "none": [],
             "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      Submit VAT (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(1) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "no-focusable-content",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element does not have focusable descendants"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      VAT Obligations (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(2) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "no-focusable-content",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element does not have focusable descendants"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      View VAT Return (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(3) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "no-focusable-content",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element does not have focusable descendants"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='about.html'\">\n                      Learn about DIY Accounting Submit\n                    </button>",
-            "target": [
-              "div:nth-child(4) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "no-focusable-content",
-                "data": null,
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element does not have focusable descendants"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
             "html": "<button id=\"consent-accept\" class=\"btn\" style=\"padding:6px 10px\">Accept</button>",
             "target": [
               "#consent-accept"
@@ -3547,134 +3043,6 @@
             "html": "<a href=\"spreadsheets.html\">Spreadsheets</a>",
             "target": [
               "a[href$=\"spreadsheets.html\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "target-size",
-                "data": {
-                  "minSize": 24,
-                  "width": 660,
-                  "height": 56.2
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Control has sufficient size (660px by 56.2px, should be at least 24px by 24px)"
-              },
-              {
-                "id": "target-offset",
-                "data": {
-                  "closestOffset": 24,
-                  "minOffset": 24
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      Submit VAT (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(1) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "target-size",
-                "data": {
-                  "minSize": 24,
-                  "width": 660,
-                  "height": 56.2
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Control has sufficient size (660px by 56.2px, should be at least 24px by 24px)"
-              },
-              {
-                "id": "target-offset",
-                "data": {
-                  "closestOffset": 24,
-                  "minOffset": 24
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      VAT Obligations (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(2) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "target-size",
-                "data": {
-                  "minSize": 24,
-                  "width": 660,
-                  "height": 56.2
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Control has sufficient size (660px by 56.2px, should be at least 24px by 24px)"
-              },
-              {
-                "id": "target-offset",
-                "data": {
-                  "closestOffset": 24,
-                  "minOffset": 24
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='auth/login.html'\">\n                      View VAT Return (HMRC)\n                    </button>",
-            "target": [
-              "div:nth-child(3) > .btn[type=\"button\"]"
-            ]
-          },
-          {
-            "any": [
-              {
-                "id": "target-size",
-                "data": {
-                  "minSize": 24,
-                  "width": 660,
-                  "height": 56.2
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Control has sufficient size (660px by 56.2px, should be at least 24px by 24px)"
-              },
-              {
-                "id": "target-offset",
-                "data": {
-                  "closestOffset": 24,
-                  "minOffset": 24
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Target has sufficient space from its closest neighbors. Safe clickable space has a diameter of 24px which is at least 24px."
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": null,
-            "html": "<button type=\"button\" class=\"btn\" onclick=\"window.location.href='about.html'\">\n                      Learn about DIY Accounting Submit\n                    </button>",
-            "target": [
-              "div:nth-child(4) > .btn[type=\"button\"]"
             ]
           },
           {
@@ -4107,31 +3475,6 @@
               "a[href$=\"spreadsheets.html\"]"
             ],
             "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
-          },
-          {
-            "any": [
-              {
-                "id": "color-contrast",
-                "data": {
-                  "contrastRatio": 0,
-                  "fontSize": "10.5pt (14px)",
-                  "fontWeight": "normal",
-                  "messageKey": "elmPartiallyObscuring",
-                  "expectedContrastRatio": "4.5:1"
-                },
-                "relatedNodes": [],
-                "impact": "serious",
-                "message": "Element's background color could not be determined because it partially overlaps other elements"
-              }
-            ],
-            "all": [],
-            "none": [],
-            "impact": "serious",
-            "html": "<span>We use minimal analytics to improve performance (CloudWatch RUM). We'll only start after you consent. See our <a href=\"/privacy.html\" style=\"color:#316497\">privacy policy</a>.</span>",
-            "target": [
-              "#consent-banner > span"
-            ],
-            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because it partially overlaps other elements"
           }
         ]
       }
@@ -4153,7 +3496,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:43.165Z",
+    "timestamp": "2026-02-04T01:36:47.860Z",
     "url": "https://ci.submit.diyaccounting.co.uk/about.html",
     "toolOptions": {
       "runOnly": {
@@ -8518,7 +7861,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:44.777Z",
+    "timestamp": "2026-02-04T01:36:49.959Z",
     "url": "https://ci.submit.diyaccounting.co.uk/privacy.html",
     "toolOptions": {
       "runOnly": {
@@ -24130,7 +23473,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:45.979Z",
+    "timestamp": "2026-02-04T01:36:51.673Z",
     "url": "https://ci.submit.diyaccounting.co.uk/terms.html",
     "toolOptions": {
       "runOnly": {
@@ -33211,7 +32554,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:47.361Z",
+    "timestamp": "2026-02-04T01:36:53.398Z",
     "url": "https://ci.submit.diyaccounting.co.uk/accessibility.html",
     "toolOptions": {
       "runOnly": {
@@ -41162,7 +40505,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:48.769Z",
+    "timestamp": "2026-02-04T01:36:55.311Z",
     "url": "https://ci.submit.diyaccounting.co.uk/auth/login.html",
     "toolOptions": {
       "runOnly": {
@@ -44783,7 +44126,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:50.143Z",
+    "timestamp": "2026-02-04T01:36:57.048Z",
     "url": "https://ci.submit.diyaccounting.co.uk/bundles.html",
     "toolOptions": {
       "runOnly": {
@@ -48907,7 +48250,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:51.656Z",
+    "timestamp": "2026-02-04T01:36:58.675Z",
     "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/submitVat.html",
     "toolOptions": {
       "runOnly": {
@@ -56723,7 +56066,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:53.205Z",
+    "timestamp": "2026-02-04T01:37:00.356Z",
     "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html",
     "toolOptions": {
       "runOnly": {
@@ -61465,7 +60808,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:54.390Z",
+    "timestamp": "2026-02-04T01:37:01.982Z",
     "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html",
     "toolOptions": {
       "runOnly": {
@@ -65862,7 +65205,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:55.618Z",
+    "timestamp": "2026-02-04T01:37:03.471Z",
     "url": "https://ci.submit.diyaccounting.co.uk/hmrc/receipt/receipts.html",
     "toolOptions": {
       "runOnly": {
@@ -69055,7 +68398,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:57.159Z",
+    "timestamp": "2026-02-04T01:37:04.896Z",
     "url": "https://ci.submit.diyaccounting.co.uk/guide.html",
     "toolOptions": {
       "runOnly": {
@@ -73965,7 +73308,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:06:58.602Z",
+    "timestamp": "2026-02-04T01:37:06.437Z",
     "url": "https://ci.submit.diyaccounting.co.uk/help.html",
     "toolOptions": {
       "runOnly": {
@@ -77360,7 +76703,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:00.026Z",
+    "timestamp": "2026-02-04T01:37:07.969Z",
     "url": "https://ci.submit.diyaccounting.co.uk/mcp.html",
     "toolOptions": {
       "runOnly": {
@@ -80571,7 +79914,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:01.268Z",
+    "timestamp": "2026-02-04T01:37:09.603Z",
     "url": "https://ci.submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html",
     "toolOptions": {
       "runOnly": {
@@ -84027,7 +83370,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:02.656Z",
+    "timestamp": "2026-02-04T01:37:11.162Z",
     "url": "https://ci.submit.diyaccounting.co.uk/diy-accounting-limited.html",
     "toolOptions": {
       "runOnly": {
@@ -87707,7 +87050,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:04.200Z",
+    "timestamp": "2026-02-04T01:37:12.851Z",
     "url": "https://ci.submit.diyaccounting.co.uk/spreadsheets.html",
     "toolOptions": {
       "runOnly": {
@@ -93059,7 +92402,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:05.672Z",
+    "timestamp": "2026-02-04T01:37:14.206Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/404-error-distribution.html",
     "toolOptions": {
       "runOnly": {
@@ -96032,7 +95375,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:06.902Z",
+    "timestamp": "2026-02-04T01:37:15.811Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/404-error-origin.html",
     "toolOptions": {
       "runOnly": {
@@ -99005,7 +98348,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:07.981Z",
+    "timestamp": "2026-02-04T01:37:17.015Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/403.html",
     "toolOptions": {
       "runOnly": {
@@ -101439,7 +100782,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:09.136Z",
+    "timestamp": "2026-02-04T01:37:18.214Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/404.html",
     "toolOptions": {
       "runOnly": {
@@ -103873,7 +103216,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:10.236Z",
+    "timestamp": "2026-02-04T01:37:19.438Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/500.html",
     "toolOptions": {
       "runOnly": {
@@ -106307,7 +105650,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:11.269Z",
+    "timestamp": "2026-02-04T01:37:20.683Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/502.html",
     "toolOptions": {
       "runOnly": {
@@ -108741,7 +108084,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:12.012Z",
+    "timestamp": "2026-02-04T01:37:21.837Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/503.html",
     "toolOptions": {
       "runOnly": {
@@ -111175,7 +110518,7 @@
       "orientationAngle": 0,
       "orientationType": "landscape-primary"
     },
-    "timestamp": "2026-02-03T23:07:13.083Z",
+    "timestamp": "2026-02-04T01:37:23.026Z",
     "url": "https://ci.submit.diyaccounting.co.uk/errors/504.html",
     "toolOptions": {
       "runOnly": {
