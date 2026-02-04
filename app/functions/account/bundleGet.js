@@ -153,12 +153,15 @@ export async function retrieveUserBundles(userId, requestId = null) {
         capValues[b.id] = b.cap;
       }
     }
+    logger.info({ message: "Capacity check setup", capValues, counters, cappedBundleIds });
 
     function isCapacityAvailable(bundleId) {
       if (!(bundleId in capValues)) return true;
       const counter = counters[bundleId];
       const activeCount = counter ? counter.activeCount || 0 : 0;
-      return activeCount < capValues[bundleId];
+      const result = activeCount < capValues[bundleId];
+      logger.info({ message: "isCapacityAvailable", bundleId, inCapValues: bundleId in capValues, counter, activeCount, cap: capValues[bundleId], result });
+      return result;
     }
 
     // Lazy token refresh for user bundles
