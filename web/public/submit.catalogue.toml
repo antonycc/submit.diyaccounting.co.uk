@@ -228,6 +228,34 @@ metered = false
 paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]
 
 [[activities]]
+id = "generate-pass-digital"
+name = "Generate Digital Pass"
+display = "on-entitlement"
+bundles = ["test", "resident-pro-comp", "resident-pro"]
+tokenCost = 10
+metered = true
+# generate-pass-digital
+# =====================
+# Time-limited (7 days), unlimited capacity (100 uses).
+# Encourages short digital campaigns (social media, email, messaging).
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
+
+[[activities]]
+id = "generate-pass-physical"
+name = "Generate Physical Pass"
+display = "on-entitlement"
+bundles = ["test", "resident-pro-comp", "resident-pro"]
+tokenCost = 10
+metered = true
+# generate-pass-physical
+# ======================
+# Usage-limited (10 uses), unlimited time.
+# Encourages continued display on merchandise (t-shirts, mugs).
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+paths = ["passes/generate-physical.html", "^/api/v1/pass/generate$"]
+
+[[activities]]
 id = "help"
 name = "Learn about DIY Accounting Submit"
 display = "always"

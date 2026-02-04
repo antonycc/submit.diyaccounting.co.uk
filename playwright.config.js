@@ -128,6 +128,14 @@ export default defineConfig({
       timeout: 600_000,
     },
     {
+      name: "generatePassActivityBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/generatePassActivity.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "simulatorBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/simulator.behaviour.test.js"],

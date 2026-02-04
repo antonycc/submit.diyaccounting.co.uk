@@ -83,3 +83,31 @@ defaultValidityPeriod = "P3D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
 tokenCostToIssue = 10
+
+# Digital pass - time-limited, unlimited capacity
+# Short validity (7 days) encourages focused digital campaigns.
+# 100 uses allows broad distribution via social media, email, messaging.
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+[[passTypes]]
+id = "digital-pass"
+name = "Digital Pass"
+description = "Time-limited digital pass for short campaigns (social media, email, QR sharing)"
+bundleId = "day-guest"
+defaultValidityPeriod = "P7D"
+defaultMaxUses = 100
+requiresEmailRestriction = false
+tokenCostToIssue = 10
+
+# Physical pass - usage-limited, unlimited time
+# No time limit means merchandise retains value indefinitely.
+# 10 uses discourages sharing while rewarding continued display.
+# Designed for t-shirts, mugs, stickers with QR code + 4-word passphrase.
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+[[passTypes]]
+id = "physical-pass"
+name = "Physical Pass"
+description = "Usage-limited pass for printed merchandise (t-shirts, mugs)"
+bundleId = "day-guest"
+defaultMaxUses = 10
+requiresEmailRestriction = false
+tokenCostToIssue = 10
