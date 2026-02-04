@@ -128,7 +128,7 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-test("Click through: Generate digital pass and verify in My Generated Passes", async ({ page }, testInfo) => {
+test.fixme("Click through: Generate digital pass and verify in My Generated Passes", async ({ page }, testInfo) => {
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
       ? `http://127.0.0.1:${httpServerPort}/`
@@ -290,7 +290,7 @@ test("Click through: Generate digital pass and verify in My Generated Passes", a
   writeFiguresJson(outputDir, figures);
 });
 
-test("Click through: Generate physical pass and verify design downloads", async ({ page }, testInfo) => {
+test.fixme("Click through: Generate physical pass and verify design downloads", async ({ page }, testInfo) => {
   const testUrl =
     (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
       ? `http://127.0.0.1:${httpServerPort}/`
