@@ -905,3 +905,13 @@ footer {
 .editor-note p {
   margin: 0.3rem 0;
 }
+
+/* Article attribution for AI-generated content */
+.article-attribution {
+  font-size: 0.85em;
+  color: #666;
+  font-style: italic;
+  margin-top: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e0e0e0;
+}
