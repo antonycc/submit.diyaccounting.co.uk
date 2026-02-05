@@ -20,13 +20,26 @@
           continue;
         }
 
-        // Array of tables: [[section]]
+        // Array of tables: [[section]] or [[parent.child]]
         if (line.startsWith("[[")) {
           const sectionName = line.substring(2, line.lastIndexOf("]]")).trim();
-          if (!res[sectionName]) res[sectionName] = [];
-          const newEntry = {};
-          res[sectionName].push(newEntry);
-          currentSection = newEntry;
+          const dotIdx = sectionName.indexOf(".");
+          if (dotIdx !== -1) {
+            const parent = sectionName.substring(0, dotIdx);
+            const child = sectionName.substring(dotIdx + 1);
+            if (res[parent] && res[parent].length > 0) {
+              const lastParent = res[parent][res[parent].length - 1];
+              if (!lastParent[child]) lastParent[child] = [];
+              const newEntry = {};
+              lastParent[child].push(newEntry);
+              currentSection = newEntry;
+            }
+          } else {
+            if (!res[sectionName]) res[sectionName] = [];
+            const newEntry = {};
+            res[sectionName].push(newEntry);
+            currentSection = newEntry;
+          }
           i++;
           continue;
         }
