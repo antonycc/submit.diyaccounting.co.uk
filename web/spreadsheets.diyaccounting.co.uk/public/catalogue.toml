@@ -47,13 +47,6 @@ name = "Company"
 description = "Complete accounting spreadsheet for limited companies. Includes sales, purchases, VAT, corporation tax, payroll, dividends, and year-end accounts."
 
   [[products.periods]]
-  date = "2027-02-28"
-  label = "February 2027"
-  short = "Feb27"
-  format = "Excel 2007"
-  filename = "GB Accounts Company 2027-02-28 (Feb27) Excel 2007.zip"
-
-  [[products.periods]]
   date = "2027-01-31"
   label = "January 2027"
   short = "Jan27"
