@@ -1,0 +1,33 @@
+# Citation references for c-i-svs-corporation-tax.html
+# New references: REF289, REF290
+# Reused references: REF129, REF131
+
+[[reference]]
+id = "REF289"
+claim = "Under CIS, contractors deduct 20% from registered subcontractors' payments; 30% if unregistered"
+category = "cis"
+articles = ["c-i-svs-corporation-tax"]
+
+[[reference.source]]
+id = "SRC-GOVUK-CIS-SUBCONTRACTOR"
+url = "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor"
+title = "What you must do as a CIS subcontractor"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "a contractor must deduct 20% from your payments and pass it to HM Revenue and Customs"
+accessed = "2026-02-06"
+authority = "primary"
+
+[[reference]]
+id = "REF290"
+claim = "Limited companies must claim CIS deductions through monthly payroll (EPS), not through the Corporation Tax return"
+category = "cis"
+articles = ["c-i-svs-corporation-tax"]
+
+[[reference.source]]
+id = "SRC-GOVUK-CIS-CLAIM"
+url = "https://www.gov.uk/what-you-must-do-as-a-cis-subcontractor/how-to-claim-your-cis-deductions"
+title = "How to claim your CIS deductions"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "If you pay CIS deductions, you must claim these back through your company's monthly payroll scheme. Do not try to claim back through your Corporation Tax return - you may get a penalty if you do."
+accessed = "2026-02-06"
+authority = "primary"

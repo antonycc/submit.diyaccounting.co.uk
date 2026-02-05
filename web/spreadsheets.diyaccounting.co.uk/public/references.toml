@@ -142,7 +142,7 @@ authority = "primary"
 id = "REF010"
 claim = "Writing down allowance: 18% main rate, 6% special rate"
 category = "capital-allowances"
-articles = ["capital-allowances", "written-down-book-value-and-tax-value"]
+articles = ["capital-allowances", "written-down-book-value-and-tax-value", "annual-investment-allowance"]
 
 [[reference.source]]
 id = "SRC-GOVUK-CAPITAL-ALLOW"
