@@ -915,3 +915,99 @@ footer {
   padding-top: 0.5rem;
   border-top: 1px solid #e0e0e0;
 }
+
+/* ============================================================
+   Citation References
+   ============================================================ */
+
+/* Inline reference markers in articles */
+.ref sup a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  font-size: 0.75em;
+  vertical-align: super;
+}
+.ref sup a:hover,
+.ref sup a:focus {
+  text-decoration: underline;
+}
+
+/* Reference list entries on references.html */
+.ref-entry {
+  margin: 1.5rem 0;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid var(--color-brand-primary);
+  background: #fafafa;
+}
+.ref-entry h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: var(--font-size-base);
+}
+.ref-claim {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.ref-articles {
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.75rem;
+}
+.ref-source {
+  margin: 0.75rem 0 0.75rem 1rem;
+  font-size: 0.9em;
+}
+.ref-source-title {
+  font-weight: 600;
+}
+.ref-extract {
+  background: #f0f0f0;
+  padding: 0.5rem 1rem;
+  border-left: 2px solid #ccc;
+  font-style: italic;
+  margin: 0.4rem 0;
+  font-size: 0.95em;
+}
+.ref-accessed {
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+}
+
+/* Source catalogue on sources.html */
+.source-entry {
+  margin: 1.5rem 0;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid var(--color-brand-primary-light);
+  background: #fafafa;
+}
+.source-entry h3 {
+  margin: 0 0 0.3rem 0;
+  font-size: var(--font-size-base);
+}
+.source-publisher {
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+.source-refs {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.5rem 0;
+}
+.source-refs li {
+  padding: 0.2rem 0;
+  font-size: 0.9em;
+}
+.source-refs li::before {
+  content: "\2192 ";
+  color: var(--color-brand-primary);
+}
+
+/* Category sections on references/sources pages */
+.ref-category-section {
+  margin: 2rem 0;
+}
+.ref-category-section h2 {
+  border-bottom: 2px solid var(--color-brand-primary);
+  padding-bottom: 0.3rem;
+  margin-bottom: 1rem;
+}

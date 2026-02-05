@@ -658,6 +658,97 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     console.log(" sitemap.xml is well-formed");
   });
 
+  test("References page loads with citation entries", async ({ page }) => {
+    addOnPageLogging(page);
+
+    // ============================================================
+    // STEP 1: Verify references.toml is accessible
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 1: Verify references.toml is accessible");
+    console.log("=".repeat(60));
+
+    const refsTomlUrl = `${spreadsheetsBaseUrl}/references.toml`;
+    const tomlResponse = await page.request.fetch(refsTomlUrl, { failOnStatusCode: false });
+    expect(tomlResponse.status()).toBe(200);
+    const tomlContent = await tomlResponse.text();
+    expect(tomlContent).toContain("[[reference]]");
+    expect(tomlContent).toContain("[[reference.source]]");
+    console.log(" references.toml is accessible and well-formed");
+
+    // ============================================================
+    // STEP 2: Navigate to references page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 2: Navigate to references page");
+    console.log("=".repeat(60));
+
+    const refsUrl = `${spreadsheetsBaseUrl}/references.html`;
+    await page.goto(refsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+
+    const title = await page.title();
+    expect(title).toContain("References");
+    console.log(" References page loaded");
+
+    // Wait for JS to render references from TOML
+    await page.waitForFunction(
+      () => {
+        const list = document.getElementById("references-list");
+        return list && list.querySelector(".ref-entry");
+      },
+      { timeout: 15000 },
+    );
+    console.log(" Reference entries rendered from TOML");
+
+    // Verify reference entries have expected structure
+    const refEntries = page.locator(".ref-entry");
+    const entryCount = await refEntries.count();
+    console.log(` Found ${entryCount} reference entries`);
+    expect(entryCount).toBeGreaterThan(0);
+
+    // Verify at least one reference has a source with extract
+    const firstExtract = page.locator(".ref-extract").first();
+    await expect(firstExtract).toBeVisible({ timeout: 5000 });
+    console.log(" Reference sources with verbatim extracts are displayed");
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-18-references-page.png` });
+
+    // ============================================================
+    // STEP 3: Navigate to sources page
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 3: Navigate to sources page");
+    console.log("=".repeat(60));
+
+    const sourcesUrl = `${spreadsheetsBaseUrl}/sources.html`;
+    await page.goto(sourcesUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+
+    const sourcesTitle = await page.title();
+    expect(sourcesTitle).toContain("Source Catalogue");
+    console.log(" Sources page loaded");
+
+    // Wait for JS to render
+    await page.waitForFunction(
+      () => {
+        const list = document.getElementById("sources-list");
+        return list && list.querySelector(".source-entry");
+      },
+      { timeout: 15000 },
+    );
+    console.log(" Source entries rendered");
+
+    const sourceEntries = page.locator(".source-entry");
+    const sourceCount = await sourceEntries.count();
+    console.log(` Found ${sourceCount} source entries`);
+    expect(sourceCount).toBeGreaterThan(0);
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-19-sources-page.png` });
+
+    console.log("\n" + "=".repeat(60));
+    console.log("TEST COMPLETE - References and sources pages verified");
+    console.log("=".repeat(60));
+  });
+
   test("Navigate between all main pages", async ({ page }) => {
     addOnPageLogging(page);
 
