@@ -32,7 +32,7 @@ authority = "primary"
 id = "REF181"
 claim = "Small companies can choose not to file the directors report and profit and loss account to Companies House"
 category = "audit-exemption"
-articles = ["audit-exemptions-for-small-companies"]
+articles = ["audit-exemptions-for-small-companies", "limited-company-directors-report"]
 
 [[reference.source]]
 id = "SRC-GOVUK-ANNUAL-ACCOUNTS-SMALL"
@@ -77,7 +77,7 @@ authority = "primary"
 id = "REF184"
 claim = "Small companies must send statutory accounts to HMRC as part of their Company Tax Return"
 category = "audit-exemption"
-articles = ["audit-exemptions-for-small-companies"]
+articles = ["audit-exemptions-for-small-companies", "limited-company-directors-report"]
 
 [[reference.source]]
 id = "SRC-GOVUK-ANNUAL-ACCOUNTS-SMALL"

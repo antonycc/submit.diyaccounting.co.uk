@@ -6,7 +6,7 @@
 id = "REF149"
 claim = "Employers cannot register for PAYE more than 2 months before they start paying people"
 category = "paye-registration"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "new-employers-payroll-essentials"]
 
 [[reference.source]]
 id = "SRC-GOVUK-REGISTER-EMPLOYER"
@@ -21,7 +21,7 @@ authority = "primary"
 id = "REF150"
 claim = "PAYE registration is required when an employee is paid £96 or more a week"
 category = "paye-registration"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "new-employers-payroll-essentials"]
 
 [[reference.source]]
 id = "SRC-GOVUK-PAYE-SETUP"
@@ -36,7 +36,7 @@ authority = "primary"
 id = "REF151"
 claim = "PAYE cheque payments must reach HMRC by the 19th of the month; electronic payments by the 22nd"
 category = "paye-payment"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "new-employers-payroll-essentials"]
 
 [[reference.source]]
 id = "SRC-GOVUK-PAYE-DEADLINES"
@@ -60,7 +60,7 @@ authority = "primary"
 id = "REF152"
 claim = "Small employers paying less than £1,500 a month can arrange to pay PAYE quarterly"
 category = "paye-payment"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "new-employers-payroll-essentials"]
 
 [[reference.source]]
 id = "SRC-GOVUK-PAYE-QUARTERLY"
@@ -90,7 +90,7 @@ authority = "primary"
 id = "REF154"
 claim = "Employers must give employees a P45 when they leave"
 category = "paye-forms"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "income-tax-p-a-y-e-employers-payroll", "new-employers-payroll-essentials", "inland-revenue-p-a-y-e-returns-national-insurance-scheme"]
 
 [[reference.source]]
 id = "SRC-GOVUK-EMPLOYEE-LEAVING"
@@ -105,7 +105,7 @@ authority = "primary"
 id = "REF155"
 claim = "Employers must give each employee a P60 showing tax paid during the tax year"
 category = "paye-forms"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "income-tax-p-a-y-e-employers-payroll", "new-employers-payroll-essentials", "inland-revenue-p-a-y-e-returns-national-insurance-scheme"]
 
 [[reference.source]]
 id = "SRC-GOVUK-P60"
@@ -120,7 +120,7 @@ authority = "primary"
 id = "REF156"
 claim = "Tax code numbers represent approximately one tenth of the tax-free personal allowance"
 category = "paye-tax-codes"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "income-tax-p-a-y-e-employers-payroll"]
 
 [[reference.source]]
 id = "SRC-GOVUK-TAX-CODES"
@@ -135,7 +135,7 @@ authority = "primary"
 id = "REF157"
 claim = "Employers must give employees a payslip showing gross pay, deductions, and net pay on or before payday"
 category = "payroll"
-articles = ["pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["pay-as-you-earn-wages-salaries-tax-scheme", "income-tax-p-a-y-e-employers-payroll", "new-employers-payroll-essentials", "inland-revenue-p-a-y-e-returns-national-insurance-scheme"]
 
 [[reference.source]]
 id = "SRC-GOVUK-PAYSLIPS"

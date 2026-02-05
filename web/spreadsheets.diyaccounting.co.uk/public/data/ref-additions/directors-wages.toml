@@ -38,7 +38,7 @@ authority = "primary"
 id = "REF056"
 claim = "A company must not pay out more in dividends than its available profits"
 category = "dividends"
-articles = ["directors-wages"]
+articles = ["directors-wages", "directors-loansand-dividends"]
 
 [[reference.source]]
 id = "SRC-GOVUK-LTD-CO-MONEY"

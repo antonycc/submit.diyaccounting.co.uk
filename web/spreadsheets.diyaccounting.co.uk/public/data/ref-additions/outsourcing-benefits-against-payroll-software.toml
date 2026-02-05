@@ -5,7 +5,7 @@
 id = "REF104"
 claim = "Employers are legally responsible for operating PAYE"
 category = "payroll"
-articles = ["outsourcing-benefits-against-payroll-software", "pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["outsourcing-benefits-against-payroll-software", "pay-as-you-earn-wages-salaries-tax-scheme", "new-employers-payroll-essentials", "inland-revenue-p-a-y-e-returns-national-insurance-scheme"]
 
 [[reference.source]]
 id = "SRC-GOVUK-PAYE-EMPLOYERS"
@@ -20,7 +20,7 @@ authority = "primary"
 id = "REF105"
 claim = "Employers must deduct income tax and National Insurance from employee pay"
 category = "payroll"
-articles = ["outsourcing-benefits-against-payroll-software", "pay-as-you-earn-wages-salaries-tax-scheme"]
+articles = ["outsourcing-benefits-against-payroll-software", "pay-as-you-earn-wages-salaries-tax-scheme", "income-tax-p-a-y-e-employers-payroll", "new-employers-payroll-essentials", "inland-revenue-p-a-y-e-returns-national-insurance-scheme"]
 
 [[reference.source]]
 id = "SRC-GOVUK-PAYE-EMPLOYERS"

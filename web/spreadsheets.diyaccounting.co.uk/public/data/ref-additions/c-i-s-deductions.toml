@@ -2,7 +2,7 @@
 id = "REF129"
 claim = "Under CIS, contractors deduct money from subcontractor payments and pass it to HMRC"
 category = "cis"
-articles = ["c-i-s-deductions"]
+articles = ["c-i-s-deductions", "c-i-svs-corporation-tax"]
 
 [[reference.source]]
 id = "SRC-GOVUK-CIS-OVERVIEW"

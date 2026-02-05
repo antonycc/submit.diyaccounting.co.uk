@@ -50,7 +50,7 @@ authority = "primary"
 id = "REF141"
 claim = "The 10% dividend tax credit was abolished from April 2016 and replaced by a dividend allowance; the allowance is £500 for 2024/25"
 category = "dividends"
-articles = ["dividend-tax-credit-tax-rate-income-tax"]
+articles = ["dividend-tax-credit-tax-rate-income-tax", "directors-loansand-dividends"]
 
 [[reference.source]]
 id = "SRC-GOVUK-DIV-ALLOWANCE"
