@@ -115,13 +115,15 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     const productsNav = page.locator('.top-nav a:has-text("Products")');
     const downloadNav = page.locator('.top-nav a:has-text("Download")');
     const knowledgeBaseNav = page.locator('.top-nav a:has-text("Knowledge Base")');
+    const submitVatNav = page.locator('.top-nav a:has-text("Submit VAT MTD")');
     const donateNav = page.locator('.top-nav a:has-text("Donate")');
 
     await expect(productsNav).toBeVisible();
     await expect(downloadNav).toBeVisible();
     await expect(knowledgeBaseNav).toBeVisible();
+    await expect(submitVatNav).toBeVisible();
     await expect(donateNav).toBeVisible();
-    console.log(" Top navigation links are present (Products, Download, Knowledge Base, Donate)");
+    console.log(" Top navigation links are present (Products, Download, Knowledge Base, Submit VAT MTD, Donate)");
 
     // ============================================================
     // STEP 5: Verify download links on product cards
