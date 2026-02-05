@@ -243,35 +243,7 @@
       <span class="lightbox-hint">Click anywhere to close</span>
     </div>
 
-    <script>
-      // Lightbox functionality for images
-      (function () {
-        var lightbox = document.getElementById("lightbox");
-        var lightboxImg = document.getElementById("lightbox-image");
-        var images = document.querySelectorAll(".lightbox-img");
-
-        images.forEach(function (img) {
-          img.addEventListener("click", function () {
-            lightboxImg.src = this.src;
-            lightboxImg.alt = this.alt;
-            lightbox.classList.add("active");
-            document.body.style.overflow = "hidden";
-          });
-        });
-
-        lightbox.addEventListener("click", function () {
-          lightbox.classList.remove("active");
-          document.body.style.overflow = "";
-        });
-
-        document.addEventListener("keydown", function (e) {
-          if (e.key === "Escape" && lightbox.classList.contains("active")) {
-            lightbox.classList.remove("active");
-            document.body.style.overflow = "";
-          }
-        });
-      })();
-    </script>
+    <script src="lib/lightbox.js"></script>
 
     <script type="application/ld+json">
     {
