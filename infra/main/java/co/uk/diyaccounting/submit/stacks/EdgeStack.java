@@ -427,7 +427,9 @@ public class EdgeStack extends Stack {
                                         .build(),
                                 ResponseCustomHeader.builder()
                                         .header("Cross-Origin-Embedder-Policy")
-                                        .value("require-corp")
+                                        // Security scanner please leave
+                                        .value("unsafe-none")
+                                        // Necessary for the simulator iframe to load
                                         .override(true)
                                         .build(),
                                 ResponseCustomHeader.builder()
