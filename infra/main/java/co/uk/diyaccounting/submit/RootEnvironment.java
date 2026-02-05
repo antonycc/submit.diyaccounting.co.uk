@@ -16,7 +16,7 @@ import software.amazon.awscdk.Environment;
 /**
  * CDK entry point for the root account DNS management.
  * Deploys RootDnsStack which manages Route53 alias records
- * for gateway CloudFront distributions.
+ * for gateway and spreadsheets CloudFront distributions.
  * <p>
  * Deployed by deploy-root.yml (manual dispatch only).
  */
@@ -31,13 +31,33 @@ public class RootEnvironment {
         var hostedZoneId = KindCdk.getContextValueString(app, "hostedZoneId", "");
         var ciGatewayCfDomain = envOr("CI_GATEWAY_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "ciGatewayCloudFrontDomain", ""));
         var prodGatewayCfDomain = envOr("PROD_GATEWAY_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "prodGatewayCloudFrontDomain", ""));
+        var ciSpreadsheetsCfDomain = envOr(
+                "CI_SPREADSHEETS_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "ciSpreadsheetsCloudFrontDomain", ""));
+        var prodSpreadsheetsCfDomain = envOr(
+                "PROD_SPREADSHEETS_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "prodSpreadsheetsCloudFrontDomain", ""));
 
-        var root = new RootEnvironment(app, hostedZoneName, hostedZoneId, ciGatewayCfDomain, prodGatewayCfDomain);
+        var root = new RootEnvironment(
+                app,
+                hostedZoneName,
+                hostedZoneId,
+                ciGatewayCfDomain,
+                prodGatewayCfDomain,
+                ciSpreadsheetsCfDomain,
+                prodSpreadsheetsCfDomain);
         app.synth();
         infof("CDK synth complete for root DNS environment");
     }
 
-    public RootEnvironment(App app, String hostedZoneName, String hostedZoneId, String ciGatewayCfDomain, String prodGatewayCfDomain) {
+    public RootEnvironment(
+            App app,
+            String hostedZoneName,
+            String hostedZoneId,
+            String ciGatewayCfDomain,
+            String prodGatewayCfDomain,
+            String ciSpreadsheetsCfDomain,
+            String prodSpreadsheetsCfDomain) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
         Environment usEast1Env = Environment.builder()
                 .region("us-east-1")
@@ -56,6 +76,8 @@ public class RootEnvironment {
                         .hostedZoneId(hostedZoneId)
                         .ciGatewayCloudFrontDomain(ciGatewayCfDomain)
                         .prodGatewayCloudFrontDomain(prodGatewayCfDomain)
+                        .ciSpreadsheetsCloudFrontDomain(ciSpreadsheetsCfDomain)
+                        .prodSpreadsheetsCloudFrontDomain(prodSpreadsheetsCfDomain)
                         .build());
     }
 }

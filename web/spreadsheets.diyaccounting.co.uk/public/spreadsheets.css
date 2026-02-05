@@ -8,24 +8,25 @@
    ============================================================ */
 
 :root {
-  /* Brand */
-  --color-brand-primary: #2c5aa0;
-  --color-brand-primary-dark: #1e3f73;
+  /* Brand — teal palette from diyaccounting.co.uk */
+  --color-brand-primary: #2d9c9c;
+  --color-brand-primary-dark: #247d7d;
+  --color-brand-primary-light: #29c0c0;
 
   /* Text */
-  --color-text-primary: #333;
-  --color-text-secondary: #666;
+  --color-text-primary: #292a2a;
+  --color-text-secondary: #555;
   --color-text-muted: #737373;
   --color-text-inverse: #fff;
 
   /* UI */
-  --color-background: #f9f9f9;
+  --color-background: #f7fafa;
   --color-surface: #fff;
-  --color-border: #ddd;
+  --color-border: #d5dede;
 
   /* Focus (WCAG 2.1 AA) */
-  --color-focus: #005ea5;
-  --color-focus-ring: rgba(0, 94, 165, 0.3);
+  --color-focus: #2d9c9c;
+  --color-focus-ring: rgba(45, 156, 156, 0.3);
 
   /* Accent (product feature ticks) */
   --color-accent-green: #2e7d32;
@@ -85,6 +86,39 @@
 }
 
 /* ============================================================
+   Top Navigation
+   ============================================================ */
+
+.top-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.25em;
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.top-nav a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  padding: 0.5em 1em;
+  border-radius: var(--radius-md);
+  font-size: 0.95em;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.top-nav a:hover {
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+  text-decoration: none;
+}
+
+.top-nav a.nav-current {
+  border-bottom: 2px solid var(--color-brand-primary);
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ============================================================
    Links (WCAG 2.1 AA: distinguishable by more than colour)
    ============================================================ */
 
@@ -125,6 +159,8 @@ body {
 body {
   font-family: var(--font-family-base);
   background-color: var(--color-background);
+  background-image: radial-gradient(circle, #dbe5e5 0.5px, transparent 0.5px);
+  background-size: 12px 12px;
   color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
@@ -327,7 +363,7 @@ main {
 }
 
 .btn-download:hover {
-  background: #e8f0fe;
+  background: #e6f5f5;
 }
 
 .btn-primary {
@@ -598,6 +634,15 @@ footer {
   .product-card .feature-list {
     flex-direction: column;
     gap: 0.15em;
+  }
+
+  .top-nav {
+    gap: 0.15em;
+  }
+
+  .top-nav a {
+    padding: 0.4em 0.75em;
+    font-size: 0.85em;
   }
 
   .gallery-grid {

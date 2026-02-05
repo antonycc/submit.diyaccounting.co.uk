@@ -21,13 +21,13 @@ import software.constructs.Construct;
 
 /**
  * RootDnsStack: Manages Route53 alias records in the root account zone
- * for the gateway CloudFront distributions.
+ * for the gateway and spreadsheets CloudFront distributions.
  * <p>
- * Phase 1 records:
- * - ci-gateway.diyaccounting.co.uk → gateway account CloudFront
- * - prod-gateway.diyaccounting.co.uk → gateway account CloudFront
- * <p>
- * Future phases will add NS delegations for spreadsheets and submit subdomains.
+ * Records:
+ * - ci-gateway.diyaccounting.co.uk → gateway CloudFront
+ * - prod-gateway.diyaccounting.co.uk → gateway CloudFront
+ * - ci-spreadsheets.diyaccounting.co.uk → spreadsheets CloudFront
+ * - prod-spreadsheets.diyaccounting.co.uk → spreadsheets CloudFront
  */
 public class RootDnsStack extends Stack {
 
@@ -49,6 +49,18 @@ public class RootDnsStack extends Stack {
         /** CloudFront domain name for prod-gateway. Empty to skip. */
         @Value.Default
         default String prodGatewayCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for ci-spreadsheets (e.g. d5678efghij.cloudfront.net). Empty to skip. */
+        @Value.Default
+        default String ciSpreadsheetsCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for prod-spreadsheets. Empty to skip. */
+        @Value.Default
+        default String prodSpreadsheetsCloudFrontDomain() {
             return "";
         }
 
@@ -95,6 +107,25 @@ public class RootDnsStack extends Stack {
             Route53AliasUpsert.upsertAliasToCloudFront(
                     this, "ProdGateway", zone, "prod-gateway", props.prodGatewayCloudFrontDomain());
             cfnOutput(this, "ProdGatewayDomain", "prod-gateway." + props.hostedZoneName());
+        }
+
+        // Spreadsheets DNS records
+        if (!props.ciSpreadsheetsCloudFrontDomain().isBlank()) {
+            infof("Creating ci-spreadsheets alias to %s", props.ciSpreadsheetsCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "CiSpreadsheets", zone, "ci-spreadsheets", props.ciSpreadsheetsCloudFrontDomain());
+            cfnOutput(this, "CiSpreadsheetsDomain", "ci-spreadsheets." + props.hostedZoneName());
+        }
+
+        if (!props.prodSpreadsheetsCloudFrontDomain().isBlank()) {
+            infof("Creating prod-spreadsheets alias to %s", props.prodSpreadsheetsCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this,
+                    "ProdSpreadsheets",
+                    zone,
+                    "prod-spreadsheets",
+                    props.prodSpreadsheetsCloudFrontDomain());
+            cfnOutput(this, "ProdSpreadsheetsDomain", "prod-spreadsheets." + props.hostedZoneName());
         }
 
         infof("RootDnsStack %s created", this.getNode().getId());

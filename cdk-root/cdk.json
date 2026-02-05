@@ -7,6 +7,8 @@
     "hostedZoneName": "diyaccounting.co.uk",
     "hostedZoneId": "Z0315522208PWZSSBI9AL",
     "ciGatewayCloudFrontDomain": "",
-    "prodGatewayCloudFrontDomain": ""
+    "prodGatewayCloudFrontDomain": "",
+    "ciSpreadsheetsCloudFrontDomain": "",
+    "prodSpreadsheetsCloudFrontDomain": ""
   }
 }

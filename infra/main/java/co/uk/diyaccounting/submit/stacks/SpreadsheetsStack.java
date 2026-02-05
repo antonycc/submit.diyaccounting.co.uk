@@ -302,7 +302,9 @@ public class SpreadsheetsStack extends Stack {
                         "/donate.html",
                         "/knowledge-base.html",
                         "/knowledge-base.toml",
-                        "/spreadsheets.css"))
+                        "/spreadsheets.css",
+                        "/favicon.svg",
+                        "/favicon.ico"))
                 .retainOnDelete(true)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)
