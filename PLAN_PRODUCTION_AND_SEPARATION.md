@@ -94,6 +94,95 @@ Current certs cover only `ci-*` and `prod-*` prefixed domains. For Phase 1, new 
 
 Either way, this is a one-time manual operation in the AWS console, same as the original cert creation.
 
+### Google Analytics 4 and conversion tracking
+
+The old `www.diyaccounting.co.uk` used Universal Analytics (`UA-1035014-1`) with basic pageview tracking only — no event tracking, no ecommerce, no GA4. UA stopped collecting data in July 2023. The old site also had a Google Ads remarketing pixel (conversion ID `1065724931`). None of the current sites (gateway, spreadsheets, submit) have any Google Analytics.
+
+**Goal**: Implement GA4 across all three sites with full ecommerce event tracking and conversion tracking, using the Google Analytics account that owns `UA-1035014-1`.
+
+#### Steps
+
+| Step | Description |
+|------|-------------|
+| 1.12 | **Create GA4 property** in the Google Analytics account that owns `UA-1035014-1`. Name: "DIY Accounting" with three data streams: `diyaccounting.co.uk` (gateway), `spreadsheets.diyaccounting.co.uk` (spreadsheets), `submit.diyaccounting.co.uk` (submit). Record the Measurement ID (`G-XXXXXXXXXX`) for each stream. |
+| 1.13 | **Add gtag.js snippet to all three sites**. Each site gets its own data stream's Measurement ID. Place in `<head>` of every page. Respect user consent (cookie banner required for UK/GDPR — load gtag with `consent: 'denied'` default, grant on acceptance). |
+| 1.14 | **Implement GA4 ecommerce events on spreadsheets site**. The download flow maps naturally to GA4's recommended ecommerce events (see event mapping below). |
+| 1.15 | **Implement GA4 ecommerce events on submit site**. Map the VAT submission flow to conversion events. |
+| 1.16 | **Configure conversions in GA4 console**. Mark `purchase` (donation completed) and `begin_checkout` (download initiated) as conversion events. |
+| 1.17 | **Link Google Ads account** if the remarketing pixel (conversion ID `1065724931`) is still in use. Set up GA4 audiences for remarketing. |
+| 1.18 | **Set up cross-domain tracking** so users navigating between gateway → spreadsheets → submit are tracked as a single session. Configure referral exclusions for the three domains. |
+| 1.19 | **Update CSP headers** on all three CloudFront distributions to allow `https://www.googletagmanager.com` and `https://www.google-analytics.com` in `script-src` and `connect-src`. |
+| 1.20 | **Update privacy policy** on submit site to document GA4 data collection alongside existing CloudWatch RUM disclosure. |
+
+#### GA4 ecommerce event mapping — spreadsheets site
+
+The product catalogue and donation flow map to GA4's recommended retail ecommerce events:
+
+| User action | GA4 event | Parameters |
+|---|---|---|
+| Views product catalogue (index.html) | `view_item_list` | `item_list_name: "Products"`, items array |
+| Selects product on download page | `view_item` | `item_id`, `item_name`, `price`, `currency: "GBP"` |
+| Selects period/clicks "Download with donation" | `begin_checkout` | `item_id`, `item_name`, `price`, `currency: "GBP"` |
+| Completes PayPal donation | `purchase` | `transaction_id` (from PayPal), `value` (donation amount), `currency: "GBP"`, item details |
+| Clicks "Download without donating" | `add_to_cart` | `item_id`, `item_name`, `price: 0`, `currency: "GBP"` |
+
+#### Product pricing for ecommerce tracking
+
+Current products are free with voluntary donations. For GA4 ecommerce events, use `price: 0` and `currency: "GBP"` for all current products. When paid tiers are introduced (e.g. `resident-pro` at £12.99), add them to the catalogue with pricing:
+
+```toml
+# Example future paid product in catalogue.toml
+[[products]]
+id = "ResidentPro"
+name = "Resident Pro"
+description = "..."
+price = "12.99"
+currency = "GBP"
+```
+
+The gtag `purchase` event should capture the actual PayPal donation amount (available from the PayPal Donate SDK `onComplete` callback) as the `value` parameter, even for voluntary donations. This provides real revenue tracking regardless of whether products have a set price.
+
+#### GA4 event mapping — submit site
+
+| User action | GA4 event | Parameters |
+|---|---|---|
+| Lands on submit home page | `page_view` | (automatic) |
+| Logs in via Cognito | `login` | `method: "cognito"` |
+| Starts VAT return submission | `begin_checkout` | `item_name: "VAT Return"`, `item_id: "vat-return"` |
+| Submits VAT return to HMRC | `purchase` | `transaction_id` (HMRC receipt ref), `value: 0`, `currency: "GBP"` |
+
+#### GA4 event mapping — gateway site
+
+| User action | GA4 event | Parameters |
+|---|---|---|
+| Lands on gateway | `page_view` | (automatic) |
+| Clicks through to spreadsheets | `select_content` | `content_type: "product_link"`, `item_id: "spreadsheets"` |
+| Clicks through to submit | `select_content` | `content_type: "product_link"`, `item_id: "submit"` |
+
+#### Carry forward from old www.diyaccounting.co.uk
+
+Check and bring across these tracking assets from the old site where still relevant:
+
+| Asset | Old site location | Action |
+|---|---|---|
+| Google Ads remarketing pixel (ID `1065724931`) | `footer.html` | Evaluate if Google Ads campaigns are still active. If so, link to GA4 audiences instead of legacy remarketing tag. If not, skip. |
+| Google site verification files (`googleXXX.html`) | 4 files in site root | Check if needed for Google Search Console access. If the same Google account is used, verify via DNS TXT record instead (already have `_domainkey` etc.). |
+| Facebook `fb:admins` meta tag | All pages | Check if a Facebook page (`DIY.Accounting.Software`) is still maintained. Add Open Graph meta tags to new sites if so. |
+| Open Graph image/URL tags | All pages | Add `og:image`, `og:url`, `og:site_name`, `og:type` meta tags to spreadsheets and gateway for social sharing. Use product screenshots for spreadsheets pages. |
+| Schema.org JSON-LD Product markup | index.html | Already present on spreadsheets `index.html`. Extend with `offers.price` when paid products are introduced. |
+| Google Search Console | (external) | Register all three production domains in Google Search Console. Submit sitemaps. Monitor indexing of new URLs and crawl of 301 redirects from old URLs. |
+
+#### Consent and privacy
+
+GA4 must respect GDPR/UK data protection:
+- Default consent mode: `analytics_storage: 'denied'`
+- Cookie banner on all three sites (can be a shared component or inline)
+- On acceptance: `gtag('consent', 'update', { analytics_storage: 'granted' })`
+- Cookie policy documented in privacy page
+- GA4 data retention: set to 14 months (maximum) in GA4 admin
+- IP anonymization: on by default in GA4 (no action needed)
+- Google Signals: enable for cross-device tracking if desired
+
 ---
 
 ## Phase 2: Separate AWS accounts
