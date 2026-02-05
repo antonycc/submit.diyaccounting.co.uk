@@ -152,3 +152,38 @@ jobs:
           cat cdk-submit-gateway.out/cdk-outputs-gateway.json | jq '.'
           echo ""
           echo ">>> Copy the CloudFrontDomainName value above and use it as input to deploy-root.yml <<<"
+
+  test-gateway:
+    name: 'gateway smoke test'
+    needs:
+      - names
+      - deploy-gateway
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run gateway behaviour tests
+        run: npm run test:gatewayBehaviour-${{ needs.names.outputs.environment-name }}
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: gateway-behaviour-test
+          retention-days: 7
+          path: target/behaviour-test-results/

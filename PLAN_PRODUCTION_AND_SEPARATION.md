@@ -48,6 +48,165 @@ Features already built:
 
 **Goal**: Point the live `diyaccounting.co.uk`, `www.diyaccounting.co.uk`, and `spreadsheets.diyaccounting.co.uk` domains to the new sites. No new AWS accounts. No new repos.
 
+```
+ Good — plan file cleaned up. Here's where we stand:
+
+  Status right now
+  ┌──────────────────────────────────┬────────────────────────────┐
+  │               Item               │           Status           │
+  ├──────────────────────────────────┼────────────────────────────┤
+  │ CI gateway deploy                │ In progress                │
+  ├──────────────────────────────────┼────────────────────────────┤
+  │ CI spreadsheets deploy           │ In progress                │
+  ├──────────────────────────────────┼────────────────────────────┤
+  │ Submit deploy                    │ Queued (waiting for tests) │
+  ├──────────────────────────────────┼────────────────────────────┤
+  │ GA4 ecommerce events (1.14/1.15) │ Background task running    │
+  ├──────────────────────────────────┼────────────────────────────┤
+  │ Privacy policy (1.20)            │ Done                       │
+  ├──────────────────────────────────┼────────────────────────────┤
+  │ Plan file cleanup                │ Done                       │
+  └──────────────────────────────────┴────────────────────────────┘
+  What's next after CI deployments land
+
+  Once CI deploys complete, we can run the new behaviour tests against CI to validate everything works:
+  npm run test:gatewayBehaviour-ci
+  npm run test:spreadsheetsBehaviour-ci
+
+  Then the remaining steps toward go-live are:
+  1. Deploy prod stacks (1.1/1.2) — from this branch
+  2. ACM certs (1.4/1.5) — manual in AWS console, you'll need to do this
+  3. Update stack domain names (1.6/1.7) — code change with new cert ARNs
+  4. Test against prod — behaviour tests
+  5. Merge to main — PR
+  6. DNS flip — deploy-root.yml
+
+  Do you want me to start on anything else while we wait for the deployments and ecommerce task to finish?
+
+✻ Worked for 4m 7s · 1 agent running in the background
+
+⏺ Agent "Implement GA4 ecommerce events" completed
+
+⏺ Ecommerce events are done and committed. Here's what was added:
+
+  Spreadsheets site
+
+  - view_item_list on product catalogue page
+  - view_item when product selected in download dropdown
+  - begin_checkout on "Download with donation" click
+  - add_to_cart on "Download without donating" click
+  - purchase on PayPal donation completion (PayPal Donate SDK doesn't expose transaction ID, so uses timestamp fallback)
+
+  Submit site
+
+  - login after successful Cognito authentication
+  - begin_checkout when VAT submission starts
+  - purchase when HMRC returns success receipt (uses formBundleNumber as transaction ID)
+
+  Gateway site
+
+  - select_content on clicks to spreadsheets and submit navigation buttons
+
+  Steps 1.14 and 1.15 marked done. All 714 tests pass.
+
+  Let me push and check deployment status.
+
+⏺ Bash(git add -A && git status --short)
+  ⎿  (No content)
+
+⏺ Bash(gh run list --branch claude/pre-golive-fixes --limit 8 --json name,status,conclusion,databaseId --jq '.[] | "\(.status) \(.conclusion // "-") \(.name)"')
+  ⎿  completed success deploy spreadsheets from claude/pre-golive-fixes
+     completed success deploy gateway from claude/pre-golive-fixes
+     completed success CodeQL
+     … +5 lines (ctrl+o to expand)
+
+⏺ Gateway and spreadsheets CI deployments both succeeded. Submit deploy still in progress.
+
+⏺ Bash(git diff --cached --stat)
+  ⎿  (No content)
+
+⏺ Bash(git status)
+  ⎿  On branch claude/pre-golive-fixes
+     nothing to commit, working tree clean
+
+⏺ The background agent already committed everything. Let me check what's committed and push.
+
+⏺ Bash(git log --oneline -8)
+  ⎿  298831c9 feat: add GA4 ecommerce event tracking across all three sites
+     d0015de4 feat: update production plan with AWS account and repository transition details
+     216823c7 feat: add behaviour tests, GA config, and updated compliance reports
+     … +5 lines (ctrl+o to expand)
+
+⏺ I see the ecommerce events agent committed and the plan update too, but my privacy policy changes and plan cleanup are already included in d0015de4 (the plan update commit).
+   Let me check if privacy is actually in there or if I need a separate commit.
+
+⏺ Bash(git show --stat d0015de4)
+  ⎿  commit d0015de4828476cab85bd1e14906690dd5373119
+     Author: Antony at Polycode <antony@polycode.co.uk>
+     Date:   Thu Feb 5 21:12:12 2026 +0100
+     … +5 lines (ctrl+o to expand)
+
+⏺ That's just your plan edit. Let me check if the privacy HTML and plan cleanup are included in the ecommerce commit.
+
+⏺ Bash(git show --stat 298831c9)
+  ⎿  commit 298831c9429453db3dbfc766cf2df6c623c7acd6
+     Author: Antony at Polycode <antony@polycode.co.uk>
+     Date:   Thu Feb 5 21:15:26 2026 +0100
+     … +30 lines (ctrl+o to expand)
+
+⏺ The ecommerce agent included the privacy policy and plan updates in its commit. Everything is committed. Let me push.
+
+⏺ Bash(git push origin claude/pre-golive-fixes)
+  ⎿  To github.com:antonycc/submit.diyaccounting.co.uk.git
+        216823c7..298831c9  claude/pre-golive-fixes -> claude/pre-golive-fixes
+
+⏺ Pushed. This will trigger new CI deployments with the ecommerce events included.
+
+  Current scoreboard
+  ┌─────────────────────────────────────────────────────┬────────────────────────────────┐
+  │                    Phase 1 Step                     │             Status             │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.1 Deploy prod gateway                             │ Next — ready to trigger        │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.2 Deploy prod spreadsheets                        │ Next — ready to trigger        │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.3 Deploy root DNS for prod subdomains             │ After 1.1/1.2                  │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.4/1.5 ACM certs for apex domains                  │ Manual — you do in AWS console │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.6/1.7 Update stacks with domain names + cert ARNs │ Code change after certs ready  │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.8/1.9 DNS switchover                              │ After merge to main            │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.10 Validate live domains                          │ After DNS switchover           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.11 Decommission old www                           │ ~1 week after go-live          │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.12 GA4 property                                   │ Done                           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.12a Retire old GA4 stream                         │ ~1 week after go-live          │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.13 gtag.js on all sites                           │ Done                           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.14 Ecommerce events (spreadsheets)                │ Done                           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.15 Ecommerce events (submit)                      │ Done                           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.16 Configure conversions in GA4                   │ After events flowing           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.17 Link Google Ads                                │ Check if campaigns active      │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.18 Cross-domain tracking                          │ Done                           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.19 CSP headers                                    │ Done                           │
+  ├─────────────────────────────────────────────────────┼────────────────────────────────┤
+  │ 1.20 Privacy policy                                 │ Done                           │
+  └─────────────────────────────────────────────────────┴────────────────────────────────┘
+  Want me to trigger the prod deployments (1.1/1.2) now? Or would you prefer to wait for the CI behaviour tests to validate first?
+
+```
+
+
 ### Prerequisites
 
 - Deploy prod gateway and prod spreadsheets stacks (same pattern as CI, triggered from main branch)

@@ -159,3 +159,38 @@ jobs:
           cat cdk-submit-spreadsheets.out/cdk-outputs-spreadsheets.json | jq '.'
           echo ""
           echo ">>> Copy the CloudFrontDomainName value above and use it as input to deploy-root.yml <<<"
+
+  test-spreadsheets:
+    name: 'spreadsheets smoke test'
+    needs:
+      - names
+      - deploy-spreadsheets
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run spreadsheets behaviour tests
+        run: npm run test:spreadsheetsBehaviour-${{ needs.names.outputs.environment-name }}
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: spreadsheets-behaviour-test
+          retention-days: 7
+          path: target/behaviour-test-results/

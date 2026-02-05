@@ -1916,6 +1916,75 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-gateway:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'gatewayBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - deploy-publish
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'gatewayBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-spreadsheets:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'spreadsheetsBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - deploy-publish
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'spreadsheetsBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-generate-pass-activity:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'generatePassActivityBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   disable-native-auth:
     if: ${{ !cancelled() }}
     name: 'disable native auth after behaviour tests'
@@ -1937,6 +2006,9 @@ jobs:
       - web-test-vatValidation-sandbox
       - web-test-vatSchemes-sandbox
       - web-test-simulator
+      - web-test-gateway
+      - web-test-spreadsheets
+      - web-test-generate-pass-activity
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
