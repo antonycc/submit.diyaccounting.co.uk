@@ -514,7 +514,7 @@ priority = 63
 id = "introduction-v-a-t-registration"
 category = "vat"
 question = "Introduction VAT Registration"
-description = "When the sales turnover of a business reaches the vat threshold, currently 67,000 pounds per annum until reviewed in April 2008, then registration for vat is compulsory"
+description = "When the sales turnover of a business reaches the VAT threshold, currently £90,000 per annum (from April 2024), then registration for VAT is compulsory"
 keywords = []
 priority = 64
 
