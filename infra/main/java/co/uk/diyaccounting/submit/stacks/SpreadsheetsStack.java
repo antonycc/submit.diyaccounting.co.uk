@@ -297,7 +297,12 @@ public class SpreadsheetsStack extends Stack {
                 .destinationBucket(this.originBucket)
                 .distribution(distribution)
                 .distributionPaths(List.of(
-                        "/index.html", "/download.html", "/donate.html", "/spreadsheets.css"))
+                        "/index.html",
+                        "/download.html",
+                        "/donate.html",
+                        "/knowledge-base.html",
+                        "/knowledge-base.toml",
+                        "/spreadsheets.css"))
                 .retainOnDelete(true)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)

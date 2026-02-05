@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Knowledge Base - DIY Accounting Spreadsheets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="DIY Accounting Spreadsheets Knowledge Base. Articles on bookkeeping, tax returns, VAT, payroll, company accounts, and more for UK small businesses."
+    />
+    <link rel="stylesheet" href="spreadsheets.css" />
+    <style>
+      /* ============================================================
+         Knowledge Base Search
+         ============================================================ */
+      .kb-search-container {
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        padding: var(--spacing-lg) var(--spacing-xl);
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .kb-search-container input {
+        width: 100%;
+        padding: 0.75em 1em;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-family: var(--font-family-base);
+        font-size: 1em;
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+        transition: border-color 0.2s;
+      }
+
+      .kb-search-container input:focus {
+        border-color: var(--color-focus);
+        outline: none;
+        box-shadow: 0 0 0 3px var(--color-focus-ring);
+      }
+
+      .kb-search-row {
+        display: flex;
+        gap: 0.75em;
+        align-items: stretch;
+      }
+
+      .kb-search-row input {
+        flex: 1;
+      }
+
+      .kb-search-row select {
+        min-width: 180px;
+        padding: 0.75em 0.8em;
+        border: 2px solid var(--color-border);
+        border-radius: var(--radius-md);
+        font-family: var(--font-family-base);
+        font-size: 0.95em;
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+        appearance: auto;
+      }
+
+      .search-hint {
+        display: block;
+        margin-top: 0.4em;
+        font-size: 0.85em;
+        color: var(--color-text-muted);
+      }
+
+      /* ============================================================
+         Article List (Accordion)
+         ============================================================ */
+      .kb-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5em;
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .kb-item {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+      }
+
+      .kb-question {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 0.85em 1em;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font-family-base);
+        font-size: 0.95em;
+        color: var(--color-text-primary);
+        text-align: left;
+        gap: 0.6em;
+        transition: background-color 0.15s;
+      }
+
+      .kb-question:hover {
+        background: #f5f7fa;
+      }
+
+      .kb-question:focus {
+        outline: 3px solid var(--color-focus);
+        outline-offset: -3px;
+      }
+
+      .kb-category-badge {
+        display: inline-block;
+        padding: 0.15em 0.5em;
+        border-radius: 3px;
+        font-size: 0.75em;
+        font-weight: var(--font-weight-semibold);
+        background: #e8f0fe;
+        color: var(--color-brand-primary);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .kb-question-text {
+        flex: 1;
+        font-weight: var(--font-weight-semibold);
+      }
+
+      .kb-chevron {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        fill: none;
+        stroke: var(--color-text-muted);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 0.2s;
+      }
+
+      .kb-question[aria-expanded="true"] .kb-chevron {
+        transform: rotate(180deg);
+      }
+
+      .kb-answer {
+        padding: 0 1.25em 1em;
+        font-size: 0.92em;
+        line-height: 1.7;
+        color: var(--color-text-secondary);
+        border-top: 1px solid #eee;
+      }
+
+      .kb-answer p {
+        margin-bottom: 0.6em;
+      }
+
+      .kb-answer ol,
+      .kb-answer ul {
+        margin: 0.5em 0;
+        padding-left: 1.5em;
+      }
+
+      .kb-answer li {
+        margin-bottom: 0.3em;
+      }
+
+      .kb-answer a {
+        color: var(--color-brand-primary);
+      }
+
+      .no-results {
+        text-align: center;
+        padding: var(--spacing-xl);
+        color: var(--color-text-muted);
+      }
+
+      .link-button {
+        background: none;
+        border: none;
+        color: var(--color-brand-primary);
+        text-decoration: underline;
+        cursor: pointer;
+        font-size: inherit;
+        font-family: inherit;
+      }
+
+      /* ============================================================
+         Responsive
+         ============================================================ */
+      @media (max-width: 600px) {
+        .kb-search-row {
+          flex-direction: column;
+        }
+
+        .kb-search-row select {
+          min-width: auto;
+        }
+
+        .kb-category-badge {
+          font-size: 0.65em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+    <header>
+      <h1>DIY Accounting Spreadsheets</h1>
+      <p class="subtitle">Excel bookkeeping and accounting software for UK small businesses</p>
+    </header>
+
+    <main id="mainContent">
+      <nav class="nav-back" aria-label="Breadcrumb">
+        <a href="index.html">&larr; Back to products</a>
+      </nav>
+
+      <h2 style="text-align: center; color: var(--color-brand-primary); margin-bottom: 0.75em;">Knowledge Base</h2>
+      <p style="text-align: center; color: var(--color-text-secondary); margin-bottom: var(--spacing-lg);">
+        Articles on bookkeeping, tax returns, VAT, payroll, company accounts, and more for UK small businesses.
+      </p>
+
+      <!-- Search box -->
+      <div class="kb-search-container">
+        <div class="kb-search-row">
+          <input
+            type="text"
+            id="kb-search"
+            placeholder="Search articles... e.g. 'capital allowances' or 'VAT registration'"
+            autocomplete="off"
+            aria-label="Search knowledge base"
+          />
+          <select id="category-filter" aria-label="Filter by category">
+            <option value="">All categories</option>
+            <!-- Populated by JS -->
+          </select>
+        </div>
+        <span class="search-hint" id="search-hint">Showing featured articles</span>
+      </div>
+
+      <!-- Article list -->
+      <div class="kb-list" id="article-list">
+        <!-- Dynamically populated -->
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="https://diyaccounting.co.uk">diyaccounting.co.uk</a>
+          <a href="https://submit.diyaccounting.co.uk/privacy.html">privacy</a>
+          <a href="https://submit.diyaccounting.co.uk/terms.html">terms</a>
+          <a href="https://submit.diyaccounting.co.uk/accessibility.html">accessibility</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="lib/toml-parser.js"></script>
+    <script src="lib/kb-search.js"></script>
+    <script src="lib/knowledge-base-page.js"></script>
+  </body>
+</html>

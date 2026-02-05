@@ -6,14 +6,14 @@ on:
     inputs:
       ci-gateway-cloudfront-domain:
         type: string
-        description: 'CloudFront domain for ci-gateway (e.g. d1234abcdef.cloudfront.net). Empty to skip.'
+        description: 'Override CI gateway CloudFront domain. Default: auto-lookup from ci-gateway-GatewayStack.'
         required: false
-        default: ''
+        default: '(auto)'
       prod-gateway-cloudfront-domain:
         type: string
-        description: 'CloudFront domain for prod-gateway (e.g. d5678ghijkl.cloudfront.net). Empty to skip.'
+        description: 'Override prod gateway CloudFront domain. Default: auto-lookup from prod-gateway-GatewayStack.'
         required: false
-        default: ''
+        default: '(auto)'
 
 permissions:
   id-token: write
@@ -44,11 +44,20 @@ jobs:
         id: normalise
         shell: bash
         run: |
-          echo "ci-gateway-cloudfront-domain=${{ inputs.ci-gateway-cloudfront-domain }}" | tee -a "$GITHUB_OUTPUT"
-          echo "prod-gateway-cloudfront-domain=${{ inputs.prod-gateway-cloudfront-domain }}" | tee -a "$GITHUB_OUTPUT"
+          CI_GW="${{ inputs.ci-gateway-cloudfront-domain }}"
+          PROD_GW="${{ inputs.prod-gateway-cloudfront-domain }}"
+          # Convert (auto) to empty string — actual lookup happens in deploy job
+          [[ "$CI_GW" == "(auto)" ]] && CI_GW=""
+          [[ "$PROD_GW" == "(auto)" ]] && PROD_GW=""
+          echo "ci-gateway-cloudfront-domain=${CI_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-gateway-cloudfront-domain=${PROD_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "ci-auto=$( [[ '${{ inputs.ci-gateway-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-auto=$( [[ '${{ inputs.prod-gateway-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
     outputs:
       ci-gateway-cloudfront-domain: ${{ steps.normalise.outputs.ci-gateway-cloudfront-domain }}
       prod-gateway-cloudfront-domain: ${{ steps.normalise.outputs.prod-gateway-cloudfront-domain }}
+      ci-auto: ${{ steps.normalise.outputs.ci-auto }}
+      prod-auto: ${{ steps.normalise.outputs.prod-auto }}
 
   names:
     needs:
@@ -125,9 +134,40 @@ jobs:
       - name: Build CDK JARs
         run: ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
 
+      - name: Lookup gateway CloudFront domains
+        id: lookup
+        shell: bash
+        run: |
+          # Auto-lookup CI gateway CloudFront domain from stack output
+          CI_DOMAIN="${{ needs.params.outputs.ci-gateway-cloudfront-domain }}"
+          if [[ -z "$CI_DOMAIN" && "${{ needs.params.outputs.ci-auto }}" == "true" ]]; then
+            echo "Looking up ci-gateway-GatewayStack DistributionDomainName..."
+            CI_DOMAIN=$(aws cloudformation describe-stacks \
+              --stack-name ci-gateway-GatewayStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "CI gateway: ${CI_DOMAIN:-not found}"
+          fi
+
+          # Auto-lookup prod gateway CloudFront domain from stack output
+          PROD_DOMAIN="${{ needs.params.outputs.prod-gateway-cloudfront-domain }}"
+          if [[ -z "$PROD_DOMAIN" && "${{ needs.params.outputs.prod-auto }}" == "true" ]]; then
+            echo "Looking up prod-gateway-GatewayStack DistributionDomainName..."
+            PROD_DOMAIN=$(aws cloudformation describe-stacks \
+              --stack-name prod-gateway-GatewayStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "Prod gateway: ${PROD_DOMAIN:-not found}"
+          fi
+
+          echo "ci-gateway-cloudfront-domain=${CI_DOMAIN}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-gateway-cloudfront-domain=${PROD_DOMAIN}" | tee -a "$GITHUB_OUTPUT"
+
       - name: Deploy RootDnsStack (CDK)
         run: |
           echo "Deploying stack: root-RootDnsStack"
+          echo "CI gateway domain: $CI_GATEWAY_CLOUDFRONT_DOMAIN"
+          echo "Prod gateway domain: $PROD_GATEWAY_CLOUDFRONT_DOMAIN"
           cd cdk-root \
             && npx cdk deploy \
               root-RootDnsStack \
@@ -136,8 +176,8 @@ jobs:
               --outputs-file ../cdk-submit-root.out/cdk-outputs-root-dns.json \
           ;
         env:
-          CI_GATEWAY_CLOUDFRONT_DOMAIN: ${{ needs.params.outputs.ci-gateway-cloudfront-domain }}
-          PROD_GATEWAY_CLOUDFRONT_DOMAIN: ${{ needs.params.outputs.prod-gateway-cloudfront-domain }}
+          CI_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.ci-gateway-cloudfront-domain }}
+          PROD_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.prod-gateway-cloudfront-domain }}
 
       - name: Show stack outputs
         run: |
