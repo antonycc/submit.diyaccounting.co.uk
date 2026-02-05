@@ -304,6 +304,7 @@ public class SpreadsheetsStack extends Stack {
                         "/knowledge-base.toml",
                         "/catalogue.toml",
                         "/spreadsheets.css",
+                        "/lib/*",
                         "/robots.txt",
                         "/sitemap.xml",
                         "/favicon.svg",
