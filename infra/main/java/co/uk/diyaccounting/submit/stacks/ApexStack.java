@@ -265,11 +265,27 @@ public class ApexStack extends Stack {
                                 .build())
                         .build())
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(ResponseCustomHeader.builder()
-                                .header("Server")
-                                .value("DIY-Accounting")
-                                .override(true)
-                                .build()))
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        .value("require-corp")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
                         .build())
                 .build();
 

@@ -8,9 +8,9 @@
    ============================================================ */
 
 :root {
-  /* Brand — teal palette from diyaccounting.co.uk */
-  --color-brand-primary: #2d9c9c;
-  --color-brand-primary-dark: #247d7d;
+  /* Brand — teal palette from diyaccounting.co.uk (WCAG 2 AA compliant) */
+  --color-brand-primary: #158484;
+  --color-brand-primary-dark: #106868;
   --color-brand-primary-light: #29c0c0;
 
   /* Text */
@@ -25,8 +25,8 @@
   --color-border: #d5dede;
 
   /* Focus (WCAG 2.1 AA) */
-  --color-focus: #2d9c9c;
-  --color-focus-ring: rgba(45, 156, 156, 0.3);
+  --color-focus: #158484;
+  --color-focus-ring: rgba(21, 132, 132, 0.3);
 
   /* Accent (product feature ticks) */
   --color-accent-green: #2e7d32;
@@ -741,7 +741,7 @@ footer {
   font-size: 0.75em;
   font-weight: var(--font-weight-semibold);
   background: #e6f5f5;
-  color: var(--color-brand-primary);
+  color: var(--color-text-primary);
   white-space: nowrap;
   flex-shrink: 0;
 }
