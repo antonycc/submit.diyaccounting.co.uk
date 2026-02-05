@@ -1,6 +1,13 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* Copyright (C) 2025-2026 DIY Accounting Ltd */
 
+// Safe wrapper - gtag may not be loaded if blocked by consent/adblocker
+function trackEvent(eventName, params) {
+  if (typeof gtag === 'function') {
+    gtag('event', eventName, params);
+  }
+}
+
 var catalogue = null;
 
 function loadCatalogue() {
@@ -68,6 +75,16 @@ function updateTitle() {
   if (product) {
     document.getElementById('product-title').textContent = 'Download ' + product.name;
     document.getElementById('product-description').textContent = product.description;
+    trackEvent('view_item', {
+      currency: 'GBP',
+      value: 0,
+      items: [{
+        item_id: product.id,
+        item_name: product.name,
+        price: 0,
+        currency: 'GBP'
+      }]
+    });
   }
 }
 
@@ -125,5 +142,39 @@ document.getElementById('product-select').addEventListener('change', function ()
   updatePeriods();
 });
 document.getElementById('period-select').addEventListener('change', updateLinks);
+
+// GA4 ecommerce: begin_checkout when user clicks "Download with optional donation"
+document.getElementById('download-donate-btn').addEventListener('click', function () {
+  var product = getSelectedProduct();
+  if (product) {
+    trackEvent('begin_checkout', {
+      currency: 'GBP',
+      value: 0,
+      items: [{
+        item_id: product.id,
+        item_name: product.name,
+        price: 0,
+        currency: 'GBP'
+      }]
+    });
+  }
+});
+
+// GA4 ecommerce: add_to_cart when user clicks "Download without donating" (free download)
+document.getElementById('download-direct-btn').addEventListener('click', function () {
+  var product = getSelectedProduct();
+  if (product) {
+    trackEvent('add_to_cart', {
+      currency: 'GBP',
+      value: 0,
+      items: [{
+        item_id: product.id,
+        item_name: product.name,
+        price: 0,
+        currency: 'GBP'
+      }]
+    });
+  }
+});
 
 loadCatalogue();

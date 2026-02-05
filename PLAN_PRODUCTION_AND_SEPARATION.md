@@ -69,13 +69,21 @@ Features already built:
 | 1.10 | Validate live domains | Verify `https://diyaccounting.co.uk`, `https://www.diyaccounting.co.uk`, and `https://spreadsheets.diyaccounting.co.uk` all serve the correct content. Test redirects from old www URLs. |
 | 1.11 | Decommission old www distribution | Once validated, disable/delete the old CloudFront distribution `d2nnnfnriqw5mg.cloudfront.net` and its S3 origin. |
 
-### RootDnsStack changes for Phase 1
+### Go-live execution plan
 
-```
-I see us in this session gettin all the sites ready to go to prod while still in a single AWS account and single
-  repository, all on a branch (this branch) then merging to prod, running the deploy root DNS and that's the full live switch over. The AWS account split and repository
-  split will come later.
-```
+**Approach**: All sites ready to go to prod while still in a single AWS account and single repository, all on branch `claude/pre-golive-fixes`. Merge to main, deploy prod, run deploy-root DNS — that's the full live switchover. AWS account split and repository split come later (Phase 2/3).
+
+**Merge-to-live sequence** (DNS switchover happens after merge to main):
+
+1. Merge PR to main
+2. Main branch auto-deploys submit (via `deploy.yml`)
+3. Manually trigger `deploy-gateway.yml` and `deploy-spreadsheets.yml` from main with `environment-name=prod`
+4. Verify `prod-gateway.diyaccounting.co.uk` and `prod-spreadsheets.diyaccounting.co.uk`
+5. Trigger `deploy-root.yml` — this flips DNS. **You're live.**
+
+Rollback is instant: run `deploy-root.yml` again with the old CloudFront domain.
+
+### RootDnsStack changes for Phase 1
 
 Add props and records for apex domains:
 
@@ -115,13 +123,13 @@ An existing GA4 property was found with an active stream for `www.diyaccounting.
 | 1.12 | **Create GA4 property** — DONE. Property "DIY Accounting" (ID `523400333`) created in account `1035014` with three web data streams. Measurement IDs recorded in `google-analytics.toml`. |
 | 1.12a | **Retire old GA4 stream** (~1 week after go-live). Compare traffic levels between old stream (`G-PJPVQWRWJZ` on `www.diyaccounting.co.uk`) and new gateway stream (`G-C76HK806F1` on `diyaccounting.co.uk`). Once comparable, delete the old stream from the old property. |
 | 1.13 | **Add gtag.js snippet to all three sites** — DONE. External `lib/analytics.js` on each site initialises dataLayer, sets `consent: 'denied'` default, configures the measurement ID, and dynamically loads gtag.js. Script tag added to every HTML page. |
-| 1.14 | **Implement GA4 ecommerce events on spreadsheets site**. The download flow maps naturally to GA4's recommended ecommerce events (see event mapping below). |
-| 1.15 | **Implement GA4 ecommerce events on submit site**. Map the VAT submission flow to conversion events. |
+| 1.14 | **Implement GA4 ecommerce events on spreadsheets site** — DONE. Added `view_item_list` on index.html (product catalogue), `view_item` on product selection in download-page.js, `begin_checkout` on donate link click and donate page load, `add_to_cart` on direct download click, and `purchase` on PayPal donation completion in donate-page.js. Gateway site also has `select_content` events on navigation buttons. |
+| 1.15 | **Implement GA4 ecommerce events on submit site** — DONE. Added `login` event on Cognito callback, `begin_checkout` on VAT return form submission, and `purchase` with HMRC receipt reference on successful submission. |
 | 1.16 | **Configure conversions in GA4 console**. Mark `purchase` (donation completed) and `begin_checkout` (download initiated) as conversion events. |
 | 1.17 | **Link Google Ads account** if the remarketing pixel (conversion ID `1065724931`) is still in use. Set up GA4 audiences for remarketing. |
 | 1.18 | **Set up cross-domain tracking** — DONE. All three domains configured in GA4 tag settings so cross-site sessions are linked. Referral exclusions set. |
 | 1.19 | **Update CSP headers** — DONE. Added `https://www.googletagmanager.com` to `script-src` and `connect-src`, and `https://www.google-analytics.com` to `connect-src` and `img-src` in GatewayStack, SpreadsheetsStack, EdgeStack, and ApexStack. |
-| 1.20 | **Update privacy policy** on submit site to document GA4 data collection alongside existing CloudWatch RUM disclosure. |
+| 1.20 | **Update privacy policy** — DONE. Added GA4 section to privacy.html covering data collected, consent model, retention (14 months), Google as data processor, ICO disclosure updated. |
 
 #### GA4 ecommerce event mapping — spreadsheets site
 
