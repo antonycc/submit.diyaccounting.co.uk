@@ -187,11 +187,11 @@ public class GatewayStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self'; "
+                                        + "script-src 'self' https://www.googletagmanager.com; "
                                         + "style-src 'self'; "
-                                        + "img-src 'self' data:; "
+                                        + "img-src 'self' data: https://www.google-analytics.com; "
                                         + "font-src 'self'; "
-                                        + "connect-src 'self'; "
+                                        + "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)
@@ -346,6 +346,7 @@ public class GatewayStack extends Stack {
                 .distribution(distribution)
                 .distributionPaths(List.of(
                         "/index.html", "/about.html", "/gateway.css",
+                        "/lib/*",
                         "/robots.txt", "/sitemap.xml"))
                 .retainOnDelete(true)
                 .expires(Expiration.after(Duration.minutes(5)))

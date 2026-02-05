@@ -180,11 +180,11 @@ public class SpreadsheetsStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' https://www.paypalobjects.com; "
+                                        + "script-src 'self' https://www.paypalobjects.com https://www.googletagmanager.com; "
                                         + "style-src 'self'; "
-                                        + "img-src 'self' data: https://www.paypalobjects.com; "
+                                        + "img-src 'self' data: https://www.paypalobjects.com https://www.google-analytics.com; "
                                         + "font-src 'self'; "
-                                        + "connect-src 'self' https://www.paypal.com; "
+                                        + "connect-src 'self' https://www.paypal.com https://www.google-analytics.com https://www.googletagmanager.com; "
                                         + "frame-src https://www.paypal.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self' https://www.paypal.com;")

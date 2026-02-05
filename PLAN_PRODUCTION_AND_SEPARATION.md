@@ -96,22 +96,25 @@ Either way, this is a one-time manual operation in the AWS console, same as the 
 
 ### Google Analytics 4 and conversion tracking
 
-The old `www.diyaccounting.co.uk` used Universal Analytics (`UA-1035014-1`) with basic pageview tracking only — no event tracking, no ecommerce, no GA4. UA stopped collecting data in July 2023. The old site also had a Google Ads remarketing pixel (conversion ID `1065724931`). None of the current sites (gateway, spreadsheets, submit) have any Google Analytics.
+The old `www.diyaccounting.co.uk` used Universal Analytics (`UA-1035014-1`) with basic pageview tracking only — no event tracking, no ecommerce, no GA4. UA stopped collecting data in July 2023. The old site also had a Google Ads remarketing pixel (conversion ID `1065724931`).
 
-**Goal**: Implement GA4 across all three sites with full ecommerce event tracking and conversion tracking, using the Google Analytics account that owns `UA-1035014-1`.
+An existing GA4 property was found with an active stream for `www.diyaccounting.co.uk` (Measurement ID `G-PJPVQWRWJZ`, stream ID `5793048524`) that is currently receiving traffic. A new GA4 property (ID `523400333`) has been created with three data streams for the new sites. See `google-analytics.toml` for all IDs.
+
+**Goal**: Implement GA4 across all three sites with full ecommerce event tracking and conversion tracking, using the new property. Run the old and new properties in parallel for ~1 week post go-live, then retire the old stream once traffic levels match.
 
 #### Steps
 
 | Step | Description |
 |------|-------------|
-| 1.12 | **Create GA4 property** in the Google Analytics account that owns `UA-1035014-1`. Name: "DIY Accounting" with three data streams: `diyaccounting.co.uk` (gateway), `spreadsheets.diyaccounting.co.uk` (spreadsheets), `submit.diyaccounting.co.uk` (submit). Record the Measurement ID (`G-XXXXXXXXXX`) for each stream. |
-| 1.13 | **Add gtag.js snippet to all three sites**. Each site gets its own data stream's Measurement ID. Place in `<head>` of every page. Respect user consent (cookie banner required for UK/GDPR — load gtag with `consent: 'denied'` default, grant on acceptance). |
+| 1.12 | **Create GA4 property** — DONE. Property "DIY Accounting" (ID `523400333`) created in account `1035014` with three web data streams. Measurement IDs recorded in `google-analytics.toml`. |
+| 1.12a | **Retire old GA4 stream** (~1 week after go-live). Compare traffic levels between old stream (`G-PJPVQWRWJZ` on `www.diyaccounting.co.uk`) and new gateway stream (`G-C76HK806F1` on `diyaccounting.co.uk`). Once comparable, delete the old stream from the old property. |
+| 1.13 | **Add gtag.js snippet to all three sites** — DONE. External `lib/analytics.js` on each site initialises dataLayer, sets `consent: 'denied'` default, configures the measurement ID, and dynamically loads gtag.js. Script tag added to every HTML page. |
 | 1.14 | **Implement GA4 ecommerce events on spreadsheets site**. The download flow maps naturally to GA4's recommended ecommerce events (see event mapping below). |
 | 1.15 | **Implement GA4 ecommerce events on submit site**. Map the VAT submission flow to conversion events. |
 | 1.16 | **Configure conversions in GA4 console**. Mark `purchase` (donation completed) and `begin_checkout` (download initiated) as conversion events. |
 | 1.17 | **Link Google Ads account** if the remarketing pixel (conversion ID `1065724931`) is still in use. Set up GA4 audiences for remarketing. |
-| 1.18 | **Set up cross-domain tracking** so users navigating between gateway → spreadsheets → submit are tracked as a single session. Configure referral exclusions for the three domains. |
-| 1.19 | **Update CSP headers** on all three CloudFront distributions to allow `https://www.googletagmanager.com` and `https://www.google-analytics.com` in `script-src` and `connect-src`. |
+| 1.18 | **Set up cross-domain tracking** — DONE. All three domains configured in GA4 tag settings so cross-site sessions are linked. Referral exclusions set. |
+| 1.19 | **Update CSP headers** — DONE. Added `https://www.googletagmanager.com` to `script-src` and `connect-src`, and `https://www.google-analytics.com` to `connect-src` and `img-src` in GatewayStack, SpreadsheetsStack, EdgeStack, and ApexStack. |
 | 1.20 | **Update privacy policy** on submit site to document GA4 data collection alongside existing CloudWatch RUM disclosure. |
 
 #### GA4 ecommerce event mapping — spreadsheets site

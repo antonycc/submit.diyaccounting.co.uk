@@ -378,9 +378,9 @@ public class EdgeStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com; "
+                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; "
                                         + "style-src 'self' 'unsafe-inline'; "
                                         + "frame-src 'self' https://"
                                         + props.sharedNames().simulatorDomainName + "; "
