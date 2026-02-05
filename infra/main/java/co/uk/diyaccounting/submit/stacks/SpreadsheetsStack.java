@@ -320,6 +320,8 @@ public class SpreadsheetsStack extends Stack {
                         "/all-articles.html",
                         "/references.html",
                         "/sources.html",
+                        "/recently-updated.html",
+                        "/recently-updated.toml",
                         "/knowledge-base.toml",
                         "/references.toml",
                         "/catalogue.toml",

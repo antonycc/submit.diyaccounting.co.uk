@@ -7,7 +7,7 @@
 id = "REF001"
 claim = "The VAT registration threshold is £90,000"
 category = "vat-registration"
-articles = ["introduction-v-a-t-registration", "v-a-t-registration-schemes-thresholds", "self-employed-tax-returns", "sole-trader-self-employed-tax-return"]
+articles = ["introduction-v-a-t-registration", "v-a-t-registration-schemes-thresholds", "self-employed-tax-returns", "sole-trader-self-employed-tax-return", "sole-trader-business-start-up"]
 
 [[reference.source]]
 id = "SRC-GOVUK-VAT-REG"
@@ -240,5 +240,110 @@ url = "https://www.gov.uk/government/publications/making-tax-digital/overview-of
 title = "Overview of Making Tax Digital"
 publisher = "GOV.UK / HM Revenue & Customs"
 extract = "From 6 April 2026, sole traders and landlords must use it if their annual income from self-employment and property is over £50,000."
+accessed = "2026-02-05"
+authority = "primary"
+
+[[reference]]
+id = "REF017"
+claim = "Selling an asset below its written down value creates a balancing allowance that can be claimed as a capital allowance"
+category = "capital-allowances"
+articles = ["capital-allowances"]
+
+[[reference.source]]
+id = "SRC-GOVUK-CA-SELL"
+url = "https://www.gov.uk/capital-allowances-sell-asset"
+title = "Capital allowances when you sell an asset"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "For items in single asset pools, claim any amount that's left as a capital allowance. The leftover amount is known as a 'balancing allowance'."
+accessed = "2026-02-05"
+authority = "primary"
+
+[[reference]]
+id = "REF018"
+claim = "Sole traders must register as self-employed with HMRC"
+category = "self-employment"
+articles = ["sole-trader-business-start-up"]
+
+[[reference.source]]
+id = "SRC-GOVUK-SOLE-TRADER"
+url = "https://www.gov.uk/set-up-sole-trader"
+title = "Set up as a sole trader"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "you must register for Self Assessment as a sole trader if you earn more than £1,000 in a tax year (from 6 April to 5 April)"
+accessed = "2026-02-05"
+authority = "primary"
+
+[[reference]]
+id = "REF019"
+claim = "Paper Self Assessment tax returns must be submitted by 31 October"
+category = "self-assessment"
+articles = ["sole-trader-business-start-up"]
+
+[[reference.source]]
+id = "SRC-GOVUK-SA-DEADLINES"
+url = "https://www.gov.uk/self-assessment-tax-returns/deadlines"
+title = "Self Assessment tax returns: Deadlines"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "HMRC must receive your paper tax return by 11:59pm on 31 October 2025 or you'll get a late filing penalty."
+accessed = "2026-02-05"
+authority = "primary"
+
+[[reference]]
+id = "REF020"
+claim = "Online Self Assessment tax returns must be submitted by 31 January"
+category = "self-assessment"
+articles = ["sole-trader-business-start-up"]
+
+[[reference.source]]
+id = "SRC-GOVUK-SA-DEADLINES"
+url = "https://www.gov.uk/self-assessment-tax-returns/deadlines"
+title = "Self Assessment tax returns: Deadlines"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "You must submit your online tax return by 11:59pm on 31 January 2026 or you'll get a late filing penalty."
+accessed = "2026-02-05"
+authority = "primary"
+
+[[reference]]
+id = "REF021"
+claim = "Income tax basic rate is 20% and higher rate is 40%"
+category = "income-tax"
+articles = ["sole-trader-business-start-up"]
+
+[[reference.source]]
+id = "SRC-GOVUK-INCOME-TAX"
+url = "https://www.gov.uk/income-tax-rates"
+title = "Income Tax rates and Personal Allowances"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "£12,571 to £50,270 taxable income is taxed at 20%. £50,271 to £125,140 taxable income is taxed at 40%."
+accessed = "2026-02-05"
+authority = "primary"
+
+[[reference]]
+id = "REF022"
+claim = "Self Assessment tax must be paid in full by 31 January following the end of the tax year"
+category = "self-assessment"
+articles = ["sole-trader-business-start-up"]
+
+[[reference.source]]
+id = "SRC-GOVUK-SA-DEADLINES"
+url = "https://www.gov.uk/self-assessment-tax-returns/deadlines"
+title = "Self Assessment tax returns: Deadlines"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "You need to pay your Self Assessment tax by 11:59pm on 31 January 2026 or you'll get a penalty."
+accessed = "2026-02-05"
+authority = "primary"
+
+[[reference]]
+id = "REF023"
+claim = "Payments on account are each half the previous year's tax bill, due 31 January and 31 July"
+category = "self-assessment"
+articles = ["sole-trader-business-start-up"]
+
+[[reference.source]]
+id = "SRC-GOVUK-POA"
+url = "https://www.gov.uk/understand-self-assessment-bill/payments-on-account"
+title = "Understand your Self Assessment tax bill: Payments on account"
+publisher = "GOV.UK / HM Revenue & Customs"
+extract = "Each payment is half of the tax you owed last year. These payments are due by midnight on 31 January and 31 July."
 accessed = "2026-02-05"
 authority = "primary"

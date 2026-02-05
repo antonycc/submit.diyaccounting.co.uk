@@ -972,6 +972,29 @@ footer {
   color: var(--color-text-muted);
 }
 
+/* Citation check date on articles */
+.citation-check-date {
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Recently updated page */
+.recently-updated-item .kb-item-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.recently-updated-date {
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
 /* Source catalogue on sources.html */
 .source-entry {
   margin: 1.5rem 0;
