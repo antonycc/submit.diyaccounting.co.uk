@@ -1,0 +1,148 @@
+name: deploy spreadsheets
+run-name: "deploy spreadsheets from ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
+        options:
+          - '(auto)'
+          - 'ci'
+          - 'prod'
+        default: '(auto)'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '22'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+
+  params:
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+
+  names:
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
+        with:
+          environment-name: ${{ needs.params.outputs.environment-name }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+
+  deploy-spreadsheets:
+    name: 'deploy spreadsheets stack'
+    needs:
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Build CDK JARs
+        run: ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Deploy SpreadsheetsStack (CDK)
+        run: |
+          STACK_NAME="${{ needs.names.outputs.environment-name }}-spreadsheets-SpreadsheetsStack"
+          echo "Deploying stack: $STACK_NAME"
+          cd cdk-spreadsheets \
+            && npx cdk deploy \
+              "$STACK_NAME" \
+              --require-approval never \
+              --ci true \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../cdk-submit-spreadsheets.out/cdk-outputs-spreadsheets.json \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DOC_ROOT_PATH: '../web/spreadsheets.diyaccounting.co.uk/public'
+
+      - name: Show stack outputs
+        run: |
+          echo "=== Spreadsheets Stack Outputs ==="
+          cat cdk-submit-spreadsheets.out/cdk-outputs-spreadsheets.json | jq '.'
+          echo ""
+          echo ">>> Copy the CloudFrontDomainName value above and use it as input to deploy-root.yml <<<"
