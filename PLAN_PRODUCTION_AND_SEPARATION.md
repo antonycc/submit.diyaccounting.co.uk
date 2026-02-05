@@ -71,6 +71,12 @@ Features already built:
 
 ### RootDnsStack changes for Phase 1
 
+```
+I see us in this session gettin all the sites ready to go to prod while still in a single AWS account and single
+  repository, all on a branch (this branch) then merging to prod, running the deploy root DNS and that's the full live switch over. The AWS account split and repository
+  split will come later.
+```
+
 Add props and records for apex domains:
 
 ```java
