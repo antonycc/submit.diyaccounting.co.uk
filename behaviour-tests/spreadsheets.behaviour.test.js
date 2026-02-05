@@ -96,10 +96,11 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     expect(cardCount).toBeGreaterThanOrEqual(5);
     console.log(" Product cards are displayed");
 
-    // Verify specific products exist
+    // Verify specific products exist (match on h2 heading to avoid strict mode violations
+    // from product names appearing in other cards' feature lists)
     const productNames = ["Basic Sole Trader", "Self Employed", "Company Accounts", "Taxi Driver", "Payslips"];
     for (const name of productNames) {
-      const card = page.locator(`.product-card:has-text("${name}")`);
+      const card = page.locator(`.product-card:has(h2:has-text("${name}"))`);
       await expect(card).toBeVisible({ timeout: 5000 });
       console.log(` Product "${name}" is visible`);
     }
