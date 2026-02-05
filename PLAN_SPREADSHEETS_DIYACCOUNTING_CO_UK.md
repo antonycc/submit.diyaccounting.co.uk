@@ -1,6 +1,6 @@
 # DIY Accounting Spreadsheets - Repository & Site Plan
 
-**Version**: 1.0 | **Date**: February 2026 | **Status**: Draft
+**Version**: 1.1 | **Date**: February 2026 | **Status**: Phase 1 In Progress
 
 ---
 
@@ -16,7 +16,7 @@ The site follows the gateway site's minimal design philosophy: static HTML/CSS, 
 2. **Select** a product and accounting period (year-end date)
 3. **Donate** optionally via PayPal before downloading
 4. **Download** the zip package containing Excel workbooks and user guides
-5. **Read** accounting articles (migrated from the old www site over time)
+5. **Read** a knowledge base of 120 accounting articles (migrated from the old www site)
 
 ### What This Site Does Not Do
 
@@ -29,51 +29,56 @@ The site follows the gateway site's minimal design philosophy: static HTML/CSS, 
 
 ## 2. Repository Structure
 
-### Phase 1: Within the Submit Repository
+### Phase 1: Within the Submit Repository (Current)
 
-Phase 1 lives entirely inside the existing `submit.diyaccounting.co.uk` repository, following the same pattern as GatewayStack. New directories are added alongside existing ones:
+Phase 1 lives entirely inside the existing `submit.diyaccounting.co.uk` repository, following the same pattern as GatewayStack:
 
 ```
 submit.diyaccounting.co.uk/              # Existing repository
 +-- .github/
 |   +-- workflows/
-|   |   +-- deploy-spreadsheets.yml      # NEW: Deploy spreadsheets site to S3/CloudFront
+|   |   +-- deploy-spreadsheets.yml      # Deploy spreadsheets site to S3/CloudFront
 |   |   +-- deploy.yml                   # Existing submit deployment
 |   |   +-- deploy-gateway.yml           # Existing gateway deployment
+|   |   +-- deploy-root.yml             # Root DNS (includes spreadsheets records)
 |   |   +-- ...
 +-- infra/
 |   +-- main/java/.../stacks/
-|       +-- SpreadsheetsStack.java       # NEW: S3 + CloudFront (modelled on GatewayStack)
+|       +-- SpreadsheetsStack.java       # S3 + CloudFront (modelled on GatewayStack)
+|       +-- RootDnsStack.java            # Route53 aliases (includes spreadsheets)
 |       +-- GatewayStack.java            # Existing
 |       +-- ...
 +-- cdk-spreadsheets/
-|   +-- cdk.json                         # NEW: CDK context for spreadsheets stack
+|   +-- cdk.json                         # CDK context for spreadsheets stack
++-- scripts/
+|   +-- generate-knowledge-base-toml.cjs # Generates knowledge-base.toml from old site articles
 +-- web/
 |   +-- spreadsheets.diyaccounting.co.uk/
 |   |   +-- public/
 |   |       +-- index.html               # Homepage: product catalogue with screenshots
-|   |       +-- product.html             # Product detail (query param: ?product=X)
 |   |       +-- download.html            # Period selection + donate/download
 |   |       +-- donate.html              # PayPal donation interstitial
-|   |       +-- about.html               # Redirect/link to diyaccounting.co.uk/about.html
-|   |       +-- spreadsheets.css         # Stylesheet (based on gateway.css)
-|   |       +-- spreadsheets.js          # Minimal JS: product selection, lightbox, PayPal
+|   |       +-- knowledge-base.html      # Article index (search + browse)
+|   |       +-- knowledge-base.toml      # Article metadata and content (120 articles)
+|   |       +-- spreadsheets.css         # Stylesheet (teal palette from old site)
+|   |       +-- favicon.ico              # Favicon from old site
+|   |       +-- favicon.svg              # Modern SVG favicon (spreadsheet grid icon)
 |   |       +-- images/
-|   |       |   +-- spreadsheets/        # Product screenshots (from submit)
-|   |       |   +-- company/             # Logo, branding
-|   |       +-- catalogue.json           # Product metadata (hand-curated or generated)
-|   |       +-- favicon.ico, favicon.svg, etc.
-|   |       +-- robots.txt
-|   |       +-- sitemap.xml
-|   |       +-- .well-known/security.txt
+|   |       |   +-- spreadsheets/        # 22 product screenshots
+|   |       +-- articles/                # 120 markdown article files
+|   |       +-- lib/
+|   |           +-- toml-parser.js       # TOML parser for knowledge base
+|   |           +-- knowledge-base-page.js # Knowledge base page logic
+|   |           +-- kb-search.js         # Knowledge base search
+|   +-- www.diyaccounting.co.uk/
+|   |   +-- public/                      # Gateway site (with env-aware links to spreadsheets)
 |   +-- public/                          # Existing submit site content
-|   +-- diyaccounting.co.uk/             # Existing gateway site content
 +-- ...existing submit directories...
 ```
 
 ### Phase 2: Separate Repository
 
-When Phase 2 creates the standalone `spreadsheets.diyaccounting.co.uk` repository, the structure expands to include package syncing, catalogue automation, article content, and its own deployment scripts:
+When Phase 2 creates the standalone `spreadsheets.diyaccounting.co.uk` repository, the structure expands to include package syncing, catalogue automation, and its own deployment scripts:
 
 ```
 spreadsheets.diyaccounting.co.uk/        # New repository
@@ -91,18 +96,15 @@ spreadsheets.diyaccounting.co.uk/        # New repository
 +-- web/
 |   +-- public/
 |       +-- index.html                   # Homepage: product catalogue with screenshots
-|       +-- product.html                 # Product detail (query param: ?product=X)
 |       +-- download.html                # Period selection + donate/download
 |       +-- donate.html                  # PayPal donation interstitial
-|       +-- articles.html                # Article index (content migration)
-|       +-- article.html                 # Individual article (query param: ?article=X)
-|       +-- about.html                   # Redirect/link to diyaccounting.co.uk/about.html
-|       +-- spreadsheets.css             # Stylesheet (based on gateway.css)
-|       +-- spreadsheets.js              # Minimal JS: product selection, lightbox, PayPal
+|       +-- knowledge-base.html          # Article index (search + browse)
+|       +-- knowledge-base.toml          # Article metadata and content
+|       +-- spreadsheets.css             # Stylesheet (teal palette)
 |       +-- images/
-|       |   +-- spreadsheets/            # Product screenshots (from submit)
-|       |   +-- company/                 # Logo, branding
-|       +-- articles/                    # Static article HTML files (migrated)
+|       |   +-- spreadsheets/            # Product screenshots
+|       +-- articles/                    # 120 markdown article files
+|       +-- lib/                         # JS for knowledge base
 |       +-- catalogue.json               # Product metadata (generated from diy-accounting)
 |       +-- favicon.ico, favicon.svg, etc.
 |       +-- robots.txt
@@ -110,6 +112,7 @@ spreadsheets.diyaccounting.co.uk/        # New repository
 |       +-- .well-known/security.txt
 +-- scripts/
 |   +-- generate-catalogue.sh            # Build catalogue.json from diy-accounting packages
+|   +-- generate-knowledge-base-toml.cjs # Build knowledge-base.toml from old site articles
 |   +-- sync-packages-to-s3.sh           # Sync zip packages from diy-accounting to S3
 |   +-- aws-assume-spreadsheets-role.sh
 +-- pom.xml                              # CDK build (minimal, single module)
@@ -125,73 +128,72 @@ spreadsheets.diyaccounting.co.uk/        # New repository
 ### Design Principles
 
 - **Gateway-like simplicity**: Same minimal aesthetic as `diyaccounting.co.uk` gateway
-- **Familiar touches**: Bring across the product grid image, the PayPal donate button, and the old-site colour palette where it adds warmth without clashing
-- **No framework**: Plain HTML, CSS, minimal vanilla JS
+- **Old-site branding**: Teal colour palette (`#2d9c9c` primary, `#183e3e` dark, `#29c0c0` hover) and gridded background from the original `www.diyaccounting.co.uk`
+- **No framework**: Plain HTML, CSS, minimal vanilla JS (inline in HTML)
 - **Accessible**: WCAG 2.1 AA, skip links, focus states, semantic HTML
 - **Mobile-first**: 600px responsive breakpoint (same as gateway)
 
 ### Stylesheet: `spreadsheets.css`
 
-Based on `gateway.css` (367 lines), extended with:
+Based on `gateway.css`, extended with the teal brand palette (670 lines):
 
-- Same design tokens: `#2c5aa0` primary, Arial sans-serif, 800px max-width
-- Product card styles (from `spreadsheets.html` in submit: white cards, 8px radius, subtle shadow)
-- Feature list checkmarks (green tick `\2713` before each feature)
-- Download/donate button styles (outlined brand-colour buttons)
+- Design tokens: `#2d9c9c` primary, `#247d7d` dark, `#29c0c0` light, Arial sans-serif, 800px max-width
+- Gridded background: CSS linear-gradient grid lines at 11px intervals (replicating old site's `bg.png`)
+- Top navigation bar: Products, Knowledge Base, Donate (with `nav-current` highlighting)
+- Product card styles: white cards, 8px radius, subtle shadow, feature checklists
+- Feature list checkmarks: green tick `\2713` before each feature
+- Download/donate button styles: outlined brand-colour buttons
 - Lightbox for product screenshots (inline `<script>`, no library)
-- Gallery section for article thumbnails (later)
+- Knowledge base styles (inline in `knowledge-base.html`)
 
 ### Familiar Elements From Old Site
 
 These elements bridge the gap for existing customers:
 
-1. **Product grid comparison image** (`diyaccounting-spreadsheets-product-grid.png`) - the feature comparison table showing what's in each product
-2. **Product screenshots** - the Excel spreadsheet screenshots (profit & loss, VAT returns, payslips, corporation tax)
-3. **PayPal Donate button** - same hosted button ID `XTEQ73HM52QQW`, same PayPal Donate SDK flow
-4. **"Download without donating" link** - the existing skip-donation path
-5. **Product descriptions** - the ACMA-designed accounting language that customers expect
-6. **MPL 2.0 license notice** - on download page, with link to GitHub source
+1. **Teal colour scheme** - the original `#2d9c9c` teal from `www.diyaccounting.co.uk`
+2. **Gridded background** - CSS grid pattern replicating the old site's 11px repeating `bg.png` tile
+3. **Product grid comparison image** (`diyaccounting-spreadsheets-product-grid.png`) - feature comparison table
+4. **Product screenshots** - 22 Excel spreadsheet screenshots (profit & loss, VAT returns, payslips, etc.)
+5. **PayPal Donate button** - same hosted button ID `XTEQ73HM52QQW`, same PayPal Donate SDK flow
+6. **"Download without donating" link** - the existing skip-donation path
+7. **Product descriptions** - the ACMA-designed accounting language that customers expect
+8. **MPL 2.0 license notice** - on download page, with link to GitHub source
+9. **Favicon** - original ICO from old site plus modern SVG (spreadsheet grid icon in teal)
 
 ### Page Designs
 
 #### `index.html` - Product Catalogue
 
-Gateway-style layout with:
-
+- **Top nav**: Products (current), Knowledge Base, Donate
 - **Header**: "DIY Accounting Spreadsheets" h1, subtitle "Excel bookkeeping and accounting software for UK small businesses"
-- **Intro section**: White card with overview text (from `spreadsheets.html`)
+- **Intro section**: White card with overview text
 - **Product grid image**: Feature comparison table (clickable, lightbox)
-- **Product cards**: One card per product with:
-  - Product name (linked to `product.html?product=X`)
-  - Short description
-  - Feature checklist
-  - Screenshot thumbnail (clickable, lightbox)
+- **Product cards**: One card per product with name, description, feature checklist, screenshot, download link
+- **Gallery section**: Additional screenshots
 - **Footer**: Links to privacy/terms/accessibility on submit site, copyright
 
-#### `product.html?product=X` - Product Detail
+#### `download.html` - Period Selection & Download
 
-- Full product description
-- All screenshots for that product
-- Feature list with explanations
-- "Download" button linking to `download.html?product=X`
-- Link back to product catalogue
-
-#### `download.html?product=X` - Period Selection & Download
-
-- Product name header
-- Period dropdown (populated from `catalogue.json`)
-- Excel format selector (2003 vs 2007, where both available)
+- **Top nav**: Products, Knowledge Base, Donate
+- Product/period/format dropdowns (populated from inline JavaScript data)
 - "Download" button → `donate.html` with params
 - "Download without donating" direct link to zip
 - License notice (MPL 2.0)
 
 #### `donate.html` - PayPal Donation
 
-- Thank you message, product info
-- PayPal Donate SDK button (hosted_button_id: `XTEQ73HM52QQW`)
-- On completion: redirect to download URL
-- "Download without donating" fallback link
+- **Top nav**: Products, Knowledge Base, Donate (current)
+- Thank you message, PayPal Donate SDK button
+- "Skip and download" fallback link
 - Minimal page, focused on the donation action
+
+#### `knowledge-base.html` - Article Knowledge Base
+
+- **Top nav**: Products, Knowledge Base (current), Donate
+- Full-text search across 120 articles
+- Collapsible article list grouped alphabetically
+- Articles loaded from `knowledge-base.toml` and rendered client-side
+- Individual articles stored as markdown in `articles/` directory
 
 ---
 
@@ -199,7 +201,7 @@ Gateway-style layout with:
 
 ### Source: `../diy-accounting`
 
-The `diy-accounting` repository builds zip packages served via Docker nginx at `/zips/`. The `build/packages.txt` manifest lists all 177 available packages.
+The `diy-accounting` repository builds zip packages. The `build.sh` script generates zips from year-based directories and produces `catalogue.csv` with package metadata. Packages are served via Docker nginx at `/zips/`.
 
 ### Public Products (shown on site)
 
@@ -216,31 +218,9 @@ The `diy-accounting` repository builds zip packages served via Docker nginx at `
 
 - Employee Expenses, Invoice Generator, SE Extra, Business Insurance
 
-### `catalogue.json`
+### Current Implementation (Phase 1)
 
-Generated from `packages.txt` by `scripts/generate-catalogue.sh`. Structure:
-
-```json
-{
-  "products": [
-    {
-      "id": "BasicSoleTrader",
-      "name": "Basic Sole Trader",
-      "description": "...",
-      "periods": [
-        {
-          "label": "April 2026",
-          "date": "2026-04-05",
-          "shortLabel": "Apr26",
-          "formats": [
-            { "label": "Excel 2007", "filename": "GB Accounts Basic Sole Trader 2026-04-05 (Apr26) Excel 2007.zip" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
+Product and period data is currently managed as inline JavaScript in `download.html`. There is no separate `catalogue.json` file yet. Catalogue automation (generating from `diy-accounting` package data) is planned for Phase 2.
 
 ### Download URLs
 
@@ -283,19 +263,25 @@ Modelled on `GatewayStack.java` -- minimal static site hosting:
 | S3 bucket | `{env}-spreadsheets-origin`, BLOCK_ALL, S3_MANAGED, DESTROY |
 | OAC | S3OriginAccessControl, SIGV4_ALWAYS |
 | CloudFront | S3 origin, HTTPS redirect, security headers, `defaultRootObject: index.html` |
-| ACM certificate | Referenced by ARN (see phase-specific details below) |
-| BucketDeployment | From `web/spreadsheets.diyaccounting.co.uk/public/` (Phase 1) or `web/public/` (Phase 2) |
-| Access logging | CloudWatch Logs delivery |
+| ACM certificate | Referenced by ARN (must be in us-east-1 for CloudFront) |
+| BucketDeployment | From `web/spreadsheets.diyaccounting.co.uk/public/` with invalidation paths |
+| Access logging | CloudWatch Logs delivery (distribution → log group → JSON format) |
+| CSP | `default-src 'self'; script-src 'self' https://www.paypalobjects.com; ...` (PayPal SDK) |
 
-### Phase 1: Deployed Within Submit's AWS Account
+Invalidation paths: `/index.html`, `/download.html`, `/donate.html`, `/knowledge-base.html`, `/knowledge-base.toml`, `/spreadsheets.css`, `/favicon.svg`, `/favicon.ico`
 
-In Phase 1, SpreadsheetsStack deploys alongside GatewayStack in the existing submit-prod AWS account (887764105431):
+### Phase 1: Deployed Within Submit's AWS Account (Current)
+
+SpreadsheetsStack deploys alongside GatewayStack in the existing submit-prod AWS account (887764105431):
 
 - **CDK app**: `cdk-spreadsheets/cdk.json` in the submit repo, using the same CDK patterns and build toolchain
+- **Entry point**: `SpreadsheetsEnvironment.java` (mirrors `GatewayEnvironment.java`)
+- **Region**: us-east-1 (CloudFront requirement)
 - **Workflow**: `deploy-spreadsheets.yml` follows the same pattern as `deploy-gateway.yml`
-- **ACM certificate**: Uses an existing certificate in the submit account (or creates one via the existing process)
-- **DNS**: Route53 record in the root account zone pointing to the CloudFront distribution (same approach as the gateway site)
+- **ACM certificate**: `arn:aws:acm:us-east-1:887764105431:certificate/95653acb-d279-4e87-911a-9dad45f34732`
+- **DNS**: Route53 alias records in root account zone (managed by `RootDnsStack` via `deploy-root.yml`)
 - **Deployment role**: Reuses `submit-deployment-role` in the submit-prod account
+- **Compliance**: Pa11y and axe-core configs updated to include `{env}-spreadsheets.diyaccounting.co.uk` URLs
 - **No new AWS account** -- everything runs in the same account as submit and gateway
 
 ### Phase 2: Own AWS Account & Self-Hosting
@@ -319,30 +305,28 @@ When Phase 2 creates the standalone repository, infrastructure moves to its own 
 
 ---
 
-## 7. Content Migration (Articles)
+## 7. Content Migration (Articles / Knowledge Base)
 
-The old `www.diyaccounting.co.uk` has 121 articles covering accounting topics. These are currently served as HTML rendered from markdown via a CMS.
+The old `www.diyaccounting.co.uk` has 120+ articles covering accounting topics. These were served as HTML rendered from markdown via a CMS (mdcms) in the old architecture.
 
 ### Migration Strategy
 
-**Not in Phase 1 or Phase 2 launch.** Articles migrate gradually in Phase 3:
+**Completed in Phase 1.** 120 articles have been migrated as markdown files in `articles/` and indexed via `knowledge-base.toml`, browsable on `knowledge-base.html` with full-text search.
 
-1. **Phase 1 (design proof in submit repo)**: No articles. Product catalogue and download flow only.
-2. **Phase 2 (own repo & self-hosting)**: No articles yet. Focus is on package hosting and catalogue automation.
-3. **Phase 3 (content migration)**: Convert high-value articles to static HTML in `web/public/articles/`. Start with articles linked from product pages. Eventually all 121 articles migrated, `articles.html` index page, old www URLs redirect via gateway CloudFront Function.
+The migration was done using `scripts/generate-knowledge-base-toml.cjs`, which processes the old site's article content into a structured TOML index. Individual article markdown files are stored in `articles/` and loaded client-side by `lib/knowledge-base-page.js`.
 
 ### Article Format
 
-Static HTML files in `web/public/articles/`:
+Markdown files in `articles/`:
 ```
 articles/
-+-- accounting-for-vat-with-making-tax-digital.html
-+-- basic-accounts-bookkeeping-save-assessment-tax.html
-+-- bookkeeping-records-cash-or-accrual-accounting-basis.html
-+-- ...
++-- accounting-and-basis-periods-self-employed-business.md
++-- accounting-for-profit-with-marginal-costing.md
++-- accounting-for-v-a-t-with-making-tax-digital.md
++-- ... (120 files total)
 ```
 
-Each article uses the same `spreadsheets.css` stylesheet with an article-specific content area. No templating system — just plain HTML.
+The `knowledge-base.toml` file contains metadata for all articles (title, slug, summary). The `knowledge-base.html` page provides search and browsable access using three client-side JS modules in `lib/`.
 
 ### Submit Site Cutdown
 
@@ -359,30 +343,34 @@ Once the spreadsheets site is live:
 
 ### Phase 1: Design & Technology Proof (in Submit Repo)
 
-Everything needed to see the design working and get the technology right. The spreadsheets site is deployed as a new stack within the existing `submit.diyaccounting.co.uk` repository, following the same pattern as GatewayStack. No separate AWS account yet -- deploys to the same submit-prod account.
+Everything needed to see the design working and get the technology right. The spreadsheets site is deployed as a new stack within the existing `submit.diyaccounting.co.uk` repository, following the same pattern as GatewayStack.
 
-| Step | Description |
-|------|-------------|
-| 1.1 | Create `SpreadsheetsStack.java` in submit's `infra/` (copy GatewayStack, adapt) |
-| 1.2 | Create `cdk-spreadsheets/cdk.json` in submit repo |
-| 1.3 | Create `web/spreadsheets.diyaccounting.co.uk/public/` content directory |
-| 1.4 | Build `index.html` -- product catalogue page with screenshots |
-| 1.5 | Build `spreadsheets.css` (extend gateway.css) |
-| 1.6 | Copy product screenshots to `web/spreadsheets.diyaccounting.co.uk/public/images/spreadsheets/` |
-| 1.7 | Hand-curate `catalogue.json` for the initial product set |
-| 1.8 | Build `download.html` -- period selection page |
-| 1.9 | Build `donate.html` -- PayPal donation interstitial |
-| 1.10 | Build `deploy-spreadsheets.yml` workflow (modelled on `deploy-gateway.yml`) |
-| 1.11 | Deploy to CI within submit's account, validate the design and technology |
-| 1.12 | Deploy to prod, set up DNS record in root account zone |
+| Step | Description | Status |
+|------|-------------|--------|
+| 1.1 | Create `SpreadsheetsStack.java` in submit's `infra/` (copy GatewayStack, adapt) | Done |
+| 1.2 | Create `cdk-spreadsheets/cdk.json` in submit repo | Done |
+| 1.3 | Create `web/spreadsheets.diyaccounting.co.uk/public/` content directory | Done |
+| 1.4 | Build `index.html` -- product catalogue page with screenshots and lightbox | Done |
+| 1.5 | Build `spreadsheets.css` (teal palette from old site, gridded background) | Done |
+| 1.6 | Copy product screenshots to `images/spreadsheets/` (22 images) | Done |
+| 1.7 | Build `download.html` -- product/period/format selection page | Done |
+| 1.8 | Build `donate.html` -- PayPal donation interstitial | Done |
+| 1.9 | Build `knowledge-base.html` -- 120-article knowledge base with search | Done |
+| 1.10 | Build `deploy-spreadsheets.yml` workflow (modelled on `deploy-gateway.yml`) | Done |
+| 1.11 | Add spreadsheets to `RootDnsStack` and `deploy-root.yml` | Done |
+| 1.12 | Add spreadsheets to compliance scan configs (pa11y, axe) | Done |
+| 1.13 | Add environment-aware links from gateway to spreadsheets and submit | Done |
+| 1.14 | Create ACM certificate and DNS validation records | Done |
+| 1.15 | Deploy to CI within submit's account | In progress |
+| 1.16 | Deploy to prod, set up DNS record in root account zone | Pending |
 
 **Downloads**: In Phase 1, download links point out to the existing diy-accounting Docker container endpoint or GitHub releases. No zip packages are hosted on the spreadsheets site itself.
 
-**What Phase 1 proves**: The static site design works, the CloudFront/S3 hosting pattern is sound, the PayPal donation flow functions, and the product catalogue is navigable. All without creating a new AWS account or repository.
+**What Phase 1 proves**: The static site design works, the CloudFront/S3 hosting pattern is sound, the PayPal donation flow functions, the product catalogue is navigable, and the knowledge base provides article access. All without creating a new AWS account or repository.
 
 ### Phase 2: Own Repository, Account & Package Hosting
 
-When it is worth the overhead of a separate repository -- probably when bringing the downloadable packages over (syncing zips to S3, catalogue automation, article migration). This phase creates the standalone `spreadsheets.diyaccounting.co.uk` repository with its own AWS account and self-hosted infrastructure.
+When it is worth the overhead of a separate repository -- probably when bringing the downloadable packages over (syncing zips to S3, catalogue automation). This phase creates the standalone `spreadsheets.diyaccounting.co.uk` repository with its own AWS account and self-hosted infrastructure.
 
 | Step | Description |
 |------|-------------|
@@ -400,15 +388,14 @@ When it is worth the overhead of a separate repository -- probably when bringing
 | 2.12 | Update download links to point to self-hosted S3/CloudFront zips |
 | 2.13 | Remove SpreadsheetsStack and spreadsheets content from submit repo |
 
-### Phase 3: Content Migration
+### Phase 3: Polish & SEO
 
 | Step | Description |
 |------|-------------|
-| 3.1 | Migrate top 20 most-linked articles from old www site to `web/public/articles/` |
-| 3.2 | Build `articles.html` index page |
-| 3.3 | Set up redirects from old www URLs via gateway CloudFront Function |
-| 3.4 | Cut down submit spreadsheet pages to link to the spreadsheets site |
-| 3.5 | Migrate remaining articles (121 total) |
+| 3.1 | Set up redirects from old www URLs via gateway CloudFront Function |
+| 3.2 | Cut down submit spreadsheet pages to link to the spreadsheets site |
+| 3.3 | Add robots.txt and sitemap.xml |
+| 3.4 | SEO redirect mapping from old www.diyaccounting.co.uk URLs |
 
 ---
 
@@ -427,8 +414,8 @@ When Phase 2 creates the standalone repository, the spreadsheets repo is a drast
 | Java modules | 3 (infra, app, web) | 1 (infra only) |
 | npm packages | 50+ | Minimal (CDK CLI, dotenv) |
 | Test tiers | 4 (unit, system, browser, behaviour) | 1 (smoke tests only) |
-| JavaScript | Complex SPA-like app | Minimal vanilla JS |
-| CSS | 2,112 lines (submit.css) | ~400 lines (spreadsheets.css) |
+| JavaScript | Complex SPA-like app | Minimal vanilla JS + knowledge base |
+| CSS | 2,112 lines (submit.css) | ~670 lines (spreadsheets.css) |
 | Workflows | 6+ | 2 (deploy + smoke test) |
 | Environment stacks | Observability, Data, Backup, Identity, Simulator | None (single stack) |
 
@@ -439,14 +426,15 @@ When Phase 2 creates the standalone repository, the spreadsheets repo is a drast
 | Item | Status | Notes |
 |------|--------|-------|
 | Download source in Phase 1 | TBD | GitHub releases, Docker container endpoint, or pre-synced S3? |
-| Catalogue update automation | TBD | How to trigger catalogue.json rebuild when diy-accounting releases new year-end |
-| SEO redirect mapping | TBD | Map old www.diyaccounting.co.uk URLs to new spreadsheets site paths |
-| Ireland products | TBD | IE Accounts (2007-2009) available but may not be worth featuring |
+| Catalogue automation | Phase 2 | Generate `catalogue.json` from `diy-accounting` build output (`catalogue.csv` / `packages.txt`) |
+| SEO redirect mapping | Phase 3 | Map old www.diyaccounting.co.uk URLs to new spreadsheets site paths |
+| Ireland products | Deferred | IE Accounts (2007-2009) available but likely not worth featuring |
 | Payslip 20 variant | TBD | Only 05 and 10 in packages.txt; check if 20-employee version exists |
-| Product images from old site | TBD | Old site has additional product images in `/assets/` and `/images/` |
+| Product images from old site | Partial | 22 screenshots copied; old site has 2700+ images in `/assets/` |
 | Google Analytics | TBD | Whether to add analytics (UA-1035014-1 from old site, or new GA4 property) |
-| Friendly welcome note | Planned | Note with picture of spreadsheets to help existing customers find their way |
+| robots.txt / sitemap.xml | Phase 3 | Not yet created |
+| security.txt | Phase 3 | Not yet created |
 
 ---
 
-*Generated: February 2026*
+*Updated: February 2026*

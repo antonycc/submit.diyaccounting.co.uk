@@ -33,35 +33,26 @@
 
       <div class="download-section">
         <h2 id="product-title">Download</h2>
-        <p id="product-description">Select your accounting period and Excel format below.</p>
+        <p id="product-description">Select your product and accounting period below.</p>
 
-        <div class="download-form">
+        <noscript>
+          <p>JavaScript is required to load the product catalogue. Alternatively, download packages directly from
+            <a href="https://github.com/antonycc/diy-accounting/releases">GitHub releases</a>.
+          </p>
+        </noscript>
+
+        <div class="download-form" id="download-form" style="display: none;">
           <div class="form-group">
             <label for="product-select">Product</label>
             <select id="product-select">
-              <option value="BasicSoleTrader">Basic Sole Trader</option>
-              <option value="SelfEmployed">Self Employed</option>
-              <option value="Company">Company Accounts</option>
-              <option value="TaxiDriver">Taxi Driver (Cabsmart)</option>
-              <option value="Payslip05">Payslips (5 employees)</option>
-              <option value="Payslip10">Payslips (10 employees)</option>
+              <option value="">Loading catalogue...</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="period-select">Accounting period (year-end)</label>
             <select id="period-select">
-              <option value="2026-04-05">April 2026</option>
-              <option value="2025-04-05">April 2025</option>
-              <option value="2024-04-05">April 2024</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="format-select">Excel format</label>
-            <select id="format-select">
-              <option value="Excel 2007">Excel 2007 (.xlsx)</option>
-              <option value="Excel 2003">Excel 2003 (.xls)</option>
+              <option value="">Select a product first</option>
             </select>
           </div>
 
@@ -101,82 +92,134 @@
       </div>
     </footer>
 
+    <script src="lib/toml-parser.js"></script>
     <script>
-      // Product metadata for building download filenames
-      var products = {
-        BasicSoleTrader: { name: "Basic Sole Trader", taxYearOnly: true },
-        SelfEmployed: { name: "Self Employed", taxYearOnly: true },
-        Company: { name: "Company", taxYearOnly: false },
-        TaxiDriver: { name: "Taxi Driver", taxYearOnly: true },
-        Payslip05: { name: "Payslip 05", taxYearOnly: true },
-        Payslip10: { name: "Payslip 10", taxYearOnly: true }
-      };
+      var catalogue = null;
 
-      // Month short labels for filename construction
-      var monthLabels = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-      ];
-
-      function getShortLabel(dateStr) {
-        var parts = dateStr.split("-");
-        var month = parseInt(parts[1], 10);
-        var year = parts[0].substring(2);
-        return monthLabels[month - 1] + year;
+      function loadCatalogue() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'catalogue.toml', true);
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            catalogue = TomlParser.parse(xhr.responseText);
+            initForm();
+          } else {
+            document.getElementById('product-description').textContent =
+              'Could not load product catalogue. Please try again later.';
+          }
+        };
+        xhr.onerror = function () {
+          document.getElementById('product-description').textContent =
+            'Could not load product catalogue. Please try again later.';
+        };
+        xhr.send();
       }
 
-      function buildFilename() {
-        var productId = document.getElementById("product-select").value;
-        var period = document.getElementById("period-select").value;
-        var format = document.getElementById("format-select").value;
-        var product = products[productId];
-        var shortLabel = getShortLabel(period);
-        return "GB Accounts " + product.name + " " + period + " (" + shortLabel + ") " + format + ".zip";
+      function initForm() {
+        var products = catalogue.products || [];
+        var productSelect = document.getElementById('product-select');
+
+        // Populate product dropdown
+        productSelect.innerHTML = '';
+        for (var i = 0; i < products.length; i++) {
+          var opt = document.createElement('option');
+          opt.value = products[i].id;
+          opt.textContent = products[i].name;
+          productSelect.appendChild(opt);
+        }
+
+        // Set product from URL query parameter if present
+        var params = new URLSearchParams(window.location.search);
+        var urlProduct = params.get('product');
+        if (urlProduct) {
+          for (var j = 0; j < products.length; j++) {
+            if (products[j].id === urlProduct) {
+              productSelect.value = urlProduct;
+              break;
+            }
+          }
+        }
+
+        // Show the form
+        document.getElementById('download-form').style.display = '';
+        updatePeriods();
+        updateTitle();
+      }
+
+      function getSelectedProduct() {
+        if (!catalogue) return null;
+        var productId = document.getElementById('product-select').value;
+        var products = catalogue.products || [];
+        for (var i = 0; i < products.length; i++) {
+          if (products[i].id === productId) return products[i];
+        }
+        return null;
+      }
+
+      function updateTitle() {
+        var product = getSelectedProduct();
+        if (product) {
+          document.getElementById('product-title').textContent = 'Download ' + product.name;
+          document.getElementById('product-description').textContent = product.description;
+        }
+      }
+
+      function updatePeriods() {
+        var product = getSelectedProduct();
+        var periodSelect = document.getElementById('period-select');
+        periodSelect.innerHTML = '';
+
+        if (!product || !product.periods || product.periods.length === 0) {
+          var opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'No periods available';
+          periodSelect.appendChild(opt);
+          return;
+        }
+
+        for (var i = 0; i < product.periods.length; i++) {
+          var period = product.periods[i];
+          var opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = period.label + ' (' + period.format + ')';
+          periodSelect.appendChild(opt);
+        }
+
+        updateLinks();
+      }
+
+      function getSelectedPeriod() {
+        var product = getSelectedProduct();
+        if (!product) return null;
+        var idx = parseInt(document.getElementById('period-select').value, 10);
+        if (isNaN(idx) || !product.periods[idx]) return null;
+        return product.periods[idx];
       }
 
       function updateLinks() {
-        var filename = buildFilename();
-        var productId = document.getElementById("product-select").value;
-        var period = document.getElementById("period-select").value;
-        var format = document.getElementById("format-select").value;
+        var product = getSelectedProduct();
+        var period = getSelectedPeriod();
+        if (!product || !period) return;
+
+        var filename = period.filename;
 
         // Donate link passes parameters
-        var donateBtn = document.getElementById("download-donate-btn");
-        donateBtn.href = "donate.html?product=" + encodeURIComponent(productId)
-          + "&period=" + encodeURIComponent(period)
-          + "&format=" + encodeURIComponent(format);
+        var donateBtn = document.getElementById('download-donate-btn');
+        donateBtn.href = 'donate.html?product=' + encodeURIComponent(product.id)
+          + '&filename=' + encodeURIComponent(filename);
 
-        // Direct download link (Phase 1: external endpoint)
-        var directBtn = document.getElementById("download-direct-btn");
-        directBtn.href = "https://github.com/antonycc/diy-accounting/releases";
-        directBtn.target = "_blank";
-        directBtn.rel = "noopener";
+        // Direct download link to zip on this site
+        var directBtn = document.getElementById('download-direct-btn');
+        directBtn.href = '/zips/' + encodeURIComponent(filename);
       }
 
-      function setProductFromUrl() {
-        var params = new URLSearchParams(window.location.search);
-        var product = params.get("product");
-        if (product && document.getElementById("product-select").querySelector('option[value="' + product + '"]')) {
-          document.getElementById("product-select").value = product;
-        }
-        var productInfo = products[document.getElementById("product-select").value];
-        if (productInfo) {
-          document.getElementById("product-title").textContent = "Download " + productInfo.name;
-        }
-      }
-
-      document.getElementById("product-select").addEventListener("change", function () {
-        var productInfo = products[this.value];
-        if (productInfo) {
-          document.getElementById("product-title").textContent = "Download " + productInfo.name;
-        }
-        updateLinks();
+      document.getElementById('product-select').addEventListener('change', function () {
+        updateTitle();
+        updatePeriods();
       });
-      document.getElementById("period-select").addEventListener("change", updateLinks);
-      document.getElementById("format-select").addEventListener("change", updateLinks);
+      document.getElementById('period-select').addEventListener('change', updateLinks);
 
-      setProductFromUrl();
-      updateLinks();
+      loadCatalogue();
     </script>
   </body>
 </html>

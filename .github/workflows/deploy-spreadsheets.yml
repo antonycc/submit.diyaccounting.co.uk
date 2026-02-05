@@ -114,6 +114,12 @@ jobs:
       - name: Node dependencies
         run: npm ci
 
+      - name: Build packages (zips + catalogue)
+        run: node scripts/build-packages.cjs
+
+      - name: Build sitemaps
+        run: node scripts/build-sitemaps.cjs
+
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
@@ -139,6 +145,13 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DOC_ROOT_PATH: '../web/spreadsheets.diyaccounting.co.uk/public'
+
+      - name: Upload zip packages to S3
+        run: |
+          STACK_NAME="${{ needs.names.outputs.environment-name }}-spreadsheets-SpreadsheetsStack"
+          BUCKET_NAME=$(jq -r ".\"${STACK_NAME}\".OriginBucketName" cdk-submit-spreadsheets.out/cdk-outputs-spreadsheets.json)
+          echo "Uploading zips to s3://${BUCKET_NAME}/zips/"
+          aws s3 sync target/zips/ "s3://${BUCKET_NAME}/zips/" --delete
 
       - name: Show stack outputs
         run: |

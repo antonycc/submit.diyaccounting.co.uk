@@ -102,4 +102,5 @@
   }
 
   window.TOML = TOML;
+  window.TomlParser = TOML;
 })();

@@ -373,3 +373,6 @@ web/public/simulator-local.js
 # Generated QR codes (produced by generate-pass workflow, uploaded as artifacts)
 /qr-codes/
 /passes-output.json
+
+# Generated gateway redirect function (built from redirects.toml by scripts/build-gateway-redirects.cjs)
+web/www.diyaccounting.co.uk/redirect-function.js

@@ -29,7 +29,7 @@ class KnowledgeBasePage {
         throw new Error("Failed to load knowledge base: " + response.status);
       }
       const tomlText = await response.text();
-      const data = window.TOML.parse(tomlText);
+      const data = window.TomlParser.parse(tomlText);
       this.kbSearch = new window.KBSearch(data.article);
 
       // Populate category filter
