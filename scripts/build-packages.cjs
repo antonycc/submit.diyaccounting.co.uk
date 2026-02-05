@@ -81,8 +81,25 @@ function generateCompanyVariants(sourceDir, startYear, endYear, format) {
   const firstYearEnd = startYear + 1;
   const secondYearEnd = endYear + 1;
 
+  // Cutoff: only generate variants whose financial year has already started.
+  // A company with year-end in month M of year Y has a financial year
+  // starting in month M+1 of year Y-1. Generate only if today >= that start.
+  const now = new Date();
+  const currentYM = now.getFullYear() * 12 + (now.getMonth() + 1);
+
   for (const m of MONTHS) {
     const year = m.month >= 4 ? firstYearEnd : secondYearEnd;
+
+    // Financial year start: month after year-end, one year earlier
+    const fyStartMonth = m.month === 12 ? 1 : m.month + 1;
+    const fyStartYear = m.month === 12 ? year : year - 1;
+    const fyStartYM = fyStartYear * 12 + fyStartMonth;
+
+    if (currentYM < fyStartYM) {
+      console.log(`  Skipping Company variant (FY not started): ${m.abbr}${String(year).slice(-2)}`);
+      continue;
+    }
+
     const yr2 = String(year).slice(-2);
     const days = monthEndDate(year, m.month);
     const date = `${year}-${pad2(m.month)}-${pad2(days)}`;
