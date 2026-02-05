@@ -112,13 +112,15 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     console.log("=".repeat(60));
 
     const productsNav = page.locator('.top-nav a:has-text("Products")');
+    const downloadNav = page.locator('.top-nav a:has-text("Download")');
     const knowledgeBaseNav = page.locator('.top-nav a:has-text("Knowledge Base")');
     const donateNav = page.locator('.top-nav a:has-text("Donate")');
 
     await expect(productsNav).toBeVisible();
+    await expect(downloadNav).toBeVisible();
     await expect(knowledgeBaseNav).toBeVisible();
     await expect(donateNav).toBeVisible();
-    console.log(" Top navigation links are present (Products, Knowledge Base, Donate)");
+    console.log(" Top navigation links are present (Products, Download, Knowledge Base, Donate)");
 
     // ============================================================
     // STEP 5: Verify download links on product cards
@@ -130,13 +132,18 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     const downloadLinks = page.locator("a.btn-download");
     const downloadCount = await downloadLinks.count();
     console.log(` Found ${downloadCount} download buttons`);
-    expect(downloadCount).toBeGreaterThanOrEqual(5);
+    expect(downloadCount).toBeGreaterThanOrEqual(6); // 1 generic + 5 product-specific
 
-    // Verify a download link goes to download.html with product parameter
-    const firstDownloadHref = await downloadLinks.first().getAttribute("href");
-    console.log(` First download link href: ${firstDownloadHref}`);
-    expect(firstDownloadHref).toContain("download.html?product=");
-    console.log(" Download links correctly reference download.html with product parameter");
+    // Verify product-specific download links within product cards
+    const productDownloadLinks = page.locator(".product-card a.btn-download");
+    const productDownloadCount = await productDownloadLinks.count();
+    console.log(` Found ${productDownloadCount} product-specific download buttons`);
+    expect(productDownloadCount).toBeGreaterThanOrEqual(5);
+
+    const firstProductDownloadHref = await productDownloadLinks.first().getAttribute("href");
+    console.log(` First product download link href: ${firstProductDownloadHref}`);
+    expect(firstProductDownloadHref).toContain("download.html?product=");
+    console.log(" Product download links correctly reference download.html with product parameter");
 
     // ============================================================
     // STEP 6: Verify footer
@@ -168,12 +175,14 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     const catalogueUrl = `${spreadsheetsBaseUrl}/catalogue.toml`;
     console.log(` Fetching: ${catalogueUrl}`);
 
-    const response = await page.goto(catalogueUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    // Use page.request.fetch() instead of page.goto() because CloudFront
+    // serves .toml with a content-type that triggers a browser download
+    const response = await page.request.fetch(catalogueUrl, { failOnStatusCode: false });
     const status = response.status();
     console.log(` Response status: ${status}`);
     expect(status).toBe(200);
 
-    const content = await page.textContent("body");
+    const content = await response.text();
     console.log(` Content length: ${content.length} chars`);
     expect(content.length).toBeGreaterThan(100);
 
