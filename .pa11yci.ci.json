@@ -33,6 +33,14 @@
     "https://ci.submit.diyaccounting.co.uk/errors/500.html",
     "https://ci.submit.diyaccounting.co.uk/errors/502.html",
     "https://ci.submit.diyaccounting.co.uk/errors/503.html",
-    "https://ci.submit.diyaccounting.co.uk/errors/504.html"
+    "https://ci.submit.diyaccounting.co.uk/errors/504.html",
+    "https://ci-gateway.diyaccounting.co.uk/",
+    "https://ci-gateway.diyaccounting.co.uk/index.html",
+    "https://ci-gateway.diyaccounting.co.uk/about.html",
+    "https://ci-spreadsheets.diyaccounting.co.uk/",
+    "https://ci-spreadsheets.diyaccounting.co.uk/index.html",
+    "https://ci-spreadsheets.diyaccounting.co.uk/download.html",
+    "https://ci-spreadsheets.diyaccounting.co.uk/donate.html",
+    "https://ci-spreadsheets.diyaccounting.co.uk/knowledge-base.html"
   ]
 }

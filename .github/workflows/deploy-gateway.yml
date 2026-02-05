@@ -6,21 +6,13 @@ on:
     inputs:
       environment-name:
         type: choice
-        description: 'Environment name (ci or prod)'
-        required: true
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
         options:
+          - '(auto)'
           - 'ci'
           - 'prod'
-        default: 'ci'
-      certificate-arn:
-        type: string
-        description: 'ACM certificate ARN in us-east-1 for the gateway CloudFront distribution'
-        required: true
-      domain-names:
-        type: string
-        description: 'Comma-separated domain names for CloudFront alternates (e.g. ci-gateway.diyaccounting.co.uk)'
-        required: false
-        default: ''
+        default: '(auto)'
 
 permissions:
   id-token: write
@@ -39,36 +31,53 @@ jobs:
     runs-on: ubuntu-24.04
     permissions: {}
     steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
       - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
-        run: ":"
-      - name: "inputs.certificate-arn=[${{ inputs.certificate-arn }}]"
-        run: ":"
-      - name: "inputs.domain-names=[${{ inputs.domain-names }}]"
         run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
         run: |
-          ENV_NAME='${{ inputs.environment-name }}'
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
-          CERT_ARN='${{ inputs.certificate-arn }}'
-          echo "certificate-arn=${CERT_ARN}" | tee -a "$GITHUB_OUTPUT"
-          DOMAIN_NAMES='${{ inputs.domain-names }}'
-          if [ -z "$DOMAIN_NAMES" ]; then
-            DOMAIN_NAMES="${ENV_NAME}-gateway.diyaccounting.co.uk"
-          fi
-          echo "domain-names=${DOMAIN_NAMES}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
-      certificate-arn: ${{ steps.normalise.outputs.certificate-arn }}
-      domain-names: ${{ steps.normalise.outputs.domain-names }}
+
+  names:
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
+        with:
+          environment-name: ${{ needs.params.outputs.environment-name }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   deploy-gateway:
     name: 'deploy gateway stack'
     needs:
-      - params
+      - names
     runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.environment-name == 'prod' && 'prod' || 'ci' }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -105,6 +114,12 @@ jobs:
       - name: Node dependencies
         run: npm ci
 
+      - name: Build gateway redirects
+        run: node scripts/build-gateway-redirects.cjs
+
+      - name: Build sitemaps
+        run: node scripts/build-sitemaps.cjs
+
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
@@ -116,7 +131,7 @@ jobs:
 
       - name: Deploy GatewayStack (CDK)
         run: |
-          STACK_NAME="${{ needs.params.outputs.environment-name }}-gateway-GatewayStack"
+          STACK_NAME="${{ needs.names.outputs.environment-name }}-gateway-GatewayStack"
           echo "Deploying stack: $STACK_NAME"
           cd cdk-gateway \
             && npx cdk deploy \
@@ -128,10 +143,8 @@ jobs:
               --outputs-file ../cdk-submit-gateway.out/cdk-outputs-gateway.json \
           ;
         env:
-          ENVIRONMENT_NAME: ${{ needs.params.outputs.environment-name }}
-          CERTIFICATE_ARN: ${{ needs.params.outputs.certificate-arn }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DOC_ROOT_PATH: '../web/www.diyaccounting.co.uk/public'
-          DOMAIN_NAMES: ${{ needs.params.outputs.domain-names }}
 
       - name: Show stack outputs
         run: |

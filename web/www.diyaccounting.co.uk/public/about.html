@@ -140,6 +140,27 @@
       </div>
     </footer>
 
+    <script>
+      // Environment-aware links: adjust submit URLs
+      // based on which gateway environment is serving this page
+      (function () {
+        var host = window.location.hostname;
+        var match = host.match(/^(ci|prod)-gateway\.diyaccounting\.co\.uk$/);
+        if (!match) return;
+        var env = match[1];
+        var submitUrl = env === "ci"
+          ? "https://ci.submit.diyaccounting.co.uk"
+          : "https://submit.diyaccounting.co.uk";
+        var links = document.querySelectorAll("a[href]");
+        for (var i = 0; i < links.length; i++) {
+          var href = links[i].getAttribute("href");
+          if (href.indexOf("https://submit.diyaccounting.co.uk") === 0) {
+            links[i].setAttribute("href", href.replace("https://submit.diyaccounting.co.uk", submitUrl));
+          }
+        }
+      })();
+    </script>
+
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",

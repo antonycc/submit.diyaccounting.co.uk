@@ -6,14 +6,24 @@ on:
     inputs:
       ci-gateway-cloudfront-domain:
         type: string
-        description: 'CloudFront domain for ci-gateway (e.g. d1234abcdef.cloudfront.net). Empty to skip.'
+        description: 'Override CI gateway CloudFront domain. Default: auto-lookup from ci-gateway-GatewayStack.'
         required: false
-        default: ''
+        default: '(auto)'
       prod-gateway-cloudfront-domain:
         type: string
-        description: 'CloudFront domain for prod-gateway (e.g. d5678ghijkl.cloudfront.net). Empty to skip.'
+        description: 'Override prod gateway CloudFront domain. Default: auto-lookup from prod-gateway-GatewayStack.'
         required: false
-        default: ''
+        default: '(auto)'
+      ci-spreadsheets-cloudfront-domain:
+        type: string
+        description: 'Override CI spreadsheets CloudFront domain. Default: auto-lookup from ci-spreadsheets-SpreadsheetsStack.'
+        required: false
+        default: '(auto)'
+      prod-spreadsheets-cloudfront-domain:
+        type: string
+        description: 'Override prod spreadsheets CloudFront domain. Default: auto-lookup from prod-spreadsheets-SpreadsheetsStack.'
+        required: false
+        default: '(auto)'
 
 permissions:
   id-token: write
@@ -32,24 +42,77 @@ jobs:
     runs-on: ubuntu-24.04
     permissions: {}
     steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
       - name: "inputs.ci-gateway-cloudfront-domain=[${{ inputs.ci-gateway-cloudfront-domain }}]"
         run: ":"
       - name: "inputs.prod-gateway-cloudfront-domain=[${{ inputs.prod-gateway-cloudfront-domain }}]"
+        run: ":"
+      - name: "inputs.ci-spreadsheets-cloudfront-domain=[${{ inputs.ci-spreadsheets-cloudfront-domain }}]"
+        run: ":"
+      - name: "inputs.prod-spreadsheets-cloudfront-domain=[${{ inputs.prod-spreadsheets-cloudfront-domain }}]"
         run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
         run: |
-          echo "ci-gateway-cloudfront-domain=${{ inputs.ci-gateway-cloudfront-domain }}" | tee -a "$GITHUB_OUTPUT"
-          echo "prod-gateway-cloudfront-domain=${{ inputs.prod-gateway-cloudfront-domain }}" | tee -a "$GITHUB_OUTPUT"
+          CI_GW="${{ inputs.ci-gateway-cloudfront-domain }}"
+          PROD_GW="${{ inputs.prod-gateway-cloudfront-domain }}"
+          CI_SS="${{ inputs.ci-spreadsheets-cloudfront-domain }}"
+          PROD_SS="${{ inputs.prod-spreadsheets-cloudfront-domain }}"
+          # Convert (auto) to empty string — actual lookup happens in deploy job
+          [[ "$CI_GW" == "(auto)" ]] && CI_GW=""
+          [[ "$PROD_GW" == "(auto)" ]] && PROD_GW=""
+          [[ "$CI_SS" == "(auto)" ]] && CI_SS=""
+          [[ "$PROD_SS" == "(auto)" ]] && PROD_SS=""
+          echo "ci-gateway-cloudfront-domain=${CI_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-gateway-cloudfront-domain=${PROD_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "ci-spreadsheets-cloudfront-domain=${CI_SS}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-spreadsheets-cloudfront-domain=${PROD_SS}" | tee -a "$GITHUB_OUTPUT"
+          echo "ci-gw-auto=$( [[ '${{ inputs.ci-gateway-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-gw-auto=$( [[ '${{ inputs.prod-gateway-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
+          echo "ci-ss-auto=$( [[ '${{ inputs.ci-spreadsheets-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-ss-auto=$( [[ '${{ inputs.prod-spreadsheets-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
     outputs:
       ci-gateway-cloudfront-domain: ${{ steps.normalise.outputs.ci-gateway-cloudfront-domain }}
       prod-gateway-cloudfront-domain: ${{ steps.normalise.outputs.prod-gateway-cloudfront-domain }}
+      ci-spreadsheets-cloudfront-domain: ${{ steps.normalise.outputs.ci-spreadsheets-cloudfront-domain }}
+      prod-spreadsheets-cloudfront-domain: ${{ steps.normalise.outputs.prod-spreadsheets-cloudfront-domain }}
+      ci-gw-auto: ${{ steps.normalise.outputs.ci-gw-auto }}
+      prod-gw-auto: ${{ steps.normalise.outputs.prod-gw-auto }}
+      ci-ss-auto: ${{ steps.normalise.outputs.ci-ss-auto }}
+      prod-ss-auto: ${{ steps.normalise.outputs.prod-ss-auto }}
+
+  names:
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Compute deployment name and environment
+        id: deployment-config
+        uses: ./.github/actions/get-names
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      base-domain: ${{ steps.deployment-config.outputs.base-domain }}
+      base-url:      ${{ steps.deployment-config.outputs.base-url }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   deploy-root-dns:
     name: 'deploy root DNS records'
     needs:
       - params
+      - names
     runs-on: ubuntu-24.04
     environment: prod
     steps:
@@ -97,9 +160,66 @@ jobs:
       - name: Build CDK JARs
         run: ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
 
+      - name: Lookup CloudFront domains
+        id: lookup
+        shell: bash
+        run: |
+          # Auto-lookup CI gateway CloudFront domain from stack output
+          CI_GW="${{ needs.params.outputs.ci-gateway-cloudfront-domain }}"
+          if [[ -z "$CI_GW" && "${{ needs.params.outputs.ci-gw-auto }}" == "true" ]]; then
+            echo "Looking up ci-gateway-GatewayStack DistributionDomainName..."
+            CI_GW=$(aws cloudformation describe-stacks \
+              --stack-name ci-gateway-GatewayStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "CI gateway: ${CI_GW:-not found}"
+          fi
+
+          # Auto-lookup prod gateway CloudFront domain from stack output
+          PROD_GW="${{ needs.params.outputs.prod-gateway-cloudfront-domain }}"
+          if [[ -z "$PROD_GW" && "${{ needs.params.outputs.prod-gw-auto }}" == "true" ]]; then
+            echo "Looking up prod-gateway-GatewayStack DistributionDomainName..."
+            PROD_GW=$(aws cloudformation describe-stacks \
+              --stack-name prod-gateway-GatewayStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "Prod gateway: ${PROD_GW:-not found}"
+          fi
+
+          # Auto-lookup CI spreadsheets CloudFront domain from stack output
+          CI_SS="${{ needs.params.outputs.ci-spreadsheets-cloudfront-domain }}"
+          if [[ -z "$CI_SS" && "${{ needs.params.outputs.ci-ss-auto }}" == "true" ]]; then
+            echo "Looking up ci-spreadsheets-SpreadsheetsStack DistributionDomainName..."
+            CI_SS=$(aws cloudformation describe-stacks \
+              --stack-name ci-spreadsheets-SpreadsheetsStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "CI spreadsheets: ${CI_SS:-not found}"
+          fi
+
+          # Auto-lookup prod spreadsheets CloudFront domain from stack output
+          PROD_SS="${{ needs.params.outputs.prod-spreadsheets-cloudfront-domain }}"
+          if [[ -z "$PROD_SS" && "${{ needs.params.outputs.prod-ss-auto }}" == "true" ]]; then
+            echo "Looking up prod-spreadsheets-SpreadsheetsStack DistributionDomainName..."
+            PROD_SS=$(aws cloudformation describe-stacks \
+              --stack-name prod-spreadsheets-SpreadsheetsStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "Prod spreadsheets: ${PROD_SS:-not found}"
+          fi
+
+          echo "ci-gateway-cloudfront-domain=${CI_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-gateway-cloudfront-domain=${PROD_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "ci-spreadsheets-cloudfront-domain=${CI_SS}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-spreadsheets-cloudfront-domain=${PROD_SS}" | tee -a "$GITHUB_OUTPUT"
+
       - name: Deploy RootDnsStack (CDK)
         run: |
           echo "Deploying stack: root-RootDnsStack"
+          echo "CI gateway domain: $CI_GATEWAY_CLOUDFRONT_DOMAIN"
+          echo "Prod gateway domain: $PROD_GATEWAY_CLOUDFRONT_DOMAIN"
+          echo "CI spreadsheets domain: $CI_SPREADSHEETS_CLOUDFRONT_DOMAIN"
+          echo "Prod spreadsheets domain: $PROD_SPREADSHEETS_CLOUDFRONT_DOMAIN"
           cd cdk-root \
             && npx cdk deploy \
               root-RootDnsStack \
@@ -108,8 +228,10 @@ jobs:
               --outputs-file ../cdk-submit-root.out/cdk-outputs-root-dns.json \
           ;
         env:
-          CI_GATEWAY_CLOUDFRONT_DOMAIN: ${{ needs.params.outputs.ci-gateway-cloudfront-domain }}
-          PROD_GATEWAY_CLOUDFRONT_DOMAIN: ${{ needs.params.outputs.prod-gateway-cloudfront-domain }}
+          CI_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.ci-gateway-cloudfront-domain }}
+          PROD_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.prod-gateway-cloudfront-domain }}
+          CI_SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.ci-spreadsheets-cloudfront-domain }}
+          PROD_SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.prod-spreadsheets-cloudfront-domain }}
 
       - name: Show stack outputs
         run: |
