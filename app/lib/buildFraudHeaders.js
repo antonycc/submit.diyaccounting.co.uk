@@ -12,9 +12,54 @@ const packageName = rawPackageName.startsWith("@") ? rawPackageName.split("/")[1
 
 const logger = createLogger({ source: "app/lib/buildFraudHeaders.js" });
 
+// Module-level cache for the Lambda's outbound public IP (detected once per cold start)
+let cachedVendorPublicIp = null;
+let vendorIpDetectionAttempted = false;
+
+/**
+ * Reset module-level state. Only for use in tests.
+ */
+export function _resetForTesting() {
+  cachedVendorPublicIp = null;
+  vendorIpDetectionAttempted = false;
+}
+
+/**
+ * Detect this Lambda's outbound public IP by calling checkip.amazonaws.com.
+ * Called once per cold start and cached for subsequent warm invocations.
+ * @returns {Promise<string|null>} The detected IP or null if detection fails
+ */
+export async function detectVendorPublicIp() {
+  if (vendorIpDetectionAttempted) {
+    return cachedVendorPublicIp;
+  }
+  vendorIpDetectionAttempted = true;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch("https://checkip.amazonaws.com", { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (response.ok) {
+      cachedVendorPublicIp = (await response.text()).trim();
+      logger.info({ message: "Detected vendor public IP", vendorPublicIp: cachedVendorPublicIp });
+    } else {
+      logger.warn({ message: "Failed to detect vendor public IP: non-OK response", status: response.status });
+    }
+  } catch (error) {
+    logger.warn({ message: "Failed to detect vendor public IP", error: error.message });
+  }
+
+  return cachedVendorPublicIp;
+}
+
 /**
  * Build Gov-Client and Gov-Vendor fraud prevention headers from the incoming API Gateway event.
  * Follows HMRC's fraud prevention header specifications for WEB_APP_VIA_SERVER connection method.
+ *
+ * Gov-Vendor-Public-IP is the Lambda's outbound IP (detected at cold start via checkip.amazonaws.com).
+ * Gov-Client-Public-IP is the end user's IP (extracted from X-Forwarded-For set by CloudFront).
+ * These MUST be different values — HMRC rejects submissions where they are the same.
  *
  * @param {object} event – Lambda proxy event containing headers and request context
  * @returns {object} – An object containing all required fraud prevention headers
@@ -59,54 +104,91 @@ export function buildFraudHeaders(event) {
     headers["Gov-Client-Public-IP"] = publicClientIp;
     logger.debug({ message: "Detected public client IP", publicClientIp, xff });
   } else {
-    logger.warn({ message: "No public client IP detected in X-Forwarded-For", xff });
+    logger.warn({
+      message: "HMRC REQUIRED HEADER MISSING: Gov-Client-Public-IP — no public IP found in X-Forwarded-For",
+      xff,
+    });
   }
 
-  // 2. Client device ID – from custom header sent by browser
+  // 2. Client public port – extract from CloudFront-Viewer-Address header (format: "ip:port" or "[ipv6]:port")
+  const viewerAddress = getHeader("cloudfront-viewer-address");
+  if (viewerAddress) {
+    const port = viewerAddress.split(":").pop();
+    if (port && /^\d+$/.test(port)) {
+      headers["Gov-Client-Public-Port"] = port;
+    }
+  } else {
+    logger.warn({
+      message:
+        "HMRC REQUIRED HEADER MISSING: Gov-Client-Public-Port — CloudFront-Viewer-Address header not present. Ensure CloudFront Origin Request Policy forwards this header.",
+    });
+  }
+
+  // 3. Client device ID – from custom header sent by browser
   const deviceId = getHeader("x-device-id") || getHeader("Gov-Client-Device-ID");
   if (deviceId && deviceId !== "unknown-device") {
     headers["Gov-Client-Device-ID"] = deviceId;
+  } else {
+    logger.warn({ message: "HMRC REQUIRED HEADER MISSING: Gov-Client-Device-ID — not provided by client" });
   }
 
-  // 3. Client user IDs – from authenticated user (Cognito sub) or anonymous
-  const userId = event.requestContext?.authorizer?.claims?.sub || event.requestContext?.authorizer?.sub || "anonymous";
-  headers["Gov-Client-User-IDs"] = `server=${encodeURIComponent(userId)}`;
+  // 4. Client user IDs – from authenticated user (Cognito sub)
+  // Match the extraction logic in extractUserFromAuthorizerContext (httpResponseHelper.js)
+  const authz = event.requestContext?.authorizer;
+  const authzCtx = authz?.lambda ?? authz;
+  const authzClaims = authzCtx?.jwt?.claims ?? authzCtx?.claims;
+  const userId = authzClaims?.sub;
+  if (userId) {
+    headers["Gov-Client-User-IDs"] = `server=${encodeURIComponent(userId)}`;
+  } else {
+    logger.warn({
+      message:
+        "HMRC REQUIRED HEADER MISSING: Gov-Client-User-IDs — no Cognito sub found in authorizer context. The custom authorizer should reject unauthenticated requests before this point.",
+    });
+  }
 
-  // 4. Connection method – WEB_APP_VIA_SERVER for both client and vendor
+  // 5. Connection method – WEB_APP_VIA_SERVER for both client and vendor
   headers["Gov-Client-Connection-Method"] = "WEB_APP_VIA_SERVER";
 
-  // 5. Vendor public IP – use detected client IP or SERVER_PUBLIC_IP from environment
-  const serverPublicIp = process.env.SERVER_PUBLIC_IP || publicClientIp;
-  if (serverPublicIp) {
-    headers["Gov-Vendor-Public-IP"] = serverPublicIp;
+  // 6. Vendor public IP – the Lambda's outbound IP (detected at cold start)
+  // MUST NOT fall back to publicClientIp — HMRC rejects submissions where vendor IP = client IP
+  const vendorPublicIp = cachedVendorPublicIp;
+  if (vendorPublicIp) {
+    headers["Gov-Vendor-Public-IP"] = vendorPublicIp;
+  } else {
+    logger.warn({
+      message:
+        "HMRC REQUIRED HEADER MISSING: Gov-Vendor-Public-IP — vendor IP not detected. Call detectVendorPublicIp() during Lambda initialization.",
+    });
   }
 
-  // 6. Vendor forwarded chain – build from X-Forwarded-For
-  // Format: Array of objects with 'by' and 'for' keys
-  if (serverPublicIp && clientIps.length > 0) {
+  // 7. Vendor forwarded chain – build from X-Forwarded-For
+  if (vendorPublicIp && clientIps.length > 0) {
     headers["Gov-Vendor-Forwarded"] = clientIps
-      .map((ip) => `by=${encodeURIComponent(serverPublicIp)}&for=${encodeURIComponent(ip)}`)
+      .map((ip) => `by=${encodeURIComponent(vendorPublicIp)}&for=${encodeURIComponent(ip)}`)
       .join(",");
+  } else if (clientIps.length > 0) {
+    logger.warn({
+      message: "HMRC REQUIRED HEADER MISSING: Gov-Vendor-Forwarded — cannot build without vendor public IP",
+    });
   }
 
-  // 7. Gov-Vendor-License-IDs is intentionally NOT supplied because:
+  // 8. Gov-Vendor-License-IDs is intentionally NOT supplied because:
   // - The software is open-source (no commercial license)
   // - There is no per-device or per-user license key
-  // - The application runs in a browser with no installable licensed component
-  // This is declared in intentionallyNotSuppliedHeaders in dynamodb-assertions.js
+  // - HMRC confirmed: "Please omit the header" (4 Feb 2026 review)
 
-  // 8. Vendor product name – from environment variable (must be percent-encoded)
+  // 9. Vendor product name – from package.json (must be percent-encoded)
   headers["Gov-Vendor-Product-Name"] = encodeURIComponent(packageName);
 
-  // 9. Vendor version – from environment variable (must be key-value structure)
+  // 10. Vendor version – from package.json (must be key-value structure)
   headers["Gov-Vendor-Version"] = `${encodeURIComponent(packageName)}=${encodeURIComponent(packageVersion)}`;
 
-  // 10. Pass through any client-side headers from the browser
+  // 11. Pass through any client-side headers from the browser
   const clientHeaderNames = [
     "Gov-Client-Browser-JS-User-Agent",
     "Gov-Client-Multi-Factor",
     "Gov-Client-Public-IP-Timestamp",
-    "Gov-Client-Public-Port",
     "Gov-Client-Screens",
     "Gov-Client-Timezone",
     "Gov-Client-Window-Size",

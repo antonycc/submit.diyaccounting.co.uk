@@ -8,6 +8,7 @@
     "envName": "",
     "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/0ee9d0f8-e02c-4920-94ca-1ba30c005d3c",
     "docRootPath": "../web/spreadsheets.diyaccounting.co.uk/public",
-    "domainNames": ""
+    "domainNames": "",
+    "prodFQDomainName": "spreadsheets.diyaccounting.co.uk"
   }
 }

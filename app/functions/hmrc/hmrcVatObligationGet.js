@@ -31,7 +31,7 @@ import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidVrn, isValidIsoDate, isValidDateRange } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
-import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
+import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
@@ -123,6 +123,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 // TODO: Remove all but the initial wait and async options.
 export async function ingestHandler(event) {
   await initializeSalt();
+  await detectVendorPublicIp();
   validateEnv([
     "HMRC_BASE_URI",
     "HMRC_SANDBOX_BASE_URI",
