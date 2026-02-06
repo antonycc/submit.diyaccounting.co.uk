@@ -198,6 +198,32 @@ main {
 }
 
 /* ============================================================
+   Spreadsheets Button — matches spreadsheets.diyaccounting.co.uk branding
+   ============================================================ */
+
+.gateway-btn-spreadsheets {
+  border-color: #158484;
+  background-color: #f7fafa;
+  background-image:
+    linear-gradient(to right, #e8eded 1px, transparent 1px),
+    linear-gradient(to bottom, #e8eded 1px, transparent 1px);
+  background-size: 11px 11px;
+}
+
+.gateway-btn-spreadsheets:hover {
+  border-color: #0e5f5f;
+  background-color: rgba(21, 132, 132, 0.06);
+  background-image:
+    linear-gradient(to right, #e8eded 1px, transparent 1px),
+    linear-gradient(to bottom, #e8eded 1px, transparent 1px);
+  background-size: 11px 11px;
+}
+
+.gateway-btn-spreadsheets .btn-title {
+  color: #158484;
+}
+
+/* ============================================================
    Company Summary (index.html)
    ============================================================ */
 

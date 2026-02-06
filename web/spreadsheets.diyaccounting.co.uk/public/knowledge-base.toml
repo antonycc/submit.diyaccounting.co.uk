@@ -514,7 +514,7 @@ priority = 63
 id = "introduction-v-a-t-registration"
 category = "vat"
 question = "Introduction VAT Registration"
-description = "When the sales turnover of a business reaches the vat threshold, currently 67,000 pounds per annum until reviewed in April 2008, then registration for vat is compulsory"
+description = "When the sales turnover of a business reaches the VAT threshold, currently £90,000 per annum (from April 2024), then registration for VAT is compulsory"
 keywords = []
 priority = 64
 
@@ -965,4 +965,44 @@ question = "Using Our Packages On A Mac"
 description = "This article will inform you how to use our DIY packages on a Mac"
 keywords = ["mac", "openoffice", "excel"]
 priority = 120
+
+[[article]]
+id = "mtd-vat-submission-guide"
+category = "vat"
+question = "How to Submit Your VAT Return Using Making Tax Digital"
+description = "A step-by-step guide to submitting VAT returns through Making Tax Digital (MTD), including who must comply, software requirements, and how to use DIY Accounting's free submission service"
+keywords = ["MTD", "VAT", "Making Tax Digital", "VAT return", "submit", "bridging software", "HMRC", "digital records"]
+priority = 121
+
+[[article]]
+id = "mtd-vat-penalties-and-deadlines"
+category = "vat"
+question = "MTD VAT Return Deadlines and Penalty Points System"
+description = "Understand the new points-based penalty system for late VAT returns introduced in January 2023, including deadlines for monthly, quarterly and annual returns, and late payment interest rules"
+keywords = ["VAT", "penalties", "deadlines", "penalty points", "late submission", "late payment", "interest", "HMRC"]
+priority = 122
+
+[[article]]
+id = "vat-flat-rate-scheme-guide"
+category = "vat"
+question = "VAT Flat Rate Scheme: How It Works for Small Businesses"
+description = "A guide to the VAT Flat Rate Scheme for small businesses, including eligibility, flat rate percentages, limited cost trader rules, and how the scheme works with Making Tax Digital"
+keywords = ["VAT", "flat rate scheme", "FRS", "small business", "limited cost trader", "MTD", "VAT scheme"]
+priority = 123
+
+[[article]]
+id = "free-mtd-vat-bridging-software"
+category = "vat"
+question = "Free MTD VAT Bridging Software for Spreadsheet Users"
+description = "Learn what MTD VAT bridging software is, why spreadsheet users need it, and how DIY Accounting provides a free bridging service to submit VAT returns directly to HMRC"
+keywords = ["bridging software", "MTD", "VAT", "spreadsheet", "free", "Making Tax Digital", "submit", "HMRC API"]
+priority = 124
+
+[[article]]
+id = "mtd-income-tax-self-assessment"
+category = "tax"
+question = "Making Tax Digital for Income Tax Self Assessment (ITSA)"
+description = "An overview of Making Tax Digital for Income Tax Self Assessment (MTD for ITSA), including who will need to comply from April 2026, what changes to expect, and how to prepare"
+keywords = ["MTD", "ITSA", "income tax", "self assessment", "Making Tax Digital", "quarterly updates", "self employed", "landlord"]
+priority = 125
 

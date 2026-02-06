@@ -180,11 +180,11 @@ public class SpreadsheetsStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' https://www.paypalobjects.com; "
-                                        + "style-src 'self'; "
-                                        + "img-src 'self' data: https://www.paypalobjects.com; "
+                                        + "script-src 'self' 'unsafe-inline' https://www.paypalobjects.com https://www.googletagmanager.com; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "img-src 'self' data: https://www.paypalobjects.com https://www.google-analytics.com https://www.googletagmanager.com https://avatars.githubusercontent.com; "
                                         + "font-src 'self'; "
-                                        + "connect-src 'self' https://www.paypal.com; "
+                                        + "connect-src 'self' https://www.paypal.com https://www.paypalobjects.com https://*.google-analytics.com https://www.googletagmanager.com https://api.github.com; "
                                         + "frame-src https://www.paypal.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self' https://www.paypal.com;")
@@ -215,11 +215,27 @@ public class SpreadsheetsStack extends Stack {
                                 .build())
                         .build())
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(ResponseCustomHeader.builder()
-                                .header("Server")
-                                .value("DIY-Accounting")
-                                .override(true)
-                                .build()))
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        .value("unsafe-none")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
                         .build())
                 .build();
 
@@ -301,10 +317,18 @@ public class SpreadsheetsStack extends Stack {
                         "/download.html",
                         "/donate.html",
                         "/knowledge-base.html",
+                        "/all-articles.html",
+                        "/references.html",
+                        "/sources.html",
+                        "/recently-updated.html",
+                        "/community.html",
+                        "/recently-updated.toml",
                         "/knowledge-base.toml",
+                        "/references.toml",
                         "/catalogue.toml",
                         "/spreadsheets.css",
                         "/lib/*",
+                        "/articles/*",
                         "/robots.txt",
                         "/sitemap.xml",
                         "/favicon.svg",

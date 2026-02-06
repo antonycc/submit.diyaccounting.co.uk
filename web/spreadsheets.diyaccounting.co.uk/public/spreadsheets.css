@@ -8,9 +8,9 @@
    ============================================================ */
 
 :root {
-  /* Brand — teal palette from diyaccounting.co.uk */
-  --color-brand-primary: #2d9c9c;
-  --color-brand-primary-dark: #247d7d;
+  /* Brand — teal palette from diyaccounting.co.uk (WCAG 2 AA compliant) */
+  --color-brand-primary: #158484;
+  --color-brand-primary-dark: #106868;
   --color-brand-primary-light: #29c0c0;
 
   /* Text */
@@ -25,8 +25,8 @@
   --color-border: #d5dede;
 
   /* Focus (WCAG 2.1 AA) */
-  --color-focus: #2d9c9c;
-  --color-focus-ring: rgba(45, 156, 156, 0.3);
+  --color-focus: #158484;
+  --color-focus-ring: rgba(21, 132, 132, 0.3);
 
   /* Accent (product feature ticks) */
   --color-accent-green: #2e7d32;
@@ -616,7 +616,7 @@ footer {
 }
 
 .footer-left a {
-  color: var(--color-brand-primary);
+  color: var(--color-brand-primary-dark);
   text-decoration: none;
   font-size: 0.85em;
   transition: color 0.3s;
@@ -741,7 +741,7 @@ footer {
   font-size: 0.75em;
   font-weight: var(--font-weight-semibold);
   background: #e6f5f5;
-  color: var(--color-brand-primary);
+  color: var(--color-text-primary);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -889,4 +889,209 @@ footer {
   .kb-category-badge {
     font-size: 0.65em;
   }
+}
+
+/* ============================================================
+   Editor Notes (updated information callouts)
+   ============================================================ */
+
+.editor-note {
+  background: #f0f7f7;
+  border-left: 4px solid var(--color-brand-primary);
+  padding: 1rem 1.2rem;
+  margin: 1.5rem 0;
+  border-radius: 0 4px 4px 0;
+}
+.editor-note p {
+  margin: 0.3rem 0;
+}
+
+/* Article attribution for AI-generated content */
+.article-attribution {
+  font-size: 0.85em;
+  color: #666;
+  font-style: italic;
+  margin-top: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* ============================================================
+   Citation References
+   ============================================================ */
+
+/* Inline reference markers in articles */
+.ref sup a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+  font-size: 0.75em;
+  vertical-align: super;
+}
+.ref sup a:hover,
+.ref sup a:focus {
+  text-decoration: underline;
+}
+
+/* Reference list entries on references.html */
+.ref-entry {
+  margin: 1.5rem 0;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid var(--color-brand-primary);
+  background: #fafafa;
+}
+.ref-entry h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: var(--font-size-base);
+}
+.ref-claim {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.ref-articles {
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.75rem;
+}
+.ref-source {
+  margin: 0.75rem 0 0.75rem 1rem;
+  font-size: 0.9em;
+}
+.ref-source-title {
+  font-weight: 600;
+}
+.ref-extract {
+  background: #f0f0f0;
+  padding: 0.5rem 1rem;
+  border-left: 2px solid #ccc;
+  font-style: italic;
+  margin: 0.4rem 0;
+  font-size: 0.95em;
+}
+.ref-accessed {
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+}
+
+/* Citation check date on articles */
+.citation-check-date {
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Community discussions page */
+.community-item {
+  border-left: 3px solid var(--color-brand-primary);
+}
+.community-item .kb-item-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.85em 1em;
+  text-decoration: none;
+  color: var(--color-text-primary);
+}
+.community-item .kb-item-link:hover {
+  background: #f5f7fa;
+}
+.community-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+  align-items: center;
+}
+.community-category {
+  font-size: 0.8em;
+  font-weight: var(--font-weight-semibold);
+}
+.community-snippet {
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+.community-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.community-actions {
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.community-actions select {
+  padding: 0.6em 0.8em;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-base);
+  font-size: 0.95em;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  appearance: auto;
+}
+.community-browse-all {
+  text-align: center;
+}
+.community-browse-all a {
+  color: var(--color-brand-primary);
+}
+
+/* Recently updated page */
+.recently-updated-item .kb-item-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.recently-updated-date {
+  font-size: 0.8em;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Source catalogue on sources.html */
+.source-entry {
+  margin: 1.5rem 0;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid var(--color-brand-primary-light);
+  background: #fafafa;
+}
+.source-entry h3 {
+  margin: 0 0 0.3rem 0;
+  font-size: var(--font-size-base);
+}
+.source-publisher {
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+.source-refs {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.5rem 0;
+}
+.source-refs li {
+  padding: 0.2rem 0;
+  font-size: 0.9em;
+}
+.source-refs li::before {
+  content: "\2192 ";
+  color: var(--color-brand-primary);
+}
+
+/* Category sections on references/sources pages */
+.ref-category-section {
+  margin: 2rem 0;
+}
+.ref-category-section h2 {
+  border-bottom: 2px solid var(--color-brand-primary);
+  padding-bottom: 0.3rem;
+  margin-bottom: 1rem;
 }

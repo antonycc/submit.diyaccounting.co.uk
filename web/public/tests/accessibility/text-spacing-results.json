@@ -1,180 +1,180 @@
 {
   "testName": "WCAG 1.4.12 Text Spacing",
   "baseUrl": "https://ci.submit.diyaccounting.co.uk",
-  "timestamp": "2026-02-04T01:37:44.164Z",
+  "timestamp": "2026-02-05T21:39:53.666Z",
   "cssInjected": "* {\n    line-height: 1.5 !important;\n    letter-spacing: 0.12em !important;\n    word-spacing: 0.16em !important;\n  }\n  p {\n    margin-bottom: 2em !important;\n  }",
   "pages": [
     {
       "url": "https://ci.submit.diyaccounting.co.uk/",
-      "timestamp": "2026-02-04T01:37:44.332Z",
+      "timestamp": "2026-02-05T21:39:53.817Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/about.html",
-      "timestamp": "2026-02-04T01:37:47.472Z",
+      "timestamp": "2026-02-05T21:39:56.827Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/privacy.html",
-      "timestamp": "2026-02-04T01:37:50.675Z",
+      "timestamp": "2026-02-05T21:40:00.500Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/terms.html",
-      "timestamp": "2026-02-04T01:37:53.704Z",
+      "timestamp": "2026-02-05T21:40:03.678Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/accessibility.html",
-      "timestamp": "2026-02-04T01:37:56.493Z",
+      "timestamp": "2026-02-05T21:40:06.469Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/auth/login.html",
-      "timestamp": "2026-02-04T01:37:59.446Z",
+      "timestamp": "2026-02-05T21:40:09.645Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/bundles.html",
-      "timestamp": "2026-02-04T01:38:02.818Z",
+      "timestamp": "2026-02-05T21:40:13.236Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/submitVat.html",
-      "timestamp": "2026-02-04T01:38:05.830Z",
+      "timestamp": "2026-02-05T21:40:16.390Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html",
-      "timestamp": "2026-02-04T01:38:08.583Z",
+      "timestamp": "2026-02-05T21:40:19.191Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html",
-      "timestamp": "2026-02-04T01:38:11.080Z",
+      "timestamp": "2026-02-05T21:40:21.936Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/hmrc/receipt/receipts.html",
-      "timestamp": "2026-02-04T01:38:13.748Z",
+      "timestamp": "2026-02-05T21:40:24.633Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/guide.html",
-      "timestamp": "2026-02-04T01:38:16.763Z",
+      "timestamp": "2026-02-05T21:40:27.576Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/help.html",
-      "timestamp": "2026-02-04T01:38:19.643Z",
+      "timestamp": "2026-02-05T21:40:31.081Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/mcp.html",
-      "timestamp": "2026-02-04T01:38:22.612Z",
+      "timestamp": "2026-02-05T21:40:34.221Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html",
-      "timestamp": "2026-02-04T01:38:25.616Z",
+      "timestamp": "2026-02-05T21:40:37.364Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/diy-accounting-limited.html",
-      "timestamp": "2026-02-04T01:38:28.998Z",
+      "timestamp": "2026-02-05T21:40:41.228Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/spreadsheets.html",
-      "timestamp": "2026-02-04T01:38:32.338Z",
+      "timestamp": "2026-02-05T21:40:44.357Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/404-error-distribution.html",
-      "timestamp": "2026-02-04T01:38:35.802Z",
+      "timestamp": "2026-02-05T21:40:47.849Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/404-error-origin.html",
-      "timestamp": "2026-02-04T01:38:38.824Z",
+      "timestamp": "2026-02-05T21:40:50.780Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/403.html",
-      "timestamp": "2026-02-04T01:38:41.796Z",
+      "timestamp": "2026-02-05T21:40:53.793Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/404.html",
-      "timestamp": "2026-02-04T01:38:43.714Z",
+      "timestamp": "2026-02-05T21:40:56.029Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/500.html",
-      "timestamp": "2026-02-04T01:38:45.721Z",
+      "timestamp": "2026-02-05T21:40:58.229Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/502.html",
-      "timestamp": "2026-02-04T01:38:47.633Z",
+      "timestamp": "2026-02-05T21:41:00.220Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/503.html",
-      "timestamp": "2026-02-04T01:38:49.636Z",
+      "timestamp": "2026-02-05T21:41:02.265Z",
       "passed": true,
       "clippedElements": [],
       "error": null
     },
     {
       "url": "https://ci.submit.diyaccounting.co.uk/errors/504.html",
-      "timestamp": "2026-02-04T01:38:51.553Z",
+      "timestamp": "2026-02-05T21:41:04.378Z",
       "passed": true,
       "clippedElements": [],
       "error": null

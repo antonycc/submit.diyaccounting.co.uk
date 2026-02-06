@@ -232,9 +232,9 @@ public class ApexStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://unpkg.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://api.ipify.org https://ipapi.co https://httpbin.org; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://github.com; "
+                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://unpkg.com https://www.googletagmanager.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://api.ipify.org https://ipapi.co https://httpbin.org https://*.google-analytics.com https://www.googletagmanager.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google-analytics.com https://www.googletagmanager.com; "
                                         + "style-src 'self' 'unsafe-inline' https://unpkg.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
@@ -265,11 +265,27 @@ public class ApexStack extends Stack {
                                 .build())
                         .build())
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(ResponseCustomHeader.builder()
-                                .header("Server")
-                                .value("DIY-Accounting")
-                                .override(true)
-                                .build()))
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        .value("require-corp")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
                         .build())
                 .build();
 

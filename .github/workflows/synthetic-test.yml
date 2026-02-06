@@ -44,6 +44,9 @@ on:
           - 'vatValidationBehaviour'
           - 'vatSchemesBehaviour'
           - 'simulatorBehaviour'
+          - 'gatewayBehaviour'
+          - 'spreadsheetsBehaviour'
+          - 'generatePassActivityBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:

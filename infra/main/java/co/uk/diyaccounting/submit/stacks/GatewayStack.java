@@ -187,11 +187,11 @@ public class GatewayStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self'; "
-                                        + "style-src 'self'; "
-                                        + "img-src 'self' data:; "
+                                        + "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com; "
                                         + "font-src 'self'; "
-                                        + "connect-src 'self'; "
+                                        + "connect-src 'self' https://*.google-analytics.com https://www.googletagmanager.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)
@@ -221,11 +221,27 @@ public class GatewayStack extends Stack {
                                 .build())
                         .build())
                 .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(ResponseCustomHeader.builder()
-                                .header("Server")
-                                .value("DIY-Accounting")
-                                .override(true)
-                                .build()))
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        .value("require-corp")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
                         .build())
                 .build();
 
@@ -330,6 +346,7 @@ public class GatewayStack extends Stack {
                 .distribution(distribution)
                 .distributionPaths(List.of(
                         "/index.html", "/about.html", "/gateway.css",
+                        "/lib/*",
                         "/robots.txt", "/sitemap.xml"))
                 .retainOnDelete(true)
                 .expires(Expiration.after(Duration.minutes(5)))

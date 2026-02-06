@@ -17,6 +17,7 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
     <!--script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script-->
     <!--script async src="../../prefetch/prefetch-hmrc-vat-return-head.js"></script-->
@@ -702,6 +703,20 @@
           return;
         }
 
+        // GA4 ecommerce: begin_checkout when VAT return submission starts
+        if (typeof gtag === 'function') {
+          gtag('event', 'begin_checkout', {
+            currency: 'GBP',
+            value: 0,
+            items: [{
+              item_id: 'vat-return',
+              item_name: 'VAT Return',
+              price: 0,
+              currency: 'GBP'
+            }]
+          });
+        }
+
         // Store submission data for the submission handler
         submissionData = {
           vatNumber,
@@ -985,6 +1000,21 @@
 
         // Handle both direct receipt object and wrapped response (from module's submitVat)
         const receipt = response.receipt ?? response;
+
+        // GA4 ecommerce: purchase when VAT return is successfully submitted
+        if (typeof gtag === 'function') {
+          gtag('event', 'purchase', {
+            transaction_id: receipt.formBundleNumber || '',
+            value: 0,
+            currency: 'GBP',
+            items: [{
+              item_id: 'vat-return',
+              item_name: 'VAT Return',
+              price: 0,
+              currency: 'GBP'
+            }]
+          });
+        }
 
         // Format and display the processing date
         const processingDate = new Date(receipt.processingDate);

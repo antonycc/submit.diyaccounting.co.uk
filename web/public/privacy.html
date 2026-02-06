@@ -14,6 +14,7 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="./lib/analytics.js"></script>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -92,7 +93,7 @@
         </div>
       </div>
       <h1 style="text-align: center">Privacy Policy</h1>
-      <p class="muted" style="text-align: center">Last updated: January 12, 2026</p>
+      <p class="muted" style="text-align: center">Last updated: February 5, 2026</p>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="./index.html">Activities</a>
         <a href="./hmrc/receipt/receipts.html">Receipts</a>
@@ -167,6 +168,44 @@
           <li>Full URLs with query parameters or personal identifiers</li>
           <li>IP addresses (AWS receives them for request routing but we do not store or process them for RUM)</li>
         </ul>
+
+        <h3>Google Analytics 4</h3>
+        <p>
+          We use Google Analytics 4 (GA4) to understand how visitors use our sites (diyaccounting.co.uk, spreadsheets.diyaccounting.co.uk,
+          and submit.diyaccounting.co.uk). GA4 collects anonymized usage data to help us improve our services.
+        </p>
+        <h4>Data Collected by GA4</h4>
+        <ul>
+          <li><strong>Page views</strong>: Pages visited and navigation paths across our three sites</li>
+          <li><strong>Events</strong>: Interactions such as product downloads, donation completions, and VAT submission milestones</li>
+          <li><strong>Device and browser information</strong>: Browser type, operating system, screen resolution, language</li>
+          <li><strong>Geographic information</strong>: Approximate location derived from IP address (IP addresses are not stored by GA4)</li>
+          <li><strong>Referral data</strong>: How you arrived at our site (search engine, direct, referral link)</li>
+        </ul>
+        <h4>Data NOT Collected by GA4</h4>
+        <ul>
+          <li>Personal information (names, email addresses, VAT numbers)</li>
+          <li>Financial data (VAT figures, payment details)</li>
+          <li>Authentication tokens or passwords</li>
+        </ul>
+        <h4>Consent and Control</h4>
+        <p>
+          GA4 loads with <strong>analytics consent denied by default</strong>. No analytics cookies are set and no tracking data is sent to
+          Google until you explicitly grant consent via the cookie banner. You can withdraw consent at any time by clearing your browser's
+          site data and revisiting the site.
+        </p>
+        <h4>Data Retention and Processing</h4>
+        <ul>
+          <li><strong>Retention period</strong>: 14 months (the maximum allowed by GA4)</li>
+          <li><strong>IP anonymization</strong>: Enabled by default in GA4 (IP addresses are not stored)</li>
+          <li><strong>Data processor</strong>: Google Ireland Limited (EU data processing)</li>
+          <li><strong>Cross-domain tracking</strong>: Sessions are linked across our three domains to provide a unified view of user journeys</li>
+        </ul>
+        <p>
+          For more information, see
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a> and
+          <a href="https://support.google.com/analytics/answer/6004245" target="_blank" rel="noopener">Google Analytics Data Safeguards</a>.
+        </p>
 
         <h3>Infrastructure and Operational Data</h3>
         <ul>
@@ -302,6 +341,10 @@
           </li>
           <li><strong>RUM data</strong>: Only collected after you click "Accept" in the consent banner.</li>
           <li>
+            <strong>Google Analytics data</strong>: Only collected after you grant analytics consent via the cookie banner. No cookies or
+            tracking data are sent before consent.
+          </li>
+          <li>
             <strong>Infrastructure logs</strong>: Collected automatically by AWS services when you use the site, for security and
             operational reasons.
           </li>
@@ -377,6 +420,10 @@
           </thead>
           <tbody>
             <tr>
+              <td>Google Analytics data</td>
+              <td>14 months</td>
+            </tr>
+            <tr>
               <td>CloudWatch RUM events</td>
               <td>30 days (raw), longer for aggregated metrics</td>
             </tr>
@@ -409,7 +456,7 @@
         <ul>
           <li><strong>Authentication tokens</strong>: Cognito access, identity, and refresh tokens for session management</li>
           <li><strong>User info</strong>: Parsed user profile from Cognito (sub, name, email)</li>
-          <li><strong>Consent preferences</strong>: Your RUM and analytics consent choices</li>
+          <li><strong>Consent preferences</strong>: Your RUM and Google Analytics consent choices</li>
           <li><strong>Auth state</strong>: OAuth state parameter for CSRF protection during login</li>
         </ul>
 
@@ -428,8 +475,8 @@
         <h2>Your choices</h2>
         <ul>
           <li>
-            <strong>RUM consent</strong>: You can decline analytics in the consent banner. You can change your choice by clearing site data
-            in your browser and revisiting.
+            <strong>Analytics consent</strong>: You can decline both RUM and Google Analytics in the consent banner. No analytics data is
+            collected until you grant consent. You can change your choice by clearing site data in your browser and revisiting.
           </li>
           <li>
             <strong>HMRC authorization</strong>: You can revoke HMRC access at any time through your
@@ -520,10 +567,15 @@
           <a href="https://aws.amazon.com/compliance/gdpr-center/" target="_blank" rel="noopener">AWS GDPR Center</a> for details.
         </p>
 
-        <h3>Google (Authentication Provider)</h3>
+        <h3>Google (Authentication Provider and Analytics Processor)</h3>
         <p>
           If you sign in with Google, Google processes your authentication data according to their privacy policy. We receive only your
           name, email address, and a unique identifier from Google.
+        </p>
+        <p>
+          We also use Google Analytics 4 to collect anonymized usage data about how visitors use our sites. Google acts as a data processor
+          for analytics data. Analytics data is only collected after you grant consent. See the
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> for details.
         </p>
       </section>
 
@@ -639,6 +691,10 @@
                 <td>Consent</td>
               </tr>
               <tr>
+                <td>Website analytics (Google Analytics 4)</td>
+                <td>Consent</td>
+              </tr>
+              <tr>
                 <td>Security and fraud prevention</td>
                 <td>Legitimate interests</td>
               </tr>
@@ -653,7 +709,7 @@
           <ul>
             <li><strong>HMRC</strong>: VAT return data and fraud prevention headers (data controller)</li>
             <li><strong>Amazon Web Services</strong>: All processing and storage (data processor, EU-West London region)</li>
-            <li><strong>Google</strong>: Authentication provider (data controller for auth data)</li>
+            <li><strong>Google</strong>: Authentication provider (data controller for auth data) and analytics processor (Google Analytics 4, consent-based)</li>
           </ul>
 
           <h3>International Transfers</h3>
@@ -668,6 +724,7 @@
             <li><strong>User account data</strong>: Duration of account plus 30 days</li>
             <li><strong>Subscription records</strong>: 1 month after expiry</li>
             <li><strong>Audit logs</strong>: 30-90 days</li>
+            <li><strong>Google Analytics data</strong>: 14 months</li>
             <li><strong>RUM data</strong>: 30 days (raw)</li>
           </ul>
 

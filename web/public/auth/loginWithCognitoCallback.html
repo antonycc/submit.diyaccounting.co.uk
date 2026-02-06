@@ -11,6 +11,7 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
     <!--script async src="../prefetch/prefetch-cognito-token-head.js"></script-->
     <!--script async src="../prefetch/prefetch-bundle-head.js"></script-->
@@ -208,6 +209,10 @@
           );
 
           console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
+          // GA4: login event after successful Cognito authentication
+          if (typeof gtag === 'function') {
+            gtag('event', 'login', { method: 'cognito' });
+          }
           showStatus("Authenticated successfully. Fetching bundles...", "info");
 
           // Extract MFA status from amr (Authentication Methods Reference) claim

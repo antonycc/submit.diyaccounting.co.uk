@@ -3,8 +3,8 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://ci.submit.diyaccounting.co.uk
-**Generated**: 2026-02-04T01:48:55.813Z
-**Overall Status**: ✅ PASS
+**Generated**: 2026-02-05T21:45:20.175Z
+**Overall Status**: ❌ FAIL
 
 **Source Files**:
 ```
@@ -28,11 +28,11 @@
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
 | ESLint Security | ✅ | 0 errors, 7 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 0 medium, 11 low |
-| Pa11y (WCAG AA) | ✅ | 26/26 pages passed |
-| axe-core | ✅ | 0 violations, 871 passes |
-| axe-core (WCAG 2.2) | ✅ | 0 violations, 513 passes |
-| Lighthouse | ✅ | A11y: 100%, Perf: 99%, BP: 100% |
+| OWASP ZAP | ✅ | 0 high, 0 medium, 2 low |
+| Pa11y (WCAG AA) | ✅ | 34/34 pages passed |
+| axe-core | ❌ | 4 violations, 1057 passes |
+| axe-core (WCAG 2.2) | ❌ | 4 violations, 617 passes |
+| Lighthouse | ✅ | A11y: 100%, Perf: 93%, BP: 93% |
 | Text Spacing (1.4.12) | ✅ | 25/25 pages passed |
 
 ---
@@ -76,8 +76,8 @@
 |------------|-------|
 | High | 0 |
 | Medium | 0 |
-| Low | 11 |
-| Informational | 35 |
+| Low | 2 |
+| Informational | 36 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -85,9 +85,8 @@
 
 | Alert | Risk | Count |
 |-------|------|-------|
-| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 9 |
 | Timestamp Disclosure - Unix | Low (Low) | 2 |
-| Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
+| Information Disclosure - Suspicious Comments | Informational (Low) | 13 |
 | Modern Web Application | Informational (Medium) | 5 |
 | Non-Storable Content | Informational (Medium) | 3 |
 | Re-examine Cache-control Directives | Informational (Low) | 5 |
@@ -109,8 +108,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 26 |
-| Pages Passed | 26 |
+| Pages Tested | 34 |
+| Pages Passed | 34 |
 | Pages Failed | 0 |
 
 **Status**: ✅ All pages comply with WCAG AA
@@ -145,36 +144,60 @@
 | /errors/502.html | 0 |
 | /errors/503.html | 0 |
 | /errors/504.html | 0 |
+| https://ci-gateway.diyaccounting.co.uk/ | 0 |
+| https://ci-gateway.diyaccounting.co.uk/index.html | 0 |
+| https://ci-gateway.diyaccounting.co.uk/about.html | 0 |
+| https://ci-spreadsheets.diyaccounting.co.uk/ | 0 |
+| https://ci-spreadsheets.diyaccounting.co.uk/index.html | 0 |
+| https://ci-spreadsheets.diyaccounting.co.uk/download.html | 0 |
+| https://ci-spreadsheets.diyaccounting.co.uk/donate.html | 0 |
+| https://ci-spreadsheets.diyaccounting.co.uk/knowledge-base.html | 0 |
 
 ### 2.2 axe-core (Automated Accessibility)
 
 | Metric | Count |
 |--------|-------|
-| Violations | 0 |
-| Passes | 871 |
-| Incomplete | 25 |
+| Violations | 4 |
+| Passes | 1057 |
+| Incomplete | 29 |
 
-**Status**: ✅ No accessibility violations
+**Status**: ❌ Accessibility violations require attention
 
+#### Violations
+
+| Rule | Impact | Description | Nodes |
+|------|--------|-------------|-------|
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 4 |
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
 
 | Metric | Count |
 |--------|-------|
-| Violations | 0 |
-| Passes | 513 |
-| Incomplete | 25 |
+| Violations | 4 |
+| Passes | 617 |
+| Incomplete | 29 |
 
-**Status**: ✅ No WCAG 2.2 violations
+**Status**: ❌ WCAG 2.2 violations detected
 
+#### Violations
+
+| Rule | Impact | Description | Nodes |
+|------|--------|-------------|-------|
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
+| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 4 |
 
 ### 2.4 Lighthouse
 
 | Category | Score |
 |----------|-------|
 | Accessibility | 100% |
-| Performance | 99% |
-| Best Practices | 100% |
+| Performance | 93% |
+| Best Practices | 93% |
 | SEO | 100% |
 
 **Status**: ✅ Accessibility score meets threshold (90%+)

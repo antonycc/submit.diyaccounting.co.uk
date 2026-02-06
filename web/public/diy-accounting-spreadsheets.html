@@ -16,6 +16,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="submit.css" />
+    <script src="./lib/analytics.js"></script>
     <style>
       .spreadsheets-page {
         max-width: 800px;
@@ -100,6 +101,41 @@
         margin: 0;
         line-height: 1.5;
         font-size: 0.95rem;
+      }
+
+      .download-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+      }
+
+      .download-section h2 {
+        color: var(--color-brand-primary);
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+      }
+
+      .download-section p {
+        color: var(--color-text-secondary);
+        margin-bottom: 1rem;
+      }
+
+      .download-section a {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 500;
+        text-decoration: none;
+        border: 2px solid var(--color-brand-primary);
+        color: var(--color-brand-primary);
+        background: white;
+        transition: all 0.2s;
+      }
+
+      .download-section a:hover {
+        background: #e8f0fe;
       }
 
       .gallery-section {
@@ -318,6 +354,14 @@
               class="lightbox-img"
             />
           </div>
+        </div>
+
+        <div class="download-section">
+          <h2>Download</h2>
+          <p>All DIY Accounting spreadsheet products are available for immediate download from the spreadsheets site.</p>
+          <a href="https://spreadsheets.diyaccounting.co.uk" target="_blank" rel="noopener">
+            Visit spreadsheets.diyaccounting.co.uk to download
+          </a>
         </div>
       </div>
     </main>
