@@ -188,8 +188,8 @@ public class GatewayStack extends Stack {
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
                                         + "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; "
-                                        + "style-src 'self'; "
-                                        + "img-src 'self' data: https://www.google-analytics.com; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com; "
                                         + "font-src 'self'; "
                                         + "connect-src 'self' https://*.google-analytics.com https://www.googletagmanager.com; "
                                         + "frame-ancestors 'none'; "

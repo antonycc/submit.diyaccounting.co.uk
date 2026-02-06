@@ -191,33 +191,55 @@ class KnowledgeBasePage {
   loadArticleContent(id, answerEl) {
     // Check cache first
     if (this.loadedArticles[id]) {
-      answerEl.innerHTML = this.renderMarkdown(this.loadedArticles[id]);
+      answerEl.innerHTML = this.loadedArticles[id].html
+        ? this.loadedArticles[id].content
+        : this.renderMarkdown(this.loadedArticles[id].content);
       answerEl.dataset.loaded = "true";
       return;
     }
 
     answerEl.innerHTML = '<p class="kb-loading">Loading article...</p>';
+    var self = this;
+    var encodedId = encodeURIComponent(id);
 
-    fetch("articles/" + encodeURIComponent(id) + ".md")
-      .then(
-        function (response) {
-          if (!response.ok) throw new Error("Not found");
-          return response.text();
-        }
-      )
-      .then(
-        function (markdown) {
-          this.loadedArticles[id] = markdown;
-          answerEl.innerHTML = this.renderMarkdown(markdown);
-          answerEl.dataset.loaded = "true";
-        }.bind(this)
-      )
-      .catch(
-        function () {
-          answerEl.innerHTML =
-            "<p>Unable to load article content. Please try again.</p>";
-        }
-      );
+    // Try .md first, fall back to .html for articles without markdown source
+    fetch("articles/" + encodedId + ".md")
+      .then(function (response) {
+        if (!response.ok) throw new Error("Not found");
+        return response.text();
+      })
+      .then(function (markdown) {
+        self.loadedArticles[id] = { content: markdown, html: false };
+        answerEl.innerHTML = self.renderMarkdown(markdown);
+        answerEl.dataset.loaded = "true";
+      })
+      .catch(function () {
+        // Fall back to .html — extract content from <article class="kb-article">
+        fetch("articles/" + encodedId + ".html")
+          .then(function (response) {
+            if (!response.ok) throw new Error("Not found");
+            return response.text();
+          })
+          .then(function (htmlText) {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(htmlText, "text/html");
+            var article = doc.querySelector(".kb-article");
+            if (!article) throw new Error("No article element");
+            // Remove the h2 title and category badge (already shown in the accordion header)
+            var title = article.querySelector("h2");
+            if (title) title.remove();
+            var badge = article.querySelector(".kb-category-badge");
+            if (badge) badge.remove();
+            var content = article.innerHTML;
+            self.loadedArticles[id] = { content: content, html: true };
+            answerEl.innerHTML = content;
+            answerEl.dataset.loaded = "true";
+          })
+          .catch(function () {
+            answerEl.innerHTML =
+              '<p>Unable to load article. <a href="articles/' + encodedId + '.html">View article</a></p>';
+          });
+      });
   }
 
   formatCategory(cat) {

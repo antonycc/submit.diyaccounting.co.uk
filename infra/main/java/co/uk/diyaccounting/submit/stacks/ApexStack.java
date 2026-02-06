@@ -234,7 +234,7 @@ public class ApexStack extends Stack {
                                 .contentSecurityPolicy("default-src 'self'; "
                                         + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://unpkg.com https://www.googletagmanager.com; "
                                         + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://api.ipify.org https://ipapi.co https://httpbin.org https://*.google-analytics.com https://www.googletagmanager.com; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google-analytics.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://github.com https://www.google-analytics.com https://www.googletagmanager.com; "
                                         + "style-src 'self' 'unsafe-inline' https://unpkg.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
