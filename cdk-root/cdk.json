@@ -9,6 +9,9 @@
     "ciGatewayCloudFrontDomain": "",
     "prodGatewayCloudFrontDomain": "",
     "ciSpreadsheetsCloudFrontDomain": "",
-    "prodSpreadsheetsCloudFrontDomain": ""
+    "prodSpreadsheetsCloudFrontDomain": "",
+    "apexCloudFrontDomain": "",
+    "wwwCloudFrontDomain": "",
+    "spreadsheetsCloudFrontDomain": ""
   }
 }
