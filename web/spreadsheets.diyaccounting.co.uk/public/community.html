@@ -2,17 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Source Catalogue - DIY Accounting Spreadsheets</title>
+    <title>Community Discussions - DIY Accounting Spreadsheets</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Catalogue of authoritative sources used across DIY Accounting knowledge base articles. Each source lists all references that cite it, enabling tracking of upstream changes."
+      content="Community discussions about DIY Accounting spreadsheets. Ask questions, share tips, and get help from other UK small business owners."
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <meta property="og:title" content="Source Catalogue - DIY Accounting Spreadsheets" />
-    <meta property="og:description" content="Catalogue of authoritative sources used across DIY Accounting knowledge base articles." />
-    <meta property="og:url" content="https://spreadsheets.diyaccounting.co.uk/sources.html" />
+    <meta property="og:title" content="Community Discussions - DIY Accounting Spreadsheets" />
+    <meta property="og:description" content="Community discussions about DIY Accounting spreadsheets. Ask questions, share tips, and get help from other UK small business owners." />
+    <meta property="og:url" content="https://spreadsheets.diyaccounting.co.uk/community.html" />
     <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:type" content="website" />
     <link rel="stylesheet" href="spreadsheets.css" />
@@ -25,7 +25,7 @@
       <a href="index.html">Products</a>
       <a href="download.html">Download</a>
       <a href="knowledge-base.html">Knowledge Base</a>
-      <a href="community.html">Community</a>
+      <a href="community.html" class="nav-current">Community</a>
       <a href="https://submit.diyaccounting.co.uk">Submit VAT MTD</a>
       <a href="donate.html">Donate</a>
     </nav>
@@ -37,28 +37,34 @@
 
     <main id="mainContent">
       <nav class="nav-back" aria-label="Breadcrumb">
-        <a href="knowledge-base.html">&larr; Knowledge Base</a> &middot;
-        <a href="references.html">References</a>
+        <a href="index.html">&larr; Back to products</a>
       </nav>
 
-      <h2 class="kb-page-title">Source Catalogue</h2>
+      <h2 class="kb-page-title">Community Discussions</h2>
       <p class="kb-page-description">
-        All authoritative sources referenced by our knowledge base articles, grouped by publisher.
-        When a source is updated (e.g., a VAT threshold change), this catalogue identifies every
-        article that needs reviewing.
+        Questions, answers, and tips from the DIY Accounting community. Click any discussion to join the conversation on GitHub.
       </p>
-      <p id="source-count" class="kb-page-description" style="font-size: 0.9em; color: #666;"></p>
 
-      <div id="sources-list">
-        <p>Loading sources...</p>
+      <div class="community-actions">
+        <a href="https://github.com/antonycc/diy-accounting/discussions/new" target="_blank" rel="noopener noreferrer" class="btn-download btn-primary">Ask a question</a>
+        <select id="category-filter" aria-label="Filter by category">
+          <option value="">All categories</option>
+        </select>
       </div>
+
+      <div id="community-list" class="kb-list">
+        <!-- Dynamically populated by JS -->
+      </div>
+
+      <p class="community-browse-all">
+        <a href="https://github.com/antonycc/diy-accounting/discussions" target="_blank" rel="noopener noreferrer">View all discussions on GitHub &rarr;</a>
+      </p>
     </main>
 
     <footer>
       <div class="footer-content">
         <div class="footer-left">
           <a href="https://diyaccounting.co.uk">diyaccounting.co.uk</a>
-          <a href="knowledge-base.html">knowledge base</a>
           <a href="https://submit.diyaccounting.co.uk/privacy.html">privacy</a>
           <a href="https://submit.diyaccounting.co.uk/terms.html">terms</a>
           <a href="https://submit.diyaccounting.co.uk/accessibility.html">accessibility</a>
@@ -69,7 +75,6 @@
       </div>
     </footer>
 
-    <script src="lib/toml-parser.js"></script>
-    <script src="lib/references-page.js"></script>
+    <script src="lib/community-page.js"></script>
   </body>
 </html>

@@ -182,9 +182,9 @@ public class SpreadsheetsStack extends Stack {
                                 .contentSecurityPolicy("default-src 'self'; "
                                         + "script-src 'self' https://www.paypalobjects.com https://www.googletagmanager.com; "
                                         + "style-src 'self'; "
-                                        + "img-src 'self' data: https://www.paypalobjects.com https://www.google-analytics.com; "
+                                        + "img-src 'self' data: https://www.paypalobjects.com https://www.google-analytics.com https://avatars.githubusercontent.com; "
                                         + "font-src 'self'; "
-                                        + "connect-src 'self' https://www.paypal.com https://www.google-analytics.com https://www.googletagmanager.com; "
+                                        + "connect-src 'self' https://www.paypal.com https://www.google-analytics.com https://www.googletagmanager.com https://api.github.com; "
                                         + "frame-src https://www.paypal.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self' https://www.paypal.com;")
@@ -321,6 +321,7 @@ public class SpreadsheetsStack extends Stack {
                         "/references.html",
                         "/sources.html",
                         "/recently-updated.html",
+                        "/community.html",
                         "/recently-updated.toml",
                         "/knowledge-base.toml",
                         "/references.toml",
