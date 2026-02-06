@@ -4,6 +4,36 @@
 
 ---
 
+```
+YOU ARE HERE
+
+You're right — there's a gap. Here's the situation:
+
+What deploy-root.yml / RootDnsStack currently creates:
+- ci-gateway.diyaccounting.co.uk → ci gateway CloudFront
+- prod-gateway.diyaccounting.co.uk → prod gateway CloudFront
+- ci-spreadsheets.diyaccounting.co.uk → ci spreadsheets CloudFront
+- prod-spreadsheets.diyaccounting.co.uk → prod spreadsheets CloudFront
+
+What the plan needs for steps 1.8 and 1.9 (the actual go-live DNS switchover):
+- diyaccounting.co.uk (apex) → prod gateway CloudFront
+- www.diyaccounting.co.uk → prod gateway CloudFront
+- spreadsheets.diyaccounting.co.uk → prod spreadsheets CloudFront
+
+These three records don't exist in the code yet. The RootDnsStack needs to be extended with new props and alias records for the bare/apex domains. Then deploy-root.yml and
+RootEnvironment.java also need updating to pass those values through.
+
+The plan steps 1.8/1.9 say "Run deploy-root.yml" but gloss over the fact that it's a code change + deploy, not just a deploy. Shall I update the plan to make this explicit,
+or would you rather I go ahead and implement the RootDnsStack changes now so it's ready when you need it?
+
+✻ Cooked for 1m 11s
+
+❯ yes, go ahead and implement the RootDnsStack changes now so it's ready and please check my certs, do I need tom add these domains to my existing certs? Or does
+assigning the record to cloudfromt automatically find the cert?
+```
+
+---
+
 ## Current State
 
 Everything runs in the submit-prod AWS account (887764105431). Both gateway and spreadsheets are deployed as CDK stacks within the `submit.diyaccounting.co.uk` repository. CI environments are live and validated:
