@@ -191,7 +191,7 @@ public class GatewayStack extends Stack {
                                         + "style-src 'self'; "
                                         + "img-src 'self' data: https://www.google-analytics.com; "
                                         + "font-src 'self'; "
-                                        + "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com; "
+                                        + "connect-src 'self' https://*.google-analytics.com https://www.googletagmanager.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)

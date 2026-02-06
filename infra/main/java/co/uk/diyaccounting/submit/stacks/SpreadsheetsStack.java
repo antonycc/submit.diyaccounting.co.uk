@@ -184,7 +184,7 @@ public class SpreadsheetsStack extends Stack {
                                         + "style-src 'self'; "
                                         + "img-src 'self' data: https://www.paypalobjects.com https://www.google-analytics.com https://avatars.githubusercontent.com; "
                                         + "font-src 'self'; "
-                                        + "connect-src 'self' https://www.paypal.com https://www.google-analytics.com https://www.googletagmanager.com https://api.github.com; "
+                                        + "connect-src 'self' https://www.paypal.com https://*.google-analytics.com https://www.googletagmanager.com https://api.github.com; "
                                         + "frame-src https://www.paypal.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self' https://www.paypal.com;")
