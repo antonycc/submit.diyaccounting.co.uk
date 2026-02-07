@@ -346,6 +346,35 @@ main {
 }
 
 /* ============================================================
+   Partner Section
+   ============================================================ */
+
+.partner-section {
+  max-width: 740px;
+  margin: var(--spacing-xl) auto;
+}
+
+.partner-card {
+  border-left: 4px solid var(--color-brand-primary-light);
+}
+
+.partner-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.25em 0;
+}
+
+.partner-trust {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0.75em 0 0 0;
+}
+
+/* ============================================================
    Product Action (download button in card)
    ============================================================ */
 
