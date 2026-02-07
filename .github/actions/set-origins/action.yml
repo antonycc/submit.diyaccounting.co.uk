@@ -154,22 +154,49 @@ runs:
       env:
         SET_ORIGINS_ORIGIN_DOMAIN: ${{ inputs.origin-domain }}
         SET_ORIGINS_APEX_DOMAIN: ${{ inputs.apex-domain }}
+        SET_ORIGINS_PROD_APEX_ALIAS: ${{ inputs.prod-apex-alias }}
         SET_ORIGINS_HOSTED_ZONE_ID: ${{ inputs.hosted-zone-id }}
       run: |
         set -euo pipefail
 
-        cat > /tmp/alias.json <<JSON
-        {
-          "Comment": "Alias apex domain to base domain",
-          "Changes": [
+        CHANGES='[
+          {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+              "Name": "'"${SET_ORIGINS_APEX_DOMAIN?}"'.",
+              "Type": "A",
+              "AliasTarget": {
+                "HostedZoneId": "'"${SET_ORIGINS_HOSTED_ZONE_ID?}"'",
+                "DNSName": "'"${SET_ORIGINS_ORIGIN_DOMAIN?}"'.",
+                "EvaluateTargetHealth": false
+              }
+            }
+          },
+          {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+              "Name": "'"${SET_ORIGINS_APEX_DOMAIN?}"'.",
+              "Type": "AAAA",
+              "AliasTarget": {
+                "HostedZoneId": "'"${SET_ORIGINS_HOSTED_ZONE_ID?}"'",
+                "DNSName": "'"${SET_ORIGINS_ORIGIN_DOMAIN?}"'.",
+                "EvaluateTargetHealth": false
+              }
+            }
+          }
+        ]'
+
+        if [ -n "${SET_ORIGINS_PROD_APEX_ALIAS:-}" ]; then
+          echo "Adding prod apex alias DNS: [${SET_ORIGINS_PROD_APEX_ALIAS}] -> [${SET_ORIGINS_ORIGIN_DOMAIN?}]"
+          CHANGES=$(echo "$CHANGES" | jq --arg alias "${SET_ORIGINS_PROD_APEX_ALIAS}" --arg origin "${SET_ORIGINS_ORIGIN_DOMAIN?}" --arg zoneId "${SET_ORIGINS_HOSTED_ZONE_ID?}" '. + [
             {
               "Action": "UPSERT",
               "ResourceRecordSet": {
-                "Name": "${SET_ORIGINS_APEX_DOMAIN?}.",
+                "Name": ($alias + "."),
                 "Type": "A",
                 "AliasTarget": {
-                  "HostedZoneId": "${SET_ORIGINS_HOSTED_ZONE_ID?}",
-                  "DNSName": "${SET_ORIGINS_ORIGIN_DOMAIN?}.",
+                  "HostedZoneId": $zoneId,
+                  "DNSName": ($origin + "."),
                   "EvaluateTargetHealth": false
                 }
               }
@@ -177,21 +204,23 @@ runs:
             {
               "Action": "UPSERT",
               "ResourceRecordSet": {
-                "Name": "${SET_ORIGINS_APEX_DOMAIN?}.",
+                "Name": ($alias + "."),
                 "Type": "AAAA",
                 "AliasTarget": {
-                  "HostedZoneId": "${SET_ORIGINS_HOSTED_ZONE_ID?}",
-                  "DNSName": "${SET_ORIGINS_ORIGIN_DOMAIN?}.",
+                  "HostedZoneId": $zoneId,
+                  "DNSName": ($origin + "."),
                   "EvaluateTargetHealth": false
                 }
               }
             }
-          ]
-        }
-        JSON
+          ]')
+        fi
+
+        CHANGE_BATCH=$(jq -n --argjson changes "$CHANGES" '{"Comment": "Alias apex domain to base domain", "Changes": $changes}')
 
         echo "Upserting alias records: [${SET_ORIGINS_APEX_DOMAIN?}] -> [${SET_ORIGINS_ORIGIN_DOMAIN?}] in hosted zone [${SET_ORIGINS_HOSTED_ZONE_ID?}]"
-        aws route53 change-resource-record-sets --hosted-zone-id "${SET_ORIGINS_HOSTED_ZONE_ID?}" --change-batch file:///tmp/alias.json
+        echo "$CHANGE_BATCH" | jq '.Changes[].ResourceRecordSet.Name'
+        aws route53 change-resource-record-sets --hosted-zone-id "${SET_ORIGINS_HOSTED_ZONE_ID?}" --change-batch "$CHANGE_BATCH"
 
     - name: Transfer API Gateway custom domain for apex
       id: apigw-custom-domain
