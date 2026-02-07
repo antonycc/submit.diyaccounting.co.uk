@@ -1,37 +1,158 @@
 Running Pa11y on 34 URLs:
- > https://ci.submit.diyaccounting.co.uk/ - 0 errors
- > https://ci.submit.diyaccounting.co.uk/index.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/privacy.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/terms.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/about.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/accessibility.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/auth/login.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/bundles.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/hmrc/vat/submitVat.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/hmrc/receipt/receipts.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/guide.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/help.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/mcp.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/diy-accounting-limited.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/spreadsheets.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/404-error-distribution.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/404-error-origin.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/403.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/404.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/500.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/502.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/503.html - 0 errors
- > https://ci.submit.diyaccounting.co.uk/errors/504.html - 0 errors
- > https://ci-gateway.diyaccounting.co.uk/ - 0 errors
- > https://ci-gateway.diyaccounting.co.uk/index.html - 0 errors
- > https://ci-gateway.diyaccounting.co.uk/about.html - 0 errors
- > https://ci-spreadsheets.diyaccounting.co.uk/ - 0 errors
- > https://ci-spreadsheets.diyaccounting.co.uk/index.html - 0 errors
- > https://ci-spreadsheets.diyaccounting.co.uk/download.html - 0 errors
- > https://ci-spreadsheets.diyaccounting.co.uk/donate.html - 0 errors
- > https://ci-spreadsheets.diyaccounting.co.uk/knowledge-base.html - 0 errors
+ > https://submit.diyaccounting.co.uk/ - Failed to run
+ > https://submit.diyaccounting.co.uk/index.html - Failed to run
+ > https://submit.diyaccounting.co.uk/privacy.html - Failed to run
+ > https://submit.diyaccounting.co.uk/terms.html - Failed to run
+ > https://submit.diyaccounting.co.uk/about.html - Failed to run
+ > https://submit.diyaccounting.co.uk/accessibility.html - Failed to run
+ > https://submit.diyaccounting.co.uk/auth/login.html - Failed to run
+ > https://submit.diyaccounting.co.uk/bundles.html - Failed to run
+ > https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html - Failed to run
+ > https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html - Failed to run
+ > https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html - Failed to run
+ > https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html - Failed to run
+ > https://submit.diyaccounting.co.uk/guide.html - Failed to run
+ > https://submit.diyaccounting.co.uk/help.html - Failed to run
+ > https://submit.diyaccounting.co.uk/mcp.html - Failed to run
+ > https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html - Failed to run
+ > https://submit.diyaccounting.co.uk/diy-accounting-limited.html - Failed to run
+ > https://submit.diyaccounting.co.uk/spreadsheets.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/404-error-distribution.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/404-error-origin.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/403.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/404.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/500.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/502.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/503.html - Failed to run
+ > https://submit.diyaccounting.co.uk/errors/504.html - Failed to run
+ > https://prod-gateway.diyaccounting.co.uk/ - 0 errors
+ > https://prod-gateway.diyaccounting.co.uk/index.html - 0 errors
+ > https://prod-gateway.diyaccounting.co.uk/about.html - 0 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/ - 0 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/index.html - 0 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/download.html - 0 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/donate.html - 0 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/knowledge-base.html - 0 errors
 
-✔ 34/34 URLs passed
+Errors in https://submit.diyaccounting.co.uk/:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/
+
+Errors in https://submit.diyaccounting.co.uk/index.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/index.html
+
+Errors in https://submit.diyaccounting.co.uk/privacy.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/privacy.html
+
+Errors in https://submit.diyaccounting.co.uk/terms.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/terms.html
+
+Errors in https://submit.diyaccounting.co.uk/about.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/about.html
+
+Errors in https://submit.diyaccounting.co.uk/accessibility.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/accessibility.html
+
+Errors in https://submit.diyaccounting.co.uk/auth/login.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/auth/login.html
+
+Errors in https://submit.diyaccounting.co.uk/bundles.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/bundles.html
+
+Errors in https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html
+
+Errors in https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html
+
+Errors in https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html
+
+Errors in https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html
+
+Errors in https://submit.diyaccounting.co.uk/guide.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/guide.html
+
+Errors in https://submit.diyaccounting.co.uk/help.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/help.html
+
+Errors in https://submit.diyaccounting.co.uk/mcp.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/mcp.html
+
+Errors in https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html
+
+Errors in https://submit.diyaccounting.co.uk/diy-accounting-limited.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/diy-accounting-limited.html
+
+Errors in https://submit.diyaccounting.co.uk/spreadsheets.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/spreadsheets.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/404-error-distribution.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/404-error-distribution.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/404-error-origin.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/404-error-origin.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/403.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/403.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/404.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/404.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/500.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/500.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/502.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/502.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/503.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/503.html
+
+Errors in https://submit.diyaccounting.co.uk/errors/504.html:
+
+ • Error: net::ERR_NAME_NOT_RESOLVED at
+   https://submit.diyaccounting.co.uk/errors/504.html
+
+✘ 8/34 URLs passed

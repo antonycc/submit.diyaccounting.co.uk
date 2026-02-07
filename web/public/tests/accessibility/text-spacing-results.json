@@ -1,189 +1,189 @@
 {
   "testName": "WCAG 1.4.12 Text Spacing",
-  "baseUrl": "https://ci.submit.diyaccounting.co.uk",
-  "timestamp": "2026-02-05T21:39:53.666Z",
+  "baseUrl": "https://submit.diyaccounting.co.uk",
+  "timestamp": "2026-02-07T23:20:41.588Z",
   "cssInjected": "* {\n    line-height: 1.5 !important;\n    letter-spacing: 0.12em !important;\n    word-spacing: 0.16em !important;\n  }\n  p {\n    margin-bottom: 2em !important;\n  }",
   "pages": [
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/",
-      "timestamp": "2026-02-05T21:39:53.817Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/",
+      "timestamp": "2026-02-07T23:20:41.670Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/about.html",
-      "timestamp": "2026-02-05T21:39:56.827Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/about.html",
+      "timestamp": "2026-02-07T23:20:41.765Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/about.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/about.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/privacy.html",
-      "timestamp": "2026-02-05T21:40:00.500Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/privacy.html",
+      "timestamp": "2026-02-07T23:20:41.840Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/privacy.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/privacy.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/terms.html",
-      "timestamp": "2026-02-05T21:40:03.678Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/terms.html",
+      "timestamp": "2026-02-07T23:20:41.916Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/terms.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/terms.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/accessibility.html",
-      "timestamp": "2026-02-05T21:40:06.469Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/accessibility.html",
+      "timestamp": "2026-02-07T23:20:41.991Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/accessibility.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/accessibility.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/auth/login.html",
-      "timestamp": "2026-02-05T21:40:09.645Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/auth/login.html",
+      "timestamp": "2026-02-07T23:20:42.065Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/auth/login.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/auth/login.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/bundles.html",
-      "timestamp": "2026-02-05T21:40:13.236Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/bundles.html",
+      "timestamp": "2026-02-07T23:20:42.142Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/bundles.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/bundles.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/submitVat.html",
-      "timestamp": "2026-02-05T21:40:16.390Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html",
+      "timestamp": "2026-02-07T23:20:42.231Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html",
-      "timestamp": "2026-02-05T21:40:19.191Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html",
+      "timestamp": "2026-02-07T23:20:42.310Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html",
-      "timestamp": "2026-02-05T21:40:21.936Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html",
+      "timestamp": "2026-02-07T23:20:42.385Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/hmrc/receipt/receipts.html",
-      "timestamp": "2026-02-05T21:40:24.633Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html",
+      "timestamp": "2026-02-07T23:20:42.460Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/guide.html",
-      "timestamp": "2026-02-05T21:40:27.576Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/guide.html",
+      "timestamp": "2026-02-07T23:20:42.537Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/guide.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/guide.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/help.html",
-      "timestamp": "2026-02-05T21:40:31.081Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/help.html",
+      "timestamp": "2026-02-07T23:20:42.612Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/help.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/help.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/mcp.html",
-      "timestamp": "2026-02-05T21:40:34.221Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/mcp.html",
+      "timestamp": "2026-02-07T23:20:42.687Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/mcp.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/mcp.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html",
-      "timestamp": "2026-02-05T21:40:37.364Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html",
+      "timestamp": "2026-02-07T23:20:42.763Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/diy-accounting-limited.html",
-      "timestamp": "2026-02-05T21:40:41.228Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/diy-accounting-limited.html",
+      "timestamp": "2026-02-07T23:20:42.838Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/diy-accounting-limited.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/diy-accounting-limited.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/spreadsheets.html",
-      "timestamp": "2026-02-05T21:40:44.357Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/spreadsheets.html",
+      "timestamp": "2026-02-07T23:20:42.914Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/spreadsheets.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/spreadsheets.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/404-error-distribution.html",
-      "timestamp": "2026-02-05T21:40:47.849Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/404-error-distribution.html",
+      "timestamp": "2026-02-07T23:20:42.989Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/404-error-distribution.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/404-error-distribution.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/404-error-origin.html",
-      "timestamp": "2026-02-05T21:40:50.780Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/404-error-origin.html",
+      "timestamp": "2026-02-07T23:20:43.063Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/404-error-origin.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/404-error-origin.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/403.html",
-      "timestamp": "2026-02-05T21:40:53.793Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/403.html",
+      "timestamp": "2026-02-07T23:20:43.137Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/403.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/403.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/404.html",
-      "timestamp": "2026-02-05T21:40:56.029Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/404.html",
+      "timestamp": "2026-02-07T23:20:43.212Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/404.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/404.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/500.html",
-      "timestamp": "2026-02-05T21:40:58.229Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/500.html",
+      "timestamp": "2026-02-07T23:20:43.293Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/500.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/500.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/502.html",
-      "timestamp": "2026-02-05T21:41:00.220Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/502.html",
+      "timestamp": "2026-02-07T23:20:43.372Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/502.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/502.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/503.html",
-      "timestamp": "2026-02-05T21:41:02.265Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/503.html",
+      "timestamp": "2026-02-07T23:20:43.447Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/503.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/503.html\", waiting until \"networkidle\"\u001b[22m\n"
     },
     {
-      "url": "https://ci.submit.diyaccounting.co.uk/errors/504.html",
-      "timestamp": "2026-02-05T21:41:04.378Z",
-      "passed": true,
+      "url": "https://submit.diyaccounting.co.uk/errors/504.html",
+      "timestamp": "2026-02-07T23:20:43.521Z",
+      "passed": false,
       "clippedElements": [],
-      "error": null
+      "error": "page.goto: net::ERR_NAME_NOT_RESOLVED at https://submit.diyaccounting.co.uk/errors/504.html\nCall log:\n\u001b[2m  - navigating to \"https://submit.diyaccounting.co.uk/errors/504.html\", waiting until \"networkidle\"\u001b[22m\n"
     }
   ],
   "summary": {
     "total": 25,
-    "passed": 25,
+    "passed": 0,
     "failed": 0,
-    "errors": 0
+    "errors": 25
   }
 }
