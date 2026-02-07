@@ -336,6 +336,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Lookup Cognito from domain convention
+        id: lookup
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: 'ci'
+          lookup-cognito: 'true'
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -374,9 +403,9 @@ jobs:
           DEPLOYMENT_NAME: 'ci'
           SELF_DESTRUCT_HANDLER_SOURCE: "../${{ steps.mvn-verify.outputs.SELF_DESTRUCT_HANDLER_SOURCE }}"
           SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          # Looked up from Cognito domain convention
+          COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   npm-test-cdk-prod:
     name: 'npm test cdk prod'
@@ -390,6 +419,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Lookup Cognito from domain convention
+        id: lookup
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: 'prod'
+          lookup-cognito: 'true'
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -428,9 +486,9 @@ jobs:
           ENVIRONMENT_NAME: 'prod'
           DEPLOYMENT_NAME: 'prod'
           SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          # Looked up from Cognito domain convention
+          COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   # Simulator behaviour tests - run in parallel without ngrok/Docker/HMRC
   # Uses Playwright official container for faster builds (browsers pre-installed)

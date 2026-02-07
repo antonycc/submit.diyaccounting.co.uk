@@ -1,0 +1,239 @@
+name: deploy holding
+run-name: "deploy holding from ${{ github.ref_name }}"
+# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        description: 'Where to point the apex domain'
+        required: true
+        options:
+          - 'holding'
+          - 'last-known-good'
+        default: 'holding'
+      environment-name:
+        type: choice
+        description: 'Environment name (auto = derive from branch)'
+        required: false
+        options:
+          - '(auto)'
+          - 'ci'
+          - 'prod'
+        default: '(auto)'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+  AWS_ACCOUNT_ID: '887764105431'
+  AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
+  REGIONAL_CERTIFICATE_ARN: 'arn:aws:acm:eu-west-2:887764105431:certificate/1f9c9a57-5834-41d3-822d-4aae7e32d633'
+
+jobs:
+
+  params:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "github.ref=[${{ github.ref }}]"
+        run: ":"
+      - name: "github.sha=[${{ github.sha }}]"
+        run: ":"
+      - name: "inputs.target=[${{ inputs.target }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          X='${{ inputs.target }}' ; echo "target=${X:-holding}" | tee -a "$GITHUB_OUTPUT"
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      target: ${{ steps.normalise.outputs.target }}
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+
+  names:
+    needs: [params]
+    runs-on: ubuntu-24.04
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Compute names
+        id: deployment-config
+        uses: ./.github/actions/get-names
+        with:
+          environment-name: ${{ needs.params.outputs.environment-name || '' }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
+      holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
+      prod-apex-alias: ${{ steps.deployment-config.outputs.prod-apex-alias }}
+
+  resolve-target:
+    name: 'resolve target deployment'
+    needs: [params, names]
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Resolve origin domain and distribution
+        id: resolve
+        env:
+          TARGET: ${{ needs.params.outputs.target }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          HOLDING_DOMAIN: ${{ needs.names.outputs.holding-domain }}
+        run: |
+          set -euo pipefail
+
+          if [ "$TARGET" = "holding" ]; then
+            ORIGIN_DOMAIN="${HOLDING_DOMAIN}"
+            echo "Target: holding page at ${ORIGIN_DOMAIN}"
+          else
+            # Look up last-known-good deployment from SSM
+            PARAMETER_NAME="/submit/${ENVIRONMENT_NAME}/last-known-good-deployment"
+            LKG_DEPLOYMENT=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+            if [ -z "$LKG_DEPLOYMENT" ] || [ "$LKG_DEPLOYMENT" = "None" ]; then
+              echo "ERROR: No last-known-good deployment found in SSM at ${PARAMETER_NAME}"
+              exit 1
+            fi
+            ORIGIN_DOMAIN="${LKG_DEPLOYMENT}.submit.diyaccounting.co.uk"
+            echo "Target: last-known-good deployment [${LKG_DEPLOYMENT}] at ${ORIGIN_DOMAIN}"
+          fi
+
+          # Look up CloudFront distribution by OriginFor tag
+          echo "Looking up CloudFront distribution with OriginFor=${ORIGIN_DOMAIN}"
+          CLOUDFRONT_DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
+            --resource-type-filters cloudfront:distribution \
+            --region us-east-1 \
+            --tag-filters Key=OriginFor,Values="${ORIGIN_DOMAIN}" \
+            --query 'ResourceTagMappingList[0].ResourceARN' \
+            --output text)
+
+          if [ -z "$CLOUDFRONT_DISTRIBUTION_ARN" ] || [ "$CLOUDFRONT_DISTRIBUTION_ARN" = "None" ]; then
+            echo "ERROR: No CloudFront distribution found with tag OriginFor=${ORIGIN_DOMAIN}" >&2
+            exit 1
+          fi
+          CLOUDFRONT_DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ARN##*/}"
+          echo "Found CloudFront Distribution ID: ${CLOUDFRONT_DISTRIBUTION_ID}"
+
+          # Look up API Gateway ID if targeting a deployment (not holding)
+          API_GATEWAY_ID=""
+          if [ "$TARGET" != "holding" ]; then
+            STACK_NAME="${LKG_DEPLOYMENT}-app-ApiStack"
+            echo "Looking up API Gateway ID from stack ${STACK_NAME}"
+            API_GATEWAY_ID=$(aws cloudformation describe-stacks \
+              --stack-name "${STACK_NAME}" \
+              --region eu-west-2 \
+              --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue | [0]" \
+              --output text 2>/dev/null || echo "")
+            if [ -z "$API_GATEWAY_ID" ] || [ "$API_GATEWAY_ID" = "None" ]; then
+              echo "WARNING: Could not find API Gateway ID from stack ${STACK_NAME}, API GW custom domains will not be updated"
+              API_GATEWAY_ID=""
+            else
+              echo "Found API Gateway ID: ${API_GATEWAY_ID}"
+            fi
+          fi
+
+          echo "ORIGIN_DOMAIN=${ORIGIN_DOMAIN}" | tee -a "$GITHUB_OUTPUT"
+          echo "CLOUDFRONT_DISTRIBUTION_ID=${CLOUDFRONT_DISTRIBUTION_ID}" | tee -a "$GITHUB_OUTPUT"
+          echo "API_GATEWAY_ID=${API_GATEWAY_ID}" | tee -a "$GITHUB_OUTPUT"
+        shell: bash
+    outputs:
+      origin-domain: ${{ steps.resolve.outputs.ORIGIN_DOMAIN }}
+      cloudfront-distribution-id: ${{ steps.resolve.outputs.CLOUDFRONT_DISTRIBUTION_ID }}
+      api-gateway-id: ${{ steps.resolve.outputs.API_GATEWAY_ID }}
+
+  set-origins:
+    name: 'set origins to ${{ needs.params.outputs.target }}'
+    needs: [params, names, resolve-target]
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set origins
+        uses: './.github/actions/set-origins'
+        with:
+          origin-domain: ${{ needs.resolve-target.outputs.origin-domain }}
+          apex-domain: ${{ needs.names.outputs.apex-domain }}
+          prod-apex-alias: ${{ needs.names.outputs.prod-apex-alias }}
+          aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
+          hosted-zone-id: ${{ env.AWS_HOSTED_ZONE_ID }}
+          cloudfront-distribution-id: ${{ needs.resolve-target.outputs.cloudfront-distribution-id }}
+          api-gateway-id: ${{ needs.resolve-target.outputs.api-gateway-id }}
+          regional-certificate-arn: ${{ needs.resolve-target.outputs.api-gateway-id != '' && env.REGIONAL_CERTIFICATE_ARN || '' }}
+
+      - name: Summary
+        run: |
+          echo "## Deploy Holding Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Setting | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Target | \`${{ needs.params.outputs.target }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | \`${{ needs.names.outputs.environment-name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Apex domain | \`${{ needs.names.outputs.apex-domain }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Origin domain | \`${{ needs.resolve-target.outputs.origin-domain }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| CloudFront | \`${{ needs.resolve-target.outputs.cloudfront-distribution-id }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Gateway | \`${{ needs.resolve-target.outputs.api-gateway-id || 'N/A' }}\` |" >> $GITHUB_STEP_SUMMARY

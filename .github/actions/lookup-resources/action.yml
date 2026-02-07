@@ -1,0 +1,149 @@
+name: "Lookup AWS resources by domain convention"
+description: "Looks up Cognito, API Gateway, and CloudFront resources using deterministic domain names"
+
+inputs:
+  environment-name:
+    description: "Environment name (e.g. ci, prod)"
+    required: true
+  deployment-name:
+    description: "Deployment name (e.g. ci-rootdns, prod-a1b2c3d). Required for API Gateway and CloudFront lookups."
+    required: false
+    default: ""
+  hosted-zone-name:
+    description: "Hosted zone name"
+    required: false
+    default: "diyaccounting.co.uk"
+  sub-domain-name:
+    description: "Sub-domain name"
+    required: false
+    default: "submit"
+  lookup-cognito:
+    description: "Look up Cognito User Pool from domain"
+    required: false
+    default: "true"
+  lookup-api-gateway:
+    description: "Look up API Gateway from deployment custom domain"
+    required: false
+    default: "false"
+  lookup-cloudfront:
+    description: "Look up CloudFront distribution from OriginFor tag"
+    required: false
+    default: "false"
+
+outputs:
+  cognito-user-pool-arn:
+    description: "Cognito User Pool ARN"
+    value: ${{ steps.cognito.outputs.USER_POOL_ARN }}
+  cognito-user-pool-id:
+    description: "Cognito User Pool ID"
+    value: ${{ steps.cognito.outputs.USER_POOL_ID }}
+  cognito-client-id:
+    description: "Cognito User Pool Client ID"
+    value: ${{ steps.cognito.outputs.CLIENT_ID }}
+  http-api-id:
+    description: "API Gateway HTTP API ID"
+    value: ${{ steps.api-gateway.outputs.HTTP_API_ID }}
+  http-api-url:
+    description: "API Gateway HTTP API URL (execute-api endpoint with trailing slash)"
+    value: ${{ steps.api-gateway.outputs.HTTP_API_URL }}
+  cloudfront-distribution-id:
+    description: "CloudFront Distribution ID"
+    value: ${{ steps.cloudfront.outputs.DISTRIBUTION_ID }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Lookup Cognito User Pool from domain
+      id: cognito
+      if: ${{ inputs.lookup-cognito == 'true' }}
+      shell: bash
+      env:
+        COGNITO_DOMAIN: "${{ inputs.environment-name }}-auth.${{ inputs.hosted-zone-name }}"
+      run: |
+        set -euo pipefail
+        echo "Looking up Cognito User Pool from domain: ${COGNITO_DOMAIN}"
+
+        USER_POOL_ID=$(aws cognito-idp describe-user-pool-domain \
+          --domain "${COGNITO_DOMAIN}" \
+          --query 'DomainDescription.UserPoolId' \
+          --output text 2>/dev/null || echo "")
+
+        if [ -z "$USER_POOL_ID" ] || [ "$USER_POOL_ID" = "None" ]; then
+          echo "ERROR: No Cognito User Pool found for domain ${COGNITO_DOMAIN}" >&2
+          exit 1
+        fi
+        echo "Found User Pool ID: ${USER_POOL_ID}"
+
+        USER_POOL_ARN=$(aws cognito-idp describe-user-pool \
+          --user-pool-id "${USER_POOL_ID}" \
+          --query 'UserPool.Arn' \
+          --output text)
+        echo "Found User Pool ARN: ${USER_POOL_ARN}"
+
+        CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
+          --user-pool-id "${USER_POOL_ID}" \
+          --query 'UserPoolClients[0].ClientId' \
+          --output text)
+        echo "Found Client ID: ${CLIENT_ID}"
+
+        echo "USER_POOL_ID=${USER_POOL_ID}" >> "$GITHUB_OUTPUT"
+        echo "USER_POOL_ARN=${USER_POOL_ARN}" >> "$GITHUB_OUTPUT"
+        echo "CLIENT_ID=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
+
+    - name: Lookup API Gateway from custom domain
+      id: api-gateway
+      if: ${{ inputs.lookup-api-gateway == 'true' && inputs.deployment-name != '' }}
+      shell: bash
+      env:
+        DEPLOYMENT_DOMAIN: "${{ inputs.deployment-name }}.${{ inputs.sub-domain-name }}.${{ inputs.hosted-zone-name }}"
+      run: |
+        set -euo pipefail
+        echo "Looking up API Gateway from custom domain: ${DEPLOYMENT_DOMAIN}"
+
+        HTTP_API_ID=$(aws apigatewayv2 get-api-mappings \
+          --domain-name "${DEPLOYMENT_DOMAIN}" \
+          --query 'Items[0].ApiId' \
+          --output text 2>/dev/null || echo "")
+
+        if [ -z "$HTTP_API_ID" ] || [ "$HTTP_API_ID" = "None" ]; then
+          echo "ERROR: No API Gateway mapping found for domain ${DEPLOYMENT_DOMAIN}" >&2
+          exit 1
+        fi
+        echo "Found HTTP API ID: ${HTTP_API_ID}"
+
+        HTTP_API_URL=$(aws apigatewayv2 get-api \
+          --api-id "${HTTP_API_ID}" \
+          --query 'ApiEndpoint' \
+          --output text)
+        # Append trailing slash to match CDK output format
+        HTTP_API_URL="${HTTP_API_URL}/"
+        echo "Found HTTP API URL: ${HTTP_API_URL}"
+
+        echo "HTTP_API_ID=${HTTP_API_ID}" >> "$GITHUB_OUTPUT"
+        echo "HTTP_API_URL=${HTTP_API_URL}" >> "$GITHUB_OUTPUT"
+
+    - name: Lookup CloudFront distribution from OriginFor tag
+      id: cloudfront
+      if: ${{ inputs.lookup-cloudfront == 'true' && inputs.deployment-name != '' }}
+      shell: bash
+      env:
+        ORIGIN_DOMAIN: "${{ inputs.deployment-name }}.${{ inputs.sub-domain-name }}.${{ inputs.hosted-zone-name }}"
+      run: |
+        set -euo pipefail
+        echo "Looking up CloudFront distribution with OriginFor tag: ${ORIGIN_DOMAIN}"
+
+        CLOUDFRONT_DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
+          --resource-type-filters cloudfront:distribution \
+          --region us-east-1 \
+          --tag-filters "Key=OriginFor,Values=${ORIGIN_DOMAIN}" \
+          --query 'ResourceTagMappingList[0].ResourceARN' \
+          --output text 2>/dev/null || echo "")
+
+        if [ -z "$CLOUDFRONT_DISTRIBUTION_ARN" ] || [ "$CLOUDFRONT_DISTRIBUTION_ARN" = "None" ]; then
+          echo "ERROR: No CloudFront distribution found with OriginFor tag ${ORIGIN_DOMAIN}" >&2
+          exit 1
+        fi
+        DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ARN##*/}"
+        echo "Found CloudFront Distribution ID: ${DISTRIBUTION_ID}"
+
+        echo "DISTRIBUTION_ID=${DISTRIBUTION_ID}" >> "$GITHUB_OUTPUT"

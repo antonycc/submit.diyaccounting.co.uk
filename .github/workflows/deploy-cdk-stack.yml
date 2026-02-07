@@ -47,9 +47,17 @@ on:
         required: false
         default: ''
       http-api-url:
-        description: 'HTTP API URL'
+        description: 'HTTP API URL (manual override, ignored when lookup-api-gateway is true)'
         required: false
         default: ''
+      lookup-api-gateway:
+        description: 'Look up API Gateway URL from deployment custom domain instead of using http-api-url input'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
       website-hash:
         description: 'Website hash to use'
         required: false
@@ -80,10 +88,10 @@ on:
         type: string
         required: false
         default: ''
-      http-api-url:
+      lookup-api-gateway:
         type: string
         required: false
-        default: ''
+        default: 'false'
       website-hash:
         type: string
         required: false
@@ -130,7 +138,7 @@ jobs:
         run: ":"
       - name: "inputs.self-destruct-start-datetime=[${{ inputs['self-destruct-start-datetime'] }}]"
         run: ":"
-      - name: "inputs.http-api-url=[${{ inputs['http-api-url'] }}]"
+      - name: "inputs.lookup-api-gateway=[${{ inputs['lookup-api-gateway'] }}]"
         run: ":"
       - name: "inputs.website-hash=[${{ inputs['website-hash'] }}]"
         run: ":"
@@ -148,6 +156,8 @@ jobs:
           echo "cdk-application=${CDK_APP:-application}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.base-image-tag }}' ; echo "base-image-tag=${X:-${{ github.sha }}}" | tee -a "$GITHUB_OUTPUT"
           echo "self-destruct-start-datetime=${{ inputs['self-destruct-start-datetime'] }}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.lookup-api-gateway }}' ; echo "lookup-api-gateway=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          # Manual override for http-api-url (workflow_dispatch only)
           echo "http-api-url=${{ inputs['http-api-url'] }}" | tee -a "$GITHUB_OUTPUT"
           echo "website-hash=${{ inputs['website-hash'] }}" | tee -a "$GITHUB_OUTPUT"
     outputs:
@@ -158,6 +168,7 @@ jobs:
       cdk-application: ${{ steps.normalise.outputs.cdk-application }}
       base-image-tag: ${{ steps.normalise.outputs['base-image-tag'] }}
       self-destruct-start-datetime: ${{ steps.normalise.outputs['self-destruct-start-datetime'] }}
+      lookup-api-gateway: ${{ steps.normalise.outputs['lookup-api-gateway'] }}
       http-api-url: ${{ steps.normalise.outputs['http-api-url'] }}
       website-hash: ${{ steps.normalise.outputs['website-hash'] }}
 
@@ -284,6 +295,16 @@ jobs:
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v6
 
+      - name: Lookup resources from domain convention
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        id: lookup
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          deployment-name: ${{ needs.names.outputs.deployment-name }}
+          lookup-cognito: 'true'
+          lookup-api-gateway: ${{ needs.params.outputs.lookup-api-gateway }}
+
       - name: Setup Node
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/setup-node@v6
@@ -321,13 +342,15 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          # Looked up from Cognito domain convention
+          COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
           BASE_IMAGE_TAG: ${{ needs.params.outputs['base-image-tag'] }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.params.outputs['self-destruct-start-datetime'] }}
           HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           HMRC_SANDBOX_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:887764105431:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret"
-          HTTP_API_URL: ${{ needs.params.outputs['http-api-url'] }}
+          # Looked up from API Gateway custom domain, or manual override from http-api-url input
+          HTTP_API_URL: ${{ steps.lookup.outputs.http-api-url || needs.params.outputs['http-api-url'] }}
           WEBSITE_HASH: ${{ needs.params.outputs['website-hash'] }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
 
