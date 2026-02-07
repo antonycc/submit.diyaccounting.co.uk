@@ -1,6 +1,6 @@
 # DIY Accounting Submit - AWS Account Overview
 
-**Version**: 2.0 | **Date**: January 2026 | **Status**: Production
+**Version**: 3.0 | **Date**: February 2026 | **Status**: Production
 
 ---
 
@@ -10,9 +10,13 @@
 AWS Organization Root
 └── submit-management (Organization Admin)
     ├── submit-backup ─────── Backup OU
-    ├── submit-ci ──────────── Workloads OU
+    ├── submit-ci ──────────── Workloads OU (planned)
+    ├── diy-gateway ─────────── Workloads OU (planned — Phase 2)
+    ├── diy-spreadsheets ────── Workloads OU (planned — Phase 2)
     └── submit-prod (887764105431) ── Workloads OU
 ```
+
+**Current state**: All services (submit, gateway, spreadsheets) run in submit-prod. Gateway and spreadsheets are static sites (S3 + CloudFront only). Submit has the full application stack (Lambda, API Gateway, Cognito, DynamoDB).
 
 ---
 
@@ -42,12 +46,31 @@ AWS Organization Root
 
 **Purpose**: Production workloads - your live application
 
+### Services Hosted
+
+All three services currently run in this account:
+
+| Service | CI Domain | Prod Domain | Stacks |
+|---------|-----------|-------------|--------|
+| Submit | `ci-submit.diyaccounting.co.uk` | `prod-submit.diyaccounting.co.uk` + `submit.diyaccounting.co.uk` | ApiStack, AuthStack, EdgeStack, HmrcStack, AccountStack, OpsStack, DevStack, SelfDestructStack |
+| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` + `diyaccounting.co.uk` + `www.diyaccounting.co.uk` | GatewayStack |
+| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` + `spreadsheets.diyaccounting.co.uk` | SpreadsheetsStack |
+
+Supporting domains (submit only):
+
+| Purpose | CI Domain | Prod Domain |
+|---------|-----------|-------------|
+| Cognito auth | `ci-auth.diyaccounting.co.uk` | `prod-auth.diyaccounting.co.uk` |
+| Holding page | `ci-holding.diyaccounting.co.uk` | `prod-holding.diyaccounting.co.uk` |
+| HMRC simulator | `ci-simulator.diyaccounting.co.uk` | `prod-simulator.diyaccounting.co.uk` |
+| Deployment | `{deployment}.submit.diyaccounting.co.uk` | `{deployment}.submit.diyaccounting.co.uk` |
+
 ### Compute Resources
 
 | Resource | Description |
 |----------|-------------|
-| Lambda functions | All production Lambdas (hmrcVatReturnPost, customAuthorizer, etc.) |
-| API Gateway | Production API endpoints |
+| Lambda functions | Submit Lambdas (hmrcVatReturnPost, customAuthorizer, etc.) |
+| API Gateway HTTP API | Submit API with regional custom domains per deployment |
 
 ### Data Resources
 
@@ -60,18 +83,21 @@ AWS Organization Root
 
 | Resource | Description |
 |----------|-------------|
-| CloudFront | Production CDN distribution |
-| S3 | Static website assets |
-| Route 53 | DNS (diyaccounting.co.uk zone - parent domain) |
-| ACM | SSL certificates |
+| CloudFront (submit) | CDN for submit app, EdgeStack ORP forwards `CloudFront-Viewer-Address` to API GW |
+| CloudFront (gateway) | CDN for gateway static site with CloudFront Function redirects |
+| CloudFront (spreadsheets) | CDN for spreadsheets static site with S3 package hosting |
+| S3 | Static website assets for all three services |
+| Route 53 | DNS (`diyaccounting.co.uk` zone — parent domain for all services) |
+| ACM (us-east-1) | Main cert (submit CloudFront), auth cert (Cognito), simulator cert |
+| ACM (eu-west-2) | Regional cert (API Gateway custom domains) |
 
-**Note**: Route 53 hosted zone for `diyaccounting.co.uk` stays in this account. The `submit.diyaccounting.co.uk` subdomain records can be delegated to management account if desired.
+**Note**: Route 53 hosted zone for `diyaccounting.co.uk` stays in this account. All services use the `{env}-{service}.diyaccounting.co.uk` domain convention. RootDnsStack manages apex/www alias records for submit, gateway, and spreadsheets.
 
 ### Security Resources
 
 | Resource | Description |
 |----------|-------------|
-| Cognito | User authentication |
+| Cognito | User authentication at `{env}-auth.diyaccounting.co.uk` |
 | WAF | Web application firewall |
 
 ### Backup Resources
@@ -88,19 +114,28 @@ AWS Organization Root
 | github-actions-role | OIDC assumption |
 | github-deploy-role | CDK deployments |
 | CDK bootstrap | CloudFormation deployment bucket |
+| Resource lookups | `.github/actions/lookup-resources` discovers Cognito/API GW/CloudFront by domain convention |
 
 ---
 
-## 3. submit-ci (New Account)
+## 3. submit-ci (Planned Account)
 
-**Purpose**: CI/CD testing - feature branch deployments
+**Purpose**: CI/CD testing — feature branch deployments. Currently runs in submit-prod alongside production.
+
+### Services (same as prod, CI environment)
+
+| Service | CI Domain |
+|---------|-----------|
+| Submit | `ci-submit.diyaccounting.co.uk` |
+| Gateway | `ci-gateway.diyaccounting.co.uk` |
+| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` |
 
 ### Compute Resources
 
 | Resource | Description |
 |----------|-------------|
-| Lambda functions | CI versions of all Lambdas |
-| API Gateway | CI API endpoints |
+| Lambda functions | CI versions of all submit Lambdas |
+| API Gateway HTTP API | CI API with regional custom domains per deployment |
 
 ### Data Resources
 
@@ -113,14 +148,16 @@ AWS Organization Root
 
 | Resource | Description |
 |----------|-------------|
-| CloudFront | CI CDN distribution |
-| S3 | CI static assets |
+| CloudFront (submit) | CI CDN for submit app |
+| CloudFront (gateway) | CI CDN for gateway static site |
+| CloudFront (spreadsheets) | CI CDN for spreadsheets static site |
+| S3 | CI static assets for all three services |
 
 ### Security Resources
 
 | Resource | Description |
 |----------|-------------|
-| Cognito | CI user pool (test accounts) |
+| Cognito | CI user pool at `ci-auth.diyaccounting.co.uk` |
 
 ### Backup Resources
 
@@ -142,6 +179,7 @@ AWS Organization Root
 - Uses HMRC sandbox APIs
 - Test data only, no real user PII
 - Shorter backup retention
+- Feature branch deployments create per-deployment stacks (`{deployment}-app-*`)
 
 ---
 
@@ -208,17 +246,39 @@ AWS Organization Root
 GitHub Actions (feature branch)
         │
         ▼ OIDC
-┌───────────────────┐
-│    submit-ci      │  ◄── Feature branches deploy here
-└───────────────────┘
+┌───────────────────────────────────────────────────────┐
+│    submit-prod (ci environment)                        │
+│                                                        │
+│  deploy-environment.yml → ci-env-* stacks             │
+│    (IdentityStack, DataStack, ObservabilityStack,     │
+│     SimulatorStack)                                    │
+│                                                        │
+│  deploy.yml → {deployment}-app-* stacks               │
+│    (DevStack, AuthStack, HmrcStack, AccountStack,     │
+│     ApiStack, EdgeStack, OpsStack, SelfDestructStack) │
+│                                                        │
+│  deploy-gateway.yml → ci-gateway-GatewayStack         │
+│  deploy-spreadsheets.yml → ci-spreadsheets-*Stack     │
+│  deploy-root.yml → ci-env-RootDnsStack                │
+│                                                        │
+│  Resource discovery: lookup-resources action finds     │
+│  Cognito, API GW, CloudFront by domain convention     │
+└───────────────────────────────────────────────────────┘
 
 GitHub Actions (main branch)
         │
         ▼ OIDC
-┌───────────────────┐
-│   submit-prod     │  ◄── Main branch deploys here
-└───────────────────┘
+┌───────────────────────────────────────────────────────┐
+│   submit-prod (prod environment)                       │
+│                                                        │
+│  Same workflow pattern as CI, prod-env-* / prod-*-app-*│
+│  Prod apex aliases: submit.diyaccounting.co.uk,       │
+│    diyaccounting.co.uk, www.diyaccounting.co.uk,      │
+│    spreadsheets.diyaccounting.co.uk                   │
+└───────────────────────────────────────────────────────┘
 ```
+
+**Note**: Both CI and prod currently deploy to the same AWS account (submit-prod, 887764105431). Separation into dedicated CI/prod accounts is planned (see Account Structure above).
 
 ---
 
@@ -226,7 +286,7 @@ GitHub Actions (main branch)
 
 ### Current State (Single Account)
 
-All roles live in submit-prod (887764105431):
+All roles live in submit-prod (887764105431). All three services (submit, gateway, spreadsheets) deploy here:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -325,8 +385,10 @@ Bastion pattern with role chaining across accounts:
 | Account | Expected Cost | Main Drivers |
 |---------|---------------|--------------|
 | submit-management | ~$0-5/month | IAM Identity Center (free), minimal CloudTrail |
-| submit-prod | Current costs | Lambda, DynamoDB, CloudFront, API Gateway |
+| submit-prod | Current costs | Lambda, DynamoDB, CloudFront (x3 services), API Gateway, Cognito |
 | submit-ci | ~30-50% of prod | Same services, less traffic, smaller capacity |
+| diy-gateway | ~$1-5/month | S3, CloudFront only (static site) |
+| diy-spreadsheets | ~$1-10/month | S3, CloudFront only (static site + package zips) |
 | submit-backup | ~$5-20/month | S3 storage for backup copies |
 
 ---
@@ -336,11 +398,32 @@ Bastion pattern with role chaining across accounts:
 | Account | ID | Email | OU | Purpose |
 |---------|-----|-------|-----|---------|
 | submit-management | TBD | aws-management@diyaccounting.co.uk | Root | Org admin |
-| submit-prod | 887764105431 | (existing) | Workloads | Production |
+| submit-prod | 887764105431 | (existing) | Workloads | Production (all 3 services) |
 | submit-ci | TBD | aws-ci@diyaccounting.co.uk | Workloads | CI/CD |
+| diy-gateway | TBD | aws-gateway@diyaccounting.co.uk | Workloads | Gateway static site |
+| diy-spreadsheets | TBD | aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets static site |
 | submit-backup | TBD | aws-backup@diyaccounting.co.uk | Backup | DR |
 
 *Update this table with actual account IDs after creation.*
+
+---
+
+## Domain Convention
+
+All services follow the `{env}-{service}.diyaccounting.co.uk` naming pattern:
+
+```
+diyaccounting.co.uk                          (Route53 hosted zone)
+├── {env}-submit.diyaccounting.co.uk         (submit apex — CloudFront)
+├── {deployment}.submit.diyaccounting.co.uk  (submit deployment — CloudFront + API GW custom domain)
+├── {env}-auth.diyaccounting.co.uk           (Cognito custom domain)
+├── {env}-holding.diyaccounting.co.uk        (holding page — CloudFront)
+├── {env}-simulator.diyaccounting.co.uk      (HMRC simulator — CloudFront)
+├── {env}-gateway.diyaccounting.co.uk        (gateway — CloudFront)
+└── {env}-spreadsheets.diyaccounting.co.uk   (spreadsheets — CloudFront)
+```
+
+Resource discovery uses this convention: the `lookup-resources` composite action finds Cognito User Pools via `describe-user-pool-domain`, API Gateway via `get-api-mappings` on the custom domain, and CloudFront via the `OriginFor` resource tag.
 
 ---
 
@@ -353,7 +436,8 @@ Bastion pattern with role chaining across accounts:
 | Accidental data exposure | Medium | Reduced |
 | Service limit exhaustion | Medium | Eliminated |
 | Cost overrun visibility | Medium | Clear |
+| Gateway/spreadsheets blast radius | Medium | Eliminated (own accounts) |
 
 ---
 
-*Generated: January 2026*
+*Updated: February 2026*
