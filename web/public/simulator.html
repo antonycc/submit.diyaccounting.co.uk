@@ -231,20 +231,31 @@
     </footer>
 
     <script>
-      // Compute simulator URL from current hostname using {env}-simulator.submit.diyaccounting.co.uk pattern
-      // (matches Cognito pattern: {env}-auth.submit.diyaccounting.co.uk)
-      //   submit.diyaccounting.co.uk     → https://prod-simulator.submit.diyaccounting.co.uk/
-      //   ci.submit.diyaccounting.co.uk  → https://ci-simulator.submit.diyaccounting.co.uk/
-      //   localhost / other              → production fallback
+      // Compute simulator URL from current hostname using {env}-simulator.diyaccounting.co.uk pattern
+      // Domain convention: {env}-submit.diyaccounting.co.uk → {env}-simulator.diyaccounting.co.uk
+      //   prod-submit.diyaccounting.co.uk  → https://prod-simulator.diyaccounting.co.uk/
+      //   ci-submit.diyaccounting.co.uk    → https://ci-simulator.diyaccounting.co.uk/
+      //   submit.diyaccounting.co.uk       → https://prod-simulator.diyaccounting.co.uk/ (prod alias)
+      //   {deploy}.submit.diyaccounting.co.uk → extract env from deployment name
+      //   localhost / other                → production fallback
       var host = window.location.hostname;
-      var baseDomain = "submit.diyaccounting.co.uk";
-      if (host === baseDomain) {
-        window.__simulatorFrameSrc = "https://prod-simulator." + baseDomain + "/";
-      } else if (host.endsWith("." + baseDomain)) {
-        var env = host.slice(0, host.length - baseDomain.length - 1);
-        window.__simulatorFrameSrc = "https://" + env + "-simulator." + baseDomain + "/";
+      var rootDomain = "diyaccounting.co.uk";
+      var submitSuffix = "-submit." + rootDomain;
+      var deploymentSuffix = ".submit." + rootDomain;
+      if (host.endsWith(submitSuffix)) {
+        // {env}-submit.diyaccounting.co.uk → {env}-simulator.diyaccounting.co.uk
+        var env = host.slice(0, host.length - submitSuffix.length);
+        window.__simulatorFrameSrc = "https://" + env + "-simulator." + rootDomain + "/";
+      } else if (host === "submit." + rootDomain) {
+        // prod alias: submit.diyaccounting.co.uk
+        window.__simulatorFrameSrc = "https://prod-simulator." + rootDomain + "/";
+      } else if (host.endsWith(deploymentSuffix)) {
+        // {deployment}.submit.diyaccounting.co.uk — extract env prefix (e.g., ci-rootdns → ci)
+        var deployment = host.slice(0, host.length - deploymentSuffix.length);
+        var env = deployment.split("-")[0];
+        window.__simulatorFrameSrc = "https://" + env + "-simulator." + rootDomain + "/";
       } else {
-        window.__simulatorFrameSrc = "https://prod-simulator." + baseDomain + "/";
+        window.__simulatorFrameSrc = "https://prod-simulator." + rootDomain + "/";
       }
     </script>
     <script src="./simulator-local.js" onerror="void 0"></script>
