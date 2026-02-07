@@ -36,7 +36,8 @@ No change to `certificateArn` in `cdk-application/cdk.json` or `cdk-environment/
 - `ci-auth.diyaccounting.co.uk`
 - `prod-auth.diyaccounting.co.uk`
 
-Done: arn:aws:acm:eu-west-2:887764105431:certificate/2b09cb4f-0edf-4495-a883-68ef498982e0
+Wrong: arn:aws:acm:eu-west-2:887764105431:certificate/2b09cb4f-0edf-4495-a883-68ef498982e0
+Done:  arn:aws:acm:us-east-1:887764105431:certificate/8750ac93-48f8-47fc-9702-8707d3b7398a
 
 Add authCertificateArn to cdk-environment/cdk.json.
 

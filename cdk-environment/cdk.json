@@ -25,7 +25,7 @@
     "holdingDocRootPath": "../web/holding",
     "simulatorCodePath": "../web/public-simulator",
     "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/d340de40-96ca-4f5b-ae4c-f66a776e5a75",
-    "authCertificateArn": "arn:aws:acm:eu-west-2:887764105431:certificate/2b09cb4f-0edf-4495-a883-68ef498982e0",
+    "authCertificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/8750ac93-48f8-47fc-9702-8707d3b7398a",
     "simulatorCertificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/5b8afa59-8e91-4335-9196-f4043c1870b3",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "hmrcApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
