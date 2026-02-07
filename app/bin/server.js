@@ -21,6 +21,7 @@ import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrc
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
+import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 
@@ -179,6 +180,7 @@ hmrcReceiptGetApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);
+interestPostApiEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {

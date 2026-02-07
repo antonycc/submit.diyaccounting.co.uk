@@ -386,6 +386,13 @@
         "operationId" : "generatePass"
       }
     },
+    "/interest" : {
+      "post" : {
+        "summary" : "Register waitlist interest",
+        "description" : "Publishes the authenticated user's email to an SNS topic for waitlist registration",
+        "operationId" : "registerInterest"
+      }
+    },
     "/hmrc/receipt/{name}" : {
       "get" : {
         "summary" : "Retrieve a stored receipt by name",

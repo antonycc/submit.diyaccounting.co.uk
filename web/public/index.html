@@ -70,6 +70,59 @@
     </header>
 
     <main id="mainContent">
+      <div
+        id="waitlistBanner"
+        style="
+          display: none;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background-color: #d1ecf1;
+          color: #0c5460;
+          border-bottom: 1px solid #bee5eb;
+          padding: 0.75em 1em;
+          text-align: center;
+          font-size: 0.95em;
+        "
+        role="complementary"
+        aria-label="Waitlist registration"
+      >
+        <span>We're getting ready to launch. Join the waitlist and we'll send you an invitation.</span>
+        <button
+          type="button"
+          id="waitlistJoinBtn"
+          class="btn"
+          style="
+            margin-left: 1em;
+            padding: 0.3em 1em;
+            font-size: 0.9em;
+            min-width: unset;
+            width: auto;
+            display: inline;
+            vertical-align: middle;
+          "
+        >
+          Join the waitlist
+        </button>
+        <button
+          type="button"
+          id="waitlistDismissBtn"
+          style="
+            background: none;
+            border: none;
+            color: #0c5460;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-left: 0.5em;
+            vertical-align: middle;
+            padding: 0 0.3em;
+          "
+          aria-label="Dismiss waitlist banner"
+        >
+          &#x2715;
+        </button>
+      </div>
+
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
       <div class="form-container" style="text-align: center">
@@ -100,6 +153,7 @@
     <script src="developer-mode.js"></script>
     <script src="lib/request-cache.js"></script>
     <script src="lib/toml-parser.js"></script>
+    <script src="lib/feature-flags.js"></script>
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
@@ -447,10 +501,61 @@
       sessionStorage.removeItem("currentActivity");
       console.log("Current activity cleared");
 
+      // Waitlist banner logic
+      async function initWaitlistBanner() {
+        const banner = document.getElementById("waitlistBanner");
+        if (!banner) return;
+
+        const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
+        const alreadyRegistered = localStorage.getItem("waitlistRegistered") === "true";
+
+        if (!isLoggedIn || alreadyRegistered) return;
+
+        // Check feature flag
+        if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
+          const enabled = await window.featureFlags.isFeatureEnabled("waitlist");
+          if (!enabled) return;
+        }
+
+        banner.style.display = "block";
+
+        var joinBtn = document.getElementById("waitlistJoinBtn");
+        var dismissBtn = document.getElementById("waitlistDismissBtn");
+
+        if (joinBtn) {
+          joinBtn.addEventListener("click", async function () {
+            joinBtn.disabled = true;
+            joinBtn.textContent = "Registering...";
+            try {
+              var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
+              if (response.ok) {
+                joinBtn.textContent = "You're on the list";
+                joinBtn.style.backgroundColor = "#0a8927";
+                localStorage.setItem("waitlistRegistered", "true");
+              } else {
+                joinBtn.textContent = "Try again";
+                joinBtn.disabled = false;
+              }
+            } catch (err) {
+              console.error("Waitlist registration failed:", err);
+              joinBtn.textContent = "Try again";
+              joinBtn.disabled = false;
+            }
+          });
+        }
+
+        if (dismissBtn) {
+          dismissBtn.addEventListener("click", function () {
+            banner.style.display = "none";
+          });
+        }
+      }
+
       // Initialize page - wait for submit.js module to be ready
       function initPage() {
         checkAuthStatus();
         initializeBundles();
+        initWaitlistBanner();
       }
 
       if (window.__submitReady__) {
