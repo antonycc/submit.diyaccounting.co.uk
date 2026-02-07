@@ -1,6 +1,6 @@
 # Production Launch & Service Separation Plan
 
-**Version**: 2.0 | **Date**: February 2026 | **Status**: In progress
+**Version**: 3.0 | **Date**: February 2026 | **Status**: In progress
 
 ---
 
@@ -16,10 +16,14 @@ Everything runs in the submit-prod AWS account (887764105431). Both gateway and 
 Features already built:
 - Gateway: static site, about.html (Companies Act), CloudFront Function for URL redirects, sitemaps, security.txt, GA4 analytics with ecommerce events
 - Spreadsheets: product catalogue from TOML, package zip hosting on S3, PayPal donate flow, 120-article knowledge base with citation references, community discussions page (GitHub API), financial year cutoff logic, GA4 analytics with ecommerce events
-- Root DNS: RootDnsStack manages ci-gateway and ci-spreadsheets alias records via deploy-root.yml
+- Root DNS: RootDnsStack manages ci-gateway, ci-spreadsheets, and submit apex/www CloudFront alias records via deploy-root.yml
 - Redirects: CloudFront Function handles old www.diyaccounting.co.uk URLs with 301 redirects to spreadsheets site
 - Behaviour tests: Playwright tests for gateway, spreadsheets, and submit — runnable against local (proxy), CI, and prod environments
-- Holding page: maintenance page with GA4 analytics at `{env}-holding.submit.diyaccounting.co.uk`
+- Holding page: maintenance page with GA4 analytics at `{env}-holding.diyaccounting.co.uk`
+- Domain convention: All services use `{env}-{service}.diyaccounting.co.uk` pattern (e.g., `ci-submit.diyaccounting.co.uk`, `ci-gateway.diyaccounting.co.uk`)
+- API Gateway custom domains: Each deployment has a regional custom domain matching the CloudFront forwarded `Host` header
+- Resource lookups: `.github/actions/lookup-resources` composite action discovers Cognito, API Gateway, and CloudFront resources by deterministic domain convention — replaces brittle GitHub environment variables
+- Fraud prevention: HMRC fraud prevention headers fixed — `Gov-Vendor-Public-IP` detected at Lambda cold start, `Gov-Client-Public-Port` extracted from `CloudFront-Viewer-Address` header
 
 ### Items from prior plans completed or superseded
 
@@ -34,6 +38,12 @@ Features already built:
 | security.txt (PLAN_WWW Section 7) | Done on gateway |
 | Google Analytics | Done — GA4 on all three sites with ecommerce events, cross-domain tracking, privacy policy |
 | CSP headers for analytics | Done — `https://*.google-analytics.com` in connect-src across all stacks |
+| Submit domain alignment (PLAN_DOMAIN_ALIGNMENT) | Done — `{env}-submit.diyaccounting.co.uk` convention, API GW custom domains, separate auth/simulator certs |
+| HMRC fraud prevention headers (PLAN_HMRC_FRAUD_PREVENTION_HEADERS) | Done — Gov-Vendor-Public-IP, Gov-Client-Public-Port, EdgeStack ORP forwards CloudFront-Viewer-Address |
+| Resource lookup by domain convention | Done — `.github/actions/lookup-resources` replaces `vars.COGNITO_*` env vars and CloudFormation output passing |
+| Cognito domain alignment | Done — `{env}-auth.diyaccounting.co.uk` (was `{env}-auth.submit.diyaccounting.co.uk`) |
+| Simulator domain alignment | Done — `{env}-simulator.diyaccounting.co.uk` (was `{env}-simulator.submit.diyaccounting.co.uk`) |
+| Holding page domain alignment | Done — `{env}-holding.diyaccounting.co.uk` (was `{env}-holding.submit.diyaccounting.co.uk`) |
 
 ### Items from prior plans still open
 
@@ -110,9 +120,16 @@ Rollback is instant: run `deploy-root.yml` again with the old CloudFront domain.
 
 ### ACM cert strategy
 
-Current certs cover only `ci-*` and `prod-*` prefixed domains. For Phase 1, new certs are needed that also cover the bare production domains.
+Submit's cert strategy is now multi-cert:
 
-**Approach**: Request new certs with all needed SANs, update cdk.json ARNs, redeploy. Old certs can be deleted after. ACM doesn't support modifying existing certs — must request new and swap.
+| Cert | Region | SANs | Used by |
+|------|--------|------|---------|
+| Main cert (`d340de40`) | us-east-1 | `submit.diyaccounting.co.uk`, `*.submit.diyaccounting.co.uk`, `ci-submit.diyaccounting.co.uk`, `prod-submit.diyaccounting.co.uk`, `ci-holding.diyaccounting.co.uk`, `prod-holding.diyaccounting.co.uk` | EdgeStack, ApexStack |
+| Auth cert (`8750ac93`) | us-east-1 | `ci-auth.diyaccounting.co.uk`, `prod-auth.diyaccounting.co.uk` | IdentityStack (Cognito custom domain) |
+| Simulator cert (`5b8afa59`) | us-east-1 | `ci-simulator.diyaccounting.co.uk`, `prod-simulator.diyaccounting.co.uk` | SimulatorStack |
+| Regional cert (`1f9c9a57`) | eu-west-2 | `submit.diyaccounting.co.uk`, `*.submit.diyaccounting.co.uk`, `ci-submit.diyaccounting.co.uk`, `prod-submit.diyaccounting.co.uk` | ApiStack (API Gateway custom domain) |
+
+For gateway and spreadsheets, new certs are needed that also cover the bare production domains. ACM doesn't support modifying existing certs — must request new and swap.
 
 ### Google Analytics 4 and conversion tracking
 
@@ -259,6 +276,7 @@ GitHub Actions workflow conventions carried over:
 - `names` job: computes deployment name, environment name, base URLs from branch
 - Environment name derivation: `ci` for feature branches, `prod` for main
 - CDK stack naming: `{env}-{app}-{StackName}`
+- Domain convention: `{env}-{service}.diyaccounting.co.uk` (e.g., `ci-gateway.diyaccounting.co.uk`, `ci-spreadsheets.diyaccounting.co.uk`)
 
 #### CDK infrastructure
 
@@ -334,9 +352,13 @@ Each repo gets its own deploy workflow (adapted from the current `deploy-gateway
 
 - All submit application code (Lambda, API Gateway, Cognito, DynamoDB)
 - Submit web content (`web/public/`)
-- Submit CDK stacks and workflows
-- `deploy-root.yml` and `RootDnsStack` (manages DNS for all services)
-- `deploy-environment.yml` (submit environment stacks)
+- Submit CDK stacks and workflows (with API Gateway custom domains, EdgeStack ORP forwarding CloudFront-Viewer-Address)
+- `deploy-root.yml` and `RootDnsStack` (manages DNS for all services: submit, gateway, spreadsheets)
+- `deploy-environment.yml` (submit environment stacks: IdentityStack, DataStack, ObservabilityStack, SimulatorStack)
+- `deploy-holding.yml` (holding page at `{env}-holding.diyaccounting.co.uk`)
+- `.github/actions/lookup-resources` (domain-convention-based resource discovery)
+- `.github/actions/get-names` (deployment/environment name computation)
+- `.github/actions/set-origins` (CloudFront alias + API GW custom domain transfer)
 - Submit behaviour tests (submitVat, auth, bundles, tokenEnforcement)
 - Holding page (`web/holding/`)
 
@@ -389,7 +411,12 @@ Add `archive/` to CDK and build tool ignore patterns so it doesn't interfere wit
 
 ### deploy-root.yml ownership
 
-`deploy-root.yml` stays in the submit repo. It manages root account DNS for gateway, spreadsheets, and submit. Moving it to its own repo is a future consideration when/if submit itself splits into ci/prod accounts.
+`deploy-root.yml` stays in the submit repo. It manages root account DNS for gateway, spreadsheets, and submit via `RootDnsStack`. This stack creates A/AAAA alias records for:
+- `{env}-gateway.diyaccounting.co.uk` → gateway CloudFront
+- `{env}-spreadsheets.diyaccounting.co.uk` → spreadsheets CloudFront
+- `{env}-submit.diyaccounting.co.uk` / `submit.diyaccounting.co.uk` / `www.submit.diyaccounting.co.uk` → submit CloudFront
+
+Moving it to its own repo is a future consideration when/if submit itself splits into ci/prod accounts.
 
 ### Repository naming
 
@@ -413,6 +440,22 @@ If `diy-accounting` is renamed to `diy-accounting-spreadsheets`, the OIDC trust 
 | Old www URLs break | CloudFront Function already handles redirects. 301s preserve SEO link equity. Sitemaps guide crawlers to new URLs. |
 | `diy-accounting` repo rename breaks OIDC | Update OIDC trust policy in AWS account before renaming. Verify workflow runs after rename. |
 | Behaviour tests break in new repo | Tests are environment-agnostic (configurable base URL). Same Playwright config and helpers preserved. Test against CI from new repo before removing from submit. |
+| Submit domain alignment breaks existing bookmarks | `submit.diyaccounting.co.uk` kept as prod alias. CI uses `ci-submit.diyaccounting.co.uk`. |
+
+---
+
+## Domain Convention Reference
+
+All services follow the `{env}-{service}.diyaccounting.co.uk` pattern:
+
+| Service | CI | Prod | Prod alias |
+|---------|-----|------|------------|
+| Submit | `ci-submit.diyaccounting.co.uk` | `prod-submit.diyaccounting.co.uk` | `submit.diyaccounting.co.uk` |
+| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` | `diyaccounting.co.uk`, `www.diyaccounting.co.uk` |
+| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` | `spreadsheets.diyaccounting.co.uk` |
+| Cognito | `ci-auth.diyaccounting.co.uk` | `prod-auth.diyaccounting.co.uk` | — |
+| Holding | `ci-holding.diyaccounting.co.uk` | `prod-holding.diyaccounting.co.uk` | — |
+| Simulator | `ci-simulator.diyaccounting.co.uk` | `prod-simulator.diyaccounting.co.uk` | — |
 
 ---
 
