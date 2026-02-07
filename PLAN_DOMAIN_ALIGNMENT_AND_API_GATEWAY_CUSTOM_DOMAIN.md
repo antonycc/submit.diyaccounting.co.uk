@@ -46,7 +46,8 @@ Dome
 - `ci-simulator.diyaccounting.co.uk`
 - `prod-simulator.diyaccounting.co.uk`
 
-Done: arn:aws:acm:eu-west-2:887764105431:certificate/7ae3bc98-843b-4103-8ff5-744dd9307ea7
+Done: (wrong) arn:aws:acm:eu-west-2:887764105431:certificate/7ae3bc98-843b-4103-8ff5-744dd9307ea7
+Done: arn:aws:acm:us-east-1:887764105431:certificate/5b8afa59-8e91-4335-9196-f4043c1870b3
 
 Add simulatorCertificateArn to cdk-environment/cdk.json.
 

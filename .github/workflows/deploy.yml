@@ -265,6 +265,7 @@ jobs:
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+      prod-apex-alias: ${{ steps.deployment-config.outputs.prod-apex-alias }}
 
   test:
     name: 'delegate to test workflow'
