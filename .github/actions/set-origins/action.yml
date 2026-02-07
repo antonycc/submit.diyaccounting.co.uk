@@ -227,6 +227,8 @@ runs:
             done
             echo "  Deleting domain [${DOMAIN}]"
             aws apigatewayv2 delete-domain-name --domain-name "${DOMAIN}"
+            echo "  Waiting 5s after domain deletion to avoid rate limiting..."
+            sleep 5
           fi
 
           echo "Creating API GW custom domain [${DOMAIN}] with cert [${CERT_ARN}]"
@@ -246,7 +248,9 @@ runs:
         # Transfer apex domain
         transfer_apigw_domain "${SET_ORIGINS_APEX_DOMAIN}" "${SET_ORIGINS_API_GATEWAY_ID}" "${SET_ORIGINS_REGIONAL_CERT_ARN}"
 
-        # Transfer prod alias domain if set
+        # Transfer prod alias domain if set (sleep to avoid API Gateway TooManyRequestsException)
         if [ -n "${SET_ORIGINS_PROD_APEX_ALIAS:-}" ]; then
+          echo "Waiting 10s before next API Gateway domain operation to avoid rate limiting..."
+          sleep 10
           transfer_apigw_domain "${SET_ORIGINS_PROD_APEX_ALIAS}" "${SET_ORIGINS_API_GATEWAY_ID}" "${SET_ORIGINS_REGIONAL_CERT_ARN}"
         fi
