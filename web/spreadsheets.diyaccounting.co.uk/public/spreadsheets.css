@@ -262,6 +262,68 @@ main {
 }
 
 /* ============================================================
+   Reviews Section
+   ============================================================ */
+
+.reviews-section {
+  max-width: 740px;
+  margin: 0 auto var(--spacing-xl);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-lg);
+}
+
+.reviews-header {
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.reviews-stars {
+  color: #fbbc04;
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+}
+
+.reviews-rating {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0.25em 0;
+}
+
+.reviews-link {
+  font-size: 0.85rem;
+  color: var(--color-brand-primary);
+}
+
+.reviews-quotes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.reviews-quotes blockquote {
+  margin: 0;
+  padding: 0;
+}
+
+.reviews-quotes blockquote p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 0.25em 0;
+  font-style: italic;
+}
+
+.reviews-quotes cite {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: normal;
+}
+
+/* ============================================================
    Product Cards
    ============================================================ */
 
