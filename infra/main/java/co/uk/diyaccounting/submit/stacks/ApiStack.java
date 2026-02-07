@@ -13,8 +13,10 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.KindCdk.EnsuredLogGroup;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.CustomResource;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
@@ -37,11 +39,16 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.customresources.Provider;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.lambda.Permission;
+import software.amazon.awscdk.services.lambda.Runtime;
 import software.constructs.Construct;
 
 public class ApiStack extends Stack {
@@ -147,6 +154,34 @@ public class ApiStack extends Stack {
         ApiMapping.Builder.create(this, props.resourceNamePrefix() + "-ApiMapping")
                 .api(this.httpApi)
                 .domainName(deploymentCustomDomain)
+                .build();
+
+        // Custom resource to clean up external API Gateway custom domain mappings on stack deletion.
+        // set-origins creates mappings outside CloudFormation; if not removed before CF deletes the
+        // HttpApi, the deletion fails because the $default stage is still referenced.
+        Function cleanupFn = Function.Builder.create(
+                        this, props.resourceNamePrefix() + "-ApiGwCleanupFn")
+                .runtime(Runtime.NODEJS_22_X)
+                .handler("index.handler")
+                .code(Code.fromInline(CLEANUP_LAMBDA_CODE))
+                .timeout(Duration.minutes(5))
+                .description("Cleans up external API Gateway custom domain mappings on stack deletion")
+                .build();
+
+        cleanupFn.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("apigateway:GET", "apigateway:DELETE"))
+                .resources(List.of("arn:aws:apigateway:" + getRegion() + "::/*"))
+                .build());
+
+        Provider cleanupProvider = Provider.Builder.create(
+                        this, props.resourceNamePrefix() + "-ApiGwCleanupProvider")
+                .onEventHandler(cleanupFn)
+                .build();
+
+        CustomResource.Builder.create(this, props.resourceNamePrefix() + "-ApiGwCleanup")
+                .serviceToken(cleanupProvider.getServiceToken())
+                .properties(Map.of("ApiId", this.httpApi.getHttpApiId()))
                 .build();
 
         // Enable access logging for the default stage - ensure log group exists (idempotent creation)
@@ -274,6 +309,57 @@ public class ApiStack extends Stack {
                 "ApiStack %s created successfully for %s with API Gateway URL: %s",
                 this.getNode().getId(), props.resourceNamePrefix(), this.httpApi.getUrl());
     }
+
+    // Inline Node.js Lambda that cleans up external API Gateway custom domain mappings on Delete.
+    // On Create/Update it is a no-op. All errors are caught and logged — best-effort only.
+    private static final String CLEANUP_LAMBDA_CODE =
+            """
+            const { ApiGatewayV2Client, GetDomainNamesCommand, GetApiMappingsCommand,
+                    DeleteApiMappingCommand, DeleteDomainNameCommand } = require("@aws-sdk/client-apigatewayv2");
+            exports.handler = async (event) => {
+              console.log("Event:", JSON.stringify(event));
+              if (event.RequestType !== "Delete") {
+                return { PhysicalResourceId: event.PhysicalResourceId || "cleanup-noop" };
+              }
+              const apiId = event.ResourceProperties.ApiId;
+              if (!apiId) {
+                console.log("No ApiId provided, skipping");
+                return { PhysicalResourceId: "cleanup-no-api-id" };
+              }
+              const client = new ApiGatewayV2Client({});
+              try {
+                let nextToken;
+                do {
+                  const domainResp = await client.send(new GetDomainNamesCommand({ NextToken: nextToken }));
+                  const domains = domainResp.Items || [];
+                  for (const domain of domains) {
+                    const domainName = domain.DomainName;
+                    try {
+                      const mapResp = await client.send(new GetApiMappingsCommand({ DomainName: domainName }));
+                      const mappings = mapResp.Items || [];
+                      const ourMappings = mappings.filter(m => m.ApiId === apiId);
+                      for (const m of ourMappings) {
+                        console.log(`Deleting mapping ${m.ApiMappingId} from domain ${domainName}`);
+                        try {
+                          await client.send(new DeleteApiMappingCommand({
+                            DomainName: domainName, ApiMappingId: m.ApiMappingId
+                          }));
+                        } catch (e) { console.log(`Delete mapping error (ignored): ${e.message}`); }
+                      }
+                      if (ourMappings.length > 0 && ourMappings.length === mappings.length) {
+                        console.log(`Deleting domain ${domainName} (all mappings were ours)`);
+                        try {
+                          await client.send(new DeleteDomainNameCommand({ DomainName: domainName }));
+                        } catch (e) { console.log(`Delete domain error (ignored): ${e.message}`); }
+                      }
+                    } catch (e) { console.log(`Error processing domain ${domainName} (ignored): ${e.message}`); }
+                  }
+                  nextToken = domainResp.NextToken;
+                } while (nextToken);
+              } catch (e) { console.log(`Cleanup error (ignored): ${e.message}`); }
+              return { PhysicalResourceId: `cleanup-${apiId}` };
+            };
+            """;
 
     private void createRouteForLambda(
             AbstractApiLambdaProps apiLambdaProps,

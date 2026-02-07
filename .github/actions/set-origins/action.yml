@@ -232,9 +232,23 @@ runs:
           fi
 
           echo "Creating API GW custom domain [${DOMAIN}] with cert [${CERT_ARN}]"
-          aws apigatewayv2 create-domain-name \
-            --domain-name "${DOMAIN}" \
-            --domain-name-configurations "CertificateArn=${CERT_ARN},EndpointType=REGIONAL"
+          local RETRY_DELAY=15
+          local CREATED=false
+          for ATTEMPT in 1 2 3 4 5; do
+            if aws apigatewayv2 create-domain-name \
+              --domain-name "${DOMAIN}" \
+              --domain-name-configurations "CertificateArn=${CERT_ARN},EndpointType=REGIONAL"; then
+              CREATED=true
+              break
+            fi
+            echo "  Attempt ${ATTEMPT}/5 failed (likely rate limited), retrying in ${RETRY_DELAY}s..."
+            sleep "${RETRY_DELAY}"
+            RETRY_DELAY=$((RETRY_DELAY * 2))
+          done
+          if [ "$CREATED" != "true" ]; then
+            echo "ERROR: Failed to create API GW custom domain [${DOMAIN}] after 5 attempts"
+            return 1
+          fi
 
           echo "Creating API mapping for domain [${DOMAIN}] -> API [${API_ID}]"
           aws apigatewayv2 create-api-mapping \
@@ -250,7 +264,7 @@ runs:
 
         # Transfer prod alias domain if set (sleep to avoid API Gateway TooManyRequestsException)
         if [ -n "${SET_ORIGINS_PROD_APEX_ALIAS:-}" ]; then
-          echo "Waiting 10s before next API Gateway domain operation to avoid rate limiting..."
-          sleep 10
+          echo "Waiting 15s before next API Gateway domain operation to avoid rate limiting..."
+          sleep 15
           transfer_apigw_domain "${SET_ORIGINS_PROD_APEX_ALIAS}" "${SET_ORIGINS_API_GATEWAY_ID}" "${SET_ORIGINS_REGIONAL_CERT_ARN}"
         fi

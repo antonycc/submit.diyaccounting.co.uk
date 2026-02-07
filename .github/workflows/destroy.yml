@@ -580,6 +580,42 @@ jobs:
           aws s3 rm s3://${{ needs.names.outputs.deployment-name }}-app-origin-us-east-1 --recursive \
             || echo "Origin bucket already empty or does not exist"
 
+      - name: Clean up external API Gateway custom domain mappings
+        shell: bash
+        run: |
+          set +e  # Best-effort cleanup
+          API_STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-ApiStack"
+          API_ID=$(aws cloudformation describe-stacks \
+            --stack-name "${API_STACK_NAME}" --region eu-west-2 \
+            --query "Stacks[0].Outputs[?OutputKey=='HttpApiId'].OutputValue | [0]" \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$API_ID" ] || [ "$API_ID" = "None" ]; then
+            echo "No API ID found for stack ${API_STACK_NAME}, skipping"
+            exit 0
+          fi
+          echo "Found API ID: $API_ID, scanning for external domain mappings"
+          DOMAINS=$(aws apigatewayv2 get-domain-names --region eu-west-2 \
+            --query 'Items[].DomainName' --output text 2>/dev/null || echo "")
+          for DOMAIN in $DOMAINS; do
+            [ -z "$DOMAIN" ] || [ "$DOMAIN" = "None" ] && continue
+            MAPPINGS=$(aws apigatewayv2 get-api-mappings --domain-name "$DOMAIN" --region eu-west-2 \
+              --query "Items[?ApiId=='${API_ID}'].[ApiMappingId]" --output text 2>/dev/null || echo "")
+            ALL_COUNT=$(aws apigatewayv2 get-api-mappings --domain-name "$DOMAIN" --region eu-west-2 \
+              --query 'length(Items)' --output text 2>/dev/null || echo "0")
+            OUR_COUNT=0
+            for MID in $MAPPINGS; do
+              [ -z "$MID" ] || [ "$MID" = "None" ] && continue
+              echo "Deleting mapping $MID from domain $DOMAIN"
+              aws apigatewayv2 delete-api-mapping --domain-name "$DOMAIN" --api-mapping-id "$MID" --region eu-west-2 2>/dev/null || true
+              OUR_COUNT=$((OUR_COUNT + 1))
+            done
+            if [ "$OUR_COUNT" -gt 0 ] && [ "$OUR_COUNT" -eq "$ALL_COUNT" ]; then
+              echo "Deleting domain $DOMAIN (all mappings were ours)"
+              aws apigatewayv2 delete-domain-name --domain-name "$DOMAIN" --region eu-west-2 2>/dev/null || true
+            fi
+          done
+          echo "API Gateway custom domain mapping cleanup complete"
+
       - name: Destroy Submit Application
         run: |
           cd cdk-application && \
