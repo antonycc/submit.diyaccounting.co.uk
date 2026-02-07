@@ -64,6 +64,7 @@ public class SubmitApplication {
         public String certificateArn;
         public String docRootPath;
         public String httpApiUrl;
+        public String regionalCertificateArn;
         public String githubTokenSecretArn;
 
         public static class Builder {
@@ -289,6 +290,7 @@ public class SubmitApplication {
                         .userPoolClientId(cognitoUserPoolClientId)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)
+                        .regionalCertificateArn(appProps.regionalCertificateArn)
                         .build());
         this.apiStack.addDependency(accountStack);
         this.apiStack.addDependency(hmrcStack);

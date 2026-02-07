@@ -111,7 +111,7 @@ Add this job before `deploy-identity`:
 
       - name: Verify certificate covers Cognito domain
         run: |
-          CERT_ARN="arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b"
+          CERT_ARN="arn:aws:acm:us-east-1:887764105431:certificate/d340de40-96ca-4f5b-ae4c-f66a776e5a75"
           COGNITO_DOMAIN="${{ needs.names.outputs.environment-name }}-auth.submit.diyaccounting.co.uk"
 
           echo "Verifying certificate $CERT_ARN covers $COGNITO_DOMAIN"

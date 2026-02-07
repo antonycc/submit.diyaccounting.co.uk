@@ -326,13 +326,10 @@ public class SubmitSharedNames {
     public SubmitSharedNames(SubmitSharedNamesProps props) {
         this();
         this.hostedZoneName = props.hostedZoneName;
-        this.envDomainName = props.envName.equals("prod")
-                ? "%s.%s".formatted(props.subDomainName, props.hostedZoneName)
-                : "%s.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
-        this.cognitoDomainName = "%s-auth.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
-        this.holdingDomainName = "%s-holding.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
-        this.simulatorDomainName =
-                "%s-simulator.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
+        this.envDomainName = "%s-%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
+        this.cognitoDomainName = "%s-auth.%s".formatted(props.envName, props.hostedZoneName);
+        this.holdingDomainName = "%s-holding.%s".formatted(props.envName, props.hostedZoneName);
+        this.simulatorDomainName = "%s-simulator.%s".formatted(props.envName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
                 .formatted(
                         props.deploymentName,

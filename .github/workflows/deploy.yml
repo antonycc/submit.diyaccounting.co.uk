@@ -1128,6 +1128,7 @@ jobs:
     outputs:
       # TODO: Can this be derived from shared names?
       httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
+      httpApiId: ${{ steps.api-outputs.outputs.HTTP_API_ID }}
 
   deploy-edge:
     name: 'deploy EdgeStack via deploy-cdk-stack.yml'
@@ -1404,6 +1405,7 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - deploy-api
       - deploy-auth
       - deploy-hmrc
       - deploy-account
@@ -1458,9 +1460,12 @@ jobs:
         with:
           origin-domain: ${{ needs.names.outputs.base-domain }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
+          prod-apex-alias: ${{ needs.names.outputs.prod-apex-alias }}
           aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
           hosted-zone-id: ${{ env.AWS_HOSTED_ZONE_ID }}
           cloudfront-distribution-id: ${{ steps.get-distribution-id.outputs.DISTRIBUTION_ID }}
+          api-gateway-id: ${{ needs.deploy-api.outputs.httpApiId }}
+          regional-certificate-arn: 'arn:aws:acm:eu-west-2:887764105431:certificate/1f9c9a57-5834-41d3-822d-4aae7e32d633'
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 

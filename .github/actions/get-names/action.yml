@@ -36,6 +36,9 @@ outputs:
   holding-url:
     description: "Holding page URL for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_HOLDING_URL }}
+  prod-apex-alias:
+    description: "Additional prod alias domain (submit.diyaccounting.co.uk) - only set for prod"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_PROD_ALIAS }}
 
 runs:
   using: "composite"
@@ -93,15 +96,16 @@ runs:
         DIY_SUBMIT_BASE_DOMAIN="${DEPLOYMENT_NAME?}.submit.diyaccounting.co.uk"
         DIY_SUBMIT_BASE_URL="https://${DIY_SUBMIT_BASE_DOMAIN?}/"
 
-        if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
-          DIY_SUBMIT_APEX_DOMAIN="submit.diyaccounting.co.uk"
-        else
-          DIY_SUBMIT_APEX_DOMAIN="${ENVIRONMENT_NAME?}.submit.diyaccounting.co.uk"
-        fi
+        DIY_SUBMIT_APEX_DOMAIN="${ENVIRONMENT_NAME?}-submit.diyaccounting.co.uk"
         DIY_SUBMIT_APEX_URL="https://${DIY_SUBMIT_APEX_DOMAIN?}/"
 
-        DIY_SUBMIT_HOLDING_DOMAIN="${ENVIRONMENT_NAME?}-holding.submit.diyaccounting.co.uk"
+        DIY_SUBMIT_HOLDING_DOMAIN="${ENVIRONMENT_NAME?}-holding.diyaccounting.co.uk"
         DIY_SUBMIT_HOLDING_URL="https://${DIY_SUBMIT_HOLDING_DOMAIN?}/"
+
+        if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
+          DIY_SUBMIT_PROD_ALIAS="submit.diyaccounting.co.uk"
+          echo "DIY_SUBMIT_PROD_ALIAS=$DIY_SUBMIT_PROD_ALIAS" | tee -a "$GITHUB_OUTPUT"
+        fi
 
         echo "ENVIRONMENT_NAME=$ENVIRONMENT_NAME" | tee -a "$GITHUB_OUTPUT"
         echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"

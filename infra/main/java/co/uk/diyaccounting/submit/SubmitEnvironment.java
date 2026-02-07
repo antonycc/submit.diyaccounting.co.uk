@@ -50,6 +50,8 @@ public class SubmitEnvironment {
         public String googleClientId;
         public String googleClientSecretArn;
         public String securityServicesEnabled;
+        public String authCertificateArn;
+        public String simulatorCertificateArn;
         public String simulatorCodePath;
 
         public static class Builder {
@@ -210,7 +212,10 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
-                        .certificateArn(appProps.certificateArn)
+                        .certificateArn(
+                                appProps.authCertificateArn != null && !appProps.authCertificateArn.isBlank()
+                                        ? appProps.authCertificateArn
+                                        : appProps.certificateArn)
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
                         .build());
@@ -256,7 +261,11 @@ public class SubmitEnvironment {
                             .simulatorBaseUrl(simulatorBaseUrl)
                             .hostedZoneName(appProps.hostedZoneName)
                             .hostedZoneId(appProps.hostedZoneId)
-                            .certificateArn(appProps.certificateArn)
+                            .certificateArn(
+                                    appProps.simulatorCertificateArn != null
+                                                    && !appProps.simulatorCertificateArn.isBlank()
+                                            ? appProps.simulatorCertificateArn
+                                            : appProps.certificateArn)
                             .build());
         } else {
             warnf(
