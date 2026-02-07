@@ -24,10 +24,13 @@ import software.constructs.Construct;
  * for the gateway and spreadsheets CloudFront distributions.
  * <p>
  * Records:
- * - ci-gateway.diyaccounting.co.uk → gateway CloudFront
- * - prod-gateway.diyaccounting.co.uk → gateway CloudFront
- * - ci-spreadsheets.diyaccounting.co.uk → spreadsheets CloudFront
- * - prod-spreadsheets.diyaccounting.co.uk → spreadsheets CloudFront
+ * - ci-gateway.diyaccounting.co.uk → CI gateway CloudFront
+ * - prod-gateway.diyaccounting.co.uk → prod gateway CloudFront
+ * - ci-spreadsheets.diyaccounting.co.uk → CI spreadsheets CloudFront
+ * - prod-spreadsheets.diyaccounting.co.uk → prod spreadsheets CloudFront
+ * - diyaccounting.co.uk (apex) → prod gateway CloudFront
+ * - www.diyaccounting.co.uk → prod gateway CloudFront
+ * - spreadsheets.diyaccounting.co.uk → prod spreadsheets CloudFront
  */
 public class RootDnsStack extends Stack {
 
@@ -61,6 +64,24 @@ public class RootDnsStack extends Stack {
         /** CloudFront domain name for prod-spreadsheets. Empty to skip. */
         @Value.Default
         default String prodSpreadsheetsCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for apex (diyaccounting.co.uk). Empty to skip. */
+        @Value.Default
+        default String apexCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for www.diyaccounting.co.uk. Empty to skip. */
+        @Value.Default
+        default String wwwCloudFrontDomain() {
+            return "";
+        }
+
+        /** CloudFront domain name for spreadsheets.diyaccounting.co.uk. Empty to skip. */
+        @Value.Default
+        default String spreadsheetsCloudFrontDomain() {
             return "";
         }
 
@@ -126,6 +147,26 @@ public class RootDnsStack extends Stack {
                     "prod-spreadsheets",
                     props.prodSpreadsheetsCloudFrontDomain());
             cfnOutput(this, "ProdSpreadsheetsDomain", "prod-spreadsheets." + props.hostedZoneName());
+        }
+
+        // Phase 2: Production domain DNS records (go-live switchover)
+        if (!props.apexCloudFrontDomain().isBlank()) {
+            infof("Creating apex alias to %s", props.apexCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(this, "Apex", zone, null, props.apexCloudFrontDomain());
+            cfnOutput(this, "ApexDomain", props.hostedZoneName());
+        }
+
+        if (!props.wwwCloudFrontDomain().isBlank()) {
+            infof("Creating www alias to %s", props.wwwCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(this, "Www", zone, "www", props.wwwCloudFrontDomain());
+            cfnOutput(this, "WwwDomain", "www." + props.hostedZoneName());
+        }
+
+        if (!props.spreadsheetsCloudFrontDomain().isBlank()) {
+            infof("Creating spreadsheets alias to %s", props.spreadsheetsCloudFrontDomain());
+            Route53AliasUpsert.upsertAliasToCloudFront(
+                    this, "Spreadsheets", zone, "spreadsheets", props.spreadsheetsCloudFrontDomain());
+            cfnOutput(this, "SpreadsheetsDomain", "spreadsheets." + props.hostedZoneName());
         }
 
         infof("RootDnsStack %s created", this.getNode().getId());

@@ -24,11 +24,15 @@ import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpJwtAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaResponseType;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
+import software.amazon.awscdk.services.apigatewayv2.ApiMapping;
 import software.amazon.awscdk.services.apigatewayv2.CfnStage;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
 import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
+import software.amazon.awscdk.services.apigatewayv2.DomainName;
+import software.amazon.awscdk.services.certificatemanager.Certificate;
+import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
@@ -84,6 +88,8 @@ public class ApiStack extends Stack {
         String customAuthorizerLambdaArn();
 
         String buildNumber();
+
+        String regionalCertificateArn();
     }
 
     @Value.Immutable
@@ -125,6 +131,22 @@ public class ApiStack extends Stack {
                 .apiName(props.resourceNamePrefix() + "-api")
                 .description(
                         "API Gateway v2 for " + props.resourceNamePrefix() + " (build " + props.buildNumber() + ")")
+                .build();
+
+        // Create API Gateway custom domain for the deployment domain so API GW accepts
+        // the Host header that CloudFront forwards (required for CloudFront-Viewer-Address forwarding)
+        ICertificate regionalCert = Certificate.fromCertificateArn(
+                this, props.resourceNamePrefix() + "-RegionalCert", props.regionalCertificateArn());
+
+        DomainName deploymentCustomDomain = DomainName.Builder.create(
+                        this, props.resourceNamePrefix() + "-CustomDomain")
+                .domainName(props.sharedNames().deploymentDomainName)
+                .certificate(regionalCert)
+                .build();
+
+        ApiMapping.Builder.create(this, props.resourceNamePrefix() + "-ApiMapping")
+                .api(this.httpApi)
+                .domainName(deploymentCustomDomain)
                 .build();
 
         // Enable access logging for the default stage - ensure log group exists (idempotent creation)

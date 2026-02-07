@@ -195,7 +195,8 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
  *
  * - gov-client-multi-factor: Cognito MFA not yet implemented
  * - gov-vendor-license-ids: Open-source software with no license keys
- * - gov-client-public-port: Browser apps cannot access client TCP port
+ * - gov-client-public-port: Supplied via CloudFront-Viewer-Address in AWS deployments,
+ *   but unavailable in proxy/simulator mode (no CloudFront in path)
  *
  * @see buildFraudHeaders.js for server-side header generation
  * @see submit.js buildGovClientHeaders() for client-side header generation

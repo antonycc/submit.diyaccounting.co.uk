@@ -39,7 +39,7 @@ import {
   isValidWholeAmount,
 } from "../../lib/vatReturnTypes.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
-import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
+import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
@@ -223,6 +223,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 // TODO: Remove all but the initial wait and async options.
 export async function ingestHandler(event) {
   await initializeSalt();
+  await detectVendorPublicIp();
   validateEnv([
     "HMRC_BASE_URI",
     "RECEIPTS_DYNAMODB_TABLE_NAME",

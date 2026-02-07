@@ -85,7 +85,7 @@ All ci-*/prod-* submit records are created by the submit CDK stacks (via `Route5
 ### Current Certificate
 
 Single wildcard ACM public cert covers all submit subdomains:
-- **ARN**: `arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b`
+- **ARN**: `arn:aws:acm:us-east-1:887764105431:certificate/d340de40-96ca-4f5b-ae4c-f66a776e5a75`
 - **Domain**: `*.submit.diyaccounting.co.uk`
 - **Account**: Root (887764105431), region us-east-1
 - **Type**: ACM public certificate (free, DNS-validated)

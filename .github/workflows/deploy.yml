@@ -256,6 +256,13 @@ jobs:
         with:
           environment-name: ${{ needs.params.outputs.environment-name || '' }}
           deployment-name: ${{ steps.resolved-deployment-name.outputs.deployment-name }}
+
+      - name: Lookup Cognito from domain convention
+        id: lookup-cognito
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+          lookup-cognito: 'true'
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -265,6 +272,9 @@ jobs:
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+      prod-apex-alias: ${{ steps.deployment-config.outputs.prod-apex-alias }}
+      cognito-user-pool-arn: ${{ steps.lookup-cognito.outputs.cognito-user-pool-arn }}
+      cognito-client-id: ${{ steps.lookup-cognito.outputs.cognito-client-id }}
 
   test:
     name: 'delegate to test workflow'
@@ -661,9 +671,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-dev-us-east-1:
@@ -686,9 +697,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   push-images:
@@ -915,9 +927,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-auth:
@@ -941,9 +954,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-hmrc:
@@ -967,9 +981,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-account:
@@ -993,9 +1008,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Downstream of the API use ${{ needs.deploy-api.outputs.httpApiUrl }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-api:
@@ -1070,9 +1086,9 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          # Looked up from Cognito domain convention in names job
+          COGNITO_USER_POOL_ARN: ${{ needs.names.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-api.json | jq '.'
 
@@ -1128,6 +1144,7 @@ jobs:
     outputs:
       # TODO: Can this be derived from shared names?
       httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
+      httpApiId: ${{ steps.api-outputs.outputs.HTTP_API_ID }}
 
   deploy-edge:
     name: 'deploy EdgeStack via deploy-cdk-stack.yml'
@@ -1154,9 +1171,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
-      http-api-url: ${{ needs.deploy-api.outputs.httpApiUrl }}
+      lookup-api-gateway: 'true'
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   deploy-publish:
@@ -1211,6 +1229,15 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      - name: Lookup API Gateway from domain convention
+        id: lookup-api
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          deployment-name: ${{ needs.names.outputs.deployment-name }}
+          lookup-cognito: 'false'
+          lookup-api-gateway: 'true'
 
       - name: Resolve RUM config from ObservabilityStack
         id: rum-config
@@ -1284,8 +1311,8 @@ jobs:
           set -euo pipefail
           # Load variables from the environment-specific .env file and write to web/public/submit.env
           npx dotenv -e .env.${{ needs.names.outputs.environment-name }} -- bash -c 'cat > web/public/submit.env <<EOF
-          COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-${{ vars.COGNITO_CLIENT_ID }}}
-          COGNITO_BASE_URI=https://${{ needs.names.outputs.environment-name }}-auth.submit.diyaccounting.co.uk
+          COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID:-${{ needs.names.outputs.cognito-client-id }}}
+          COGNITO_BASE_URI=https://${{ needs.names.outputs.environment-name }}-auth.diyaccounting.co.uk
 
           HMRC_CLIENT_ID=${HMRC_CLIENT_ID}
           HMRC_BASE_URI=${HMRC_BASE_URI}
@@ -1365,10 +1392,11 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
-          HTTP_API_URL: ${{ needs.deploy-api.outputs.httpApiUrl }}
+          HTTP_API_URL: ${{ steps.lookup-api.outputs.http-api-url }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          # Looked up from Cognito domain convention in names job
+          COGNITO_USER_POOL_ARN: ${{ needs.names.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
 
   deploy-ops:
     name: 'deploy OpsStack via deploy-cdk-stack.yml'
@@ -1393,9 +1421,10 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
-      http-api-url: ${{ needs.deploy-api.outputs.httpApiUrl }}
+      lookup-api-gateway: 'true'
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
   set-origins:
@@ -1404,6 +1433,7 @@ jobs:
     needs:
       - names
       - skip-deploy-check
+      - deploy-api
       - deploy-auth
       - deploy-hmrc
       - deploy-account
@@ -1440,17 +1470,15 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Get CloudFront distribution ID
-        id: get-distribution-id
-        run: |
-          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-            --stack-name "${{ needs.names.outputs.deployment-name }}-app-EdgeStack" \
-            --region "us-east-1" \
-            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
-            --output text)
-          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID"
-          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
-        shell: bash
+      - name: Lookup CloudFront and API Gateway from domain convention
+        id: lookup-resources
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          deployment-name: ${{ needs.names.outputs.deployment-name }}
+          lookup-cognito: 'false'
+          lookup-api-gateway: 'true'
+          lookup-cloudfront: 'true'
 
       - name: Alias apex domain to base domain
         id: set-origins
@@ -1458,9 +1486,12 @@ jobs:
         with:
           origin-domain: ${{ needs.names.outputs.base-domain }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
+          prod-apex-alias: ${{ needs.names.outputs.prod-apex-alias }}
           aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
           hosted-zone-id: ${{ env.AWS_HOSTED_ZONE_ID }}
-          cloudfront-distribution-id: ${{ steps.get-distribution-id.outputs.DISTRIBUTION_ID }}
+          cloudfront-distribution-id: ${{ steps.lookup-resources.outputs.cloudfront-distribution-id }}
+          api-gateway-id: ${{ steps.lookup-resources.outputs.http-api-id }}
+          regional-certificate-arn: 'arn:aws:acm:eu-west-2:887764105431:certificate/1f9c9a57-5834-41d3-822d-4aae7e32d633'
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 

@@ -567,6 +567,13 @@ jobs:
       - name: Build CDK
         run: ./mvnw --errors clean verify -DskipTests
 
+      - name: Lookup Cognito from domain convention
+        id: lookup
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          lookup-cognito: 'true'
+
       - name: Empty origin bucket
         shell: bash
         run: |
@@ -586,9 +593,9 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-          # Set by deploy-environment.yml after the environment's AuthStack is deployed
-          COGNITO_USER_POOL_ARN: ${{ vars.COGNITO_USER_POOL_ARN }}
-          COGNITO_CLIENT_ID: ${{ vars.COGNITO_CLIENT_ID }}
+          # Looked up from Cognito domain convention
+          COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
+          COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 

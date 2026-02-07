@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import co.uk.diyaccounting.submit.stacks.GatewayStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import java.util.ArrayList;
 import java.util.List;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -32,10 +33,21 @@ public class GatewayEnvironment {
         var certificateArn = envOr("CERTIFICATE_ARN", KindCdk.getContextValueString(app, "certificateArn", ""));
         var docRootPath = envOr("DOC_ROOT_PATH", KindCdk.getContextValueString(app, "docRootPath", "../web/www.diyaccounting.co.uk/public"));
         var domainNamesStr = envOr("DOMAIN_NAMES", KindCdk.getContextValueString(app, "domainNames", ""));
+        var prodFQDomainName = KindCdk.getContextValueString(app, "prodFQDomainName", "");
+        var prodFQNakedDomainName = KindCdk.getContextValueString(app, "prodFQNakedDomainName", "");
 
-        var domainNames = domainNamesStr.isBlank()
-                ? List.of(envName + "-gateway.diyaccounting.co.uk")
-                : List.of(domainNamesStr.split(","));
+        List<String> domainNames;
+        if (!domainNamesStr.isBlank()) {
+            domainNames = List.of(domainNamesStr.split(","));
+        } else {
+            var names = new ArrayList<String>();
+            names.add(envName + "-gateway.diyaccounting.co.uk");
+            if ("prod".equals(envName)) {
+                if (!prodFQDomainName.isBlank()) names.add(prodFQDomainName);
+                if (!prodFQNakedDomainName.isBlank()) names.add(prodFQNakedDomainName);
+            }
+            domainNames = List.copyOf(names);
+        }
 
         var gateway = new GatewayEnvironment(app, envName, certificateArn, docRootPath, domainNames);
         app.synth();

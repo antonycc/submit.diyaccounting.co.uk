@@ -3,33 +3,21 @@
 
 // app/unit-tests/lib/buildFraudHeaders.test.js
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { readFileSync } from "fs";
-import { buildFraudHeaders } from "../../lib/buildFraudHeaders.js";
+import { buildFraudHeaders, detectVendorPublicIp, _resetForTesting } from "../../lib/buildFraudHeaders.js";
 
 // Read package info for test assertions (strip scope if present)
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
 const packageName = rawPackageName.startsWith("@") ? rawPackageName.split("/")[1] : rawPackageName;
 
 describe("buildFraudHeaders", () => {
-  let originalEnv;
-
   beforeEach(() => {
-    // Save original environment
-    originalEnv = {
-      SERVER_PUBLIC_IP: process.env.SERVER_PUBLIC_IP,
-    };
+    _resetForTesting();
   });
 
   afterEach(() => {
-    // Restore original environment
-    Object.keys(originalEnv).forEach((key) => {
-      if (originalEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = originalEnv[key];
-      }
-    });
+    vi.restoreAllMocks();
   });
 
   it("should return govClientHeaders and govClientErrorMessages", () => {
@@ -43,23 +31,6 @@ describe("buildFraudHeaders", () => {
     expect(result).toHaveProperty("govClientHeaders");
     expect(result).toHaveProperty("govClientErrorMessages");
     expect(Array.isArray(result.govClientErrorMessages)).toBe(true);
-  });
-
-  it("should build vendor forwarded chain from x-forwarded-for", () => {
-    const event = {
-      headers: {
-        "x-forwarded-for": "198.51.100.1, 203.0.113.5",
-      },
-      requestContext: {
-        authorizer: { claims: { sub: "user123" } },
-      },
-    };
-
-    const { govClientHeaders: headers } = buildFraudHeaders(event);
-
-    // Gov-Vendor-Forwarded should now be a JSON array of objects
-    const forwarded = headers["Gov-Vendor-Forwarded"];
-    expect(forwarded).toEqual("by=198.51.100.1&for=198.51.100.1,by=198.51.100.1&for=203.0.113.5");
   });
 
   it("should extract public client IP from x-forwarded-for", () => {
@@ -113,12 +84,16 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
   });
 
-  it("should extract user ID from Cognito authorizer claims", () => {
+  it("should extract user ID from HTTP API v2 Lambda authorizer claims", () => {
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
       requestContext: {
         authorizer: {
-          claims: { sub: "cognito-user-abc123" },
+          lambda: {
+            jwt: {
+              claims: { sub: "cognito-user-abc123" },
+            },
+          },
         },
       },
     };
@@ -128,7 +103,22 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-abc123");
   });
 
-  it("should use anonymous user ID when not authenticated", () => {
+  it("should extract user ID from flat authorizer claims", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {
+        authorizer: {
+          claims: { sub: "cognito-user-flat" },
+        },
+      },
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-flat");
+  });
+
+  it("should omit Gov-Client-User-IDs when not authenticated", () => {
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
       requestContext: {},
@@ -136,7 +126,8 @@ describe("buildFraudHeaders", () => {
 
     const { govClientHeaders: headers } = buildFraudHeaders(event);
 
-    expect(headers["Gov-Client-User-IDs"]).toBe("server=anonymous");
+    // No fallback to "anonymous" - header is omitted when no user sub available
+    expect(headers["Gov-Client-User-IDs"]).toBeUndefined();
   });
 
   it("should pass through client-side headers", () => {
@@ -165,9 +156,10 @@ describe("buildFraudHeaders", () => {
 
     const { govClientHeaders: headers } = buildFraudHeaders(event);
 
-    // Should still include vendor headers and connection method
+    // Should still include connection method
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
-    expect(headers["Gov-Client-User-IDs"]).toBe("server=anonymous");
+    // Gov-Client-Public-IP should be omitted (not falsified)
+    expect(headers["Gov-Client-Public-IP"]).toBeUndefined();
   });
 
   it("should use device ID from x-device-id header", () => {
@@ -184,8 +176,33 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-Device-ID"]).toBe("device-uuid-12345");
   });
 
-  it("should use SERVER_PUBLIC_IP environment variable if set", () => {
-    process.env.SERVER_PUBLIC_IP = "203.0.113.100";
+  it("should omit Gov-Vendor-Public-IP when vendor IP not detected", () => {
+    // Without calling detectVendorPublicIp(), cachedVendorPublicIp is null
+    const event = {
+      headers: {
+        "x-forwarded-for": "198.51.100.1",
+      },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    // Gov-Vendor-Public-IP must NOT fall back to client IP
+    expect(headers["Gov-Vendor-Public-IP"]).toBeUndefined();
+    expect(headers["Gov-Vendor-Forwarded"]).toBeUndefined();
+  });
+
+  it("should use detected vendor IP for Gov-Vendor-Public-IP after detectVendorPublicIp()", async () => {
+    // Mock fetch to return a known IP
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve("203.0.113.50\n"),
+      }),
+    );
+
+    await detectVendorPublicIp();
 
     const event = {
       headers: {
@@ -196,8 +213,102 @@ describe("buildFraudHeaders", () => {
 
     const { govClientHeaders: headers } = buildFraudHeaders(event);
 
-    expect(headers["Gov-Vendor-Public-IP"]).toBe("203.0.113.100");
+    expect(headers["Gov-Vendor-Public-IP"]).toBe("203.0.113.50");
+    expect(headers["Gov-Vendor-Forwarded"]).toEqual("by=203.0.113.50&for=198.51.100.1");
+  });
+
+  it("should build vendor forwarded chain using vendor IP (not client IP)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve("203.0.113.50\n"),
+      }),
+    );
+
+    await detectVendorPublicIp();
+
+    const event = {
+      headers: {
+        "x-forwarded-for": "198.51.100.1, 203.0.113.5",
+      },
+      requestContext: {
+        authorizer: { claims: { sub: "user123" } },
+      },
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
     const forwarded = headers["Gov-Vendor-Forwarded"];
-    expect(forwarded).toEqual("by=203.0.113.100&for=198.51.100.1");
+    expect(forwarded).toEqual("by=203.0.113.50&for=198.51.100.1,by=203.0.113.50&for=203.0.113.5");
+  });
+
+  it("should cache vendor IP detection and not call fetch again", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve("203.0.113.50\n"),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const ip1 = await detectVendorPublicIp();
+    const ip2 = await detectVendorPublicIp();
+
+    expect(ip1).toBe("203.0.113.50");
+    expect(ip2).toBe("203.0.113.50");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("should handle vendor IP detection failure gracefully", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("Network error")),
+    );
+
+    const ip = await detectVendorPublicIp();
+
+    expect(ip).toBeNull();
+  });
+});
+
+describe("Gov-Client-Public-Port from CloudFront-Viewer-Address", () => {
+  it("should extract port from IPv4 CloudFront-Viewer-Address", () => {
+    const event = {
+      headers: {
+        "x-forwarded-for": "198.51.100.1",
+        "CloudFront-Viewer-Address": "198.51.100.1:54321",
+      },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Public-Port"]).toBe("54321");
+  });
+
+  it("should extract port from IPv6 CloudFront-Viewer-Address", () => {
+    const event = {
+      headers: {
+        "x-forwarded-for": "2001:db8::1",
+        "CloudFront-Viewer-Address": "[2001:db8::1]:54321",
+      },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Public-Port"]).toBe("54321");
+  });
+
+  it("should omit Gov-Client-Public-Port when CloudFront-Viewer-Address is absent", () => {
+    const event = {
+      headers: {
+        "x-forwarded-for": "198.51.100.1",
+      },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Public-Port"]).toBeUndefined();
   });
 });

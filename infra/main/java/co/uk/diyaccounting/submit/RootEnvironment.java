@@ -37,6 +37,11 @@ public class RootEnvironment {
         var prodSpreadsheetsCfDomain = envOr(
                 "PROD_SPREADSHEETS_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "prodSpreadsheetsCloudFrontDomain", ""));
+        var apexCfDomain = envOr("APEX_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "apexCloudFrontDomain", ""));
+        var wwwCfDomain = envOr("WWW_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "wwwCloudFrontDomain", ""));
+        var spreadsheetsCfDomain = envOr(
+                "SPREADSHEETS_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "spreadsheetsCloudFrontDomain", ""));
 
         var root = new RootEnvironment(
                 app,
@@ -45,7 +50,10 @@ public class RootEnvironment {
                 ciGatewayCfDomain,
                 prodGatewayCfDomain,
                 ciSpreadsheetsCfDomain,
-                prodSpreadsheetsCfDomain);
+                prodSpreadsheetsCfDomain,
+                apexCfDomain,
+                wwwCfDomain,
+                spreadsheetsCfDomain);
         app.synth();
         infof("CDK synth complete for root DNS environment");
     }
@@ -57,7 +65,10 @@ public class RootEnvironment {
             String ciGatewayCfDomain,
             String prodGatewayCfDomain,
             String ciSpreadsheetsCfDomain,
-            String prodSpreadsheetsCfDomain) {
+            String prodSpreadsheetsCfDomain,
+            String apexCfDomain,
+            String wwwCfDomain,
+            String spreadsheetsCfDomain) {
         // Root account DNS management runs in us-east-1 (Route53 is global but CDK needs a region)
         Environment usEast1Env = Environment.builder()
                 .region("us-east-1")
@@ -78,6 +89,9 @@ public class RootEnvironment {
                         .prodGatewayCloudFrontDomain(prodGatewayCfDomain)
                         .ciSpreadsheetsCloudFrontDomain(ciSpreadsheetsCfDomain)
                         .prodSpreadsheetsCloudFrontDomain(prodSpreadsheetsCfDomain)
+                        .apexCloudFrontDomain(apexCfDomain)
+                        .wwwCloudFrontDomain(wwwCfDomain)
+                        .spreadsheetsCloudFrontDomain(spreadsheetsCfDomain)
                         .build());
     }
 }

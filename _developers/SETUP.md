@@ -235,7 +235,7 @@ Add the following repository variables to your GitHub repository settings under 
 |---------------------------|------------------------------------------|--------------|----------|---------------------------------|
 | `AWS_HOSTED_ZONE_ID`      | The AWS hosted zone ID for the domain.   | Repository   | String   | `Z0315522208PWZSSBI9AL`         |
 | `AWS_HOSTED_ZONE_NAME`    | The AWS hosted zone name for the domain. | Repository   | String   | `submit.diyaccounting.co.uk`             |
-| `AWS_CERTIFICATE_ARN`      | The AWS certificate ID for the domain.   | Environment  | String   | `arn:aws:acm:us-east-1:887764105431:certificate/b23cd904-8e3b-4cd0-84f1-57ca11d7fe2b`          |
+| `AWS_CERTIFICATE_ARN`      | The AWS certificate ID for the domain.   | Environment  | String   | `arn:aws:acm:us-east-1:887764105431:certificate/d340de40-96ca-4f5b-ae4c-f66a776e5a75`          |
 | `AWS_CLOUD_TRAIL_ENABLED` | Enable CloudTrail logging.               | Environment  | Boolean  | `true`                          |
 
 To use a repository level variable certificate should be able to cover the domain `submit.diyaccounting.co.uk` and

@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import co.uk.diyaccounting.submit.stacks.SpreadsheetsStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
+import java.util.ArrayList;
 import java.util.List;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -36,10 +37,19 @@ public class SpreadsheetsEnvironment {
                 KindCdk.getContextValueString(app, "docRootPath", "../web/spreadsheets.diyaccounting.co.uk/public"));
         var domainNamesStr =
                 envOr("DOMAIN_NAMES", KindCdk.getContextValueString(app, "domainNames", ""));
+        var prodFQDomainName = KindCdk.getContextValueString(app, "prodFQDomainName", "");
 
-        var domainNames = domainNamesStr.isBlank()
-                ? List.of(envName + "-spreadsheets.diyaccounting.co.uk")
-                : List.of(domainNamesStr.split(","));
+        List<String> domainNames;
+        if (!domainNamesStr.isBlank()) {
+            domainNames = List.of(domainNamesStr.split(","));
+        } else {
+            var names = new ArrayList<String>();
+            names.add(envName + "-spreadsheets.diyaccounting.co.uk");
+            if ("prod".equals(envName) && !prodFQDomainName.isBlank()) {
+                names.add(prodFQDomainName);
+            }
+            domainNames = List.copyOf(names);
+        }
 
         var spreadsheets = new SpreadsheetsEnvironment(app, envName, certificateArn, docRootPath, domainNames);
         app.synth();

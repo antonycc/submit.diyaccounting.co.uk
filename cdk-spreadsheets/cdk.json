@@ -6,8 +6,9 @@
     "@aws-cdk/core:newStyleStackSynthesis": true,
     "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
     "envName": "",
-    "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/95653acb-d279-4e87-911a-9dad45f34732",
+    "certificateArn": "arn:aws:acm:us-east-1:887764105431:certificate/0ee9d0f8-e02c-4920-94ca-1ba30c005d3c",
     "docRootPath": "../web/spreadsheets.diyaccounting.co.uk/public",
-    "domainNames": ""
+    "domainNames": "",
+    "prodFQDomainName": "spreadsheets.diyaccounting.co.uk"
   }
 }
