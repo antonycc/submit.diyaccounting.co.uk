@@ -671,6 +671,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
@@ -696,6 +697,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
@@ -925,6 +927,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
@@ -951,6 +954,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
@@ -977,6 +981,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
@@ -1003,6 +1008,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
@@ -1165,6 +1171,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       lookup-api-gateway: 'true'
@@ -1414,6 +1421,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
+      lookup-cognito: 'true'
       #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       lookup-api-gateway: 'true'

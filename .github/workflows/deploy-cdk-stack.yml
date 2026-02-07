@@ -50,6 +50,14 @@ on:
         description: 'HTTP API URL (manual override, ignored when lookup-api-gateway is true)'
         required: false
         default: ''
+      lookup-cognito:
+        description: 'Look up Cognito User Pool from environment domain convention'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
       lookup-api-gateway:
         description: 'Look up API Gateway URL from deployment custom domain instead of using http-api-url input'
         type: choice
@@ -88,6 +96,10 @@ on:
         type: string
         required: false
         default: ''
+      lookup-cognito:
+        type: string
+        required: false
+        default: 'false'
       lookup-api-gateway:
         type: string
         required: false
@@ -138,6 +150,8 @@ jobs:
         run: ":"
       - name: "inputs.self-destruct-start-datetime=[${{ inputs['self-destruct-start-datetime'] }}]"
         run: ":"
+      - name: "inputs.lookup-cognito=[${{ inputs['lookup-cognito'] }}]"
+        run: ":"
       - name: "inputs.lookup-api-gateway=[${{ inputs['lookup-api-gateway'] }}]"
         run: ":"
       - name: "inputs.website-hash=[${{ inputs['website-hash'] }}]"
@@ -156,6 +170,7 @@ jobs:
           echo "cdk-application=${CDK_APP:-application}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.base-image-tag }}' ; echo "base-image-tag=${X:-${{ github.sha }}}" | tee -a "$GITHUB_OUTPUT"
           echo "self-destruct-start-datetime=${{ inputs['self-destruct-start-datetime'] }}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.lookup-cognito }}' ; echo "lookup-cognito=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.lookup-api-gateway }}' ; echo "lookup-api-gateway=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Manual override for http-api-url (workflow_dispatch only)
           echo "http-api-url=${{ inputs['http-api-url'] }}" | tee -a "$GITHUB_OUTPUT"
@@ -168,6 +183,7 @@ jobs:
       cdk-application: ${{ steps.normalise.outputs.cdk-application }}
       base-image-tag: ${{ steps.normalise.outputs['base-image-tag'] }}
       self-destruct-start-datetime: ${{ steps.normalise.outputs['self-destruct-start-datetime'] }}
+      lookup-cognito: ${{ steps.normalise.outputs['lookup-cognito'] }}
       lookup-api-gateway: ${{ steps.normalise.outputs['lookup-api-gateway'] }}
       http-api-url: ${{ steps.normalise.outputs['http-api-url'] }}
       website-hash: ${{ steps.normalise.outputs['website-hash'] }}
@@ -296,13 +312,13 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Lookup resources from domain convention
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        if: ${{ (needs.params.outputs.lookup-cognito == 'true' || needs.params.outputs.lookup-api-gateway == 'true') && (needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true') }}
         id: lookup
         uses: './.github/actions/lookup-resources'
         with:
           environment-name: ${{ needs.names.outputs.environment-name }}
           deployment-name: ${{ needs.names.outputs.deployment-name }}
-          lookup-cognito: 'true'
+          lookup-cognito: ${{ needs.params.outputs.lookup-cognito }}
           lookup-api-gateway: ${{ needs.params.outputs.lookup-api-gateway }}
 
       - name: Setup Node
