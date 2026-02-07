@@ -53,6 +53,11 @@ export async function ingestHandler(event, context) {
       await emptyBucket(process.env.EDGE_ORIGIN_BUCKET);
     }
 
+    // Clean up external API Gateway custom domain mappings before deleting ApiStack
+    if (process.env.API_STACK_NAME) {
+      await cleanupApiGatewayMappings(process.env.API_STACK_NAME);
+    }
+
     // Stack deletion order (reverse of creation dependency order)
     const stacksToDelete = [];
     addStackNameIfPresent(stacksToDelete, process.env.OPS_STACK_NAME);
@@ -260,4 +265,88 @@ async function emptyBucket(bucketName) {
   } while (continuationToken);
 
   console.log(`Bucket ${bucketName} emptied (or failed while emptying) successfully.`);
+}
+
+async function cleanupApiGatewayMappings(apiStackName) {
+  console.log(`Cleaning up API Gateway custom domain mappings for stack: ${apiStackName}`);
+
+  try {
+    // Get the API ID from CloudFormation stack outputs
+    const cfClient = await getCloudFormationClient();
+    const { DescribeStacksCommand } = await import("@aws-sdk/client-cloudformation");
+
+    let apiId;
+    try {
+      const stackResp = await cfClient.send(new DescribeStacksCommand({ StackName: apiStackName }));
+      const outputs = stackResp.Stacks?.[0]?.Outputs || [];
+      const apiIdOutput = outputs.find((o) => o.OutputKey === "HttpApiId");
+      apiId = apiIdOutput?.OutputValue;
+    } catch (error) {
+      if (error.message?.includes("does not exist")) {
+        console.log(`Stack ${apiStackName} does not exist, skipping API Gateway cleanup`);
+        return;
+      }
+      throw error;
+    }
+
+    if (!apiId) {
+      console.log(`No HttpApiId output found in stack ${apiStackName}, skipping`);
+      return;
+    }
+
+    console.log(`Found API ID: ${apiId}, scanning for external domain mappings`);
+
+    const {
+      ApiGatewayV2Client,
+      GetDomainNamesCommand,
+      GetApiMappingsCommand,
+      DeleteApiMappingCommand,
+      DeleteDomainNameCommand,
+    } = await import("@aws-sdk/client-apigatewayv2");
+
+    const apigwClient = new ApiGatewayV2Client({ region: process.env.AWS_REGION || "eu-west-2" });
+
+    let nextToken;
+    do {
+      const domainResp = await apigwClient.send(new GetDomainNamesCommand({ NextToken: nextToken }));
+      const domains = domainResp.Items || [];
+
+      for (const domain of domains) {
+        const domainName = domain.DomainName;
+        try {
+          const mapResp = await apigwClient.send(new GetApiMappingsCommand({ DomainName: domainName }));
+          const mappings = mapResp.Items || [];
+          const ourMappings = mappings.filter((m) => m.ApiId === apiId);
+
+          for (const m of ourMappings) {
+            console.log(`Deleting mapping ${m.ApiMappingId} from domain ${domainName}`);
+            try {
+              await apigwClient.send(
+                new DeleteApiMappingCommand({ DomainName: domainName, ApiMappingId: m.ApiMappingId }),
+              );
+            } catch (e) {
+              console.log(`Delete mapping error (ignored): ${e.message}`);
+            }
+          }
+
+          if (ourMappings.length > 0 && ourMappings.length === mappings.length) {
+            console.log(`Deleting domain ${domainName} (all mappings were ours)`);
+            try {
+              await apigwClient.send(new DeleteDomainNameCommand({ DomainName: domainName }));
+            } catch (e) {
+              console.log(`Delete domain error (ignored): ${e.message}`);
+            }
+          }
+        } catch (e) {
+          console.log(`Error processing domain ${domainName} (ignored): ${e.message}`);
+        }
+      }
+
+      nextToken = domainResp.NextToken;
+    } while (nextToken);
+
+    console.log("API Gateway custom domain mapping cleanup complete");
+  } catch (error) {
+    console.log(`API Gateway cleanup error (non-fatal): ${error.message}`);
+  }
 }

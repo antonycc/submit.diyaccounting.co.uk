@@ -94,9 +94,15 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
       console.log("  Seeded demo user bundles in DynamoDB");
     }
 
-    // Start HTTP simulator (replaces HMRC API for simulator mode)
-    if (runHttpSimulator === "run") {
-      httpSimulatorProcess = await runLocalHttpSimulator(runHttpSimulator, httpSimulatorPort);
+    // Always start HTTP simulator when running a local server — simulator behaviour tests
+    // should never call real HMRC. The simulator page embeds a self-contained demo site.
+    if (runTestServer === "run" || runHttpSimulator === "run") {
+      const simPort = httpSimulatorPort || 9000;
+      httpSimulatorProcess = await runLocalHttpSimulator("run", simPort);
+      // Override HMRC endpoints to point to the local simulator
+      process.env.HMRC_BASE_URI = `http://localhost:${simPort}`;
+      process.env.HMRC_SANDBOX_BASE_URI = `http://localhost:${simPort}`;
+      console.log(`  HMRC endpoints overridden to http://localhost:${simPort} (simulator)`);
     }
 
     if (runTestServer === "run") {

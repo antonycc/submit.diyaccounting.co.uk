@@ -156,7 +156,8 @@ public class SelfDestructStack extends Stack {
                                                         "ecr:*",
                                                         "cloudwatch:*",
                                                         "acm:*",
-                                                        "events:*"))
+                                                        "events:*",
+                                                        "apigateway:*"))
                                                 .resources(List.of("*"))
                                                 .build()))
                                 .build()))
