@@ -393,7 +393,7 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     console.log("=".repeat(60));
   });
 
-  test("Donate page loads with PayPal container", async ({ page }) => {
+  test("Donate page loads with Stripe and PayPal donation options", async ({ page }) => {
     addOnPageLogging(page);
 
     // ============================================================
@@ -427,22 +427,37 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     console.log(" Donate page content is present");
 
     // ============================================================
-    // STEP 3: Verify PayPal donate form exists
+    // STEP 3: Verify Stripe donate link (primary)
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 3: Verify PayPal donate form");
+    console.log("STEP 3: Verify Stripe donate link");
+    console.log("=".repeat(60));
+
+    const stripeLink = page.locator("#stripe-donate-link");
+    await expect(stripeLink).toBeVisible({ timeout: 5000 });
+    const stripeHref = await stripeLink.getAttribute("href");
+    expect(stripeHref).toContain("buy.stripe.com");
+    console.log(" Stripe donate link is visible with correct URL");
+
+    const amountBadges = page.locator(".amount-badge");
+    const badgeCount = await amountBadges.count();
+    expect(badgeCount).toBeGreaterThanOrEqual(3);
+    console.log(` ${badgeCount} donation amount badges displayed`);
+
+    // ============================================================
+    // STEP 3b: Verify PayPal donate form (secondary)
+    // ============================================================
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 3b: Verify PayPal donate form");
     console.log("=".repeat(60));
 
     const paypalForm = page.locator("#paypal-donate-form");
     await expect(paypalForm).toBeAttached({ timeout: 5000 });
     const formAction = await paypalForm.getAttribute("action");
     expect(formAction).toBe("https://www.paypal.com/donate");
-    console.log(" PayPal donate form exists with correct action");
+    console.log(" PayPal donate form exists as secondary option");
 
-    const donateButton = page.locator(".btn-paypal-donate");
-    await expect(donateButton).toBeVisible({ timeout: 5000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-donate-paypal.png` });
-    console.log(" PayPal donate button is visible");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-donate-options.png` });
 
     // ============================================================
     // STEP 4: Verify browse products link (no filename parameter)

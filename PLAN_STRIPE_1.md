@@ -13,7 +13,8 @@ The spreadsheets.diyaccounting.co.uk donate page currently uses PayPal hosted do
 
 Done, link:
 ```
-https://buy.stripe.com/test_9B6dR94G7euH66u90s3VC00
+test: https://buy.stripe.com/test_9B6dR94G7euH66u90s3VC00
+live: https://buy.stripe.com/5kQ7sK49X9bie0N0bN4F200
 ```
 5Use live-mode link for both CI and prod (behaviour tests only verify the link renders, they don't complete checkout).
 

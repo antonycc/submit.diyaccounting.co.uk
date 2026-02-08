@@ -14,7 +14,7 @@ var productId = params.get('product') || '';
 var filename = params.get('filename');
 var downloadUrl = filename ? '/zips/' + encodeURIComponent(filename) : null;
 
-// Save download context to sessionStorage for PayPal return flow
+// Save download context to sessionStorage for donation return flow
 if (downloadUrl) {
   sessionStorage.setItem('donateProduct', productId);
   sessionStorage.setItem('donateFilename', filename);
@@ -56,11 +56,27 @@ if (downloadUrl) {
   });
 }
 
+// GA4 ecommerce: begin_checkout when user clicks Stripe donate link
+document.getElementById('stripe-donate-link').addEventListener('click', function () {
+  trackEvent('begin_checkout', {
+    currency: 'GBP',
+    value: 0,
+    payment_method: 'stripe',
+    items: [{
+      item_id: productId,
+      item_name: productId,
+      price: 0,
+      currency: 'GBP'
+    }]
+  });
+});
+
 // GA4 ecommerce: begin_checkout when user submits the PayPal donate form
 document.getElementById('paypal-donate-form').addEventListener('submit', function () {
   trackEvent('begin_checkout', {
     currency: 'GBP',
     value: 0,
+    payment_method: 'paypal',
     items: [{
       item_id: productId,
       item_name: productId,
