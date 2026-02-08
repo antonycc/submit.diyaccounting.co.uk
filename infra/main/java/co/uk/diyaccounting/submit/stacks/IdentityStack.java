@@ -199,10 +199,8 @@ public class IdentityStack extends Stack {
                 .oAuth(OAuthSettings.builder()
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
                         .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
-                        .callbackUrls(List.of(
-                                "https://" + props.sharedNames().envDomainName + "/",
-                                "https://" + props.sharedNames().envDomainName + "/auth/loginWithCognitoCallback.html"))
-                        .logoutUrls(List.of("https://" + props.sharedNames().envDomainName + "/"))
+                        .callbackUrls(buildCallbackUrls(props.sharedNames()))
+                        .logoutUrls(buildLogoutUrls(props.sharedNames()))
                         .build())
                 .supportedIdentityProviders(allProviders)
                 .build();
@@ -242,5 +240,24 @@ public class IdentityStack extends Stack {
         infof(
                 "IdentityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+    }
+
+    private static List<String> buildCallbackUrls(SubmitSharedNames sharedNames) {
+        var urls = new java.util.ArrayList<>(List.of(
+                "https://" + sharedNames.publicDomainName + "/",
+                "https://" + sharedNames.publicDomainName + "/auth/loginWithCognitoCallback.html"));
+        if (!sharedNames.publicDomainName.equals(sharedNames.envDomainName)) {
+            urls.add("https://" + sharedNames.envDomainName + "/");
+            urls.add("https://" + sharedNames.envDomainName + "/auth/loginWithCognitoCallback.html");
+        }
+        return urls;
+    }
+
+    private static List<String> buildLogoutUrls(SubmitSharedNames sharedNames) {
+        var urls = new java.util.ArrayList<>(List.of("https://" + sharedNames.publicDomainName + "/"));
+        if (!sharedNames.publicDomainName.equals(sharedNames.envDomainName)) {
+            urls.add("https://" + sharedNames.envDomainName + "/");
+        }
+        return urls;
     }
 }
