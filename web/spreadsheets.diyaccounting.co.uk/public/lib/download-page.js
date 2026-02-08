@@ -58,6 +58,19 @@ function initForm() {
   document.getElementById('download-form').classList.remove('hidden');
   updatePeriods();
   updateTitle();
+
+  // Detect PayPal return and auto-trigger download from sessionStorage
+  var returnParams = new URLSearchParams(window.location.search);
+  if (returnParams.get('st') === 'Completed') {
+    var savedFilename = sessionStorage.getItem('donateFilename');
+    var savedProduct = sessionStorage.getItem('donateProduct');
+    sessionStorage.removeItem('donateFilename');
+    sessionStorage.removeItem('donateProduct');
+    if (savedFilename) {
+      window.location = '/zips/' + encodeURIComponent(savedFilename);
+      return;
+    }
+  }
 }
 
 function getSelectedProduct() {

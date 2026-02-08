@@ -14,6 +14,12 @@ var productId = params.get('product') || '';
 var filename = params.get('filename');
 var downloadUrl = filename ? '/zips/' + encodeURIComponent(filename) : null;
 
+// Save download context to sessionStorage for PayPal return flow
+if (downloadUrl) {
+  sessionStorage.setItem('donateProduct', productId);
+  sessionStorage.setItem('donateFilename', filename);
+}
+
 // Show download link if a specific file was selected
 if (downloadUrl) {
   var linkContainer = document.getElementById('download-link-container');

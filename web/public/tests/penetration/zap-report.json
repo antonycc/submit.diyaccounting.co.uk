@@ -1,21 +1,29 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Thu, 5 Feb 2026 21:44:20",
-	"created": "2026-02-05T21:44:20.494560543Z",
+	"@generated": "Sun, 8 Feb 2026 00:40:28",
+	"created": "2026-02-08T00:40:28.350714201Z",
 	"insights":[
 		{
 			"level": "Low",
+			"reason": "Warning",
+			"site": "",
+			"key": "insight.log.warn",
+			"description": "ZAP warnings logged - see the zap.log file for details",
+			"statistic": "2"
+		},
+		{
+			"level": "Low",
 			"reason": "Exceeded High",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.response.slow",
 			"description": "Percentage of slow responses",
-			"statistic": "87"
+			"statistic": "81"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.code.2xx",
 			"description": "Percentage of responses with status code 2xx",
 			"statistic": "9"
@@ -23,31 +31,31 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.code.3xx",
 			"description": "Percentage of responses with status code 3xx",
-			"statistic": "89"
+			"statistic": "87"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.code.4xx",
 			"description": "Percentage of responses with status code 4xx",
-			"statistic": "1"
+			"statistic": "3"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.binary/octet-stream",
 			"description": "Percentage of endpoints with content type binary/octet-stream",
-			"statistic": "5"
+			"statistic": "3"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.image/jpeg",
 			"description": "Percentage of endpoints with content type image/jpeg",
 			"statistic": "3"
@@ -55,15 +63,15 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.image/png",
 			"description": "Percentage of endpoints with content type image/png",
-			"statistic": "15"
+			"statistic": "16"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.image/svg+xml",
 			"description": "Percentage of endpoints with content type image/svg+xml",
 			"statistic": "1"
@@ -71,7 +79,7 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/css",
 			"description": "Percentage of endpoints with content type text/css",
 			"statistic": "1"
@@ -79,23 +87,23 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/html",
 			"description": "Percentage of endpoints with content type text/html",
-			"statistic": "21"
+			"statistic": "24"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/javascript",
 			"description": "Percentage of endpoints with content type text/javascript",
-			"statistic": "45"
+			"statistic": "42"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/plain",
 			"description": "Percentage of endpoints with content type text/plain",
 			"statistic": "5"
@@ -103,7 +111,7 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.method.GET",
 			"description": "Percentage of endpoints with method GET",
 			"statistic": "100"
@@ -111,16 +119,16 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://ci.submit.diyaccounting.co.uk",
+			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.total",
 			"description": "Count of total endpoints",
-			"statistic": "57"
+			"statistic": "54"
 		}
 	],
 	"site":[ 
 		{
-			"@name": "https://ci.submit.diyaccounting.co.uk",
-			"@host": "ci.submit.diyaccounting.co.uk",
+			"@name": "https://submit.diyaccounting.co.uk",
+			"@host": "submit.diyaccounting.co.uk",
 			"@port": "443",
 			"@ssl": "true",
 			"alerts": [ 
@@ -135,54 +143,64 @@
 					"desc": "<p>Content Security Policy (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks. Including (but not limited to) Cross Site Scripting (XSS), and data injection attacks. These attacks are used for everything from data theft to site defacement or distribution of malware. CSP provides a set of standard HTTP headers that allow website owners to declare approved sources of content that browsers should be allowed to load on that page \u2014 covered types are JavaScript, CSS, HTML frames, fonts, images and embeddable objects such as Java applets, ActiveX, audio and video files.</p>",
 					"instances":[ 
 						{
-							"id": "3",
-							"uri": "https://ci.submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk",
+							"id": "0",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "18",
-							"uri": "https://ci.submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/",
+							"id": "17",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"otherinfo": "script-src includes unsafe-inline."
+						},
+						{
+							"id": "51",
+							"uri": "https://submit.diyaccounting.co.uk/index.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
+							"method": "GET",
+							"param": "Content-Security-Policy",
+							"attack": "",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
 							"id": "8",
-							"uri": "https://ci.submit.diyaccounting.co.uk/robots.txt",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/robots.txt",
+							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
 							"id": "11",
-							"uri": "https://ci.submit.diyaccounting.co.uk/sitemap.xml",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/sitemap.xml",
+							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "script-src includes unsafe-inline."
 						}
 					],
-					"count": "4",
+					"count": "5",
 					"systemic": true,
 					"solution": "<p>Ensure that your web server, application server, load balancer, etc. is properly configured to set the Content-Security-Policy header.</p>",
 					"otherinfo": "<p>script-src includes unsafe-inline.</p>",
 					"reference": "<p>https://www.w3.org/TR/CSP/</p><p>https://caniuse.com/#search=content+security+policy</p><p>https://content-security-policy.com/</p><p>https://github.com/HtmlUnit/htmlunit-csp</p><p>https://web.dev/articles/csp#resource-options</p>",
 					"cweid": "693",
 					"wascid": "15",
-					"sourceid": "1"
+					"sourceid": "6"
 				},
 				{
 					"pluginid": "10055",
@@ -196,46 +214,56 @@
 					"instances":[ 
 						{
 							"id": "2",
-							"uri": "https://ci.submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "19",
-							"uri": "https://ci.submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/",
+							"id": "18",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"otherinfo": "style-src includes unsafe-inline."
+						},
+						{
+							"id": "52",
+							"uri": "https://submit.diyaccounting.co.uk/index.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
+							"method": "GET",
+							"param": "Content-Security-Policy",
+							"attack": "",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
 							"id": "9",
-							"uri": "https://ci.submit.diyaccounting.co.uk/robots.txt",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/robots.txt",
+							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
 							"id": "12",
-							"uri": "https://ci.submit.diyaccounting.co.uk/sitemap.xml",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/sitemap.xml",
+							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://www.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://ci-simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
 							"otherinfo": "style-src includes unsafe-inline."
 						}
 					],
-					"count": "4",
+					"count": "5",
 					"systemic": true,
 					"solution": "<p>Ensure that your web server, application server, load balancer, etc. is properly configured to set the Content-Security-Policy header.</p>",
 					"otherinfo": "<p>style-src includes unsafe-inline.</p>",
@@ -243,6 +271,76 @@
 					"cweid": "693",
 					"wascid": "15",
 					"sourceid": "6"
+				},
+				{
+					"pluginid": "90004",
+					"alertRef": "90004-2",
+					"alert": "Insufficient Site Isolation Against Spectre Vulnerability",
+					"name": "Insufficient Site Isolation Against Spectre Vulnerability",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Low (Medium)",
+					"desc": "<p>Cross-Origin-Embedder-Policy header is a response header that prevents a document from loading any cross-origin resources that don't explicitly grant the document permission (using CORP or CORS).</p>",
+					"instances":[ 
+						{
+							"id": "15",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "27",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "81",
+							"uri": "https://submit.diyaccounting.co.uk/about.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "80",
+							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "54",
+							"uri": "https://submit.diyaccounting.co.uk/index.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>Ensure that the application/web server sets the Cross-Origin-Embedder-Policy header appropriately, and that it sets the Cross-Origin-Embedder-Policy header to 'require-corp' for documents.</p><p>If possible, ensure that the end user uses a standards-compliant and modern web browser that supports the Cross-Origin-Embedder-Policy header (https://caniuse.com/mdn-http_headers_cross-origin-embedder-policy).</p>",
+					"otherinfo": "",
+					"reference": "<p>https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Embedder-Policy</p>",
+					"cweid": "693",
+					"wascid": "14",
+					"sourceid": "1"
 				},
 				{
 					"pluginid": "10096",
@@ -255,9 +353,9 @@
 					"desc": "<p>A timestamp was disclosed by the application/web server. - Unix</p>",
 					"instances":[ 
 						{
-							"id": "42",
-							"uri": "https://ci.submit.diyaccounting.co.uk/submit.catalogue.toml",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/submit.catalogue.toml",
+							"id": "43",
+							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -265,9 +363,9 @@
 							"otherinfo": "1742169599, which evaluates to: 2025-03-16 23:59:59."
 						},
 						{
-							"id": "41",
-							"uri": "https://ci.submit.diyaccounting.co.uk/submit.catalogue.toml",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/submit.catalogue.toml",
+							"id": "42",
+							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -296,8 +394,8 @@
 					"instances":[ 
 						{
 							"id": "5",
-							"uri": "https://ci.submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -305,9 +403,9 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "20",
-							"uri": "https://ci.submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/",
+							"id": "21",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -315,9 +413,9 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "27",
-							"uri": "https://ci.submit.diyaccounting.co.uk/developer-mode.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/developer-mode.js",
+							"id": "30",
+							"uri": "https://submit.diyaccounting.co.uk/developer-mode.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/developer-mode.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -325,9 +423,9 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// The toggle icon only appears if the user has the \"test\" bundle.\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "15",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/request-cache.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/request-cache.js",
+							"id": "23",
+							"uri": "https://submit.diyaccounting.co.uk/lib/request-cache.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/request-cache.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -335,9 +433,9 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "37",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/utils/correlation-utils.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/utils\/correlation-utils.js",
+							"id": "39",
+							"uri": "https://submit.diyaccounting.co.uk/lib/utils/correlation-utils.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/correlation-utils.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -345,9 +443,9 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// Initialize from session storage\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "34",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/utils/crypto-utils.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/utils\/crypto-utils.js",
+							"id": "37",
+							"uri": "https://submit.diyaccounting.co.uk/lib/utils/crypto-utils.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/crypto-utils.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -355,19 +453,9 @@
 							"otherinfo": "The following pattern was used: \\bWHERE\\b and was detected in likely comment: \"// Prefer cryptographically secure random values where available\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "38",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/utils/dom-utils.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/utils\/dom-utils.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "from",
-							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Read content from a meta tag\n * @param {string} name - Meta tag name\n * @returns {string} Meta content or empty string\n *\", see evidence field for the suspicious comment/snippet."
-						},
-						{
 							"id": "36",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/utils/jwt-utils.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/utils\/jwt-utils.js",
+							"uri": "https://submit.diyaccounting.co.uk/lib/utils/jwt-utils.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/jwt-utils.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -375,9 +463,9 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Parse JWT claims from a token\n * @param {string} jwt - JWT token string\n * @returns {object|null} Parsed claims or null i\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "35",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/utils/storage-utils.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/utils\/storage-utils.js",
+							"id": "38",
+							"uri": "https://submit.diyaccounting.co.uk/lib/utils/storage-utils.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/storage-utils.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -385,9 +473,9 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Safely get item from localStorage\n * @param {string} key - Storage key\n * @returns {string|null} Stored value or null\n */\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "26",
-							"uri": "https://ci.submit.diyaccounting.co.uk/submit.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/submit.js",
+							"id": "28",
+							"uri": "https://submit.diyaccounting.co.uk/submit.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -395,9 +483,9 @@
 							"otherinfo": "The following pattern was used: \\bDEBUG\\b and was detected in likely comment: \"// Debug widgets initial setup\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "32",
-							"uri": "https://ci.submit.diyaccounting.co.uk/widgets/auth-status.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/widgets\/auth-status.js",
+							"id": "34",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -405,9 +493,9 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// Clear Cognito tokens and user info from localStorage\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "29",
-							"uri": "https://ci.submit.diyaccounting.co.uk/widgets/entitlement-status.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
+							"id": "31",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/entitlement-status.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -415,9 +503,9 @@
 							"otherinfo": "The following pattern was used: \\bQUERY\\b and was detected in likely comment: \"// Normalize path - remove leading slash and query parameters\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "33",
-							"uri": "https://ci.submit.diyaccounting.co.uk/widgets/view-source-link.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/widgets\/view-source-link.js",
+							"id": "35",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/view-source-link.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/view-source-link.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -425,7 +513,7 @@
 							"otherinfo": "The following pattern was used: \\bDEBUG\\b and was detected in likely comment: \"// Respect debug gating: only show when debug widgets are enabled\", see evidence field for the suspicious comment/snippet."
 						}
 					],
-					"count": "13",
+					"count": "12",
 					"systemic": false,
 					"solution": "<p>Remove all comments that return information that may help an attacker and fix any underlying problems they refer to.</p>",
 					"otherinfo": "<p>The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet.</p>",
@@ -446,8 +534,8 @@
 					"instances":[ 
 						{
 							"id": "6",
-							"uri": "https://ci.submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -455,9 +543,9 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "21",
-							"uri": "https://ci.submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/",
+							"id": "22",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -465,9 +553,9 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "75",
-							"uri": "https://ci.submit.diyaccounting.co.uk/about.html",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/about.html",
+							"id": "79",
+							"uri": "https://submit.diyaccounting.co.uk/about.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -475,9 +563,9 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "77",
-							"uri": "https://ci.submit.diyaccounting.co.uk/auth/login.html",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/auth\/login.html",
+							"id": "78",
+							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -486,8 +574,8 @@
 						},
 						{
 							"id": "53",
-							"uri": "https://ci.submit.diyaccounting.co.uk/index.html",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/index.html",
+							"uri": "https://submit.diyaccounting.co.uk/index.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -516,8 +604,8 @@
 					"instances":[ 
 						{
 							"id": "7",
-							"uri": "https://ci.submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -526,8 +614,8 @@
 						},
 						{
 							"id": "10",
-							"uri": "https://ci.submit.diyaccounting.co.uk/robots.txt",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/robots.txt",
+							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -535,9 +623,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "14",
-							"uri": "https://ci.submit.diyaccounting.co.uk/sitemap.xml",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/sitemap.xml",
+							"id": "13",
+							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -566,8 +654,8 @@
 					"instances":[ 
 						{
 							"id": "1",
-							"uri": "https://ci.submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
@@ -575,9 +663,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "17",
-							"uri": "https://ci.submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/",
+							"id": "16",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
@@ -585,9 +673,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "52",
-							"uri": "https://ci.submit.diyaccounting.co.uk/index.html",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/index.html",
+							"id": "50",
+							"uri": "https://submit.diyaccounting.co.uk/index.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
@@ -595,9 +683,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "39",
-							"uri": "https://ci.submit.diyaccounting.co.uk/submit.deployment-name.txt",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/submit.deployment-name.txt",
+							"id": "40",
+							"uri": "https://submit.diyaccounting.co.uk/submit.deployment-name.txt",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.deployment-name.txt",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
@@ -605,9 +693,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "45",
-							"uri": "https://ci.submit.diyaccounting.co.uk/submit.version.txt",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/submit.version.txt",
+							"id": "46",
+							"uri": "https://submit.diyaccounting.co.uk/submit.version.txt",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.version.txt",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
@@ -635,9 +723,9 @@
 					"desc": "<p>The content was retrieved from a shared cache. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
 					"instances":[ 
 						{
-							"id": "57",
-							"uri": "https://ci.submit.diyaccounting.co.uk/developer-mode.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/developer-mode.js",
+							"id": "61",
+							"uri": "https://submit.diyaccounting.co.uk/developer-mode.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/developer-mode.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -645,9 +733,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "56",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/analytics.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/analytics.js",
+							"id": "41",
+							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -655,9 +743,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "58",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/toml-parser.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/toml-parser.js",
+							"id": "63",
+							"uri": "https://submit.diyaccounting.co.uk/submit.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -665,9 +753,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "40",
-							"uri": "https://ci.submit.diyaccounting.co.uk/submit.catalogue.toml",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/submit.catalogue.toml",
+							"id": "64",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -675,9 +763,9 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "55",
-							"uri": "https://ci.submit.diyaccounting.co.uk/submit.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/submit.js",
+							"id": "62",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/entitlement-status.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -692,7 +780,7 @@
 					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.rfc-editor.org/rfc/rfc9110.html</p>",
 					"cweid": "525",
 					"wascid": "-1",
-					"sourceid": "82"
+					"sourceid": "110"
 				},
 				{
 					"pluginid": "10049",
@@ -705,9 +793,9 @@
 					"desc": "<p>The response contents are storable by caching components such as proxy servers, and may be retrieved directly from the cache, rather than from the origin server by the caching servers, in response to similar requests from other users. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where \"shared\" caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
 					"instances":[ 
 						{
-							"id": "13",
-							"uri": "https://ci.submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk",
+							"id": "14",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -715,9 +803,9 @@
 							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
 						},
 						{
-							"id": "22",
-							"uri": "https://ci.submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/",
+							"id": "25",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -726,8 +814,8 @@
 						},
 						{
 							"id": "24",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/analytics.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/analytics.js",
+							"uri": "https://submit.diyaccounting.co.uk/lib/request-cache.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/request-cache.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -735,9 +823,9 @@
 							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
 						},
 						{
-							"id": "16",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/request-cache.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/request-cache.js",
+							"id": "20",
+							"uri": "https://submit.diyaccounting.co.uk/lib/toml-parser.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/toml-parser.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -745,9 +833,9 @@
 							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
 						},
 						{
-							"id": "23",
-							"uri": "https://ci.submit.diyaccounting.co.uk/lib/toml-parser.js",
-							"nodeName": "https:\/\/ci.submit.diyaccounting.co.uk\/lib\/toml-parser.js",
+							"id": "19",
+							"uri": "https://submit.diyaccounting.co.uk/submit.css",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.css",
 							"method": "GET",
 							"param": "",
 							"attack": "",
