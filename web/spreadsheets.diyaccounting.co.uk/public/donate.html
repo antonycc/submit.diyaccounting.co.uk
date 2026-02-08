@@ -52,11 +52,30 @@
           contribution helps us continue providing free accounting tools to UK small businesses.
         </p>
 
+        <div class="donate-amounts">
+          <p class="donate-suggested">Suggested donation amounts:</p>
+          <div class="amount-options">
+            <span class="amount-badge">&pound;10</span>
+            <span class="amount-badge">&pound;20</span>
+            <span class="amount-badge">&pound;45</span>
+            <span class="amount-badge">Any amount</span>
+          </div>
+        </div>
+
+        <div class="stripe-container">
+          <a href="https://buy.stripe.com/test_9B6dR94G7euH66u90s3VC00" id="stripe-donate-link" class="btn-stripe-donate">
+            Donate with card
+          </a>
+          <p class="donate-hint">Secure payment via Stripe</p>
+        </div>
+
+        <div class="donate-divider"><span>or</span></div>
+
         <div class="paypal-container">
           <form action="https://www.paypal.com/donate" method="post" target="_top" id="paypal-donate-form">
             <input type="hidden" name="hosted_button_id" value="XTEQ73HM52QQW" />
-            <button type="submit" class="btn-paypal-donate">
-              <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-mark-color.svg" alt="" width="24" height="24" />
+            <button type="submit" class="btn-paypal-donate btn-paypal-secondary">
+              <img src="https://www.paypalobjects.com/paypal-ui/logos/svg/paypal-mark-color.svg" alt="" width="20" height="20" />
               Donate with PayPal
             </button>
           </form>

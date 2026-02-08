@@ -59,17 +59,19 @@ function initForm() {
   updatePeriods();
   updateTitle();
 
-  // Detect PayPal return and auto-trigger download from sessionStorage
+  // Detect donation return (Stripe or PayPal) and auto-trigger download from sessionStorage
   var returnParams = new URLSearchParams(window.location.search);
-  if (returnParams.get('st') === 'Completed') {
+  var isPayPalReturn = returnParams.get('st') === 'Completed';
+  var isStripeReturn = returnParams.get('stripe') === 'success';
+  if (isPayPalReturn || isStripeReturn) {
     var savedFilename = sessionStorage.getItem('donateFilename');
     var savedProduct = sessionStorage.getItem('donateProduct');
     sessionStorage.removeItem('donateFilename');
     sessionStorage.removeItem('donateProduct');
     if (savedFilename) {
-      // GA4 ecommerce: purchase when returning from PayPal donation
+      var provider = isStripeReturn ? 'stripe' : 'paypal';
       trackEvent('purchase', {
-        transaction_id: 'paypal_' + Date.now(),
+        transaction_id: provider + '_' + Date.now(),
         value: 0,
         currency: 'GBP',
         items: [{
