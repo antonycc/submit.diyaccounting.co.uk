@@ -36,6 +36,12 @@ outputs:
   holding-url:
     description: "Holding page URL for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_HOLDING_URL }}
+  public-domain:
+    description: "Public-facing hostname (submit.diyaccounting.co.uk for prod, same as apex for non-prod)"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_PUBLIC_DOMAIN }}
+  public-url:
+    description: "Public-facing URL (https://submit.diyaccounting.co.uk/ for prod, same as apex for non-prod)"
+    value: ${{ steps.compute.outputs.DIY_SUBMIT_PUBLIC_URL }}
   prod-apex-alias:
     description: "Additional prod alias domain (submit.diyaccounting.co.uk) - only set for prod"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_PROD_ALIAS }}
@@ -102,10 +108,15 @@ runs:
         DIY_SUBMIT_HOLDING_DOMAIN="${ENVIRONMENT_NAME?}-holding.diyaccounting.co.uk"
         DIY_SUBMIT_HOLDING_URL="https://${DIY_SUBMIT_HOLDING_DOMAIN?}/"
 
+        # Public domain: the canonical user-facing domain (matches publicDomainName in SubmitSharedNames.java)
         if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
-          DIY_SUBMIT_PROD_ALIAS="submit.diyaccounting.co.uk"
+          DIY_SUBMIT_PUBLIC_DOMAIN="submit.diyaccounting.co.uk"
+          DIY_SUBMIT_PROD_ALIAS="${DIY_SUBMIT_PUBLIC_DOMAIN}"
           echo "DIY_SUBMIT_PROD_ALIAS=$DIY_SUBMIT_PROD_ALIAS" | tee -a "$GITHUB_OUTPUT"
+        else
+          DIY_SUBMIT_PUBLIC_DOMAIN="${DIY_SUBMIT_APEX_DOMAIN}"
         fi
+        DIY_SUBMIT_PUBLIC_URL="https://${DIY_SUBMIT_PUBLIC_DOMAIN}/"
 
         echo "ENVIRONMENT_NAME=$ENVIRONMENT_NAME" | tee -a "$GITHUB_OUTPUT"
         echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
@@ -115,6 +126,9 @@ runs:
 
         echo "DIY_SUBMIT_APEX_DOMAIN=$DIY_SUBMIT_APEX_DOMAIN" | tee -a "$GITHUB_OUTPUT"
         echo "DIY_SUBMIT_APEX_URL=$DIY_SUBMIT_APEX_URL" | tee -a "$GITHUB_OUTPUT"
+
+        echo "DIY_SUBMIT_PUBLIC_DOMAIN=$DIY_SUBMIT_PUBLIC_DOMAIN" | tee -a "$GITHUB_OUTPUT"
+        echo "DIY_SUBMIT_PUBLIC_URL=$DIY_SUBMIT_PUBLIC_URL" | tee -a "$GITHUB_OUTPUT"
 
         echo "DIY_SUBMIT_HOLDING_DOMAIN=$DIY_SUBMIT_HOLDING_DOMAIN" | tee -a "$GITHUB_OUTPUT"
         echo "DIY_SUBMIT_HOLDING_URL=$DIY_SUBMIT_HOLDING_URL" | tee -a "$GITHUB_OUTPUT"
