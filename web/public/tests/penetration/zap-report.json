@@ -1,8 +1,8 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Sun, 8 Feb 2026 00:40:28",
-	"created": "2026-02-08T00:40:28.350714201Z",
+	"@generated": "Sun, 8 Feb 2026 01:35:41",
+	"created": "2026-02-08T01:35:41.378008536Z",
 	"insights":[
 		{
 			"level": "Low",
@@ -26,7 +26,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.code.2xx",
 			"description": "Percentage of responses with status code 2xx",
-			"statistic": "9"
+			"statistic": "8"
 		},
 		{
 			"level": "Info",
@@ -34,7 +34,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.code.3xx",
 			"description": "Percentage of responses with status code 3xx",
-			"statistic": "87"
+			"statistic": "91"
 		},
 		{
 			"level": "Info",
@@ -42,7 +42,15 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.code.4xx",
 			"description": "Percentage of responses with status code 4xx",
-			"statistic": "3"
+			"statistic": "1"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://submit.diyaccounting.co.uk",
+			"key": "insight.endpoint.ctype.application/xml",
+			"description": "Percentage of endpoints with content type application/xml",
+			"statistic": "1"
 		},
 		{
 			"level": "Info",
@@ -50,7 +58,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.binary/octet-stream",
 			"description": "Percentage of endpoints with content type binary/octet-stream",
-			"statistic": "3"
+			"statistic": "5"
 		},
 		{
 			"level": "Info",
@@ -66,7 +74,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.image/png",
 			"description": "Percentage of endpoints with content type image/png",
-			"statistic": "16"
+			"statistic": "15"
 		},
 		{
 			"level": "Info",
@@ -90,7 +98,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/html",
 			"description": "Percentage of endpoints with content type text/html",
-			"statistic": "24"
+			"statistic": "21"
 		},
 		{
 			"level": "Info",
@@ -98,7 +106,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/javascript",
 			"description": "Percentage of endpoints with content type text/javascript",
-			"statistic": "42"
+			"statistic": "45"
 		},
 		{
 			"level": "Info",
@@ -122,7 +130,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.total",
 			"description": "Count of total endpoints",
-			"statistic": "54"
+			"statistic": "60"
 		}
 	],
 	"site":[ 
@@ -153,7 +161,7 @@
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "17",
+							"id": "18",
 							"uri": "https://submit.diyaccounting.co.uk/",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
@@ -163,7 +171,7 @@
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "51",
+							"id": "52",
 							"uri": "https://submit.diyaccounting.co.uk/index.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
@@ -223,7 +231,7 @@
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "18",
+							"id": "19",
 							"uri": "https://submit.diyaccounting.co.uk/",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
@@ -233,7 +241,7 @@
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "52",
+							"id": "53",
 							"uri": "https://submit.diyaccounting.co.uk/index.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
@@ -303,7 +311,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "81",
+							"id": "72",
 							"uri": "https://submit.diyaccounting.co.uk/about.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
 							"method": "GET",
@@ -313,7 +321,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "80",
+							"id": "75",
 							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
 							"method": "GET",
@@ -323,7 +331,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "54",
+							"id": "55",
 							"uri": "https://submit.diyaccounting.co.uk/index.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
@@ -423,7 +431,7 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// The toggle icon only appears if the user has the \"test\" bundle.\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "23",
+							"id": "26",
 							"uri": "https://submit.diyaccounting.co.uk/lib/request-cache.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/request-cache.js",
 							"method": "GET",
@@ -433,17 +441,7 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "39",
-							"uri": "https://submit.diyaccounting.co.uk/lib/utils/correlation-utils.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/correlation-utils.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "from",
-							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// Initialize from session storage\", see evidence field for the suspicious comment/snippet."
-						},
-						{
-							"id": "37",
+							"id": "38",
 							"uri": "https://submit.diyaccounting.co.uk/lib/utils/crypto-utils.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/crypto-utils.js",
 							"method": "GET",
@@ -453,7 +451,17 @@
 							"otherinfo": "The following pattern was used: \\bWHERE\\b and was detected in likely comment: \"// Prefer cryptographically secure random values where available\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "36",
+							"id": "40",
+							"uri": "https://submit.diyaccounting.co.uk/lib/utils/dom-utils.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/dom-utils.js",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "from",
+							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Read content from a meta tag\n * @param {string} name - Meta tag name\n * @returns {string} Meta content or empty string\n *\", see evidence field for the suspicious comment/snippet."
+						},
+						{
+							"id": "37",
 							"uri": "https://submit.diyaccounting.co.uk/lib/utils/jwt-utils.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/jwt-utils.js",
 							"method": "GET",
@@ -463,7 +471,7 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Parse JWT claims from a token\n * @param {string} jwt - JWT token string\n * @returns {object|null} Parsed claims or null i\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "38",
+							"id": "39",
 							"uri": "https://submit.diyaccounting.co.uk/lib/utils/storage-utils.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/storage-utils.js",
 							"method": "GET",
@@ -473,7 +481,7 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Safely get item from localStorage\n * @param {string} key - Storage key\n * @returns {string|null} Stored value or null\n */\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "28",
+							"id": "20",
 							"uri": "https://submit.diyaccounting.co.uk/submit.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.js",
 							"method": "GET",
@@ -483,7 +491,7 @@
 							"otherinfo": "The following pattern was used: \\bDEBUG\\b and was detected in likely comment: \"// Debug widgets initial setup\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "34",
+							"id": "33",
 							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
 							"method": "GET",
@@ -503,7 +511,7 @@
 							"otherinfo": "The following pattern was used: \\bQUERY\\b and was detected in likely comment: \"// Normalize path - remove leading slash and query parameters\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "35",
+							"id": "36",
 							"uri": "https://submit.diyaccounting.co.uk/widgets/view-source-link.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/view-source-link.js",
 							"method": "GET",
@@ -553,7 +561,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "79",
+							"id": "71",
 							"uri": "https://submit.diyaccounting.co.uk/about.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
 							"method": "GET",
@@ -563,7 +571,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "78",
+							"id": "74",
 							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
 							"method": "GET",
@@ -573,7 +581,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "53",
+							"id": "54",
 							"uri": "https://submit.diyaccounting.co.uk/index.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
@@ -673,7 +681,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "50",
+							"id": "51",
 							"uri": "https://submit.diyaccounting.co.uk/index.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
@@ -683,7 +691,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "40",
+							"id": "41",
 							"uri": "https://submit.diyaccounting.co.uk/submit.deployment-name.txt",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.deployment-name.txt",
 							"method": "GET",
@@ -693,7 +701,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "46",
+							"id": "47",
 							"uri": "https://submit.diyaccounting.co.uk/submit.version.txt",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.version.txt",
 							"method": "GET",
@@ -723,9 +731,9 @@
 					"desc": "<p>The content was retrieved from a shared cache. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
 					"instances":[ 
 						{
-							"id": "61",
-							"uri": "https://submit.diyaccounting.co.uk/developer-mode.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/developer-mode.js",
+							"id": "78",
+							"uri": "https://submit.diyaccounting.co.uk/index.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -733,7 +741,17 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "41",
+							"id": "81",
+							"uri": "https://submit.diyaccounting.co.uk/lib/analytics.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/analytics.js",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Hit from cloudfront",
+							"otherinfo": ""
+						},
+						{
+							"id": "44",
 							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
 							"method": "GET",
@@ -743,29 +761,19 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "63",
+							"id": "79",
+							"uri": "https://submit.diyaccounting.co.uk/submit.css",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.css",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Hit from cloudfront",
+							"otherinfo": ""
+						},
+						{
+							"id": "80",
 							"uri": "https://submit.diyaccounting.co.uk/submit.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "64",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "62",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/entitlement-status.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -780,7 +788,7 @@
 					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.rfc-editor.org/rfc/rfc9110.html</p>",
 					"cweid": "525",
 					"wascid": "-1",
-					"sourceid": "110"
+					"sourceid": "226"
 				},
 				{
 					"pluginid": "10049",
@@ -814,8 +822,8 @@
 						},
 						{
 							"id": "24",
-							"uri": "https://submit.diyaccounting.co.uk/lib/request-cache.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/request-cache.js",
+							"uri": "https://submit.diyaccounting.co.uk/lib/analytics.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/analytics.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -823,19 +831,19 @@
 							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
 						},
 						{
-							"id": "20",
-							"uri": "https://submit.diyaccounting.co.uk/lib/toml-parser.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/toml-parser.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "",
-							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
-						},
-						{
-							"id": "19",
+							"id": "17",
 							"uri": "https://submit.diyaccounting.co.uk/submit.css",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.css",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+						},
+						{
+							"id": "23",
+							"uri": "https://submit.diyaccounting.co.uk/submit.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",

@@ -3,8 +3,8 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-02-07T23:21:23.472Z
-**Overall Status**: ❌ FAIL
+**Generated**: 2026-02-08T01:36:41.329Z
+**Overall Status**: ✅ PASS
 
 **Source Files**:
 ```
@@ -28,12 +28,12 @@
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
 | ESLint Security | ✅ | 0 errors, 7 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 0 medium, 2 low |
-| Pa11y (WCAG AA) | ✅ | 8/8 pages passed |
-| axe-core | ❌ | 4 violations, 1057 passes |
-| axe-core (WCAG 2.2) | ❌ | 4 violations, 617 passes |
-| Lighthouse | ❌ | A11y: 0%, Perf: 0%, BP: 0% |
-| Text Spacing (1.4.12) | ✅ | 0/25 pages passed |
+| OWASP ZAP | ✅ | 0 high, 0 medium, 7 low |
+| Pa11y (WCAG AA) | ✅ | 34/34 pages passed |
+| axe-core | ✅ | 0 violations, 1053 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 612 passes |
+| Lighthouse | ✅ | A11y: 100%, Perf: 82%, BP: 100% |
+| Text Spacing (1.4.12) | ✅ | 25/25 pages passed |
 
 ---
 
@@ -76,8 +76,8 @@
 |------------|-------|
 | High | 0 |
 | Medium | 0 |
-| Low | 2 |
-| Informational | 36 |
+| Low | 7 |
+| Informational | 35 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -85,8 +85,9 @@
 
 | Alert | Risk | Count |
 |-------|------|-------|
+| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 5 |
 | Timestamp Disclosure - Unix | Low (Low) | 2 |
-| Information Disclosure - Suspicious Comments | Informational (Low) | 13 |
+| Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
 | Modern Web Application | Informational (Medium) | 5 |
 | Non-Storable Content | Informational (Medium) | 3 |
 | Re-examine Cache-control Directives | Informational (Low) | 5 |
@@ -108,8 +109,8 @@
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 8 |
-| Pages Passed | 8 |
+| Pages Tested | 34 |
+| Pages Passed | 34 |
 | Pages Failed | 0 |
 
 **Status**: ✅ All pages comply with WCAG AA
@@ -118,6 +119,32 @@
 
 | Page | Errors |
 |------|--------|
+| / | 0 |
+| /index.html | 0 |
+| /privacy.html | 0 |
+| /terms.html | 0 |
+| /about.html | 0 |
+| /accessibility.html | 0 |
+| /auth/login.html | 0 |
+| /bundles.html | 0 |
+| /hmrc/vat/submitVat.html | 0 |
+| /hmrc/vat/vatObligations.html | 0 |
+| /hmrc/vat/viewVatReturn.html | 0 |
+| /hmrc/receipt/receipts.html | 0 |
+| /guide.html | 0 |
+| /help.html | 0 |
+| /mcp.html | 0 |
+| /diy-accounting-spreadsheets.html | 0 |
+| /diy-accounting-limited.html | 0 |
+| /spreadsheets.html | 0 |
+| /errors/404-error-distribution.html | 0 |
+| /errors/404-error-origin.html | 0 |
+| /errors/403.html | 0 |
+| /errors/404.html | 0 |
+| /errors/500.html | 0 |
+| /errors/502.html | 0 |
+| /errors/503.html | 0 |
+| /errors/504.html | 0 |
 | https://prod-gateway.diyaccounting.co.uk/ | 0 |
 | https://prod-gateway.diyaccounting.co.uk/index.html | 0 |
 | https://prod-gateway.diyaccounting.co.uk/about.html | 0 |
@@ -131,59 +158,43 @@
 
 | Metric | Count |
 |--------|-------|
-| Violations | 4 |
-| Passes | 1057 |
-| Incomplete | 29 |
+| Violations | 0 |
+| Passes | 1053 |
+| Incomplete | 30 |
 
-**Status**: ❌ Accessibility violations require attention
+**Status**: ✅ No accessibility violations
 
-#### Violations
-
-| Rule | Impact | Description | Nodes |
-|------|--------|-------------|-------|
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 4 |
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
 
 | Metric | Count |
 |--------|-------|
-| Violations | 4 |
-| Passes | 617 |
-| Incomplete | 29 |
+| Violations | 0 |
+| Passes | 612 |
+| Incomplete | 30 |
 
-**Status**: ❌ WCAG 2.2 violations detected
+**Status**: ✅ No WCAG 2.2 violations
 
-#### Violations
-
-| Rule | Impact | Description | Nodes |
-|------|--------|-------------|-------|
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 5 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 4 |
 
 ### 2.4 Lighthouse
 
 | Category | Score |
 |----------|-------|
-| Accessibility | 0% |
-| Performance | 0% |
-| Best Practices | 0% |
-| SEO | 0% |
+| Accessibility | 100% |
+| Performance | 82% |
+| Best Practices | 100% |
+| SEO | 100% |
 
-**Status**: ❌ Accessibility score below 90% threshold
+**Status**: ✅ Accessibility score meets threshold (90%+)
 
 ### 2.5 Text Spacing (WCAG 1.4.12)
 
 | Metric | Value |
 |--------|-------|
 | Pages Tested | 25 |
-| Pages Passed | 0 |
+| Pages Passed | 25 |
 | Pages Failed | 0 |
-| Errors | 25 |
+| Errors | 0 |
 
 **Status**: ✅ All pages pass text spacing test
 
