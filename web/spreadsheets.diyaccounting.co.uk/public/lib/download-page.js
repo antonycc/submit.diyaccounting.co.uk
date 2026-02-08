@@ -67,6 +67,18 @@ function initForm() {
     sessionStorage.removeItem('donateFilename');
     sessionStorage.removeItem('donateProduct');
     if (savedFilename) {
+      // GA4 ecommerce: purchase when returning from PayPal donation
+      trackEvent('purchase', {
+        transaction_id: 'paypal_' + Date.now(),
+        value: 0,
+        currency: 'GBP',
+        items: [{
+          item_id: savedProduct,
+          item_name: savedProduct,
+          price: 0,
+          currency: 'GBP'
+        }]
+      });
       window.location = '/zips/' + encodeURIComponent(savedFilename);
       return;
     }

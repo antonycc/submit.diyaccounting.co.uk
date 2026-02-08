@@ -501,6 +501,31 @@ main {
   justify-content: center;
 }
 
+.btn-paypal-donate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #253b80;
+  background: #ffc439;
+  border: none;
+  border-radius: 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-paypal-donate:hover {
+  background: #f0b72f;
+}
+
+.btn-paypal-donate:focus {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .donate-skip {
   margin-top: var(--spacing-lg);
   text-align: center;
