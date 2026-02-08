@@ -168,7 +168,7 @@ public class SimulatorStack extends Stack {
                 .cors(FunctionUrlCorsOptions.builder()
                         .allowedOrigins(List.of(
                                 "https://submit.diyaccounting.co.uk",
-                                "https://ci.submit.diyaccounting.co.uk",
+                                "https://ci-submit.diyaccounting.co.uk",
                                 "http://localhost:3000"))
                         .allowedMethods(List.of(HttpMethod.GET, HttpMethod.POST))
                         .allowedHeaders(List.of("Content-Type", "Authorization"))

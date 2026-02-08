@@ -9,11 +9,11 @@ The simulator is deployed at `ci-simulator.submit.diyaccounting.co.uk` and embed
 ### Symptoms
 
 1. On page load, benign console warnings:
-   - `GET https://ci.submit.diyaccounting.co.uk/simulator-local.js net::ERR_ABORTED 403` -- expected, this file only exists locally
+   - `GET https://submit.diyaccounting.co.uk/simulator-local.js net::ERR_ABORTED 403` -- expected, this file only exists locally
    - `Refused to execute script... MIME type ('application/xml')` -- S3 returns XML error page for missing file
 
 2. When clicking any Watch button (Submit VAT, View Obligations, View Return):
-   - `Framing 'https://ci.submit.diyaccounting.co.uk/' violates the following Content Security Policy directive: "frame-ancestors 'none'"`
+   - `Framing 'https://submit.diyaccounting.co.uk/' violates the following Content Security Policy directive: "frame-ancestors 'none'"`
    - The iframe switches from showing the simulator to "ci.submit.diyaccounting.co.uk refused to connect"
 
 ### Root Cause Analysis
@@ -39,7 +39,7 @@ iframe.contentWindow.location.href = "/index.html";
 
 1. The assignment **does not throw** -- the catch block never fires
 2. The relative URL `/index.html` resolves against the **calling script's origin** (the parent page: `ci.submit.diyaccounting.co.uk`), **not** the iframe's origin (`ci-simulator.submit.diyaccounting.co.uk`)
-3. This navigates the iframe to `https://ci.submit.diyaccounting.co.uk/index.html`
+3. This navigates the iframe to `https://submit.diyaccounting.co.uk/index.html`
 4. The main site's EdgeStack.java sets `frame-ancestors 'none'` in its CSP response headers
 5. The browser blocks the framing, breaking the iframe
 
@@ -151,7 +151,7 @@ Style the icon to match the existing Expand button aesthetic.
 1. `npm test` -- unit tests pass
 2. `npm run test:simulatorBehaviour-simulator` -- local simulator behaviour tests pass
 3. Push to `helpdocs` branch, deploy
-4. Manual: visit `https://ci.submit.diyaccounting.co.uk/simulator.html`:
+4. Manual: visit `https://submit.diyaccounting.co.uk/simulator.html`:
    - Verify iframe loads simulator correctly
    - Click each Watch button -- iframe should reset to simulator home, not show CSP error
    - Verify "open in new tab" icon appears next to Expand and opens simulator in new tab

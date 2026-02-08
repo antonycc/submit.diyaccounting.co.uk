@@ -80,7 +80,7 @@ describe("Deployed RUM Configuration (Integration)", () => {
     it.skip("should have real values in deployed HTML (requires deployed environment)", () => {
       // Skipped - no deployed environment configured
       // To run this test, set DIY_SUBMIT_BASE_URL to a real deployed environment
-      // Example: DIY_SUBMIT_BASE_URL=https://ci.submit.diyaccounting.co.uk npm run test:system
+      // Example: DIY_SUBMIT_BASE_URL=https://submit.diyaccounting.co.uk npm run test:system
     });
 
     it.skip("should have all RUM meta tags in deployed environment (requires deployed environment)", () => {

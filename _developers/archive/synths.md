@@ -43,7 +43,7 @@ Example YAML to add to deploy.yml (pseudocode that Junie should adapt to match t
       actions: read
     env:
       ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }} # 'ci' or 'prod'
-      BASE_URL: ${{ needs.names.outputs.environment-base-url }}     # Junie must expose this from existing job outputs (for example https://ci.submit.diyaccounting.co.uk)
+      BASE_URL: ${{ needs.names.outputs.environment-base-url }}     # Junie must expose this from existing job outputs (for example https://submit.diyaccounting.co.uk)
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -103,7 +103,7 @@ Actions for Junie in this step:
 * Identify deploy job name(s) and outputs in deploy.yml.
 * Add needs: so ordering is after infra has gone live and URLs resolve.
 * Surface the environment URL to this job. If that URL is not already an output, Junie must update the earlier job that knows the domain (likely the stack synthesis or set-origins step) to echo something like:
-  echo "environment-base-url=[https://ci.submit.diyaccounting.co.uk](https://ci.submit.diyaccounting.co.uk)" >> $GITHUB_OUTPUT
+  echo "environment-base-url=[https://ci-submit.diyaccounting.co.uk](https://ci-submit.diyaccounting.co.uk)" >> $GITHUB_OUTPUT
   and then expose it from that job's outputs so behaviour-tests-and-publish can consume it.
 
 Step A2. Add a new CDK stack or extend an existing ops/monitoring stack in ./infra to define an Alarm on that metric
@@ -265,7 +265,7 @@ import software.amazon.awscdk.services.synthetics.Schedule;
 public abstract class CanaryStackProps {
     public abstract Environment env();
     public abstract String environmentName(); // 'ci' or 'prod'
-    public abstract String baseUrl();         // e.g. https://ci.submit.diyaccounting.co.uk
+    public abstract String baseUrl();         // e.g. https://submit.diyaccounting.co.uk
 }
 
 public class CanaryStack extends Stack {
@@ -323,7 +323,7 @@ new CanaryStack(app,
     ImmutableCanaryStackProps.builder()
         .env(ciEnv)
         .environmentName("ci")
-        .baseUrl("https://ci.submit.diyaccounting.co.uk")
+        .baseUrl("https://ci-submit.diyaccounting.co.uk")
         .build());
 
 new BehaviourMonitoringStack(app,

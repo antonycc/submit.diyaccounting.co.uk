@@ -26,7 +26,7 @@ describe("qrCodeGenerator", () => {
     createdAt: "2026-01-01T00:00:00.000Z",
   };
 
-  const testUrl = "https://ci.submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver";
+  const testUrl = "https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver";
 
   describe("generatePassQrCode", () => {
     it("should generate a data URL QR code", async () => {
@@ -60,7 +60,7 @@ describe("qrCodeGenerator", () => {
         generatePassQrCode({
           code: "",
           url: testUrl,
-        })
+        }),
       ).rejects.toThrow("Pass code is required");
     });
 
@@ -69,13 +69,13 @@ describe("qrCodeGenerator", () => {
         generatePassQrCode({
           code: testPass.code,
           url: "",
-        })
+        }),
       ).rejects.toThrow("Pass URL is required");
     });
 
     it("should generate different QR codes for different URLs", async () => {
-      const url1 = "https://ci.submit.diyaccounting.co.uk/bundles.html?pass=code-one";
-      const url2 = "https://ci.submit.diyaccounting.co.uk/bundles.html?pass=code-two";
+      const url1 = "https://submit.diyaccounting.co.uk/bundles.html?pass=code-one";
+      const url2 = "https://submit.diyaccounting.co.uk/bundles.html?pass=code-two";
 
       const qr1 = await generatePassQrCode({ code: "code-one", url: url1 });
       const qr2 = await generatePassQrCode({ code: "code-two", url: url2 });
@@ -105,7 +105,7 @@ describe("qrCodeGenerator", () => {
         generatePassQrCodeBuffer({
           code: "",
           url: testUrl,
-        })
+        }),
       ).rejects.toThrow("Pass code is required");
     });
 
@@ -114,7 +114,7 @@ describe("qrCodeGenerator", () => {
         generatePassQrCodeBuffer({
           code: testPass.code,
           url: "",
-        })
+        }),
       ).rejects.toThrow("Pass URL is required");
     });
 
@@ -151,7 +151,7 @@ describe("qrCodeGenerator", () => {
         generatePassQrCodeText({
           code: "",
           url: testUrl,
-        })
+        }),
       ).rejects.toThrow("Pass code is required");
     });
 
@@ -160,7 +160,7 @@ describe("qrCodeGenerator", () => {
         generatePassQrCodeText({
           code: testPass.code,
           url: "",
-        })
+        }),
       ).rejects.toThrow("Pass URL is required");
     });
   });
@@ -220,7 +220,7 @@ describe("qrCodeGenerator", () => {
       const svg = await generateAnnotatedPassQrCodeSvg({
         code: "test-code",
         url: "https://example.com/bundles.html?pass=test&extra=1",
-        bundleName: "Test <Bundle> & \"Quotes\"",
+        bundleName: 'Test <Bundle> & "Quotes"',
       });
 
       // Must not contain unescaped XML characters
@@ -230,15 +230,11 @@ describe("qrCodeGenerator", () => {
     });
 
     it("should throw error when code is missing", async () => {
-      await expect(
-        generateAnnotatedPassQrCodeSvg({ code: "", url: testUrl })
-      ).rejects.toThrow("Pass code is required");
+      await expect(generateAnnotatedPassQrCodeSvg({ code: "", url: testUrl })).rejects.toThrow("Pass code is required");
     });
 
     it("should throw error when URL is missing", async () => {
-      await expect(
-        generateAnnotatedPassQrCodeSvg({ code: testPass.code, url: "" })
-      ).rejects.toThrow("Pass URL is required");
+      await expect(generateAnnotatedPassQrCodeSvg({ code: testPass.code, url: "" })).rejects.toThrow("Pass URL is required");
     });
 
     it("should contain a nested SVG element for the QR code", async () => {

@@ -39,7 +39,7 @@ export function createSimulatorServer() {
     // Allow embedding from parent domain
     const allowedOrigins = [
       "https://submit.diyaccounting.co.uk",
-      "https://ci.submit.diyaccounting.co.uk",
+      "https://ci-submit.diyaccounting.co.uk",
       "http://localhost:3000",
       "http://localhost:8080",
     ];

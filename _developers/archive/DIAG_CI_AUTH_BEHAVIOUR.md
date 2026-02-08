@@ -84,7 +84,7 @@ Screenshots available in artifacts:
 ```
 .env.ci:
   TEST_AUTH_PROVIDER=cognito-native
-  DIY_SUBMIT_BASE_URL=https://ci.submit.diyaccounting.co.uk/
+  DIY_SUBMIT_BASE_URL=https://ci-submit.diyaccounting.co.uk/
 ```
 
 ---

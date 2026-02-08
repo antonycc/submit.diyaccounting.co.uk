@@ -71,7 +71,7 @@ The `passes-output.json` file contains complete metadata:
 [
   {
     "code": "tiger-happy-mountain-silver",
-    "url": "https://ci.submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver",
+    "url": "https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver",
     "bundleId": "test",
     "passTypeId": "test-access",
     "maxUses": 1,
@@ -95,7 +95,7 @@ import fs from 'fs';
 // Generate PNG QR code
 const buffer = await generatePassQrCodeBuffer({
   code: 'my-pass-code',
-  url: 'https://ci.submit.diyaccounting.co.uk/bundles.html?pass=my-pass-code',
+  url: 'https://submit.diyaccounting.co.uk/bundles.html?pass=my-pass-code',
 });
 
 fs.writeFileSync('qr-code.png', buffer);
@@ -103,7 +103,7 @@ fs.writeFileSync('qr-code.png', buffer);
 // Generate terminal QR code
 const text = await generatePassQrCodeText({
   code: 'my-pass-code',
-  url: 'https://ci.submit.diyaccounting.co.uk/bundles.html?pass=my-pass-code',
+  url: 'https://submit.diyaccounting.co.uk/bundles.html?pass=my-pass-code',
 });
 
 console.log(text);
@@ -114,7 +114,7 @@ console.log(text);
 ```javascript
 const buffer = await generatePassQrCodeBuffer({
   code: 'my-pass-code',
-  url: 'https://ci.submit.diyaccounting.co.uk/bundles.html?pass=my-pass-code',
+  url: 'https://submit.diyaccounting.co.uk/bundles.html?pass=my-pass-code',
   options: {
     width: 400,              // Width in pixels (default: 300)
     margin: 2,               // Margin in modules (default: 4)

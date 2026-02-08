@@ -83,7 +83,7 @@ checkFraudPreventionHeadersFeedback()
 After deploying these changes:
 
 1. Run the fraud prevention headers test in CI
-2. Check the test report at `https://ci.submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test`
+2. Check the test report at `https://submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test`
 3. The validation feedback should now appear in the HMRC API requests section
 4. Look for records with `"source": "test-executor-direct"` to identify feedback captured this way
 

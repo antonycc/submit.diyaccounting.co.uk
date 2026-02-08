@@ -97,7 +97,7 @@ After deployment, verify the fix by:
 
 2. Checking test report at:
    ```
-   https://ci.submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test
+   https://submit.diyaccounting.co.uk/tests/test-report-template.html?test=web-test
    ```
 
 3. Verifying that HMRC API requests in the report include Gov-Client-* headers in the `httpRequest.headers` field

@@ -145,7 +145,7 @@ This ensures:
 - Fix 1 applied in commit: `4cedecac` (partial - caused 403 errors)
 - Fix 2 applied: Changed to `denyList("Host")`
 - Final deployment run: https://github.com/antonycc/submit.diyaccounting.co.uk/actions/runs/20798721281
-- **Status: RESOLVED** - Website working at https://ci.submit.diyaccounting.co.uk/
+- **Status: RESOLVED** - Website working at https://submit.diyaccounting.co.uk/
 
 ## Resolution Summary
 1. ~~Apply Fix 1 - change to `headerBehavior.all()` and `cookieBehavior.all()`~~ DONE (caused 403)
