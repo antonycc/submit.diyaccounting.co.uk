@@ -174,7 +174,7 @@ Since the MCP server runs locally inside Docker and cannot receive HTTP callback
       "command": "docker",
       "args": [
         "run", "-i", "--rm",
-        "-e", "DIY_SUBMIT_API_BASE_URL=https://ci.submit.diyaccounting.co.uk",
+        "-e", "DIY_SUBMIT_API_BASE_URL=https://submit.diyaccounting.co.uk",
         "ghcr.io/antonycc/diy-accounting-mcp:latest"
       ]
     }
@@ -191,7 +191,7 @@ Since the MCP server runs locally inside Docker and cannot receive HTTP callback
       "command": "docker",
       "args": [
         "run", "-i", "--rm",
-        "-e", "DIY_SUBMIT_API_BASE_URL=https://ci.submit.diyaccounting.co.uk",
+        "-e", "DIY_SUBMIT_API_BASE_URL=https://submit.diyaccounting.co.uk",
         "ghcr.io/antonycc/diy-accounting-mcp:latest"
       ]
     }
@@ -207,7 +207,7 @@ Or with npx (no Docker):
       "command": "npx",
       "args": ["-y", "@diy-accounting/mcp-server"],
       "env": {
-        "DIY_SUBMIT_API_BASE_URL": "https://ci.submit.diyaccounting.co.uk"
+        "DIY_SUBMIT_API_BASE_URL": "https://submit.diyaccounting.co.uk"
       }
     }
   }
@@ -815,7 +815,7 @@ import { MemorySession } from "./session.js";
 import { AuthHelper } from "./auth.js";
 import * as tools from "./tools/index.js";
 
-const API_BASE_URL = process.env.DIY_SUBMIT_API_BASE_URL || "https://ci.submit.diyaccounting.co.uk";
+const API_BASE_URL = process.env.DIY_SUBMIT_API_BASE_URL || "https://submit.diyaccounting.co.uk";
 
 const session = new MemorySession();
 const apiClient = new ApiClient(API_BASE_URL, session);
@@ -1065,7 +1065,7 @@ redirect_uri: body.redirect_uri
 ```
 
 **Cognito User Pool Client** - Register `mcpCallback.html` as allowed callback URL:
-- Add `https://ci.submit.diyaccounting.co.uk/auth/mcpCallback.html` to Cognito User Pool Client's allowed callback URLs
+- Add `https://submit.diyaccounting.co.uk/auth/mcpCallback.html` to Cognito User Pool Client's allowed callback URLs
 - Add `https://submit.diyaccounting.co.uk/auth/mcpCallback.html` for production
 
 **HMRC Application** - Register `mcpCallback.html` as allowed redirect URI:
@@ -1133,7 +1133,7 @@ The MCP server needs only one environment variable. All other configuration is f
 
 ```bash
 # .env.mcp
-DIY_SUBMIT_API_BASE_URL=https://ci.submit.diyaccounting.co.uk
+DIY_SUBMIT_API_BASE_URL=https://submit.diyaccounting.co.uk
 ```
 
 For production:
@@ -1148,7 +1148,7 @@ DIY_SUBMIT_API_BASE_URL=https://submit.diyaccounting.co.uk
   "start:mcp": "node mcp/server.js",
   "test:mcp": "vitest run mcp/",
   "docker:build:mcp": "docker build --target mcp -t diy-accounting-mcp .",
-  "docker:run:mcp": "docker run -i --rm -e DIY_SUBMIT_API_BASE_URL=https://ci.submit.diyaccounting.co.uk diy-accounting-mcp"
+  "docker:run:mcp": "docker run -i --rm -e DIY_SUBMIT_API_BASE_URL=https://submit.diyaccounting.co.uk diy-accounting-mcp"
 }
 ```
 

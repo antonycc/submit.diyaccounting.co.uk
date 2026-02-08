@@ -123,7 +123,7 @@ function addCommonHeaders(req, res) {
   const origin = req.headers.origin;
   const allowedOrigins = [
     "https://submit.diyaccounting.co.uk",
-    "https://ci.submit.diyaccounting.co.uk",
+    "https://ci-submit.diyaccounting.co.uk",
     "http://localhost:3000",
     "http://localhost:8080",
   ];

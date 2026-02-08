@@ -264,7 +264,7 @@ These fields correctly use domain names because they're for DNS/URLs:
 | `cognitoDomainName` | 298 | `ci-auth.submit.diyaccounting.co.uk` | Cognito custom domain |
 | `holdingDomainName` | 299 | `ci-holding.submit.diyaccounting.co.uk` | Holding page domain |
 | `baseUrl` | 307 | `https://ci-testabc.submit.diyaccounting.co.uk/` | OAuth callbacks |
-| `envBaseUrl` | 310 | `https://ci.submit.diyaccounting.co.uk/` | Environment base URL |
+| `envBaseUrl` | 310 | `https://submit.diyaccounting.co.uk/` | Environment base URL |
 | `cognitoBaseUri` | 320 | `https://ci-auth.submit.diyaccounting.co.uk` | Cognito OAuth URI |
 | `dashedDeploymentDomainName` | 308 | `ci-testabc-submit-diyaccounting-co-uk` | Used for internal tracking only |
 

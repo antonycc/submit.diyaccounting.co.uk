@@ -85,12 +85,6 @@ All ci-*/prod-* submit records are created by the submit CDK stacks (via `Route5
 ### Current Certificate
 
 Single wildcard ACM public cert covers all submit subdomains:
-- **ARN**: `arn:aws:acm:us-east-1:887764105431:certificate/d340de40-96ca-4f5b-ae4c-f66a776e5a75`
-- **Domain**: `*.submit.diyaccounting.co.uk`
-- **Account**: Root (887764105431), region us-east-1
-- **Type**: ACM public certificate (free, DNS-validated)
-- **Used by**: All CloudFront distributions (EdgeStack, ApexStack, SimulatorStack) and Cognito custom domains (IdentityStack) via `Certificate.fromCertificateArn()`
-- **Wildcard scope**: Covers one level only. `*.submit.diyaccounting.co.uk` matches `ci-compy.submit.diyaccounting.co.uk` and `prod-auth.submit.diyaccounting.co.uk` but would NOT match `auth.ci.submit.diyaccounting.co.uk` (two levels deep)
 
 **ACM cost note**: All ACM public certificates are free regardless of wildcard or SAN count. When accounts split, each account creates its own free wildcard cert. There is no cost impact.
 

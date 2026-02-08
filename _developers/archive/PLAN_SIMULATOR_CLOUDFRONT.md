@@ -102,5 +102,5 @@ Pass `hostedZoneName`, `hostedZoneId`, `certificateArn` to SimulatorStack builde
 2. `npm test` - unit tests pass
 3. `npm run test:simulatorBehaviour-simulator` - local simulator tests pass
 4. Push to `simulator` branch, deploy to CI
-5. Check `https://ci.submit.diyaccounting.co.uk/simulator.html` - iframe loads from `ci-simulator.submit.diyaccounting.co.uk`
+5. Check `https://submit.diyaccounting.co.uk/simulator.html` - iframe loads from `ci-simulator.submit.diyaccounting.co.uk`
 6. `npm run test:simulatorBehaviour-ci` - CI simulator tests pass (journey steps shown, iframe loads)
