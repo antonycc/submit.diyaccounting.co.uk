@@ -63,11 +63,13 @@ public class SubmitSharedNames {
     public String hostedZoneName;
     public String deploymentDomainName;
     public String envDomainName;
+    public String publicDomainName;
     public String cognitoDomainName;
     public String holdingDomainName;
     public String simulatorDomainName;
     public String baseUrl;
     public String envBaseUrl;
+    public String publicBaseUrl;
     public String dashedDeploymentDomainName;
     public String cognitoBaseUri;
     public String trailName;
@@ -336,6 +338,11 @@ public class SubmitSharedNames {
         this();
         this.hostedZoneName = props.hostedZoneName;
         this.envDomainName = "%s-%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
+        if ("prod".equals(props.envName)) {
+            this.publicDomainName = "%s.%s".formatted(props.subDomainName, props.hostedZoneName);
+        } else {
+            this.publicDomainName = this.envDomainName;
+        }
         this.cognitoDomainName = "%s-auth.%s".formatted(props.envName, props.hostedZoneName);
         this.holdingDomainName = "%s-holding.%s".formatted(props.envName, props.hostedZoneName);
         this.simulatorDomainName = "%s-simulator.%s".formatted(props.envName, props.hostedZoneName);
@@ -350,6 +357,7 @@ public class SubmitSharedNames {
         this.dashedDeploymentDomainName = buildDashedDomainName(this.deploymentDomainName);
 
         this.envBaseUrl = "https://%s/".formatted(this.envDomainName);
+        this.publicBaseUrl = "https://%s/".formatted(this.publicDomainName);
         // Use envName directly for consistency with stack IDs (e.g., ci-env-IdentityStack → ci-env-user-pool)
         this.envResourceNamePrefix = "%s-env".formatted(props.envName);
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);

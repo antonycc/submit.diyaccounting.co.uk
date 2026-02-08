@@ -103,7 +103,7 @@ public class AuthStack extends Stack {
 
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("COGNITO_CLIENT_ID", props.cognitoClientId())

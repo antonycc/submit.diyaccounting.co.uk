@@ -157,7 +157,7 @@ public class HmrcStack extends Stack {
 
         // exchangeToken - HMRC
         var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_CLIENT_ID", props.hmrcClientId())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
@@ -249,7 +249,7 @@ public class HmrcStack extends Stack {
 
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
@@ -321,7 +321,7 @@ public class HmrcStack extends Stack {
 
         // VAT obligations GET
         var vatObligationLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
@@ -390,7 +390,7 @@ public class HmrcStack extends Stack {
 
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("HMRC_BASE_URI", props.hmrcBaseUri())
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
@@ -458,7 +458,7 @@ public class HmrcStack extends Stack {
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().envBaseUrl)
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
                 .with("ENVIRONMENT_NAME", props.envName());
