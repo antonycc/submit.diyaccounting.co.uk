@@ -48,6 +48,63 @@
         margin-bottom: 0;
       }
 
+      .reviews-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .reviews-header {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      .reviews-stars {
+        color: #fbbc04;
+        font-size: 1.4rem;
+        letter-spacing: 0.05em;
+      }
+
+      .reviews-rating {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin: 0.25em 0;
+      }
+
+      .reviews-link {
+        font-size: 0.85rem;
+        color: var(--color-brand-primary);
+      }
+
+      .reviews-quotes {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .reviews-quotes blockquote {
+        margin: 0;
+        padding: 0;
+      }
+
+      .reviews-quotes blockquote p {
+        color: var(--color-text-secondary, #555);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 0 0 0.25em 0;
+        font-style: italic;
+      }
+
+      .reviews-quotes cite {
+        font-size: 0.8rem;
+        color: #999;
+        font-style: normal;
+      }
+
       .product-grid-image {
         background: white;
         border-radius: 8px;
@@ -152,6 +209,26 @@
 
       .product-screenshot img:hover {
         opacity: 0.9;
+      }
+
+      .partner-product {
+        border-left: 4px solid var(--color-brand-primary, #2c5aa0);
+      }
+
+      .partner-label {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #999;
+        margin: 0 0 0.25em 0;
+      }
+
+      .partner-trust {
+        font-size: 0.85rem;
+        color: #999;
+        margin: 0.75em 0 0 0;
       }
 
       .download-section {
@@ -290,6 +367,30 @@
             All products are compatible with Microsoft Excel and OpenOffice Calc. They are available as immediate downloads
             and include step-by-step user guides.
           </p>
+        </div>
+
+        <div class="reviews-section">
+          <div class="reviews-header">
+            <span class="reviews-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+            <span class="reviews-rating">5.0 out of 5</span>
+            <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener" class="reviews-link">
+              9 reviews on Google
+            </a>
+          </div>
+          <div class="reviews-quotes">
+            <blockquote>
+              <p>&ldquo;I highly recommend the DIY Accounting accounts packages &mdash; far better value and much simpler than expensive subscription accounting packages.&rdquo;</p>
+              <cite>&mdash; Steve Walsh</cite>
+            </blockquote>
+            <blockquote>
+              <p>&ldquo;I've used DIY accounting for over 10 years and can recommend it to any small business owner.&rdquo;</p>
+              <cite>&mdash; Andrew Williamson</cite>
+            </blockquote>
+            <blockquote>
+              <p>&ldquo;Easy to use and reliable software package, good / clear reporting &mdash; any time a clear picture of business figures.&rdquo;</p>
+              <cite>&mdash; Laura Paterson</cite>
+            </blockquote>
+          </div>
         </div>
 
         <div class="product-grid-image">
@@ -441,6 +542,46 @@
                 class="lightbox-img"
               />
             </div>
+          </div>
+          <!-- Partner: Business Insurance -->
+          <div class="product partner-product">
+            <p class="partner-label">Partner</p>
+            <h3>
+              <a href="policybee.html">
+                Business Insurance from PolicyBee
+              </a>
+            </h3>
+            <p>
+              Looking for professional insurance? Try PolicyBee &mdash; an online broker specialising in
+              professional indemnity, public liability, employers' liability and office insurance for
+              freelancers and small businesses. Hassle-free protection for sole traders and limited companies.
+            </p>
+            <ul class="features-list">
+              <li>Professional indemnity insurance</li>
+              <li>Public liability insurance</li>
+              <li>Employers' liability insurance</li>
+              <li>Office &amp; contents insurance</li>
+            </ul>
+            <p class="partner-trust">Rated 4.8/5 from 6,000+ reviews</p>
+            <p style="margin-top: 0.75em">
+              <a
+                href="policybee.html"
+                style="
+                  display: inline-block;
+                  padding: 0.5rem 1.25rem;
+                  border-radius: 6px;
+                  font-size: 0.95rem;
+                  font-weight: 500;
+                  text-decoration: none;
+                  border: 2px solid var(--color-brand-primary);
+                  color: var(--color-brand-primary);
+                  background: white;
+                  transition: all 0.2s;
+                "
+              >
+                Visit PolicyBee
+              </a>
+            </p>
           </div>
         </div>
 

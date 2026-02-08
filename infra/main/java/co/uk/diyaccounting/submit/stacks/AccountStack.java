@@ -35,6 +35,7 @@ import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.sns.Topic;
 import software.constructs.Construct;
 
 public class AccountStack extends Stack {
@@ -54,6 +55,10 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps supportTicketPostLambdaProps;
     public Function supportTicketPostLambda;
     public ILogGroup supportTicketPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps interestPostLambdaProps;
+    public Function interestPostLambda;
+    public ILogGroup interestPostLambdaLogGroup;
 
     public AbstractApiLambdaProps passGetLambdaProps;
     public Function passGetLambda;
@@ -451,6 +456,54 @@ public class AccountStack extends Stack {
         } else {
             infof("Skipping Support Ticket Lambda - no GitHub token secret ARN provided");
         }
+
+        // ============================================================================
+        // Interest POST Lambda (JWT auth - register waitlist interest via SNS)
+        // ============================================================================
+        var waitlistTopic = Topic.Builder.create(
+                        this, "%s-waitlist".formatted(props.resourceNamePrefix()))
+                .topicName("%s-waitlist".formatted(props.resourceNamePrefix()))
+                .build();
+
+        var interestPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("WAITLIST_TOPIC_ARN", waitlistTopic.getTopicArn());
+        var interestPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().interestPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().interestPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().interestPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().interestPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().interestPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().interestPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().interestPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().interestPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().interestPostLambdaCustomAuthorizer)
+                        .environment(interestPostLambdaEnv)
+                        .build());
+
+        this.interestPostLambdaProps = interestPostApiLambda.apiProps;
+        this.interestPostLambda = interestPostApiLambda.ingestLambda;
+        this.interestPostLambdaLogGroup = interestPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.interestPostLambdaProps);
+
+        // Grant permission to publish to the waitlist SNS topic
+        waitlistTopic.grantPublish(this.interestPostLambda);
+
+        infof(
+                "Created Interest POST Lambda %s with handler %s",
+                this.interestPostLambda.getNode().getId(),
+                props.sharedNames().interestPostIngestLambdaHandler);
+
+        cfnOutput(this, "InterestPostLambdaArn", this.interestPostLambda.getFunctionArn());
+        cfnOutput(this, "WaitlistTopicArn", waitlistTopic.getTopicArn());
 
         // ============================================================================
         // Pass GET Lambda (public, no auth)

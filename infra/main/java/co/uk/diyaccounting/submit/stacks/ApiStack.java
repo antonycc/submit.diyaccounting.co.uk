@@ -357,7 +357,7 @@ public class ApiStack extends Stack {
                   nextToken = domainResp.NextToken;
                 } while (nextToken);
               } catch (e) { console.log(`Cleanup error (ignored): ${e.message}`); }
-              return { PhysicalResourceId: `cleanup-${apiId}` };
+              return { PhysicalResourceId: event.PhysicalResourceId || `cleanup-${apiId}` };
             };
             """;
 

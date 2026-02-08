@@ -58,6 +58,31 @@ function initForm() {
   document.getElementById('download-form').classList.remove('hidden');
   updatePeriods();
   updateTitle();
+
+  // Detect PayPal return and auto-trigger download from sessionStorage
+  var returnParams = new URLSearchParams(window.location.search);
+  if (returnParams.get('st') === 'Completed') {
+    var savedFilename = sessionStorage.getItem('donateFilename');
+    var savedProduct = sessionStorage.getItem('donateProduct');
+    sessionStorage.removeItem('donateFilename');
+    sessionStorage.removeItem('donateProduct');
+    if (savedFilename) {
+      // GA4 ecommerce: purchase when returning from PayPal donation
+      trackEvent('purchase', {
+        transaction_id: 'paypal_' + Date.now(),
+        value: 0,
+        currency: 'GBP',
+        items: [{
+          item_id: savedProduct,
+          item_name: savedProduct,
+          price: 0,
+          currency: 'GBP'
+        }]
+      });
+      window.location = '/zips/' + encodeURIComponent(savedFilename);
+      return;
+    }
+  }
 }
 
 function getSelectedProduct() {

@@ -427,29 +427,22 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     console.log(" Donate page content is present");
 
     // ============================================================
-    // STEP 3: Verify PayPal donate button container exists
+    // STEP 3: Verify PayPal donate form exists
     // ============================================================
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 3: Verify PayPal donate button container");
+    console.log("STEP 3: Verify PayPal donate form");
     console.log("=".repeat(60));
 
-    const paypalContainer = page.locator("#paypal-donate-button");
-    await expect(paypalContainer).toBeAttached({ timeout: 5000 });
-    console.log(" PayPal donate button container (div#paypal-donate-button) exists");
+    const paypalForm = page.locator("#paypal-donate-form");
+    await expect(paypalForm).toBeAttached({ timeout: 5000 });
+    const formAction = await paypalForm.getAttribute("action");
+    expect(formAction).toBe("https://www.paypal.com/donate");
+    console.log(" PayPal donate form exists with correct action");
 
-    // Wait for PayPal SDK to potentially render the button
-    // The PayPal SDK loads asynchronously from www.paypalobjects.com
-    await page.waitForTimeout(3000);
+    const donateButton = page.locator(".btn-paypal-donate");
+    await expect(donateButton).toBeVisible({ timeout: 5000 });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-donate-paypal.png` });
-
-    // Check if PayPal iframe or button rendered (SDK may be blocked in test context)
-    const paypalIframe = page.locator("#paypal-donate-button iframe");
-    const paypalIframeCount = await paypalIframe.count();
-    if (paypalIframeCount > 0) {
-      console.log(` PayPal button iframe rendered (${paypalIframeCount} iframe(s))`);
-    } else {
-      console.log(" PayPal button iframe not rendered (SDK may be blocked in test browser context - this is expected)");
-    }
+    console.log(" PayPal donate button is visible");
 
     // ============================================================
     // STEP 4: Verify browse products link (no filename parameter)

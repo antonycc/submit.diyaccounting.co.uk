@@ -1,0 +1,23 @@
+version = "1.0.0"
+
+# Feature flags for DIY Accounting Submit
+#
+# Each [[features]] entry defines a feature toggle:
+#   id          - unique identifier (kebab-case)
+#   name        - human-readable name
+#   enabled     - whether the feature is active (true/false)
+#   description - what the feature does
+#
+# Future A/B testing extensions:
+#   rolloutPercent - percentage of users who see the feature (0-100)
+#   variants       - array of variant objects for multivariate tests
+#   audience       - targeting rules (e.g., by environment, user segment)
+#
+# The client-side evaluator (lib/feature-flags.js) fetches this file,
+# caches it, and exposes a simple isFeatureEnabled(id) API.
+
+[[features]]
+id = "waitlist"
+name = "Join the Waitlist"
+enabled = true
+description = "Show waitlist registration banner for authenticated users"

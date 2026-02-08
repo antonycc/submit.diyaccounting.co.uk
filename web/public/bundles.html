@@ -86,6 +86,16 @@
           </div>
         </div>
 
+        <div id="waitlistSection" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
+          <h3>Join the waitlist</h3>
+          <p style="color: #666; font-size: 0.9em">
+            We're getting ready to launch. Register your interest and we'll send you an invitation.
+          </p>
+          <div style="margin: 1em auto; text-align: center">
+            <button type="button" id="waitlistJoinBtn" class="btn" style="min-width: 180px">Join the waitlist</button>
+          </div>
+        </div>
+
         <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
           <h3>Your Current Bundles</h3>
           <div id="currentBundles" style="margin: 1em 0"></div>
@@ -115,6 +125,7 @@
     <script src="lib/request-cache.js"></script>
     <script src="lib/bundle-cache.js"></script>
     <script src="lib/toml-parser.js"></script>
+    <script src="lib/feature-flags.js"></script>
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script src="widgets/status-messages.js"></script>
@@ -830,6 +841,61 @@
         renderCurrentBundles();
       }, 100);
 
+      // Waitlist section logic
+      async function initWaitlistSection() {
+        var section = document.getElementById("waitlistSection");
+        if (!section) return;
+
+        var isLoggedIn = !!getIdToken();
+        var alreadyRegistered = false;
+        try {
+          alreadyRegistered = localStorage.getItem("waitlistRegistered") === "true";
+        } catch {}
+
+        if (!isLoggedIn || alreadyRegistered) return;
+
+        // Check feature flag
+        if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
+          var enabled = await window.featureFlags.isFeatureEnabled("waitlist");
+          if (!enabled) return;
+        }
+
+        section.style.display = "block";
+
+        var joinBtn = document.getElementById("waitlistJoinBtn");
+        if (joinBtn) {
+          // If already registered, update button state
+          if (alreadyRegistered) {
+            joinBtn.textContent = "You're on the list";
+            joinBtn.style.backgroundColor = "#0a8927";
+            joinBtn.disabled = true;
+            return;
+          }
+
+          joinBtn.addEventListener("click", async function () {
+            joinBtn.disabled = true;
+            joinBtn.textContent = "Registering...";
+            try {
+              var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
+              if (response.ok) {
+                joinBtn.textContent = "You're on the list";
+                joinBtn.style.backgroundColor = "#0a8927";
+                try {
+                  localStorage.setItem("waitlistRegistered", "true");
+                } catch {}
+              } else {
+                joinBtn.textContent = "Try again";
+                joinBtn.disabled = false;
+              }
+            } catch (err) {
+              console.error("Waitlist registration failed:", err);
+              joinBtn.textContent = "Try again";
+              joinBtn.disabled = false;
+            }
+          });
+        }
+      }
+
       // --- page init
       try {
         sessionStorage.removeItem("currentActivity");
@@ -838,6 +904,7 @@
       // Initialize page - wait for submit.js module to be ready
       function initPage() {
         checkAuthStatus();
+        initWaitlistSection();
 
         // Handle ?pass= URL parameter
         const urlParams = new URLSearchParams(window.location.search);

@@ -251,6 +251,15 @@ public class SubmitSharedNames {
     public boolean supportTicketPostLambdaJwtAuthorizer;
     public boolean supportTicketPostLambdaCustomAuthorizer;
 
+    public String interestPostIngestLambdaHandler;
+    public String interestPostIngestLambdaFunctionName;
+    public String interestPostIngestLambdaArn;
+    public String interestPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod interestPostLambdaHttpMethod;
+    public String interestPostLambdaUrlPath;
+    public boolean interestPostLambdaJwtAuthorizer;
+    public boolean interestPostLambdaCustomAuthorizer;
+
     public String passGetIngestLambdaHandler;
     public String passGetIngestLambdaFunctionName;
     public String passGetIngestLambdaArn;
@@ -782,6 +791,29 @@ public class SubmitSharedNames {
                 "Submit a support ticket",
                 "Creates a GitHub issue for the authenticated user's support request",
                 "submitSupportTicket"));
+
+        // Interest POST Lambda (JWT auth - register waitlist interest)
+        this.interestPostLambdaHttpMethod = HttpMethod.POST;
+        this.interestPostLambdaUrlPath = "/api/v1/interest";
+        this.interestPostLambdaJwtAuthorizer = true;
+        this.interestPostLambdaCustomAuthorizer = false;
+        var interestPostLambdaHandlerName = "interestPost.ingestHandler";
+        var interestPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(interestPostLambdaHandlerName);
+        this.interestPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, interestPostLambdaHandlerDashed);
+        this.interestPostIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, interestPostLambdaHandlerName);
+        this.interestPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, interestPostLambdaHandlerDashed);
+        this.interestPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.interestPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.interestPostLambdaHttpMethod,
+                this.interestPostLambdaUrlPath,
+                "Register waitlist interest",
+                "Publishes the authenticated user's email to an SNS topic for waitlist registration",
+                "registerInterest"));
 
         // Pass GET Lambda (public, no auth)
         this.passGetLambdaHttpMethod = HttpMethod.GET;
