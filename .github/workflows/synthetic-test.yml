@@ -236,6 +236,7 @@ jobs:
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
       apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      public-url: ${{ steps.deployment-config.outputs.public-url }}
 
   behaviour-test:
     name: 'behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
