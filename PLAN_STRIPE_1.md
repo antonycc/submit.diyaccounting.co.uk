@@ -10,7 +10,12 @@ The spreadsheets.diyaccounting.co.uk donate page currently uses PayPal hosted do
 2. **Create a Payment Link** with "customer chooses amount" enabled, with suggested amounts £10, £20, £45. Currency: GBP.
 3. **Set the success URL** to: `https://spreadsheets.diyaccounting.co.uk/download.html?stripe=success`
 4. **Record the Payment Link URL** (`https://buy.stripe.com/XXXXX`) — goes into `donate.html`.
-5. Use live-mode link for both CI and prod (behaviour tests only verify the link renders, they don't complete checkout).
+
+Done, link:
+```
+https://buy.stripe.com/test_9B6dR94G7euH66u90s3VC00
+```
+5Use live-mode link for both CI and prod (behaviour tests only verify the link renders, they don't complete checkout).
 
 ## Files to Modify
 
