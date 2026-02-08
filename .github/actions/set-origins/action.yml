@@ -255,9 +255,23 @@ runs:
               aws apigatewayv2 delete-api-mapping --domain-name "${DOMAIN}" --api-mapping-id "$MID"
             done
             echo "  Deleting domain [${DOMAIN}]"
-            aws apigatewayv2 delete-domain-name --domain-name "${DOMAIN}"
-            echo "  Waiting 5s after domain deletion to avoid rate limiting..."
-            sleep 5
+            local DELETE_DELAY=15
+            local DELETED=false
+            for DELETE_ATTEMPT in 1 2 3 4 5; do
+              if aws apigatewayv2 delete-domain-name --domain-name "${DOMAIN}"; then
+                DELETED=true
+                break
+              fi
+              echo "  Delete attempt ${DELETE_ATTEMPT}/5 failed (likely rate limited), retrying in ${DELETE_DELAY}s..."
+              sleep "${DELETE_DELAY}"
+              DELETE_DELAY=$((DELETE_DELAY * 2))
+            done
+            if [ "$DELETED" != "true" ]; then
+              echo "ERROR: Failed to delete API GW custom domain [${DOMAIN}] after 5 attempts"
+              return 1
+            fi
+            echo "  Waiting 10s after domain deletion to avoid rate limiting..."
+            sleep 10
           fi
 
           echo "Creating API GW custom domain [${DOMAIN}] with cert [${CERT_ARN}]"
