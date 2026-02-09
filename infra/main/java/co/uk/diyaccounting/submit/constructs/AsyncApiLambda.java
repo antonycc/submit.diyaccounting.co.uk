@@ -90,7 +90,7 @@ public class AsyncApiLambda extends ApiLambda {
 
         this.workerLambdaVersion = Version.Builder.create(scope, props.idPrefix() + "-worker-version")
                 .lambda(this.workerLambda)
-                .description("Created for PC setting in alias")
+                .description("Image: " + props.baseImageTag())
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         this.workerLambdaAlias = Alias.Builder.create(scope, props.idPrefix() + "-worker-zero-alias")
