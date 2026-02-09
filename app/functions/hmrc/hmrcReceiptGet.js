@@ -15,8 +15,6 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
-import { enforceBundles } from "../../services/bundleManagement.js";
-import { http403ForbiddenFromBundleEnforcement } from "../../services/hmrcApi.js";
 import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -84,7 +82,7 @@ export function extractAndValidateParameters(event, errorMessages, userSub) {
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "RECEIPTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["RECEIPTS_DYNAMODB_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
@@ -101,22 +99,6 @@ export async function ingestHandler(event) {
   }
 
   const errorMessages = [];
-
-  // Bundle enforcement
-  try {
-    await enforceBundles(event);
-  } catch (error) {
-    return http403ForbiddenFromBundleEnforcement(error, request);
-  }
-
-  // If HEAD request, return 200 OK immediately after bundle enforcement
-  if (event?.requestContext?.http?.method === "HEAD") {
-    return http200OkResponse({
-      request,
-      headers: { "Content-Type": "application/json" },
-      data: {},
-    });
-  }
 
   // Extract and validate parameters
   const { hasNameOrKey, receiptId, Key } = extractAndValidateParameters(event, errorMessages, userSub);
