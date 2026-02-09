@@ -1,6 +1,6 @@
 {
   "testName": "web-test-local",
-  "generatedAt": "2026-02-08T01:38:52.280Z",
+  "generatedAt": "2026-02-09T23:46:02.351Z",
   "testContext": {
     "testId": "web-test-local",
     "name": "Click through: Submit a VAT return to HMRC",
@@ -39,33 +39,31 @@
       "runDynamoDb": "run"
     },
     "testData": {
-      "hmrcTestUsername": "714674536458",
+      "hmrcTestUsername": "487032800231",
       "hmrcTestPassword": "***MASKED***",
-      "hmrcTestVatNumber": "300143043",
+      "hmrcTestVatNumber": "400389186",
       "resolvedPeriodKey": "18A1",
       "hmrcVatDueAmount": "1000.00",
       "testUserGenerated": true,
       "userSub": "user",
-      "observedTraceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
+      "observedTraceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
       "testUrl": "https://wanted-finally-anteater.ngrok-free.app/",
       "isSandboxMode": true,
       "intentionallyNotSuppliedHeaders": [
-        "gov-client-multi-factor",
-        "gov-vendor-license-ids",
-        "gov-client-public-port"
+        "gov-vendor-license-ids"
       ]
     },
     "artefactsDir": "/Users/antony/projects/submit.diyaccounting.co.uk/target/behaviour-test-results/submitVat.behaviour-Click--3e6d3-Submit-a-VAT-return-to-HMRC-web-test-local",
     "screenshotPath": "target/behaviour-test-results/screenshots/submitVat-behaviour-test",
-    "testStartTime": "2026-02-08T01:38:28.984Z"
+    "testStartTime": "2026-02-09T23:45:56.587Z"
   },
   "hmrcApiRequests": [
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-03814b46-36a7-44e7-aebb-62daeaf6202e",
-      "requestId": "38bfe1d9-9608-432e-af94-c5082011298d",
+      "id": "hmrcreq-0360f511-df2e-47b0-9ac6-8d3f16f95fd9",
+      "requestId": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
       "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
       "method": "GET",
       "httpRequest": {
@@ -73,23 +71,24 @@
         "headers": {
           "Accept": "application/vnd.hmrc.1.0+json",
           "Authorization": "***MASKED***",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "69f2dff1-1e5f-49b1-8d87-337723cd5fff",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60737",
+          "Gov-Client-Device-ID": "cb0b1dfc-1b03-45bb-b671-718b623369a8",
           "Gov-Client-User-IDs": "server=user",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
           "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
           "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
           "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:58.446Z",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:20.096Z",
           "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
           "Gov-Client-Timezone": "UTC+01:00",
           "Gov-Client-Window-Size": "width=1280&height=1446",
-          "x-request-id": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "38bfe1d9-9608-432e-af94-c5082011298d"
+          "x-request-id": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "e260d73b-ebb1-44e3-ba39-e335ce5eb165"
         }
       },
       "httpResponse": {
@@ -97,33 +96,24 @@
         "headers": {
           "cache-control": "no-cache,no-store,max-age=0",
           "connection": "keep-alive",
-          "content-length": "489",
+          "content-length": "215",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:58 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:22 GMT",
           "strict-transport-security": "max-age=31536000;",
           "vary": "Origin",
-          "via": "1.1 5e1e1cde81deec56515dcc5317501fe8.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "Y6sQYyzfA6k6jsQagmkAbna2hQsXSv3ND7Q_soUkd0Xe4ebXkekYpw==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 3125623663e894c8bb8161ef6c981a38.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "2AV-6HIm9OHYeiAdXqiaMNAzFovAbIhHSV05Ol6bHgfe5NrWGbvB_A==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
           "x-content-type-options": "nosniff",
-          "x-envoy-upstream-service-time": "19",
+          "x-envoy-upstream-service-time": "22",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
           "specVersion": "3.3",
           "code": "***MASKED***",
-          "message": "At least 1 header is invalid",
-          "errors": [
-            {
-              "code": "***MASKED***",
-              "message": "Header missing. You will not be able to submit a header if the connection is between client and server in a private network. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-public-port"
-              ]
-            }
-          ],
+          "message": "At least 1 header is potentially invalid",
           "warnings": [
             {
               "code": "***MASKED***",
@@ -135,18 +125,90 @@
           ]
         }
       },
-      "duration": 163,
-      "createdAt": "2026-02-08T01:37:58.667Z",
-      "ttl": 1772933878,
-      "ttl_datestamp": "2026-03-08T01:37:58.667Z"
+      "duration": 273,
+      "createdAt": "2026-02-09T23:45:22.644Z",
+      "ttl": 1773099922,
+      "ttl_datestamp": "2026-03-09T23:45:22.644Z"
     },
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-0748fb0b-24ac-4728-aeac-0911426313f8",
-      "requestId": "38bfe1d9-9608-432e-af94-c5082011298d",
+      "id": "hmrcreq-1e65d3b5-6446-4135-a033-da151f870e2d",
+      "requestId": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/300143043/returns/18A1",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      "method": "GET",
+      "httpRequest": {
+        "method": "GET",
+        "headers": {
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "***MASKED***",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60836",
+          "Gov-Client-Device-ID": "24f3bcbf-9d8c-41aa-9626-77c794b8759c",
+          "Gov-Client-User-IDs": "server=user",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
+          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
+          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
+          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:36.661Z",
+          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
+          "Gov-Client-Timezone": "UTC+01:00",
+          "Gov-Client-Window-Size": "width=1280&height=1446",
+          "x-request-id": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "d295693f-e7dc-46da-ad27-71a4c7e73f2d"
+        }
+      },
+      "httpResponse": {
+        "statusCode": 200,
+        "headers": {
+          "cache-control": "no-cache,no-store,max-age=0",
+          "connection": "keep-alive",
+          "content-length": "215",
+          "content-security-policy": "default-src 'self'",
+          "content-type": "application/json",
+          "date": "Mon, 09 Feb 2026 23:45:37 GMT",
+          "strict-transport-security": "max-age=31536000;",
+          "vary": "Origin",
+          "via": "1.1 31aae39c23f641a592a85dcde0d06b40.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "DjXGE2CwqACm39U54qk7jlb_bflat1CLITnyhOq8UKTt46_baxg8dA==",
+          "x-amz-cf-pop": "HEL51-P6",
+          "x-cache": "Miss from cloudfront",
+          "x-content-type-options": "nosniff",
+          "x-envoy-upstream-service-time": "21",
+          "x-frame-options": "SAMEORIGIN"
+        },
+        "body": {
+          "specVersion": "3.3",
+          "code": "***MASKED***",
+          "message": "At least 1 header is potentially invalid",
+          "warnings": [
+            {
+              "code": "***MASKED***",
+              "message": "Header required",
+              "headers": [
+                "gov-vendor-license-ids"
+              ]
+            }
+          ]
+        }
+      },
+      "duration": 397,
+      "createdAt": "2026-02-09T23:45:37.161Z",
+      "ttl": 1773099937,
+      "ttl_datestamp": "2026-03-09T23:45:37.161Z"
+    },
+    {
+      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
+      "id": "hmrcreq-2e2746cb-d911-4f3b-b803-46d994bf16cf",
+      "requestId": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+      "amznTraceId": null,
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/400389186/obligations?from=2017-01-01&to=2017-03-31&status=O",
       "method": "GET",
       "httpRequest": {
         "method": "GET",
@@ -154,20 +216,306 @@
           "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
           "Authorization": "***MASKED***",
-          "x-request-id": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "69f2dff1-1e5f-49b1-8d87-337723cd5fff",
+          "x-request-id": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60737",
+          "Gov-Client-Device-ID": "cb0b1dfc-1b03-45bb-b671-718b623369a8",
           "Gov-Client-User-IDs": "server=user",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
           "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
           "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
           "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:58.446Z",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:20.096Z",
+          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
+          "Gov-Client-Timezone": "UTC+01:00",
+          "Gov-Client-Window-Size": "width=1280&height=1446"
+        }
+      },
+      "httpResponse": {
+        "statusCode": 200,
+        "headers": {
+          "cache-control": "no-cache,no-store,max-age=0",
+          "connection": "keep-alive",
+          "content-length": "110",
+          "content-security-policy": "default-src 'self'",
+          "content-type": "application/json",
+          "date": "Mon, 09 Feb 2026 23:45:22 GMT",
+          "strict-transport-security": "max-age=31536000;",
+          "vary": "Origin",
+          "via": "1.1 3125623663e894c8bb8161ef6c981a38.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "IdsJPNeR_7E5L_c35yn7FkIVeBWf1B4jz0vzuDa1Kyl3DjZ_ybJhdA==",
+          "x-amz-cf-pop": "HEL51-P6",
+          "x-cache": "Miss from cloudfront",
+          "x-content-type-options": "nosniff, nosniff",
+          "x-correlationid": "1ed365c2-1454-49c0-899a-9510c5d319df",
+          "x-envoy-upstream-service-time": "15",
+          "x-frame-options": "SAMEORIGIN"
+        },
+        "body": {
+          "obligations": [
+            {
+              "periodKey": "18A1",
+              "start": "2017-01-01",
+              "end": "2017-03-31",
+              "due": "2017-05-07",
+              "status": "O"
+            }
+          ]
+        }
+      },
+      "duration": 214,
+      "createdAt": "2026-02-09T23:45:22.862Z",
+      "ttl": 1773099922,
+      "ttl_datestamp": "2026-03-09T23:45:22.862Z"
+    },
+    {
+      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
+      "id": "hmrcreq-32633728-9751-473e-a7b2-61ee0d48214f",
+      "requestId": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+      "amznTraceId": null,
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      "method": "GET",
+      "httpRequest": {
+        "method": "GET",
+        "headers": {
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "***MASKED***",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60836",
+          "Gov-Client-Device-ID": "24f3bcbf-9d8c-41aa-9626-77c794b8759c",
+          "Gov-Client-User-IDs": "server=user",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
+          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
+          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
+          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:36.661Z",
+          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
+          "Gov-Client-Timezone": "UTC+01:00",
+          "Gov-Client-Window-Size": "width=1280&height=1446",
+          "x-request-id": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "d295693f-e7dc-46da-ad27-71a4c7e73f2d"
+        }
+      },
+      "httpResponse": {
+        "statusCode": 200,
+        "headers": {
+          "cache-control": "no-cache,no-store,max-age=0",
+          "connection": "keep-alive",
+          "content-length": "215",
+          "content-security-policy": "default-src 'self'",
+          "content-type": "application/json",
+          "date": "Mon, 09 Feb 2026 23:45:37 GMT",
+          "strict-transport-security": "max-age=31536000;",
+          "vary": "Origin",
+          "via": "1.1 31aae39c23f641a592a85dcde0d06b40.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "1sb8YGyz_NhaYnREB6E6751zok2LvWrjUoSwI2CnzZHqvF3vaZSYWw==",
+          "x-amz-cf-pop": "HEL51-P6",
+          "x-cache": "Miss from cloudfront",
+          "x-content-type-options": "nosniff",
+          "x-envoy-upstream-service-time": "17",
+          "x-frame-options": "SAMEORIGIN"
+        },
+        "body": {
+          "specVersion": "3.3",
+          "code": "***MASKED***",
+          "message": "At least 1 header is potentially invalid",
+          "warnings": [
+            {
+              "code": "***MASKED***",
+              "message": "Header required",
+              "headers": [
+                "gov-vendor-license-ids"
+              ]
+            }
+          ]
+        }
+      },
+      "duration": 256,
+      "createdAt": "2026-02-09T23:45:37.612Z",
+      "ttl": 1773099937,
+      "ttl_datestamp": "2026-03-09T23:45:37.612Z"
+    },
+    {
+      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
+      "id": "hmrcreq-4413fac9-5a5f-463e-a97c-fc56842eaa02",
+      "requestId": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+      "amznTraceId": null,
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/400389186/returns",
+      "method": "POST",
+      "httpRequest": {
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "***MASKED***",
+          "x-request-id": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60737",
+          "Gov-Client-Device-ID": "cb0b1dfc-1b03-45bb-b671-718b623369a8",
+          "Gov-Client-User-IDs": "server=user",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
+          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
+          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
+          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:20.096Z",
+          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
+          "Gov-Client-Timezone": "UTC+01:00",
+          "Gov-Client-Window-Size": "width=1280&height=1446"
+        },
+        "body": "{\"periodKey\":\"18A1\",\"vatDueSales\":1000,\"vatDueAcquisitions\":0,\"totalVatDue\":1000,\"vatReclaimedCurrPeriod\":0,\"netVatDue\":1000,\"totalValueSalesExVAT\":5000,\"totalValuePurchasesExVAT\":0,\"totalValueGoodsSuppliedExVAT\":0,\"totalAcquisitionsExVAT\":0,\"finalised\":true}"
+      },
+      "httpResponse": {
+        "statusCode": 201,
+        "headers": {
+          "cache-control": "no-cache,no-store,max-age=0",
+          "connection": "keep-alive",
+          "content-length": "140",
+          "content-security-policy": "default-src 'self'",
+          "content-type": "application/json",
+          "date": "Mon, 09 Feb 2026 23:45:21 GMT",
+          "receipt-id": "0dad3523-2156-4fcc-9276-7fc2ba2b6b68",
+          "receipt-signature": "This has been deprecated - DO NOT USE",
+          "receipt-timestamp": "2026-02-09T23:45:21Z",
+          "strict-transport-security": "max-age=31536000;",
+          "vary": "Origin",
+          "via": "1.1 3125623663e894c8bb8161ef6c981a38.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "6UCzPJ4AEMPKlIFjI2dVps5Lano5zrYd1qhASlC4iVxESrS8ueGoxw==",
+          "x-amz-cf-pop": "HEL51-P6",
+          "x-cache": "Miss from cloudfront",
+          "x-content-type-options": "nosniff, nosniff",
+          "x-correlationid": "0dad3523-2156-4fcc-9276-7fc2ba2b6b68",
+          "x-envoy-upstream-service-time": "28",
+          "x-frame-options": "SAMEORIGIN"
+        },
+        "body": {
+          "processingDate": "2026-02-09T23:45:21.706Z",
+          "formBundleNumber": "714747032457",
+          "paymentIndicator": "DD",
+          "chargeRefNumber": "x201AeqHSGBFG0OH"
+        }
+      },
+      "duration": 276,
+      "createdAt": "2026-02-09T23:45:21.726Z",
+      "ttl": 1773099921,
+      "ttl_datestamp": "2026-03-09T23:45:21.726Z"
+    },
+    {
+      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
+      "id": "hmrcreq-50571363-c954-487c-881e-a9c6b560fdf6",
+      "requestId": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+      "amznTraceId": null,
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      "method": "GET",
+      "httpRequest": {
+        "method": "GET",
+        "headers": {
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "***MASKED***",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60836",
+          "Gov-Client-Device-ID": "24f3bcbf-9d8c-41aa-9626-77c794b8759c",
+          "Gov-Client-User-IDs": "server=user",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
+          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
+          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
+          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:36.661Z",
+          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
+          "Gov-Client-Timezone": "UTC+01:00",
+          "Gov-Client-Window-Size": "width=1280&height=1446",
+          "x-request-id": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "d295693f-e7dc-46da-ad27-71a4c7e73f2d"
+        }
+      },
+      "httpResponse": {
+        "statusCode": 200,
+        "headers": {
+          "cache-control": "no-cache,no-store,max-age=0",
+          "connection": "keep-alive",
+          "content-length": "215",
+          "content-security-policy": "default-src 'self'",
+          "content-type": "application/json",
+          "date": "Mon, 09 Feb 2026 23:45:38 GMT",
+          "strict-transport-security": "max-age=31536000;",
+          "vary": "Origin",
+          "via": "1.1 31aae39c23f641a592a85dcde0d06b40.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "nPiUdWrZm_1zJzY7tndz8k13JBMdV5a9Qmt7Hnm5S1c_Gon7hYnJHA==",
+          "x-amz-cf-pop": "HEL51-P6",
+          "x-cache": "Miss from cloudfront",
+          "x-content-type-options": "nosniff",
+          "x-envoy-upstream-service-time": "17",
+          "x-frame-options": "SAMEORIGIN"
+        },
+        "body": {
+          "specVersion": "3.3",
+          "code": "***MASKED***",
+          "message": "At least 1 header is potentially invalid",
+          "warnings": [
+            {
+              "code": "***MASKED***",
+              "message": "Header required",
+              "headers": [
+                "gov-vendor-license-ids"
+              ]
+            }
+          ]
+        }
+      },
+      "duration": 261,
+      "createdAt": "2026-02-09T23:45:38.821Z",
+      "ttl": 1773099938,
+      "ttl_datestamp": "2026-03-09T23:45:38.821Z"
+    },
+    {
+      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
+      "id": "hmrcreq-64012882-d89f-468f-aac6-da62ffe0b725",
+      "requestId": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+      "amznTraceId": null,
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/400389186/returns/18A1",
+      "method": "GET",
+      "httpRequest": {
+        "method": "GET",
+        "headers": {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "***MASKED***",
+          "x-request-id": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60836",
+          "Gov-Client-Device-ID": "24f3bcbf-9d8c-41aa-9626-77c794b8759c",
+          "Gov-Client-User-IDs": "server=user",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
+          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
+          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
+          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:36.661Z",
           "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
           "Gov-Client-Timezone": "UTC+01:00",
           "Gov-Client-Window-Size": "width=1280&height=1446"
@@ -181,16 +529,16 @@
           "content-length": "242",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:59 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:37 GMT",
           "strict-transport-security": "max-age=31536000;",
           "vary": "Origin",
-          "via": "1.1 5e1e1cde81deec56515dcc5317501fe8.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "TUXXus9yA-lCO41IpesARMCM4wbhCcbOpVLt7SWIYNXpsqATU0Tc0w==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 31aae39c23f641a592a85dcde0d06b40.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "s9qDbsXpmt1UOpMalEaFUvdpAW8a4mzcZkd1u9DvnXVjun75aapqlg==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
           "x-content-type-options": "nosniff, nosniff",
-          "x-correlationid": "173018aa-8261-410a-9474-0faf87266e9d",
-          "x-envoy-upstream-service-time": "17",
+          "x-correlationid": "a71712e5-dbf4-4ce4-8358-4429c3950be8",
+          "x-envoy-upstream-service-time": "19",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
@@ -206,41 +554,43 @@
           "totalAcquisitionsExVAT": 0
         }
       },
-      "duration": 116,
-      "createdAt": "2026-02-08T01:37:59.136Z",
-      "ttl": 1772933879,
-      "ttl_datestamp": "2026-03-08T01:37:59.136Z"
+      "duration": 179,
+      "createdAt": "2026-02-09T23:45:37.794Z",
+      "ttl": 1773099937,
+      "ttl_datestamp": "2026-03-09T23:45:37.794Z"
     },
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-095b20fc-f21f-43a0-9223-816ee2d1dfce",
-      "requestId": "1c13e229-2231-44f9-85a9-736a11de2264",
+      "id": "hmrcreq-80346f71-9a8d-4e69-9fc4-fac8e8b71086",
+      "requestId": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/400389186/obligations?from=2017-01-01&to=2017-03-31&status=F",
       "method": "GET",
       "httpRequest": {
         "method": "GET",
         "headers": {
+          "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
           "Authorization": "***MASKED***",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "95546974-a1eb-4b12-bda6-03a519b5a69b",
+          "x-request-id": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60836",
+          "Gov-Client-Device-ID": "24f3bcbf-9d8c-41aa-9626-77c794b8759c",
           "Gov-Client-User-IDs": "server=user",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
           "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
           "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
           "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:35.778Z",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:36.661Z",
           "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
           "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446",
-          "x-request-id": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "1c13e229-2231-44f9-85a9-736a11de2264"
+          "Gov-Client-Window-Size": "width=1280&height=1446"
         }
       },
       "httpResponse": {
@@ -248,171 +598,19 @@
         "headers": {
           "cache-control": "no-cache,no-store,max-age=0",
           "connection": "keep-alive",
-          "content-length": "489",
+          "content-length": "134",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:37 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:37 GMT",
           "strict-transport-security": "max-age=31536000;",
           "vary": "Origin",
-          "via": "1.1 29676c2ee539645954aa742bde1ce894.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "NXuWEo2T2JofWICr1Tx7EBaHMMSKbtkywupm5U-hdKSlUwt63L6S0A==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 31aae39c23f641a592a85dcde0d06b40.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "nw5YuQkbSbB3RcvaVIcj5m5Fgo9StL1R5I_zxSqpQDtV_oD4at9RWQ==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff",
+          "x-content-type-options": "nosniff, nosniff",
+          "x-correlationid": "75e3be27-99dc-4ebe-87a2-fd867eaa2afa",
           "x-envoy-upstream-service-time": "16",
-          "x-frame-options": "SAMEORIGIN"
-        },
-        "body": {
-          "specVersion": "3.3",
-          "code": "***MASKED***",
-          "message": "At least 1 header is invalid",
-          "errors": [
-            {
-              "code": "***MASKED***",
-              "message": "Header missing. You will not be able to submit a header if the connection is between client and server in a private network. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-public-port"
-              ]
-            }
-          ],
-          "warnings": [
-            {
-              "code": "***MASKED***",
-              "message": "Header required",
-              "headers": [
-                "gov-vendor-license-ids"
-              ]
-            }
-          ]
-        }
-      },
-      "duration": 117,
-      "createdAt": "2026-02-08T01:37:37.499Z",
-      "ttl": 1772933857,
-      "ttl_datestamp": "2026-03-08T01:37:37.499Z"
-    },
-    {
-      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-13944341-176b-468d-b069-c7c129d6f020",
-      "requestId": "38bfe1d9-9608-432e-af94-c5082011298d",
-      "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/300143043/obligations?from=2017-01-01&to=2017-03-31&status=F",
-      "method": "GET",
-      "httpRequest": {
-        "method": "GET",
-        "headers": {
-          "Content-Type": "application/json",
-          "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "***MASKED***",
-          "x-request-id": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "69f2dff1-1e5f-49b1-8d87-337723cd5fff",
-          "Gov-Client-User-IDs": "server=user",
-          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
-          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
-          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
-          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:58.446Z",
-          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
-          "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446"
-        }
-      },
-      "httpResponse": {
-        "statusCode": 200,
-        "headers": {
-          "cache-control": "no-cache,no-store,max-age=0",
-          "connection": "keep-alive",
-          "content-length": "134",
-          "content-security-policy": "default-src 'self'",
-          "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:38:00 GMT",
-          "strict-transport-security": "max-age=31536000;",
-          "vary": "Origin",
-          "via": "1.1 5e1e1cde81deec56515dcc5317501fe8.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "N13DbT-bYddlVfe6cDs66CCxm7R8-zVAWtsmxeg_1jhEmUsdWjyYMA==",
-          "x-amz-cf-pop": "AMS1-P1",
-          "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff, nosniff",
-          "x-correlationid": "28eff520-53e0-45cc-862c-eeaf3c9bad0f",
-          "x-envoy-upstream-service-time": "13",
-          "x-frame-options": "SAMEORIGIN"
-        },
-        "body": {
-          "obligations": [
-            {
-              "periodKey": "18A1",
-              "start": "2017-01-01",
-              "end": "2017-03-31",
-              "due": "2017-05-07",
-              "status": "F",
-              "received": "2017-05-06"
-            }
-          ]
-        }
-      },
-      "duration": 118,
-      "createdAt": "2026-02-08T01:38:00.269Z",
-      "ttl": 1772933880,
-      "ttl_datestamp": "2026-03-08T01:38:00.269Z"
-    },
-    {
-      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-1c464fdf-a2f6-4fb6-a860-8c2ecbd9477f",
-      "requestId": "38bfe1d9-9608-432e-af94-c5082011298d",
-      "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/300143043/obligations?from=2017-01-01&to=2017-03-31&status=F",
-      "method": "GET",
-      "httpRequest": {
-        "method": "GET",
-        "headers": {
-          "Content-Type": "application/json",
-          "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "***MASKED***",
-          "x-request-id": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "69f2dff1-1e5f-49b1-8d87-337723cd5fff",
-          "Gov-Client-User-IDs": "server=user",
-          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
-          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
-          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
-          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:58.446Z",
-          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
-          "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446"
-        }
-      },
-      "httpResponse": {
-        "statusCode": 200,
-        "headers": {
-          "cache-control": "no-cache,no-store,max-age=0",
-          "connection": "keep-alive",
-          "content-length": "134",
-          "content-security-policy": "default-src 'self'",
-          "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:58 GMT",
-          "strict-transport-security": "max-age=31536000;",
-          "vary": "Origin",
-          "via": "1.1 5e1e1cde81deec56515dcc5317501fe8.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "87116q9d2vLwUuV-qfjd_2Zxihpr-CqF7ryolwaAtTz0WHPKRm5tYw==",
-          "x-amz-cf-pop": "AMS1-P1",
-          "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff, nosniff",
-          "x-correlationid": "68abffbc-7d4f-456f-9d6a-d92ed5ad20e5",
-          "x-envoy-upstream-service-time": "14",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
@@ -429,17 +627,17 @@
         }
       },
       "duration": 186,
-      "createdAt": "2026-02-08T01:37:58.870Z",
-      "ttl": 1772933878,
-      "ttl_datestamp": "2026-03-08T01:37:58.870Z"
+      "createdAt": "2026-02-09T23:45:37.351Z",
+      "ttl": 1773099937,
+      "ttl_datestamp": "2026-03-09T23:45:37.351Z"
     },
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-6344138a-3d98-4b71-88fa-3f4c0d0199d9",
-      "requestId": "1c13e229-2231-44f9-85a9-736a11de2264",
+      "id": "hmrcreq-8adec2d9-e10a-4814-aead-64f84c599080",
+      "requestId": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/300143043/obligations?from=2017-01-01&to=2017-03-31&status=O",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/400389186/obligations?from=2017-01-01&to=2017-03-31&status=O",
       "method": "GET",
       "httpRequest": {
         "method": "GET",
@@ -447,20 +645,21 @@
           "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
           "Authorization": "***MASKED***",
-          "x-request-id": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "95546974-a1eb-4b12-bda6-03a519b5a69b",
+          "x-request-id": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60737",
+          "Gov-Client-Device-ID": "cb0b1dfc-1b03-45bb-b671-718b623369a8",
           "Gov-Client-User-IDs": "server=user",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
           "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
           "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
           "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:35.778Z",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:20.096Z",
           "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
           "Gov-Client-Timezone": "UTC+01:00",
           "Gov-Client-Window-Size": "width=1280&height=1446"
@@ -474,16 +673,16 @@
           "content-length": "110",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:37 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:21 GMT",
           "strict-transport-security": "max-age=31536000;",
           "vary": "Origin",
-          "via": "1.1 29676c2ee539645954aa742bde1ce894.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "83tvZdWRPZXmo9vIRzCi6Wv54ZexaC-9_GQ7Jl-rLiLgdAodqjtjfw==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 3125623663e894c8bb8161ef6c981a38.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "MKNwvNdRvlCN3RjmhjJYYBjPd-CabfYPfOvzvMdYaDGg751Uo6ZcnQ==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
           "x-content-type-options": "nosniff, nosniff",
-          "x-correlationid": "5b3d426c-eae5-4a36-9d4b-75c0559f2abd",
-          "x-envoy-upstream-service-time": "18",
+          "x-correlationid": "b7e43c29-d26c-48b9-8469-9b497469f3fb",
+          "x-envoy-upstream-service-time": "19",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
@@ -498,41 +697,43 @@
           ]
         }
       },
-      "duration": 119,
-      "createdAt": "2026-02-08T01:37:37.627Z",
-      "ttl": 1772933857,
-      "ttl_datestamp": "2026-03-08T01:37:37.627Z"
+      "duration": 223,
+      "createdAt": "2026-02-09T23:45:21.113Z",
+      "ttl": 1773099921,
+      "ttl_datestamp": "2026-03-09T23:45:21.113Z"
     },
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-682cfd6b-3f12-4966-ae96-ba4785793799",
-      "requestId": "1c13e229-2231-44f9-85a9-736a11de2264",
+      "id": "hmrcreq-99ddd9e2-6c7a-4d10-9e9a-29e5a3949038",
+      "requestId": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/400389186/obligations?from=2017-01-01&to=2017-03-31&status=F",
       "method": "GET",
       "httpRequest": {
         "method": "GET",
         "headers": {
+          "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
           "Authorization": "***MASKED***",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "95546974-a1eb-4b12-bda6-03a519b5a69b",
+          "x-request-id": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "d295693f-e7dc-46da-ad27-71a4c7e73f2d",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60836",
+          "Gov-Client-Device-ID": "24f3bcbf-9d8c-41aa-9626-77c794b8759c",
           "Gov-Client-User-IDs": "server=user",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
           "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
           "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
           "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:35.778Z",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:36.661Z",
           "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
           "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446",
-          "x-request-id": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "1c13e229-2231-44f9-85a9-736a11de2264"
+          "Gov-Client-Window-Size": "width=1280&height=1446"
         }
       },
       "httpResponse": {
@@ -540,113 +741,95 @@
         "headers": {
           "cache-control": "no-cache,no-store,max-age=0",
           "connection": "keep-alive",
-          "content-length": "489",
+          "content-length": "134",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:36 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:38 GMT",
           "strict-transport-security": "max-age=31536000;",
           "vary": "Origin",
-          "via": "1.1 29676c2ee539645954aa742bde1ce894.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "UwSFx3P0o7srEl7UydD0tYmtEJ_7SswTWiwZWOn3TL7wfPDt-kEijg==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 31aae39c23f641a592a85dcde0d06b40.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "_smraNloZ-b99uonqmJOvDFHFcs5Uu5qnG31oUJSRPLsK2ePmXTJnw==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff",
-          "x-envoy-upstream-service-time": "21",
-          "x-frame-options": "SAMEORIGIN"
-        },
-        "body": {
-          "specVersion": "3.3",
-          "code": "***MASKED***",
-          "message": "At least 1 header is invalid",
-          "errors": [
-            {
-              "code": "***MASKED***",
-              "message": "Header missing. You will not be able to submit a header if the connection is between client and server in a private network. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-public-port"
-              ]
-            }
-          ],
-          "warnings": [
-            {
-              "code": "***MASKED***",
-              "message": "Header required",
-              "headers": [
-                "gov-vendor-license-ids"
-              ]
-            }
-          ]
-        }
-      },
-      "duration": 131,
-      "createdAt": "2026-02-08T01:37:36.092Z",
-      "ttl": 1772933856,
-      "ttl_datestamp": "2026-03-08T01:37:36.092Z"
-    },
-    {
-      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-69a4e04c-fc91-45c6-a53d-e7f25e32ce58",
-      "requestId": "1c13e229-2231-44f9-85a9-736a11de2264",
-      "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
-      "method": "GET",
-      "httpRequest": {
-        "method": "GET",
-        "headers": {
-          "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "***MASKED***",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "95546974-a1eb-4b12-bda6-03a519b5a69b",
-          "Gov-Client-User-IDs": "server=user",
-          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
-          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
-          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
-          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:35.778Z",
-          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
-          "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446",
-          "x-request-id": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "1c13e229-2231-44f9-85a9-736a11de2264"
-        }
-      },
-      "httpResponse": {
-        "statusCode": 200,
-        "headers": {
-          "cache-control": "no-cache,no-store,max-age=0",
-          "connection": "keep-alive",
-          "content-length": "489",
-          "content-security-policy": "default-src 'self'",
-          "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:36 GMT",
-          "strict-transport-security": "max-age=31536000;",
-          "vary": "Origin",
-          "via": "1.1 29676c2ee539645954aa742bde1ce894.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "rnl5CImWmOzu0EGSlOI2M_92mom0PYMJ0fEqPXCs-Z8QdsA7xJc6Dw==",
-          "x-amz-cf-pop": "AMS1-P1",
-          "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff",
+          "x-content-type-options": "nosniff, nosniff",
+          "x-correlationid": "41465e0e-1b0f-4b70-a20d-7252f96ed522",
           "x-envoy-upstream-service-time": "16",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
+          "obligations": [
+            {
+              "periodKey": "18A1",
+              "start": "2017-01-01",
+              "end": "2017-03-31",
+              "due": "2017-05-07",
+              "status": "F",
+              "received": "2017-05-06"
+            }
+          ]
+        }
+      },
+      "duration": 175,
+      "createdAt": "2026-02-09T23:45:39.000Z",
+      "ttl": 1773099939,
+      "ttl_datestamp": "2026-03-09T23:45:39.000Z"
+    },
+    {
+      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
+      "id": "hmrcreq-b0e57a9c-d010-4a23-8dfd-82e290ca1b7e",
+      "requestId": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+      "amznTraceId": null,
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
+      "method": "GET",
+      "httpRequest": {
+        "method": "GET",
+        "headers": {
+          "Accept": "application/vnd.hmrc.1.0+json",
+          "Authorization": "***MASKED***",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60737",
+          "Gov-Client-Device-ID": "cb0b1dfc-1b03-45bb-b671-718b623369a8",
+          "Gov-Client-User-IDs": "server=user",
+          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
+          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
+          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
+          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:20.096Z",
+          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
+          "Gov-Client-Timezone": "UTC+01:00",
+          "Gov-Client-Window-Size": "width=1280&height=1446",
+          "x-request-id": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "e260d73b-ebb1-44e3-ba39-e335ce5eb165"
+        }
+      },
+      "httpResponse": {
+        "statusCode": 200,
+        "headers": {
+          "cache-control": "no-cache,no-store,max-age=0",
+          "connection": "keep-alive",
+          "content-length": "215",
+          "content-security-policy": "default-src 'self'",
+          "content-type": "application/json",
+          "date": "Mon, 09 Feb 2026 23:45:20 GMT",
+          "strict-transport-security": "max-age=31536000;",
+          "vary": "Origin",
+          "via": "1.1 3125623663e894c8bb8161ef6c981a38.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "ufWnZWDgQPTiq2kHysynb2FWrXT9Diq55gvjtvDgNiz2GqXBeo5Hew==",
+          "x-amz-cf-pop": "HEL51-P6",
+          "x-cache": "Miss from cloudfront",
+          "x-content-type-options": "nosniff",
+          "x-envoy-upstream-service-time": "17",
+          "x-frame-options": "SAMEORIGIN"
+        },
+        "body": {
           "specVersion": "3.3",
           "code": "***MASKED***",
-          "message": "At least 1 header is invalid",
-          "errors": [
-            {
-              "code": "***MASKED***",
-              "message": "Header missing. You will not be able to submit a header if the connection is between client and server in a private network. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-public-port"
-              ]
-            }
-          ],
+          "message": "At least 1 header is potentially invalid",
           "warnings": [
             {
               "code": "***MASKED***",
@@ -658,96 +841,26 @@
           ]
         }
       },
-      "duration": 134,
-      "createdAt": "2026-02-08T01:37:36.426Z",
-      "ttl": 1772933856,
-      "ttl_datestamp": "2026-03-08T01:37:36.426Z"
+      "duration": 214,
+      "createdAt": "2026-02-09T23:45:20.879Z",
+      "ttl": 1773099920,
+      "ttl_datestamp": "2026-03-09T23:45:20.879Z"
     },
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-73c724e5-c279-4a48-90f3-8735bf1194db",
-      "requestId": "1c13e229-2231-44f9-85a9-736a11de2264",
+      "id": "hmrcreq-b60dbb99-f35f-45b0-8b5f-aacb58a10d0b",
+      "requestId": "76f6d003-bcb3-4e1d-993c-6276e99edfbc",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/300143043/obligations?from=2017-01-01&to=2017-03-31&status=O",
-      "method": "GET",
-      "httpRequest": {
-        "method": "GET",
-        "headers": {
-          "Content-Type": "application/json",
-          "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "***MASKED***",
-          "x-request-id": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "95546974-a1eb-4b12-bda6-03a519b5a69b",
-          "Gov-Client-User-IDs": "server=user",
-          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
-          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
-          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
-          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:35.778Z",
-          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
-          "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446"
-        }
-      },
-      "httpResponse": {
-        "statusCode": 200,
-        "headers": {
-          "cache-control": "no-cache,no-store,max-age=0",
-          "connection": "keep-alive",
-          "content-length": "110",
-          "content-security-policy": "default-src 'self'",
-          "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:36 GMT",
-          "strict-transport-security": "max-age=31536000;",
-          "vary": "Origin",
-          "via": "1.1 29676c2ee539645954aa742bde1ce894.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "qmLWh7Ixia8RQnxwoAbo37ELtiJ9pLbLTRzdy9XPGQ45-p0kJU6_xw==",
-          "x-amz-cf-pop": "AMS1-P1",
-          "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff, nosniff",
-          "x-correlationid": "dfcbe25d-c67e-492d-9d4d-175de360a772",
-          "x-envoy-upstream-service-time": "30",
-          "x-frame-options": "SAMEORIGIN"
-        },
-        "body": {
-          "obligations": [
-            {
-              "periodKey": "18A1",
-              "start": "2017-01-01",
-              "end": "2017-03-31",
-              "due": "2017-05-07",
-              "status": "O"
-            }
-          ]
-        }
-      },
-      "duration": 149,
-      "createdAt": "2026-02-08T01:37:36.252Z",
-      "ttl": 1772933856,
-      "ttl_datestamp": "2026-03-08T01:37:36.252Z"
-    },
-    {
-      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-8828be37-9e37-40cc-8cd0-0a06b3ccbc98",
-      "requestId": "bbcc3af0-46f8-45ef-9298-86cc2b7c2f69",
-      "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
       "url": "https://test-api.service.hmrc.gov.uk/oauth/token",
       "method": "POST",
       "httpRequest": {
         "method": "POST",
         "headers": {
           "Content-Type": "application/x-www-form-urlencoded",
-          "x-request-id": "bbcc3af0-46f8-45ef-9298-86cc2b7c2f69",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "bbcc3af0-46f8-45ef-9298-86cc2b7c2f69"
+          "x-request-id": "76f6d003-bcb3-4e1d-993c-6276e99edfbc",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "76f6d003-bcb3-4e1d-993c-6276e99edfbc"
         },
         "body": "grant_type=authorization_code&client_id=uqMHA6RsDGGa7h8EG2VqfqAmv4tV&client_secret=***MASKED***&redirect_uri=https%3A%2F%2Fwanted-finally-anteater.ngrok-free.app%2Factivities%2FsubmitVatCallback.html&code=***MASKED***"
       },
@@ -759,14 +872,14 @@
           "content-length": "172",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:35 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:19 GMT",
           "strict-transport-security": "max-age=31536000;",
-          "via": "1.1 29676c2ee539645954aa742bde1ce894.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "Fg1ugC8BRy5VcEfgkDQNPJ1fr2A6bVQwtIdyMBvA0tuJqL9LgiW47Q==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 3125623663e894c8bb8161ef6c981a38.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "gd1iTTKKgMzuEkz4lJZeZQO2akWj_VQkK8LWhqSgaUdwGMcIf6-fYw==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
           "x-content-type-options": "nosniff",
-          "x-envoy-upstream-service-time": "57",
+          "x-envoy-upstream-service-time": "51",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
@@ -777,17 +890,17 @@
           "token_type": "bearer"
         }
       },
-      "duration": 259,
-      "createdAt": "2026-02-08T01:37:35.341Z",
-      "ttl": 1772933855,
-      "ttl_datestamp": "2026-03-08T01:37:35.341Z"
+      "duration": 414,
+      "createdAt": "2026-02-09T23:45:19.087Z",
+      "ttl": 1773099919,
+      "ttl_datestamp": "2026-03-09T23:45:19.087Z"
     },
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-8df4ea55-5f39-4999-9020-6f81ceca31ac",
-      "requestId": "38bfe1d9-9608-432e-af94-c5082011298d",
+      "id": "hmrcreq-e4425734-1238-44c7-b872-d219591ddebf",
+      "requestId": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
       "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
       "method": "GET",
       "httpRequest": {
@@ -795,23 +908,24 @@
         "headers": {
           "Accept": "application/vnd.hmrc.1.0+json",
           "Authorization": "***MASKED***",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "69f2dff1-1e5f-49b1-8d87-337723cd5fff",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60737",
+          "Gov-Client-Device-ID": "cb0b1dfc-1b03-45bb-b671-718b623369a8",
           "Gov-Client-User-IDs": "server=user",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
           "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
           "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
           "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:58.446Z",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:20.096Z",
           "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
           "Gov-Client-Timezone": "UTC+01:00",
           "Gov-Client-Window-Size": "width=1280&height=1446",
-          "x-request-id": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "38bfe1d9-9608-432e-af94-c5082011298d"
+          "x-request-id": "e260d73b-ebb1-44e3-ba39-e335ce5eb165",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "e260d73b-ebb1-44e3-ba39-e335ce5eb165"
         }
       },
       "httpResponse": {
@@ -819,33 +933,24 @@
         "headers": {
           "cache-control": "no-cache,no-store,max-age=0",
           "connection": "keep-alive",
-          "content-length": "489",
+          "content-length": "215",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:38:00 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:21 GMT",
           "strict-transport-security": "max-age=31536000;",
           "vary": "Origin",
-          "via": "1.1 5e1e1cde81deec56515dcc5317501fe8.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "blGPCUCLJoBI1FNZIibv7mztxX1z6JYQ9TzqQ_VJhWAbhKNWhVda6w==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 3125623663e894c8bb8161ef6c981a38.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "Y63ht7norrzyB5_GUkxt-vmlyi5FrnDhJjaPi8yVNYi2nJ0j8er94g==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
           "x-content-type-options": "nosniff",
-          "x-envoy-upstream-service-time": "49",
+          "x-envoy-upstream-service-time": "19",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
           "specVersion": "3.3",
           "code": "***MASKED***",
-          "message": "At least 1 header is invalid",
-          "errors": [
-            {
-              "code": "***MASKED***",
-              "message": "Header missing. You will not be able to submit a header if the connection is between client and server in a private network. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-public-port"
-              ]
-            }
-          ],
+          "message": "At least 1 header is potentially invalid",
           "warnings": [
             {
               "code": "***MASKED***",
@@ -857,167 +962,18 @@
           ]
         }
       },
-      "duration": 136,
-      "createdAt": "2026-02-08T01:38:00.135Z",
-      "ttl": 1772933880,
-      "ttl_datestamp": "2026-03-08T01:38:00.135Z"
+      "duration": 305,
+      "createdAt": "2026-02-09T23:45:21.446Z",
+      "ttl": 1773099921,
+      "ttl_datestamp": "2026-03-09T23:45:21.446Z"
     },
     {
       "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-9992d133-72f4-44d2-ac02-26347d5486c3",
-      "requestId": "38bfe1d9-9608-432e-af94-c5082011298d",
+      "id": "hmrcreq-edeaa834-6dc0-463c-88de-1222fdfd9d48",
+      "requestId": "395ba307-1ee3-433a-bdd3-6d92fb98e1ee",
       "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate",
-      "method": "GET",
-      "httpRequest": {
-        "method": "GET",
-        "headers": {
-          "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "***MASKED***",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "69f2dff1-1e5f-49b1-8d87-337723cd5fff",
-          "Gov-Client-User-IDs": "server=user",
-          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
-          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
-          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
-          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:58.446Z",
-          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
-          "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446",
-          "x-request-id": "38bfe1d9-9608-432e-af94-c5082011298d",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "38bfe1d9-9608-432e-af94-c5082011298d"
-        }
-      },
-      "httpResponse": {
-        "statusCode": 200,
-        "headers": {
-          "cache-control": "no-cache,no-store,max-age=0",
-          "connection": "keep-alive",
-          "content-length": "489",
-          "content-security-policy": "default-src 'self'",
-          "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:58 GMT",
-          "strict-transport-security": "max-age=31536000;",
-          "vary": "Origin",
-          "via": "1.1 5e1e1cde81deec56515dcc5317501fe8.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "ujVIRn6RqEf4vRByeD1ZOqpjOPg2tEF3vS8llFj51nvdI0rfb5l0tA==",
-          "x-amz-cf-pop": "AMS1-P1",
-          "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff",
-          "x-envoy-upstream-service-time": "16",
-          "x-frame-options": "SAMEORIGIN"
-        },
-        "body": {
-          "specVersion": "3.3",
-          "code": "***MASKED***",
-          "message": "At least 1 header is invalid",
-          "errors": [
-            {
-              "code": "***MASKED***",
-              "message": "Header missing. You will not be able to submit a header if the connection is between client and server in a private network. If this is the case, you must contact us explaining why you cannot submit this header.",
-              "headers": [
-                "gov-client-public-port"
-              ]
-            }
-          ],
-          "warnings": [
-            {
-              "code": "***MASKED***",
-              "message": "Header required",
-              "headers": [
-                "gov-vendor-license-ids"
-              ]
-            }
-          ]
-        }
-      },
-      "duration": 110,
-      "createdAt": "2026-02-08T01:37:58.996Z",
-      "ttl": 1772933878,
-      "ttl_datestamp": "2026-03-08T01:37:58.996Z"
-    },
-    {
-      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-9c79bcd0-fa3c-4a64-a225-25caea3ad20f",
-      "requestId": "1c13e229-2231-44f9-85a9-736a11de2264",
-      "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/300143043/returns",
-      "method": "POST",
-      "httpRequest": {
-        "method": "POST",
-        "headers": {
-          "Content-Type": "application/json",
-          "Accept": "application/vnd.hmrc.1.0+json",
-          "Authorization": "***MASKED***",
-          "x-request-id": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "1c13e229-2231-44f9-85a9-736a11de2264",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "95546974-a1eb-4b12-bda6-03a519b5a69b",
-          "Gov-Client-User-IDs": "server=user",
-          "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
-          "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
-          "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
-          "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:37:35.778Z",
-          "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
-          "Gov-Client-Timezone": "UTC+01:00",
-          "Gov-Client-Window-Size": "width=1280&height=1446"
-        },
-        "body": "{\"periodKey\":\"18A1\",\"vatDueSales\":1000,\"vatDueAcquisitions\":0,\"totalVatDue\":1000,\"vatReclaimedCurrPeriod\":0,\"netVatDue\":1000,\"totalValueSalesExVAT\":5000,\"totalValuePurchasesExVAT\":0,\"totalValueGoodsSuppliedExVAT\":0,\"totalAcquisitionsExVAT\":0,\"finalised\":true}"
-      },
-      "httpResponse": {
-        "statusCode": 201,
-        "headers": {
-          "cache-control": "no-cache,no-store,max-age=0",
-          "connection": "keep-alive",
-          "content-length": "140",
-          "content-security-policy": "default-src 'self'",
-          "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:37:36 GMT",
-          "receipt-id": "18658165-3440-4447-bb4f-64220236cdec",
-          "receipt-signature": "This has been deprecated - DO NOT USE",
-          "receipt-timestamp": "2026-02-08T01:37:36Z",
-          "strict-transport-security": "max-age=31536000;",
-          "vary": "Origin",
-          "via": "1.1 29676c2ee539645954aa742bde1ce894.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "z_EhLtT9-jnSMZly0HF3bDgPr0tpXx877lTaMlCQTN9-HvvwV7qAmw==",
-          "x-amz-cf-pop": "AMS1-P1",
-          "x-cache": "Miss from cloudfront",
-          "x-content-type-options": "nosniff, nosniff",
-          "x-correlationid": "18658165-3440-4447-bb4f-64220236cdec",
-          "x-envoy-upstream-service-time": "45",
-          "x-frame-options": "SAMEORIGIN"
-        },
-        "body": {
-          "processingDate": "2026-02-08T01:37:36.660Z",
-          "formBundleNumber": "981126875354",
-          "paymentIndicator": "DD",
-          "chargeRefNumber": "AkU1xwMwn5g5exfL"
-        }
-      },
-      "duration": 238,
-      "createdAt": "2026-02-08T01:37:36.675Z",
-      "ttl": 1772933856,
-      "ttl_datestamp": "2026-03-08T01:37:36.675Z"
-    },
-    {
-      "hashedSub": "5f202fdb051350c5da3294b66ca72ea2fe0b92e841a7b04d378300a848a3dfb0",
-      "id": "hmrcreq-ee0b4a58-4743-4569-baaf-dafa47740afe",
-      "requestId": "cd9e2409-06c4-4cce-b524-4d38ce9acb62",
-      "amznTraceId": null,
-      "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/300143043/obligations?from=2025-01-01&to=2025-12-01",
+      "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+      "url": "https://test-api.service.hmrc.gov.uk/organisations/vat/400389186/obligations?from=2025-01-01&to=2025-12-01",
       "method": "GET",
       "httpRequest": {
         "method": "GET",
@@ -1025,20 +981,21 @@
           "Content-Type": "application/json",
           "Accept": "application/vnd.hmrc.1.0+json",
           "Authorization": "***MASKED***",
-          "x-request-id": "cd9e2409-06c4-4cce-b524-4d38ce9acb62",
-          "traceparent": "00-bf667bbb93537ba1526e327072455d2e-f52613a39ec1f380-01",
-          "x-correlationid": "cd9e2409-06c4-4cce-b524-4d38ce9acb62",
-          "Gov-Client-Public-IP": "87.208.194.107",
-          "Gov-Client-Device-ID": "1a8f2a5d-5a56-4277-9d37-f86ab36c384e",
+          "x-request-id": "395ba307-1ee3-433a-bdd3-6d92fb98e1ee",
+          "traceparent": "00-c255b6ade01cc07338c01a01689a14f2-cb951444c97a4d65-01",
+          "x-correlationid": "395ba307-1ee3-433a-bdd3-6d92fb98e1ee",
+          "Gov-Client-Public-IP": "79.127.150.138",
+          "Gov-Client-Public-Port": "60875",
+          "Gov-Client-Device-ID": "ce4fd70c-871c-45f3-a8ae-4a8e15ed467c",
           "Gov-Client-User-IDs": "server=user",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
-          "Gov-Vendor-Public-IP": "87.208.194.107",
-          "Gov-Vendor-Forwarded": "by=87.208.194.107&for=87.208.194.107",
+          "Gov-Vendor-Public-IP": "79.127.150.138",
+          "Gov-Vendor-Forwarded": "by=79.127.150.138&for=79.127.150.138",
           "Gov-Vendor-Product-Name": "web-submit-diyaccounting-co-uk",
           "Gov-Vendor-Version": "web-submit-diyaccounting-co-uk=1.0.0",
           "Gov-Client-Browser-JS-User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
-          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770514621292",
-          "Gov-Client-Public-IP-Timestamp": "2026-02-08T01:38:18.714Z",
+          "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00%3A09%3A01Z&unique-reference=test-mfa-1770680684335",
+          "Gov-Client-Public-IP-Timestamp": "2026-02-09T23:45:51.804Z",
           "Gov-Client-Screens": "width=1280&height=1446&colour-depth=24&scaling-factor=1",
           "Gov-Client-Timezone": "UTC+01:00",
           "Gov-Client-Window-Size": "width=1280&height=1446"
@@ -1052,16 +1009,16 @@
           "content-length": "227",
           "content-security-policy": "default-src 'self'",
           "content-type": "application/json",
-          "date": "Sun, 08 Feb 2026 01:38:19 GMT",
+          "date": "Mon, 09 Feb 2026 23:45:52 GMT",
           "strict-transport-security": "max-age=31536000;",
           "vary": "Origin",
-          "via": "1.1 b26a5eb677aed7368a2c7fd7f1d673dc.cloudfront.net (CloudFront)",
-          "x-amz-cf-id": "gSkc9xnO4muEcmiennE_AwH-LVJZK-1IOoJiIwk5PmzqQMdDjZm92Q==",
-          "x-amz-cf-pop": "AMS1-P1",
+          "via": "1.1 cebe933eea8c0fa2620104c86441b2de.cloudfront.net (CloudFront)",
+          "x-amz-cf-id": "x4P_hDLdSqryO4lAsFYX6f6Py1Nu-Xtb6kElfXqqkXImkgKoGjYdFg==",
+          "x-amz-cf-pop": "HEL51-P6",
           "x-cache": "Miss from cloudfront",
           "x-content-type-options": "nosniff, nosniff",
-          "x-correlationid": "f69ff70b-6ed6-49d3-9517-5418ac5dab7a",
-          "x-envoy-upstream-service-time": "17",
+          "x-correlationid": "5c7d20f0-0d8b-4094-9931-0551e82adf7a",
+          "x-envoy-upstream-service-time": "18",
           "x-frame-options": "SAMEORIGIN"
         },
         "body": {
@@ -1084,10 +1041,10 @@
           ]
         }
       },
-      "duration": 256,
-      "createdAt": "2026-02-08T01:38:19.056Z",
-      "ttl": 1772933899,
-      "ttl_datestamp": "2026-03-08T01:38:19.056Z"
+      "duration": 327,
+      "createdAt": "2026-02-09T23:45:52.251Z",
+      "ttl": 1773099952,
+      "ttl_datestamp": "2026-03-09T23:45:52.251Z"
     }
   ],
   "playwrightReport": {
@@ -1109,7 +1066,7 @@
       "complete-vat-receipt.png",
       "submit-hmrc-auth.png",
       "view-vat-return-results.png",
-      "submit-mock.png"
+      "focus-submitting-sign-in-form.png"
     ],
     "videos": [
       "video.webm"
@@ -1119,31 +1076,31 @@
         "filename": "fill-in-submission-pagedown.png",
         "order": 1,
         "description": "VAT return form filled out with test data including VAT number, period key, and amount due",
-        "caption": "08 01 37 21 286035780 10 Fill In Submission Pagedown"
+        "caption": "09 23 45 05 143685408 10 Fill In Submission Pagedown"
       },
       {
         "filename": "complete-vat-receipt.png",
         "order": 2,
         "description": "Successful VAT return submission confirmation showing receipt details from HMRC",
-        "caption": "08 01 37 38 981032484 02 Complete Vat Receipt"
+        "caption": "09 23 45 22 140945151 02 Complete Vat Receipt"
       },
       {
         "filename": "submit-hmrc-auth.png",
         "order": 3,
         "description": "HMRC authorization page where user authenticates with HMRC",
-        "caption": "08 01 37 31 851372539 01 Submit Hmrc Auth"
+        "caption": "09 23 45 14 732024945 01 Submit Hmrc Auth"
       },
       {
         "filename": "view-vat-return-results.png",
         "order": 4,
         "description": "Retrieved VAT return data showing previously submitted values",
-        "caption": "08 01 38 01 132833662 04 View Vat Return Results"
+        "caption": "09 23 45 43 606277557 04 View Vat Return Results"
       },
       {
-        "filename": "submit-mock.png",
+        "filename": "focus-submitting-sign-in-form.png",
         "order": 5,
         "description": "Screenshot captured during test execution",
-        "caption": "08 01 36 58 031344299 01 Submit Mock"
+        "caption": "09 23 44 40 024216393 00 Focus Submitting Sign In Form"
       }
     ]
   }
