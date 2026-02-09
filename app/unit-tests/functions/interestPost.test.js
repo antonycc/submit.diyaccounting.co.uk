@@ -66,13 +66,9 @@ describe("interestPost ingestHandler", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                sub: "test-sub",
-                "cognito:username": "test",
-                scope: "read write",
-              },
-            },
+            sub: "test-sub",
+            "cognito:username": "test",
+            scope: "read write",
           },
         },
       },

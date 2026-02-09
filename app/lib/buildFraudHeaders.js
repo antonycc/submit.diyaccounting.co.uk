@@ -133,11 +133,11 @@ export function buildFraudHeaders(event) {
   }
 
   // 4. Client user IDs – from authenticated user (Cognito sub)
-  // Match the extraction logic in extractUserFromAuthorizerContext (httpResponseHelper.js)
+  // Custom Lambda authorizer (customAuthorizer.js) returns flat context: { sub, username, email, ... }
+  // API Gateway places this at event.requestContext.authorizer.lambda
   const authz = event.requestContext?.authorizer;
   const authzCtx = authz?.lambda ?? authz;
-  const authzClaims = authzCtx?.jwt?.claims ?? authzCtx?.claims;
-  const userId = authzClaims?.sub;
+  const userId = authzCtx?.sub;
   if (userId) {
     headers["Gov-Client-User-IDs"] = `server=${encodeURIComponent(userId)}`;
   } else {

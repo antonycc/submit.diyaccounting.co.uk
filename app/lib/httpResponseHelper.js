@@ -264,27 +264,13 @@ export function extractAuthTokenFromXAuthorization(event) {
 }
 
 export function extractUserFromAuthorizerContext(event) {
-  // Support multiple shapes:
-  // - HTTP API v2 Lambda authorizer: event.requestContext.authorizer.lambda.jwt.claims
-  // - REST API custom authorizer: event.requestContext.authorizer.jwt.claims or flat fields
-  // - Backward compatibility: flat fields directly under authorizer or authorizer.lambda
+  // Custom Lambda authorizer (customAuthorizer.js) returns flat context: { sub, username, email, ... }
+  // API Gateway places this at event.requestContext.authorizer.lambda
   const authz = event.requestContext?.authorizer;
   if (!authz) return null;
 
   const ctx = authz.lambda ?? authz;
 
-  // Prefer JWT-style claims if present
-  const claims = ctx?.jwt?.claims ?? ctx?.claims;
-  if (claims && claims.sub) {
-    return {
-      sub: claims.sub,
-      username: claims["cognito:username"] || claims.username || claims.sub,
-      email: claims.email || "",
-      scope: claims.scope || claims.scopes || "",
-    };
-  }
-
-  // Fallback to flat fields (legacy)
   if (ctx && ctx.sub) {
     return {
       sub: ctx.sub,

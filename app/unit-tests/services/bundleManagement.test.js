@@ -95,14 +95,10 @@ describe("bundleEnforcement.js", () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle");
       const authorizerContext = {
-        jwt: {
-          claims: {
-            "sub": "user-with-test-bundle",
-            "cognito:username": "test",
-            "email": "test@test.submit.diyaccunting.co.uk",
-            "scope": "read write",
-          },
-        },
+        "sub": "user-with-test-bundle",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
       };
       const event = buildEvent(token, authorizerContext);
 
@@ -119,14 +115,10 @@ describe("bundleEnforcement.js", () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle-expiry");
       const authorizerContext = {
-        jwt: {
-          claims: {
-            "sub": "user-with-test-bundle-expiry",
-            "cognito:username": "test",
-            "email": "test@test.submit.diyaccunting.co.uk",
-            "scope": "read write",
-          },
-        },
+        "sub": "user-with-test-bundle-expiry",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
       };
       const event = buildEvent(token, authorizerContext);
 
@@ -142,14 +134,10 @@ describe("bundleEnforcement.js", () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-without-bundle");
       const authorizerContext = {
-        jwt: {
-          claims: {
-            "sub": "user-without-bundle",
-            "cognito:username": "test",
-            "email": "test@test.submit.diyaccunting.co.uk",
-            "scope": "read write",
-          },
-        },
+        "sub": "user-without-bundle",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
       };
       const hmrcVatReturnGetUrlPath = "/api/v1/hmrc/vat/return";
       const event = buildEvent(token, authorizerContext, hmrcVatReturnGetUrlPath);
@@ -163,14 +151,10 @@ describe("bundleEnforcement.js", () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-prod-bundle");
       const authorizerContext = {
-        jwt: {
-          claims: {
-            "sub": "user-with-prod-bundle",
-            "cognito:username": "test",
-            "email": "test@test.submit.diyaccunting.co.uk",
-            "scope": "read write",
-          },
-        },
+        "sub": "user-with-prod-bundle",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
       };
       const event = buildEvent(token, authorizerContext);
 
@@ -186,14 +170,10 @@ describe("bundleEnforcement.js", () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-legacy-bundle");
       const authorizerContext = {
-        jwt: {
-          claims: {
-            "sub": "user-with-legacy-bundle",
-            "cognito:username": "test",
-            "email": "test@test.submit.diyaccunting.co.uk",
-            "scope": "read write",
-          },
-        },
+        "sub": "user-with-legacy-bundle",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
       };
       const event = buildEvent(token, authorizerContext);
 
@@ -209,14 +189,10 @@ describe("bundleEnforcement.js", () => {
       process.env.HMRC_BASE_URI = "https://api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-prod-bundle-expiry");
       const authorizerContext = {
-        jwt: {
-          claims: {
-            "sub": "user-with-prod-bundle-expiry",
-            "cognito:username": "test",
-            "email": "test@test.submit.diyaccunting.co.uk",
-            "scope": "read write",
-          },
-        },
+        "sub": "user-with-prod-bundle-expiry",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
       };
       const event = buildEvent(token, authorizerContext);
 

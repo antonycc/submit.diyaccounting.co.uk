@@ -180,12 +180,8 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": "test-user",
-                "cognito:username": "testuser",
-              },
-            },
+            "sub": "test-user",
+            "cognito:username": "testuser",
           },
         },
       },
@@ -249,12 +245,8 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": "test-user",
-                "cognito:username": "testuser",
-              },
-            },
+            "sub": "test-user",
+            "cognito:username": "testuser",
           },
         },
       },
@@ -300,12 +292,8 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": "test-user",
-                "cognito:username": "testuser",
-              },
-            },
+            "sub": "test-user",
+            "cognito:username": "testuser",
           },
         },
       },
@@ -361,12 +349,8 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": "test-user",
-                "cognito:username": "testuser",
-              },
-            },
+            "sub": "test-user",
+            "cognito:username": "testuser",
           },
         },
       },
@@ -413,12 +397,8 @@ describe("System: HMRC VAT Scenarios with Test Parameters", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": "test-user",
-                "cognito:username": "testuser",
-              },
-            },
+            "sub": "test-user",
+            "cognito:username": "testuser",
           },
         },
       },

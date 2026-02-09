@@ -75,15 +75,15 @@ describe("eventBuilders helpers", () => {
       const context = buildAuthorizerContext();
 
       expect(context).toHaveProperty("authorizer");
-      expect(context.authorizer.lambda.jwt.claims.sub).toBe("test-sub");
+      expect(context.authorizer.lambda.sub).toBe("test-sub");
     });
 
     test("uses provided sub, username, and email", () => {
       const context = buildAuthorizerContext("my-sub", "my-user", "my-email");
 
-      expect(context.authorizer.lambda.jwt.claims.sub).toBe("my-sub");
-      expect(context.authorizer.lambda.jwt.claims["cognito:username"]).toBe("my-user");
-      expect(context.authorizer.lambda.jwt.claims.email).toBe("my-email");
+      expect(context.authorizer.lambda.sub).toBe("my-sub");
+      expect(context.authorizer.lambda["cognito:username"]).toBe("my-user");
+      expect(context.authorizer.lambda.email).toBe("my-email");
     });
   });
 

@@ -210,12 +210,8 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "obligationuser",
-              },
-            },
+            "sub": testUserSub,
+            "cognito:username": "obligationuser",
           },
         },
       },
@@ -253,12 +249,8 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "obligationuser",
-              },
-            },
+            "sub": testUserSub,
+            "cognito:username": "obligationuser",
           },
         },
       },
@@ -319,12 +311,8 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "obligationuser",
-              },
-            },
+            "sub": testUserSub,
+            "cognito:username": "obligationuser",
           },
         },
       },
@@ -391,12 +379,8 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "multiuser",
-              },
-            },
+            "sub": testUserSub,
+            "cognito:username": "multiuser",
           },
         },
       },
@@ -449,12 +433,8 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "filteruser",
-              },
-            },
+            "sub": testUserSub,
+            "cognito:username": "filteruser",
           },
         },
       },

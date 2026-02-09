@@ -84,15 +84,17 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
   });
 
-  it("should extract user ID from HTTP API v2 Lambda authorizer claims", () => {
+  it("should extract user ID from custom Lambda authorizer context", () => {
+    // Matches the actual format from customAuthorizer.js generateAllowPolicy():
+    // context: { sub, username, email, ... } placed at authorizer.lambda by API Gateway
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
       requestContext: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: { sub: "cognito-user-abc123" },
-            },
+            sub: "cognito-user-abc123",
+            username: "testuser",
+            email: "test@example.com",
           },
         },
       },
@@ -101,21 +103,6 @@ describe("buildFraudHeaders", () => {
     const { govClientHeaders: headers } = buildFraudHeaders(event);
 
     expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-abc123");
-  });
-
-  it("should extract user ID from flat authorizer claims", () => {
-    const event = {
-      headers: { "x-forwarded-for": "198.51.100.1" },
-      requestContext: {
-        authorizer: {
-          claims: { sub: "cognito-user-flat" },
-        },
-      },
-    };
-
-    const { govClientHeaders: headers } = buildFraudHeaders(event);
-
-    expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-flat");
   });
 
   it("should omit Gov-Client-User-IDs when not authenticated", () => {
@@ -233,7 +220,7 @@ describe("buildFraudHeaders", () => {
         "x-forwarded-for": "198.51.100.1, 203.0.113.5",
       },
       requestContext: {
-        authorizer: { claims: { sub: "user123" } },
+        authorizer: { lambda: { sub: "user123" } },
       },
     };
 
