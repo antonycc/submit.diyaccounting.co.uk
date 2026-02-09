@@ -193,15 +193,13 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
  * HMRC Fraud Prevention headers that are intentionally NOT supplied.
  * These headers are documented to HMRC as not applicable for this application.
  *
- * - gov-client-multi-factor: Cognito MFA not yet implemented
  * - gov-vendor-license-ids: Open-source software with no license keys
- * - gov-client-public-port: Supplied via CloudFront-Viewer-Address in AWS deployments,
- *   but unavailable in proxy/simulator mode (no CloudFront in path)
  *
  * @see buildFraudHeaders.js for server-side header generation
  * @see submit.js buildGovClientHeaders() for client-side header generation
  */
-export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
+// export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
+export const intentionallyNotSuppliedHeaders = ["gov-vendor-license-ids"];
 
 /**
  * Essential HMRC Fraud Prevention headers that MUST be present in every HMRC API request.
@@ -212,6 +210,9 @@ export const essentialFraudPreventionHeaders = [
   "gov-client-user-ids",
   "gov-vendor-product-name",
   "gov-vendor-version",
+  "gov-vendor-public-ip",
+  "gov-client-public-ip",
+  "gov-client-public-port",
 ];
 
 /**
