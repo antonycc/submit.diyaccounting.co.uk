@@ -1643,7 +1643,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'authBehaviour'
-      generate-test-reports: 'true'
+      generate-test-reports: 'false'
       skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
@@ -1666,7 +1666,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'bundleBehaviour'
-      generate-test-reports: 'true'
+      generate-test-reports: 'false'
       skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
@@ -1690,7 +1690,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'passRedemptionBehaviour'
-      generate-test-reports: 'true'
+      generate-test-reports: 'false'
       skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
@@ -1713,7 +1713,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'tokenEnforcementBehaviour'
-      generate-test-reports: 'true'
+      generate-test-reports: 'false'
       skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
