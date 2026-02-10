@@ -118,9 +118,7 @@ public class SelfDestructStack extends Stack {
 
         // Log group for self-destruct function (idempotent creation)
         ILogGroup logGroup = ensureLogGroupWithDependency(
-                        this,
-                        props.resourceNamePrefix() + "-SelfDestructLogGroup",
-                        props.selfDestructLogGroupName())
+                        this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.selfDestructLogGroupName())
                 .logGroup();
 
         // IAM role for the self-destruct Lambda function

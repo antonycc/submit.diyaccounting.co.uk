@@ -812,8 +812,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, interestPostLambdaHandlerDashed);
         this.interestPostIngestLambdaHandler =
                 "%s/account/%s".formatted(appLambdaHandlerPrefix, interestPostLambdaHandlerName);
-        this.interestPostIngestLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, interestPostLambdaHandlerDashed);
+        this.interestPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, interestPostLambdaHandlerDashed);
         this.interestPostIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.interestPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(

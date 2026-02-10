@@ -108,7 +108,8 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
-        // 26 routes: 19 original + 5 (passGet GET+HEAD, passPost POST, passAdminPost POST+HEAD) + 2 (interestPost POST+HEAD)
+        // 26 routes: 19 original + 5 (passGet GET+HEAD, passPost POST, passAdminPost POST+HEAD) + 2 (interestPost
+        // POST+HEAD)
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 26);
 
         // Dashboard moved to environment-level ObservabilityStack

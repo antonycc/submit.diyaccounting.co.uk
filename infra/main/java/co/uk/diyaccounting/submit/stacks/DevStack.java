@@ -122,9 +122,9 @@ public class DevStack extends Stack {
                 .build();
 
         // CloudWatch Log Group for ECR operations (idempotent creation)
-        this.ecrLogGroup =
-                ensureLogGroupWithDependency(this, props.resourceNamePrefix() + "-EcrLogGroup", ecrLogGroupName)
-                        .logGroup();
+        this.ecrLogGroup = ensureLogGroupWithDependency(
+                        this, props.resourceNamePrefix() + "-EcrLogGroup", ecrLogGroupName)
+                .logGroup();
 
         // IAM Role for ECR publishing with comprehensive permissions
         this.ecrPublishRole = Role.Builder.create(this, props.resourceNamePrefix() + "-EcrPublishRole")

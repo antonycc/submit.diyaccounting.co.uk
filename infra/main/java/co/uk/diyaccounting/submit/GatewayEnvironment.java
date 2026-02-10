@@ -31,7 +31,9 @@ public class GatewayEnvironment {
 
         var envName = envOr("ENVIRONMENT_NAME", KindCdk.getContextValueString(app, "envName", "ci"));
         var certificateArn = envOr("CERTIFICATE_ARN", KindCdk.getContextValueString(app, "certificateArn", ""));
-        var docRootPath = envOr("DOC_ROOT_PATH", KindCdk.getContextValueString(app, "docRootPath", "../web/www.diyaccounting.co.uk/public"));
+        var docRootPath = envOr(
+                "DOC_ROOT_PATH",
+                KindCdk.getContextValueString(app, "docRootPath", "../web/www.diyaccounting.co.uk/public"));
         var domainNamesStr = envOr("DOMAIN_NAMES", KindCdk.getContextValueString(app, "domainNames", ""));
         var prodFQDomainName = KindCdk.getContextValueString(app, "prodFQDomainName", "");
         var prodFQNakedDomainName = KindCdk.getContextValueString(app, "prodFQNakedDomainName", "");
@@ -54,7 +56,8 @@ public class GatewayEnvironment {
         infof("CDK synth complete for gateway environment");
     }
 
-    public GatewayEnvironment(App app, String envName, String certificateArn, String docRootPath, List<String> domainNames) {
+    public GatewayEnvironment(
+            App app, String envName, String certificateArn, String docRootPath, List<String> domainNames) {
         // CloudFront requires us-east-1 for certificates
         Environment usEast1Env = Environment.builder()
                 .region("us-east-1")

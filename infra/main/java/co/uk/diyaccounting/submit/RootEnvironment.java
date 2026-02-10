@@ -29,15 +29,19 @@ public class RootEnvironment {
 
         var hostedZoneName = KindCdk.getContextValueString(app, "hostedZoneName", "diyaccounting.co.uk");
         var hostedZoneId = KindCdk.getContextValueString(app, "hostedZoneId", "");
-        var ciGatewayCfDomain = envOr("CI_GATEWAY_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "ciGatewayCloudFrontDomain", ""));
-        var prodGatewayCfDomain = envOr("PROD_GATEWAY_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "prodGatewayCloudFrontDomain", ""));
+        var ciGatewayCfDomain = envOr(
+                "CI_GATEWAY_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "ciGatewayCloudFrontDomain", ""));
+        var prodGatewayCfDomain = envOr(
+                "PROD_GATEWAY_CLOUDFRONT_DOMAIN",
+                KindCdk.getContextValueString(app, "prodGatewayCloudFrontDomain", ""));
         var ciSpreadsheetsCfDomain = envOr(
                 "CI_SPREADSHEETS_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "ciSpreadsheetsCloudFrontDomain", ""));
         var prodSpreadsheetsCfDomain = envOr(
                 "PROD_SPREADSHEETS_CLOUDFRONT_DOMAIN",
                 KindCdk.getContextValueString(app, "prodSpreadsheetsCloudFrontDomain", ""));
-        var apexCfDomain = envOr("APEX_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "apexCloudFrontDomain", ""));
+        var apexCfDomain =
+                envOr("APEX_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "apexCloudFrontDomain", ""));
         var wwwCfDomain = envOr("WWW_CLOUDFRONT_DOMAIN", KindCdk.getContextValueString(app, "wwwCloudFrontDomain", ""));
         var spreadsheetsCfDomain = envOr(
                 "SPREADSHEETS_CLOUDFRONT_DOMAIN",

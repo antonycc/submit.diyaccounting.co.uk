@@ -26,20 +26,20 @@ import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpJwtAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizer;
 import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaResponseType;
 import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
+import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.apigatewayv2.ApiMapping;
 import software.amazon.awscdk.services.apigatewayv2.CfnStage;
+import software.amazon.awscdk.services.apigatewayv2.DomainName;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
 import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
-import software.amazon.awscdk.services.apigatewayv2.DomainName;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
-import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -159,8 +159,7 @@ public class ApiStack extends Stack {
         // Custom resource to clean up external API Gateway custom domain mappings on stack deletion.
         // set-origins creates mappings outside CloudFormation; if not removed before CF deletes the
         // HttpApi, the deletion fails because the $default stage is still referenced.
-        Function cleanupFn = Function.Builder.create(
-                        this, props.resourceNamePrefix() + "-ApiGwCleanupFn")
+        Function cleanupFn = Function.Builder.create(this, props.resourceNamePrefix() + "-ApiGwCleanupFn")
                 .runtime(Runtime.NODEJS_22_X)
                 .handler("index.handler")
                 .code(Code.fromInline(CLEANUP_LAMBDA_CODE))
@@ -174,8 +173,7 @@ public class ApiStack extends Stack {
                 .resources(List.of("arn:aws:apigateway:" + getRegion() + "::/*"))
                 .build());
 
-        Provider cleanupProvider = Provider.Builder.create(
-                        this, props.resourceNamePrefix() + "-ApiGwCleanupProvider")
+        Provider cleanupProvider = Provider.Builder.create(this, props.resourceNamePrefix() + "-ApiGwCleanupProvider")
                 .onEventHandler(cleanupFn)
                 .build();
 
