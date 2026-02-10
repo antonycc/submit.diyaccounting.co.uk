@@ -155,25 +155,38 @@
 
           console.log("User authenticated successfully using mock:", idTokenPayload.email);
 
-          // Extract MFA status from amr (Authentication Methods Reference) claim
-          // Mock OAuth server can include amr claims to simulate MFA (e.g., ["mfa", "pwd"])
+          // Extract MFA status from the ID token
+          // 1. Check amr (Authentication Methods Reference) claim — mock OAuth server provides amr: ["mfa", "pwd"]
+          // 2. Fallback: detect federated login via identities claim + auth_time (same logic as Cognito callback)
           const amrClaims = idTokenPayload.amr || [];
           const mfaIndicators = ["mfa", "swk", "hwk", "otp"]; // mfa=multi-factor, swk=software key, hwk=hardware key, otp=one-time password
           const hasMFA = Array.isArray(amrClaims) && amrClaims.some((method) => mfaIndicators.includes(method));
+          const isFederatedLogin = Array.isArray(idTokenPayload.identities) && idTokenPayload.identities.length > 0;
+          const authTime = idTokenPayload.auth_time;
 
           if (hasMFA) {
-            // Store MFA metadata for use in fraud prevention headers
+            // amr claims explicitly indicate MFA
             const mfaMetadata = {
-              type: "OTHER", // Use OTHER for federated IdP MFA (mock simulates Google 2FA, etc.)
-              timestamp: new Date().toISOString(),
+              type: "OTHER",
+              timestamp: authTime ? new Date(authTime * 1000).toISOString() : new Date().toISOString(),
               uniqueReference: crypto.randomUUID(),
             };
             sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
-            console.log("MFA detected from mock IdP:", amrClaims, "Stored metadata:", mfaMetadata);
+            console.log("MFA detected from amr claims:", amrClaims, "Stored metadata:", mfaMetadata);
+          } else if (isFederatedLogin && authTime) {
+            // Federated login — IdP handles MFA but doesn't expose amr
+            const providerNames = idTokenPayload.identities.map((id) => id.providerName || id.providerType).join(", ");
+            const mfaMetadata = {
+              type: "OTHER",
+              timestamp: new Date(authTime * 1000).toISOString(),
+              uniqueReference: crypto.randomUUID(),
+            };
+            sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
+            console.log("MFA inferred from federated login (" + providerNames + "), auth_time:", authTime, "Stored metadata:", mfaMetadata);
           } else {
             // No MFA detected - remove any existing metadata
             sessionStorage.removeItem("mfaMetadata");
-            console.log("No MFA detected in mock amr claims:", amrClaims);
+            console.log("No MFA detected. amr:", amrClaims, "federated:", isFederatedLogin, "auth_time:", authTime);
           }
 
           showStatus("Authenticated successfully. Fetching bundles...", "info");

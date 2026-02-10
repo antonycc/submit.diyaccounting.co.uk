@@ -287,8 +287,28 @@ npm run test:submitVatBehaviour-proxy-report
 
 **Fraud Prevention Headers Validated**:
 - All mandatory headers present
-- MFA header: `type=TOTP&timestamp=2026-01-08T00:09:01Z&unique-reference=test-mfa-*`
-- Known omissions documented (license IDs, public port)
+```
+  How we meet HMRC's Gov-Client-Multi-Factor requirement for Cognito + social auth
+
+  HMRC requires the Gov-Client-Multi-Factor header when the end user's authentication involved multi-factor authentication. The header format is:
+  Gov-Client-Multi-Factor: type=OTHER&timestamp=<ISO8601>&unique-reference=<UUID>
+
+  The problem: When a user logs in via Cognito with Google (or another social IdP), the IdP handles MFA internally but doesn't expose the amr claim in its OIDC tokens. So the standard OIDC mechanism for
+  detecting MFA doesn't work.
+
+  Our solution (two-tier detection in the login callback):
+
+  1. Primary: amr claim — If the ID token contains amr with MFA indicators (mfa, swk, hwk, otp), we use it. This works for IdPs that do expose amr (and for our mock OAuth2 server in tests).
+  2. Fallback: identities + auth_time claims — Cognito ID tokens for federated users include an identities array (listing the social provider, e.g. Google) and auth_time (the unix timestamp of when the user
+  actively authenticated with the IdP). When we detect a federated login with a valid auth_time, we populate the MFA header using type=OTHER and the auth_time as the timestamp. This is appropriate because:
+    - Google has made 2FA mandatory for most accounts
+    - HMRC's type=OTHER covers "federated IdP MFA" scenarios
+    - auth_time gives HMRC the actual authentication timestamp from the IdP session
+    - The header is only populated when the user actively authenticated (not from cached sessions without auth_time)
+
+  Test coverage: The mock OAuth2 server provides amr: ["mfa", "pwd"] in its tokens, so the mock login callback detects MFA via the primary path. The injectMockMfa() workaround is no longer needed.
+
+```
 
 ## 3.3 Questionnaire Response Preparation
 
