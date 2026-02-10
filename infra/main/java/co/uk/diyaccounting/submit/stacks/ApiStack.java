@@ -160,7 +160,7 @@ public class ApiStack extends Stack {
         // set-origins creates mappings outside CloudFormation; if not removed before CF deletes the
         // HttpApi, the deletion fails because the $default stage is still referenced.
         Function cleanupFn = Function.Builder.create(this, props.resourceNamePrefix() + "-ApiGwCleanupFn")
-                .runtime(Runtime.NODEJS_22_X)
+                .runtime(Runtime.NODEJS_24_X)
                 .handler("index.handler")
                 .code(Code.fromInline(CLEANUP_LAMBDA_CODE))
                 .timeout(Duration.minutes(5))

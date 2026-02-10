@@ -16,10 +16,10 @@
 
     <properties>
         <baseUrl>${env.DIY_SUBMIT_APEX_URL}</baseUrl>
-        <cdk.version>2.235.0</cdk.version>
+        <cdk.version>2.238.0</cdk.version>
         <immutables.version>2.12.1</immutables.version>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

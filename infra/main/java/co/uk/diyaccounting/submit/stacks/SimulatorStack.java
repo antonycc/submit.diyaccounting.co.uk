@@ -143,7 +143,7 @@ public class SimulatorStack extends Stack {
         this.simulatorFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-SimulatorFunction")
                 .functionName(props.resourceNamePrefix() + "-simulator")
                 .description("Public simulator for DIY Accounting Submit - demo mode only")
-                .runtime(Runtime.NODEJS_20_X)
+                .runtime(Runtime.NODEJS_24_X)
                 .architecture(Architecture.X86_64)
                 .handler("run.sh") // Lambda Web Adapter entrypoint - starts web server via run.sh
                 .code(Code.fromAsset(props.simulatorCodePath()))

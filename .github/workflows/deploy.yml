@@ -102,8 +102,8 @@ permissions:
   pages: write
 
 env:
-  JAVA_VERSION: '21'
-  NODE_VERSION: '22'
+  JAVA_VERSION: '25'
+  NODE_VERSION: '24'
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
