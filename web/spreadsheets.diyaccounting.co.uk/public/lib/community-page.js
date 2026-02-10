@@ -157,7 +157,7 @@
         return null;
       }
       return cached.data;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -171,7 +171,7 @@
           data: data,
         }),
       );
-    } catch (e) {
+    } catch {
       // localStorage full or unavailable — ignore
     }
   }

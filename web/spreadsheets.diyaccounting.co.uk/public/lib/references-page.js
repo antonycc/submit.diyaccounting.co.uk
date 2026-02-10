@@ -65,7 +65,7 @@
     // Group by category
     const categories = {};
     for (let i = 0; i < refs.length; i++) {
-      var ref = refs[i];
+      const ref = refs[i];
       const cat = ref.category || "general";
       if (!categories[cat]) categories[cat] = [];
       categories[cat].push(ref);
@@ -80,7 +80,7 @@
       html += "<h2>" + escapeHtml(categoryLabel(catName)) + "</h2>";
 
       for (let r = 0; r < catRefs.length; r++) {
-        var ref = catRefs[r];
+        const ref = catRefs[r];
         html += '<div class="ref-entry" id="' + escapeHtml(ref.id) + '">';
         html += "<h3>" + escapeHtml(ref.id) + "</h3>";
         html += '<p class="ref-claim">' + escapeHtml(ref.claim) + "</p>";
@@ -148,7 +148,7 @@
       const ref = refs[i];
       const sources = ref.source || [];
       for (let s = 0; s < sources.length; s++) {
-        var src = sources[s];
+        const src = sources[s];
         if (!sourceMap[src.id]) {
           sourceMap[src.id] = {
             id: src.id,
@@ -185,7 +185,7 @@
       html += "<h2>" + escapeHtml(pubName) + "</h2>";
 
       for (let k = 0; k < pubSources.length; k++) {
-        var src = pubSources[k];
+        const src = pubSources[k];
         html += '<div class="source-entry" id="' + escapeHtml(src.id) + '">';
         html += "<h3>";
         html += '<a href="' + escapeHtml(src.url) + '" rel="noopener" target="_blank">';

@@ -123,7 +123,7 @@ function updatePeriods() {
   periodSelect.innerHTML = "";
 
   if (!product || !product.periods || product.periods.length === 0) {
-    var opt = document.createElement("option");
+    const opt = document.createElement("option");
     opt.value = "";
     opt.textContent = "No periods available";
     periodSelect.appendChild(opt);
@@ -132,7 +132,7 @@ function updatePeriods() {
 
   for (let i = 0; i < product.periods.length; i++) {
     const period = product.periods[i];
-    var opt = document.createElement("option");
+    const opt = document.createElement("option");
     opt.value = i;
     opt.textContent = period.label + " (" + period.format + ")";
     periodSelect.appendChild(opt);

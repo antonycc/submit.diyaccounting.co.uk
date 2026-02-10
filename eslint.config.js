@@ -74,18 +74,63 @@ export default [
       "security/detect-object-injection": "off",
     },
   },
-  // Browser environment for web scripts
+  // Browser environment for web scripts (submit site)
   {
     files: ["web/public/**/*.js", "web/browser-tests/**/*.js", "web/unit-tests/**/*.js"],
     languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.node,
+        dataLayer: "writable",
+        gtag: "writable",
       },
     },
     rules: {
-      // Allow eval in tests for testing purposes
       "sonarjs/code-eval": "off",
+    },
+  },
+  // Browser environment for spreadsheets site (loaded via <script> tags, not ESM)
+  {
+    files: ["web/spreadsheets.diyaccounting.co.uk/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        dataLayer: "writable",
+        gtag: "writable",
+        TomlParser: "readonly",
+        KBSearch: "readonly",
+        debounce: "readonly",
+      },
+    },
+    rules: {
+      "no-invalid-this": "off",
+      "prefer-rest-params": "off",
+      "sonarjs/no-ignored-exceptions": "off",
+      "sonarjs/slow-regex": "off",
+      "promise/always-return": "off",
+      "promise/no-nesting": "off",
+    },
+  },
+  // Browser environment for gateway site
+  {
+    files: ["web/www.diyaccounting.co.uk/public/**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        dataLayer: "writable",
+        gtag: "writable",
+      },
+    },
+    rules: {
+      "no-invalid-this": "off",
+      "prefer-rest-params": "off",
+    },
+  },
+  // Google Analytics gtag snippets use `arguments` by design
+  {
+    files: ["**/lib/analytics.js"],
+    rules: {
+      "prefer-rest-params": "off",
     },
   },
   {
@@ -117,6 +162,8 @@ export default [
       "web/public/tests/",
       // Generated simulator build (gitignored, copied from web/public at build time)
       "web/public-simulator/",
+      // Auto-generated CloudFront Function (built by scripts/build-gateway-redirects.cjs)
+      "web/www.diyaccounting.co.uk/redirect-function.js",
       // Reference examples for UK Government form field standards
       "web/public/docs/hmrc-form-field-standards/",
       // Developer documentation and archive (not application code)
