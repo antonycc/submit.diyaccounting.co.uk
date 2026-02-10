@@ -212,7 +212,7 @@ export async function getGovClientHeaders() {
   // Get current user ID from localStorage if available
   const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
   const userId = userInfo.sub || "browser-unknown";
-  const govClientUserIDsHeader = `browser=${encodeURIComponent(userId)}`;
+  const govClientUserIDsHeader = `cognito=${encodeURIComponent(userId)}`;
 
   // Build client headers only (no vendor headers)
   const headers = {

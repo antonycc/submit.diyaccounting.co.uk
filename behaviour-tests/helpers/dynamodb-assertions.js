@@ -199,7 +199,7 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
  * @see submit.js buildGovClientHeaders() for client-side header generation
  */
 // export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
-export const intentionallyNotSuppliedHeaders = ["gov-vendor-license-ids"];
+export const intentionallyNotSuppliedHeaders = [];
 
 /**
  * Essential HMRC Fraud Prevention headers that MUST be present in every HMRC API request.

@@ -102,7 +102,37 @@ describe("buildFraudHeaders", () => {
 
     const { govClientHeaders: headers } = buildFraudHeaders(event);
 
-    expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-abc123");
+    expect(headers["Gov-Client-User-IDs"]).toBe("cognito=cognito-user-abc123");
+  });
+
+  it("should include Gov-Vendor-License-IDs when bundleIds provided", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event, { bundleIds: ["day-guest"] });
+    expect(headers["Gov-Vendor-License-IDs"]).toBe("diyaccounting=day-guest");
+  });
+
+  it("should join multiple bundleIds in Gov-Vendor-License-IDs", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event, { bundleIds: ["day-guest", "resident-pro"] });
+    expect(headers["Gov-Vendor-License-IDs"]).toBe("diyaccounting=day-guest&diyaccounting=resident-pro");
+  });
+
+  it("should omit Gov-Vendor-License-IDs when no bundleIds provided", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+    expect(headers["Gov-Vendor-License-IDs"]).toBeUndefined();
   });
 
   it("should omit Gov-Client-User-IDs when not authenticated", () => {

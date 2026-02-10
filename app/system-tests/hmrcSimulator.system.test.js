@@ -314,7 +314,7 @@ describe("HTTP Simulator", () => {
           "Authorization": "Bearer test-token",
           "Gov-Client-Connection-Method": "WEB_APP_VIA_SERVER",
           "Gov-Client-Device-ID": "test-device-id",
-          "Gov-Client-User-IDs": "server=anonymous",
+          "Gov-Client-User-IDs": "cognito=anonymous",
           "Gov-Client-Timezone": "UTC+00:00",
           "Gov-Client-Screens": "width=1920&height=1080&colour-depth=24&scaling-factor=1",
           "Gov-Client-Window-Size": "width=1920&height=1080",
@@ -326,7 +326,7 @@ describe("HTTP Simulator", () => {
           "Gov-Client-Public-IP": "127.0.0.1",
           "Gov-Client-Public-IP-Timestamp": new Date().toISOString(),
           "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00:00:00Z&unique-reference=test",
-          "Gov-Vendor-License-IDs": "test-license",
+          "Gov-Vendor-License-IDs": "diyaccounting=test",
           "Gov-Client-Public-Port": "443",
         },
       });

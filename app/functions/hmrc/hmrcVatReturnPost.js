@@ -243,8 +243,9 @@ export async function ingestHandler(event) {
 
   // Bundle enforcement
   let userSub;
+  let bundleIds = [];
   try {
-    userSub = await enforceBundles(event);
+    ({ userSub, bundleIds } = await enforceBundles(event));
   } catch (error) {
     // Note: Tracing headers (x-request-id, traceparent) are available via context
     // but not currently included in 403 error responses. The request URL is passed
@@ -275,7 +276,7 @@ export async function ingestHandler(event) {
   } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
-  const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event);
+  const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event, { bundleIds });
   const govTestScenarioHeader = getHeader(govClientHeaders, "Gov-Test-Scenario");
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 

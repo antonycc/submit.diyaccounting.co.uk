@@ -165,13 +165,17 @@ export async function enforceBundles(event, options = {}) {
     throw new BundleEntitlementError(message, errorDetails);
   }
 
+  // Collect the user's matched bundle IDs for downstream use (e.g. Gov-Vendor-License-IDs)
+  const matchedBundleIds = requiredBundleIds.filter((id) => currentBundleIds.has(id));
+
   logger.info({
     message: "Bundle entitlement check passed",
     userSub,
     path: requestPath,
+    matchedBundleIds,
   });
 
-  return userSub;
+  return { userSub, bundleIds: matchedBundleIds };
 }
 
 function extractUserInfo(event) {

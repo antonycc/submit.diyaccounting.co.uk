@@ -64,7 +64,7 @@ export async function detectVendorPublicIp() {
  * @param {object} event – Lambda proxy event containing headers and request context
  * @returns {object} – An object containing all required fraud prevention headers
  */
-export function buildFraudHeaders(event) {
+export function buildFraudHeaders(event, options = {}) {
   const headers = {};
   const eventHeaders = event.headers || {};
 
@@ -139,7 +139,7 @@ export function buildFraudHeaders(event) {
   const authzCtx = authz?.lambda ?? authz;
   const userId = authzCtx?.sub;
   if (userId) {
-    headers["Gov-Client-User-IDs"] = `server=${encodeURIComponent(userId)}`;
+    headers["Gov-Client-User-IDs"] = `cognito=${encodeURIComponent(userId)}`;
   } else {
     logger.warn({
       message:
@@ -173,10 +173,10 @@ export function buildFraudHeaders(event) {
     });
   }
 
-  // 8. Gov-Vendor-License-IDs is intentionally NOT supplied because:
-  // - The software is open-source (no commercial license)
-  // - There is no per-device or per-user license key
-  // - HMRC confirmed: "Please omit the header" (4 Feb 2026 review)
+  // 8. Vendor license IDs – the user's active bundle IDs from the product catalog
+  if (options.bundleIds && options.bundleIds.length > 0) {
+    headers["Gov-Vendor-License-IDs"] = options.bundleIds.map((id) => `diyaccounting=${encodeURIComponent(id)}`).join("&");
+  }
 
   // 9. Vendor product name – from package.json (must be percent-encoded)
   headers["Gov-Vendor-Product-Name"] = encodeURIComponent(packageName);
