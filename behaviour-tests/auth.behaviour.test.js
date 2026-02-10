@@ -223,7 +223,6 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
       observedTraceparent,
       testUrl,
       isSandboxMode: isSandboxMode(),
-      intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,
     screenshotPath,
