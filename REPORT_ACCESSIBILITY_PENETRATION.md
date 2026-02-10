@@ -3,7 +3,7 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-02-10T19:53:34.293Z
+**Generated**: 2026-02-10T20:27:04.754Z
 **Overall Status**: ❌ FAIL
 
 **Source Files**:
@@ -32,7 +32,7 @@
 | Pa11y (WCAG AA) | ❌ | 29/34 pages passed |
 | axe-core | ❌ | 2 violations, 1055 passes |
 | axe-core (WCAG 2.2) | ❌ | 2 violations, 614 passes |
-| Lighthouse | ✅ | A11y: 95%, Perf: 89%, BP: 100% |
+| Lighthouse | ✅ | A11y: 95%, Perf: 91%, BP: 100% |
 | Text Spacing (1.4.12) | ✅ | 25/25 pages passed |
 
 ---
@@ -193,7 +193,7 @@
 | Category | Score |
 |----------|-------|
 | Accessibility | 95% |
-| Performance | 89% |
+| Performance | 91% |
 | Best Practices | 100% |
 | SEO | 100% |
 
