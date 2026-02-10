@@ -4,6 +4,8 @@
 > **Provider**: Stripe (see [Provider Decision](#provider-decision) below)
 > **Target bundle**: `resident-pro` subscription via Stripe Checkout
 > **Branch strategy**: Feature branch deployed to CI environment, validated per phase before merging.
+> **Stripe donations (completed)**: `_developers/archive/PLAN_STRIPE_1.md` — Stripe Payment Links live on spreadsheets.diyaccounting.co.uk for donations. No backend/webhook infrastructure needed for that. This plan is for the submit site's subscription model.
+> **Stripe configuration approach**: All Stripe products, prices, and webhooks are defined as code in `scripts/stripe-setup.js` — see [Stripe Configuration as Code](#stripe-configuration-as-code) below.
 
 ## Overview
 
@@ -71,6 +73,155 @@ The simulator needs to support only the endpoints we use:
 | `GET /v1/subscriptions` | List/search subscriptions (for recovery) |
 | `POST /v1/billing_portal/sessions` | Create portal session |
 | `POST /v1/webhooks` | (simulated event delivery) |
+
+---
+
+## Stripe Configuration as Code
+
+### Principle
+
+All Stripe resources (products, prices, webhook endpoints) are defined declaratively in a single script: `scripts/stripe-setup.js`. This script is:
+
+- **Human-readable**: The configuration object at the top reads like a spec
+- **Machine-executable**: Run by either the developer or Claude Code
+- **Idempotent**: Safe to re-run — looks up existing resources by metadata before creating
+- **Environment-aware**: Works against Stripe test mode or live mode based on the API key provided
+
+### How to run
+
+**Option A — Developer runs it (shell variable or .env):**
+```bash
+# Via environment variable (recommended for one-off runs)
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
+
+# Via .env file (add to .env.proxy or create .env.stripe)
+echo "STRIPE_SECRET_KEY=sk_test_..." >> .env.stripe
+npx dotenv -e .env.stripe -- node scripts/stripe-setup.js
+```
+
+**Option B — Claude Code runs it (one-off restricted key):**
+1. Generate a restricted API key in Stripe Dashboard with only these permissions:
+   - Products: Write
+   - Prices: Write
+   - Webhook Endpoints: Write
+2. Pass the key to Claude Code in the conversation
+3. Claude runs: `STRIPE_SECRET_KEY=rk_test_... node scripts/stripe-setup.js`
+4. Delete the restricted key after setup completes
+
+### Script design (`scripts/stripe-setup.js`)
+
+```javascript
+// scripts/stripe-setup.js — Stripe subscription configuration as code
+//
+// Defines all Stripe resources needed for submit.diyaccounting.co.uk subscriptions.
+// Idempotent: safe to re-run. Looks up existing resources before creating.
+//
+// Usage: STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
+//        STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js --live
+
+import Stripe from 'stripe';
+
+const config = {
+  product: {
+    name: 'Resident Pro',
+    description: 'Monthly subscription for UK VAT submission via DIY Accounting Submit',
+    metadata: { bundleId: 'resident-pro', site: 'submit.diyaccounting.co.uk' }
+  },
+  prices: [
+    {
+      nickname: 'Resident Pro Monthly',
+      unit_amount: 999,       // £9.99 in pence
+      currency: 'gbp',
+      recurring: { interval: 'month' },
+      metadata: { bundleId: 'resident-pro', interval: 'monthly' }
+    }
+    // Future: annual price at £99.00 (2 months free)
+    // {
+    //   nickname: 'Resident Pro Annual',
+    //   unit_amount: 9900,
+    //   currency: 'gbp',
+    //   recurring: { interval: 'year' },
+    //   metadata: { bundleId: 'resident-pro', interval: 'annual' }
+    // }
+  ],
+  webhookEndpoints: {
+    ci: {
+      url: 'https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook',
+      description: 'CI environment webhook'
+    },
+    prod: {
+      url: 'https://submit.diyaccounting.co.uk/api/v1/billing/webhook',
+      description: 'Production webhook'
+    }
+  },
+  webhookEvents: [
+    'checkout.session.completed',
+    'invoice.paid',
+    'customer.subscription.updated',
+    'customer.subscription.deleted',
+    'invoice.payment_failed',
+    'charge.refunded',
+    'charge.dispute.created'
+  ],
+  portalConfiguration: {
+    business_profile: {
+      headline: 'DIY Accounting Submit — Manage your subscription'
+    },
+    features: {
+      subscription_cancel: { enabled: true, mode: 'at_period_end' },
+      payment_method_update: { enabled: true },
+      invoice_history: { enabled: true }
+    }
+  }
+};
+
+// Implementation: find-or-create each resource, print IDs at end
+// (actual implementation will be authored during Phase 2)
+```
+
+### What the script creates
+
+| Resource | Stripe API | Lookup key |
+|----------|-----------|------------|
+| Product | `POST /v1/products` | `metadata.bundleId = resident-pro` |
+| Monthly Price | `POST /v1/prices` | `metadata.bundleId + metadata.interval` |
+| Webhook (CI) | `POST /v1/webhook_endpoints` | URL match |
+| Webhook (Prod) | `POST /v1/webhook_endpoints` | URL match |
+| Customer Portal config | `POST /v1/billing_portal/configurations` | Active config check |
+
+### Output
+
+The script prints all created/found resource IDs:
+
+```
+Stripe Setup Complete (test mode)
+  Product:          prod_ResidentPro123
+  Monthly Price:    price_Monthly456
+  Webhook (CI):     we_ci789
+  Webhook (Prod):   we_prod012
+  Portal Config:    bpc_345
+
+Store these in AWS Secrets Manager:
+  {env}/submit/stripe/price_id = price_Monthly456
+```
+
+### Secrets workflow
+
+After running `stripe-setup.js`, store the output IDs in Secrets Manager using the existing `scripts/stripe-setup-secrets.sh` wrapper:
+
+```bash
+# After stripe-setup.js prints the IDs:
+STRIPE_PRICE_ID=price_Monthly456 \
+STRIPE_WEBHOOK_SECRET=whsec_... \
+STRIPE_SECRET_KEY=sk_test_... \
+  scripts/stripe-setup-secrets.sh ci
+
+# For production (with live keys):
+STRIPE_PRICE_ID=price_LiveXYZ \
+STRIPE_WEBHOOK_SECRET=whsec_live_... \
+STRIPE_SECRET_KEY=sk_live_... \
+  scripts/stripe-setup-secrets.sh prod
+```
 
 ---
 
@@ -262,23 +413,28 @@ Deploy to CI. `npm test` passes. Token usage page loads at `/usage.html` with so
 
 ### 2.1 Stripe npm dependency
 
-- [ ] Add `stripe` package to `package.json` dependencies
+- [ ] Add `stripe` package to `package.json` dependencies (note: not yet present — `PLAN_STRIPE_1` used Payment Links which need no SDK)
 - [ ] Verify `npm test` passes with new dependency
 
-### 2.2 Secrets Manager entries
+### 2.2 Stripe Configuration as Code (products, prices, webhooks)
 
-- [ ] Add Stripe secret key to Secrets Manager: `{env}/submit/stripe/secret_key`
-- [ ] Add Stripe webhook secret to Secrets Manager: `{env}/submit/stripe/webhook_secret`
-- [ ] Add Stripe price ID to Secrets Manager: `{env}/submit/stripe/price_id`
-- [ ] Script to create secrets: `scripts/stripe-setup-secrets.sh`
+All Stripe resources are created via `scripts/stripe-setup.js` (see [Stripe Configuration as Code](#stripe-configuration-as-code) above).
 
-### 2.3 Stripe product and price setup
+- [ ] Implement `scripts/stripe-setup.js` — idempotent script that creates/finds:
+  - Product: "Resident Pro" with `metadata.bundleId=resident-pro`
+  - Monthly price: GBP 9.99/month with metadata
+  - Webhook endpoints for CI and prod URLs
+  - Customer Portal configuration
+- [ ] Run `scripts/stripe-setup.js` against Stripe test mode
+- [ ] Verify all resources created correctly in Stripe Dashboard
 
-- [ ] Create Stripe test mode product: "Resident Pro" with metadata `bundleId=resident-pro`
-- [ ] Create monthly price: GBP 9.99/month with metadata `bundleId=resident-pro`
-- [ ] Create annual price (optional): GBP 99.00/year (2 months free)
-- [ ] Script: `scripts/stripe-setup-products.sh`
-- [ ] Script: `scripts/stripe-setup-webhooks.sh` (registers webhook endpoint URL)
+### 2.3 Secrets Manager entries
+
+- [ ] Create `scripts/stripe-setup-secrets.sh` — stores Stripe IDs in AWS Secrets Manager
+- [ ] Run secrets script for CI environment:
+  - `{env}/submit/stripe/secret_key` — Stripe API secret key
+  - `{env}/submit/stripe/webhook_secret` — Webhook signing secret
+  - `{env}/submit/stripe/price_id` — Monthly price ID from stripe-setup.js output
 
 ### 2.4 CDK infrastructure (BillingStack)
 
@@ -722,8 +878,8 @@ Deploy to CI. Run `npm run test:complianceBehaviour-ci`. All accessibility tools
 
 ### 9.1 Stripe Radar configuration
 
-- [ ] Enable Stripe Radar (included free)
-- [ ] Configure rules via Stripe Dashboard:
+- [ ] Enable Stripe Radar (included free, enabled by default on new accounts)
+- [ ] Configure Radar rules (via Dashboard or future Stripe API script):
   - Require 3D Secure for transactions over threshold
   - Block high-risk countries if applicable
 
@@ -735,7 +891,7 @@ Deploy to CI. Run `npm run test:complianceBehaviour-ci`. All accessibility tools
 
 ### 9.3 Payout schedule
 
-- [ ] Configure weekly payouts in Stripe Dashboard (7-10 day buffer for chargebacks)
+- [ ] Configure weekly payouts (7-10 day buffer for chargebacks) — via Dashboard or add to `stripe-setup.js`
 
 ### 9.4 UK Distance Selling compliance
 
@@ -774,12 +930,18 @@ Deploy to CI. Stripe Radar active. CloudWatch metrics visible on dashboard. Alar
 
 ### 10.1 Stripe live mode setup
 
-- [ ] Create live mode product and price in Stripe (matching test mode config)
-- [ ] Register live webhook endpoint URL
-- [ ] Update Secrets Manager with live mode keys:
-  - `prod/submit/stripe/secret_key` (live secret key)
-  - `prod/submit/stripe/webhook_secret` (live webhook secret)
-  - `prod/submit/stripe/price_id` (live price ID)
+- [ ] Run `scripts/stripe-setup.js` with live mode API key:
+  ```bash
+  STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js --live
+  ```
+  This creates the same product/price/webhook/portal resources in live mode.
+- [ ] Store live mode secrets in Secrets Manager:
+  ```bash
+  STRIPE_PRICE_ID=price_LiveXYZ \
+  STRIPE_WEBHOOK_SECRET=whsec_live_... \
+  STRIPE_SECRET_KEY=sk_live_... \
+    scripts/stripe-setup-secrets.sh prod
+  ```
 
 ### 10.2 Production deployment
 
@@ -913,9 +1075,8 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 | `app/functions/billing/billingRecoverPost.js` | 6 | Recover subscriptions after DB loss |
 | `app/data/dynamoDbSubscriptionRepository.js` | 2 | CRUD for subscriptions table |
 | `infra/main/java/.../BillingStack.java` | 2 | CDK billing infrastructure |
-| `scripts/stripe-setup-products.sh` | 2 | Create Stripe products and prices |
-| `scripts/stripe-setup-webhooks.sh` | 2 | Register Stripe webhook endpoint |
-| `scripts/stripe-setup-secrets.sh` | 2 | Create Secrets Manager entries |
+| `scripts/stripe-setup.js` | 2 | Idempotent Stripe config script (products, prices, webhooks, portal) |
+| `scripts/stripe-setup-secrets.sh` | 2 | Store Stripe IDs in AWS Secrets Manager |
 | `behaviour-tests/billing/billingCheckout.behaviour.test.js` | 3 | Skeletal checkout flow behaviour test |
 | `behaviour-tests/billing/billingLifecycle.behaviour.test.js` | 5 | Subscription lifecycle behaviour test |
 | `behaviour-tests/billing/billingManagement.behaviour.test.js` | 6 | Portal and recovery behaviour test |
@@ -951,8 +1112,14 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 
 ## Implementation Progress
 
-No implementation started. This plan will be executed after `PLAN_PASSES_V2.md` reaches stability on CI.
+- [x] `PLAN_STRIPE_1.md` — Stripe Payment Links for spreadsheets donations (completed, archived)
+- [ ] Phase 1: Token Usage Page — not started
+- [ ] Phase 2: Stripe SDK & Infrastructure Foundation — not started
+  - `scripts/stripe-setup.js` ready to be authored (config spec defined above, implementation iterates after plan approval)
+- [ ] Phases 3-10: not started
+
+**Next step**: Author `scripts/stripe-setup.js` implementation, then begin Phase 1.
 
 ---
 
-*Document restructured: 2026-02-01. Original proposal date: 2026-02-01.*
+*Document refreshed: 2026-02-10. PLAN_STRIPE_1 completed. Stripe-as-code approach added. Original proposal date: 2026-02-01.*
