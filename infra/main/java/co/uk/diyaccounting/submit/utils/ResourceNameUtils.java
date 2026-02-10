@@ -16,10 +16,8 @@ public class ResourceNameUtils {
     private static final List<AbstractMap.SimpleEntry<Pattern, String>> dashSeparatedMappings =
             List.of(new AbstractMap.SimpleEntry<>(Pattern.compile("\\."), "-"));
 
-    public static final List<AbstractMap.SimpleEntry<Pattern, String>> domainNameMappings = List.of();
-
     public static String buildDashedDomainName(String domainName) {
-        return ResourceNameUtils.convertDotSeparatedToDashSeparated(domainName, domainNameMappings);
+        return ResourceNameUtils.convertDotSeparatedToDashSeparated(domainName);
     }
 
     /**
@@ -114,5 +112,4 @@ public class ResourceNameUtils {
         }
         return result;
     }
-    ;
 }

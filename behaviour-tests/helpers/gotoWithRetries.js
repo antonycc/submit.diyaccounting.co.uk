@@ -14,7 +14,7 @@ const defaultScreenshotPath = "target/behaviour-test-results/screenshots/gotoWit
  * @param {unknown} err
  * @returns {boolean}
  */
-export function transientNavigationError(err) {
+function transientNavigationError(err) {
   const msg = String(err?.message || err || "");
   const candidates = [
     "net::ERR_NETWORK_CHANGED",
@@ -38,7 +38,7 @@ export function transientNavigationError(err) {
  * @param {number} ms
  * @returns {Promise<void>}
  */
-export function delay(ms) {
+function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 

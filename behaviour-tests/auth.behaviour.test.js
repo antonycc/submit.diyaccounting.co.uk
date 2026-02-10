@@ -24,7 +24,6 @@ import {
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
 import { goToReceiptsPageUsingMainNav } from "./steps/behaviour-hmrc-receipts-steps.js";
-import { intentionallyNotSuppliedHeaders } from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
