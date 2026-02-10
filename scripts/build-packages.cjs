@@ -11,15 +11,15 @@
 // Writes: target/zips/          (zip files for S3 upload)
 //         web/spreadsheets.diyaccounting.co.uk/public/catalogue.toml
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
 // Paths
-const ROOT = path.resolve(__dirname, '..');
-const PACKAGES_DIR = path.join(ROOT, 'packages');
-const ZIPS_DIR = path.join(ROOT, 'target', 'zips');
-const CATALOGUE_PATH = path.join(ROOT, 'web', 'spreadsheets.diyaccounting.co.uk', 'public', 'catalogue.toml');
+const ROOT = path.resolve(__dirname, "..");
+const PACKAGES_DIR = path.join(ROOT, "packages");
+const ZIPS_DIR = path.join(ROOT, "target", "zips");
+const CATALOGUE_PATH = path.join(ROOT, "web", "spreadsheets.diyaccounting.co.uk", "public", "catalogue.toml");
 
 // Regex to parse standard package directory names
 // e.g. "GB Accounts Basic Sole Trader 2025-04-05 (Apr25) Excel 2007"
@@ -31,32 +31,58 @@ const ANY_RE = /^GB Accounts Company (\d{4})-(\d{4}) \(Any\) (Excel \d{4})$/;
 
 // Product display names and IDs for the catalogue
 const PRODUCTS = {
-  'Basic Sole Trader': { id: 'BasicSoleTrader', description: 'Simple bookkeeping spreadsheet for sole traders not registered for VAT. Includes profit & loss, self assessment tax, and fixed assets.' },
-  'Self Employed': { id: 'SelfEmployed', description: 'Full bookkeeping spreadsheet for self-employed businesses. Includes sales, purchases, VAT returns, bank reconciliation, payslips, and self assessment.' },
-  'Company': { id: 'Company', description: 'Complete accounting spreadsheet for limited companies. Includes sales, purchases, VAT, corporation tax, payroll, dividends, and year-end accounts.' },
-  'Taxi Driver': { id: 'TaxiDriver', description: 'Bookkeeping spreadsheet designed for taxi drivers. Branded as Cabsmart, includes income tax, VAT, profit & loss, receipts, and expenses tracking.' },
-  'Payslip 05': { id: 'Payslip05', description: 'Payslip generator for up to 5 employees. Calculates PAYE, National Insurance, student loans, and pension contributions.' },
-  'Payslip 10': { id: 'Payslip10', description: 'Payslip generator for up to 10 employees. Calculates PAYE, National Insurance, student loans, and pension contributions.' },
+  "Basic Sole Trader": {
+    id: "BasicSoleTrader",
+    description:
+      "Simple bookkeeping spreadsheet for sole traders not registered for VAT. Includes profit & loss, self assessment tax, and fixed assets.",
+  },
+  "Self Employed": {
+    id: "SelfEmployed",
+    description:
+      "Full bookkeeping spreadsheet for self-employed businesses. Includes sales, purchases, VAT returns, bank reconciliation, payslips, and self assessment.",
+  },
+  "Company": {
+    id: "Company",
+    description:
+      "Complete accounting spreadsheet for limited companies. Includes sales, purchases, VAT, corporation tax, payroll, dividends, and year-end accounts.",
+  },
+  "Taxi Driver": {
+    id: "TaxiDriver",
+    description:
+      "Bookkeeping spreadsheet designed for taxi drivers. Branded as Cabsmart, includes income tax, VAT, profit & loss, receipts, and expenses tracking.",
+  },
+  "Payslip 05": {
+    id: "Payslip05",
+    description: "Payslip generator for up to 5 employees. Calculates PAYE, National Insurance, student loans, and pension contributions.",
+  },
+  "Payslip 10": {
+    id: "Payslip10",
+    description: "Payslip generator for up to 10 employees. Calculates PAYE, National Insurance, student loans, and pension contributions.",
+  },
 };
 
 // Months for Company (Any) generation
 const MONTHS = [
-  { month: 4, days: 30, abbr: 'Apr' },
-  { month: 5, days: 31, abbr: 'May' },
-  { month: 6, days: 30, abbr: 'Jun' },
-  { month: 7, days: 31, abbr: 'Jul' },
-  { month: 8, days: 31, abbr: 'Aug' },
-  { month: 9, days: 30, abbr: 'Sep' },
-  { month: 10, days: 31, abbr: 'Oct' },
-  { month: 11, days: 30, abbr: 'Nov' },
-  { month: 12, days: 31, abbr: 'Dec' },
-  { month: 1, days: 31, abbr: 'Jan' },
-  { month: 2, days: 28, abbr: 'Feb' }, // adjusted for leap year below
+  { month: 4, days: 30, abbr: "Apr" },
+  { month: 5, days: 31, abbr: "May" },
+  { month: 6, days: 30, abbr: "Jun" },
+  { month: 7, days: 31, abbr: "Jul" },
+  { month: 8, days: 31, abbr: "Aug" },
+  { month: 9, days: 30, abbr: "Sep" },
+  { month: 10, days: 31, abbr: "Oct" },
+  { month: 11, days: 30, abbr: "Nov" },
+  { month: 12, days: 31, abbr: "Dec" },
+  { month: 1, days: 31, abbr: "Jan" },
+  { month: 2, days: 28, abbr: "Feb" }, // adjusted for leap year below
 ];
 
-function pad2(n) { return String(n).padStart(2, '0'); }
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
 
-function isLeapYear(year) { return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0); }
+function isLeapYear(year) {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
 
 function monthEndDate(year, month) {
   if (month === 2 && isLeapYear(year)) return 29;
@@ -72,7 +98,7 @@ function zipDirectory(sourceDir, zipPath) {
   // Zip contents from within the directory, excluding .git and .sh files
   execSync(`zip -r "${zipPath}" . -q -X -x "*/.git/*" "*.sh"`, {
     cwd: sourceDir,
-    stdio: 'pipe',
+    stdio: "pipe",
   });
 }
 
@@ -111,7 +137,7 @@ function generateCompanyVariants(sourceDir, startYear, endYear, format) {
     zipDirectory(sourceDir, zipPath);
 
     zips.push({
-      product: 'Company',
+      product: "Company",
       date,
       shortLabel,
       format,
@@ -132,9 +158,10 @@ function scanAndBuild() {
     process.exit(1);
   }
 
-  const entries = fs.readdirSync(PACKAGES_DIR, { withFileTypes: true })
-    .filter(e => e.isDirectory())
-    .map(e => e.name)
+  const entries = fs
+    .readdirSync(PACKAGES_DIR, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
     .sort();
 
   const allPackages = []; // { product, date, shortLabel, format, filename }
@@ -143,7 +170,7 @@ function scanAndBuild() {
     const dirPath = path.join(PACKAGES_DIR, dirName);
 
     // Skip work-in-progress
-    if (fs.existsSync(path.join(dirPath, 'DO NOT USE - WORK IN PROGRESS.txt'))) {
+    if (fs.existsSync(path.join(dirPath, "DO NOT USE - WORK IN PROGRESS.txt"))) {
       console.log(`Skipping (WIP): ${dirName}`);
       continue;
     }
@@ -188,9 +215,22 @@ function scanAndBuild() {
 }
 
 function dateToLabel(date) {
-  const [y, m] = date.split('-').map(Number);
-  const months = ['', 'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'];
+  const [y, m] = date.split("-").map(Number);
+  const months = [
+    "",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
   return `${months[m]} ${y}`;
 }
 
@@ -209,15 +249,15 @@ function generateCatalogue(allPackages) {
 
   // Build TOML
   const lines = [
-    '# catalogue.toml — Auto-generated by scripts/build-packages.cjs',
-    '# Do not edit manually; regenerated on each deploy from packages/ directory.',
-    '',
-    `generated = "${new Date().toISOString().split('T')[0]}"`,
-    '',
+    "# catalogue.toml — Auto-generated by scripts/build-packages.cjs",
+    "# Do not edit manually; regenerated on each deploy from packages/ directory.",
+    "",
+    `generated = "${new Date().toISOString().split("T")[0]}"`,
+    "",
   ];
 
   // Output products in a stable order
-  const productOrder = ['Basic Sole Trader', 'Self Employed', 'Company', 'Taxi Driver', 'Payslip 05', 'Payslip 10'];
+  const productOrder = ["Basic Sole Trader", "Self Employed", "Company", "Taxi Driver", "Payslip 05", "Payslip 10"];
 
   for (const productName of productOrder) {
     const meta = PRODUCTS[productName];
@@ -227,7 +267,7 @@ function generateCatalogue(allPackages) {
     lines.push(`id = "${meta.id}"`);
     lines.push(`name = "${productName}"`);
     lines.push(`description = "${meta.description}"`);
-    lines.push('');
+    lines.push("");
 
     for (const pkg of byProduct[productName]) {
       lines.push(`  [[products.periods]]`);
@@ -236,26 +276,26 @@ function generateCatalogue(allPackages) {
       lines.push(`  short = "${pkg.shortLabel}"`);
       lines.push(`  format = "${pkg.format}"`);
       lines.push(`  filename = "${pkg.filename}"`);
-      lines.push('');
+      lines.push("");
     }
   }
 
-  const toml = lines.join('\n');
+  const toml = lines.join("\n");
   fs.mkdirSync(path.dirname(CATALOGUE_PATH), { recursive: true });
-  fs.writeFileSync(CATALOGUE_PATH, toml, 'utf8');
+  fs.writeFileSync(CATALOGUE_PATH, toml, "utf8");
   console.log(`\nCatalogue written to ${CATALOGUE_PATH}`);
   console.log(`Total packages: ${allPackages.length}`);
 }
 
 // Main
-console.log('=== build-packages.cjs ===');
+console.log("=== build-packages.cjs ===");
 console.log(`Packages dir: ${PACKAGES_DIR}`);
 console.log(`Output zips:  ${ZIPS_DIR}`);
-console.log('');
+console.log("");
 
 const packages = scanAndBuild();
 generateCatalogue(packages);
 
 // Summary
-const zipFiles = fs.readdirSync(ZIPS_DIR).filter(f => f.endsWith('.zip'));
+const zipFiles = fs.readdirSync(ZIPS_DIR).filter((f) => f.endsWith(".zip"));
 console.log(`\nGenerated ${zipFiles.length} zip files in target/zips/`);

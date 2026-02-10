@@ -170,8 +170,16 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
     }
     // Check if the "Request" button exists (it won't for on-pass bundles).
     const requestBtnLocator = page.getByRole("button", { name: `Request ${bundleName}`, exact: false });
-    const isRequestVisible = await requestBtnLocator.first().isVisible({ timeout: 2000 }).catch(() => false);
-    const isRequestEnabled = isRequestVisible && !(await requestBtnLocator.first().isDisabled().catch(() => true));
+    const isRequestVisible = await requestBtnLocator
+      .first()
+      .isVisible({ timeout: 2000 })
+      .catch(() => false);
+    const isRequestEnabled =
+      isRequestVisible &&
+      !(await requestBtnLocator
+        .first()
+        .isDisabled()
+        .catch(() => true));
 
     if (isRequestEnabled) {
       // Requestable and enabled bundles: skip if already present

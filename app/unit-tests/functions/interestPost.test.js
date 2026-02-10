@@ -66,9 +66,9 @@ describe("interestPost ingestHandler", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            sub: "test-sub",
+            "sub": "test-sub",
             "cognito:username": "test",
-            scope: "read write",
+            "scope": "read write",
           },
         },
       },

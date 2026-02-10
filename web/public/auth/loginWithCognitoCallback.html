@@ -210,8 +210,8 @@
 
           console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
           // GA4: login event after successful Cognito authentication
-          if (typeof gtag === 'function') {
-            gtag('event', 'login', { method: 'cognito' });
+          if (typeof gtag === "function") {
+            gtag("event", "login", { method: "cognito" });
           }
           showStatus("Authenticated successfully. Fetching bundles...", "info");
 

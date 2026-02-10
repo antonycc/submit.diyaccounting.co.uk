@@ -14,7 +14,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta property="og:title" content="DIY Accounting - Accounting Software for UK Small Businesses" />
-    <meta property="og:description" content="DIY Accounting provides accounting software for UK small businesses. Submit VAT returns to HMRC under Making Tax Digital, or use our Excel bookkeeping spreadsheets." />
+    <meta
+      property="og:description"
+      content="DIY Accounting provides accounting software for UK small businesses. Submit VAT returns to HMRC under Making Tax Digital, or use our Excel bookkeeping spreadsheets."
+    />
     <meta property="og:url" content="https://diyaccounting.co.uk/" />
     <meta property="og:site_name" content="DIY Accounting" />
     <meta property="og:type" content="website" />
@@ -47,12 +50,12 @@
 
       <div class="company-summary">
         <p>
-          DIY Accounting Limited has been providing accounting software for UK small businesses since 2006.
-          Founded by Terry Cartwright, a Chartered Management Accountant, the company is now managed by his family.
+          DIY Accounting Limited has been providing accounting software for UK small businesses since 2006. Founded by Terry Cartwright, a
+          Chartered Management Accountant, the company is now managed by his family.
         </p>
         <p>
-          Our products are designed to be straightforward and practical, giving small businesses the tools they
-          need without unnecessary complexity.
+          Our products are designed to be straightforward and practical, giving small businesses the tools they need without unnecessary
+          complexity.
         </p>
       </div>
     </main>
@@ -78,9 +81,7 @@
         var match = host.match(/^(ci|prod)-gateway\.diyaccounting\.co\.uk$/);
         if (!match) return;
         var env = match[1];
-        var submitUrl = env === "ci"
-          ? "https://ci-submit.diyaccounting.co.uk"
-          : "https://submit.diyaccounting.co.uk";
+        var submitUrl = env === "ci" ? "https://ci-submit.diyaccounting.co.uk" : "https://submit.diyaccounting.co.uk";
         var spreadsheetsUrl = "https://" + env + "-spreadsheets.diyaccounting.co.uk";
         var links = document.querySelectorAll("a[href]");
         for (var i = 0; i < links.length; i++) {
@@ -96,43 +97,41 @@
     <script src="lib/gateway-events.js"></script>
 
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "DIY Accounting Limited",
-      "url": "https://diyaccounting.co.uk",
-      "logo": "https://submit.diyaccounting.co.uk/images/company/diyaccounting-label-logo-white-bk.png",
-      "foundingDate": "2006",
-      "founder": {
-        "@type": "Person",
-        "name": "Terry Cartwright"
-      },
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "37 Sutherland Avenue",
-        "addressLocality": "Leeds",
-        "postalCode": "LS8 1BY",
-        "addressCountry": "GB"
-      },
-      "telephone": "+448450756015",
-      "sameAs": [
-        "https://find-and-update.company-information.service.gov.uk/company/06846849"
-      ],
-      "subOrganization": [
-        {
-          "@type": "WebApplication",
-          "name": "DIY Accounting Submit",
-          "url": "https://submit.diyaccounting.co.uk",
-          "description": "Submit UK VAT returns to HMRC under Making Tax Digital (MTD)"
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "DIY Accounting Limited",
+        "url": "https://diyaccounting.co.uk",
+        "logo": "https://submit.diyaccounting.co.uk/images/company/diyaccounting-label-logo-white-bk.png",
+        "foundingDate": "2006",
+        "founder": {
+          "@type": "Person",
+          "name": "Terry Cartwright"
         },
-        {
-          "@type": "SoftwareApplication",
-          "name": "DIY Accounting Spreadsheets",
-          "url": "https://spreadsheets.diyaccounting.co.uk",
-          "description": "Excel bookkeeping and accounting software for UK small businesses"
-        }
-      ]
-    }
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "37 Sutherland Avenue",
+          "addressLocality": "Leeds",
+          "postalCode": "LS8 1BY",
+          "addressCountry": "GB"
+        },
+        "telephone": "+448450756015",
+        "sameAs": ["https://find-and-update.company-information.service.gov.uk/company/06846849"],
+        "subOrganization": [
+          {
+            "@type": "WebApplication",
+            "name": "DIY Accounting Submit",
+            "url": "https://submit.diyaccounting.co.uk",
+            "description": "Submit UK VAT returns to HMRC under Making Tax Digital (MTD)"
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "DIY Accounting Spreadsheets",
+            "url": "https://spreadsheets.diyaccounting.co.uk",
+            "description": "Excel bookkeeping and accounting software for UK small businesses"
+          }
+        ]
+      }
     </script>
   </body>
 </html>

@@ -34,7 +34,13 @@ const optionalHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids"];
  * Network-dependent headers that are completely skipped in simulator validation
  * These require real network context (ngrok, public IPs) and cannot be tested locally
  */
-const skippedNetworkHeaders = ["gov-vendor-public-ip", "gov-vendor-forwarded", "gov-client-public-ip", "gov-client-public-ip-timestamp", "gov-client-public-port"];
+const skippedNetworkHeaders = [
+  "gov-vendor-public-ip",
+  "gov-vendor-forwarded",
+  "gov-client-public-ip",
+  "gov-client-public-ip-timestamp",
+  "gov-client-public-port",
+];
 
 /**
  * Validate fraud prevention headers

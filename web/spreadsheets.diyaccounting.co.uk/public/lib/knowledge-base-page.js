@@ -39,8 +39,7 @@ class KnowledgeBasePage {
       this.render(this.kbSearch.search(""));
     } catch (error) {
       console.error("Error loading knowledge base:", error);
-      this.articleList.innerHTML =
-        '<div class="no-results"><p>Unable to load knowledge base. Please refresh the page.</p></div>';
+      this.articleList.innerHTML = '<div class="no-results"><p>Unable to load knowledge base. Please refresh the page.</p></div>';
       return;
     }
 
@@ -53,7 +52,7 @@ class KnowledgeBasePage {
         this.render(results);
         this.updateHint(query, results.length);
       }.bind(this),
-      150
+      150,
     );
 
     this.searchInput.addEventListener("input", handleSearch);
@@ -68,7 +67,7 @@ class KnowledgeBasePage {
           var results = this.kbSearch.search(query, category || undefined);
           this.render(results);
           this.updateHint(query, results.length);
-        }.bind(this)
+        }.bind(this),
       );
     }
   }
@@ -80,8 +79,7 @@ class KnowledgeBasePage {
       var cat = categories[i];
       var option = document.createElement("option");
       option.value = cat.category;
-      option.textContent =
-        this.formatCategory(cat.category) + " (" + cat.count + ")";
+      option.textContent = this.formatCategory(cat.category) + " (" + cat.count + ")";
       this.categoryFilter.appendChild(option);
     }
   }
@@ -91,11 +89,9 @@ class KnowledgeBasePage {
     if (!query.trim()) {
       this.searchHint.textContent = "Showing featured articles";
     } else if (count === 0) {
-      this.searchHint.textContent =
-        "No matching articles \u2014 try different keywords";
+      this.searchHint.textContent = "No matching articles \u2014 try different keywords";
     } else {
-      this.searchHint.textContent =
-        count + " result" + (count === 1 ? "" : "s");
+      this.searchHint.textContent = count + " result" + (count === 1 ? "" : "s");
     }
   }
 
@@ -115,7 +111,7 @@ class KnowledgeBasePage {
             if (this.categoryFilter) this.categoryFilter.value = "";
             this.render(this.kbSearch.search(""));
             this.updateHint("", this.kbSearch.search("").length);
-          }.bind(this)
+          }.bind(this),
         );
       }
       return;
@@ -124,10 +120,7 @@ class KnowledgeBasePage {
     var html = "";
     for (var i = 0; i < articles.length; i++) {
       var article = articles[i];
-      html +=
-        '<div class="kb-item" data-id="' +
-        this.escapeAttr(article.id) +
-        '">';
+      html += '<div class="kb-item" data-id="' + this.escapeAttr(article.id) + '">';
       html +=
         '<button class="kb-question" aria-expanded="false">' +
         '<span class="kb-category-badge">' +
@@ -144,8 +137,7 @@ class KnowledgeBasePage {
       var desc = article.description
         ? "<p>" + this.escapeHtml(article.description) + "</p>"
         : '<p class="kb-loading">Loading article...</p>';
-      html +=
-        '<div class="kb-answer" hidden data-loaded="false">' + desc + "</div>";
+      html += '<div class="kb-answer" hidden data-loaded="false">' + desc + "</div>";
       html += "</div>";
     }
 
@@ -167,13 +159,9 @@ class KnowledgeBasePage {
 
     // Close previously open item
     if (this.openArticleId && this.openArticleId !== id) {
-      var prev = this.articleList.querySelector(
-        '[data-id="' + this.openArticleId + '"]'
-      );
+      var prev = this.articleList.querySelector('[data-id="' + this.openArticleId + '"]');
       if (prev) {
-        prev
-          .querySelector(".kb-question")
-          .setAttribute("aria-expanded", "false");
+        prev.querySelector(".kb-question").setAttribute("aria-expanded", "false");
         prev.querySelector(".kb-answer").hidden = true;
       }
     }
@@ -236,25 +224,24 @@ class KnowledgeBasePage {
             answerEl.dataset.loaded = "true";
           })
           .catch(function () {
-            answerEl.innerHTML =
-              '<p>Unable to load article. <a href="articles/' + encodedId + '.html">View article</a></p>';
+            answerEl.innerHTML = '<p>Unable to load article. <a href="articles/' + encodedId + '.html">View article</a></p>';
           });
       });
   }
 
   formatCategory(cat) {
     var labels = {
-      bookkeeping: "Bookkeeping",
+      "bookkeeping": "Bookkeeping",
       "sole-trader": "Sole Trader",
       "company-accounts": "Company Accounts",
       "company-formation": "Company Formation",
-      vat: "VAT",
-      expenses: "Expenses & Allowances",
-      payroll: "Payroll & PAYE",
-      taxi: "Taxi Driver",
+      "vat": "VAT",
+      "expenses": "Expenses & Allowances",
+      "payroll": "Payroll & PAYE",
+      "taxi": "Taxi Driver",
       "financial-planning": "Financial Planning",
-      tax: "Tax",
-      general: "General",
+      "tax": "Tax",
+      "general": "General",
     };
     return labels[cat] || cat;
   }
@@ -266,10 +253,7 @@ class KnowledgeBasePage {
   }
 
   escapeAttr(str) {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+    return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   renderMarkdown(text) {
@@ -355,12 +339,7 @@ class KnowledgeBasePage {
           if (closeParen !== -1) {
             var linkText = result.slice(i + 1, closeBracket);
             var url = result.slice(closeBracket + 2, closeParen);
-            output +=
-              '<a href="' +
-              url +
-              '" target="_blank" rel="noopener">' +
-              linkText +
-              "</a>";
+            output += '<a href="' + url + '" target="_blank" rel="noopener">' + linkText + "</a>";
             i = closeParen + 1;
             continue;
           }

@@ -7,8 +7,12 @@
 
   // Load both TOML files: recently-updated for the list, knowledge-base for titles
   Promise.all([
-    fetch("recently-updated.toml").then(function (r) { return r.text(); }),
-    fetch("knowledge-base.toml").then(function (r) { return r.text(); })
+    fetch("recently-updated.toml").then(function (r) {
+      return r.text();
+    }),
+    fetch("knowledge-base.toml").then(function (r) {
+      return r.text();
+    }),
   ])
     .then(function (results) {
       var recentData = TomlParser.parse(results[0]);
@@ -40,19 +44,19 @@
         var dateStr = date.toLocaleDateString("en-GB", {
           day: "numeric",
           month: "long",
-          year: "numeric"
+          year: "numeric",
         });
         var timeStr = date.toLocaleTimeString("en-GB", {
           hour: "2-digit",
-          minute: "2-digit"
+          minute: "2-digit",
         });
 
         html += '<div class="kb-item recently-updated-item">';
         html += '<a href="articles/' + slug + '.html" class="kb-item-link">';
-        html += '<span class="kb-item-title">' + title + '</span>';
-        html += '<span class="recently-updated-date">' + dateStr + ' at ' + timeStr + '</span>';
-        html += '</a>';
-        html += '</div>';
+        html += '<span class="kb-item-title">' + title + "</span>";
+        html += '<span class="recently-updated-date">' + dateStr + " at " + timeStr + "</span>";
+        html += "</a>";
+        html += "</div>";
       });
 
       container.innerHTML = html;

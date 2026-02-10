@@ -24,7 +24,7 @@
       return new Date(dateStr).toLocaleDateString("en-GB", {
         day: "numeric",
         month: "short",
-        year: "numeric"
+        year: "numeric",
       });
     }
     if (diffDay >= 1) return diffDay + (diffDay === 1 ? " day ago" : " days ago");
@@ -73,7 +73,7 @@
         ":hammer_and_wrench:": "\uD83D\uDD28",
         ":star2:": "\uD83C\uDF1F",
         ":light_bulb:": "\uD83D\uDCA1",
-        ":books:": "\uD83D\uDCDA"
+        ":books:": "\uD83D\uDCDA",
       };
       return map[emoji] || "";
     }
@@ -98,21 +98,21 @@
 
       html += '<div class="kb-item community-item" data-category="' + escapeHtml(catName) + '">';
       html += '<a href="' + escapeHtml(d.html_url) + '" class="kb-item-link" target="_blank" rel="noopener noreferrer">';
-      html += '<span class="community-category">' + emoji + " " + escapeHtml(catName) + '</span>';
-      html += '<span class="kb-item-title">' + escapeHtml(d.title) + '</span>';
+      html += '<span class="community-category">' + emoji + " " + escapeHtml(catName) + "</span>";
+      html += '<span class="kb-item-title">' + escapeHtml(d.title) + "</span>";
       if (snippet) {
-        html += '<span class="community-snippet">' + escapeHtml(snippet) + '</span>';
+        html += '<span class="community-snippet">' + escapeHtml(snippet) + "</span>";
       }
       html += '<span class="community-meta">';
       if (avatar) {
         html += '<img src="' + escapeHtml(avatar) + '&s=40" alt="" class="community-avatar" width="20" height="20" loading="lazy" />';
       }
-      html += '<span>' + escapeHtml(login) + '</span>';
-      html += '<span>Updated ' + relativeDate(d.updated_at) + '</span>';
-      html += '<span>' + comments + (comments === 1 ? " comment" : " comments") + '</span>';
-      html += '</span>';
-      html += '</a>';
-      html += '</div>';
+      html += "<span>" + escapeHtml(login) + "</span>";
+      html += "<span>Updated " + relativeDate(d.updated_at) + "</span>";
+      html += "<span>" + comments + (comments === 1 ? " comment" : " comments") + "</span>";
+      html += "</span>";
+      html += "</a>";
+      html += "</div>";
     });
 
     container.innerHTML = html;
@@ -164,10 +164,13 @@
 
   function setCache(data) {
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        timestamp: Date.now(),
-        data: data
-      }));
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          timestamp: Date.now(),
+          data: data,
+        }),
+      );
     } catch (e) {
       // localStorage full or unavailable — ignore
     }
@@ -175,9 +178,9 @@
 
   function showError() {
     container.innerHTML =
-      '<p class="no-results">Unable to load discussions. '
-      + '<a href="https://github.com/antonycc/diy-accounting/discussions" target="_blank" rel="noopener noreferrer">'
-      + 'View discussions on GitHub</a></p>';
+      '<p class="no-results">Unable to load discussions. ' +
+      '<a href="https://github.com/antonycc/diy-accounting/discussions" target="_blank" rel="noopener noreferrer">' +
+      "View discussions on GitHub</a></p>";
   }
 
   function handleData(discussions) {

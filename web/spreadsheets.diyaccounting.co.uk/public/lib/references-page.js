@@ -16,7 +16,7 @@
     "company": "Company Accounts",
     "sole-trader": "Sole Trader",
     "bookkeeping": "Bookkeeping",
-    "general": "General"
+    "general": "General",
   };
 
   function categoryLabel(cat) {
@@ -46,7 +46,9 @@
         callback([]);
       }
     };
-    xhr.onerror = function () { callback([]); };
+    xhr.onerror = function () {
+      callback([]);
+    };
     xhr.send();
   }
 
@@ -110,7 +112,7 @@
           }
           html += "</p>";
           if (src.extract) {
-            html += '<blockquote class="ref-extract">&ldquo;' + escapeHtml(src.extract) + '&rdquo;</blockquote>';
+            html += '<blockquote class="ref-extract">&ldquo;' + escapeHtml(src.extract) + "&rdquo;</blockquote>";
           }
           html += '<p class="ref-accessed">Accessed: ' + escapeHtml(src.accessed) + "</p>";
           html += "</div>";
@@ -153,12 +155,12 @@
             url: src.url,
             title: src.title,
             publisher: src.publisher,
-            refs: []
+            refs: [],
           };
         }
         sourceMap[src.id].refs.push({
           id: ref.id,
-          claim: ref.claim
+          claim: ref.claim,
         });
       }
     }

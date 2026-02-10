@@ -11,3 +11,24 @@ Running Pa11y on 34 URLs:
  > https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html - 0 errors
  > https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html - 0 errors
  > https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html - 0 errors
+ > https://submit.diyaccounting.co.uk/guide.html - 0 errors
+ > https://submit.diyaccounting.co.uk/help.html - 0 errors
+ > https://submit.diyaccounting.co.uk/mcp.html - 0 errors
+ > https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html - 0 errors
+ > https://submit.diyaccounting.co.uk/diy-accounting-limited.html - 0 errors
+ > https://submit.diyaccounting.co.uk/spreadsheets.html - 4 errors
+ > https://submit.diyaccounting.co.uk/errors/404-error-distribution.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/404-error-origin.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/403.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/404.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/500.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/502.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/503.html - 0 errors
+ > https://submit.diyaccounting.co.uk/errors/504.html - 0 errors
+ > https://prod-gateway.diyaccounting.co.uk/ - 0 errors
+ > https://prod-gateway.diyaccounting.co.uk/index.html - 0 errors
+ > https://prod-gateway.diyaccounting.co.uk/about.html - 0 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/ - 1 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/index.html - 1 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/download.html - 0 errors
+ > https://prod-spreadsheets.diyaccounting.co.uk/donate.html - 0 errors

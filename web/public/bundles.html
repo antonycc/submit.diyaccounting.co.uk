@@ -417,7 +417,9 @@
           if (success) {
             markGranted(btn, `Added ✓ ${bundleName}`);
             // Clear pass validation after successful redemption
-            try { sessionStorage.removeItem("passValidation"); } catch {}
+            try {
+              sessionStorage.removeItem("passValidation");
+            } catch {}
           } else {
             btn.textContent = original;
             btn.disabled = false;
@@ -500,7 +502,9 @@
         const container = document.getElementById("catalogBundles");
         try {
           await fetchUserBundles();
-          try { renderCurrentBundles(); } catch {}
+          try {
+            renderCurrentBundles();
+          } catch {}
 
           const idToken = getIdToken();
           const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
@@ -516,7 +520,9 @@
           __currentEnv = await readEnvironment();
           renderCatalogueBundles();
           // Re-render current bundles now that catalogue names are available
-          try { renderCurrentBundles(); } catch {}
+          try {
+            renderCurrentBundles();
+          } catch {}
         } catch (err) {
           try {
             console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
@@ -761,7 +767,10 @@
       // --- handle pass entry: validate first, then enable bundle or auto-redeem
       async function handlePassEntry(code) {
         const btn = document.getElementById("redeemPassBtn");
-        if (btn) { btn.textContent = "Checking..."; btn.disabled = true; }
+        if (btn) {
+          btn.textContent = "Checking...";
+          btn.disabled = true;
+        }
 
         try {
           const result = await validatePassCode(code);
@@ -813,7 +822,10 @@
         } catch (err) {
           showPassStatus(`Failed to check pass: ${err?.message || err}`, "error");
         } finally {
-          if (btn) { btn.textContent = "Redeem Pass"; btn.disabled = false; }
+          if (btn) {
+            btn.textContent = "Redeem Pass";
+            btn.disabled = false;
+          }
         }
       }
 

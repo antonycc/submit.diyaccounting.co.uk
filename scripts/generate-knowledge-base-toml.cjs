@@ -13,14 +13,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const CONTENT_DIR = path.resolve(
-  __dirname,
-  "../../diy-accounting-mdcms/content"
-);
-const OUTPUT_DIR = path.resolve(
-  __dirname,
-  "../web/spreadsheets.diyaccounting.co.uk/public"
-);
+const CONTENT_DIR = path.resolve(__dirname, "../../diy-accounting-mdcms/content");
+const OUTPUT_DIR = path.resolve(__dirname, "../web/spreadsheets.diyaccounting.co.uk/public");
 const OUTPUT_TOML = path.join(OUTPUT_DIR, "knowledge-base.toml");
 const ARTICLES_DIR = path.join(OUTPUT_DIR, "articles");
 
@@ -67,10 +61,7 @@ function htmlToMarkdown(html) {
 
   // Convert <a href="...">text</a> to [text](url)
   // But only keep external links, not internal article/product links
-  text = text.replace(
-    /<a\s+href="(https?:\/\/[^"]+)"[^>]*>(.*?)<\/a>/gi,
-    "[$2]($1)"
-  );
+  text = text.replace(/<a\s+href="(https?:\/\/[^"]+)"[^>]*>(.*?)<\/a>/gi, "[$2]($1)");
   // Remove internal links but keep text
   text = text.replace(/<a\s+href="[^"]*"[^>]*>(.*?)<\/a>/gi, "$1");
 
@@ -151,11 +142,7 @@ function stripHtml(html) {
 function categorise(name, title, keywords) {
   const combined = `${name} ${title} ${keywords}`.toLowerCase();
 
-  if (
-    combined.includes("taxi") ||
-    combined.includes("cabsmart") ||
-    combined.includes("cab driver")
-  ) {
+  if (combined.includes("taxi") || combined.includes("cabsmart") || combined.includes("cab driver")) {
     return "taxi";
   }
   if (
@@ -318,7 +305,7 @@ for (const file of files) {
   const featured = (parsed.featured || "").trim() === "true";
 
   // Use name as fallback title if title is empty
-  const effectiveTitle = (!title || title.trim() === "") ? nameToTitle(name) : title;
+  const effectiveTitle = !title || title.trim() === "" ? nameToTitle(name) : title;
 
   // Skip articles with empty bodies only
   if (!body || body.length < 20) {
@@ -393,9 +380,7 @@ for (const a of articles) {
   catCounts[a.category] = (catCounts[a.category] || 0) + 1;
 }
 console.log("\nCategory counts:");
-for (const [cat, count] of Object.entries(catCounts).sort(
-  (a, b) => b[1] - a[1]
-)) {
+for (const [cat, count] of Object.entries(catCounts).sort((a, b) => b[1] - a[1])) {
   console.log(`  ${cat}: ${count}`);
 }
 
@@ -420,12 +405,8 @@ let toml = `# SPDX-License-Identifier: AGPL-3.0-only
 
 for (const article of articles) {
   // Create a short description from the first sentence of the answer
-  const firstSentence = article.answer
-    .split(/[.\n]/)
-    .filter((s) => s.trim().length > 10)[0];
-  const shortDesc = firstSentence
-    ? firstSentence.trim().replace(/\*\*/g, "").substring(0, 200)
-    : "";
+  const firstSentence = article.answer.split(/[.\n]/).filter((s) => s.trim().length > 10)[0];
+  const shortDesc = firstSentence ? firstSentence.trim().replace(/\*\*/g, "").substring(0, 200) : "";
 
   toml += `[[article]]\n`;
   toml += `id = "${escapeTomlString(article.id)}"\n`;
@@ -434,9 +415,7 @@ for (const article of articles) {
   toml += `description = "${escapeTomlString(shortDesc)}"\n`;
 
   if (article.keywords.length > 0) {
-    const kwStr = article.keywords
-      .map((k) => `"${escapeTomlString(k)}"`)
-      .join(", ");
+    const kwStr = article.keywords.map((k) => `"${escapeTomlString(k)}"`).join(", ");
     toml += `keywords = [${kwStr}]\n`;
   } else {
     toml += `keywords = []\n`;
@@ -457,12 +436,6 @@ for (const article of articles) {
 }
 console.log(`Written ${articles.length} article files to ${ARTICLES_DIR}/`);
 
-const totalArticleSize = articles.reduce(
-  (sum, a) =>
-    sum + fs.statSync(path.join(ARTICLES_DIR, `${a.id}.md`)).size,
-  0
-);
-console.log(
-  `Total article content: ${(totalArticleSize / 1024).toFixed(1)} KB`
-);
+const totalArticleSize = articles.reduce((sum, a) => sum + fs.statSync(path.join(ARTICLES_DIR, `${a.id}.md`)).size, 0);
+console.log(`Total article content: ${(totalArticleSize / 1024).toFixed(1)} KB`);
 console.log(`Total articles: ${articles.length}`);
