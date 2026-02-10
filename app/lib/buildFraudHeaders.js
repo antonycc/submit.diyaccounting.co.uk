@@ -5,6 +5,7 @@
 
 import { createLogger } from "./logger.js";
 import { readFileSync } from "fs";
+import { hashSub, isSaltInitialized } from "../services/subHasher.js";
 
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url)));
 // Strip npm scope prefix (e.g., @org/package -> package) for cleaner HMRC product name
@@ -64,7 +65,7 @@ export async function detectVendorPublicIp() {
  * @param {object} event – Lambda proxy event containing headers and request context
  * @returns {object} – An object containing all required fraud prevention headers
  */
-export function buildFraudHeaders(event) {
+export function buildFraudHeaders(event, options = {}) {
   const headers = {};
   const eventHeaders = event.headers || {};
 
@@ -133,13 +134,13 @@ export function buildFraudHeaders(event) {
   }
 
   // 4. Client user IDs – from authenticated user (Cognito sub)
-  // Match the extraction logic in extractUserFromAuthorizerContext (httpResponseHelper.js)
+  // Custom Lambda authorizer (customAuthorizer.js) returns flat context: { sub, username, email, ... }
+  // API Gateway places this at event.requestContext.authorizer.lambda
   const authz = event.requestContext?.authorizer;
   const authzCtx = authz?.lambda ?? authz;
-  const authzClaims = authzCtx?.jwt?.claims ?? authzCtx?.claims;
-  const userId = authzClaims?.sub;
+  const userId = authzCtx?.sub;
   if (userId) {
-    headers["Gov-Client-User-IDs"] = `server=${encodeURIComponent(userId)}`;
+    headers["Gov-Client-User-IDs"] = `cognito=${encodeURIComponent(userId)}`;
   } else {
     logger.warn({
       message:
@@ -173,10 +174,10 @@ export function buildFraudHeaders(event) {
     });
   }
 
-  // 8. Gov-Vendor-License-IDs is intentionally NOT supplied because:
-  // - The software is open-source (no commercial license)
-  // - There is no per-device or per-user license key
-  // - HMRC confirmed: "Please omit the header" (4 Feb 2026 review)
+  // 8. Vendor license IDs – the user's active bundle IDs from the product catalog (hashed per HMRC spec)
+  if (options.bundleIds && options.bundleIds.length > 0 && isSaltInitialized()) {
+    headers["Gov-Vendor-License-IDs"] = options.bundleIds.map((id) => `diyaccounting=${encodeURIComponent(hashSub(id))}`).join("&");
+  }
 
   // 9. Vendor product name – from package.json (must be percent-encoded)
   headers["Gov-Vendor-Product-Name"] = encodeURIComponent(packageName);

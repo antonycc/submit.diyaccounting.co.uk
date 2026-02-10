@@ -254,12 +254,8 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "vatuser",
-              },
-            },
+            "sub": testUserSub,
+            "cognito:username": "vatuser",
           },
         },
       },
@@ -285,12 +281,8 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
       authorizer: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: {
-                "sub": testUserSub,
-                "cognito:username": "vatuser",
-              },
-            },
+            "sub": testUserSub,
+            "cognito:username": "vatuser",
           },
         },
       },

@@ -154,14 +154,7 @@ describe("System: bundleManagement with local dynalite", () => {
   it("enforceBundles should pass when no non-automatic bundles are required (unknown path)", async () => {
     const sub = "bm-auth-user";
     const token = makeJWT(sub);
-    const authorizer = {
-      jwt: {
-        claims: {
-          sub,
-          "cognito:username": "u",
-        },
-      },
-    };
+    const authorizer = { sub, "cognito:username": "u" };
     const event = buildEvent(token, authorizer, "/unknown/path");
 
     // Should not throw even if user has no bundles, because required = []
@@ -171,14 +164,7 @@ describe("System: bundleManagement with local dynalite", () => {
   it("enforceBundles should fail without a required bundle for HMRC paths, then pass after grant (Dynamo mode)", async () => {
     const sub = "bm-enforce-user";
     const token = makeJWT(sub);
-    const authorizer = {
-      jwt: {
-        claims: {
-          sub,
-          "cognito:username": sub,
-        },
-      },
-    };
+    const authorizer = { sub, "cognito:username": sub };
     const hmrcPath = "/api/v1/hmrc/vat/return";
     const event = buildEvent(token, authorizer, hmrcPath);
 

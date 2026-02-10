@@ -148,8 +148,9 @@ export async function ingestHandler(event) {
 
   // Bundle enforcement
   let userSub;
+  let bundleIds = [];
   try {
-    userSub = await enforceBundles(event);
+    ({ userSub, bundleIds } = await enforceBundles(event));
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -163,7 +164,7 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event);
+  const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event, { bundleIds });
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters

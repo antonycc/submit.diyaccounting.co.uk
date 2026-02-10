@@ -73,13 +73,13 @@ describe("unit: httpServerToLambdaAdaptor.buildLambdaEventFromHttpRequest", () =
     expect(evt.requestContext.http.host).toBe("example.com:8443");
     expect(evt.requestContext.http.path).toBe("/test/path");
 
-    // authorizer claims – merged payload plus fixed fields
-    const claims = evt.requestContext.authorizer.lambda.jwt.claims;
-    expect(claims.sub).toBe("abc-123");
+    // authorizer context – merged JWT payload plus fixed fields (flat, matching custom authorizer)
+    const ctx = evt.requestContext.authorizer.lambda;
+    expect(ctx.sub).toBe("abc-123");
     // fixed username/email/scope are present
-    expect(claims["cognito:username"]).toBe("test");
-    expect(claims.email).toBe("test@test.submit.diyaccunting.co.uk");
-    expect(claims.scope).toBe("read write");
+    expect(ctx["cognito:username"]).toBe("test");
+    expect(ctx.email).toBe("test@test.submit.diyaccunting.co.uk");
+    expect(ctx.scope).toBe("read write");
   });
 
   it("does not throw when Authorization header is missing and still builds event", () => {
@@ -88,11 +88,11 @@ describe("unit: httpServerToLambdaAdaptor.buildLambdaEventFromHttpRequest", () =
     });
     const evt = buildLambdaEventFromHttpRequest(httpRequest);
     expect(evt.headers.host).toBe("example.com:8443");
-    const claims = evt.requestContext.authorizer.lambda.jwt.claims;
+    const ctx = evt.requestContext.authorizer.lambda;
     // When no token, our hardening should avoid crashing; fixed fields still present
-    expect(claims["cognito:username"]).toBe("test");
-    expect(claims.email).toBe("test@test.submit.diyaccunting.co.uk");
-    expect(claims.scope).toBe("read write");
+    expect(ctx["cognito:username"]).toBe("test");
+    expect(ctx.email).toBe("test@test.submit.diyaccunting.co.uk");
+    expect(ctx.scope).toBe("read write");
   });
 
   it("prefers x-authorization over authorization when both present", () => {
@@ -106,8 +106,8 @@ describe("unit: httpServerToLambdaAdaptor.buildLambdaEventFromHttpRequest", () =
       },
     });
     const evt = buildLambdaEventFromHttpRequest(httpRequest);
-    const claims = evt.requestContext.authorizer.lambda.jwt.claims;
-    expect(claims.sub).toBe("from-x-auth");
+    const ctx = evt.requestContext.authorizer.lambda;
+    expect(ctx.sub).toBe("from-x-auth");
   });
 
   it("handles malformed Authorization header gracefully", () => {
@@ -116,8 +116,8 @@ describe("unit: httpServerToLambdaAdaptor.buildLambdaEventFromHttpRequest", () =
     });
     const evt = buildLambdaEventFromHttpRequest(httpRequest);
     expect(evt.headers.host).toBe("h:1");
-    const claims = evt.requestContext.authorizer.lambda.jwt.claims;
-    expect(claims["cognito:username"]).toBe("test");
+    const ctx = evt.requestContext.authorizer.lambda;
+    expect(ctx["cognito:username"]).toBe("test");
   });
 });
 

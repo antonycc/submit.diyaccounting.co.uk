@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { readFileSync } from "fs";
 import { buildFraudHeaders, detectVendorPublicIp, _resetForTesting } from "../../lib/buildFraudHeaders.js";
+import { _setTestSalt, _clearSalt, hashSub } from "../../services/subHasher.js";
 
 // Read package info for test assertions (strip scope if present)
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
@@ -84,15 +85,17 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
   });
 
-  it("should extract user ID from HTTP API v2 Lambda authorizer claims", () => {
+  it("should extract user ID from custom Lambda authorizer context", () => {
+    // Matches the actual format from customAuthorizer.js generateAllowPolicy():
+    // context: { sub, username, email, ... } placed at authorizer.lambda by API Gateway
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
       requestContext: {
         authorizer: {
           lambda: {
-            jwt: {
-              claims: { sub: "cognito-user-abc123" },
-            },
+            sub: "cognito-user-abc123",
+            username: "testuser",
+            email: "test@example.com",
           },
         },
       },
@@ -100,22 +103,42 @@ describe("buildFraudHeaders", () => {
 
     const { govClientHeaders: headers } = buildFraudHeaders(event);
 
-    expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-abc123");
+    expect(headers["Gov-Client-User-IDs"]).toBe("cognito=cognito-user-abc123");
   });
 
-  it("should extract user ID from flat authorizer claims", () => {
+  it("should include Gov-Vendor-License-IDs with hashed bundleIds when salt initialized", () => {
+    _setTestSalt("test-salt");
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
-      requestContext: {
-        authorizer: {
-          claims: { sub: "cognito-user-flat" },
-        },
-      },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event, { bundleIds: ["day-guest"] });
+    expect(headers["Gov-Vendor-License-IDs"]).toBe(`diyaccounting=${encodeURIComponent(hashSub("day-guest"))}`);
+    _clearSalt();
+  });
+
+  it("should join multiple hashed bundleIds in Gov-Vendor-License-IDs", () => {
+    _setTestSalt("test-salt");
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {},
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event, { bundleIds: ["day-guest", "resident-pro"] });
+    const expected = `diyaccounting=${encodeURIComponent(hashSub("day-guest"))}&diyaccounting=${encodeURIComponent(hashSub("resident-pro"))}`;
+    expect(headers["Gov-Vendor-License-IDs"]).toBe(expected);
+    _clearSalt();
+  });
+
+  it("should omit Gov-Vendor-License-IDs when no bundleIds provided", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {},
     };
 
     const { govClientHeaders: headers } = buildFraudHeaders(event);
-
-    expect(headers["Gov-Client-User-IDs"]).toBe("server=cognito-user-flat");
+    expect(headers["Gov-Vendor-License-IDs"]).toBeUndefined();
   });
 
   it("should omit Gov-Client-User-IDs when not authenticated", () => {
@@ -233,7 +256,7 @@ describe("buildFraudHeaders", () => {
         "x-forwarded-for": "198.51.100.1, 203.0.113.5",
       },
       requestContext: {
-        authorizer: { claims: { sub: "user123" } },
+        authorizer: { lambda: { sub: "user123" } },
       },
     };
 

@@ -20,6 +20,16 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   const referer = httpRequest.get("referer");
   if (referer) incomingHeaders.referer = referer;
 
+  // Synthesize CloudFront-Viewer-Address for local dev (CloudFront adds this in production).
+  // Use the real client IP from X-Forwarded-For (set by ngrok/proxy) and the socket port,
+  // matching the format CloudFront provides: "client-ip:client-port".
+  if (!incomingHeaders["cloudfront-viewer-address"]) {
+    const xff = incomingHeaders["x-forwarded-for"] || "";
+    const clientIp = xff.split(",")[0]?.trim() || httpRequest.ip || httpRequest.socket?.remoteAddress || "127.0.0.1";
+    const clientPort = httpRequest.socket?.remotePort || 0;
+    incomingHeaders["cloudfront-viewer-address"] = `${clientIp}:${clientPort}`;
+  }
+
   // Extract bearer token from Authorization or X-Authorization header if present
   const authorization = httpRequest.get("x-authorization") || httpRequest.get("authorization");
   let bearerToken = null;
@@ -42,14 +52,10 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
     requestContext: {
       authorizer: {
         lambda: {
-          jwt: {
-            claims: {
-              ...(jwtPayload || {}),
-              "cognito:username": "test",
-              "email": "test@test.submit.diyaccunting.co.uk",
-              "scope": "read write",
-            },
-          },
+          ...(jwtPayload || {}),
+          "cognito:username": "test",
+          "email": "test@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
         },
       },
       http: {

@@ -40,14 +40,10 @@ export function buildAuthorizerContext(sub = "test-sub", username = "test", emai
   return {
     authorizer: {
       lambda: {
-        jwt: {
-          claims: {
-            "sub": sub,
-            "cognito:username": username,
-            "email": email,
-            "scope": "read write",
-          },
-        },
+        "sub": sub,
+        "cognito:username": username,
+        "email": email,
+        "scope": "read write",
       },
     },
   };

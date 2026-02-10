@@ -225,13 +225,13 @@ describe("hmrcValidation", () => {
       const headers = {
         "Gov-Client-Public-IP": "192.168.1.100",
         "Gov-Client-Timezone": "UTC+00:00",
-        "Gov-Client-User-IDs": "server=test",
+        "Gov-Client-User-IDs": "cognito=test",
       };
 
       const masked = maskSensitiveHeaders(headers);
 
       expect(masked["Gov-Client-Timezone"]).toBe("UTC+00:00");
-      expect(masked["Gov-Client-User-IDs"]).toBe("server=test");
+      expect(masked["Gov-Client-User-IDs"]).toBe("cognito=test");
     });
 
     test("handles missing headers", () => {

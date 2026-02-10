@@ -125,7 +125,7 @@ describe("System journeys: bundleManagement", () => {
     delete process.env.TEST_BUNDLE_MOCK; // ensure we go via Dynamo
     const sub = "bm-journey-enforce";
     const token = makeJWT(sub);
-    const authorizer = { jwt: { claims: { sub, "cognito:username": "journey" } } };
+    const authorizer = { sub, "cognito:username": "journey" };
     const hmrcPath = "/api/v1/hmrc/vat/return";
     const event = buildEvent(token, authorizer, hmrcPath);
 

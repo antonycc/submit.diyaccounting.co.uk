@@ -99,7 +99,7 @@ public class Lambda {
 
         this.ingestLambdaVersion = Version.Builder.create(scope, props.idPrefix() + "-ingest-version")
                 .lambda(this.ingestLambda)
-                .description("Created for PC setting in alias")
+                .description("Image: " + props.baseImageTag())
                 .removalPolicy(RemovalPolicy.RETAIN)
                 .build();
         // Lambda Version resources with: RemovalPolicy.RETAIN
