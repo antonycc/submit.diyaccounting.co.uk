@@ -56,18 +56,22 @@ if (downloadUrl) {
   });
 }
 
-// GA4 ecommerce: begin_checkout when user clicks Stripe donate link
-document.getElementById('stripe-donate-link').addEventListener('click', function () {
-  trackEvent('begin_checkout', {
-    currency: 'GBP',
-    value: 0,
-    payment_method: 'stripe',
-    items: [{
-      item_id: productId,
-      item_name: productId,
-      price: 0,
-      currency: 'GBP'
-    }]
+// GA4 ecommerce: begin_checkout when user clicks any Stripe donate link
+document.querySelectorAll('.stripe-donate-link').forEach(function (link) {
+  link.addEventListener('click', function () {
+    var amount = this.getAttribute('data-amount');
+    var value = amount === 'custom' ? 0 : parseInt(amount, 10);
+    trackEvent('begin_checkout', {
+      currency: 'GBP',
+      value: value,
+      payment_method: 'stripe',
+      items: [{
+        item_id: productId,
+        item_name: productId,
+        price: value,
+        currency: 'GBP'
+      }]
+    });
   });
 });
 

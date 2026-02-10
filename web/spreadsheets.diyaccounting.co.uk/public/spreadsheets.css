@@ -614,6 +614,29 @@ main {
   color: var(--color-brand-primary);
 }
 
+.btn-stripe-amount {
+  display: inline-block;
+  padding: 0.6rem 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  background: #635bff;
+  border: none;
+  border-radius: 1.5rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn-stripe-amount:hover {
+  background: #5046e5;
+}
+
+.btn-stripe-amount:focus {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .stripe-container {
   margin: var(--spacing-lg) 0;
   text-align: center;
