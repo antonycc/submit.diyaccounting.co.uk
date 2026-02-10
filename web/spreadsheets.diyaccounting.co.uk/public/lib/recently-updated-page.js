@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var container = document.getElementById("recently-updated-list");
+  const container = document.getElementById("recently-updated-list");
   if (!container) return;
 
   // Load both TOML files: recently-updated for the list, knowledge-base for titles
@@ -15,17 +15,17 @@
     }),
   ])
     .then(function (results) {
-      var recentData = TomlParser.parse(results[0]);
-      var kbData = TomlParser.parse(results[1]);
+      const recentData = TomlParser.parse(results[0]);
+      const kbData = TomlParser.parse(results[1]);
 
       // Build article title lookup from knowledge-base.toml
-      var titleMap = {};
-      var articles = kbData.article || [];
+      const titleMap = {};
+      const articles = kbData.article || [];
       articles.forEach(function (a) {
         if (a.id) titleMap[a.id] = a.title || a.id;
       });
 
-      var entries = recentData.entry || [];
+      const entries = recentData.entry || [];
       if (entries.length === 0) {
         container.innerHTML = "<p>No recently updated articles.</p>";
         return;
@@ -36,17 +36,17 @@
         return new Date(b.updated) - new Date(a.updated);
       });
 
-      var html = "";
+      let html = "";
       entries.forEach(function (entry) {
-        var slug = entry.article;
-        var title = titleMap[slug] || slug.replace(/-/g, " ");
-        var date = new Date(entry.updated);
-        var dateStr = date.toLocaleDateString("en-GB", {
+        const slug = entry.article;
+        const title = titleMap[slug] || slug.replace(/-/g, " ");
+        const date = new Date(entry.updated);
+        const dateStr = date.toLocaleDateString("en-GB", {
           day: "numeric",
           month: "long",
           year: "numeric",
         });
-        var timeStr = date.toLocaleTimeString("en-GB", {
+        const timeStr = date.toLocaleTimeString("en-GB", {
           hour: "2-digit",
           minute: "2-digit",
         });

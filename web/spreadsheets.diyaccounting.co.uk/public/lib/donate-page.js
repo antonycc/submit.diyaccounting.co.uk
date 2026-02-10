@@ -9,10 +9,10 @@ function trackEvent(eventName, params) {
 }
 
 // Read query parameters from download page
-var params = new URLSearchParams(window.location.search);
-var productId = params.get("product") || "";
-var filename = params.get("filename");
-var downloadUrl = filename ? "/zips/" + encodeURIComponent(filename) : null;
+const params = new URLSearchParams(window.location.search);
+const productId = params.get("product") || "";
+const filename = params.get("filename");
+const downloadUrl = filename ? "/zips/" + encodeURIComponent(filename) : null;
 
 // Save download context to sessionStorage for donation return flow
 if (downloadUrl) {
@@ -22,9 +22,9 @@ if (downloadUrl) {
 
 // Show download link if a specific file was selected
 if (downloadUrl) {
-  var linkContainer = document.getElementById("download-link-container");
-  var skipLink = document.getElementById("skip-donate-link");
-  var browseContainer = document.getElementById("browse-products-container");
+  const linkContainer = document.getElementById("download-link-container");
+  const skipLink = document.getElementById("skip-donate-link");
+  const browseContainer = document.getElementById("browse-products-container");
   linkContainer.classList.remove("hidden");
   browseContainer.classList.add("hidden");
   skipLink.href = downloadUrl;
@@ -63,8 +63,8 @@ if (downloadUrl) {
 // GA4 ecommerce: begin_checkout when user clicks any Stripe donate link
 document.querySelectorAll(".stripe-donate-link").forEach(function (link) {
   link.addEventListener("click", function () {
-    var amount = this.getAttribute("data-amount");
-    var value = amount === "custom" ? 0 : parseInt(amount, 10);
+    const amount = this.getAttribute("data-amount");
+    const value = amount === "custom" ? 0 : parseInt(amount, 10);
     trackEvent("begin_checkout", {
       currency: "GBP",
       value: value,

@@ -12,7 +12,7 @@ gtag("js", new Date());
 gtag("config", "G-C76HK806F1");
 
 // Dynamically load gtag.js (CSP: no inline scripts allowed)
-var script = document.createElement("script");
+const script = document.createElement("script");
 script.async = true;
 script.src = "https://www.googletagmanager.com/gtag/js?id=G-C76HK806F1";
 document.head.appendChild(script);

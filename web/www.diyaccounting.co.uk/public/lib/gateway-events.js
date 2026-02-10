@@ -5,11 +5,11 @@
 (function () {
   if (typeof gtag !== "function") return;
 
-  var buttons = document.querySelectorAll(".gateway-btn");
-  for (var i = 0; i < buttons.length; i++) {
+  const buttons = document.querySelectorAll(".gateway-btn");
+  for (let i = 0; i < buttons.length; i++) {
     (function (btn) {
-      var href = btn.getAttribute("href") || "";
-      var itemId = null;
+      const href = btn.getAttribute("href") || "";
+      let itemId = null;
       if (href.indexOf("submit.diyaccounting.co.uk") !== -1) {
         itemId = "submit";
       } else if (href.indexOf("spreadsheets.diyaccounting.co.uk") !== -1) {

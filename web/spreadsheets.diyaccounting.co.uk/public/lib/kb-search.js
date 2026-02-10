@@ -65,7 +65,7 @@ class KBSearch {
     const trimmed = query.trim().toLowerCase();
 
     // Apply category filter first if provided
-    let pool = categoryFilter ? this.index.filter((a) => a.category === categoryFilter) : this.index;
+    const pool = categoryFilter ? this.index.filter((a) => a.category === categoryFilter) : this.index;
 
     // No query = return top by priority
     if (!trimmed) {

@@ -44,11 +44,11 @@ class KnowledgeBasePage {
     }
 
     // Search input handler
-    var handleSearch = window.debounce(
+    const handleSearch = window.debounce(
       function (e) {
-        var query = e.target.value;
-        var category = this.categoryFilter ? this.categoryFilter.value : "";
-        var results = this.kbSearch.search(query, category || undefined);
+        const query = e.target.value;
+        const category = this.categoryFilter ? this.categoryFilter.value : "";
+        const results = this.kbSearch.search(query, category || undefined);
         this.render(results);
         this.updateHint(query, results.length);
       }.bind(this),
@@ -62,9 +62,9 @@ class KnowledgeBasePage {
       this.categoryFilter.addEventListener(
         "change",
         function () {
-          var query = this.searchInput.value;
-          var category = this.categoryFilter.value;
-          var results = this.kbSearch.search(query, category || undefined);
+          const query = this.searchInput.value;
+          const category = this.categoryFilter.value;
+          const results = this.kbSearch.search(query, category || undefined);
           this.render(results);
           this.updateHint(query, results.length);
         }.bind(this),
@@ -74,10 +74,10 @@ class KnowledgeBasePage {
 
   populateCategories() {
     if (!this.categoryFilter) return;
-    var categories = this.kbSearch.getCategories();
-    for (var i = 0; i < categories.length; i++) {
-      var cat = categories[i];
-      var option = document.createElement("option");
+    const categories = this.kbSearch.getCategories();
+    for (let i = 0; i < categories.length; i++) {
+      const cat = categories[i];
+      const option = document.createElement("option");
       option.value = cat.category;
       option.textContent = this.formatCategory(cat.category) + " (" + cat.count + ")";
       this.categoryFilter.appendChild(option);
@@ -102,7 +102,7 @@ class KnowledgeBasePage {
         "<p>No articles match your search.</p>" +
         '<p>Try different keywords, or <button class="link-button" id="clear-search">view all articles</button></p>' +
         "</div>";
-      var clearBtn = document.getElementById("clear-search");
+      const clearBtn = document.getElementById("clear-search");
       if (clearBtn) {
         clearBtn.addEventListener(
           "click",
@@ -117,9 +117,9 @@ class KnowledgeBasePage {
       return;
     }
 
-    var html = "";
-    for (var i = 0; i < articles.length; i++) {
-      var article = articles[i];
+    let html = "";
+    for (let i = 0; i < articles.length; i++) {
+      const article = articles[i];
       html += '<div class="kb-item" data-id="' + this.escapeAttr(article.id) + '">';
       html +=
         '<button class="kb-question" aria-expanded="false">' +
@@ -134,7 +134,7 @@ class KnowledgeBasePage {
         "</svg>" +
         "</button>";
       // Show short description; full content loaded on expand
-      var desc = article.description
+      const desc = article.description
         ? "<p>" + this.escapeHtml(article.description) + "</p>"
         : '<p class="kb-loading">Loading article...</p>';
       html += '<div class="kb-answer" hidden data-loaded="false">' + desc + "</div>";
@@ -144,22 +144,22 @@ class KnowledgeBasePage {
     this.articleList.innerHTML = html;
 
     // Accordion click handlers
-    var buttons = this.articleList.querySelectorAll(".kb-question");
-    for (var j = 0; j < buttons.length; j++) {
+    const buttons = this.articleList.querySelectorAll(".kb-question");
+    for (let j = 0; j < buttons.length; j++) {
       buttons[j].addEventListener("click", this.toggleArticle.bind(this));
     }
   }
 
   toggleArticle(event) {
-    var button = event.currentTarget;
-    var item = button.closest(".kb-item");
-    var id = item.dataset.id;
-    var answer = item.querySelector(".kb-answer");
-    var isOpen = button.getAttribute("aria-expanded") === "true";
+    const button = event.currentTarget;
+    const item = button.closest(".kb-item");
+    const id = item.dataset.id;
+    const answer = item.querySelector(".kb-answer");
+    const isOpen = button.getAttribute("aria-expanded") === "true";
 
     // Close previously open item
     if (this.openArticleId && this.openArticleId !== id) {
-      var prev = this.articleList.querySelector('[data-id="' + this.openArticleId + '"]');
+      const prev = this.articleList.querySelector('[data-id="' + this.openArticleId + '"]');
       if (prev) {
         prev.querySelector(".kb-question").setAttribute("aria-expanded", "false");
         prev.querySelector(".kb-answer").hidden = true;
@@ -187,8 +187,8 @@ class KnowledgeBasePage {
     }
 
     answerEl.innerHTML = '<p class="kb-loading">Loading article...</p>';
-    var self = this;
-    var encodedId = encodeURIComponent(id);
+    const self = this;
+    const encodedId = encodeURIComponent(id);
 
     // Try .md first, fall back to .html for articles without markdown source
     fetch("articles/" + encodedId + ".md")
@@ -209,16 +209,16 @@ class KnowledgeBasePage {
             return response.text();
           })
           .then(function (htmlText) {
-            var parser = new DOMParser();
-            var doc = parser.parseFromString(htmlText, "text/html");
-            var article = doc.querySelector(".kb-article");
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, "text/html");
+            const article = doc.querySelector(".kb-article");
             if (!article) throw new Error("No article element");
             // Remove the h2 title and category badge (already shown in the accordion header)
-            var title = article.querySelector("h2");
+            const title = article.querySelector("h2");
             if (title) title.remove();
-            var badge = article.querySelector(".kb-category-badge");
+            const badge = article.querySelector(".kb-category-badge");
             if (badge) badge.remove();
-            var content = article.innerHTML;
+            const content = article.innerHTML;
             self.loadedArticles[id] = { content: content, html: true };
             answerEl.innerHTML = content;
             answerEl.dataset.loaded = "true";
@@ -230,7 +230,7 @@ class KnowledgeBasePage {
   }
 
   formatCategory(cat) {
-    var labels = {
+    const labels = {
       "bookkeeping": "Bookkeeping",
       "sole-trader": "Sole Trader",
       "company-accounts": "Company Accounts",
@@ -247,7 +247,7 @@ class KnowledgeBasePage {
   }
 
   escapeHtml(str) {
-    var div = document.createElement("div");
+    const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
   }
@@ -257,13 +257,13 @@ class KnowledgeBasePage {
   }
 
   renderMarkdown(text) {
-    var lines = text.trim().split("\n");
-    var result = [];
-    var inList = false;
-    var listType = null;
+    const lines = text.trim().split("\n");
+    const result = [];
+    let inList = false;
+    let listType = null;
 
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
 
       // Numbered list
       if (/^\d+\.\s+/.test(line.trim())) {
@@ -273,7 +273,7 @@ class KnowledgeBasePage {
           listType = "ol";
           result.push("<ol>");
         }
-        var content = line.trim().replace(/^\d+\.\s+/, "");
+        const content = line.trim().replace(/^\d+\.\s+/, "");
         result.push("<li>" + this.renderInline(content) + "</li>");
         continue;
       }
@@ -286,7 +286,7 @@ class KnowledgeBasePage {
           listType = "ul";
           result.push("<ul>");
         }
-        var ulContent = line.trim().substring(2);
+        const ulContent = line.trim().substring(2);
         result.push("<li>" + this.renderInline(ulContent) + "</li>");
         continue;
       }
@@ -323,22 +323,22 @@ class KnowledgeBasePage {
 
   renderInline(text) {
     // Bold text: **text**
-    var result = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    let result = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
     // Italic text: *text*
     result = result.replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
     // Markdown links: [text](url)
-    var output = "";
-    var i = 0;
+    let output = "";
+    let i = 0;
     while (i < result.length) {
       if (result[i] === "[") {
-        var closeBracket = result.indexOf("]", i + 1);
+        const closeBracket = result.indexOf("]", i + 1);
         if (closeBracket !== -1 && result[closeBracket + 1] === "(") {
-          var closeParen = result.indexOf(")", closeBracket + 2);
+          const closeParen = result.indexOf(")", closeBracket + 2);
           if (closeParen !== -1) {
-            var linkText = result.slice(i + 1, closeBracket);
-            var url = result.slice(closeBracket + 2, closeParen);
+            const linkText = result.slice(i + 1, closeBracket);
+            const url = result.slice(closeBracket + 2, closeParen);
             output += '<a href="' + url + '" target="_blank" rel="noopener">' + linkText + "</a>";
             i = closeParen + 1;
             continue;
@@ -354,6 +354,6 @@ class KnowledgeBasePage {
 
 // Initialise on page load
 if (document.getElementById("article-list")) {
-  var kbPageInstance = new KnowledgeBasePage();
+  const kbPageInstance = new KnowledgeBasePage();
   window.kbPageInstance = kbPageInstance;
 }
