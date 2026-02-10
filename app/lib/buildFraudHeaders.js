@@ -5,6 +5,7 @@
 
 import { createLogger } from "./logger.js";
 import { readFileSync } from "fs";
+import { hashSub, isSaltInitialized } from "../services/subHasher.js";
 
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url)));
 // Strip npm scope prefix (e.g., @org/package -> package) for cleaner HMRC product name
@@ -173,9 +174,9 @@ export function buildFraudHeaders(event, options = {}) {
     });
   }
 
-  // 8. Vendor license IDs – the user's active bundle IDs from the product catalog
-  if (options.bundleIds && options.bundleIds.length > 0) {
-    headers["Gov-Vendor-License-IDs"] = options.bundleIds.map((id) => `diyaccounting=${encodeURIComponent(id)}`).join("&");
+  // 8. Vendor license IDs – the user's active bundle IDs from the product catalog (hashed per HMRC spec)
+  if (options.bundleIds && options.bundleIds.length > 0 && isSaltInitialized()) {
+    headers["Gov-Vendor-License-IDs"] = options.bundleIds.map((id) => `diyaccounting=${encodeURIComponent(hashSub(id))}`).join("&");
   }
 
   // 9. Vendor product name – from package.json (must be percent-encoded)

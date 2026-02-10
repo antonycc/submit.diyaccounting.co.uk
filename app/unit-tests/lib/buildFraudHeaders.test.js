@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { readFileSync } from "fs";
 import { buildFraudHeaders, detectVendorPublicIp, _resetForTesting } from "../../lib/buildFraudHeaders.js";
+import { _setTestSalt, _clearSalt, hashSub } from "../../services/subHasher.js";
 
 // Read package info for test assertions (strip scope if present)
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
@@ -105,24 +106,29 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-User-IDs"]).toBe("cognito=cognito-user-abc123");
   });
 
-  it("should include Gov-Vendor-License-IDs when bundleIds provided", () => {
+  it("should include Gov-Vendor-License-IDs with hashed bundleIds when salt initialized", () => {
+    _setTestSalt("test-salt");
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
       requestContext: {},
     };
 
     const { govClientHeaders: headers } = buildFraudHeaders(event, { bundleIds: ["day-guest"] });
-    expect(headers["Gov-Vendor-License-IDs"]).toBe("diyaccounting=day-guest");
+    expect(headers["Gov-Vendor-License-IDs"]).toBe(`diyaccounting=${encodeURIComponent(hashSub("day-guest"))}`);
+    _clearSalt();
   });
 
-  it("should join multiple bundleIds in Gov-Vendor-License-IDs", () => {
+  it("should join multiple hashed bundleIds in Gov-Vendor-License-IDs", () => {
+    _setTestSalt("test-salt");
     const event = {
       headers: { "x-forwarded-for": "198.51.100.1" },
       requestContext: {},
     };
 
     const { govClientHeaders: headers } = buildFraudHeaders(event, { bundleIds: ["day-guest", "resident-pro"] });
-    expect(headers["Gov-Vendor-License-IDs"]).toBe("diyaccounting=day-guest&diyaccounting=resident-pro");
+    const expected = `diyaccounting=${encodeURIComponent(hashSub("day-guest"))}&diyaccounting=${encodeURIComponent(hashSub("resident-pro"))}`;
+    expect(headers["Gov-Vendor-License-IDs"]).toBe(expected);
+    _clearSalt();
   });
 
   it("should omit Gov-Vendor-License-IDs when no bundleIds provided", () => {

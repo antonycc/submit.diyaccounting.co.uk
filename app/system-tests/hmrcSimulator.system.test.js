@@ -326,7 +326,7 @@ describe("HTTP Simulator", () => {
           "Gov-Client-Public-IP": "127.0.0.1",
           "Gov-Client-Public-IP-Timestamp": new Date().toISOString(),
           "Gov-Client-Multi-Factor": "type=TOTP&timestamp=2026-01-08T00:00:00Z&unique-reference=test",
-          "Gov-Vendor-License-IDs": "diyaccounting=test",
+          "Gov-Vendor-License-IDs": "diyaccounting=9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
           "Gov-Client-Public-Port": "443",
         },
       });
