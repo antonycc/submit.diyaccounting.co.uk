@@ -337,6 +337,7 @@
                         <arg>-J-Xshare:off</arg>
                         <arg>-J-XX:+EnableDynamicAgentLoading</arg>
                         <arg>-Xlint:-options</arg>
+                        <arg>-Xlint:deprecation</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

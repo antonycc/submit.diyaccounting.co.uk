@@ -123,6 +123,7 @@ public class KindCdk {
      * @return ILogGroup reference to the log group
      * @deprecated Use ensureLogGroupWithDependency when you need to add dependencies on the log group creation
      */
+    @Deprecated
     public static ILogGroup ensureLogGroup(Stack stack, String id, String logGroupName) {
         return ensureLogGroupWithDependency(stack, id, logGroupName).logGroup();
     }

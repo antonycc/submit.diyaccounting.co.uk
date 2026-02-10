@@ -7,7 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -283,7 +283,9 @@ public class GatewayStack extends Stack {
 
         // CloudWatch log group for access logs
         String logGroupName = "distribution-" + resourcePrefix + "-logs";
-        ILogGroup accessLogGroup = ensureLogGroup(this, resourcePrefix + "-AccessLogGroup", logGroupName);
+        ILogGroup accessLogGroup =
+                ensureLogGroupWithDependency(this, resourcePrefix + "-AccessLogGroup", logGroupName)
+                        .logGroup();
 
         // CloudFront distribution
         this.distribution = Distribution.Builder.create(this, resourcePrefix + "-Distribution")
