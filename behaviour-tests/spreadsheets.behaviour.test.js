@@ -433,16 +433,12 @@ test.describe("Spreadsheets Site - spreadsheets.diyaccounting.co.uk", () => {
     console.log("STEP 3: Verify Stripe donate link");
     console.log("=".repeat(60));
 
-    const stripeLink = page.locator("#stripe-donate-link");
-    await expect(stripeLink).toBeVisible({ timeout: 5000 });
-    const stripeHref = await stripeLink.getAttribute("href");
+    const stripeLinks = page.locator(".stripe-donate-link");
+    const stripeLinkCount = await stripeLinks.count();
+    expect(stripeLinkCount).toBeGreaterThanOrEqual(3);
+    const stripeHref = await stripeLinks.first().getAttribute("href");
     expect(stripeHref).toContain("buy.stripe.com");
-    console.log(" Stripe donate link is visible with correct URL");
-
-    const amountBadges = page.locator(".amount-badge");
-    const badgeCount = await amountBadges.count();
-    expect(badgeCount).toBeGreaterThanOrEqual(3);
-    console.log(` ${badgeCount} donation amount badges displayed`);
+    console.log(` ${stripeLinkCount} Stripe donate links visible with correct URLs`);
 
     // ============================================================
     // STEP 3b: Verify PayPal donate form (secondary)

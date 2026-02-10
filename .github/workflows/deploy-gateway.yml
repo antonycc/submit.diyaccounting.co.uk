@@ -13,6 +13,11 @@ on:
           - 'ci'
           - 'prod'
         default: '(auto)'
+      skipDeploy:
+        type: boolean
+        description: 'Skip deployment and only run the smoke test'
+        required: false
+        default: false
 
 permissions:
   id-token: write
@@ -37,6 +42,8 @@ jobs:
         run: ":"
       - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
         run: ":"
+      - name: "inputs.skipDeploy=[${{ inputs.skipDeploy }}]"
+        run: ":"
       - name: Normalise Params
         id: normalise
         shell: bash
@@ -44,8 +51,12 @@ jobs:
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          # Default skipDeploy to false for non-dispatch triggers
+          SKIP_DEPLOY='${{ inputs.skipDeploy }}'; [[ -z "$SKIP_DEPLOY" ]] && SKIP_DEPLOY="false"
+          echo "skip-deploy=${SKIP_DEPLOY}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
+      skip-deploy: ${{ steps.normalise.outputs.skip-deploy }}
 
   names:
     needs:
@@ -74,7 +85,9 @@ jobs:
 
   deploy-gateway:
     name: 'deploy gateway stack'
+    if: ${{ needs.params.outputs.skip-deploy != 'true' }}
     needs:
+      - params
       - names
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -155,6 +168,7 @@ jobs:
 
   test-gateway:
     name: 'gateway smoke test'
+    if: ${{ !cancelled() && !failure() }}
     needs:
       - names
       - deploy-gateway
