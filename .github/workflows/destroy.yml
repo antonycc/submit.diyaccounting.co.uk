@@ -686,7 +686,6 @@ jobs:
               --force \
           && cd .. \
           || echo "CDK destroy cleanup pass completed (some stacks may already be deleted)"
-          ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
