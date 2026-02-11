@@ -616,7 +616,68 @@ jobs:
           done
           echo "API Gateway custom domain mapping cleanup complete"
 
-      - name: Destroy Submit Application
+      - name: Delete stacks in dependency order
+        shell: bash
+        run: |
+          DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
+
+          delete_stack_in_region() {
+            local STACK="$1" REGION="$2"
+            local STATUS
+            STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
+              --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+            if [ "$STATUS" = "DOES_NOT_EXIST" ]; then
+              echo "  $STACK does not exist in $REGION, skipping"
+              return 0
+            fi
+            echo "  Deleting $STACK in $REGION (status: $STATUS)..."
+            aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
+            aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
+            # Check for DELETE_FAILED and retry with --retain-resources
+            STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
+              --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+            if [ "$STATUS" = "DELETE_FAILED" ]; then
+              echo "  $STACK is DELETE_FAILED, retrying with --retain-resources"
+              FAILED_RESOURCES=$(aws cloudformation list-stack-resources --stack-name "$STACK" --region "$REGION" \
+                --query "StackResourceSummaries[?ResourceStatus=='DELETE_FAILED'].LogicalResourceId" \
+                --output text 2>/dev/null || echo "")
+              if [ -n "$FAILED_RESOURCES" ] && [ "$FAILED_RESOURCES" != "None" ]; then
+                echo "  Retaining: $FAILED_RESOURCES"
+                aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" \
+                  --retain-resources $FAILED_RESOURCES || true
+              else
+                aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" || true
+              fi
+              aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
+            fi
+          }
+
+          # Delete in reverse dependency order (leaf stacks first)
+          echo "=== Phase 1: SelfDestruct + Ops + Publish (no dependents) ==="
+          delete_stack_in_region "${DEPLOYMENT}-app-SelfDestructStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-OpsStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-PublishStack" us-east-1
+
+          echo "=== Phase 2: EdgeStack (depends on ApiStack outputs) ==="
+          delete_stack_in_region "${DEPLOYMENT}-app-EdgeStack" us-east-1
+
+          echo "=== Phase 3: ApiStack (depends on Lambda stacks) ==="
+          delete_stack_in_region "${DEPLOYMENT}-app-ApiStack" eu-west-2
+
+          echo "=== Phase 4: Lambda stacks (no cross-dependencies) ==="
+          delete_stack_in_region "${DEPLOYMENT}-app-AuthStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-HmrcStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
+
+          echo "=== Phase 5: Dev stacks ==="
+          delete_stack_in_region "${DEPLOYMENT}-app-DevStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-DevUE1Stack" us-east-1
+
+          echo "=== Stack deletion complete ==="
+
+      - name: CDK destroy (cleanup pass)
+        if: ${{ !cancelled() }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
@@ -624,6 +685,7 @@ jobs:
               --all \
               --force \
           && cd .. \
+          || echo "CDK destroy cleanup pass completed (some stacks may already be deleted)"
           ;
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
