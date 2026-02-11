@@ -1112,14 +1112,193 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 
 ## Implementation Progress
 
-- [x] `PLAN_STRIPE_1.md` — Stripe Payment Links for spreadsheets donations (completed, archived)
-- [ ] Phase 1: Token Usage Page — not started
-- [ ] Phase 2: Stripe SDK & Infrastructure Foundation — not started
-  - `scripts/stripe-setup.js` ready to be authored (config spec defined above, implementation iterates after plan approval)
-- [ ] Phases 3-10: not started
-
-**Next step**: Author `scripts/stripe-setup.js` implementation, then begin Phase 1.
+| Item | Status | Notes |
+|------|--------|-------|
+| `PLAN_STRIPE_1.md` | **COMPLETE** | Stripe Payment Links for spreadsheets donations (archived) |
+| **Phase 1: Token Usage Page** | **COMPLETE** | Deployed on `eventandpayment` branch — 2026-02-11 |
+| `web/public/usage.html` | Done | Token sources + consumption tables, reload button |
+| `app/data/dynamoDbBundleRepository.js` — `recordTokenEvent` | Done | DynamoDB `list_append` for token consumption events |
+| `app/services/tokenEnforcement.js` — consumption recording | Done | Records `{ activity, timestamp, tokensUsed }` after `consumeToken()` |
+| `web/public/widgets/auth-status.js` — usage link | Done | Token count wraps in `<a href="/usage.html">` |
+| `.pa11yci.*.json` — `/usage.html` | Done | Added to proxy, ci, prod configs |
+| Unit tests | Done | `tokenEvent.test.js`, `tokenEnforcement.consumption.test.js` |
+| **Phase 2: Stripe SDK & Infrastructure** | **COMPLETE** | Deployed on `eventandpayment` branch — 2026-02-11 |
+| `package.json` — `stripe` dependency | Done | `"stripe": "^17.x.x"` |
+| `scripts/stripe-setup.js` | Done | Idempotent: product, price, webhooks, find-or-create |
+| `scripts/stripe-setup-secrets.sh` | Done | Stores secrets in AWS Secrets Manager |
+| `app/lib/stripeClient.js` | Done | Lazy Stripe SDK init from Secrets Manager or env var |
+| `app/test-support/stripeSimulator.js` | Done | Mock Stripe API: checkout, subscriptions, portal |
+| `app/functions/billing/billingCheckoutPost.js` | Done | Placeholder (501 Not Implemented) |
+| `app/functions/billing/billingPortalGet.js` | Done | Placeholder (501 Not Implemented) |
+| `app/functions/billing/billingRecoverPost.js` | Done | Placeholder (501 Not Implemented) |
+| `app/functions/billing/billingWebhookPost.js` | Done | Placeholder (501 Not Implemented) |
+| `app/data/dynamoDbSubscriptionRepository.js` | Done | CRUD for subscriptions table |
+| CDK: `DataStack.java` — subscriptions table | Done | `{env}-submit-subscriptions`, PITR enabled |
+| CDK: `BillingStack.java` | Done | 4 ApiLambda constructs, `ingestReservedConcurrency(1)` |
+| CDK: `SubmitSharedNames.java` — billing names | Done | All billing Lambda name fields |
+| CDK: `SubmitApplication.java` — BillingStack wiring | Done | BillingStack added, lambdaFunctionProps wired to ApiStack |
+| Express server routes | Done | 4 billing endpoints registered in `server.js` |
+| `.env.test` — billing env vars | Done | `STRIPE_*`, `SUBSCRIPTIONS_DYNAMODB_TABLE_NAME` |
+| System tests | Done | `billingInfrastructure.system.test.js` |
+| Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
+| All unit tests pass (767 tests) | Done | |
+| **Phase 3: Checkout Session API** | **Not started** | Requires human actions below |
+| **Phases 4-10** | **Not started** | |
 
 ---
 
-*Document refreshed: 2026-02-10. PLAN_STRIPE_1 completed. Stripe-as-code approach added. Original proposal date: 2026-02-01.*
+## Human Actions Required Before Phase 3
+
+Phase 3 (Checkout Session API) requires a real Stripe account with resources created and secrets stored. Complete these steps before starting Phase 3:
+
+### 1. Run `stripe-setup.js` Against Stripe Test Mode
+
+```bash
+# Get a test-mode secret key from Stripe Dashboard → Developers → API keys
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
+```
+
+This creates (idempotently):
+- Product: "Resident Pro" with `metadata.bundleId=resident-pro`
+- Monthly Price: GBP 9.99/month
+- Webhook endpoint for CI: `https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook`
+- Webhook endpoint for Prod: `https://submit.diyaccounting.co.uk/api/v1/billing/webhook`
+
+Note the output IDs (product ID, price ID) and the webhook signing secrets from the Stripe Dashboard.
+
+### 2. Store Secrets in AWS Secrets Manager (CI)
+
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && \
+  scripts/stripe-setup-secrets.sh ci sk_test_... whsec_test_... price_Monthly456
+```
+
+### 3. Store Secrets in GitHub Actions (for CI deploy)
+
+```bash
+gh secret set STRIPE_SECRET_KEY_CI --body "sk_test_..."
+gh secret set STRIPE_WEBHOOK_SECRET_CI --body "whsec_test_..."
+gh secret set STRIPE_PRICE_ID_CI --body "price_Monthly456"
+```
+
+### 4. Verify Webhook Endpoint Reachable
+
+After the BillingStack deploys to CI, verify the webhook endpoint is reachable from Stripe:
+- Go to Stripe Dashboard → Developers → Webhooks
+- Check that the CI webhook shows a green status
+- Send a test event from Stripe to verify the Lambda receives it
+
+---
+
+## Payment Configuration as Code (All Sites)
+
+### Overview
+
+All payment provider resources across all DIY Accounting sites are managed as code in `scripts/`. Each script is idempotent (safe to re-run), environment-aware, and prints the IDs needed for secret storage.
+
+| Command | Site | Provider | What it creates |
+|---------|------|----------|-----------------|
+| `node scripts/stripe-setup.js --site submit` | submit | Stripe | Product, monthly price, CI+prod webhooks, portal config |
+| `node scripts/stripe-setup.js --site spreadsheets` | spreadsheets | Stripe | Product, 4 Payment Links (£10/£20/£45/custom), return URLs |
+| `node scripts/paypal-setup.js --site spreadsheets` | spreadsheets | PayPal | Verify button exists, print config, document manual steps |
+| `scripts/payment-secrets.sh <env>` | all | all | Store all payment secrets in AWS Secrets Manager + gh secrets |
+
+### Stripe Setup: Submit Subscriptions
+
+```bash
+# Test mode
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js --site submit
+
+# Live mode
+STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js --site submit --live
+```
+
+Creates:
+- Product: "Resident Pro" (`metadata.site=submit, metadata.bundleId=resident-pro`)
+- Monthly Price: GBP 9.99/month
+- Webhook endpoints for CI and prod
+- Customer Portal configuration
+
+### Stripe Setup: Spreadsheets Donations
+
+```bash
+# Test mode
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js --site spreadsheets
+
+# Live mode
+STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js --site spreadsheets --live
+```
+
+Creates:
+- Product: "Spreadsheet Donation" (`metadata.site=spreadsheets, metadata.type=donation`)
+- 4 Payment Links: £10, £20, £45, customer-chooses-amount
+  - Success URL: `https://spreadsheets.diyaccounting.co.uk/download.html?stripe=success`
+- Prints the Payment Link URLs to embed in `donate.html`
+
+> **Note**: Stripe Payment Links can be created via the API (`stripe.paymentLinks.create()`). The existing links in `donate.html` were created manually via the Dashboard — this script will find them by metadata or create new ones.
+
+### PayPal Setup: Spreadsheets Donations
+
+```bash
+# Verify existing config
+PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=... node scripts/paypal-setup.js --site spreadsheets
+
+# Live mode
+PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=... node scripts/paypal-setup.js --site spreadsheets --live
+```
+
+PayPal's hosted "Donate" buttons use a legacy API that doesn't support full programmatic creation. This script:
+- Verifies the existing hosted button ID (`XTEQ73HM52QQW`) is still active via PayPal REST API
+- Prints the current button configuration
+- Documents the manual steps if a new button is needed
+- Optionally sets up webhook URL for donation event notifications (for Phase 4 of `PLAN_WHATSAPP_ALERTING.md`)
+
+> **Limitation**: PayPal "Donate" buttons are best created in the PayPal Dashboard. The script verifies and documents rather than creates. If full API creation is needed later, PayPal's Orders API v2 could replace the hosted button with a server-side integration.
+
+### Payment Secrets: All Sites
+
+```bash
+# Store all payment secrets for an environment
+# Reads IDs from stripe-setup.js output or prompts interactively
+scripts/payment-secrets.sh ci
+
+# For production
+scripts/payment-secrets.sh prod
+```
+
+This single script stores secrets in both AWS Secrets Manager and GitHub Actions:
+
+**AWS Secrets Manager** (accessed by Lambdas at runtime):
+```
+{env}/submit/stripe/secret_key
+{env}/submit/stripe/webhook_secret
+{env}/submit/stripe/price_id
+{env}/spreadsheets/paypal/button_id          (for webhook verification)
+{env}/spreadsheets/paypal/webhook_id         (for donation events)
+```
+
+**GitHub Actions secrets** (accessed during deploy):
+```
+gh secret set STRIPE_SECRET_KEY_{ENV}
+gh secret set STRIPE_WEBHOOK_SECRET_{ENV}
+gh secret set STRIPE_PRICE_ID_{ENV}
+```
+
+### Config-in-Repository, Secrets-in-Vault
+
+| What | Where | Why |
+|------|-------|-----|
+| Product names, prices, currencies | `scripts/stripe-setup.js` | Reviewable, version-controlled |
+| Webhook URLs, event types | `scripts/stripe-setup.js` | Tied to deployment topology |
+| Payment Link amounts, return URLs | `scripts/stripe-setup.js` | Tied to site configuration |
+| PayPal button config | `scripts/paypal-setup.js` | Documentation + verification |
+| API keys, webhook signing secrets | AWS Secrets Manager | Never in code |
+| CI/CD secrets | GitHub Actions secrets | For deploy workflows |
+
+---
+
+**Next step**: Complete human actions above (Stripe test mode setup + secrets), then begin Phase 3.
+
+---
+
+*Document refreshed: 2026-02-11. Phase 1 (Token Usage Page) and Phase 2 (Stripe SDK & Infrastructure) completed. Config-as-code extended to cover spreadsheets Stripe + PayPal. Original proposal date: 2026-02-01.*

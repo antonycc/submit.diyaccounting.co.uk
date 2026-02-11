@@ -454,6 +454,89 @@ Each phase is independently removable:
 
 ---
 
+## Implementation Progress
+
+| Item | Status | Notes |
+|------|--------|-------|
+| **Phase 1** | **COMPLETE** | Deployed on `eventandpayment` branch — 2026-02-11 |
+| `app/lib/activityAlert.js` | Done | `publishActivityEvent`, `classifyActor`, `classifyFlow`, `maskEmail`, `maskVrn` |
+| `app/lib/visitorClassifier.js` | Done | `classifyVisitor` — human / ai-agent / crawler |
+| `app/unit-tests/lib/activityAlert.test.js` | Done | Classification logic, masking, event envelope, graceful no-op |
+| `app/unit-tests/lib/visitorClassifier.test.js` | Done | AI agents, crawlers, standard browsers |
+| `app/functions/account/sessionBeaconPost.js` | Done | `POST /api/session/beacon` — public, no auth |
+| `web/public/lib/session-beacon.js` | Done | Client-side beacon, sessionStorage marker, fire-and-forget |
+| CDK: OpsStack — EventBridge custom bus | Done | `{prefix}-activity-bus` + email proof rule → SNS alertTopic |
+| CDK: SubmitSharedNames — session beacon + activityBusName | Done | All billing + session beacon Lambda names added |
+| CDK: AccountStack — session beacon Lambda | Done | `ingestReservedConcurrency(1)`, `events:PutEvents` grant |
+| CDK: AccountStack — `ACTIVITY_BUS_NAME` on all Lambdas | Done | + `events:PutEvents` IAM on all existing Lambdas |
+| CDK: AuthStack — `ACTIVITY_BUS_NAME` on all Lambdas | Done | cognitoTokenPost, customAuthorizer |
+| CDK: HmrcStack — `ACTIVITY_BUS_NAME` on all Lambdas | Done | hmrcTokenPost, hmrcVatReturnPost/Get, hmrcVatObligationGet |
+| Lambda instrumentation (13 Lambdas) | Done | Fire-and-forget `publishActivityEvent().catch(() => {})` in all |
+| `.env.test` — `ACTIVITY_BUS_NAME` | Done | `ACTIVITY_BUS_NAME=test-activity-bus` |
+| All unit tests pass (767 tests) | Done | |
+| Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
+| **Phase 2** | **Not started** | Requires human actions below |
+| **Phase 3** | **Not started** | |
+| **Phase 4** | **Not started** | |
+
+---
+
+## Human Actions Required Before Phase 2
+
+Phase 2 (WhatsApp Delivery) requires a Meta Business / WhatsApp Business API setup that cannot be automated with code. Complete these steps before starting Phase 2:
+
+### 1. Meta Business Account
+
+- [ ] Create or verify Meta Business account at [business.facebook.com](https://business.facebook.com)
+- [ ] Complete business verification (may take 1-3 days)
+
+### 2. WhatsApp Business API
+
+- [ ] Add WhatsApp Business product in Meta Business Suite
+- [ ] Register a phone number (dedicated or existing) for WhatsApp Business
+- [ ] Create a WhatsApp Business app in [Meta Developer Console](https://developers.facebook.com)
+- [ ] Generate a **permanent access token** (System User token with `whatsapp_business_messaging` permission)
+
+### 3. Message Template
+
+- [ ] Create a message template for approval (template review takes ~24h):
+  - Template name: `activity_alert`
+  - Body: `{{1}}` (single variable — the formatted alert text)
+  - Category: `UTILITY`
+- [ ] Wait for template approval before proceeding
+
+### 4. WhatsApp Groups
+
+- [ ] Create 4 WhatsApp groups:
+  - `diy-ci-test` — CI test activity
+  - `diy-ci-live` — Unexpected real usage against CI
+  - `diy-prod-test` — Test runs against prod
+  - `diy-prod-live` — **The business channel** — real customer activity
+- [ ] Record the Group ID for each (visible in WhatsApp Business API group management)
+
+### 5. Store Secrets in AWS Secrets Manager
+
+- [ ] Store WhatsApp access token:
+  ```bash
+  . ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && \
+    aws secretsmanager create-secret --name "prod/submit/whatsapp/access_token" --secret-string "EAAG..."
+  ```
+- [ ] Store group IDs (JSON map):
+  ```bash
+  . ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && \
+    aws secretsmanager create-secret --name "prod/submit/whatsapp/group_ids" \
+    --secret-string '{"ci-test":"GROUP_ID","ci-live":"GROUP_ID","prod-test":"GROUP_ID","prod-live":"GROUP_ID"}'
+  ```
+
+### 6. Verify Email Proof (Optional but Recommended)
+
+Before building the WhatsApp forwarder, verify the Phase 1 email proof rule is working:
+- [ ] Subscribe an email address to the `alertTopic` SNS topic in OpsStack
+- [ ] Trigger a login in CI environment
+- [ ] Confirm email arrives with the activity event JSON
+
+---
+
 ## Dependencies
 
 | Dependency | Status | Notes |
@@ -464,6 +547,7 @@ Each phase is independently removable:
 | 4 WhatsApp groups created | Not started | ci-test, ci-live, prod-test, prod-live |
 | Stripe webhook (for donations) | Not started | See `PLAN_PAYMENT_INTEGRATION.md` |
 | PayPal webhook (for donations) | Not started | PayPal Developer account + webhook URL registration |
+| EventBridge custom bus | **Done** | `OpsStack.java` — Phase 1 complete |
 | EventBridge patterns in CDK | Exists | `ObservabilityStack.java` has EventBridge rules for GuardDuty/SecurityHub |
 | SNS publish pattern | Exists | `interestPost.js` lines 72-80 — similar but we use EventBridge instead |
 | Test user classification signals | Exists | Cognito native auth, `@test.diyaccounting.co.uk`, `hmrcAccount` header |

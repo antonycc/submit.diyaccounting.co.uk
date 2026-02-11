@@ -66,6 +66,7 @@ export async function ingestHandler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.API_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.AUTH_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.HMRC_STACK_NAME);
+    addStackNameIfPresent(stacksToDelete, process.env.BILLING_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.ACCOUNT_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.DEV_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.DEV_UE1_STACK_NAME);
@@ -191,8 +192,14 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
 
     try {
       const { DescribeStacksCommand } = await import("@aws-sdk/client-cloudformation");
-      await client.send(new DescribeStacksCommand({ StackName: stackName }));
-      console.log(`Stack ${stackName} still exists, waiting...`);
+      const resp = await client.send(new DescribeStacksCommand({ StackName: stackName }));
+      const status = resp.Stacks?.[0]?.StackStatus;
+      if (status === "DELETE_FAILED") {
+        console.log(`Stack ${stackName} entered DELETE_FAILED, retrying with --retain-resources`);
+        await retryDeleteWithRetainResources(client, stackName);
+      } else {
+        console.log(`Stack ${stackName} status: ${status}, waiting...`);
+      }
     } catch (error) {
       if (error.message?.includes("does not exist")) {
         console.log(`Stack ${stackName} deleted.`);
@@ -207,6 +214,35 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
 
   console.log(`Timeout waiting for stack ${stackName} deletion.`);
   return false;
+}
+
+async function retryDeleteWithRetainResources(client, stackName) {
+  const { DescribeStacksCommand, DeleteStackCommand, ListStackResourcesCommand } = await import(
+    "@aws-sdk/client-cloudformation"
+  );
+
+  try {
+    // Find resources that failed to delete
+    const resources = await client.send(new ListStackResourcesCommand({ StackName: stackName }));
+    const failedResources = (resources.StackResourceSummaries || [])
+      .filter((r) => r.ResourceStatus === "DELETE_FAILED")
+      .map((r) => r.LogicalResourceId);
+
+    if (failedResources.length === 0) {
+      console.log(`No DELETE_FAILED resources found in ${stackName}, retrying plain delete`);
+      await client.send(new DeleteStackCommand({ StackName: stackName }));
+    } else {
+      console.log(`Retaining failed resources in ${stackName}: ${failedResources.join(", ")}`);
+      await client.send(
+        new DeleteStackCommand({
+          StackName: stackName,
+          RetainResources: failedResources,
+        }),
+      );
+    }
+  } catch (error) {
+    console.log(`Error retrying delete for ${stackName}: ${error.message}`);
+  }
 }
 
 async function resolveBucketRegion(bucketName) {

@@ -635,6 +635,33 @@ jobs:
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 
+      - name: Retry DELETE_FAILED stacks
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
+          FAILED_STACKS=$(aws cloudformation list-stacks --region eu-west-2 \
+            --stack-status-filter DELETE_FAILED \
+            --query "StackSummaries[?starts_with(StackName, '${DEPLOYMENT}')].StackName" \
+            --output text 2>/dev/null || echo "")
+          for STACK in $FAILED_STACKS; do
+            [ -z "$STACK" ] || [ "$STACK" = "None" ] && continue
+            echo "Stack $STACK is DELETE_FAILED, retrying with --retain-resources"
+            FAILED_RESOURCES=$(aws cloudformation list-stack-resources --stack-name "$STACK" --region eu-west-2 \
+              --query "StackResourceSummaries[?ResourceStatus=='DELETE_FAILED'].LogicalResourceId" \
+              --output text 2>/dev/null || echo "")
+            if [ -n "$FAILED_RESOURCES" ] && [ "$FAILED_RESOURCES" != "None" ]; then
+              echo "Retaining: $FAILED_RESOURCES"
+              aws cloudformation delete-stack --stack-name "$STACK" --region eu-west-2 \
+                --retain-resources $FAILED_RESOURCES || true
+            else
+              echo "No failed resources found, retrying plain delete"
+              aws cloudformation delete-stack --stack-name "$STACK" --region eu-west-2 || true
+            fi
+            echo "Waiting for $STACK deletion..."
+            aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region eu-west-2 2>/dev/null || true
+          done
+
       - name: CDK stacks after
         if: ${{ !cancelled() }}
         run: |
