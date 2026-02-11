@@ -741,7 +741,6 @@ public class AccountStack extends Stack {
                         .ingestLambdaArn(props.sharedNames().sessionBeaconPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().sessionBeaconPostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .ingestReservedConcurrency(1)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().sessionBeaconPostLambdaHttpMethod)
