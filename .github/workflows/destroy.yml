@@ -384,9 +384,12 @@ jobs:
             fi
           done
 
-          # 2. Always keep any holding deployments that are published via CloudFront
+          # 2. Always keep sibling site deployments (gateway, spreadsheets) and holding pages
+          #    These are separate workflows with their own stacks — the sweeper must never touch them
           for DEPLOYMENT_NAME in $PUBLISHED_DEPLOYMENT_NAMES; do
-            if [[ "$DEPLOYMENT_NAME" == *-holding ]]; then
+            if [[ "$DEPLOYMENT_NAME" == *-holding ]] || \
+               [[ "$DEPLOYMENT_NAME" == *-gateway ]] || \
+               [[ "$DEPLOYMENT_NAME" == *-spreadsheets ]]; then
               STACK_DEPLOYMENT_NAMES_TO_KEEP+=("$DEPLOYMENT_NAME")
             fi
           done
