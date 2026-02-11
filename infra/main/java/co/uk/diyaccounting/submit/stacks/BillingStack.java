@@ -76,6 +76,26 @@ public class BillingStack extends Stack {
 
         String baseImageTag();
 
+        @Value.Default
+        default String stripeSecretKeyArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceId() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceId() {
+            return "";
+        }
+
+        @Value.Default
+        default String baseUrl() {
+            return "";
+        }
+
         static ImmutableBillingStackProps.Builder builder() {
             return ImmutableBillingStackProps.builder();
         }
@@ -120,6 +140,18 @@ public class BillingStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.stripePriceId() != null && !props.stripePriceId().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID", props.stripePriceId());
+        }
+        if (props.stripeTestPriceId() != null && !props.stripeTestPriceId().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID", props.stripeTestPriceId());
+        }
+        if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
+        }
         var billingCheckoutPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -152,6 +184,19 @@ public class BillingStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            this.billingCheckoutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for Stripe secret %s",
+                    this.billingCheckoutPostLambda.getFunctionName(), props.stripeSecretKeyArn());
+        }
         infof("Created Billing Checkout POST Lambda %s", this.billingCheckoutPostLambda.getNode().getId());
 
         // ============================================================================

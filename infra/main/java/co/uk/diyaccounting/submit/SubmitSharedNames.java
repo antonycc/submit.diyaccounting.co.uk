@@ -345,6 +345,12 @@ public class SubmitSharedNames {
 
     public String billingStackId;
 
+    // Telegram forwarder Lambda (EventBridge target, not API)
+    public String activityTelegramForwarderLambdaHandler;
+    public String activityTelegramForwarderLambdaFunctionName;
+    public String activityTelegramForwarderLambdaArn;
+    public String activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn;
+
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
     public String selfDestructLambdaArn;
@@ -1066,6 +1072,19 @@ public class SubmitSharedNames {
                 "Stripe webhook",
                 "Receives Stripe webhook events for subscription lifecycle",
                 "stripeWebhook"));
+
+        // Telegram forwarder Lambda (EventBridge target, not API)
+        var activityTelegramForwarderLambdaHandlerName = "activityTelegramForwarder.handler";
+        var activityTelegramForwarderLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(activityTelegramForwarderLambdaHandlerName);
+        this.activityTelegramForwarderLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, activityTelegramForwarderLambdaHandlerDashed);
+        this.activityTelegramForwarderLambdaHandler =
+                "%s/ops/%s".formatted(appLambdaHandlerPrefix, activityTelegramForwarderLambdaHandlerName);
+        this.activityTelegramForwarderLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, activityTelegramForwarderLambdaHandlerDashed);
+        this.activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.activityTelegramForwarderLambdaArn, this.provisionedConcurrencyAliasName);
 
         var appSelfDestructLambdaHandlerName = "selfDestruct.ingestHandler";
         var appSelfDestructLambdaHandlerDashed =

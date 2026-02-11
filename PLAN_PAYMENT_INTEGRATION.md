@@ -207,21 +207,23 @@ Store these in AWS Secrets Manager:
 
 ### Secrets workflow
 
-After running `stripe-setup.js`, store the output IDs in Secrets Manager using the existing `scripts/stripe-setup-secrets.sh` wrapper:
+After running `stripe-setup.js`, store secrets in **GitHub Actions** (not directly in AWS). The `deploy-environment.yml` workflow propagates them to AWS Secrets Manager during deployment.
 
-```bash
-# After stripe-setup.js prints the IDs:
-STRIPE_PRICE_ID=price_Monthly456 \
-STRIPE_WEBHOOK_SECRET=whsec_... \
-STRIPE_SECRET_KEY=sk_test_... \
-  scripts/stripe-setup-secrets.sh ci
-
-# For production (with live keys):
-STRIPE_PRICE_ID=price_LiveXYZ \
-STRIPE_WEBHOOK_SECRET=whsec_live_... \
-STRIPE_SECRET_KEY=sk_live_... \
-  scripts/stripe-setup-secrets.sh prod
+**Secrets** (GitHub Actions Secrets — sensitive credentials):
 ```
+STRIPE_SECRET_KEY         — Live API key (repo-level)
+STRIPE_TEST_SECRET_KEY    — Test API key (repo-level)
+STRIPE_WEBHOOK_SECRET     — Live webhook signing secret (environment-level: ci, prod)
+STRIPE_TEST_WEBHOOK_SECRET — Test webhook signing secret (repo-level)
+```
+
+**Variables** (GitHub Actions Variables — non-sensitive public IDs):
+```
+STRIPE_PRICE_ID           — Live price ID (repo-level)
+STRIPE_TEST_PRICE_ID      — Test price ID (repo-level)
+```
+
+Price IDs and chat IDs are public identifiers, not credentials. Exposing them without the corresponding API key is harmless.
 
 ---
 
@@ -696,56 +698,7 @@ Deploy to CI. Full subscription lifecycle works end-to-end against simulator. To
 
 ## Phase 6: Customer Portal & Subscription Recovery
 
-**Goal**: Users can manage their subscription via Stripe's hosted portal. Subscriptions can be recovered after database loss.
-
-**Risk mitigated**: Does the portal redirect flow work? Can we reliably match Stripe subscriptions to users after DB loss?
-
-### 6.1 billingPortalGet Lambda
-
-- [ ] Create `app/functions/billing/billingPortalGet.js`
-  - Extract hashedSub from JWT
-  - Look up `stripeCustomerId` from user's resident-pro bundle
-  - Create Stripe Billing Portal session
-  - Return: `{ portalUrl: "https://billing.stripe.com/..." }`
-  - Return 404 if no subscription found
-
-### 6.2 billingRecoverPost Lambda
-
-- [ ] Create `app/functions/billing/billingRecoverPost.js`
-  - Extract hashedSub from JWT, email from JWT
-  - Query Stripe API: search subscriptions by `metadata.hashedSub`
-  - Fallback: search by customer email
-  - For each active subscription found:
-    - Re-create bundle record in DynamoDB
-    - Re-create subscription record
-    - Calculate tokensGranted based on current period
-  - Return: `{ recovered: true, bundles: [...] }` or `{ recovered: false }`
-
-### 6.3 Unit tests
-
-- [ ] `app/unit-tests/functions/billingPortalGet.test.js`
-- [ ] `app/unit-tests/functions/billingRecoverPost.test.js`
-
-### 6.4 System tests (against simulator + dynalite)
-
-- [ ] `app/system-tests/billing/billingPortal.system.test.js`
-  - Request portal session via handler, verify URL returned from simulator
-  - Verify 404 when user has no subscription
-- [ ] `app/system-tests/billing/billingRecovery.system.test.js`
-  - Grant bundle via webhook, delete from DynamoDB, call recover handler
-  - Simulator returns the subscription when queried by hashedSub metadata
-  - Verify bundle restored in DynamoDB with correct fields
-
-### 6.5 Behaviour test: portal and recovery (simulator)
-
-- [ ] Extend `behaviour-tests/billing/billingManagement.behaviour.test.js`
-  - Navigate to bundles.html with active subscription
-  - Click "Manage Subscription" → verify portal redirect (intercepted)
-  - Test recovery: clear bundle from DynamoDB, refresh page, verify recovery prompt or automatic recovery
-
-### Validation
-
-Deploy to CI. Portal URL opens Stripe billing management. Recovery endpoint restores bundles from Stripe data. All tests pass locally against simulator, then verified on CI.
+Scrapped due to scope creep and complexity. Customer Portal and subscription recovery deferred to future phase
 
 ---
 
@@ -1128,7 +1081,7 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 | `scripts/stripe-setup-secrets.sh` | Done | Stores secrets in AWS Secrets Manager |
 | `app/lib/stripeClient.js` | Done | Lazy Stripe SDK init from Secrets Manager or env var |
 | `app/test-support/stripeSimulator.js` | Done | Mock Stripe API: checkout, subscriptions, portal |
-| `app/functions/billing/billingCheckoutPost.js` | Done | Placeholder (501 Not Implemented) |
+| `app/functions/billing/billingCheckoutPost.js` | Done | Real implementation (Phase 3 work pulled forward) |
 | `app/functions/billing/billingPortalGet.js` | Done | Placeholder (501 Not Implemented) |
 | `app/functions/billing/billingRecoverPost.js` | Done | Placeholder (501 Not Implemented) |
 | `app/functions/billing/billingWebhookPost.js` | Done | Placeholder (501 Not Implemented) |
@@ -1142,51 +1095,83 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 | System tests | Done | `billingInfrastructure.system.test.js` |
 | Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
 | All unit tests pass (767 tests) | Done | |
-| **Phase 3: Checkout Session API** | **Not started** | Requires human actions below |
+| **Phase 3: Checkout Session API** | **CODE COMPLETE** | All CDK wiring, Lambda code, and tests done — awaiting deployment |
+| `app/functions/billing/billingCheckoutPost.js` | Done | Real implementation: JWT decode, hashSub, Stripe Checkout Session create, activity event |
+| `app/unit-tests/functions/billingCheckoutPost.test.js` | Done | 200 success, correct Stripe params (metadata, hashedSub, line_items, URLs), 401/500 errors, price ID fallback |
+| `app/system-tests/billingInfrastructure.system.test.js` | Done | Updated: expects 401 (auth required) instead of 501 (placeholder) |
+| `app/system-tests/billingCheckout.system.test.js` | Done | Handler tested against Stripe simulator: 200 with checkout URL, 401 without auth |
+| CDK: `BillingStack.java` — Stripe env vars | Done | `STRIPE_SECRET_KEY_ARN`, `STRIPE_PRICE_ID`, `STRIPE_TEST_PRICE_ID`, `DIY_SUBMIT_BASE_URL` (conditionally set when non-blank) |
+| CDK: `BillingStack.java` — IAM policy | Done | `secretsmanager:GetSecretValue` on Stripe secret ARN (with wildcard suffix) |
+| CDK: `BillingStackProps` — new props | Done | `stripeSecretKeyArn()`, `stripePriceId()`, `stripeTestPriceId()`, `baseUrl()` with @Value.Default |
+| CDK: `SubmitApplication.java` — wire Stripe props | Done | `envOr()` resolution + pass to BillingStack builder |
+| `.env.ci` — `STRIPE_SECRET_KEY_ARN` | Done | Points to `ci/submit/stripe/test_secret_key` (test key for CI) |
+| `.env.prod` — `STRIPE_SECRET_KEY_ARN` | Done | Points to `prod/submit/stripe/secret_key` (live key for prod) |
+| `deploy-environment.yml` — Stripe secrets | Done | Creates `{env}/submit/stripe/secret_key` + `{env}/submit/stripe/test_secret_key` from GitHub Secrets |
+| All unit tests pass (812 tests) | Done | |
+| Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
+| **Phase 3: Next steps** | **Pending** | See below |
+| Phase 3.4 — Behaviour test: skeletal checkout flow | Not started | `billingCheckout.behaviour.test.js` |
+| Commit, push, deploy to CI | Not started | Feature branch `eventandpayment` |
 | **Phases 4-10** | **Not started** | |
 
 ---
 
 ## Human Actions Required Before Phase 3
 
-Phase 3 (Checkout Session API) requires a real Stripe account with resources created and secrets stored. Complete these steps before starting Phase 3:
+Phase 3 (Checkout Session API) requires a real Stripe account with resources created and secrets stored. **All steps completed 2026-02-11.**
 
-### 1. Run `stripe-setup.js` Against Stripe Test Mode
+### 1. Run `stripe-setup.js` — DONE (both modes)
 
 ```bash
-# Get a test-mode secret key from Stripe Dashboard → Developers → API keys
+# Test mode — creates test-mode resources
 STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
+
+# Live mode — creates live-mode resources
+STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js
 ```
 
-This creates (idempotently):
-- Product: "Resident Pro" with `metadata.bundleId=resident-pro`
-- Monthly Price: GBP 9.99/month
-- Webhook endpoint for CI: `https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook`
-- Webhook endpoint for Prod: `https://submit.diyaccounting.co.uk/api/v1/billing/webhook`
+**Test mode resources created:**
+- Product: `prod_TxfDUtfzb0ynWb` (Resident Pro)
+- Monthly Price: `price_1Szjt0FdFHdRoTOjHDXcuuq8` (GBP 9.99/month)
+- CI Webhook: `we_1Szjt0FdFHdRoTOjHvWLYhhM`
+- Prod Webhook: `we_1Szjt1FdFHdRoTOj4UFdpLCG`
 
-Note the output IDs (product ID, price ID) and the webhook signing secrets from the Stripe Dashboard.
+**Live mode resources created:**
+- Product: `prod_TxfkksBPOdFYiN` (Resident Pro)
+- Monthly Price: `price_1SzkPBCD0Ld2ukzIqbEweRSk` (GBP 9.99/month)
+- CI Webhook: `we_1SzkPBCD0Ld2ukzIZSPYj21C`
+- Prod Webhook: `we_1SzkPCCD0Ld2ukzIRQuQyccg`
 
-### 2. Store Secrets in AWS Secrets Manager (CI)
+### 2. GitHub Actions Secrets and Variables — DONE
 
-```bash
-. ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && \
-  scripts/stripe-setup-secrets.sh ci sk_test_... whsec_test_... price_Monthly456
-```
+Secrets and variables flow: GitHub Actions → `deploy-environment.yml` → AWS Secrets Manager → Lambda env vars. **No direct AWS writes.**
 
-### 3. Store Secrets in GitHub Actions (for CI deploy)
+#### Dual-key pattern (mirrors HMRC live/sandbox)
 
-```bash
-gh secret set STRIPE_SECRET_KEY_CI --body "sk_test_..."
-gh secret set STRIPE_WEBHOOK_SECRET_CI --body "whsec_test_..."
-gh secret set STRIPE_PRICE_ID_CI --body "price_Monthly456"
-```
+Both test and live Stripe keys are available at runtime. Synthetic tests and test-users use test keys (no real charges). Real customers use live keys. Selection is based on actor classification (same as HMRC `hmrcAccount` header pattern).
 
-### 4. Verify Webhook Endpoint Reachable
+**GitHub Actions Secrets** (sensitive — API credentials and signing keys):
+
+| Secret | Scope | Purpose |
+|--------|-------|---------|
+| `STRIPE_SECRET_KEY` | Repo | Live Stripe API key (real charges) |
+| `STRIPE_TEST_SECRET_KEY` | Repo | Test Stripe API key (no charges) |
+| `STRIPE_WEBHOOK_SECRET` | Environment (ci/prod) | Live webhook signing secret (per-environment) |
+| `STRIPE_TEST_WEBHOOK_SECRET` | Repo | Test webhook signing secret |
+
+**GitHub Actions Variables** (non-sensitive — public Stripe identifiers):
+
+| Variable | Scope | Value | Purpose |
+|----------|-------|-------|---------|
+| `STRIPE_PRICE_ID` | Repo | `price_1SzkPBCD0Ld2ukzIqbEweRSk` | Live monthly price ID |
+| `STRIPE_TEST_PRICE_ID` | Repo | `price_1Szjt0FdFHdRoTOjHDXcuuq8` | Test monthly price ID |
+
+### 3. Verify Webhook Endpoint Reachable
 
 After the BillingStack deploys to CI, verify the webhook endpoint is reachable from Stripe:
-- Go to Stripe Dashboard → Developers → Webhooks
-- Check that the CI webhook shows a green status
-- Send a test event from Stripe to verify the Lambda receives it
+- [ ] Go to Stripe Dashboard → Developers → Webhooks
+- [ ] Check that the CI webhook shows a green status
+- [ ] Send a test event from Stripe to verify the Lambda receives it
 
 ---
 
@@ -1257,32 +1242,26 @@ PayPal's hosted "Donate" buttons use a legacy API that doesn't support full prog
 
 ### Payment Secrets: All Sites
 
-```bash
-# Store all payment secrets for an environment
-# Reads IDs from stripe-setup.js output or prompts interactively
-scripts/payment-secrets.sh ci
+All secrets are stored in **GitHub Actions Secrets/Variables only**. The `deploy-environment.yml` workflow propagates them to AWS Secrets Manager during deployment. **Never write directly to AWS Secrets Manager.**
 
-# For production
-scripts/payment-secrets.sh prod
-```
+**GitHub Actions Secrets** (sensitive — API credentials):
 
-This single script stores secrets in both AWS Secrets Manager and GitHub Actions:
+| Secret | Scope | Purpose |
+|--------|-------|---------|
+| `STRIPE_SECRET_KEY` | Repo | Live Stripe API key |
+| `STRIPE_TEST_SECRET_KEY` | Repo | Test Stripe API key |
+| `STRIPE_WEBHOOK_SECRET` | Environment (ci/prod) | Live webhook signing secret |
+| `STRIPE_TEST_WEBHOOK_SECRET` | Repo | Test webhook signing secret |
+| `PAYPAL_CLIENT_ID` | Repo | PayPal REST API client ID (Phase 4 — donation webhooks) |
+| `PAYPAL_CLIENT_SECRET` | Repo | PayPal REST API client secret (Phase 4 — donation webhooks) |
 
-**AWS Secrets Manager** (accessed by Lambdas at runtime):
-```
-{env}/submit/stripe/secret_key
-{env}/submit/stripe/webhook_secret
-{env}/submit/stripe/price_id
-{env}/spreadsheets/paypal/button_id          (for webhook verification)
-{env}/spreadsheets/paypal/webhook_id         (for donation events)
-```
+**GitHub Actions Variables** (non-sensitive — public identifiers):
 
-**GitHub Actions secrets** (accessed during deploy):
-```
-gh secret set STRIPE_SECRET_KEY_{ENV}
-gh secret set STRIPE_WEBHOOK_SECRET_{ENV}
-gh secret set STRIPE_PRICE_ID_{ENV}
-```
+| Variable | Scope | Purpose |
+|----------|-------|---------|
+| `STRIPE_PRICE_ID` | Repo | Live monthly price ID |
+| `STRIPE_TEST_PRICE_ID` | Repo | Test monthly price ID |
+| `TELEGRAM_CHAT_IDS` | Repo | JSON map of Telegram group chat IDs |
 
 ### Config-in-Repository, Secrets-in-Vault
 
@@ -1292,13 +1271,13 @@ gh secret set STRIPE_PRICE_ID_{ENV}
 | Webhook URLs, event types | `scripts/stripe-setup.js` | Tied to deployment topology |
 | Payment Link amounts, return URLs | `scripts/stripe-setup.js` | Tied to site configuration |
 | PayPal button config | `scripts/paypal-setup.js` | Documentation + verification |
-| API keys, webhook signing secrets | AWS Secrets Manager | Never in code |
-| CI/CD secrets | GitHub Actions secrets | For deploy workflows |
+| API keys, webhook signing secrets | GitHub Actions Secrets | Propagated to AWS via `deploy-environment.yml` |
+| Public identifiers (price IDs, chat IDs) | GitHub Actions Variables | Non-sensitive, visible in logs |
 
 ---
 
-**Next step**: Complete human actions above (Stripe test mode setup + secrets), then begin Phase 3.
+**Next step**: Complete Phase 3 remaining items (system tests against Stripe simulator, behaviour test skeleton, wire price IDs + secret ARNs through CDK/deploy workflow). Then deploy to CI and verify checkout flow end-to-end.
 
 ---
 
-*Document refreshed: 2026-02-11. Phase 1 (Token Usage Page) and Phase 2 (Stripe SDK & Infrastructure) completed. Config-as-code extended to cover spreadsheets Stripe + PayPal. Original proposal date: 2026-02-01.*
+*Document refreshed: 2026-02-12. Phases 1-2 complete. Phase 3 partially complete (billingCheckoutPost Lambda implemented with real Stripe Checkout Session creation, unit tests passing). Stripe resources created in both test and live modes. Dual-key pattern (live + test) established mirroring HMRC sandbox pattern. All secrets stored in GitHub Actions Secrets/Variables (not directly in AWS). Original proposal date: 2026-02-01.*

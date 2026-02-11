@@ -86,6 +86,7 @@ async function findOrCreateWebhook(url, description) {
     description,
   });
   console.log(`Created webhook for ${url}:`, webhook.id);
+  console.log(`  Webhook signing secret:`, webhook.secret);
   return webhook;
 }
 
@@ -96,20 +97,25 @@ async function main() {
   const price = await findOrCreatePrice(product.id);
 
   // CI webhook
-  await findOrCreateWebhook(
+  const ciWebhook = await findOrCreateWebhook(
     "https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook",
     "CI environment webhook",
   );
 
   // Prod webhook
-  await findOrCreateWebhook(
+  const prodWebhook = await findOrCreateWebhook(
     "https://submit.diyaccounting.co.uk/api/v1/billing/webhook",
     "Production environment webhook",
   );
 
-  console.log("\nSetup complete.");
+  const mode = STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE" : "TEST";
+  console.log(`\n=== Stripe Setup Complete (${mode} mode) ===`);
   console.log("Product ID:", product.id);
   console.log("Price ID:", price.id);
+  console.log("CI Webhook ID:", ciWebhook.id);
+  console.log("CI Webhook Secret:", ciWebhook.secret || "(already exists — retrieve from Dashboard)");
+  console.log("Prod Webhook ID:", prodWebhook.id);
+  console.log("Prod Webhook Secret:", prodWebhook.secret || "(already exists — retrieve from Dashboard)");
   console.log("\nNext: run scripts/stripe-setup-secrets.sh to store IDs in AWS Secrets Manager");
 }
 

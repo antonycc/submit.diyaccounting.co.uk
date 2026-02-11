@@ -311,6 +311,28 @@ When CloudFormation references resources that might not exist (e.g., log groups 
 
 6. **Verify compilation locally**: Run `./mvnw clean verify` before considering any infrastructure change complete.
 
+## AWS Write Operations (CRITICAL)
+
+**ALWAYS ask before writing to AWS.** Any mutating operation (create, update, delete) requires explicit user approval. Present the command, explain what it does, and wait for a "yes" before executing.
+
+- **Preferred path for secrets**: GitHub Actions Secrets/Variables → `deploy-environment.yml` → AWS Secrets Manager. Direct AWS writes are the exception, not the norm.
+- **Preferred path for infrastructure**: CDK code → git push → GitHub Actions deploy.
+- **Read-only AWS operations are always permitted** (describe, get, list, scan, logs, etc.) — no need to ask.
+- If you need to persist data between sessions and GitHub Actions is not appropriate, ask the user.
+
+## Confirm Means Stop and Wait (CRITICAL)
+
+When the user says "confirm each command" or similar:
+
+1. **Present the command** in a code block.
+2. **STOP. Do not execute.** Wait for the user to explicitly approve.
+3. Only after the user says "yes", "go ahead", "run it", or similar, execute that single command.
+4. Then present the next command and **STOP again**.
+
+"Confirm" NEVER means "narrate what you're doing as you do it." It means **ask permission, then wait.**
+
+This applies to ALL external side effects: AWS, Stripe, Telegram, GitHub, or any other service that changes state outside the local filesystem.
+
 ## AWS CLI Access (Local Development)
 
 **Read-only AWS operations are always permitted.** You may always query AWS resources (describe, get, list, logs, etc.) without asking for permission. This includes CloudFormation stack status, Lambda configuration, CloudWatch logs, DynamoDB scans, CloudFront distributions, and any other read-only API calls needed for investigation and debugging.

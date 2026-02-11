@@ -68,6 +68,11 @@ public class SubmitApplication {
         public String httpApiUrl;
         public String regionalCertificateArn;
         public String githubTokenSecretArn;
+        public String stripeSecretKeyArn;
+        public String stripePriceId;
+        public String stripeTestPriceId;
+        public String telegramBotTokenArn;
+        public String telegramChatIds;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -155,6 +160,15 @@ public class SubmitApplication {
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var httpApiUrl = envOr("HTTP_API_URL", appProps.httpApiUrl, "(from httpApiUrl in cdk.json)");
+        var stripeSecretKeyArn = envOr(
+                "STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
+        var stripePriceId = envOr("STRIPE_PRICE_ID", appProps.stripePriceId, "(from stripePriceId in cdk.json)");
+        var stripeTestPriceId =
+                envOr("STRIPE_TEST_PRICE_ID", appProps.stripeTestPriceId, "(from stripeTestPriceId in cdk.json)");
+        var telegramBotTokenArn = envOr(
+                "TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
+        var telegramChatIds =
+                envOr("TELEGRAM_CHAT_IDS", appProps.telegramChatIds, "(from telegramChatIds in cdk.json)");
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
@@ -281,6 +295,10 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
+                        .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                        .stripePriceId(stripePriceId != null ? stripePriceId : "")
+                        .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
+                        .baseUrl(sharedNames.baseUrl)
                         .build());
         // this.billingStack.addDependency(devStack);
 
@@ -333,9 +351,12 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
                         .baseUrl(sharedNames.baseUrl)
                         .apexDomain(sharedNames.envDomainName)
                         .alertEmail(alertEmail)
+                        .telegramBotTokenArn(telegramBotTokenArn != null ? telegramBotTokenArn : "")
+                        .telegramChatIds(telegramChatIds != null ? telegramChatIds : "")
                         .build());
         // this.opsStack.addDependency(hmrcStack);
         // this.opsStack.addDependency(apiStack);

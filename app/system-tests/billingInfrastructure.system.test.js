@@ -33,14 +33,13 @@ describe("System: Billing Infrastructure", () => {
     expect(webhookPost.apiEndpoint).toBeDefined();
   });
 
-  test("billing Lambdas return 501 Not Implemented", async () => {
+  test("billingCheckoutPost returns 401 without auth", async () => {
     const { ingestHandler } = await import("../functions/billing/billingCheckoutPost.js");
     const result = await ingestHandler({
       headers: { host: "test" },
       requestContext: { requestId: "test-req" },
     });
-    expect(result.statusCode).toBe(501);
-    expect(JSON.parse(result.body).message).toBe("Not implemented");
+    expect(result.statusCode).toBe(401);
   });
 
   test("Stripe simulator starts and responds", async () => {
