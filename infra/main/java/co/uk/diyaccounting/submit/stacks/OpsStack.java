@@ -29,6 +29,10 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.events.EventBus;
+import software.amazon.awscdk.services.events.EventPattern;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
 import software.amazon.awscdk.services.synthetics.ArtifactsBucketLocation;
@@ -48,6 +52,7 @@ public class OpsStack extends Stack {
     public Canary apiCanary;
     public Alarm healthCheckAlarm;
     public Alarm apiCheckAlarm;
+    public software.amazon.awscdk.services.events.EventBus activityBus;
 
     @Value.Immutable
     public interface OpsStackProps extends StackProps, SubmitStackProps {
@@ -138,6 +143,26 @@ public class OpsStack extends Stack {
             this.alertTopic.addSubscription(new EmailSubscription(props.alertEmail()));
             infof("Added email subscription for alerts: %s", props.alertEmail());
         }
+
+        // ============================================================================
+        // EventBridge Custom Activity Bus
+        // ============================================================================
+        this.activityBus = EventBus.Builder.create(this, props.resourceNamePrefix() + "-ActivityBus")
+                .eventBusName(props.sharedNames().activityBusName)
+                .build();
+
+        // Email proof rule: all ActivityEvent detail-types → SNS alertTopic
+        Rule.Builder.create(this, "ActivityEmailProofRule")
+                .ruleName(props.resourceNamePrefix() + "-activity-email-proof")
+                .eventBus(this.activityBus)
+                .eventPattern(EventPattern.builder()
+                        .detailType(List.of("ActivityEvent"))
+                        .build())
+                .targets(List.of(new SnsTopic(this.alertTopic)))
+                .build();
+
+        cfnOutput(this, "ActivityBusName", this.activityBus.getEventBusName());
+        cfnOutput(this, "ActivityBusArn", this.activityBus.getEventBusArn());
 
         // ============================================================================
         // Synthetic Canaries (if baseUrl provided)

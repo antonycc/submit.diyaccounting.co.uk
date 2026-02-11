@@ -15,6 +15,7 @@ import {
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { createPass } from "../../services/passService.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
 
@@ -76,6 +77,11 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "Admin pass created", passTypeId, bundleId });
+    publishActivityEvent({
+      event: "pass-generated",
+      summary: "Pass generated: " + bundleId,
+      detail: { bundleId },
+    }).catch(() => {});
 
     return http200OkResponse({
       request,

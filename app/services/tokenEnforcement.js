@@ -4,7 +4,7 @@
 // app/services/tokenEnforcement.js
 
 import { createLogger } from "../lib/logger.js";
-import { consumeToken, getUserBundles } from "../data/dynamoDbBundleRepository.js";
+import { consumeToken, getUserBundles, recordTokenEvent } from "../data/dynamoDbBundleRepository.js";
 
 const logger = createLogger({ source: "app/services/tokenEnforcement.js" });
 
@@ -60,6 +60,15 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
     consumed: result.consumed,
     tokensRemaining: result.tokensRemaining,
   });
+
+  if (result.consumed) {
+    recordTokenEvent(userId, qualifyingBundle.bundleId, {
+      activity: activityId,
+      tokensUsed: tokenCost,
+    }).catch((err) => {
+      logger.warn({ message: "Failed to record token event", error: err.message, userId, activityId });
+    });
+  }
 
   return { ...result, cost: tokenCost };
 }

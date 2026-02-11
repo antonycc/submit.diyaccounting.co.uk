@@ -155,6 +155,10 @@ public class HmrcStack extends Stack {
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
         var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
 
+        // Construct EventBridge activity bus ARN for IAM policies
+        var activityBusArn = String.format(
+                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
+
         // exchangeToken - HMRC
         var exchangeHmrcTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
@@ -164,6 +168,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
             exchangeHmrcTokenLambdaEnv.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
@@ -247,6 +252,13 @@ public class HmrcStack extends Stack {
         SubHashSaltHelper.grantSaltAccess(this.hmrcTokenPostLambda, region, account, props.envName());
         infof("Granted Secrets Manager salt access to %s", this.hmrcTokenPostLambda.getFunctionName());
 
+        // Grant EventBridge PutEvents permission
+        this.hmrcTokenPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
         // submitVat
         var submitVatLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
@@ -258,6 +270,7 @@ public class HmrcStack extends Stack {
                 .with(
                         "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcVatReturnPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var submitVatLambdaUrlOrigin = new AsyncApiLambda(
                 this,
@@ -314,6 +327,13 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
                 });
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
@@ -329,6 +349,7 @@ public class HmrcStack extends Stack {
                 .with(
                         "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcVatObligationGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var hmrcVatObligationGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
@@ -383,6 +404,13 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
                 });
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
@@ -398,6 +426,7 @@ public class HmrcStack extends Stack {
                 .with(
                         "HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcVatReturnGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var hmrcVatReturnGetLambdaUrlOrigin = new AsyncApiLambda(
                 this,
@@ -451,6 +480,13 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
                 });
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
@@ -461,6 +497,7 @@ public class HmrcStack extends Stack {
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -519,6 +556,13 @@ public class HmrcStack extends Stack {
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.receiptGetLambda, region, account, props.envName());
         infof("Granted Secrets Manager salt access to %s", this.receiptGetLambda.getFunctionName());
+
+        // Grant EventBridge PutEvents permission
+        this.receiptGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());
         cfnOutput(this, "SubmitVatLambdaArn", this.hmrcVatReturnPostLambda.getFunctionArn());

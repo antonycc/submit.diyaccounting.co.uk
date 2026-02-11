@@ -8,6 +8,7 @@ import { extractRequest, buildTokenExchangeResponse, buildValidationError, http2
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/auth/cognitoTokenPost.js" });
 
@@ -84,6 +85,18 @@ export async function ingestHandler(event) {
   } else if (grantType === "refresh_token") {
     logger.info({ message: "Refreshing Cognito access token" });
     tokenResponse = await exchangeRefreshTokenForToken(refreshToken);
+  }
+
+  if (grantType === "authorization_code") {
+    publishActivityEvent({
+      event: "login",
+      summary: "Login via authorization_code",
+    }).catch(() => {});
+  } else if (grantType === "refresh_token") {
+    publishActivityEvent({
+      event: "token-refresh",
+      summary: "Token refresh",
+    }).catch(() => {});
   }
 
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);

@@ -41,6 +41,7 @@ import {
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -821,6 +822,13 @@ export async function submitVat(
     logger.info({ message: `Received HMRC response: ${JSON.stringify(httpResult.hmrcResponse)}`, httpResult });
     hmrcResponse = httpResult.hmrcResponse;
     hmrcResponseBody = httpResult.hmrcResponseBody;
+  }
+
+  if (hmrcResponse.ok) {
+    publishActivityEvent({
+      event: "vat-return-submitted",
+      summary: "VAT return submitted",
+    }).catch(() => {});
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };

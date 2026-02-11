@@ -15,6 +15,8 @@ import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
@@ -101,12 +103,21 @@ public class AuthStack extends Stack {
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
+        // Region and account for IAM policies and Secrets Manager access
+        var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
+        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
+
+        // Construct EventBridge activity bus ARN for IAM policies
+        var activityBusArn = String.format(
+                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
+
         // exchangeToken - Google or Antonycc via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("COGNITO_CLIENT_ID", props.cognitoClientId())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.optionalTestAccessToken().isPresent()
                 && StringUtils.isNotBlank(props.optionalTestAccessToken().get())) {
@@ -148,16 +159,22 @@ public class AuthStack extends Stack {
                 this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().bundlesTableName);
 
         // Grant access to user sub hash salt secret in Secrets Manager
-        var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
-        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
         SubHashSaltHelper.grantSaltAccess(this.cognitoTokenPostLambda, region, account, props.envName());
         infof("Granted Secrets Manager salt access to %s", this.cognitoTokenPostLambda.getFunctionName());
+
+        // Grant EventBridge PutEvents permission
+        this.cognitoTokenPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
 
         // Custom authorizer Lambda for X-Authorization header
         var customAuthorizerLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var customAuthorizerLambda = new ApiLambda(
                 this,
@@ -195,6 +212,13 @@ public class AuthStack extends Stack {
         // Grant Custom Authorizer Lambda access to user sub hash salt secret
         SubHashSaltHelper.grantSaltAccess(this.customAuthorizerLambda, region, account, props.envName());
         infof("Granted Secrets Manager salt access to %s", this.customAuthorizerLambda.getFunctionName());
+
+        // Grant EventBridge PutEvents permission to custom authorizer
+        this.customAuthorizerLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
 
         // cfnOutput(this, "AuthUrlCognitoLambdaArn", this.cognitoAuthUrlGetLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.cognitoTokenPostLambda.getFunctionArn());

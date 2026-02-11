@@ -86,6 +86,8 @@ public class SubmitSharedNames {
     public String hmrcApiRequestsTableName;
     public String passesTableName;
     public String bundleCapacityTableName;
+    public String activityBusName;
+    public String subscriptionsTableName;
     public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -294,6 +296,55 @@ public class SubmitSharedNames {
     public String bundleCapacityReconcileLambdaArn;
     public String bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn;
 
+    // Session Beacon POST Lambda (public, no auth)
+    public String sessionBeaconPostIngestLambdaHandler;
+    public String sessionBeaconPostIngestLambdaFunctionName;
+    public String sessionBeaconPostIngestLambdaArn;
+    public String sessionBeaconPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod sessionBeaconPostLambdaHttpMethod;
+    public String sessionBeaconPostLambdaUrlPath;
+    public boolean sessionBeaconPostLambdaJwtAuthorizer;
+    public boolean sessionBeaconPostLambdaCustomAuthorizer;
+
+    // Billing Lambda names
+    public String billingCheckoutPostIngestLambdaHandler;
+    public String billingCheckoutPostIngestLambdaFunctionName;
+    public String billingCheckoutPostIngestLambdaArn;
+    public String billingCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod billingCheckoutPostLambdaHttpMethod;
+    public String billingCheckoutPostLambdaUrlPath;
+    public boolean billingCheckoutPostLambdaJwtAuthorizer;
+    public boolean billingCheckoutPostLambdaCustomAuthorizer;
+
+    public String billingPortalGetIngestLambdaHandler;
+    public String billingPortalGetIngestLambdaFunctionName;
+    public String billingPortalGetIngestLambdaArn;
+    public String billingPortalGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod billingPortalGetLambdaHttpMethod;
+    public String billingPortalGetLambdaUrlPath;
+    public boolean billingPortalGetLambdaJwtAuthorizer;
+    public boolean billingPortalGetLambdaCustomAuthorizer;
+
+    public String billingRecoverPostIngestLambdaHandler;
+    public String billingRecoverPostIngestLambdaFunctionName;
+    public String billingRecoverPostIngestLambdaArn;
+    public String billingRecoverPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod billingRecoverPostLambdaHttpMethod;
+    public String billingRecoverPostLambdaUrlPath;
+    public boolean billingRecoverPostLambdaJwtAuthorizer;
+    public boolean billingRecoverPostLambdaCustomAuthorizer;
+
+    public String billingWebhookPostIngestLambdaHandler;
+    public String billingWebhookPostIngestLambdaFunctionName;
+    public String billingWebhookPostIngestLambdaArn;
+    public String billingWebhookPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod billingWebhookPostLambdaHttpMethod;
+    public String billingWebhookPostLambdaUrlPath;
+    public boolean billingWebhookPostLambdaJwtAuthorizer;
+    public boolean billingWebhookPostLambdaCustomAuthorizer;
+
+    public String billingStackId;
+
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
     public String selfDestructLambdaArn;
@@ -383,6 +434,8 @@ public class SubmitSharedNames {
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
         this.passesTableName = "%s-passes".formatted(this.envResourceNamePrefix);
         this.bundleCapacityTableName = "%s-bundle-capacity".formatted(this.envResourceNamePrefix);
+        this.activityBusName = "%s-activity-bus".formatted(this.envResourceNamePrefix);
+        this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);
@@ -403,6 +456,7 @@ public class SubmitSharedNames {
         this.authStackId = "%s-app-AuthStack".formatted(props.deploymentName);
         this.hmrcStackId = "%s-app-HmrcStack".formatted(props.deploymentName);
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
+        this.billingStackId = "%s-app-BillingStack".formatted(props.deploymentName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
         this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
@@ -897,6 +951,121 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(appLambdaArnPrefix, bundleCapacityReconcileLambdaHandlerDashed);
         this.bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.bundleCapacityReconcileLambdaArn, this.provisionedConcurrencyAliasName);
+
+        // Session Beacon POST Lambda (public, no auth)
+        this.sessionBeaconPostLambdaHttpMethod = HttpMethod.POST;
+        this.sessionBeaconPostLambdaUrlPath = "/api/session/beacon";
+        this.sessionBeaconPostLambdaJwtAuthorizer = false;
+        this.sessionBeaconPostLambdaCustomAuthorizer = false;
+        var sessionBeaconPostLambdaHandlerName = "sessionBeaconPost.ingestHandler";
+        var sessionBeaconPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(sessionBeaconPostLambdaHandlerName);
+        this.sessionBeaconPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, sessionBeaconPostLambdaHandlerDashed);
+        this.sessionBeaconPostIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, sessionBeaconPostLambdaHandlerName);
+        this.sessionBeaconPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, sessionBeaconPostLambdaHandlerDashed);
+        this.sessionBeaconPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.sessionBeaconPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.sessionBeaconPostLambdaHttpMethod,
+                this.sessionBeaconPostLambdaUrlPath,
+                "Session beacon",
+                "Records a new browser session for activity monitoring",
+                "sessionBeacon"));
+
+        // Billing Checkout POST Lambda (JWT auth)
+        this.billingCheckoutPostLambdaHttpMethod = HttpMethod.POST;
+        this.billingCheckoutPostLambdaUrlPath = "/api/v1/billing/checkout-session";
+        this.billingCheckoutPostLambdaJwtAuthorizer = true;
+        this.billingCheckoutPostLambdaCustomAuthorizer = false;
+        var billingCheckoutPostLambdaHandlerName = "billingCheckoutPost.ingestHandler";
+        var billingCheckoutPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(billingCheckoutPostLambdaHandlerName);
+        this.billingCheckoutPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, billingCheckoutPostLambdaHandlerDashed);
+        this.billingCheckoutPostIngestLambdaHandler =
+                "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingCheckoutPostLambdaHandlerName);
+        this.billingCheckoutPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, billingCheckoutPostLambdaHandlerDashed);
+        this.billingCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.billingCheckoutPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.billingCheckoutPostLambdaHttpMethod,
+                this.billingCheckoutPostLambdaUrlPath,
+                "Create billing checkout session",
+                "Creates a Stripe checkout session for subscription",
+                "createCheckoutSession"));
+
+        // Billing Portal GET Lambda (JWT auth)
+        this.billingPortalGetLambdaHttpMethod = HttpMethod.GET;
+        this.billingPortalGetLambdaUrlPath = "/api/v1/billing/portal";
+        this.billingPortalGetLambdaJwtAuthorizer = true;
+        this.billingPortalGetLambdaCustomAuthorizer = false;
+        var billingPortalGetLambdaHandlerName = "billingPortalGet.ingestHandler";
+        var billingPortalGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(billingPortalGetLambdaHandlerName);
+        this.billingPortalGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, billingPortalGetLambdaHandlerDashed);
+        this.billingPortalGetIngestLambdaHandler =
+                "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingPortalGetLambdaHandlerName);
+        this.billingPortalGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, billingPortalGetLambdaHandlerDashed);
+        this.billingPortalGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.billingPortalGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.billingPortalGetLambdaHttpMethod,
+                this.billingPortalGetLambdaUrlPath,
+                "Get billing portal URL",
+                "Creates a Stripe billing portal session URL",
+                "getBillingPortal"));
+
+        // Billing Recover POST Lambda (JWT auth)
+        this.billingRecoverPostLambdaHttpMethod = HttpMethod.POST;
+        this.billingRecoverPostLambdaUrlPath = "/api/v1/billing/recover";
+        this.billingRecoverPostLambdaJwtAuthorizer = true;
+        this.billingRecoverPostLambdaCustomAuthorizer = false;
+        var billingRecoverPostLambdaHandlerName = "billingRecoverPost.ingestHandler";
+        var billingRecoverPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(billingRecoverPostLambdaHandlerName);
+        this.billingRecoverPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, billingRecoverPostLambdaHandlerDashed);
+        this.billingRecoverPostIngestLambdaHandler =
+                "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingRecoverPostLambdaHandlerName);
+        this.billingRecoverPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, billingRecoverPostLambdaHandlerDashed);
+        this.billingRecoverPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.billingRecoverPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.billingRecoverPostLambdaHttpMethod,
+                this.billingRecoverPostLambdaUrlPath,
+                "Recover billing subscription",
+                "Recovers or reconciles a billing subscription",
+                "recoverBilling"));
+
+        // Billing Webhook POST Lambda (NO auth - Stripe signature verification)
+        this.billingWebhookPostLambdaHttpMethod = HttpMethod.POST;
+        this.billingWebhookPostLambdaUrlPath = "/api/v1/billing/webhook";
+        this.billingWebhookPostLambdaJwtAuthorizer = false;
+        this.billingWebhookPostLambdaCustomAuthorizer = false;
+        var billingWebhookPostLambdaHandlerName = "billingWebhookPost.ingestHandler";
+        var billingWebhookPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(billingWebhookPostLambdaHandlerName);
+        this.billingWebhookPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, billingWebhookPostLambdaHandlerDashed);
+        this.billingWebhookPostIngestLambdaHandler =
+                "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingWebhookPostLambdaHandlerName);
+        this.billingWebhookPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, billingWebhookPostLambdaHandlerDashed);
+        this.billingWebhookPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.billingWebhookPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.billingWebhookPostLambdaHttpMethod,
+                this.billingWebhookPostLambdaUrlPath,
+                "Stripe webhook",
+                "Receives Stripe webhook events for subscription lifecycle",
+                "stripeWebhook"));
 
         var appSelfDestructLambdaHandlerName = "selfDestruct.ingestHandler";
         var appSelfDestructLambdaHandlerDashed =

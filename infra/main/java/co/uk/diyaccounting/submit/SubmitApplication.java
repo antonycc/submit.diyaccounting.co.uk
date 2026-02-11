@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
+import co.uk.diyaccounting.submit.stacks.BillingStack;
 import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
@@ -36,6 +37,7 @@ public class SubmitApplication {
     public final AuthStack authStack;
     public final HmrcStack hmrcStack;
     public final AccountStack accountStack;
+    public final BillingStack billingStack;
     public final ApiStack apiStack;
     public final OpsStack opsStack;
     public final EdgeStack edgeStack;
@@ -263,6 +265,25 @@ public class SubmitApplication {
                         .build());
         // this.accountStack.addDependency(devStack);
 
+        // Create the BillingStack
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.billingStackId, deploymentName, envName);
+        this.billingStack = new BillingStack(
+                app,
+                sharedNames.billingStackId,
+                BillingStack.BillingStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .build());
+        // this.billingStack.addDependency(devStack);
+
         // Create the ApiStack with API Gateway v2 for all Lambda endpoints
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -273,6 +294,7 @@ public class SubmitApplication {
         lambdaFunctions.addAll(this.authStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.hmrcStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
+        lambdaFunctions.addAll(this.billingStack.lambdaFunctionProps);
 
         this.apiStack = new ApiStack(
                 app,
@@ -295,6 +317,7 @@ public class SubmitApplication {
         this.apiStack.addDependency(accountStack);
         this.apiStack.addDependency(hmrcStack);
         this.apiStack.addDependency(authStack);
+        this.apiStack.addDependency(billingStack);
 
         // Get optional alert email from environment variable
         String alertEmail = envOr("ALERT_EMAIL", "");

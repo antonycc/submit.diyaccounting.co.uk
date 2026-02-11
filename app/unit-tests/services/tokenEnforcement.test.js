@@ -10,6 +10,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
   consumeToken: vi.fn().mockResolvedValue({ consumed: true, tokensRemaining: 2 }),
+  recordTokenEvent: vi.fn().mockResolvedValue(),
   putBundle: vi.fn(),
   deleteBundle: vi.fn(),
   deleteAllBundles: vi.fn(),

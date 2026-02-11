@@ -22,6 +22,7 @@ import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
@@ -277,6 +278,12 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
       // Use DynamoDB as primary storage via updateUserBundles
       await updateUserBundles(userId, bundlesAfterRemoval);
       logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
+      const bundleId = bundleToRemove;
+      publishActivityEvent({
+        event: "bundle-deleted",
+        summary: "Bundle deleted: " + bundleId,
+        detail: { bundleId },
+      }).catch(() => {});
       result = {
         statusCode: 204,
         status: "removed",

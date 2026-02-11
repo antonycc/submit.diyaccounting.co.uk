@@ -18,6 +18,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { redeemPass } from "../../services/passService.js";
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/passPost.js" });
 
@@ -86,6 +87,11 @@ export async function ingestHandler(event) {
     const grantResult = await grantBundle(userId, { bundleId: result.bundleId, qualifiers: {} }, decodedToken);
 
     logger.info({ message: "Pass redeemed and bundle granted", code, bundleId: result.bundleId, userId });
+    publishActivityEvent({
+      event: "pass-redeemed",
+      summary: "Pass redeemed: " + (result?.bundleId || "unknown"),
+      detail: { bundleId: result?.bundleId },
+    }).catch(() => {});
 
     return http200OkResponse({
       request,

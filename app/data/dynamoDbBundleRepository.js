@@ -220,6 +220,38 @@ export async function consumeToken(userId, bundleId) {
   }
 }
 
+export async function recordTokenEvent(userId, bundleId, event) {
+  logger.info({ message: `recordTokenEvent [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
+
+  try {
+    const hashedSub = hashSub(userId);
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    const tokenEvent = {
+      ...event,
+      timestamp: new Date().toISOString(),
+    };
+
+    await docClient.send(
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { hashedSub, bundleId },
+        UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event)",
+        ExpressionAttributeValues: {
+          ":empty": [],
+          ":event": [tokenEvent],
+        },
+      }),
+    );
+
+    logger.info({ message: "Token event recorded", hashedSub, bundleId, event: tokenEvent });
+  } catch (error) {
+    logger.error({ message: "Error recording token event", error: error.message, userId, bundleId });
+    throw error;
+  }
+}
+
 export async function getUserBundles(userId) {
   logger.info({ message: `getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
 

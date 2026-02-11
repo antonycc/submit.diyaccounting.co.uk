@@ -23,6 +23,7 @@ import { getUserBundles, deleteBundle } from "../../data/dynamoDbBundleRepositor
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
@@ -453,6 +454,12 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   emitCapMetric("BundleGranted", requestedBundle);
   logger.info({ message: "Bundle granted to user:", userId, newBundle });
+  const bundleId = requestedBundle;
+  publishActivityEvent({
+    event: "bundle-granted",
+    summary: "Bundle granted: " + bundleId,
+    detail: { bundleId },
+  }).catch(() => {});
   const result = {
     status: "granted",
     granted: true,

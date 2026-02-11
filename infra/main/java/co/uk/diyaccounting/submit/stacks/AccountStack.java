@@ -76,6 +76,10 @@ public class AccountStack extends Stack {
     public ILogGroup bundleCapacityReconcileLambdaLogGroup;
     public Rule bundleCapacityReconcileSchedule;
 
+    public AbstractApiLambdaProps sessionBeaconPostLambdaProps;
+    public Function sessionBeaconPostLambda;
+    public ILogGroup sessionBeaconPostLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -174,10 +178,15 @@ public class AccountStack extends Stack {
         var cognitoUserPoolArn =
                 String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, userPool.getUserPoolId());
 
+        // Construct EventBridge activity bus ARN for IAM policies
+        var activityBusArn = String.format(
+                "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
+
         // Get Bundles Lambda
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         // .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
         var getBundlesAsyncLambda = new ApiLambda(
@@ -234,11 +243,19 @@ public class AccountStack extends Stack {
         SubHashSaltHelper.grantSaltAccess(this.bundleGetLambda, region, account, props.envName());
         infof("Granted Secrets Manager salt access to %s", this.bundleGetLambda.getFunctionName());
 
+        // Grant EventBridge PutEvents permission
+        this.bundleGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
         // Request Bundles Lambda
         var requestBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundlePostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
@@ -303,6 +320,13 @@ public class AccountStack extends Stack {
 
             // Grant access to user sub hash salt secret in Secrets Manager
             SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+            // Grant EventBridge PutEvents permission
+            fn.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("events:PutEvents"))
+                    .resources(List.of(activityBusArn))
+                    .build());
         });
 
         infof(
@@ -313,6 +337,7 @@ public class AccountStack extends Stack {
         var bundleDeleteLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", bundleDeleteAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("TEST_BUNDLE_EXPIRY_DATE", "2025-12-31")
                 .with("TEST_BUNDLE_USER_LIMIT", "10");
@@ -401,6 +426,13 @@ public class AccountStack extends Stack {
 
             // Grant access to user sub hash salt secret in Secrets Manager
             SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+            // Grant EventBridge PutEvents permission
+            fn.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("events:PutEvents"))
+                    .resources(List.of(activityBusArn))
+                    .build());
         });
 
         infof(
@@ -412,6 +444,7 @@ public class AccountStack extends Stack {
                 && !props.githubTokenSecretArn().isEmpty()) {
             var supportTicketPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
+                    .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                     .with("GITHUB_TOKEN_SECRET_ARN", props.githubTokenSecretArn())
                     .with("GITHUB_REPO", props.githubRepo());
             var supportTicketPostApiLambda = new ApiLambda(
@@ -447,6 +480,13 @@ public class AccountStack extends Stack {
                     .resources(List.of(props.githubTokenSecretArn()))
                     .build());
 
+            // Grant EventBridge PutEvents permission
+            this.supportTicketPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("events:PutEvents"))
+                    .resources(List.of(activityBusArn))
+                    .build());
+
             infof(
                     "Created Support Ticket POST Lambda %s with handler %s",
                     this.supportTicketPostLambda.getNode().getId(),
@@ -466,6 +506,7 @@ public class AccountStack extends Stack {
 
         var interestPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("WAITLIST_TOPIC_ARN", waitlistTopic.getTopicArn());
         var interestPostApiLambda = new ApiLambda(
                 this,
@@ -496,6 +537,13 @@ public class AccountStack extends Stack {
         // Grant permission to publish to the waitlist SNS topic
         waitlistTopic.grantPublish(this.interestPostLambda);
 
+        // Grant EventBridge PutEvents permission
+        this.interestPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
         infof(
                 "Created Interest POST Lambda %s with handler %s",
                 this.interestPostLambda.getNode().getId(), props.sharedNames().interestPostIngestLambdaHandler);
@@ -508,6 +556,7 @@ public class AccountStack extends Stack {
         // ============================================================================
         var passGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passGetApiLambda = new ApiLambda(
                 this,
@@ -534,6 +583,11 @@ public class AccountStack extends Stack {
         this.passGetLambdaLogGroup = passGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passGetLambdaProps);
         passesTable.grantReadData(this.passGetLambda);
+        this.passGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
         infof("Created Pass GET Lambda %s", this.passGetLambda.getNode().getId());
 
         // ============================================================================
@@ -543,6 +597,7 @@ public class AccountStack extends Stack {
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passPostApiLambda = new ApiLambda(
                 this,
@@ -572,6 +627,11 @@ public class AccountStack extends Stack {
         bundlesTable.grantReadWriteData(this.passPostLambda);
         bundleCapacityTable.grantReadWriteData(this.passPostLambda);
         SubHashSaltHelper.grantSaltAccess(this.passPostLambda, region, account, props.envName());
+        this.passPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
         infof("Created Pass POST Lambda %s", this.passPostLambda.getNode().getId());
 
         // ============================================================================
@@ -579,6 +639,7 @@ public class AccountStack extends Stack {
         // ============================================================================
         var passAdminPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var passAdminPostApiLambda = new ApiLambda(
                 this,
@@ -605,6 +666,11 @@ public class AccountStack extends Stack {
         this.passAdminPostLambdaLogGroup = passAdminPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passAdminPostLambdaProps);
         passesTable.grantReadWriteData(this.passAdminPostLambda);
+        this.passAdminPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
         infof(
                 "Created Pass Admin POST Lambda %s",
                 this.passAdminPostLambda.getNode().getId());
@@ -615,6 +681,7 @@ public class AccountStack extends Stack {
         var reconcileLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var reconcileLambda = new Lambda(
                 this,
@@ -637,6 +704,11 @@ public class AccountStack extends Stack {
         this.bundleCapacityReconcileLambdaLogGroup = reconcileLambda.logGroup;
         bundlesTable.grantReadData(this.bundleCapacityReconcileLambda);
         bundleCapacityTable.grantReadWriteData(this.bundleCapacityReconcileLambda);
+        this.bundleCapacityReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
 
         // EventBridge Rule: trigger reconciliation every 5 minutes
         this.bundleCapacityReconcileSchedule = Rule.Builder.create(
@@ -651,6 +723,43 @@ public class AccountStack extends Stack {
                 "Created Bundle Capacity Reconciliation Lambda %s with 5-minute schedule",
                 this.bundleCapacityReconcileLambda.getNode().getId());
 
+        // ============================================================================
+        // Session Beacon POST Lambda (public, no auth)
+        // ============================================================================
+        var sessionBeaconPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var sessionBeaconPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().sessionBeaconPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().sessionBeaconPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().sessionBeaconPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().sessionBeaconPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().sessionBeaconPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().sessionBeaconPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().sessionBeaconPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().sessionBeaconPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().sessionBeaconPostLambdaCustomAuthorizer)
+                        .environment(sessionBeaconPostLambdaEnv)
+                        .build());
+        this.sessionBeaconPostLambdaProps = sessionBeaconPostApiLambda.apiProps;
+        this.sessionBeaconPostLambda = sessionBeaconPostApiLambda.ingestLambda;
+        this.sessionBeaconPostLambdaLogGroup = sessionBeaconPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.sessionBeaconPostLambdaProps);
+        this.sessionBeaconPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+        infof("Created Session Beacon POST Lambda %s", this.sessionBeaconPostLambda.getNode().getId());
+
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());
         cfnOutput(this, "BundleDeleteLambdaArn", this.bundleDeleteLambda.getFunctionArn());
@@ -658,6 +767,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassPostLambdaArn", this.passPostLambda.getFunctionArn());
         cfnOutput(this, "PassAdminPostLambdaArn", this.passAdminPostLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());
+        cfnOutput(this, "SessionBeaconPostLambdaArn", this.sessionBeaconPostLambda.getFunctionArn());
 
         infof(
                 "AccountStack %s created successfully for %s",

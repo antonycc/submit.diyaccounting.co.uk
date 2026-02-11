@@ -22,6 +22,11 @@ import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
+import { apiEndpoint as sessionBeaconPostApiEndpoint } from "../functions/account/sessionBeaconPost.js";
+import { apiEndpoint as billingCheckoutPostApiEndpoint } from "../functions/billing/billingCheckoutPost.js";
+import { apiEndpoint as billingPortalGetApiEndpoint } from "../functions/billing/billingPortalGet.js";
+import { apiEndpoint as billingRecoverPostApiEndpoint } from "../functions/billing/billingRecoverPost.js";
+import { apiEndpoint as billingWebhookPostApiEndpoint } from "../functions/billing/billingWebhookPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 
@@ -181,6 +186,11 @@ passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);
 interestPostApiEndpoint(app);
+sessionBeaconPostApiEndpoint(app);
+billingCheckoutPostApiEndpoint(app);
+billingPortalGetApiEndpoint(app);
+billingRecoverPostApiEndpoint(app);
+billingWebhookPostApiEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {

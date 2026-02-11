@@ -13,6 +13,7 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { publishActivityEvent, maskEmail } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/interestPost.js" });
 
@@ -80,6 +81,11 @@ export async function ingestHandler(event) {
     );
 
     logger.info({ message: "Waitlist interest published to SNS", email, requestId });
+    publishActivityEvent({
+      event: "waitlist-registered",
+      summary: "Waitlist: " + maskEmail(email),
+      detail: { email: maskEmail(email) },
+    }).catch(() => {});
 
     return http200OkResponse({
       request,
