@@ -633,21 +633,13 @@ jobs:
             echo "  Deleting $STACK in $REGION (status: $STATUS)..."
             aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
             aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
-            # Check for DELETE_FAILED and retry with --retain-resources
+            # Check for DELETE_FAILED and force delete
             STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
               --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "DOES_NOT_EXIST")
             if [ "$STATUS" = "DELETE_FAILED" ]; then
-              echo "  $STACK is DELETE_FAILED, retrying with --retain-resources"
-              FAILED_RESOURCES=$(aws cloudformation list-stack-resources --stack-name "$STACK" --region "$REGION" \
-                --query "StackResourceSummaries[?ResourceStatus=='DELETE_FAILED'].LogicalResourceId" \
-                --output text 2>/dev/null || echo "")
-              if [ -n "$FAILED_RESOURCES" ] && [ "$FAILED_RESOURCES" != "None" ]; then
-                echo "  Retaining: $FAILED_RESOURCES"
-                aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" \
-                  --retain-resources $FAILED_RESOURCES || true
-              else
-                aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" || true
-              fi
+              echo "  $STACK is DELETE_FAILED, force deleting"
+              aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" \
+                --deletion-mode FORCE_DELETE_STACK || true
               aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
             fi
           }
