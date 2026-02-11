@@ -91,12 +91,7 @@ public class RootDnsStack extends Stack {
     }
 
     public RootDnsStack(final Construct scope, final String id, final RootDnsStackProps props) {
-        super(
-                scope,
-                id,
-                StackProps.builder()
-                        .env(props.getEnv())
-                        .build());
+        super(scope, id, StackProps.builder().env(props.getEnv()).build());
 
         // Cost allocation tags
         Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk/root-dns");
@@ -141,11 +136,7 @@ public class RootDnsStack extends Stack {
         if (!props.prodSpreadsheetsCloudFrontDomain().isBlank()) {
             infof("Creating prod-spreadsheets alias to %s", props.prodSpreadsheetsCloudFrontDomain());
             Route53AliasUpsert.upsertAliasToCloudFront(
-                    this,
-                    "ProdSpreadsheets",
-                    zone,
-                    "prod-spreadsheets",
-                    props.prodSpreadsheetsCloudFrontDomain());
+                    this, "ProdSpreadsheets", zone, "prod-spreadsheets", props.prodSpreadsheetsCloudFrontDomain());
             cfnOutput(this, "ProdSpreadsheetsDomain", "prod-spreadsheets." + props.hostedZoneName());
         }
 

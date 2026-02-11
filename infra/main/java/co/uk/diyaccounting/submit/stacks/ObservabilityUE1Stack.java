@@ -7,7 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
@@ -75,16 +75,18 @@ public class ObservabilityUE1Stack extends Stack {
                         .build());
 
         // Log Group for CloudFront access logs (idempotent creation)
-        this.distributionAccessLogGroup = ensureLogGroup(
-                this,
-                props.resourceNamePrefix() + "-DistributionAccessLogGroup",
-                props.sharedNames().distributionAccessLogGroupName);
+        this.distributionAccessLogGroup = ensureLogGroupWithDependency(
+                        this,
+                        props.resourceNamePrefix() + "-DistributionAccessLogGroup",
+                        props.sharedNames().distributionAccessLogGroupName)
+                .logGroup();
 
         // Log group for self-destruct operations (idempotent creation)
-        this.selfDestructLogGroup = ensureLogGroup(
-                this,
-                props.resourceNamePrefix() + "-SelfDestructLogGroup",
-                props.sharedNames().ue1SelfDestructLogGroupName);
+        this.selfDestructLogGroup = ensureLogGroupWithDependency(
+                        this,
+                        props.resourceNamePrefix() + "-SelfDestructLogGroup",
+                        props.sharedNames().ue1SelfDestructLogGroupName)
+                .logGroup();
         infof(
                 "ObservabilityStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);

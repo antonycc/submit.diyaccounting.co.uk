@@ -282,10 +282,7 @@ describe("buildFraudHeaders", () => {
   });
 
   it("should handle vendor IP detection failure gracefully", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new Error("Network error")),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
 
     const ip = await detectVendorPublicIp();
 

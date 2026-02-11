@@ -113,21 +113,6 @@ public class KindCdk {
     }
 
     /**
-     * Creates a LogGroup idempotently using AwsCustomResource.
-     * Uses createLogGroup API with ignoreErrorCodesMatching("ResourceAlreadyExistsException")
-     * so deployments succeed whether the log group exists or not.
-     *
-     * @param stack The stack to create the log group in
-     * @param id The construct ID prefix
-     * @param logGroupName The name of the log group
-     * @return ILogGroup reference to the log group
-     * @deprecated Use ensureLogGroupWithDependency when you need to add dependencies on the log group creation
-     */
-    public static ILogGroup ensureLogGroup(Stack stack, String id, String logGroupName) {
-        return ensureLogGroupWithDependency(stack, id, logGroupName).logGroup();
-    }
-
-    /**
      * Creates an S3 bucket idempotently using AwsCustomResource.
      * Uses CreateBucket API with ignoreErrorCodesMatching("BucketAlreadyOwnedByYou")
      * so deployments succeed whether the bucket exists (owned by us) or not.

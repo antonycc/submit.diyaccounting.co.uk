@@ -3,9 +3,9 @@
 
 // Lightbox functionality for images
 (function () {
-  var lightbox = document.getElementById("lightbox");
-  var lightboxImg = document.getElementById("lightbox-image");
-  var images = document.querySelectorAll(".lightbox-img");
+  const lightbox = document.getElementById("lightbox");
+  const lightboxImg = document.getElementById("lightbox-image");
+  const images = document.querySelectorAll(".lightbox-img");
 
   images.forEach(function (img) {
     img.addEventListener("click", function () {

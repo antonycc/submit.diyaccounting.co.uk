@@ -144,7 +144,7 @@
           color: #555;
         "
       >
-        <span style="color: #fbbc04; font-size: 1.2em; letter-spacing: 0.05em" aria-label="5 out of 5 stars"
+        <span style="color: #977000; font-size: 1.2em; letter-spacing: 0.05em" aria-label="5 out of 5 stars"
           >&#9733;&#9733;&#9733;&#9733;&#9733;</span
         >
         <span style="font-weight: 600; color: #333; margin-left: 0.4em">5.0</span>
@@ -156,10 +156,10 @@
           >9 reviews on Google</a
         >
         <p style="margin: 0.5em 0 0; font-style: italic; line-height: 1.5">
-          &ldquo;I highly recommend the DIY Accounting accounts packages &mdash; far better value and much simpler than
-          expensive subscription accounting packages.&rdquo;
+          &ldquo;I highly recommend the DIY Accounting accounts packages &mdash; far better value and much simpler than expensive
+          subscription accounting packages.&rdquo;
         </p>
-        <p style="margin: 0.25em 0 0; font-size: 0.85em; color: #999">&mdash; Steve Walsh</p>
+        <p style="margin: 0.25em 0 0; font-size: 0.85em; color: #767676">&mdash; Steve Walsh</p>
       </div>
     </main>
 
@@ -479,11 +479,9 @@
             } else if (displayRule === "always-with-upsell") {
               // User doesn't have access - show activity with upsell annotation
               const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
-              const distinctLevelNames = [...new Set(
-                activity.bundles
-                  .filter((id) => id !== "default")
-                  .map((id) => bundleLevelNameMap[id] || id)
-              )];
+              const distinctLevelNames = [
+                ...new Set(activity.bundles.filter((id) => id !== "default").map((id) => bundleLevelNameMap[id] || id)),
+              ];
               const requiredBundleNames = distinctLevelNames.join(" or ");
 
               if (isLoggedIn) {

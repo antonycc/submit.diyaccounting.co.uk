@@ -7,7 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -112,12 +112,7 @@ public class GatewayStack extends Stack {
     }
 
     public GatewayStack(final Construct scope, final String id, final GatewayStackProps props) {
-        super(
-                scope,
-                id,
-                StackProps.builder()
-                        .env(props.getEnv())
-                        .build());
+        super(scope, id, StackProps.builder().env(props.getEnv()).build());
 
         String resourcePrefix = props.envName() + "-gateway";
 
@@ -283,7 +278,8 @@ public class GatewayStack extends Stack {
 
         // CloudWatch log group for access logs
         String logGroupName = "distribution-" + resourcePrefix + "-logs";
-        ILogGroup accessLogGroup = ensureLogGroup(this, resourcePrefix + "-AccessLogGroup", logGroupName);
+        ILogGroup accessLogGroup = ensureLogGroupWithDependency(this, resourcePrefix + "-AccessLogGroup", logGroupName)
+                .logGroup();
 
         // CloudFront distribution
         this.distribution = Distribution.Builder.create(this, resourcePrefix + "-Distribution")
@@ -344,10 +340,8 @@ public class GatewayStack extends Stack {
                 .sources(List.of(webDocRootSource))
                 .destinationBucket(this.originBucket)
                 .distribution(distribution)
-                .distributionPaths(List.of(
-                        "/index.html", "/about.html", "/gateway.css",
-                        "/lib/*",
-                        "/robots.txt", "/sitemap.xml"))
+                .distributionPaths(
+                        List.of("/index.html", "/about.html", "/gateway.css", "/lib/*", "/robots.txt", "/sitemap.xml"))
                 .retainOnDelete(true)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)

@@ -111,7 +111,9 @@
   padding: 0.5em 1em;
   border-radius: var(--radius-md);
   font-size: 0.95em;
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .top-nav a:hover {
@@ -167,9 +169,7 @@ body {
 body {
   font-family: var(--font-family-base);
   background-color: var(--color-background);
-  background-image:
-    linear-gradient(to right, #e8eded 1px, transparent 1px),
-    linear-gradient(to bottom, #e8eded 1px, transparent 1px);
+  background-image: linear-gradient(to right, #e8eded 1px, transparent 1px), linear-gradient(to bottom, #e8eded 1px, transparent 1px);
   background-size: 11px 11px;
   color: var(--color-text-primary);
   display: flex;
@@ -280,7 +280,7 @@ main {
 }
 
 .reviews-stars {
-  color: #fbbc04;
+  color: #977000;
   font-size: 1.4rem;
   letter-spacing: 0.05em;
 }
@@ -459,7 +459,9 @@ main {
   border: 2px solid var(--color-brand-primary);
   color: var(--color-brand-primary);
   background: var(--color-surface);
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
   cursor: pointer;
 }
 
@@ -684,7 +686,7 @@ main {
 
 .donate-divider::before,
 .donate-divider::after {
-  content: '';
+  content: "";
   flex: 1;
   border-bottom: 1px solid #ddd;
 }

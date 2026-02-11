@@ -82,7 +82,7 @@ app.use((req, res, next) => {
   // Content-Security-Policy: Basic CSP for security
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
   );
   // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");

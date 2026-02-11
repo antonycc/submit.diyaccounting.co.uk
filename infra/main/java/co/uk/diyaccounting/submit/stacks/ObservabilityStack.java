@@ -7,7 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
@@ -224,14 +224,18 @@ public class ObservabilityStack extends Stack {
         }
 
         // Log group for self-destruct operations (idempotent creation)
-        this.selfDestructLogGroup = ensureLogGroup(
-                this,
-                props.resourceNamePrefix() + "-SelfDestructLogGroup",
-                props.sharedNames().ew2SelfDestructLogGroupName);
+        this.selfDestructLogGroup = ensureLogGroupWithDependency(
+                        this,
+                        props.resourceNamePrefix() + "-SelfDestructLogGroup",
+                        props.sharedNames().ew2SelfDestructLogGroupName)
+                .logGroup();
 
         // API Gateway access log group with env-stable name (idempotent creation)
-        this.apiAccessLogGroup = ensureLogGroup(
-                this, props.resourceNamePrefix() + "-ApiAccessLogGroup", props.sharedNames().apiAccessLogGroupName);
+        this.apiAccessLogGroup = ensureLogGroupWithDependency(
+                        this,
+                        props.resourceNamePrefix() + "-ApiAccessLogGroup",
+                        props.sharedNames().apiAccessLogGroupName)
+                .logGroup();
 
         // Add a single shared resource policy to allow all API Gateway APIs in this environment to write logs
         // This prevents hitting the 10 resource policy limit when multiple ApiStacks try to add their own policies

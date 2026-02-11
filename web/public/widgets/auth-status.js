@@ -210,12 +210,16 @@
     }
 
     // Redirect to Cognito logout endpoint to invalidate session
-    var env = window.__env;
+    const env = window.__env;
     if (env && env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
-      var logoutUrl =
-        env.COGNITO_BASE_URI.replace(/\/$/, "") + "/logout?" +
-        "client_id=" + env.COGNITO_CLIENT_ID + "&" +
-        "logout_uri=" + encodeURIComponent(window.location.origin + "/");
+      const logoutUrl =
+        env.COGNITO_BASE_URI.replace(/\/$/, "") +
+        "/logout?" +
+        "client_id=" +
+        env.COGNITO_CLIENT_ID +
+        "&" +
+        "logout_uri=" +
+        encodeURIComponent(window.location.origin + "/");
       window.location.href = logoutUrl;
     } else {
       window.location.reload();

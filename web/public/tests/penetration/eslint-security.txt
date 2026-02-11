@@ -1,6 +1,6 @@
 
 /Users/antony/projects/submit.diyaccounting.co.uk/app/lib/buildFraudHeaders.js
-  9:70  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+  10:70  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
 
 /Users/antony/projects/submit.diyaccounting.co.uk/app/lib/env.js
   10:8   warning  Found existsSync from package "fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
@@ -11,7 +11,7 @@
   289:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
 
 /Users/antony/projects/submit.diyaccounting.co.uk/app/services/bundleManagement.js
-  214:19  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
+  218:19  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
 
 /Users/antony/projects/submit.diyaccounting.co.uk/web/public/widgets/entitlement-status.js
   123:21  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp

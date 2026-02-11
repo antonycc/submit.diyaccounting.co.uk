@@ -282,34 +282,6 @@ export function maskDeviceId(deviceId) {
 }
 
 /**
- * Masks sensitive fraud prevention headers for logging.
- * @param {Object} headers - Headers object
- * @returns {Object} Headers with sensitive values masked
- */
-export function maskSensitiveHeaders(headers) {
-  if (!headers || typeof headers !== "object") {
-    return {};
-  }
-
-  const masked = { ...headers };
-
-  // Mask IP addresses
-  if (masked["Gov-Client-Public-IP"]) {
-    masked["Gov-Client-Public-IP"] = maskIpAddress(masked["Gov-Client-Public-IP"]);
-  }
-  if (masked["Gov-Vendor-Public-IP"]) {
-    masked["Gov-Vendor-Public-IP"] = maskIpAddress(masked["Gov-Vendor-Public-IP"]);
-  }
-
-  // Mask device ID
-  if (masked["Gov-Client-Device-ID"]) {
-    masked["Gov-Client-Device-ID"] = maskDeviceId(masked["Gov-Client-Device-ID"]);
-  }
-
-  return masked;
-}
-
-/**
  * Maps HMRC error codes to user-friendly messages.
  * @param {string} code - HMRC error code
  * @returns {Object} Object with userMessage and actionAdvice

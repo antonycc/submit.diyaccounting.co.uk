@@ -5,6 +5,7 @@
 // Supports: key = value, [section], [[array-of-tables]], strings, multi-line strings ("""), numbers, arrays
 (function () {
   const TOML = {
+    // eslint-disable-next-line sonarjs/cognitive-complexity
     parse: function (src) {
       const res = {};
       let currentSection = res;

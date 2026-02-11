@@ -7,7 +7,12 @@
 
 import { createPass } from "../app/services/passService.js";
 import { initializeEmailHashSecret } from "../app/lib/emailHash.js";
-import { generatePassQrCodeBuffer, generatePassQrCodeText, generateAnnotatedPassQrCodeSvg, buildPassDetails } from "../app/lib/qrCodeGenerator.js";
+import {
+  generatePassQrCodeBuffer,
+  generatePassQrCodeText,
+  generateAnnotatedPassQrCodeSvg,
+  buildPassDetails,
+} from "../app/lib/qrCodeGenerator.js";
 import fs from "fs";
 import path from "path";
 

@@ -296,13 +296,8 @@ async function cleanupApiGatewayMappings(apiStackName) {
 
     console.log(`Found API ID: ${apiId}, scanning for external domain mappings`);
 
-    const {
-      ApiGatewayV2Client,
-      GetDomainNamesCommand,
-      GetApiMappingsCommand,
-      DeleteApiMappingCommand,
-      DeleteDomainNameCommand,
-    } = await import("@aws-sdk/client-apigatewayv2");
+    const { ApiGatewayV2Client, GetDomainNamesCommand, GetApiMappingsCommand, DeleteApiMappingCommand, DeleteDomainNameCommand } =
+      await import("@aws-sdk/client-apigatewayv2");
 
     const apigwClient = new ApiGatewayV2Client({ region: process.env.AWS_REGION || "eu-west-2" });
 
@@ -321,9 +316,7 @@ async function cleanupApiGatewayMappings(apiStackName) {
           for (const m of ourMappings) {
             console.log(`Deleting mapping ${m.ApiMappingId} from domain ${domainName}`);
             try {
-              await apigwClient.send(
-                new DeleteApiMappingCommand({ DomainName: domainName, ApiMappingId: m.ApiMappingId }),
-              );
+              await apigwClient.send(new DeleteApiMappingCommand({ DomainName: domainName, ApiMappingId: m.ApiMappingId }));
             } catch (e) {
               console.log(`Delete mapping error (ignored): ${e.message}`);
             }

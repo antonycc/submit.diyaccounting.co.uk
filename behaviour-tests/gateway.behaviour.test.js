@@ -454,7 +454,7 @@ test.describe("Gateway Site - diyaccounting.co.uk", () => {
     console.log(" Meta viewport is set correctly");
 
     // Check charset
-    const metaCharset = page.locator('meta[charset]');
+    const metaCharset = page.locator("meta[charset]");
     const charsetValue = await metaCharset.getAttribute("charset");
     expect(charsetValue.toLowerCase()).toBe("utf-8");
     console.log(" Charset is UTF-8");

@@ -395,7 +395,6 @@
     <script src="../../lib/test-data-generator.js"></script>
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
-    <script type="module" src="../../lib/utils/obligation-utils.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -704,16 +703,18 @@
         }
 
         // GA4 ecommerce: begin_checkout when VAT return submission starts
-        if (typeof gtag === 'function') {
-          gtag('event', 'begin_checkout', {
-            currency: 'GBP',
+        if (typeof gtag === "function") {
+          gtag("event", "begin_checkout", {
+            currency: "GBP",
             value: 0,
-            items: [{
-              item_id: 'vat-return',
-              item_name: 'VAT Return',
-              price: 0,
-              currency: 'GBP'
-            }]
+            items: [
+              {
+                item_id: "vat-return",
+                item_name: "VAT Return",
+                price: 0,
+                currency: "GBP",
+              },
+            ],
           });
         }
 
@@ -1002,17 +1003,19 @@
         const receipt = response.receipt ?? response;
 
         // GA4 ecommerce: purchase when VAT return is successfully submitted
-        if (typeof gtag === 'function') {
-          gtag('event', 'purchase', {
-            transaction_id: receipt.formBundleNumber || '',
+        if (typeof gtag === "function") {
+          gtag("event", "purchase", {
+            transaction_id: receipt.formBundleNumber || "",
             value: 0,
-            currency: 'GBP',
-            items: [{
-              item_id: 'vat-return',
-              item_name: 'VAT Return',
-              price: 0,
-              currency: 'GBP'
-            }]
+            currency: "GBP",
+            items: [
+              {
+                item_id: "vat-return",
+                item_name: "VAT Return",
+                price: 0,
+                currency: "GBP",
+              },
+            ],
           });
         }
 

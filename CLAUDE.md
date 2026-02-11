@@ -92,7 +92,7 @@ Behaviour tests (`npm run test:submitVatBehaviour-*`) take approximately 2-3 min
 - Tests MUST NOT be overfit to specific responses
 - Simulator should NOT encourage hardcoding specific dates/periods
 
-See `OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
+See `_developers/archive/OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
 
 ## Target Directory Access
 
@@ -188,8 +188,8 @@ When implementing features that require infrastructure validation:
 
 4. **Validate against AWS deployment** (3.4):
    ```bash
-   # Run Playwright tests against deployed environment
-   npm run test:submitVatBehaviour-aws-<branch>
+   # Run Playwright tests against CI environment
+   npm run test:submitVatBehaviour-ci
    ```
 
    If tests fail against AWS but passed locally, investigate environment-specific issues:
@@ -251,6 +251,7 @@ When implementing features that require infrastructure validation:
 | Environment | File | Purpose |
 |-------------|------|---------|
 | test | `.env.test` | Unit/system tests (mocked) |
+| simulator | `.env.simulator` | Local dev with HTTP simulator (no Docker, no external config) |
 | proxy | `.env.proxy` | Local dev (ngrok, Docker OAuth2, dynalite) |
 | ci | `.env.ci` | CI with real AWS |
 | prod | `.env.prod` | Production |
@@ -412,6 +413,21 @@ This script:
 - If the enable script says credentials already exist, run `npm run test:disableCognitoNative` first
 - The scripts are idempotent: enabling when already enabled or disabling when already disabled is a no-op
 - For auth-specific tests, use `npm run test:authBehaviour-ci` or `npm run test:authBehaviour-prod`
+
+## Multi-Site Deployments
+
+This repository also deploys related sibling sites via dedicated workflows:
+
+| Site | Workflow | Source |
+|------|----------|--------|
+| gateway.diyaccounting.co.uk | `deploy-gateway.yml` | `web/www.diyaccounting.co.uk/` |
+| spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | `web/spreadsheets.diyaccounting.co.uk/` |
+| diyaccounting.co.uk (root) | `deploy-root.yml` | Root domain DNS |
+| Holding page | `deploy-holding.yml` | `web/holding/` |
+
+Behaviour tests exist for gateway (`test:gatewayBehaviour-*`) and spreadsheets (`test:spreadsheetsBehaviour-*`).
+
+**Stripe Payment Links** are live on the spreadsheets site for donations (see `_developers/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are planned in `PLAN_PAYMENT_INTEGRATION.md`.
 
 ## Security Checklist
 

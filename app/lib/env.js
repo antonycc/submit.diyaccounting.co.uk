@@ -9,7 +9,7 @@ import fs from "fs";
 export function dotenvConfigIfNotBlank({ path }) {
   if (!fs.existsSync(path)) {
     if (path !== ".env") {
-      `dotenvConfigIfNotBlank: Environment config file not found: ${path}`;
+      console.log(`dotenvConfigIfNotBlank: Environment config file not found: ${path}`);
     }
     return;
   }

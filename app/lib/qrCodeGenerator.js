@@ -112,12 +112,7 @@ export async function generatePassQrCodeText({ code, url, options = {} }) {
  * @returns {string} XML-escaped string
  */
 function escapeXml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
 /**
@@ -189,7 +184,8 @@ export async function generateAnnotatedPassQrCodeSvg({ code, url, bundleName, ma
   let textElements = "";
   lines.forEach((line, i) => {
     const y = textStartY + i * lineHeight;
-    textElements += `  <text x="10" y="${y}" font-family="monospace" font-size="${fontSize}" fill="#333">` +
+    textElements +=
+      `  <text x="10" y="${y}" font-family="monospace" font-size="${fontSize}" fill="#333">` +
       `<tspan font-weight="bold">${escapeXml(line.label)}:</tspan> ${escapeXml(line.value)}</text>\n`;
   });
 

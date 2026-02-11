@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
   ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
   DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'

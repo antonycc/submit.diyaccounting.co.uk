@@ -460,8 +460,7 @@ public class AccountStack extends Stack {
         // ============================================================================
         // Interest POST Lambda (JWT auth - register waitlist interest via SNS)
         // ============================================================================
-        var waitlistTopic = Topic.Builder.create(
-                        this, "%s-waitlist".formatted(props.resourceNamePrefix()))
+        var waitlistTopic = Topic.Builder.create(this, "%s-waitlist".formatted(props.resourceNamePrefix()))
                 .topicName("%s-waitlist".formatted(props.resourceNamePrefix()))
                 .build();
 
@@ -499,8 +498,7 @@ public class AccountStack extends Stack {
 
         infof(
                 "Created Interest POST Lambda %s with handler %s",
-                this.interestPostLambda.getNode().getId(),
-                props.sharedNames().interestPostIngestLambdaHandler);
+                this.interestPostLambda.getNode().getId(), props.sharedNames().interestPostIngestLambdaHandler);
 
         cfnOutput(this, "InterestPostLambdaArn", this.interestPostLambda.getFunctionArn());
         cfnOutput(this, "WaitlistTopicArn", waitlistTopic.getTopicArn());

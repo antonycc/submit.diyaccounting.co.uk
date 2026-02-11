@@ -33,10 +33,10 @@ public interface EdgeLambdaProps {
     /** Path to the directory containing the Lambda code */
     String assetPath();
 
-    /** Lambda runtime - defaults to Node.js 20.x */
+    /** Lambda runtime - defaults to Node.js 24.x */
     @Value.Default
     default Runtime runtime() {
-        return Runtime.NODEJS_20_X;
+        return Runtime.NODEJS_24_X;
     }
 
     /** Memory size in MB - defaults to 128MB (Lambda@Edge has lower limits) */

@@ -99,7 +99,7 @@ public class AsyncApiLambda extends ApiLambda {
                 .provisionedConcurrentExecutions(props.workerProvisionedConcurrency())
                 .build();
         this.workerLambdaAliasArn =
-                "%s:%s".formatted(this.ingestLambda.getFunctionArn(), this.ingestLambdaAlias.getAliasName());
+                "%s:%s".formatted(this.workerLambda.getFunctionArn(), this.workerLambdaAlias.getAliasName());
         infof(
                 "Created worker Lambda alias %s for version %s with arn %s",
                 this.workerLambdaAlias.getAliasName(),

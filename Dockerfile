@@ -6,7 +6,7 @@
 
 # Builder stage: runs natively on the build host (no QEMU emulation)
 # Uses node:22-slim instead of the Lambda image — only needs npm for dependency install.
-FROM --platform=$BUILDPLATFORM node:22-slim AS builder
+FROM --platform=$BUILDPLATFORM node:24-slim AS builder
 
 WORKDIR /build
 
@@ -19,7 +19,7 @@ COPY web/public/submit.catalogue.toml web/public/submit.catalogue.toml
 RUN npm ci --omit=dev --ignore-scripts
 
 # Final stage: ARM64 Lambda base image
-FROM public.ecr.aws/lambda/nodejs:22
+FROM public.ecr.aws/lambda/nodejs:24
 
 # Copy dependencies from builder (pure JS, architecture-independent)
 COPY --from=builder /build/node_modules ./node_modules

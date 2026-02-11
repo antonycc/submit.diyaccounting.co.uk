@@ -7,7 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.nio.file.Paths;
@@ -299,10 +299,11 @@ public class ApexStack extends Stack {
                 .build();
 
         // Ensure distribution access log group exists (idempotent creation)
-        ILogGroup distributionAccessLogGroup = ensureLogGroup(
-                this,
-                props.resourceNamePrefix() + "-DistributionAccessLogGroup",
-                props.sharedNames().distributionAccessLogGroupName);
+        ILogGroup distributionAccessLogGroup = ensureLogGroupWithDependency(
+                        this,
+                        props.resourceNamePrefix() + "-DistributionAccessLogGroup",
+                        props.sharedNames().distributionAccessLogGroupName)
+                .logGroup();
 
         // CloudFront distribution for the web origin and all the URL Lambdas.
         this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-ApexWebDist")

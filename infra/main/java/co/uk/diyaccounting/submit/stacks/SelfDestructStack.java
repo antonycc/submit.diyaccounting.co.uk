@@ -8,7 +8,7 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -117,8 +117,9 @@ public class SelfDestructStack extends Stack {
         Tags.of(this).add("MonitoringEnabled", "true");
 
         // Log group for self-destruct function (idempotent creation)
-        ILogGroup logGroup = ensureLogGroup(
-                this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.selfDestructLogGroupName());
+        ILogGroup logGroup = ensureLogGroupWithDependency(
+                        this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.selfDestructLogGroupName())
+                .logGroup();
 
         // IAM role for the self-destruct Lambda function
         String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");

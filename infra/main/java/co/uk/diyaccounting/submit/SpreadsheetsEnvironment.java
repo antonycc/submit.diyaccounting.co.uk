@@ -30,13 +30,11 @@ public class SpreadsheetsEnvironment {
         App app = new App();
 
         var envName = envOr("ENVIRONMENT_NAME", KindCdk.getContextValueString(app, "envName", "ci"));
-        var certificateArn =
-                envOr("CERTIFICATE_ARN", KindCdk.getContextValueString(app, "certificateArn", ""));
+        var certificateArn = envOr("CERTIFICATE_ARN", KindCdk.getContextValueString(app, "certificateArn", ""));
         var docRootPath = envOr(
                 "DOC_ROOT_PATH",
                 KindCdk.getContextValueString(app, "docRootPath", "../web/spreadsheets.diyaccounting.co.uk/public"));
-        var domainNamesStr =
-                envOr("DOMAIN_NAMES", KindCdk.getContextValueString(app, "domainNames", ""));
+        var domainNamesStr = envOr("DOMAIN_NAMES", KindCdk.getContextValueString(app, "domainNames", ""));
         var prodFQDomainName = KindCdk.getContextValueString(app, "prodFQDomainName", "");
 
         List<String> domainNames;

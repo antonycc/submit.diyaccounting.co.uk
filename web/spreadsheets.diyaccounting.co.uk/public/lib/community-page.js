@@ -2,29 +2,29 @@
 (function () {
   "use strict";
 
-  var container = document.getElementById("community-list");
-  var categoryFilter = document.getElementById("category-filter");
+  const container = document.getElementById("community-list");
+  const categoryFilter = document.getElementById("category-filter");
   if (!container) return;
 
-  var CACHE_KEY = "diy-community-discussions";
-  var CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-  var API_URL = "https://api.github.com/repos/antonycc/diy-accounting/discussions?per_page=30&sort=updated&direction=desc";
-  var allDiscussions = [];
+  const CACHE_KEY = "diy-community-discussions";
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const API_URL = "https://api.github.com/repos/antonycc/diy-accounting/discussions?per_page=30&sort=updated&direction=desc";
+  let allDiscussions = [];
 
   function relativeDate(dateStr) {
-    var now = Date.now();
-    var then = new Date(dateStr).getTime();
-    var diffMs = now - then;
-    var diffSec = Math.floor(diffMs / 1000);
-    var diffMin = Math.floor(diffSec / 60);
-    var diffHr = Math.floor(diffMin / 60);
-    var diffDay = Math.floor(diffHr / 24);
+    const now = Date.now();
+    const then = new Date(dateStr).getTime();
+    const diffMs = now - then;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHr = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHr / 24);
 
     if (diffDay > 30) {
       return new Date(dateStr).toLocaleDateString("en-GB", {
         day: "numeric",
         month: "short",
-        year: "numeric"
+        year: "numeric",
       });
     }
     if (diffDay >= 1) return diffDay + (diffDay === 1 ? " day ago" : " days ago");
@@ -34,7 +34,7 @@
   }
 
   function escapeHtml(str) {
-    var div = document.createElement("div");
+    const div = document.createElement("div");
     div.appendChild(document.createTextNode(str));
     return div.innerHTML;
   }
@@ -42,7 +42,7 @@
   function stripHtmlAndTruncate(text, maxLen) {
     if (!text) return "";
     // Strip markdown/HTML tags
-    var stripped = text
+    const stripped = text
       .replace(/<[^>]*>/g, "")
       .replace(/#{1,6}\s/g, "")
       .replace(/[*_~`]/g, "")
@@ -59,10 +59,10 @@
     if (!category || !category.emoji) return "";
     // GitHub category emojis are stored as shortcodes like ":speech_balloon:"
     // or as actual emoji characters
-    var emoji = category.emoji;
+    const emoji = category.emoji;
     if (emoji.charAt(0) === ":") {
       // Shortcode — return a common mapping or skip
-      var map = {
+      const map = {
         ":speech_balloon:": "\uD83D\uDCAC",
         ":bulb:": "\uD83D\uDCA1",
         ":pray:": "\uD83D\uDE4F",
@@ -73,7 +73,7 @@
         ":hammer_and_wrench:": "\uD83D\uDD28",
         ":star2:": "\uD83C\uDF1F",
         ":light_bulb:": "\uD83D\uDCA1",
-        ":books:": "\uD83D\uDCDA"
+        ":books:": "\uD83D\uDCDA",
       };
       return map[emoji] || "";
     }
@@ -86,41 +86,41 @@
       return;
     }
 
-    var html = "";
+    let html = "";
     discussions.forEach(function (d) {
-      var cat = d.category;
-      var catName = cat ? cat.name : "General";
-      var emoji = categoryEmoji(cat);
-      var snippet = stripHtmlAndTruncate(d.body, 150);
-      var avatar = d.user && d.user.avatar_url ? d.user.avatar_url : "";
-      var login = d.user ? d.user.login : "unknown";
-      var comments = d.comments || 0;
+      const cat = d.category;
+      const catName = cat ? cat.name : "General";
+      const emoji = categoryEmoji(cat);
+      const snippet = stripHtmlAndTruncate(d.body, 150);
+      const avatar = d.user && d.user.avatar_url ? d.user.avatar_url : "";
+      const login = d.user ? d.user.login : "unknown";
+      const comments = d.comments || 0;
 
       html += '<div class="kb-item community-item" data-category="' + escapeHtml(catName) + '">';
       html += '<a href="' + escapeHtml(d.html_url) + '" class="kb-item-link" target="_blank" rel="noopener noreferrer">';
-      html += '<span class="community-category">' + emoji + " " + escapeHtml(catName) + '</span>';
-      html += '<span class="kb-item-title">' + escapeHtml(d.title) + '</span>';
+      html += '<span class="community-category">' + emoji + " " + escapeHtml(catName) + "</span>";
+      html += '<span class="kb-item-title">' + escapeHtml(d.title) + "</span>";
       if (snippet) {
-        html += '<span class="community-snippet">' + escapeHtml(snippet) + '</span>';
+        html += '<span class="community-snippet">' + escapeHtml(snippet) + "</span>";
       }
       html += '<span class="community-meta">';
       if (avatar) {
         html += '<img src="' + escapeHtml(avatar) + '&s=40" alt="" class="community-avatar" width="20" height="20" loading="lazy" />';
       }
-      html += '<span>' + escapeHtml(login) + '</span>';
-      html += '<span>Updated ' + relativeDate(d.updated_at) + '</span>';
-      html += '<span>' + comments + (comments === 1 ? " comment" : " comments") + '</span>';
-      html += '</span>';
-      html += '</a>';
-      html += '</div>';
+      html += "<span>" + escapeHtml(login) + "</span>";
+      html += "<span>Updated " + relativeDate(d.updated_at) + "</span>";
+      html += "<span>" + comments + (comments === 1 ? " comment" : " comments") + "</span>";
+      html += "</span>";
+      html += "</a>";
+      html += "</div>";
     });
 
     container.innerHTML = html;
   }
 
   function populateCategories(discussions) {
-    var seen = {};
-    var categories = [];
+    const seen = {};
+    const categories = [];
     discussions.forEach(function (d) {
       if (d.category && d.category.name && !seen[d.category.name]) {
         seen[d.category.name] = true;
@@ -129,7 +129,7 @@
     });
     categories.sort();
     categories.forEach(function (name) {
-      var opt = document.createElement("option");
+      const opt = document.createElement("option");
       opt.value = name;
       opt.textContent = name;
       categoryFilter.appendChild(opt);
@@ -141,7 +141,7 @@
       renderDiscussions(allDiscussions);
       return;
     }
-    var filtered = allDiscussions.filter(function (d) {
+    const filtered = allDiscussions.filter(function (d) {
       return d.category && d.category.name === category;
     });
     renderDiscussions(filtered);
@@ -149,35 +149,38 @@
 
   function getCached() {
     try {
-      var raw = localStorage.getItem(CACHE_KEY);
+      const raw = localStorage.getItem(CACHE_KEY);
       if (!raw) return null;
-      var cached = JSON.parse(raw);
+      const cached = JSON.parse(raw);
       if (Date.now() - cached.timestamp > CACHE_TTL) {
         localStorage.removeItem(CACHE_KEY);
         return null;
       }
       return cached.data;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
 
   function setCache(data) {
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        timestamp: Date.now(),
-        data: data
-      }));
-    } catch (e) {
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          timestamp: Date.now(),
+          data: data,
+        }),
+      );
+    } catch {
       // localStorage full or unavailable — ignore
     }
   }
 
   function showError() {
     container.innerHTML =
-      '<p class="no-results">Unable to load discussions. '
-      + '<a href="https://github.com/antonycc/diy-accounting/discussions" target="_blank" rel="noopener noreferrer">'
-      + 'View discussions on GitHub</a></p>';
+      '<p class="no-results">Unable to load discussions. ' +
+      '<a href="https://github.com/antonycc/diy-accounting/discussions" target="_blank" rel="noopener noreferrer">' +
+      "View discussions on GitHub</a></p>";
   }
 
   function handleData(discussions) {
@@ -187,7 +190,7 @@
   }
 
   // Try cache first
-  var cached = getCached();
+  const cached = getCached();
   if (cached) {
     handleData(cached);
   } else {

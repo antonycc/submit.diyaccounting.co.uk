@@ -7,7 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroup;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
@@ -122,7 +122,9 @@ public class DevStack extends Stack {
                 .build();
 
         // CloudWatch Log Group for ECR operations (idempotent creation)
-        this.ecrLogGroup = ensureLogGroup(this, props.resourceNamePrefix() + "-EcrLogGroup", ecrLogGroupName);
+        this.ecrLogGroup = ensureLogGroupWithDependency(
+                        this, props.resourceNamePrefix() + "-EcrLogGroup", ecrLogGroupName)
+                .logGroup();
 
         // IAM Role for ECR publishing with comprehensive permissions
         this.ecrPublishRole = Role.Builder.create(this, props.resourceNamePrefix() + "-EcrPublishRole")

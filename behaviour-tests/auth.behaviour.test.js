@@ -24,7 +24,6 @@ import {
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
 import { goToReceiptsPageUsingMainNav } from "./steps/behaviour-hmrc-receipts-steps.js";
-import { intentionallyNotSuppliedHeaders } from "./helpers/dynamodb-assertions.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -224,7 +223,6 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
       observedTraceparent,
       testUrl,
       isSandboxMode: isSandboxMode(),
-      intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,
     screenshotPath,

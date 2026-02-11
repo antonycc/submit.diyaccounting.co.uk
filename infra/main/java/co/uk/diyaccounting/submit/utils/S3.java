@@ -10,11 +10,8 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.StorageClass;
 import software.amazon.awscdk.services.s3.Transition;
-import software.amazon.awssdk.services.s3.S3Client;
 
 public class S3 {
-
-    public S3Client client = S3Client.create();
 
     /**
      * Create lifecycle rules based on bucket purpose and retention period

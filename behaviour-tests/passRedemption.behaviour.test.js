@@ -165,7 +165,10 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   // --- Step 1: Verify clean state ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
   const requestTestBtn = page.locator('button[data-bundle-id="test"]');
-  const requestTestVisible = await requestTestBtn.first().isVisible({ timeout: 5000 }).catch(() => false);
+  const requestTestVisible = await requestTestBtn
+    .first()
+    .isVisible({ timeout: 5000 })
+    .catch(() => false);
   if (isTestBundleHidden) {
     // Hidden bundles should NOT appear in the catalogue
     console.log(`[pass-test]: Test bundle hidden=true, button visible: ${requestTestVisible} (expected: false)`);
@@ -174,9 +177,15 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
     // Visible on-pass bundles appear as disabled cards
     console.log(`[pass-test]: Test bundle button visible: ${requestTestVisible} (expected: true, but disabled for on-pass bundle)`);
     if (requestTestVisible) {
-      const isDisabled = await requestTestBtn.first().isDisabled().catch(() => false);
+      const isDisabled = await requestTestBtn
+        .first()
+        .isDisabled()
+        .catch(() => false);
       console.log(`[pass-test]: Test bundle button disabled: ${isDisabled} (expected: true)`);
-      const btnText = await requestTestBtn.first().textContent().catch(() => "");
+      const btnText = await requestTestBtn
+        .first()
+        .textContent()
+        .catch(() => "");
       console.log(`[pass-test]: Button text: "${btnText}" (expected: "Pass required" prefix)`);
       const annotation = page.locator('.service-item:has(button[data-bundle-id="test"]) p');
       const annotationText = await annotation.textContent().catch(() => "");

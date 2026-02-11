@@ -1,6 +1,6 @@
 # DIY Accounting Submit - Repository Documentation
 
-**Generated:** 2026-02-01
+**Generated:** 2026-02-10
 
 This document provides a high-level overview of the `submit.diyaccounting.co.uk` repository. For detailed reference, consult the source files directly.
 
@@ -41,7 +41,9 @@ This document provides a high-level overview of the `submit.diyaccounting.co.uk`
 - **Bundle Capacity**: Global cap enforcement with atomic counters and EventBridge reconciliation
 - **Simulator Mode**: Fully self-contained local development with mocked OAuth2 and HMRC APIs
 - **Multi-Environment**: Supports simulator, local proxy, CI, and production deployments
+- **Multi-Site**: Also deploys gateway.diyaccounting.co.uk, spreadsheets.diyaccounting.co.uk, and root domain
 - **OAuth Integration**: Google/Cognito for production, mock OAuth2 for local testing
+- **Stripe Donations**: Stripe Payment Links on spreadsheets site (completed, see `_developers/archive/PLAN_STRIPE_1.md`)
 
 ## Environment Configuration
 
@@ -134,6 +136,9 @@ npm run test:submitVatBehaviour-proxy
 | `help.behaviour.test.js` | Help page functionality |
 | `compliance.behaviour.test.js` | Compliance checks |
 | `simulator.behaviour.test.js` | Simulator mode |
+| `gateway.behaviour.test.js` | Gateway site |
+| `generatePassActivity.behaviour.test.js` | Pass generation activity |
+| `spreadsheets.behaviour.test.js` | Spreadsheets site (download, donate) |
 
 ### Maven Commands
 
@@ -218,6 +223,9 @@ Created per deployment by `deploy.yml`:
 | EdgeStack | Production CloudFront |
 | PublishStack | S3 static file deployment |
 | OpsStack | CloudWatch dashboard |
+| GatewayStack | Gateway site (gateway.diyaccounting.co.uk) S3 + CloudFront |
+| RootDnsStack | Root domain DNS (diyaccounting.co.uk) |
+| SpreadsheetsStack | Spreadsheets site (spreadsheets.diyaccounting.co.uk) S3 + CloudFront |
 
 **Read the CDK stack files in `infra/main/java/co/uk/diyaccounting/submit/stacks/` for details.**
 
@@ -241,6 +249,10 @@ Created per deployment by `deploy.yml`:
 | `compliance.yml` | Run compliance checks (Pa11y, axe, Lighthouse, ZAP) | Push, manual |
 | `security-review.yml` | Security scanning | Push, manual |
 | `codeql.yml` | CodeQL security analysis | Push, schedule |
+| `deploy-gateway.yml` | Deploy gateway site (gateway.diyaccounting.co.uk) | Push, manual |
+| `deploy-holding.yml` | Deploy holding/maintenance page | Push, manual |
+| `deploy-root.yml` | Deploy root domain (diyaccounting.co.uk) | Push, manual |
+| `deploy-spreadsheets.yml` | Deploy spreadsheets site (spreadsheets.diyaccounting.co.uk) | Push, manual |
 | `copilot-agent.yml` | GitHub Copilot agent workflow | workflow_dispatch |
 | `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |
 
@@ -387,7 +399,7 @@ The proxy mode tests are the gold standard for CI validation as they use real OA
 | `functions/edge/` | CloudFront edge Lambdas (errorPageHandler) |
 | `functions/non-lambda-mocks/` | Mock handlers for local dev (mockTokenPost, mockAuthUrlGet) |
 | `http-simulator/` | HTTP simulator for local OAuth2 and HMRC API mocking |
-| `lib/` | Shared libraries (logger, JWT, HTTP helpers, passphrase, emailHash, etc.) |
+| `lib/` | Shared libraries (logger, JWT, HTTP helpers, passphrase, emailHash, env, envSchema, dynamoDbClient, dataMasking, hmrcValidation, obligationFormatter, buildFraudHeaders, dateUtils, qrCodeGenerator, vatReturnTypes) |
 | `services/` | Business logic (hmrcApi, bundleManagement, passService, tokenEnforcement, productCatalog, subHasher) |
 | `test-helpers/` | Test utilities (mock helpers, event builders, DynamoDB mocks) |
 | `unit-tests/` | Vitest unit tests |
@@ -410,10 +422,12 @@ The proxy mode tests are the gold standard for CI validation as they use real OA
 | passGet | `functions/account/passGet.js` | Check pass validity (public, no auth) |
 | passPost | `functions/account/passPost.js` | Redeem pass (authenticated) |
 | passAdminPost | `functions/account/passAdminPost.js` | Create pass (admin only) |
+| interestPost | `functions/account/interestPost.js` | Register user interest |
 | bundleCapacityReconcile | `functions/account/bundleCapacityReconcile.js` | Reconcile capacity counters (EventBridge) |
 | supportTicketPost | `functions/support/supportTicketPost.js` | Submit support ticket |
 | selfDestruct | `functions/infra/selfDestruct.js` | Non-prod stack cleanup |
 | errorPageHandler | `functions/edge/errorPageHandler.js` | CloudFront custom error pages |
+| errorPageHtml | `functions/edge/errorPageHtml.js` | Error page HTML generation |
 
 #### Data Repositories
 
@@ -482,6 +496,10 @@ Lightweight mock server for local development:
 | `privacy.html` | Privacy policy |
 | `terms.html` | Terms of service |
 | `accessibility.html` | Accessibility statement |
+| `policybee.html` | PolicyBee insurance verification |
+| `diy-accounting-spreadsheets.html` | Cross-link to spreadsheets site |
+| `diy-accounting-limited.html` | DIY Accounting Limited company info |
+| `spreadsheets.html` | Spreadsheets integration page |
 | `auth/login.html` | Login page (Cognito redirect) |
 | `auth/loginWithCognitoCallback.html` | Cognito OAuth callback |
 | `auth/loginWithMockCallback.html` | Mock OAuth callback (dev) |
@@ -496,6 +514,9 @@ Lightweight mock server for local development:
 
 | Path | Purpose |
 |------|---------|
+| `analytics.js` | Google Analytics integration |
+| `env-loader.js` | Environment configuration loader |
+| `feature-flags.js` | Feature flags |
 | `services/api-client.js` | Base API client with auth headers |
 | `services/auth-service.js` | Authentication service |
 | `services/catalog-service.js` | Product catalogue service |
@@ -505,7 +526,7 @@ Lightweight mock server for local development:
 | `utils/correlation-utils.js` | Request correlation |
 | `utils/storage-utils.js` | localStorage helpers |
 | `utils/dom-utils.js` | DOM manipulation helpers |
-| `utils/obligation-utils.js` | Obligation formatting |
+| `utils/obligation-utils.js` | VAT obligation formatting |
 | `bundle-cache.js` | IndexedDB bundle cache (5-min TTL) |
 | `auth-url-builder.js` | OAuth URL construction |
 | `toml-parser.js` | TOML file parser |
@@ -575,7 +596,9 @@ Head-injected scripts for early API prefetching:
 |------|---------|
 | `submit.catalogue.toml` | Product catalogue (bundles, activities, display rules, tokens) |
 | `submit.passes.toml` | Pass type definitions (templates for generating passes) |
+| `google-analytics.toml` | GA4 configuration |
 | `faqs.toml` | FAQ content for help page |
+| `submit.features.toml` | Feature flags configuration |
 | `playwright.config.js` | Playwright test configuration |
 | `vitest.config.js` | Vitest test configuration |
 | `eslint.config.js` | ESLint configuration |
@@ -619,6 +642,16 @@ Head-injected scripts for early API prefetching:
 | `setup-s3-replication.sh` | Configure S3 replication |
 | `setup-backup-account.sh` | Setup backup AWS account |
 | `dr-restore-from-backup-account.sh` | Disaster recovery restore |
+| `build-gateway-redirects.cjs` | Build gateway redirect configuration |
+| `build-packages.cjs` | Build deployment packages |
+| `build-sitemaps.cjs` | Build XML sitemaps |
+| `generate-pass-with-qr.js` | Generate pass with QR code |
+| `generate-knowledge-base-toml.cjs` | Generate knowledge base TOML from references |
+| `playwright-video-reporter.js` | Playwright video test reporter |
+| `add-bundle.sh` | Add bundle to user account |
+| `create-favicon.sh` | Generate favicon variants |
+| `list-domains.sh` | List DNS domain configuration |
+| `update.sh` | Update dependencies and tools |
 
 ## DynamoDB Schema
 
@@ -750,5 +783,8 @@ For specific topics, see:
 | Obligation flexibility | `_developers/archive/OBLIGATION_FLEXIBILITY_FIX.md` |
 | Test report generation | `scripts/generate-test-reports.js` |
 | API documentation | `web/public/docs/api/openapi.yaml` |
+| Stripe donation integration (completed) | `_developers/archive/PLAN_STRIPE_1.md` |
+| Payment integration plan | `PLAN_PAYMENT_INTEGRATION.md` |
+| Multi-site deployment | `deploy-gateway.yml`, `deploy-spreadsheets.yml`, `deploy-root.yml` |
 
 **For detailed implementation, always refer to the source files directly.**

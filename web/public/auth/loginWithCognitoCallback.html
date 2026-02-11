@@ -210,30 +210,46 @@
 
           console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
           // GA4: login event after successful Cognito authentication
-          if (typeof gtag === 'function') {
-            gtag('event', 'login', { method: 'cognito' });
+          if (typeof gtag === "function") {
+            gtag("event", "login", { method: "cognito" });
           }
           showStatus("Authenticated successfully. Fetching bundles...", "info");
 
-          // Extract MFA status from amr (Authentication Methods Reference) claim
-          // Google and other federated IdPs include MFA indicators in the amr array
+          // Extract MFA status from the ID token
+          // 1. Check amr (Authentication Methods Reference) claim — standard OIDC, provided by some IdPs
+          // 2. Fallback: detect federated login via identities claim + auth_time
+          //    Google and other federated IdPs enforce 2FA but don't expose amr in their tokens;
+          //    Cognito includes identities and auth_time for federated users
           const amrClaims = idTokenPayload.amr || [];
           const mfaIndicators = ["mfa", "swk", "hwk", "otp"]; // mfa=multi-factor, swk=software key, hwk=hardware key, otp=one-time password
           const hasMFA = Array.isArray(amrClaims) && amrClaims.some((method) => mfaIndicators.includes(method));
+          const isFederatedLogin = Array.isArray(idTokenPayload.identities) && idTokenPayload.identities.length > 0;
+          const authTime = idTokenPayload.auth_time;
 
           if (hasMFA) {
-            // Store MFA metadata for use in fraud prevention headers
+            // amr claims explicitly indicate MFA (e.g. Cognito native TOTP, or IdPs that provide amr)
             const mfaMetadata = {
-              type: "OTHER", // Use OTHER for federated IdP MFA (Google 2FA, passkeys, etc.)
-              timestamp: new Date().toISOString(),
+              type: "OTHER",
+              timestamp: authTime ? new Date(authTime * 1000).toISOString() : new Date().toISOString(),
               uniqueReference: crypto.randomUUID(),
             };
             sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
-            console.log("MFA detected from federated IdP:", amrClaims, "Stored metadata:", mfaMetadata);
+            console.log("MFA detected from amr claims:", amrClaims, "Stored metadata:", mfaMetadata);
+          } else if (isFederatedLogin && authTime) {
+            // Federated login (Google, etc.) — IdP handles MFA but doesn't expose amr;
+            // use auth_time from the token as the authentication timestamp
+            const providerNames = idTokenPayload.identities.map((id) => id.providerName || id.providerType).join(", ");
+            const mfaMetadata = {
+              type: "OTHER",
+              timestamp: new Date(authTime * 1000).toISOString(),
+              uniqueReference: crypto.randomUUID(),
+            };
+            sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
+            console.log("MFA inferred from federated login (" + providerNames + "), auth_time:", authTime, "Stored metadata:", mfaMetadata);
           } else {
             // No MFA detected - remove any existing metadata
             sessionStorage.removeItem("mfaMetadata");
-            console.log("No MFA detected in amr claims:", amrClaims);
+            console.log("No MFA detected. amr:", amrClaims, "federated:", isFederatedLogin, "auth_time:", authTime);
           }
 
           // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle

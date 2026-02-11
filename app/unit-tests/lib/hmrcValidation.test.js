@@ -16,7 +16,6 @@ import {
   isValidNetVatDueCalculation,
   maskIpAddress,
   maskDeviceId,
-  maskSensitiveHeaders,
   getHmrcErrorMessage,
   extractHmrcErrorCode,
 } from "@app/lib/hmrcValidation.js";
@@ -203,41 +202,6 @@ describe("hmrcValidation", () => {
       expect(maskDeviceId("")).toBe("unknown");
       expect(maskDeviceId(null)).toBe("unknown");
       expect(maskDeviceId(undefined)).toBe("unknown");
-    });
-  });
-
-  describe("maskSensitiveHeaders", () => {
-    test("masks IP addresses in headers", () => {
-      const headers = {
-        "Gov-Client-Public-IP": "192.168.1.100",
-        "Gov-Vendor-Public-IP": "10.0.0.1",
-        "Gov-Client-Device-ID": "device-12345678",
-      };
-
-      const masked = maskSensitiveHeaders(headers);
-
-      expect(masked["Gov-Client-Public-IP"]).toBe("192.168.1.xxx");
-      expect(masked["Gov-Vendor-Public-IP"]).toBe("10.0.0.xxx");
-      expect(masked["Gov-Client-Device-ID"]).toBe("device-1...");
-    });
-
-    test("preserves non-sensitive headers", () => {
-      const headers = {
-        "Gov-Client-Public-IP": "192.168.1.100",
-        "Gov-Client-Timezone": "UTC+00:00",
-        "Gov-Client-User-IDs": "cognito=test",
-      };
-
-      const masked = maskSensitiveHeaders(headers);
-
-      expect(masked["Gov-Client-Timezone"]).toBe("UTC+00:00");
-      expect(masked["Gov-Client-User-IDs"]).toBe("cognito=test");
-    });
-
-    test("handles missing headers", () => {
-      expect(maskSensitiveHeaders({})).toEqual({});
-      expect(maskSensitiveHeaders(null)).toEqual({});
-      expect(maskSensitiveHeaders(undefined)).toEqual({});
     });
   });
 
