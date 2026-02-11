@@ -132,6 +132,7 @@ public class BillingStack extends Stack {
                         .ingestLambdaArn(props.sharedNames().billingCheckoutPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().billingCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestReservedConcurrency(1)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().billingCheckoutPostLambdaHttpMethod)
@@ -173,6 +174,7 @@ public class BillingStack extends Stack {
                         .ingestLambdaArn(props.sharedNames().billingPortalGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().billingPortalGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestReservedConcurrency(1)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().billingPortalGetLambdaHttpMethod)
@@ -214,6 +216,7 @@ public class BillingStack extends Stack {
                         .ingestLambdaArn(props.sharedNames().billingRecoverPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().billingRecoverPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestReservedConcurrency(1)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().billingRecoverPostLambdaHttpMethod)
@@ -256,6 +259,7 @@ public class BillingStack extends Stack {
                         .ingestLambdaArn(props.sharedNames().billingWebhookPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().billingWebhookPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestReservedConcurrency(1)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().billingWebhookPostLambdaHttpMethod)
