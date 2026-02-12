@@ -47,6 +47,7 @@ on:
           - 'gatewayBehaviour'
           - 'spreadsheetsBehaviour'
           - 'generatePassActivityBehaviour'
+          - 'paymentBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:

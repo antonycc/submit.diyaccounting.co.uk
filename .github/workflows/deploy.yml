@@ -1746,6 +1746,29 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-payment:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - web-test
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'paymentBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test:
     if: ${{ !cancelled() }}
     name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
@@ -2056,6 +2079,7 @@ jobs:
       - web-test-bundle
       - web-test-pass-redemption
       - web-test-token-enforcement
+      - web-test-payment
       - web-test
       - web-test-post-vat-return-sandbox
       - web-test-get-vat-return-sandbox

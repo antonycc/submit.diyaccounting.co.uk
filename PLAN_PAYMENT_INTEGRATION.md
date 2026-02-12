@@ -1285,8 +1285,127 @@ All secrets are stored in **GitHub Actions Secrets/Variables only**. The `deploy
 
 ---
 
-**Next step**: Wire webhook secret through CDK BillingStack (env var `STRIPE_WEBHOOK_SECRET` from Secrets Manager). Push and deploy to CI. Verify webhook endpoint receives Stripe test events. Then proceed to Phase 5 (subscription lifecycle events).
+**Next step**: Phase 11 — Payment Funnel Behaviour Test (conversion funnel end-to-end).
 
 ---
 
-*Document refreshed: 2026-02-12. Phases 1-3 complete. Phase 4 code complete (billingWebhookPost with signature verification, checkout.session.completed→bundle grant, subscription record storage, 12 unit tests + system test). 827 tests passing. Stripe resources created in both test and live modes. Dual-key pattern (live + test) established mirroring HMRC sandbox pattern. All secrets stored in GitHub Actions Secrets/Variables (not directly in AWS). Original proposal date: 2026-02-01.*
+## Phase 11: Payment Funnel Behaviour Test
+
+**Goal**: A dedicated behaviour test that exercises the entire conversion funnel — the core business journey from free guest through token exhaustion to paid subscription and verified token usage.
+
+**Why this test matters**: This is the entire point of the business. A user gets a free day-guest pass, uses their 3 tokens, finds activities disabled, navigates to bundles to upgrade, subscribes to resident-pro via Stripe, then verifies they can use activities again and that the token usage page accurately reflects their transactions.
+
+### 11.1 Test Flow (verbatim user specification)
+
+The `paymentBehaviour` test:
+
+1. **Get day-guest via generated pass** — Create a day-guest pass via admin API, redeem it, verify bundle allocated with 3 tokens
+2. **Drain the 3 tokens** — Use tokens (1 via VAT submission if possible, remainder via direct DynamoDB `consumeToken` calls)
+3. **Verify activities are disabled** — Navigate to home page, verify activity buttons show "Insufficient tokens" and are disabled
+4. **Verify button redirects to bundles page** — The disabled activity button or upsell prompt links to `/bundles.html` for upgrade
+5. **Navigate to bundles page** — See the day-guest bundle with 0 tokens, see the resident-pro bundle available
+6. **Get resident-pro via generated pass** — Create a resident-pro pass via admin API, redeem it, verify resident-pro bundle allocated with 100 tokens
+7. **Use a token for a submission** — Navigate home, start a VAT submission, verify token consumed (99 remaining)
+8. **Check the token usage page** — Navigate to `/usage.html`, verify the token sources table shows resident-pro with correct token count, verify the token consumption table shows the actual transactions matching real usage
+
+### 11.2 Behaviour Test File
+
+- [ ] Create `behaviour-tests/payment.behaviour.test.js`
+  - Follow existing patterns from `tokenEnforcement.behaviour.test.js` and `passRedemption.behaviour.test.js`
+  - Use `test.step()` for each numbered step above
+  - 600s timeout (10 minutes — involves VAT submission + multiple API calls)
+  - Extract `userSub` for direct DynamoDB token exhaustion
+  - Use `ensureBundleViaPassApi()` from `behaviour-bundle-steps.js` for both day-guest and resident-pro
+  - Use `consumeToken()` from `dynamoDbBundleRepository.js` for fast token exhaustion
+  - Use `getTokensRemaining()` from `behaviour-bundle-steps.js` for token count verification
+  - Steps that require DynamoDB access (direct token exhaustion) skip gracefully when `BUNDLE_DYNAMODB_TABLE_NAME` is not set
+
+### 11.3 Playwright Configuration
+
+- [ ] Add `paymentBehaviour` project to `playwright.config.js`:
+  ```javascript
+  {
+    name: "paymentBehaviour",
+    testDir: "behaviour-tests",
+    testMatch: ["**/payment.behaviour.test.js"],
+    workers: 1,
+    outputDir: "./target/behaviour-test-results/",
+    timeout: 600_000,  // 10 minutes (involves HMRC submission + multiple steps)
+  }
+  ```
+
+### 11.4 npm Scripts
+
+- [ ] Add to `package.json`:
+  ```
+  "test:paymentBehaviour": "playwright test --project=paymentBehaviour",
+  "test:paymentBehaviour-simulator": "npx dotenv -e .env.simulator -- npm run test:paymentBehaviour",
+  "test:paymentBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:paymentBehaviour",
+  "test:paymentBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:paymentBehaviour",
+  "test:paymentBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:paymentBehaviour",
+  ```
+
+### 11.5 CI: Simulator Test in test.yml
+
+- [ ] Add `behaviour-test-simulator-payment` job to `.github/workflows/test.yml`:
+  - Same structure as `behaviour-test-simulator-token-enforcement`
+  - Runs `npm run test:paymentBehaviour-simulator`
+  - Uploads artefacts (screenshots, videos, test context)
+  - Runs in Playwright container
+
+### 11.6 CI: Synthetic Test in deploy.yml
+
+- [ ] Add `web-test-payment` job to `.github/workflows/deploy.yml`:
+  - Same structure as `web-test-token-enforcement`
+  - Uses `./.github/workflows/synthetic-test.yml` with `behaviour-test-suite: 'paymentBehaviour'`
+  - Depends on: `enable-native-auth`, `web-test`, stack deployments
+  - Add to `disable-native-auth` needs list
+
+### 11.7 Synthetic Test Options
+
+- [ ] Add `'paymentBehaviour'` to the `behaviour-test-suite` choice list in `.github/workflows/synthetic-test.yml`
+- [ ] Add `paymentBehaviour` to `allBehaviour` testMatch in `playwright.config.js`
+
+### 11.8 Feature Uplift Assessment
+
+Before this test can pass, the following features must work:
+
+| Feature | Current State | Required State | Gap |
+|---------|--------------|----------------|-----|
+| Day-guest pass creation | Working (admin API) | Working | None |
+| Day-guest bundle allocation | Working (on-pass via pass API) | Working | None |
+| Day-guest tokens (3) | Working | Working | None |
+| Token exhaustion via DynamoDB | Working (consumeToken) | Working | None |
+| Activity disabled when tokens=0 | Working ("Insufficient tokens") | Working | None |
+| Upsell link to bundles page | Partially — `display: "always-with-upsell"` exists in catalogue | Must show "View Bundles" link when tokens exhausted | **Small gap**: verify upsell link renders correctly |
+| Resident-pro pass creation | Working (admin API) | Working | None |
+| Resident-pro bundle allocation | Working (on-pass via pass API) | Working | None |
+| Resident-pro tokens (100) | Working | Working | None |
+| VAT submission consumes token | Working | Working | None |
+| Token usage page (`/usage.html`) | Working (Phase 1) | Working | None |
+| Token consumption events on usage page | Working (Phase 1) | Working | None |
+
+**Verdict**: The app is **already capable of passing this test** in simulator mode. The pass-based allocation path works for both day-guest and resident-pro. The only potential gap is verifying the "View Bundles" upsell link renders when tokens are exhausted — this is a minor UI check that existing tests already partially cover (tokenEnforcement test step 7 verifies the disabled button).
+
+The Stripe checkout path (Phase 7: bundles.html "Subscribe" button → Stripe Checkout → webhook → bundle grant) is a separate flow that requires the bundles.html frontend integration. This Phase 11 test uses the **pass-based** allocation path which is already fully functional, exercising the same conversion funnel journey.
+
+### 11.9 Future: `on-subscription-with-pass` allocation mode
+
+Currently `resident-pro` uses `allocation = "on-pass"`. For production launch, we need `allocation = "on-subscription-with-pass"` — a new allocation mode where the bundle is:
+- **Visible** on the bundles page (not hidden)
+- **Grantable via pass** (for testing, comps, beta testers)
+- **Grantable via Stripe subscription** (for paying customers via webhook)
+
+This lets resident-pro be live on the site while gating access via either passes (admin-controlled) or subscriptions (self-serve payment). The catalogue change is:
+```toml
+allocation = "on-subscription-with-pass"  # accepts both pass and subscription grants
+```
+Implementation: extend `bundlePost.js` allocation logic to accept both pass-based and subscription-based grants for bundles with this allocation type.
+
+### Validation
+
+`npm run test:paymentBehaviour-simulator` passes locally. Simulator test runs in CI via `test.yml`. Synthetic test runs against deployed CI via `deploy.yml`. All 8 steps of the conversion funnel verified: pass → tokens → exhaustion → disabled → upgrade → new bundle → submission → usage page.
+
+---
+
+*Document refreshed: 2026-02-12. Phases 1-4 complete (webhook handler deployed). Phase 11 added (Payment Funnel Behaviour Test). 827 tests passing. Original proposal date: 2026-02-01.*
