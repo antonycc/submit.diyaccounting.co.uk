@@ -1084,7 +1084,7 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 | `app/functions/billing/billingCheckoutPost.js` | Done | Real implementation (Phase 3 work pulled forward) |
 | `app/functions/billing/billingPortalGet.js` | Done | Placeholder (501 Not Implemented) |
 | `app/functions/billing/billingRecoverPost.js` | Done | Placeholder (501 Not Implemented) |
-| `app/functions/billing/billingWebhookPost.js` | Done | Placeholder (501 Not Implemented) |
+| `app/functions/billing/billingWebhookPost.js` | Done | Real implementation: signature verify, event routing, checkout→bundle grant |
 | `app/data/dynamoDbSubscriptionRepository.js` | Done | CRUD for subscriptions table |
 | CDK: `DataStack.java` — subscriptions table | Done | `{env}-submit-subscriptions`, PITR enabled |
 | CDK: `BillingStack.java` | Done | 4 ApiLambda constructs, `ingestReservedConcurrency(1)` |
@@ -1112,7 +1112,16 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 | **Phase 3: Next steps** | **Pending** | See below |
 | Phase 3.4 — Behaviour test: skeletal checkout flow | Not started | `billingCheckout.behaviour.test.js` |
 | Commit, push, deploy to CI | Not started | Feature branch `eventandpayment` |
-| **Phases 4-10** | **Not started** | |
+| **Phase 4: Webhook Handler & Bundle Grant** | **CODE COMPLETE** | All Lambda code and tests done — 2026-02-12 |
+| `app/functions/billing/billingWebhookPost.js` | Done | Signature verification, event routing, handleCheckoutComplete with bundle grant |
+| `app/data/dynamoDbBundleRepository.js` — `putBundleByHashedSub` | Done | Store bundle using hashedSub directly (webhook metadata) |
+| `app/unit-tests/functions/billingWebhookPost.test.js` | Done | 12 tests: signature validation, checkout→bundle, fallbacks, error handling, lifecycle stubs |
+| `app/system-tests/billingInfrastructure.system.test.js` | Done | Updated: webhook returns 400 without signature |
+| All unit tests pass (827 tests) | Done | |
+| **Phase 4: Next steps** | **Pending** | |
+| Phase 4.5 — System tests against simulator + dynalite | Not started | `billingWebhook.system.test.js` |
+| Phase 4.6 — Behaviour test: checkout-to-bundle flow | Not started | Extend `billingCheckout.behaviour.test.js` |
+| **Phases 5-10** | **Not started** | |
 
 ---
 
@@ -1276,8 +1285,8 @@ All secrets are stored in **GitHub Actions Secrets/Variables only**. The `deploy
 
 ---
 
-**Next step**: Complete Phase 3 remaining items (system tests against Stripe simulator, behaviour test skeleton, wire price IDs + secret ARNs through CDK/deploy workflow). Then deploy to CI and verify checkout flow end-to-end.
+**Next step**: Wire webhook secret through CDK BillingStack (env var `STRIPE_WEBHOOK_SECRET` from Secrets Manager). Push and deploy to CI. Verify webhook endpoint receives Stripe test events. Then proceed to Phase 5 (subscription lifecycle events).
 
 ---
 
-*Document refreshed: 2026-02-12. Phases 1-2 complete. Phase 3 partially complete (billingCheckoutPost Lambda implemented with real Stripe Checkout Session creation, unit tests passing). Stripe resources created in both test and live modes. Dual-key pattern (live + test) established mirroring HMRC sandbox pattern. All secrets stored in GitHub Actions Secrets/Variables (not directly in AWS). Original proposal date: 2026-02-01.*
+*Document refreshed: 2026-02-12. Phases 1-3 complete. Phase 4 code complete (billingWebhookPost with signature verification, checkout.session.completed→bundle grant, subscription record storage, 12 unit tests + system test). 827 tests passing. Stripe resources created in both test and live modes. Dual-key pattern (live + test) established mirroring HMRC sandbox pattern. All secrets stored in GitHub Actions Secrets/Variables (not directly in AWS). Original proposal date: 2026-02-01.*

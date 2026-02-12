@@ -96,6 +96,11 @@ public class BillingStack extends Stack {
             return "";
         }
 
+        @Value.Default
+        default String stripeWebhookSecretArn() {
+            return "";
+        }
+
         static ImmutableBillingStackProps.Builder builder() {
             return ImmutableBillingStackProps.builder();
         }
@@ -289,6 +294,12 @@ public class BillingStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            billingWebhookPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.stripeWebhookSecretArn() != null && !props.stripeWebhookSecretArn().isBlank()) {
+            billingWebhookPostLambdaEnv.with("STRIPE_WEBHOOK_SECRET_ARN", props.stripeWebhookSecretArn());
+        }
         var billingWebhookPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -321,6 +332,26 @@ public class BillingStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+        }
+        if (props.stripeWebhookSecretArn() != null && !props.stripeWebhookSecretArn().isBlank()) {
+            var webhookSecretArnWithWildcard = props.stripeWebhookSecretArn().endsWith("*")
+                    ? props.stripeWebhookSecretArn()
+                    : props.stripeWebhookSecretArn() + "-*";
+            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(webhookSecretArnWithWildcard))
+                    .build());
+        }
         infof("Created Billing Webhook POST Lambda %s", this.billingWebhookPostLambda.getNode().getId());
 
         cfnOutput(this, "BillingCheckoutPostLambdaArn", this.billingCheckoutPostLambda.getFunctionArn());

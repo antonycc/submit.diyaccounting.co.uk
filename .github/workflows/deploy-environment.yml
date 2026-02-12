@@ -207,6 +207,17 @@ jobs:
             aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_TEST_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
           fi
 
+      - name: Create secret in AWS from secrets.STRIPE_WEBHOOK_SECRET
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/webhook_secret"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_WEBHOOK_SECRET }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_WEBHOOK_SECRET }}" --region ${{ env.AWS_REGION }}
+          fi
+
       - name: Create secret in AWS from secrets.TELEGRAM_BOT_TOKEN
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/telegram/bot_token"

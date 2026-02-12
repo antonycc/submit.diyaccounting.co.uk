@@ -42,6 +42,18 @@ describe("System: Billing Infrastructure", () => {
     expect(result.statusCode).toBe(401);
   });
 
+  test("billingWebhookPost returns 400 without stripe-signature", async () => {
+    const { ingestHandler } = await import("../functions/billing/billingWebhookPost.js");
+    const result = await ingestHandler({
+      body: "{}",
+      headers: { host: "test", "content-type": "application/json" },
+      requestContext: { http: { method: "POST", path: "/api/v1/billing/webhook" } },
+    });
+    expect(result.statusCode).toBe(400);
+    const body = JSON.parse(result.body);
+    expect(body.error).toContain("stripe-signature");
+  });
+
   test("Stripe simulator starts and responds", async () => {
     simulatorServer = await startStripeSimulator(0); // random port
     const port = simulatorServer.address().port;

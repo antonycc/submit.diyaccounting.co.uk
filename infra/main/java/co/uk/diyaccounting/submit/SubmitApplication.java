@@ -71,6 +71,7 @@ public class SubmitApplication {
         public String stripeSecretKeyArn;
         public String stripePriceId;
         public String stripeTestPriceId;
+        public String stripeWebhookSecretArn;
         public String telegramBotTokenArn;
         public String telegramChatIds;
 
@@ -165,6 +166,10 @@ public class SubmitApplication {
         var stripePriceId = envOr("STRIPE_PRICE_ID", appProps.stripePriceId, "(from stripePriceId in cdk.json)");
         var stripeTestPriceId =
                 envOr("STRIPE_TEST_PRICE_ID", appProps.stripeTestPriceId, "(from stripeTestPriceId in cdk.json)");
+        var stripeWebhookSecretArn = envOr(
+                "STRIPE_WEBHOOK_SECRET_ARN",
+                appProps.stripeWebhookSecretArn,
+                "(from stripeWebhookSecretArn in cdk.json)");
         var telegramBotTokenArn = envOr(
                 "TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
         var telegramChatIds =
@@ -298,6 +303,7 @@ public class SubmitApplication {
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
                         .stripePriceId(stripePriceId != null ? stripePriceId : "")
                         .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
+                        .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")
                         .baseUrl(sharedNames.baseUrl)
                         .build());
         // this.billingStack.addDependency(devStack);
