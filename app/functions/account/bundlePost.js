@@ -314,8 +314,8 @@ export async function workerHandler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export async function grantBundle(userId, requestBody, decodedToken, requestId = null) {
-  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId });
+export async function grantBundle(userId, requestBody, decodedToken, requestId = null, { skipCapCheck = false } = {}) {
+  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck });
 
   const requestedBundle = requestBody.bundleId;
   const qualifiers = requestBody.qualifiers || {};
@@ -390,7 +390,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   // Existing bundles are deleted and re-granted above, so this fires for every allocation.
   const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
   let capIncremented = false;
-  if (typeof cap === "number" && process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME) {
+  if (typeof cap === "number" && !skipCapCheck && process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME) {
     const { incrementCounter } = await import("../../data/dynamoDbCapacityRepository.js");
     const granted = await incrementCounter(requestedBundle, cap);
     if (!granted) {
