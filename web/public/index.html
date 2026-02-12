@@ -86,9 +86,9 @@
           font-size: 0.95em;
         "
         role="complementary"
-        aria-label="Waitlist registration"
+        aria-label="Early access registration"
       >
-        <span>We're getting ready to launch. Join the waitlist and we'll send you an invitation.</span>
+        <span>We're getting ready to launch. Register for early access and we'll send you an invitation.</span>
         <button
           type="button"
           id="waitlistJoinBtn"
@@ -103,7 +103,7 @@
             vertical-align: middle;
           "
         >
-          Join the waitlist
+          Register for Early Access
         </button>
         <button
           type="button"
@@ -118,7 +118,7 @@
             vertical-align: middle;
             padding: 0 0.3em;
           "
-          aria-label="Dismiss waitlist banner"
+          aria-label="Dismiss early access banner"
         >
           &#x2715;
         </button>
@@ -559,7 +559,7 @@
             try {
               var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
               if (response.ok) {
-                joinBtn.textContent = "You're on the list";
+                joinBtn.textContent = "You're registered!";
                 joinBtn.style.backgroundColor = "#0a8927";
                 localStorage.setItem("waitlistRegistered", "true");
               } else {

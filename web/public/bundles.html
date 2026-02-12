@@ -88,12 +88,12 @@
         </div>
 
         <div id="waitlistSection" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Join the waitlist</h3>
+          <h3>Register for Early Access</h3>
           <p style="color: #666; font-size: 0.9em">
-            We're getting ready to launch. Register your interest and we'll send you an invitation.
+            We're getting ready to launch. Register for early access and we'll send you an invitation.
           </p>
           <div style="margin: 1em auto; text-align: center">
-            <button type="button" id="waitlistJoinBtn" class="btn" style="min-width: 180px">Join the waitlist</button>
+            <button type="button" id="waitlistJoinBtn" class="btn" style="min-width: 180px">Register for Early Access</button>
           </div>
         </div>
 
@@ -879,7 +879,7 @@
         if (joinBtn) {
           // If already registered, update button state
           if (alreadyRegistered) {
-            joinBtn.textContent = "You're on the list";
+            joinBtn.textContent = "You're registered!";
             joinBtn.style.backgroundColor = "#0a8927";
             joinBtn.disabled = true;
             return;
@@ -891,7 +891,7 @@
             try {
               var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
               if (response.ok) {
-                joinBtn.textContent = "You're on the list";
+                joinBtn.textContent = "You're registered!";
                 joinBtn.style.backgroundColor = "#0a8927";
                 try {
                   localStorage.setItem("waitlistRegistered", "true");

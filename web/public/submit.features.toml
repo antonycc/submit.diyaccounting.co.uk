@@ -18,6 +18,6 @@ version = "1.0.0"
 
 [[features]]
 id = "waitlist"
-name = "Join the Waitlist"
+name = "Register for Early Access"
 enabled = true
-description = "Show waitlist registration banner for authenticated users"
+description = "Show early access registration banner for authenticated users"

@@ -141,6 +141,8 @@
     "test:simulatorBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:simulatorBehaviour",
     "test:simulatorBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:simulatorBehaviour",
     "test:simulatorBehaviour-simulator": "npx dotenv -e .env.simulator -- npm run test:simulatorBehaviour",
+    "test:captureDemo": "playwright test --project=captureDemo",
+    "test:captureDemo-simulator": "npx dotenv -e .env.simulator -- npm run test:captureDemo",
     "test:gatewayBehaviour": "playwright test --project=gatewayBehaviour",
     "test:gatewayBehaviour-ci": "GATEWAY_BASE_URL=https://ci-gateway.diyaccounting.co.uk npx dotenv -e .env.ci -- npm run test:gatewayBehaviour",
     "test:gatewayBehaviour-prod": "GATEWAY_BASE_URL=https://prod-gateway.diyaccounting.co.uk npx dotenv -e .env.prod -- npm run test:gatewayBehaviour",

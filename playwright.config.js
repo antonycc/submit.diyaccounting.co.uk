@@ -144,6 +144,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "captureDemo",
+      testDir: "behaviour-tests",
+      testMatch: ["**/captureDemo.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/demo-videos/",
+      timeout: 300_000,
+    },
+    {
       name: "gatewayBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/gateway.behaviour.test.js"],
