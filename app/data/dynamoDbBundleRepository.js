@@ -33,13 +33,15 @@ export async function putBundle(userId, bundle) {
     };
 
     // Add expiry with millisecond precision timestamp (ISO format)
-    const expiryDate = new Date(bundle.expiry);
-    item.expiry = expiryDate.toISOString();
+    if (bundle.expiry) {
+      const expiryDate = new Date(bundle.expiry);
+      item.expiry = expiryDate.toISOString();
 
-    // Calculate TTL as 1 month after expiry
-    const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
-    item.ttl = ttl;
-    item.ttl_datestamp = ttl_datestamp;
+      // Calculate TTL as 1 month after expiry
+      const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
+      item.ttl = ttl;
+      item.ttl_datestamp = ttl_datestamp;
+    }
 
     logger.info({
       message: "Storing bundle in DynamoDB as item",

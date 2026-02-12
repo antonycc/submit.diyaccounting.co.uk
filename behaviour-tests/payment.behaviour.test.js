@@ -40,7 +40,7 @@ import {
   goToBundlesPage,
   verifyBundleApiResponse,
 } from "./steps/behaviour-bundle-steps.js";
-import { fillInVat, initSubmitVat, submitFormVat } from "./steps/behaviour-hmrc-vat-steps.js";
+import { fillInVat } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -288,7 +288,8 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-home-exhausted.png` });
 
     // The Submit VAT button should be disabled with "Insufficient tokens"
-    const activityButtonText = isSandboxMode() ? "Submit VAT (HMRC Sandbox)" : "Submit VAT (HMRC)";
+    // day-guest bundle maps to "Submit VAT (HMRC)" activity, not the sandbox variant
+    const activityButtonText = "Submit VAT (HMRC)";
     const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
     await expect(submitButton).toBeVisible({ timeout: 10_000 });
     await expect(submitButton).toBeDisabled({ timeout: 10_000 });
@@ -363,7 +364,13 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("=".repeat(60));
 
     await goToHomePageUsingMainNav(page, screenshotPath);
-    await initSubmitVat(page, screenshotPath);
+    // Navigate directly to the Submit VAT form — resident-pro maps to the HMRC (live) activity,
+    // not the sandbox activity, so initSubmitVat (which uses isSandboxMode()) would look for the wrong button.
+    const submitVatButton = page.locator(`button:has-text('Submit VAT (HMRC)')`);
+    await expect(submitVatButton).toBeVisible({ timeout: 10_000 });
+    await submitVatButton.click();
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("#vatSubmissionForm")).toBeVisible();
     await fillInVat(
       page,
       hmrcVatNumber,
@@ -433,8 +440,9 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("STEP 9: Verify token usage page");
     console.log("=".repeat(60));
 
-    // Navigate to usage page
-    await page.goto(`${testUrl}usage.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    // Navigate to usage page (use current page origin to avoid 127.0.0.1 vs localhost mismatch)
+    const currentOrigin = new URL(page.url()).origin;
+    await page.goto(`${currentOrigin}/usage.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-usage-page.png` });
