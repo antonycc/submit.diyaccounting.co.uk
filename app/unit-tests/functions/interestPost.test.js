@@ -5,7 +5,7 @@
 
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { buildLambdaEvent, buildHeadEvent } from "@app/test-helpers/eventBuilders.js";
+import { buildLambdaEvent, buildHeadEvent, buildJwtAuthorizerContext } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 
 const mockSnsSend = vi.fn();
@@ -60,7 +60,21 @@ describe("interestPost ingestHandler", () => {
     expect(publishCommand.input.Message).toContain("Timestamp:");
   });
 
-  test("returns 400 when email is missing from authorizer context", async () => {
+  test("returns 200 with JWT authorizer context (HTTP API)", async () => {
+    const event = buildLambdaEvent({
+      method: "POST",
+      authorizer: buildJwtAuthorizerContext("jwt-sub", "jwt-user", "jwt@example.com"),
+    });
+    const response = await ingestHandler(event);
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.registered).toBe(true);
+
+    const publishCommand = mockSnsSend.mock.calls[0][0];
+    expect(publishCommand.input.Message).toContain("Email: jwt@example.com");
+  });
+
+  test("returns 400 when email is missing from custom authorizer context", async () => {
     const event = buildLambdaEvent({
       method: "POST",
       authorizer: {
@@ -69,6 +83,27 @@ describe("interestPost ingestHandler", () => {
             "sub": "test-sub",
             "cognito:username": "test",
             "scope": "read write",
+          },
+        },
+      },
+    });
+    const response = await ingestHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("Email not found");
+  });
+
+  test("returns 400 when email is missing from JWT authorizer context", async () => {
+    const event = buildLambdaEvent({
+      method: "POST",
+      authorizer: {
+        authorizer: {
+          jwt: {
+            claims: {
+              "sub": "test-sub",
+              "cognito:username": "test",
+            },
+            scopes: [],
           },
         },
       },

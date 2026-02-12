@@ -50,6 +50,25 @@ export function buildAuthorizerContext(sub = "test-sub", username = "test", emai
 }
 
 /**
+ * Build authorizer context matching HTTP API JWT authorizer structure
+ * (claims at event.requestContext.authorizer.jwt.claims)
+ */
+export function buildJwtAuthorizerContext(sub = "test-sub", username = "test", email = "test@test.submit.diyaccounting.co.uk") {
+  return {
+    authorizer: {
+      jwt: {
+        claims: {
+          "sub": sub,
+          "cognito:username": username,
+          "email": email,
+        },
+        scopes: [],
+      },
+    },
+  };
+}
+
+/**
  * Build a standard Lambda event with common properties
  */
 export function buildLambdaEvent({
