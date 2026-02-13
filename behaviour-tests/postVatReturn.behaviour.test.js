@@ -26,7 +26,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import { ensureBundlePresent, ensureBundleViaPassApi, getTokensRemaining, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
@@ -135,7 +135,23 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
+/**
+ * Re-grant the day-guest bundle via pass API if tokens are running low.
+ * Each grant provides tokensGranted=3 fresh tokens; the server replaces the existing bundle.
+ */
+async function refreshBundleIfTokensLow(page, minTokens = 1) {
+  const bundleId = "day-guest";
+  const remaining = await getTokensRemaining(page, bundleId);
+  if (remaining !== null && remaining > minTokens) return;
+  console.log(`[token-refresh] Tokens remaining=${remaining} (min=${minTokens}), re-granting ${bundleId} via pass API...`);
+  await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass: true });
+  const after = await getTokensRemaining(page, bundleId);
+  console.log(`[token-refresh] Tokens after re-grant: ${after}`);
+}
+
 async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation }) {
+  // Ensure sufficient tokens before each submission (day-guest has tokensGranted=3)
+  await refreshBundleIfTokensLow(page);
   await initSubmitVat(page, screenshotPath);
   await fillInVat(page, vatNumber, undefined, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
   // Click submit. The HMRC access token may or may not be cached:
