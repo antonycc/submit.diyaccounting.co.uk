@@ -133,6 +133,31 @@ describe("passService", () => {
       expect(pass.maxUses).toBe(10);
     });
 
+    it("should set testPass when true", () => {
+      const pass = buildPassRecord({
+        passTypeId: "test-access",
+        bundleId: "day-guest",
+        testPass: true,
+        validityPeriod: "P30D",
+        maxUses: 10,
+        createdBy: "admin",
+      });
+
+      expect(pass.testPass).toBe(true);
+      expect(pass.bundleId).toBe("day-guest");
+    });
+
+    it("should omit testPass when false or undefined", () => {
+      const pass = buildPassRecord({
+        passTypeId: "test-access",
+        bundleId: "day-guest",
+        validityPeriod: "P7D",
+        createdBy: "admin",
+      });
+
+      expect(pass.testPass).toBeUndefined();
+    });
+
     it("should set issuedBy for user-issued passes", () => {
       const pass = buildPassRecord({
         passTypeId: "campaign",

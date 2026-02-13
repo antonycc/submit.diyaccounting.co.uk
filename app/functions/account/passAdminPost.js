@@ -59,14 +59,15 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { passTypeId, bundleId, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
+  const { passTypeId, bundleId, testPass, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
 
-  logger.info({ message: "Creating admin pass", passTypeId, bundleId });
+  logger.info({ message: "Creating admin pass", passTypeId, bundleId, testPass: !!testPass });
 
   try {
     const pass = await createPass({
       passTypeId,
       bundleId,
+      testPass,
       validFrom,
       validUntil,
       validityPeriod,
@@ -90,6 +91,7 @@ export async function ingestHandler(event) {
         code: pass.code,
         bundleId: pass.bundleId,
         passTypeId: pass.passTypeId,
+        testPass: pass.testPass || false,
         validFrom: pass.validFrom,
         validUntil: pass.validUntil,
         maxUses: pass.maxUses,

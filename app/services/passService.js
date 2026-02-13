@@ -55,6 +55,7 @@ export function addDuration(date, duration) {
 export function buildPassRecord({
   passTypeId,
   bundleId,
+  testPass,
   validFrom,
   validUntil,
   validityPeriod,
@@ -113,6 +114,7 @@ export function buildPassRecord({
     record.restrictedToEmailHash = restrictedToEmailHash;
     record.emailHashSecretVersion = emailHashSecretVersion;
   }
+  if (testPass) record.testPass = true;
   if (createdBy) record.createdBy = createdBy;
   if (issuedBy) record.issuedBy = issuedBy;
   if (notes) record.notes = notes;

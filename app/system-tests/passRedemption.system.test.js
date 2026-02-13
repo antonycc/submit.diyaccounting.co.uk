@@ -274,6 +274,52 @@ describe("System: pass creation and redemption", () => {
     });
   });
 
+  describe("test pass with sandbox qualifier", () => {
+    let testPassCode;
+
+    it("should create a test pass with testPass: true", async () => {
+      const event = buildAdminPostEvent({
+        passTypeId: "test-access",
+        bundleId: "day-guest",
+        testPass: true,
+        validityPeriod: "P30D",
+        maxUses: 10,
+        createdBy: "system-test",
+      });
+
+      const res = await passAdminPostHandler(event);
+      const body = JSON.parse(res.body);
+
+      expect(res.statusCode).toBe(200);
+      expect(body.testPass).toBe(true);
+      expect(body.bundleId).toBe("day-guest");
+      testPassCode = body.code;
+    });
+
+    it("should redeem test pass and store sandbox qualifier on bundle", async () => {
+      const token = makeJWT("test-pass-user-1");
+      const event = buildRedeemEvent(token, testPassCode);
+      const res = await passPostHandler(event);
+      const body = JSON.parse(res.body);
+
+      expect(res.statusCode).toBe(200);
+      expect(body.redeemed).toBe(true);
+      expect(body.bundleId).toBe("day-guest");
+    });
+
+    it("should show sandbox qualifier on bundle via GET", async () => {
+      const token = makeJWT("test-pass-user-1");
+      const event = buildBundleGetEvent(token);
+      const res = await bundleGetHandler(event);
+      const body = JSON.parse(res.body);
+
+      expect(res.statusCode).toBe(200);
+      const dayGuest = body.bundles.find((b) => b.bundleId === "day-guest" && b.allocated);
+      expect(dayGuest).toBeTruthy();
+      expect(dayGuest.qualifiers).toEqual({ sandbox: true });
+    });
+  });
+
   describe("expired pass", () => {
     let expiredPassCode;
 

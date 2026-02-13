@@ -314,8 +314,8 @@ export async function workerHandler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export async function grantBundle(userId, requestBody, decodedToken, requestId = null, { skipCapCheck = false } = {}) {
-  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck });
+export async function grantBundle(userId, requestBody, decodedToken, requestId = null, { skipCapCheck = false, grantQualifiers } = {}) {
+  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck, grantQualifiers });
 
   const requestedBundle = requestBody.bundleId;
   const qualifiers = requestBody.qualifiers || {};
@@ -414,6 +414,9 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
   const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
+  if (grantQualifiers && Object.keys(grantQualifiers).length > 0) {
+    newBundle.qualifiers = grantQualifiers;
+  }
 
   // Token tracking: set token fields from catalogue
   const tokensGranted = catalogBundle.tokensGranted ?? undefined;

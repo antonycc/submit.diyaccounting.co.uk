@@ -313,20 +313,17 @@ In prod, `HMRC_CLIENT_SECRET_ARN` points to the real live secret. Only test-pass
 
 ## Implementation Phases
 
-### Phase A: Telegram Config Update
+### Phase A: Telegram Config Update — **COMPLETE** (commit `00f4f3b8`)
 
-**Prerequisite**: Create Telegram ops channels (`diy-ci-ops`, `diy-prod-ops`).
+**Prerequisite**: Create Telegram ops channels (`diy-ci-ops`, `diy-prod-ops`). **DONE**
 
-1. Update `activityTelegramForwarder.js`:
-   - Read `TELEGRAM_TEST_CHAT_ID`, `TELEGRAM_LIVE_CHAT_ID`, `TELEGRAM_OPS_CHAT_ID` env vars
-   - Update `resolveTargetChatIds()` routing logic (ops channel for infra/operational)
-   - Graceful no-op when vars are empty
-2. Update `activityTelegramForwarder.test.js` unit tests
-3. Update CDK `OpsStack.java` — pass three env vars to Lambda
-4. Update CDK `OpsStackProps` — new props for three chat IDs
-5. Update CDK `SubmitApplication.java` — wire new props
-6. Remove `TELEGRAM_CHAT_IDS` from `.env.*` files (keep new individual vars)
-7. Remove `TELEGRAM_CHAT_IDS` GitHub Actions Variable
+1. ~~Update `activityTelegramForwarder.js`~~ — `resolveChatConfig()` reads 3 env vars, `resolveTargetChatIds()` routes by `(actor, flow)`, `[[TELEGRAM_*_CHAT]]` logging when empty
+2. ~~Update `activityTelegramForwarder.test.js` unit tests~~ — full rewrite for new routing
+3. ~~Update CDK `OpsStack.java`~~ — 3 individual props + env vars
+4. ~~Update CDK `OpsStackProps`~~ — `telegramTestChatId()`, `telegramLiveChatId()`, `telegramOpsChatId()`
+5. ~~Update CDK `SubmitApplication.java`~~ — wire new props via `envOr()`
+6. ~~Remove `TELEGRAM_CHAT_IDS` from `.env.*` files~~ — all 7 env files cleaned
+7. Remove `TELEGRAM_CHAT_IDS` GitHub Actions Variable — **deferred** (no longer read by code, can be removed manually)
 
 ### Phase B: Pass Test Type + Bundle Qualifier
 
