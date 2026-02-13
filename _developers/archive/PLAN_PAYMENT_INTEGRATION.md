@@ -1095,7 +1095,7 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 | System tests | Done | `billingInfrastructure.system.test.js` |
 | Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
 | All unit tests pass (767 tests) | Done | |
-| **Phase 3: Checkout Session API** | **CODE COMPLETE** | All CDK wiring, Lambda code, and tests done — awaiting deployment |
+| **Phase 3: Checkout Session API** | **DEPLOYED** | All CDK wiring, Lambda code, and tests done — deployed to CI 2026-02-13 |
 | `app/functions/billing/billingCheckoutPost.js` | Done | Real implementation: JWT decode, hashSub, Stripe Checkout Session create, activity event |
 | `app/unit-tests/functions/billingCheckoutPost.test.js` | Done | 200 success, correct Stripe params (metadata, hashedSub, line_items, URLs), 401/500 errors, price ID fallback |
 | `app/system-tests/billingInfrastructure.system.test.js` | Done | Updated: expects 401 (auth required) instead of 501 (placeholder) |
@@ -1109,15 +1109,28 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 | `deploy-environment.yml` — Stripe secrets | Done | Creates `{env}/submit/stripe/secret_key` + `{env}/submit/stripe/test_secret_key` from GitHub Secrets |
 | All unit tests pass (812 tests) | Done | |
 | Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
-| **Phase 3: Next steps** | **Pending** | See below |
-| Phase 3.4 — Behaviour test: skeletal checkout flow | Not started | `billingCheckout.behaviour.test.js` |
-| Commit, push, deploy to CI | Not started | Feature branch `eventandpayment` |
-| **Phase 4: Webhook Handler & Bundle Grant** | **CODE COMPLETE** | All Lambda code and tests done — 2026-02-12 |
+| **Phase 3: Checkout Session API** | **DEPLOYED** | Deployed to CI and validated — 2026-02-13 |
+| Phase 3.4 — Behaviour test: skeletal checkout flow | Done | `paymentBehaviour` covers checkout button, Stripe redirect, success/cancel |
+| Commit, push, deploy to CI | Done | Feature branch `eventandpayment` |
+| **Phase 4: Webhook Handler & Bundle Grant** | **DEPLOYED** | Deployed to CI and validated — 2026-02-13 |
 | `app/functions/billing/billingWebhookPost.js` | Done | Signature verification, event routing, handleCheckoutComplete with bundle grant |
 | `app/data/dynamoDbBundleRepository.js` — `putBundleByHashedSub` | Done | Store bundle using hashedSub directly (webhook metadata) |
 | `app/unit-tests/functions/billingWebhookPost.test.js` | Done | 12 tests: signature validation, checkout→bundle, fallbacks, error handling, lifecycle stubs |
 | `app/system-tests/billingInfrastructure.system.test.js` | Done | Updated: webhook returns 400 without signature |
-| All unit tests pass (827 tests) | Done | |
+| All unit tests pass (831 tests) | Done | |
+| **Phase 11: Payment Funnel Behaviour Test** | **DEPLOYED** | Behaviour test for full checkout flow — 2026-02-12 |
+| `behaviour-tests/payment.behaviour.test.js` | Done | Tests checkout button, Stripe redirect, success/cancel flows |
+| **Test Cleanup: Phases A-E** | **DEPLOYED** | Remove test bundle, use Day Guest with testPass — 2026-02-13 |
+| Phase A — Telegram env var refactor | Done | `00f4f3b8` — Replace TELEGRAM_CHAT_IDS JSON blob with individual channel env vars |
+| Phase B — testPass field on passes | Done | `c8e2217f` — Add testPass field to passes and sandbox qualifier on bundle grant |
+| Phase C+D — Remove test bundle | Done | `83790b1c` — Remove test bundle, sandbox activities, add frontend sandbox routing |
+| Phase E — Update all behaviour tests | Done | `280ac4cb` — All 11 behaviour tests use Day Guest with testPass |
+| **Bug fixes during deployment validation** | **DEPLOYED** | CI-validated — 2026-02-13 |
+| `web/public/bundles.html` — capacity bypass | Done | `714fca89` — Bypass capacity check when valid pass exists (`!capacityAvailable && !passCode`) |
+| `behaviour-tests/postVatReturn.behaviour.test.js` — token refresh | Done | `96cc401a` — Re-grant bundle via pass when tokens run low (prevents 16-min hang) |
+| **CI Validation** | **PASSED** | All simulator tests + CI synthetic tests green — 2026-02-13 |
+| Test workflow `21972360703` (simulator) | Done | All tests pass including postVatReturn, passRedemption, tokenEnforcement |
+| Deploy workflow `21972063355` (CI deployment) | Done | All stacks deployed, all CI synthetic tests pass |
 | **Phase 4: Next steps** | **Pending** | |
 | Phase 4.5 — System tests against simulator + dynalite | Not started | `billingWebhook.system.test.js` |
 | Phase 4.6 — Behaviour test: checkout-to-bundle flow | Not started | Extend `billingCheckout.behaviour.test.js` |
