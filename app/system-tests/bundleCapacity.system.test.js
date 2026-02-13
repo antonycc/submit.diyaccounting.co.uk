@@ -103,7 +103,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
   describe("per-user uniqueness (hard-wired rule)", () => {
     it("should grant a bundle to a new user", async () => {
       const token = makeJWT("cap-unique-user-1");
-      const event = buildPostEvent(token, { bundleId: "test", qualifiers: {} });
+      const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
       const res = await bundlePostHandler(event);
       const body = JSON.parse(res.body);
       expect(res.statusCode).toBe(201);
@@ -112,7 +112,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
 
     it("should re-grant when same user requests same bundle again", async () => {
       const token = makeJWT("cap-unique-user-2");
-      const event = buildPostEvent(token, { bundleId: "test", qualifiers: {} });
+      const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
 
       // First request - granted
       const res1 = await bundlePostHandler(event);
@@ -129,18 +129,18 @@ describe("System: bundle capacity and per-user uniqueness", () => {
     it("should allow same user to have different bundle types", async () => {
       const token = makeJWT("cap-unique-user-3");
 
-      const res1 = await bundlePostHandler(buildPostEvent(token, { bundleId: "test", qualifiers: {} }));
+      const res1 = await bundlePostHandler(buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} }));
       expect(JSON.parse(res1.body).status).toBe("granted");
 
-      const res2 = await bundlePostHandler(buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} }));
+      const res2 = await bundlePostHandler(buildPostEvent(token, { bundleId: "resident-guest", qualifiers: {} }));
       expect(JSON.parse(res2.body).status).toBe("granted");
 
       // Verify user has both bundles
       const getRes = await bundleGetHandler(buildGetEvent(token));
       const bundles = JSON.parse(getRes.body).bundles;
       const bundleIds = bundles.map((b) => b.bundleId);
-      expect(bundleIds).toContain("test");
       expect(bundleIds).toContain("invited-guest");
+      expect(bundleIds).toContain("resident-guest");
     });
   });
 
@@ -156,9 +156,9 @@ describe("System: bundle capacity and per-user uniqueness", () => {
     });
 
     it("should grant bundle when no cap is defined", async () => {
-      // test bundle has no cap field
+      // invited-guest has no cap field — uncapped bundles are always grantable
       const token = makeJWT("cap-no-cap-user");
-      const event = buildPostEvent(token, { bundleId: "test", qualifiers: {} });
+      const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
       const res = await bundlePostHandler(event);
       const body = JSON.parse(res.body);
       expect(res.statusCode).toBe(201);
@@ -213,11 +213,11 @@ describe("System: bundle capacity and per-user uniqueness", () => {
 
   describe("multiple users allocating same bundle", () => {
     it("should allow different users to each get the same uncapped bundle type", async () => {
-      // test bundle has no cap — multiple users can each allocate it
+      // invited-guest has no cap — multiple users can each allocate it
       const users = ["cap-multi-user-a", "cap-multi-user-b", "cap-multi-user-c"];
       for (const userId of users) {
         const token = makeJWT(userId);
-        const event = buildPostEvent(token, { bundleId: "test", qualifiers: {} });
+        const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
         const res = await bundlePostHandler(event);
         const body = JSON.parse(res.body);
         expect(res.statusCode).toBe(201);
@@ -227,7 +227,7 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       // Verify each user independently has the bundle
       for (const userId of users) {
         const bundles = await bundleRepository.getUserBundles(userId);
-        const testBundle = bundles.find((b) => b.bundleId === "test");
+        const testBundle = bundles.find((b) => b.bundleId === "invited-guest");
         expect(testBundle).toBeDefined();
       }
     });

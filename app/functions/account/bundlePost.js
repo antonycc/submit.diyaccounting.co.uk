@@ -23,6 +23,7 @@ import { getUserBundles, deleteBundle } from "../../data/dynamoDbBundleRepositor
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
@@ -313,8 +314,8 @@ export async function workerHandler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export async function grantBundle(userId, requestBody, decodedToken, requestId = null) {
-  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId });
+export async function grantBundle(userId, requestBody, decodedToken, requestId = null, { skipCapCheck = false, grantQualifiers } = {}) {
+  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck, grantQualifiers });
 
   const requestedBundle = requestBody.bundleId;
   const qualifiers = requestBody.qualifiers || {};
@@ -389,7 +390,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   // Existing bundles are deleted and re-granted above, so this fires for every allocation.
   const cap = Number.isFinite(catalogBundle.cap) ? Number(catalogBundle.cap) : undefined;
   let capIncremented = false;
-  if (typeof cap === "number" && process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME) {
+  if (typeof cap === "number" && !skipCapCheck && process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME) {
     const { incrementCounter } = await import("../../data/dynamoDbCapacityRepository.js");
     const granted = await incrementCounter(requestedBundle, cap);
     if (!granted) {
@@ -413,6 +414,9 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
   const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
+  if (grantQualifiers && Object.keys(grantQualifiers).length > 0) {
+    newBundle.qualifiers = grantQualifiers;
+  }
 
   // Token tracking: set token fields from catalogue
   const tokensGranted = catalogBundle.tokensGranted ?? undefined;
@@ -453,6 +457,12 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
 
   emitCapMetric("BundleGranted", requestedBundle);
   logger.info({ message: "Bundle granted to user:", userId, newBundle });
+  const bundleId = requestedBundle;
+  publishActivityEvent({
+    event: "bundle-granted",
+    summary: "Bundle granted: " + bundleId,
+    detail: { bundleId },
+  }).catch(() => {});
   const result = {
     status: "granted",
     granted: true,

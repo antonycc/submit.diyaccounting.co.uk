@@ -12,6 +12,7 @@ import { validateEnv } from "../../lib/env.js";
 import { getDynamoDbDocClient } from "../../lib/dynamoDbClient.js";
 import { loadCatalogFromRoot, getCappedBundleIds } from "../../services/productCatalog.js";
 import { putCounter } from "../../data/dynamoDbCapacityRepository.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleCapacityReconcile.js" });
 
@@ -75,6 +76,11 @@ export async function handler(_event) {
   }
 
   logger.info({ message: "Bundle capacity reconciliation complete", bundleCount: cappedBundleIds.length });
+  publishActivityEvent({
+    event: "capacity-reconciled",
+    summary: "Capacity reconciled",
+    flow: "operational",
+  }).catch(() => {});
 }
 
 function emitActiveAllocationsMetric(bundleId, activeCount) {

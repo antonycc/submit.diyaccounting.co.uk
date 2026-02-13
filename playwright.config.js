@@ -136,11 +136,27 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "paymentBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/payment.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 600_000,
+    },
+    {
       name: "simulatorBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/simulator.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
+      name: "captureDemo",
+      testDir: "behaviour-tests",
+      testMatch: ["**/captureDemo.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/demo-videos/",
       timeout: 300_000,
     },
     {

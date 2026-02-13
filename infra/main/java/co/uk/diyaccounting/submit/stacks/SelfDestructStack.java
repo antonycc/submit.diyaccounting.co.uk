@@ -174,6 +174,7 @@ public class SelfDestructStack extends Stack {
         putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
         putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
         putIfNotNull(selfDestructLambdaEnv, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
+        putIfNotNull(selfDestructLambdaEnv, "BILLING_STACK_NAME", props.sharedNames().billingStackId);
         putIfNotNull(selfDestructLambdaEnv, "API_STACK_NAME", props.sharedNames().apiStackId);
         putIfNotNull(selfDestructLambdaEnv, "OPS_STACK_NAME", props.sharedNames().opsStackId);
         putIfNotNull(selfDestructLambdaEnv, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);

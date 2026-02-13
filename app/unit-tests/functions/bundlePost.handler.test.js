@@ -131,7 +131,7 @@ describe("bundlePost ingestHandler", () => {
   test("returns 401 when Authorization header is missing", async () => {
     const event = buildLambdaEvent({
       method: "POST",
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
       headers: {}, // No Authorization header
     });
 
@@ -145,7 +145,7 @@ describe("bundlePost ingestHandler", () => {
   test("returns 401 when Authorization token is invalid", async () => {
     const event = buildLambdaEvent({
       method: "POST",
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
       headers: { Authorization: "Bearer invalid-token" },
     });
 
@@ -188,7 +188,7 @@ describe("bundlePost ingestHandler", () => {
   test("returns 400 when unknown qualifier is provided", async () => {
     const token = makeIdToken("user-unknown-qualifier");
     const event = buildEventWithToken(token, {
-      bundleId: "test",
+      bundleId: "day-guest",
       qualifiers: { unknownField: "value" },
     });
     event.headers["x-wait-time-ms"] = "30000";
@@ -262,7 +262,7 @@ describe("bundlePost ingestHandler", () => {
 
   test("returns 201 and grants test bundle with timeout producing expiry", async () => {
     const token = makeIdToken("user-test");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
@@ -279,7 +279,7 @@ describe("bundlePost ingestHandler", () => {
 
   test("returns 201 with granted status when re-granting existing bundle", async () => {
     const token = makeIdToken("user-duplicate");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "30000";
 
     // Mock: first query returns existing bundle, subsequent calls succeed
@@ -289,7 +289,7 @@ describe("bundlePost ingestHandler", () => {
         queryCallCount++;
         // First query: existing bundle found (triggers delete + re-grant)
         // Second query (from updateUserBundles): no bundles after delete
-        return queryCallCount === 1 ? { Items: [{ bundleId: "test" }], Count: 1 } : { Items: [], Count: 0 };
+        return queryCallCount === 1 ? { Items: [{ bundleId: "day-guest" }], Count: 1 } : { Items: [], Count: 0 };
       }
       return {};
     });
@@ -306,7 +306,7 @@ describe("bundlePost ingestHandler", () => {
 
   test("skips async request lookup when x-initial-request header is true", async () => {
     const token = makeIdToken("user-initial");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-initial-request"] = "true";
     event.headers["x-wait-time-ms"] = "30000";
 
@@ -322,7 +322,7 @@ describe("bundlePost ingestHandler", () => {
 
   test("grants bundle successfully with all fields in response", async () => {
     const token = makeIdToken("user-success");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "30000";
 
     const response = await bundlePostHandler(event);
@@ -334,7 +334,7 @@ describe("bundlePost ingestHandler", () => {
     const body = parseResponseBody(response);
     expect(body.status).toBe("granted");
     expect(body.granted).toBe(true);
-    expect(body.bundle).toBe("test");
+    expect(body.bundle).toBe("day-guest");
     expect(Array.isArray(body.bundles)).toBe(true);
   });
 
@@ -347,7 +347,7 @@ describe("bundlePost ingestHandler", () => {
     delete process.env.BUNDLE_DYNAMODB_TABLE_NAME;
 
     const token = makeIdToken("user-error");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "30000";
 
     await expect(bundlePostHandler(event)).rejects.toThrow();
@@ -359,7 +359,7 @@ describe("bundlePost ingestHandler", () => {
 
   test("returns 202 Accepted for async initiation", async () => {
     const token = makeIdToken("user-async");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "0";
 
     const response = await bundlePostHandler(event);
@@ -373,7 +373,7 @@ describe("bundlePost ingestHandler", () => {
     const requestId = "req-sqs-success";
     const payload = {
       userId,
-      requestBody: { bundleId: "test" },
+      requestBody: { bundleId: "day-guest" },
       decodedToken: { sub: userId },
       requestId,
     };

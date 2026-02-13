@@ -21,6 +21,11 @@
     tokenBalanceEl.className = "token-balance";
     tokenBalanceEl.style.display = "none";
 
+    const tokenLink = document.createElement("a");
+    tokenLink.href = "/usage.html";
+    tokenLink.style.textDecoration = "none";
+    tokenLink.style.color = "inherit";
+
     const tokenCountEl = document.createElement("span");
     tokenCountEl.className = "token-count";
 
@@ -35,7 +40,8 @@
       "</svg>";
     refreshBtn.addEventListener("click", onRefreshTokenBalance);
 
-    tokenBalanceEl.appendChild(tokenCountEl);
+    tokenLink.appendChild(tokenCountEl);
+    tokenBalanceEl.appendChild(tokenLink);
     tokenBalanceEl.appendChild(refreshBtn);
     authSection.insertBefore(tokenBalanceEl, loginLinkElement);
     return tokenBalanceEl;

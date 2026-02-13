@@ -236,13 +236,8 @@ export function fetchWithId(url, opts = {}) {
     console.warn("Failed to generate X-Client-Request-Id:", error);
   }
 
-  // Add hmrcAccount header if present in URL or sessionStorage
-  const urlParams = new URLSearchParams(window.location.search);
-  const hmrcAccountFromUrl = urlParams.get("hmrcAccount");
-  if (hmrcAccountFromUrl) {
-    sessionStorage.setItem("hmrcAccount", hmrcAccountFromUrl);
-  }
-  const hmrcAccount = hmrcAccountFromUrl || sessionStorage.getItem("hmrcAccount");
+  // Add hmrcAccount header if present in sessionStorage
+  const hmrcAccount = sessionStorage.getItem("hmrcAccount");
   if (hmrcAccount) {
     headers.set("hmrcAccount", hmrcAccount);
   }

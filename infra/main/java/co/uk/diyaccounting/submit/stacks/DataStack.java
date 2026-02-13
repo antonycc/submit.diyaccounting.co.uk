@@ -29,6 +29,7 @@ public class DataStack extends Stack {
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
     public ITable bundleCapacityTable;
+    public ITable subscriptionsTable;
 
     @Value.Immutable
     public interface DataStackProps extends StackProps, SubmitStackProps {
@@ -181,6 +182,15 @@ public class DataStack extends Stack {
                 null);
         infof("Ensured bundle capacity DynamoDB table with name %s", props.sharedNames().bundleCapacityTableName);
 
+        // Subscriptions table (subscription data)
+        this.subscriptionsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-SubscriptionsTable",
+                props.sharedNames().subscriptionsTableName,
+                "pk",
+                null);
+        infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().subscriptionsTableName);
+
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
@@ -212,6 +222,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "PassesTableArn", this.passesTable.getTableArn());
         cfnOutput(this, "BundleCapacityTableName", this.bundleCapacityTable.getTableName());
         cfnOutput(this, "BundleCapacityTableArn", this.bundleCapacityTable.getTableArn());
+        cfnOutput(this, "SubscriptionsTableName", this.subscriptionsTable.getTableName());
+        cfnOutput(this, "SubscriptionsTableArn", this.subscriptionsTable.getTableArn());
 
         infof(
                 "DataStack %s created successfully for %s",

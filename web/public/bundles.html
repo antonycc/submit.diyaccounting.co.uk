@@ -18,6 +18,7 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -87,12 +88,12 @@
         </div>
 
         <div id="waitlistSection" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Join the waitlist</h3>
+          <h3>Register for Early Access</h3>
           <p style="color: #666; font-size: 0.9em">
-            We're getting ready to launch. Register your interest and we'll send you an invitation.
+            We're getting ready to launch. Register for early access and we'll send you an invitation.
           </p>
           <div style="margin: 1em auto; text-align: center">
-            <button type="button" id="waitlistJoinBtn" class="btn" style="min-width: 180px">Join the waitlist</button>
+            <button type="button" id="waitlistJoinBtn" class="btn" style="min-width: 180px">Register for Early Access</button>
           </div>
         </div>
 
@@ -366,8 +367,8 @@
           </div>`;
         }
 
-        // Capacity full: disabled with reason on button
-        if (!capacityAvailable) {
+        // Capacity full: disabled with reason on button (pass bypasses cap)
+        if (!capacityAvailable && !passCode) {
           return `
           <div class="service-item" style="text-align:left">
             <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="capacity" disabled>Limit reached \u2014 ${rawName}</button>
@@ -878,7 +879,7 @@
         if (joinBtn) {
           // If already registered, update button state
           if (alreadyRegistered) {
-            joinBtn.textContent = "You're on the list";
+            joinBtn.textContent = "You're registered!";
             joinBtn.style.backgroundColor = "#0a8927";
             joinBtn.disabled = true;
             return;
@@ -890,7 +891,7 @@
             try {
               var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
               if (response.ok) {
-                joinBtn.textContent = "You're on the list";
+                joinBtn.textContent = "You're registered!";
                 joinBtn.style.backgroundColor = "#0a8927";
                 try {
                   localStorage.setItem("waitlistRegistered", "true");

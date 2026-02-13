@@ -81,7 +81,20 @@ function initForm() {
           },
         ],
       });
-      window.location = "/zips/" + encodeURIComponent(savedFilename);
+      const fileUrl = "/zips/" + encodeURIComponent(savedFilename);
+      // Show visible download area
+      const availableSection = document.getElementById("download-available");
+      const availableBtn = document.getElementById("download-available-btn");
+      const availableLink = document.getElementById("download-available-link");
+      if (availableSection) {
+        availableBtn.href = fileUrl;
+        availableLink.href = fileUrl;
+        availableLink.textContent = fileUrl;
+        availableSection.classList.remove("hidden");
+        availableSection.scrollIntoView({ behavior: "smooth" });
+      }
+      // Also trigger the browser's automatic download
+      window.location = fileUrl;
       return;
     }
   }

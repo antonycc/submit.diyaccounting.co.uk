@@ -59,14 +59,14 @@ describe("passService", () => {
     it("should build a pass record with required fields", () => {
       const pass = buildPassRecord({
         passTypeId: "test-access",
-        bundleId: "test",
+        bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
       });
 
       expect(pass.pk).toMatch(/^pass#/);
       expect(pass.code).toBeTruthy();
-      expect(pass.bundleId).toBe("test");
+      expect(pass.bundleId).toBe("day-guest");
       expect(pass.passTypeId).toBe("test-access");
       expect(pass.maxUses).toBe(1);
       expect(pass.useCount).toBe(0);
@@ -83,7 +83,7 @@ describe("passService", () => {
       const now = new Date();
       const pass = buildPassRecord({
         passTypeId: "test-access",
-        bundleId: "test",
+        bundleId: "day-guest",
         validityPeriod: "P1D",
         createdBy: "admin",
       });
@@ -133,6 +133,31 @@ describe("passService", () => {
       expect(pass.maxUses).toBe(10);
     });
 
+    it("should set testPass when true", () => {
+      const pass = buildPassRecord({
+        passTypeId: "test-access",
+        bundleId: "day-guest",
+        testPass: true,
+        validityPeriod: "P30D",
+        maxUses: 10,
+        createdBy: "admin",
+      });
+
+      expect(pass.testPass).toBe(true);
+      expect(pass.bundleId).toBe("day-guest");
+    });
+
+    it("should omit testPass when false or undefined", () => {
+      const pass = buildPassRecord({
+        passTypeId: "test-access",
+        bundleId: "day-guest",
+        validityPeriod: "P7D",
+        createdBy: "admin",
+      });
+
+      expect(pass.testPass).toBeUndefined();
+    });
+
     it("should set issuedBy for user-issued passes", () => {
       const pass = buildPassRecord({
         passTypeId: "campaign",
@@ -152,13 +177,13 @@ describe("passService", () => {
 
       const pass = await createPass({
         passTypeId: "test-access",
-        bundleId: "test",
+        bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
       });
 
       expect(putPass).toHaveBeenCalledTimes(1);
-      expect(pass.bundleId).toBe("test");
+      expect(pass.bundleId).toBe("day-guest");
       expect(pass.code).toBeTruthy();
     });
 
@@ -167,13 +192,13 @@ describe("passService", () => {
 
       const pass = await createPass({
         passTypeId: "test-access",
-        bundleId: "test",
+        bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
       });
 
       expect(putPass).toHaveBeenCalledTimes(2);
-      expect(pass.bundleId).toBe("test");
+      expect(pass.bundleId).toBe("day-guest");
     });
 
     it("should throw non-collision errors", async () => {
@@ -182,7 +207,7 @@ describe("passService", () => {
       await expect(
         createPass({
           passTypeId: "test-access",
-          bundleId: "test",
+          bundleId: "day-guest",
           validityPeriod: "P7D",
           createdBy: "admin",
         }),
@@ -203,7 +228,7 @@ describe("passService", () => {
       getPass.mockResolvedValueOnce({
         pk: "pass#test-code",
         code: "test-code",
-        bundleId: "test",
+        bundleId: "day-guest",
         validFrom: "2020-01-01T00:00:00.000Z",
         validUntil: "2030-12-31T23:59:59.000Z",
         maxUses: 5,
@@ -214,7 +239,7 @@ describe("passService", () => {
 
       const result = await checkPass("test-code");
       expect(result.valid).toBe(true);
-      expect(result.bundleId).toBe("test");
+      expect(result.bundleId).toBe("day-guest");
       expect(result.usesRemaining).toBe(3);
     });
 
@@ -222,7 +247,7 @@ describe("passService", () => {
       getPass.mockResolvedValueOnce({
         pk: "pass#test-code",
         code: "test-code",
-        bundleId: "test",
+        bundleId: "day-guest",
         validFrom: "2020-01-01T00:00:00.000Z",
         validUntil: "2030-12-31T23:59:59.000Z",
         maxUses: 3,
@@ -240,7 +265,7 @@ describe("passService", () => {
       getPass.mockResolvedValueOnce({
         pk: "pass#test-code",
         code: "test-code",
-        bundleId: "test",
+        bundleId: "day-guest",
         validFrom: "2020-01-01T00:00:00.000Z",
         validUntil: "2030-12-31T23:59:59.000Z",
         maxUses: 5,
@@ -258,7 +283,7 @@ describe("passService", () => {
       getPass.mockResolvedValueOnce({
         pk: "pass#test-code",
         code: "test-code",
-        bundleId: "test",
+        bundleId: "day-guest",
         validFrom: "2020-01-01T00:00:00.000Z",
         validUntil: "2020-12-31T23:59:59.000Z",
         maxUses: 5,

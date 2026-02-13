@@ -15,6 +15,7 @@ import {
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { createPass } from "../../services/passService.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
 
@@ -58,14 +59,15 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { passTypeId, bundleId, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
+  const { passTypeId, bundleId, testPass, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
 
-  logger.info({ message: "Creating admin pass", passTypeId, bundleId });
+  logger.info({ message: "Creating admin pass", passTypeId, bundleId, testPass: !!testPass });
 
   try {
     const pass = await createPass({
       passTypeId,
       bundleId,
+      testPass,
       validFrom,
       validUntil,
       validityPeriod,
@@ -76,6 +78,11 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "Admin pass created", passTypeId, bundleId });
+    publishActivityEvent({
+      event: "pass-generated",
+      summary: "Pass generated: " + bundleId,
+      detail: { bundleId },
+    }).catch(() => {});
 
     return http200OkResponse({
       request,
@@ -84,6 +91,7 @@ export async function ingestHandler(event) {
         code: pass.code,
         bundleId: pass.bundleId,
         passTypeId: pass.passTypeId,
+        testPass: pass.testPass || false,
         validFrom: pass.validFrom,
         validUntil: pass.validUntil,
         maxUses: pass.maxUses,

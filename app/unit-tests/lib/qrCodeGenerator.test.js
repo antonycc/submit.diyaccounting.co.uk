@@ -17,7 +17,7 @@ function escapeForSvgCheck(str) {
 describe("qrCodeGenerator", () => {
   const testPass = {
     code: "tiger-happy-mountain-silver",
-    bundleId: "test",
+    bundleId: "day-guest",
     passTypeId: "test-access",
     maxUses: 1,
     useCount: 0,

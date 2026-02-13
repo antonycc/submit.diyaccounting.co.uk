@@ -264,12 +264,12 @@ export function extractAuthTokenFromXAuthorization(event) {
 }
 
 export function extractUserFromAuthorizerContext(event) {
-  // Custom Lambda authorizer (customAuthorizer.js) returns flat context: { sub, username, email, ... }
-  // API Gateway places this at event.requestContext.authorizer.lambda
+  // HTTP API JWT authorizer: claims at event.requestContext.authorizer.jwt.claims
+  // Custom Lambda authorizer: claims at event.requestContext.authorizer.lambda
   const authz = event.requestContext?.authorizer;
   if (!authz) return null;
 
-  const ctx = authz.lambda ?? authz;
+  const ctx = authz.jwt?.claims ?? authz.lambda ?? authz;
 
   if (ctx && ctx.sub) {
     return {

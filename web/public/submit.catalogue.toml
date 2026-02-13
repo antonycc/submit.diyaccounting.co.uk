@@ -6,23 +6,6 @@ name = "Default"
 enable = "never"
 allocation = "automatic"
 
-# Access to Sandbox APIs for testing
-[[bundles]]
-id = "test"
-name = "Test"
-levelName = "Test"
-enable = "on-pass"
-# on-pass
-# =======
-# Disable until a pass has been accecpted, once we have implemented pass generation and acceptance via a form.
-hidden = true
-# hidden
-# ======
-# Hide this bundle from the bundles page until allocated are implemented
-allocation = "on-request"
-timeout = "P1D"
-tokensGranted = 10
-
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
 id = "day-guest"
@@ -153,44 +136,6 @@ metered = false
 paths = ["bundles.html", "^/api/v1/catalog.*", "^/api/v1/bundle.*"]
 
 [[activities]]
-id = "submit-vat-sandbox"
-name = "Submit VAT (HMRC Sandbox)"
-display = "on-entitlement"
-bundles = ["test"]
-tokenCost = 1
-# tokenCost
-# =========
-# Number of Activity API tokens consumed by this activity when completed
-metered = true
-# metered
-# =======
-# If true, this activity appears in the user's activity list and consumes tokens
-# and the activity buttons show the token cost
-# and if the token balance is insufficient (or zero) the activity is disabled similar to entitlement disabling
-paths = ["hmrc/vat/submitVat.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
-
-[[activities]]
-id = "vat-obligations-sandbox"
-name = "VAT Obligations (HMRC Sandbox)"
-display = "on-entitlement"
-bundles = ["test"]
-tokenCost = 0
-metered = true
-# metered
-# =======
-# In this case the cost is zero but the activity is metered so when there are 0 avilable tokens the activty is disabled
-paths = ["hmrc/vat/vatObligations.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
-
-[[activities]]
-id = "view-vat-return-sandbox"
-name = "View VAT Return (HMRC Sandbox)"
-display = "on-entitlement"
-bundles = ["test"]
-tokenCost = 0
-metered = true
-paths = ["hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox", "^/api/v1/hmrc/vat.*"]
-
-[[activities]]
 id = "submit-vat"
 name = "Submit VAT (HMRC)"
 display = "always-with-upsell"
@@ -231,7 +176,7 @@ paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]
 id = "generate-pass-digital"
 name = "Generate Digital Pass"
 display = "on-entitlement"
-bundles = ["test", "resident-pro-comp", "resident-pro"]
+bundles = ["resident-pro-comp", "resident-pro"]
 tokenCost = 10
 metered = true
 # generate-pass-digital
@@ -245,7 +190,7 @@ paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
 id = "generate-pass-physical"
 name = "Generate Physical Pass"
 display = "on-entitlement"
-bundles = ["test", "resident-pro-comp", "resident-pro"]
+bundles = ["resident-pro-comp", "resident-pro"]
 tokenCost = 10
 metered = true
 # generate-pass-physical

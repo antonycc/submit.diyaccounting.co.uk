@@ -33,6 +33,7 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
     <!-- HEAD-prefetch scripts to prime API Gateway/Lambda and authorizers to reduce cold-start impact -->
     <!--script async src="./prefetch/prefetch-catalog-head.js"></script-->
     <!--script async src="./prefetch/prefetch-bundle-head.js"></script-->
@@ -85,9 +86,9 @@
           font-size: 0.95em;
         "
         role="complementary"
-        aria-label="Waitlist registration"
+        aria-label="Early access registration"
       >
-        <span>We're getting ready to launch. Join the waitlist and we'll send you an invitation.</span>
+        <span>We're getting ready to launch. Register for early access and we'll send you an invitation.</span>
         <button
           type="button"
           id="waitlistJoinBtn"
@@ -102,7 +103,7 @@
             vertical-align: middle;
           "
         >
-          Join the waitlist
+          Register for Early Access
         </button>
         <button
           type="button"
@@ -117,7 +118,7 @@
             vertical-align: middle;
             padding: 0 0.3em;
           "
-          aria-label="Dismiss waitlist banner"
+          aria-label="Dismiss early access banner"
         >
           &#x2715;
         </button>
@@ -192,6 +193,7 @@
     <script>
       // In-memory user bundles state (list of bundleId strings)
       let __userBundles = [];
+      let __sandboxBundleIds = new Set();
       let __tokensRemaining = 0;
       let __hasTokenBundles = false;
       let __fetchBundlesController = null;
@@ -226,11 +228,20 @@
             }
 
             if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-              __userBundles = bundlesData.bundles.filter((b) => b.allocated).map((b) => b.bundleId);
+              const allocated = bundlesData.bundles.filter((b) => b.allocated);
+              __userBundles = allocated.map((b) => b.bundleId);
+              __sandboxBundleIds = new Set(allocated.filter((b) => b.qualifiers?.sandbox === true).map((b) => b.bundleId));
+              // Set sessionStorage for sandbox mode based on bundle qualifiers (single source of truth)
+              if (__sandboxBundleIds.size > 0) {
+                sessionStorage.setItem("hmrcAccount", "sandbox");
+              } else {
+                sessionStorage.removeItem("hmrcAccount");
+              }
               __tokensRemaining = typeof bundlesData.tokensRemaining === "number" ? bundlesData.tokensRemaining : 0;
               __hasTokenBundles = bundlesData.bundles.some((b) => b.allocated && b.tokensGranted !== undefined);
             } else {
               __userBundles = [];
+              __sandboxBundleIds = new Set();
               __tokensRemaining = 0;
               __hasTokenBundles = false;
             }
@@ -558,7 +569,7 @@
             try {
               var response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
               if (response.ok) {
-                joinBtn.textContent = "You're on the list";
+                joinBtn.textContent = "You're registered!";
                 joinBtn.style.backgroundColor = "#0a8927";
                 localStorage.setItem("waitlistRegistered", "true");
               } else {

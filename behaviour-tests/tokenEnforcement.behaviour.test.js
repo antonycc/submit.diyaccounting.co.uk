@@ -177,28 +177,28 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 2: Ensure Test bundle is present (3 tokens)
+  // STEP 2: Ensure Day Guest bundle is present (via test pass for sandbox routing)
   // ============================================================
-  await test.step("Ensure Test bundle is present", async () => {
+  await test.step("Ensure Day Guest bundle is present", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 2: Ensure Test bundle");
+    console.log("STEP 2: Ensure Day Guest bundle");
     console.log("=".repeat(60));
 
     await goToBundlesPage(page, screenshotPath);
-    await ensureBundlePresent(page, "Test", screenshotPath);
+    await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
   });
 
   // ============================================================
-  // STEP 3: Verify initial token count (10 — from catalogue)
+  // STEP 3: Verify initial token count (3 — from catalogue for day-guest)
   // ============================================================
-  await test.step("Verify initial token count is 10", async () => {
+  await test.step("Verify initial token count is 3", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 3: Verify initial tokens = 10");
+    console.log("STEP 3: Verify initial tokens = 3");
     console.log("=".repeat(60));
 
-    const initialTokens = await getTokensRemaining(page, "test");
+    const initialTokens = await getTokensRemaining(page, "day-guest");
     console.log(`Initial tokens remaining: ${initialTokens}`);
-    expect(initialTokens).toBe(10);
+    expect(initialTokens).toBe(3);
 
     // Also extract userSub for later use
     userSub = await extractUserSub(page);
@@ -261,19 +261,19 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 5: Verify token consumed (9 remaining)
+  // STEP 5: Verify token consumed (2 remaining)
   // ============================================================
-  await test.step("Verify token consumed - 9 remaining", async () => {
+  await test.step("Verify token consumed - 2 remaining", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 5: Verify tokens = 9");
+    console.log("STEP 5: Verify tokens = 2");
     console.log("=".repeat(60));
 
     await goToHomePageUsingMainNav(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
 
-    const tokensAfterSubmission = await getTokensRemaining(page, "test");
+    const tokensAfterSubmission = await getTokensRemaining(page, "day-guest");
     console.log(`Tokens remaining after submission: ${tokensAfterSubmission}`);
-    expect(tokensAfterSubmission).toBe(9);
+    expect(tokensAfterSubmission).toBe(2);
 
     // UI token display may be stale due to ~5 min bundleCache TTL; log but don't assert
     const bundleInfo = page.locator("#currentBundles");
@@ -297,10 +297,10 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     }
 
     // Consume all remaining tokens directly via the repository
-    let remaining = 9; // 10 initial minus 1 consumed by VAT submission
+    let remaining = 2; // 3 initial minus 1 consumed by VAT submission
     let consumed = 0;
     while (remaining > 0) {
-      const result = await consumeToken(userSub, "test");
+      const result = await consumeToken(userSub, "day-guest");
       consumed++;
       remaining = result.tokensRemaining;
       console.log(`Consumed token ${consumed + 1}: remaining=${remaining}`);
@@ -309,7 +309,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     console.log(`Exhausted all tokens (consumed ${consumed} directly)`);
 
     // Verify 0 tokens remaining via API
-    const tokensAfterExhaust = await getTokensRemaining(page, "test");
+    const tokensAfterExhaust = await getTokensRemaining(page, "day-guest");
     console.log(`Tokens remaining after exhaustion: ${tokensAfterExhaust}`);
     expect(tokensAfterExhaust).toBe(0);
   });
@@ -334,7 +334,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-home.png` });
 
     // The Submit VAT button should now be disabled with "Insufficient tokens" in its text
-    const activityButtonText = isSandboxMode() ? "Submit VAT (HMRC Sandbox)" : "Submit VAT (HMRC)";
+    const activityButtonText = "Submit VAT (HMRC)";
     const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
     await expect(submitButton).toBeVisible({ timeout: 10_000 });
     await expect(submitButton).toBeDisabled({ timeout: 10_000 });
@@ -369,7 +369,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await goToBundlesPage(page, screenshotPath);
 
     // UI token display may be stale due to ~5 min bundleCache TTL; verify via API instead
-    const tokensAfterExhaust = await getTokensRemaining(page, "test");
+    const tokensAfterExhaust = await getTokensRemaining(page, "day-guest");
     console.log(`Tokens remaining via API: ${tokensAfterExhaust}`);
     expect(tokensAfterExhaust).toBe(0);
 

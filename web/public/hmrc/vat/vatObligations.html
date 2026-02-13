@@ -273,10 +273,9 @@
 
       // Check if we're in sandbox/test mode to show developer options
       function initializePage() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const hmrcAccount = urlParams.get("hmrcAccount");
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
-        // Show sandbox indicator if hmrcAccount=sandbox
+        // Show sandbox indicator if in sandbox mode (determined by bundle qualifiers via sessionStorage)
         if (hmrcAccount === "sandbox") {
           const sandboxIndicator = document.getElementById("sandboxIndicator");
           if (sandboxIndicator) {
@@ -361,9 +360,8 @@
             ...govClientHeaders,
           };
 
-          // Add hmrcAccount header if present in URL
-          const urlParams = new URLSearchParams(window.location.search);
-          const hmrcAccount = urlParams.get("hmrcAccount");
+          // Add hmrcAccount header if present in sessionStorage
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
           if (hmrcAccount) {
             requestHeaders["hmrcAccount"] = hmrcAccount;
           }
@@ -463,20 +461,13 @@
               runFraudPreventionHeaderValidation,
             };
 
-            // Add current activity hmrcAccount header if present in URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const hmrcAccount = urlParams.get("hmrcAccount");
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
             const currentActivity = `${location.pathname}`;
 
             sessionStorage.setItem("oauth_state", state);
             sessionStorage.setItem("pendingObligationsRequest", JSON.stringify(requestData));
             // Note: Don't set pendingReturnRequest here - it has different field names (periodStart/periodEnd vs from/to)
             sessionStorage.setItem("currentActivity", currentActivity);
-            if (hmrcAccount === "sandbox") {
-              sessionStorage.setItem("hmrcAccount", hmrcAccount);
-            } else {
-              sessionStorage.removeItem("hmrcAccount");
-            }
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
             // Get OAuth URL with read-only scope
@@ -658,23 +649,13 @@
       }
 
       function viewReturn(vrn, periodKey, periodStart, periodEnd) {
-        // Navigate to view VAT return page with period dates
-        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-        let url = `viewVatReturn.html?vrn=${encodeURIComponent(vrn)}&periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`;
-        if (hmrcAccount) {
-          url += `&hmrcAccount=${encodeURIComponent(hmrcAccount)}`;
-        }
-        window.location.href = url;
+        // Navigate to view VAT return page with period dates (hmrcAccount is in sessionStorage)
+        window.location.href = `viewVatReturn.html?vrn=${encodeURIComponent(vrn)}&periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`;
       }
 
       function submitReturn(vrn, periodKey, periodStart, periodEnd) {
-        // Navigate to submit VAT return page with period dates
-        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-        let url = `submitVat.html?vrn=${encodeURIComponent(vrn)}&periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`;
-        if (hmrcAccount) {
-          url += `&hmrcAccount=${encodeURIComponent(hmrcAccount)}`;
-        }
-        window.location.href = url;
+        // Navigate to submit VAT return page with period dates (hmrcAccount is in sessionStorage)
+        window.location.href = `submitVat.html?vrn=${encodeURIComponent(vrn)}&periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`;
       }
 
       // Toggle search criteria button handler

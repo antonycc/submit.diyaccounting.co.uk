@@ -103,7 +103,7 @@ describe("bundleEnforcement.js", () => {
       const event = buildEvent(token, authorizerContext);
 
       // Dynamo returns objects; enforceBundles maps to bundleId
-      getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
@@ -122,7 +122,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext);
 
-      getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);
@@ -212,7 +212,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(null, authorizerContext);
 
-      getUserBundles.mockResolvedValue([{ bundleId: "test", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest", expiry: new Date().toISOString() }]);
 
       // Should not throw
       await enforceBundles(event);

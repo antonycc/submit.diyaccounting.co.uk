@@ -203,7 +203,7 @@
         const vrn = urlParams.get("vrn");
         const periodStart = urlParams.get("periodStart");
         const periodEnd = urlParams.get("periodEnd");
-        const hmrcAccount = urlParams.get("hmrcAccount");
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
         // If URL params provide complete period data, clear any stale pendingReturnRequest
         // This handles navigation from obligations page where URL params should take precedence
@@ -351,9 +351,8 @@
             ...govClientHeaders,
           };
 
-          // Add hmrcAccount header if present in URL
-          const urlParams = new URLSearchParams(window.location.search);
-          const hmrcAccount = urlParams.get("hmrcAccount");
+          // Add hmrcAccount header if present in sessionStorage
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
           if (hmrcAccount) {
             requestHeaders["hmrcAccount"] = hmrcAccount;
           }
@@ -438,9 +437,8 @@
         // Check if we have an access token
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
 
-        // Check hmrcAccount for sandbox mode
-        const urlParams = new URLSearchParams(window.location.search);
-        const hmrcAccount = urlParams.get("hmrcAccount") || sessionStorage.getItem("hmrcAccount");
+        // Check hmrcAccount for sandbox mode (set by bundle qualifiers via sessionStorage)
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         const allowSandboxObligations = hmrcAccount === "sandbox";
 
         if (!accessToken) {
@@ -464,11 +462,6 @@
             sessionStorage.setItem("oauth_state", state);
             sessionStorage.setItem("pendingReturnRequest", JSON.stringify(requestData));
             sessionStorage.setItem("currentActivity", currentActivity);
-            if (hmrcAccount === "sandbox") {
-              sessionStorage.setItem("hmrcAccount", hmrcAccount);
-            } else {
-              sessionStorage.removeItem("hmrcAccount");
-            }
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
             // Get OAuth URL with read-only scope
@@ -674,12 +667,7 @@
       });
 
       document.getElementById("backToObligationsBtn")?.addEventListener("click", () => {
-        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-        let url = "vatObligations.html";
-        if (hmrcAccount) {
-          url += `?hmrcAccount=${encodeURIComponent(hmrcAccount)}`;
-        }
-        window.location.href = url;
+        window.location.href = "vatObligations.html";
       });
 
       // Input validation for VAT registration number

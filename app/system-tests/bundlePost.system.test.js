@@ -76,12 +76,12 @@ describe("System: account/bundlePost high-level behaviours", () => {
     const { updateUserBundles } = await import("@app/services/bundleManagement.js");
     const token = makeIdToken("test-sub");
     const expiry = new Date(Date.now() + 3600_000).toISOString();
-    await updateUserBundles("test-sub", [{ bundleId: "test", expiry }]);
+    await updateUserBundles("test-sub", [{ bundleId: "day-guest", expiry }]);
     const event = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/bundle",
       headers: { Authorization: `Bearer ${token}` },
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
     });
     const res = await ingestHandler(event);
     expect(res.statusCode).toBe(201);

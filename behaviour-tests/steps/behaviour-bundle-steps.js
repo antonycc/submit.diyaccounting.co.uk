@@ -120,10 +120,10 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
   });
 }
 
-export async function ensureBundlePresent(page, bundleName = "Test", screenshotPath = defaultScreenshotPath, { isHidden = false } = {}) {
+export async function ensureBundlePresent(page, bundleName = "Test", screenshotPath = defaultScreenshotPath, { isHidden = false, testPass = false } = {}) {
   await test.step(`Ensure ${bundleName} bundle is present (idempotent)`, async () => {
     const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
-    console.log(`Ensuring ${bundleName} bundle is present (hidden=${isHidden})...`);
+    console.log(`Ensuring ${bundleName} bundle is present (hidden=${isHidden}, testPass=${testPass})...`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-bundle.png` });
 
     // For hidden bundles, check "Your Current Bundles" section (data-remove-bundle-id buttons)
@@ -139,7 +139,7 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
       // Hidden bundle not present — grant via pass API
       console.log(`Hidden bundle ${bundleName} not in current bundles, granting via pass API...`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
-      await ensureBundleViaPassApi(page, bundleId, screenshotPath);
+      await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass });
       // Verify it now appears in current bundles
       await expect(removeLocator).toBeVisible({ timeout: 32000 });
       console.log(`${bundleName} bundle now present in current bundles.`);
@@ -195,7 +195,7 @@ export async function ensureBundlePresent(page, bundleName = "Test", screenshotP
       // On-pass bundles (visible but disabled) or not visible: re-grant via pass API to ensure fresh tokens
       console.log(`"Request ${bundleName}" button not enabled (on-pass bundle), using pass API for fresh grant...`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
-      await ensureBundleViaPassApi(page, bundleId, screenshotPath);
+      await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass });
     }
   });
 }
@@ -265,31 +265,33 @@ export async function verifyBundleApiResponse(page, screenshotPath = defaultScre
   });
 }
 
-export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = defaultScreenshotPath) {
+export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = defaultScreenshotPath, { testPass = false } = {}) {
   return await test.step(`Ensure ${bundleId} bundle via pass API`, async () => {
-    console.log(`Creating and redeeming pass for bundle ${bundleId}...`);
+    console.log(`Creating and redeeming pass for bundle ${bundleId} (testPass=${testPass})...`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-creating.png` });
 
     // Step 1: Create a pass via admin API (no auth required)
-    const createResult = await page.evaluate(async (bid) => {
+    const createResult = await page.evaluate(async ({ bid, isTestPass }) => {
       try {
+        const passBody = {
+          passTypeId: bid,
+          bundleId: bid,
+          validityPeriod: "P1D",
+          maxUses: 1,
+          createdBy: "behaviour-test",
+        };
+        if (isTestPass) passBody.testPass = true;
         const response = await fetch("/api/v1/pass/admin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            passTypeId: bid,
-            bundleId: bid,
-            validityPeriod: "P1D",
-            maxUses: 1,
-            createdBy: "behaviour-test",
-          }),
+          body: JSON.stringify(passBody),
         });
         const body = await response.json();
         return { ok: response.ok, code: body?.data?.code || body?.code, body };
       } catch (err) {
         return { ok: false, error: err.message };
       }
-    }, bundleId);
+    }, { bid: bundleId, isTestPass: testPass });
 
     console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
     if (!createResult.ok || !createResult.code) {

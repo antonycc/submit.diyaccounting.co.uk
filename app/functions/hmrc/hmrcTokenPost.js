@@ -17,6 +17,7 @@ import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
@@ -112,6 +113,10 @@ export async function ingestHandler(event) {
   if (!userSub) {
     userSub = getHeader(event.headers, "x-user-sub") || null;
   }
+  publishActivityEvent({
+    event: "hmrc-token-exchanged",
+    summary: "HMRC token exchanged",
+  }).catch(() => {});
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
 }
 

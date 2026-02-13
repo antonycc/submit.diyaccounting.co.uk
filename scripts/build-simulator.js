@@ -23,8 +23,7 @@ const targetDir = path.join(projectRoot, "web/public-simulator");
 const SIMULATOR_BANNER = `
   <!-- Simulator Banner - Injected by build-simulator.js -->
   <div class="simulator-banner" role="alert" aria-live="polite">
-    <span aria-hidden="true">&#9888;</span>
-    SIMULATOR - Demo Mode - No real data is submitted
+    This is the demo. Click here for the live site: <a href="https://submit.diyaccounting.co.uk/" style="color: inherit; text-decoration: underline; font-weight: bold;">submit.diyaccounting.co.uk</a>
   </div>
 `;
 

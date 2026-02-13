@@ -41,6 +41,7 @@ import {
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
@@ -397,7 +398,7 @@ export async function ingestHandler(event) {
 
   // Token enforcement: consume 1 token for VAT submission (the "value action") — initial request only
   if (isInitialRequest) {
-    const activityId = hmrcAccount === "sandbox" ? "submit-vat-sandbox" : "submit-vat";
+    const activityId = "submit-vat";
     try {
       const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
       const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
@@ -821,6 +822,13 @@ export async function submitVat(
     logger.info({ message: `Received HMRC response: ${JSON.stringify(httpResult.hmrcResponse)}`, httpResult });
     hmrcResponse = httpResult.hmrcResponse;
     hmrcResponseBody = httpResult.hmrcResponseBody;
+  }
+
+  if (hmrcResponse.ok) {
+    publishActivityEvent({
+      event: "vat-return-submitted",
+      summary: "VAT return submitted",
+    }).catch(() => {});
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };

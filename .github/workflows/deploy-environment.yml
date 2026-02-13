@@ -5,7 +5,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# bump8
+# bump9
 
 on:
   workflow_dispatch:
@@ -184,6 +184,50 @@ jobs:
           fi
         env:
           HMRC_SANDBOX_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret
+
+      - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/secret_key"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
+          fi
+
+      - name: Create secret in AWS from secrets.STRIPE_TEST_SECRET_KEY
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/test_secret_key"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_TEST_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_TEST_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
+          fi
+
+      - name: Create secret in AWS from secrets.STRIPE_WEBHOOK_SECRET
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/webhook_secret"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_WEBHOOK_SECRET }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_WEBHOOK_SECRET }}" --region ${{ env.AWS_REGION }}
+          fi
+
+      - name: Create secret in AWS from secrets.TELEGRAM_BOT_TOKEN
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/telegram/bot_token"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.TELEGRAM_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.TELEGRAM_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
+          fi
 
       - name: Create user sub hash salt (if not exists)
         run: |

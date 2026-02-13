@@ -13,41 +13,6 @@
     "description" : "DIY Accounting Submit API documentation"
   } ],
   "paths" : {
-    "/hmrc/receipt" : {
-      "get" : {
-        "summary" : "Retrieve stored receipts",
-        "description" : "Retrieves previously stored receipts for the authenticated user",
-        "operationId" : "getReceipts",
-        "parameters" : [ {
-          "name" : "name",
-          "in" : "query",
-          "required" : false,
-          "description" : "Receipt file name including .json",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-03-31-123456789012.json"
-          }
-        }, {
-          "name" : "key",
-          "in" : "query",
-          "required" : false,
-          "description" : "Full DynamoDB Item key",
-          "schema" : {
-            "type" : "string",
-            "example" : "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Receipts retrieved successfully"
-          }
-        }
-      }
-    },
     "/hmrc/token" : {
       "post" : {
         "summary" : "Exchange HMRC authorization code for access token",
@@ -83,11 +48,25 @@
         }
       }
     },
+    "/billing/checkout-session" : {
+      "post" : {
+        "summary" : "Create billing checkout session",
+        "description" : "Creates a Stripe checkout session for subscription",
+        "operationId" : "createCheckoutSession"
+      }
+    },
     "/support/ticket" : {
       "post" : {
         "summary" : "Submit a support ticket",
         "description" : "Creates a GitHub issue for the authenticated user's support request",
         "operationId" : "submitSupportTicket"
+      }
+    },
+    "/api/session/beacon" : {
+      "post" : {
+        "summary" : "Session beacon",
+        "description" : "Records a new browser session for activity monitoring",
+        "operationId" : "sessionBeacon"
       }
     },
     "/bundle/{id}" : {
@@ -102,118 +81,6 @@
           "description" : "The bundle id (or name) to delete",
           "schema" : {
             "type" : "string"
-          }
-        } ],
-        "tags" : [ "Account" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Bundle deleted successfully"
-          },
-          "202" : {
-            "description" : "Request accepted for processing (async)"
-          }
-        }
-      }
-    },
-    "/bundle" : {
-      "get" : {
-        "summary" : "Get user bundles",
-        "description" : "Retrieves all bundles for the authenticated user",
-        "operationId" : "getBundles",
-        "parameters" : [ {
-          "name" : "x-wait-time-ms",
-          "in" : "header",
-          "required" : false,
-          "description" : "Max time to wait for synchronous response (ms)",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "Account" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Bundles retrieved successfully"
-          },
-          "202" : {
-            "description" : "Request accepted for processing (async)"
-          }
-        }
-      },
-      "post" : {
-        "summary" : "Request new bundle",
-        "description" : "Creates a new bundle request for the authenticated user",
-        "operationId" : "requestBundle",
-        "requestBody" : {
-          "required" : true,
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "bundleId" : {
-                    "type" : "string",
-                    "example" : "test"
-                  },
-                  "qualifiers" : {
-                    "type" : "object",
-                    "properties" : {
-                      "transactionId" : {
-                        "type" : "string",
-                        "example" : "TX-12345"
-                      }
-                    }
-                  }
-                }
-              },
-              "example" : {
-                "bundleId" : "test",
-                "qualifiers" : {
-                  "transactionId" : "TX-12345"
-                }
-              }
-            }
-          }
-        },
-        "tags" : [ "Account" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Bundle created successfully"
-          },
-          "202" : {
-            "description" : "Request accepted for processing (async)"
-          }
-        }
-      },
-      "delete" : {
-        "summary" : "Delete bundle",
-        "description" : "Deletes a bundle for the authenticated user",
-        "operationId" : "deleteBundle",
-        "parameters" : [ {
-          "name" : "bundleId",
-          "in" : "query",
-          "required" : false,
-          "description" : "The bundle id (or name) to delete",
-          "schema" : {
-            "type" : "string",
-            "example" : "test"
-          }
-        }, {
-          "name" : "removeAll",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, removes all bundles",
-          "schema" : {
-            "type" : "string",
-            "example" : "false"
           }
         } ],
         "tags" : [ "Account" ],
@@ -347,76 +214,11 @@
         }
       }
     },
-    "/cognito/token" : {
-      "post" : {
-        "summary" : "Exchange Cognito authorization code for access token",
-        "description" : "Exchanges an authorization code for a Cognito access token",
-        "operationId" : "exchangeCognitoToken",
-        "requestBody" : {
-          "required" : true,
-          "content" : {
-            "application/x-www-form-urlencoded" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "code" : {
-                    "type" : "string",
-                    "example" : "abc123"
-                  }
-                }
-              },
-              "example" : {
-                "code" : "abc123"
-              }
-            }
-          }
-        },
-        "tags" : [ "Authentication" ],
-        "responses" : {
-          "200" : {
-            "description" : "Token exchanged successfully"
-          }
-        }
-      }
-    },
-    "/pass/admin" : {
-      "post" : {
-        "summary" : "Generate a new pass",
-        "description" : "Generates a new pass code for a specified bundle type (admin only)",
-        "operationId" : "generatePass"
-      }
-    },
     "/interest" : {
       "post" : {
         "summary" : "Register waitlist interest",
         "description" : "Publishes the authenticated user's email to an SNS topic for waitlist registration",
         "operationId" : "registerInterest"
-      }
-    },
-    "/hmrc/receipt/{name}" : {
-      "get" : {
-        "summary" : "Retrieve a stored receipt by name",
-        "description" : "Retrieves a specific stored receipt for the authenticated user by file name",
-        "operationId" : "getReceiptByName",
-        "parameters" : [ {
-          "name" : "name",
-          "in" : "path",
-          "required" : true,
-          "description" : "The receipt file name including .json",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-03-31-123456789012.json"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
       }
     },
     "/pass" : {
@@ -510,6 +312,239 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/hmrc/receipt" : {
+      "get" : {
+        "summary" : "Retrieve stored receipts",
+        "description" : "Retrieves previously stored receipts for the authenticated user",
+        "operationId" : "getReceipts",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "required" : false,
+          "description" : "Receipt file name including .json",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31-123456789012.json"
+          }
+        }, {
+          "name" : "key",
+          "in" : "query",
+          "required" : false,
+          "description" : "Full DynamoDB Item key",
+          "schema" : {
+            "type" : "string",
+            "example" : "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Receipts retrieved successfully"
+          }
+        }
+      }
+    },
+    "/billing/webhook" : {
+      "post" : {
+        "summary" : "Stripe webhook",
+        "description" : "Receives Stripe webhook events for subscription lifecycle",
+        "operationId" : "stripeWebhook"
+      }
+    },
+    "/bundle" : {
+      "get" : {
+        "summary" : "Get user bundles",
+        "description" : "Retrieves all bundles for the authenticated user",
+        "operationId" : "getBundles",
+        "parameters" : [ {
+          "name" : "x-wait-time-ms",
+          "in" : "header",
+          "required" : false,
+          "description" : "Max time to wait for synchronous response (ms)",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundles retrieved successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
+          }
+        }
+      },
+      "post" : {
+        "summary" : "Request new bundle",
+        "description" : "Creates a new bundle request for the authenticated user",
+        "operationId" : "requestBundle",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "bundleId" : {
+                    "type" : "string",
+                    "example" : "test"
+                  },
+                  "qualifiers" : {
+                    "type" : "object",
+                    "properties" : {
+                      "transactionId" : {
+                        "type" : "string",
+                        "example" : "TX-12345"
+                      }
+                    }
+                  }
+                }
+              },
+              "example" : {
+                "bundleId" : "test",
+                "qualifiers" : {
+                  "transactionId" : "TX-12345"
+                }
+              }
+            }
+          }
+        },
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle created successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "Delete bundle",
+        "description" : "Deletes a bundle for the authenticated user",
+        "operationId" : "deleteBundle",
+        "parameters" : [ {
+          "name" : "bundleId",
+          "in" : "query",
+          "required" : false,
+          "description" : "The bundle id (or name) to delete",
+          "schema" : {
+            "type" : "string",
+            "example" : "test"
+          }
+        }, {
+          "name" : "removeAll",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, removes all bundles",
+          "schema" : {
+            "type" : "string",
+            "example" : "false"
+          }
+        } ],
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle deleted successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
+          }
+        }
+      }
+    },
+    "/billing/recover" : {
+      "post" : {
+        "summary" : "Recover billing subscription",
+        "description" : "Recovers or reconciles a billing subscription",
+        "operationId" : "recoverBilling"
+      }
+    },
+    "/cognito/token" : {
+      "post" : {
+        "summary" : "Exchange Cognito authorization code for access token",
+        "description" : "Exchanges an authorization code for a Cognito access token",
+        "operationId" : "exchangeCognitoToken",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "code" : {
+                    "type" : "string",
+                    "example" : "abc123"
+                  }
+                }
+              },
+              "example" : {
+                "code" : "abc123"
+              }
+            }
+          }
+        },
+        "tags" : [ "Authentication" ],
+        "responses" : {
+          "200" : {
+            "description" : "Token exchanged successfully"
+          }
+        }
+      }
+    },
+    "/pass/admin" : {
+      "post" : {
+        "summary" : "Generate a new pass",
+        "description" : "Generates a new pass code for a specified bundle type (admin only)",
+        "operationId" : "generatePass"
+      }
+    },
+    "/hmrc/receipt/{name}" : {
+      "get" : {
+        "summary" : "Retrieve a stored receipt by name",
+        "description" : "Retrieves a specific stored receipt for the authenticated user by file name",
+        "operationId" : "getReceiptByName",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "path",
+          "required" : true,
+          "description" : "The receipt file name including .json",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31-123456789012.json"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/billing/portal" : {
+      "get" : {
+        "summary" : "Get billing portal URL",
+        "description" : "Creates a Stripe billing portal session URL",
+        "operationId" : "getBillingPortal"
       }
     }
   },

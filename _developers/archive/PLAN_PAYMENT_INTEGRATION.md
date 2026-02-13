@@ -207,21 +207,23 @@ Store these in AWS Secrets Manager:
 
 ### Secrets workflow
 
-After running `stripe-setup.js`, store the output IDs in Secrets Manager using the existing `scripts/stripe-setup-secrets.sh` wrapper:
+After running `stripe-setup.js`, store secrets in **GitHub Actions** (not directly in AWS). The `deploy-environment.yml` workflow propagates them to AWS Secrets Manager during deployment.
 
-```bash
-# After stripe-setup.js prints the IDs:
-STRIPE_PRICE_ID=price_Monthly456 \
-STRIPE_WEBHOOK_SECRET=whsec_... \
-STRIPE_SECRET_KEY=sk_test_... \
-  scripts/stripe-setup-secrets.sh ci
-
-# For production (with live keys):
-STRIPE_PRICE_ID=price_LiveXYZ \
-STRIPE_WEBHOOK_SECRET=whsec_live_... \
-STRIPE_SECRET_KEY=sk_live_... \
-  scripts/stripe-setup-secrets.sh prod
+**Secrets** (GitHub Actions Secrets — sensitive credentials):
 ```
+STRIPE_SECRET_KEY         — Live API key (repo-level)
+STRIPE_TEST_SECRET_KEY    — Test API key (repo-level)
+STRIPE_WEBHOOK_SECRET     — Live webhook signing secret (environment-level: ci, prod)
+STRIPE_TEST_WEBHOOK_SECRET — Test webhook signing secret (repo-level)
+```
+
+**Variables** (GitHub Actions Variables — non-sensitive public IDs):
+```
+STRIPE_PRICE_ID           — Live price ID (repo-level)
+STRIPE_TEST_PRICE_ID      — Test price ID (repo-level)
+```
+
+Price IDs and chat IDs are public identifiers, not credentials. Exposing them without the corresponding API key is harmless.
 
 ---
 
@@ -696,56 +698,7 @@ Deploy to CI. Full subscription lifecycle works end-to-end against simulator. To
 
 ## Phase 6: Customer Portal & Subscription Recovery
 
-**Goal**: Users can manage their subscription via Stripe's hosted portal. Subscriptions can be recovered after database loss.
-
-**Risk mitigated**: Does the portal redirect flow work? Can we reliably match Stripe subscriptions to users after DB loss?
-
-### 6.1 billingPortalGet Lambda
-
-- [ ] Create `app/functions/billing/billingPortalGet.js`
-  - Extract hashedSub from JWT
-  - Look up `stripeCustomerId` from user's resident-pro bundle
-  - Create Stripe Billing Portal session
-  - Return: `{ portalUrl: "https://billing.stripe.com/..." }`
-  - Return 404 if no subscription found
-
-### 6.2 billingRecoverPost Lambda
-
-- [ ] Create `app/functions/billing/billingRecoverPost.js`
-  - Extract hashedSub from JWT, email from JWT
-  - Query Stripe API: search subscriptions by `metadata.hashedSub`
-  - Fallback: search by customer email
-  - For each active subscription found:
-    - Re-create bundle record in DynamoDB
-    - Re-create subscription record
-    - Calculate tokensGranted based on current period
-  - Return: `{ recovered: true, bundles: [...] }` or `{ recovered: false }`
-
-### 6.3 Unit tests
-
-- [ ] `app/unit-tests/functions/billingPortalGet.test.js`
-- [ ] `app/unit-tests/functions/billingRecoverPost.test.js`
-
-### 6.4 System tests (against simulator + dynalite)
-
-- [ ] `app/system-tests/billing/billingPortal.system.test.js`
-  - Request portal session via handler, verify URL returned from simulator
-  - Verify 404 when user has no subscription
-- [ ] `app/system-tests/billing/billingRecovery.system.test.js`
-  - Grant bundle via webhook, delete from DynamoDB, call recover handler
-  - Simulator returns the subscription when queried by hashedSub metadata
-  - Verify bundle restored in DynamoDB with correct fields
-
-### 6.5 Behaviour test: portal and recovery (simulator)
-
-- [ ] Extend `behaviour-tests/billing/billingManagement.behaviour.test.js`
-  - Navigate to bundles.html with active subscription
-  - Click "Manage Subscription" → verify portal redirect (intercepted)
-  - Test recovery: clear bundle from DynamoDB, refresh page, verify recovery prompt or automatic recovery
-
-### Validation
-
-Deploy to CI. Portal URL opens Stripe billing management. Recovery endpoint restores bundles from Stripe data. All tests pass locally against simulator, then verified on CI.
+Scrapped due to scope creep and complexity. Customer Portal and subscription recovery deferred to future phase
 
 ---
 
@@ -1112,14 +1065,360 @@ Phases 6 and 7 can run in parallel after Phase 5 completes. Phase 8 should inclu
 
 ## Implementation Progress
 
-- [x] `PLAN_STRIPE_1.md` — Stripe Payment Links for spreadsheets donations (completed, archived)
-- [ ] Phase 1: Token Usage Page — not started
-- [ ] Phase 2: Stripe SDK & Infrastructure Foundation — not started
-  - `scripts/stripe-setup.js` ready to be authored (config spec defined above, implementation iterates after plan approval)
-- [ ] Phases 3-10: not started
-
-**Next step**: Author `scripts/stripe-setup.js` implementation, then begin Phase 1.
+| Item | Status | Notes |
+|------|--------|-------|
+| `PLAN_STRIPE_1.md` | **COMPLETE** | Stripe Payment Links for spreadsheets donations (archived) |
+| **Phase 1: Token Usage Page** | **COMPLETE** | Deployed on `eventandpayment` branch — 2026-02-11 |
+| `web/public/usage.html` | Done | Token sources + consumption tables, reload button |
+| `app/data/dynamoDbBundleRepository.js` — `recordTokenEvent` | Done | DynamoDB `list_append` for token consumption events |
+| `app/services/tokenEnforcement.js` — consumption recording | Done | Records `{ activity, timestamp, tokensUsed }` after `consumeToken()` |
+| `web/public/widgets/auth-status.js` — usage link | Done | Token count wraps in `<a href="/usage.html">` |
+| `.pa11yci.*.json` — `/usage.html` | Done | Added to proxy, ci, prod configs |
+| Unit tests | Done | `tokenEvent.test.js`, `tokenEnforcement.consumption.test.js` |
+| **Phase 2: Stripe SDK & Infrastructure** | **COMPLETE** | Deployed on `eventandpayment` branch — 2026-02-11 |
+| `package.json` — `stripe` dependency | Done | `"stripe": "^17.x.x"` |
+| `scripts/stripe-setup.js` | Done | Idempotent: product, price, webhooks, find-or-create |
+| `scripts/stripe-setup-secrets.sh` | Done | Stores secrets in AWS Secrets Manager |
+| `app/lib/stripeClient.js` | Done | Lazy Stripe SDK init from Secrets Manager or env var |
+| `app/test-support/stripeSimulator.js` | Done | Mock Stripe API: checkout, subscriptions, portal |
+| `app/functions/billing/billingCheckoutPost.js` | Done | Real implementation (Phase 3 work pulled forward) |
+| `app/functions/billing/billingPortalGet.js` | Done | Placeholder (501 Not Implemented) |
+| `app/functions/billing/billingRecoverPost.js` | Done | Placeholder (501 Not Implemented) |
+| `app/functions/billing/billingWebhookPost.js` | Done | Real implementation: signature verify, event routing, checkout→bundle grant |
+| `app/data/dynamoDbSubscriptionRepository.js` | Done | CRUD for subscriptions table |
+| CDK: `DataStack.java` — subscriptions table | Done | `{env}-submit-subscriptions`, PITR enabled |
+| CDK: `BillingStack.java` | Done | 4 ApiLambda constructs, `ingestReservedConcurrency(1)` |
+| CDK: `SubmitSharedNames.java` — billing names | Done | All billing Lambda name fields |
+| CDK: `SubmitApplication.java` — BillingStack wiring | Done | BillingStack added, lambdaFunctionProps wired to ApiStack |
+| Express server routes | Done | 4 billing endpoints registered in `server.js` |
+| `.env.test` — billing env vars | Done | `STRIPE_*`, `SUBSCRIPTIONS_DYNAMODB_TABLE_NAME` |
+| System tests | Done | `billingInfrastructure.system.test.js` |
+| Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
+| All unit tests pass (767 tests) | Done | |
+| **Phase 3: Checkout Session API** | **DEPLOYED** | All CDK wiring, Lambda code, and tests done — deployed to CI 2026-02-13 |
+| `app/functions/billing/billingCheckoutPost.js` | Done | Real implementation: JWT decode, hashSub, Stripe Checkout Session create, activity event |
+| `app/unit-tests/functions/billingCheckoutPost.test.js` | Done | 200 success, correct Stripe params (metadata, hashedSub, line_items, URLs), 401/500 errors, price ID fallback |
+| `app/system-tests/billingInfrastructure.system.test.js` | Done | Updated: expects 401 (auth required) instead of 501 (placeholder) |
+| `app/system-tests/billingCheckout.system.test.js` | Done | Handler tested against Stripe simulator: 200 with checkout URL, 401 without auth |
+| CDK: `BillingStack.java` — Stripe env vars | Done | `STRIPE_SECRET_KEY_ARN`, `STRIPE_PRICE_ID`, `STRIPE_TEST_PRICE_ID`, `DIY_SUBMIT_BASE_URL` (conditionally set when non-blank) |
+| CDK: `BillingStack.java` — IAM policy | Done | `secretsmanager:GetSecretValue` on Stripe secret ARN (with wildcard suffix) |
+| CDK: `BillingStackProps` — new props | Done | `stripeSecretKeyArn()`, `stripePriceId()`, `stripeTestPriceId()`, `baseUrl()` with @Value.Default |
+| CDK: `SubmitApplication.java` — wire Stripe props | Done | `envOr()` resolution + pass to BillingStack builder |
+| `.env.ci` — `STRIPE_SECRET_KEY_ARN` | Done | Points to `ci/submit/stripe/test_secret_key` (test key for CI) |
+| `.env.prod` — `STRIPE_SECRET_KEY_ARN` | Done | Points to `prod/submit/stripe/secret_key` (live key for prod) |
+| `deploy-environment.yml` — Stripe secrets | Done | Creates `{env}/submit/stripe/secret_key` + `{env}/submit/stripe/test_secret_key` from GitHub Secrets |
+| All unit tests pass (812 tests) | Done | |
+| Maven `./mvnw clean verify` | Done | BUILD SUCCESS |
+| **Phase 3: Checkout Session API** | **DEPLOYED** | Deployed to CI and validated — 2026-02-13 |
+| Phase 3.4 — Behaviour test: skeletal checkout flow | Done | `paymentBehaviour` covers checkout button, Stripe redirect, success/cancel |
+| Commit, push, deploy to CI | Done | Feature branch `eventandpayment` |
+| **Phase 4: Webhook Handler & Bundle Grant** | **DEPLOYED** | Deployed to CI and validated — 2026-02-13 |
+| `app/functions/billing/billingWebhookPost.js` | Done | Signature verification, event routing, handleCheckoutComplete with bundle grant |
+| `app/data/dynamoDbBundleRepository.js` — `putBundleByHashedSub` | Done | Store bundle using hashedSub directly (webhook metadata) |
+| `app/unit-tests/functions/billingWebhookPost.test.js` | Done | 12 tests: signature validation, checkout→bundle, fallbacks, error handling, lifecycle stubs |
+| `app/system-tests/billingInfrastructure.system.test.js` | Done | Updated: webhook returns 400 without signature |
+| All unit tests pass (831 tests) | Done | |
+| **Phase 11: Payment Funnel Behaviour Test** | **DEPLOYED** | Behaviour test for full checkout flow — 2026-02-12 |
+| `behaviour-tests/payment.behaviour.test.js` | Done | Tests checkout button, Stripe redirect, success/cancel flows |
+| **Test Cleanup: Phases A-E** | **DEPLOYED** | Remove test bundle, use Day Guest with testPass — 2026-02-13 |
+| Phase A — Telegram env var refactor | Done | `00f4f3b8` — Replace TELEGRAM_CHAT_IDS JSON blob with individual channel env vars |
+| Phase B — testPass field on passes | Done | `c8e2217f` — Add testPass field to passes and sandbox qualifier on bundle grant |
+| Phase C+D — Remove test bundle | Done | `83790b1c` — Remove test bundle, sandbox activities, add frontend sandbox routing |
+| Phase E — Update all behaviour tests | Done | `280ac4cb` — All 11 behaviour tests use Day Guest with testPass |
+| **Bug fixes during deployment validation** | **DEPLOYED** | CI-validated — 2026-02-13 |
+| `web/public/bundles.html` — capacity bypass | Done | `714fca89` — Bypass capacity check when valid pass exists (`!capacityAvailable && !passCode`) |
+| `behaviour-tests/postVatReturn.behaviour.test.js` — token refresh | Done | `96cc401a` — Re-grant bundle via pass when tokens run low (prevents 16-min hang) |
+| **CI Validation** | **PASSED** | All simulator tests + CI synthetic tests green — 2026-02-13 |
+| Test workflow `21972360703` (simulator) | Done | All tests pass including postVatReturn, passRedemption, tokenEnforcement |
+| Deploy workflow `21972063355` (CI deployment) | Done | All stacks deployed, all CI synthetic tests pass |
+| **Phase 4: Next steps** | **Pending** | |
+| Phase 4.5 — System tests against simulator + dynalite | Not started | `billingWebhook.system.test.js` |
+| Phase 4.6 — Behaviour test: checkout-to-bundle flow | Not started | Extend `billingCheckout.behaviour.test.js` |
+| **Phases 5-10** | **Not started** | |
 
 ---
 
-*Document refreshed: 2026-02-10. PLAN_STRIPE_1 completed. Stripe-as-code approach added. Original proposal date: 2026-02-01.*
+## Human Actions Required Before Phase 3
+
+Phase 3 (Checkout Session API) requires a real Stripe account with resources created and secrets stored. **All steps completed 2026-02-11.**
+
+### 1. Run `stripe-setup.js` — DONE (both modes)
+
+```bash
+# Test mode — creates test-mode resources
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
+
+# Live mode — creates live-mode resources
+STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js
+```
+
+**Test mode resources created:**
+- Product: `prod_TxfDUtfzb0ynWb` (Resident Pro)
+- Monthly Price: `price_1Szjt0FdFHdRoTOjHDXcuuq8` (GBP 9.99/month)
+- CI Webhook: `we_1Szjt0FdFHdRoTOjHvWLYhhM`
+- Prod Webhook: `we_1Szjt1FdFHdRoTOj4UFdpLCG`
+
+**Live mode resources created:**
+- Product: `prod_TxfkksBPOdFYiN` (Resident Pro)
+- Monthly Price: `price_1SzkPBCD0Ld2ukzIqbEweRSk` (GBP 9.99/month)
+- CI Webhook: `we_1SzkPBCD0Ld2ukzIZSPYj21C`
+- Prod Webhook: `we_1SzkPCCD0Ld2ukzIRQuQyccg`
+
+### 2. GitHub Actions Secrets and Variables — DONE
+
+Secrets and variables flow: GitHub Actions → `deploy-environment.yml` → AWS Secrets Manager → Lambda env vars. **No direct AWS writes.**
+
+#### Dual-key pattern (mirrors HMRC live/sandbox)
+
+Both test and live Stripe keys are available at runtime. Synthetic tests and test-users use test keys (no real charges). Real customers use live keys. Selection is based on actor classification (same as HMRC `hmrcAccount` header pattern).
+
+**GitHub Actions Secrets** (sensitive — API credentials and signing keys):
+
+| Secret | Scope | Purpose |
+|--------|-------|---------|
+| `STRIPE_SECRET_KEY` | Repo | Live Stripe API key (real charges) |
+| `STRIPE_TEST_SECRET_KEY` | Repo | Test Stripe API key (no charges) |
+| `STRIPE_WEBHOOK_SECRET` | Environment (ci/prod) | Live webhook signing secret (per-environment) |
+| `STRIPE_TEST_WEBHOOK_SECRET` | Repo | Test webhook signing secret |
+
+**GitHub Actions Variables** (non-sensitive — public Stripe identifiers):
+
+| Variable | Scope | Value | Purpose |
+|----------|-------|-------|---------|
+| `STRIPE_PRICE_ID` | Repo | `price_1SzkPBCD0Ld2ukzIqbEweRSk` | Live monthly price ID |
+| `STRIPE_TEST_PRICE_ID` | Repo | `price_1Szjt0FdFHdRoTOjHDXcuuq8` | Test monthly price ID |
+
+### 3. Verify Webhook Endpoint Reachable
+
+After the BillingStack deploys to CI, verify the webhook endpoint is reachable from Stripe:
+- [ ] Go to Stripe Dashboard → Developers → Webhooks
+- [ ] Check that the CI webhook shows a green status
+- [ ] Send a test event from Stripe to verify the Lambda receives it
+
+---
+
+## Payment Configuration as Code (All Sites)
+
+### Overview
+
+All payment provider resources across all DIY Accounting sites are managed as code in `scripts/`. Each script is idempotent (safe to re-run), environment-aware, and prints the IDs needed for secret storage.
+
+| Command | Site | Provider | What it creates |
+|---------|------|----------|-----------------|
+| `node scripts/stripe-setup.js --site submit` | submit | Stripe | Product, monthly price, CI+prod webhooks, portal config |
+| `node scripts/stripe-setup.js --site spreadsheets` | spreadsheets | Stripe | Product, 4 Payment Links (£10/£20/£45/custom), return URLs |
+| `node scripts/paypal-setup.js --site spreadsheets` | spreadsheets | PayPal | Verify button exists, print config, document manual steps |
+| `scripts/payment-secrets.sh <env>` | all | all | Store all payment secrets in AWS Secrets Manager + gh secrets |
+
+### Stripe Setup: Submit Subscriptions
+
+```bash
+# Test mode
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js --site submit
+
+# Live mode
+STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js --site submit --live
+```
+
+Creates:
+- Product: "Resident Pro" (`metadata.site=submit, metadata.bundleId=resident-pro`)
+- Monthly Price: GBP 9.99/month
+- Webhook endpoints for CI and prod
+- Customer Portal configuration
+
+### Stripe Setup: Spreadsheets Donations
+
+```bash
+# Test mode
+STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js --site spreadsheets
+
+# Live mode
+STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js --site spreadsheets --live
+```
+
+Creates:
+- Product: "Spreadsheet Donation" (`metadata.site=spreadsheets, metadata.type=donation`)
+- 4 Payment Links: £10, £20, £45, customer-chooses-amount
+  - Success URL: `https://spreadsheets.diyaccounting.co.uk/download.html?stripe=success`
+- Prints the Payment Link URLs to embed in `donate.html`
+
+> **Note**: Stripe Payment Links can be created via the API (`stripe.paymentLinks.create()`). The existing links in `donate.html` were created manually via the Dashboard — this script will find them by metadata or create new ones.
+
+### PayPal Setup: Spreadsheets Donations
+
+```bash
+# Verify existing config
+PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=... node scripts/paypal-setup.js --site spreadsheets
+
+# Live mode
+PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=... node scripts/paypal-setup.js --site spreadsheets --live
+```
+
+PayPal's hosted "Donate" buttons use a legacy API that doesn't support full programmatic creation. This script:
+- Verifies the existing hosted button ID (`XTEQ73HM52QQW`) is still active via PayPal REST API
+- Prints the current button configuration
+- Documents the manual steps if a new button is needed
+- Optionally sets up webhook URL for donation event notifications (for Phase 4 of `PLAN_WHATSAPP_ALERTING.md`)
+
+> **Limitation**: PayPal "Donate" buttons are best created in the PayPal Dashboard. The script verifies and documents rather than creates. If full API creation is needed later, PayPal's Orders API v2 could replace the hosted button with a server-side integration.
+
+### Payment Secrets: All Sites
+
+All secrets are stored in **GitHub Actions Secrets/Variables only**. The `deploy-environment.yml` workflow propagates them to AWS Secrets Manager during deployment. **Never write directly to AWS Secrets Manager.**
+
+**GitHub Actions Secrets** (sensitive — API credentials):
+
+| Secret | Scope | Purpose |
+|--------|-------|---------|
+| `STRIPE_SECRET_KEY` | Repo | Live Stripe API key |
+| `STRIPE_TEST_SECRET_KEY` | Repo | Test Stripe API key |
+| `STRIPE_WEBHOOK_SECRET` | Environment (ci/prod) | Live webhook signing secret |
+| `STRIPE_TEST_WEBHOOK_SECRET` | Repo | Test webhook signing secret |
+| `PAYPAL_CLIENT_ID` | Repo | PayPal REST API client ID (Phase 4 — donation webhooks) |
+| `PAYPAL_CLIENT_SECRET` | Repo | PayPal REST API client secret (Phase 4 — donation webhooks) |
+
+**GitHub Actions Variables** (non-sensitive — public identifiers):
+
+| Variable | Scope | Purpose |
+|----------|-------|---------|
+| `STRIPE_PRICE_ID` | Repo | Live monthly price ID |
+| `STRIPE_TEST_PRICE_ID` | Repo | Test monthly price ID |
+| `TELEGRAM_CHAT_IDS` | Repo | JSON map of Telegram group chat IDs |
+
+### Config-in-Repository, Secrets-in-Vault
+
+| What | Where | Why |
+|------|-------|-----|
+| Product names, prices, currencies | `scripts/stripe-setup.js` | Reviewable, version-controlled |
+| Webhook URLs, event types | `scripts/stripe-setup.js` | Tied to deployment topology |
+| Payment Link amounts, return URLs | `scripts/stripe-setup.js` | Tied to site configuration |
+| PayPal button config | `scripts/paypal-setup.js` | Documentation + verification |
+| API keys, webhook signing secrets | GitHub Actions Secrets | Propagated to AWS via `deploy-environment.yml` |
+| Public identifiers (price IDs, chat IDs) | GitHub Actions Variables | Non-sensitive, visible in logs |
+
+---
+
+**Next step**: Phase 11 — Payment Funnel Behaviour Test (conversion funnel end-to-end).
+
+---
+
+## Phase 11: Payment Funnel Behaviour Test
+
+**Goal**: A dedicated behaviour test that exercises the entire conversion funnel — the core business journey from free guest through token exhaustion to paid subscription and verified token usage.
+
+**Why this test matters**: This is the entire point of the business. A user gets a free day-guest pass, uses their 3 tokens, finds activities disabled, navigates to bundles to upgrade, subscribes to resident-pro via Stripe, then verifies they can use activities again and that the token usage page accurately reflects their transactions.
+
+### 11.1 Test Flow (verbatim user specification)
+
+The `paymentBehaviour` test:
+
+1. **Get day-guest via generated pass** — Create a day-guest pass via admin API, redeem it, verify bundle allocated with 3 tokens
+2. **Drain the 3 tokens** — Use tokens (1 via VAT submission if possible, remainder via direct DynamoDB `consumeToken` calls)
+3. **Verify activities are disabled** — Navigate to home page, verify activity buttons show "Insufficient tokens" and are disabled
+4. **Verify button redirects to bundles page** — The disabled activity button or upsell prompt links to `/bundles.html` for upgrade
+5. **Navigate to bundles page** — See the day-guest bundle with 0 tokens, see the resident-pro bundle available
+6. **Get resident-pro via generated pass** — Create a resident-pro pass via admin API, redeem it, verify resident-pro bundle allocated with 100 tokens
+7. **Use a token for a submission** — Navigate home, start a VAT submission, verify token consumed (99 remaining)
+8. **Check the token usage page** — Navigate to `/usage.html`, verify the token sources table shows resident-pro with correct token count, verify the token consumption table shows the actual transactions matching real usage
+
+### 11.2 Behaviour Test File
+
+- [ ] Create `behaviour-tests/payment.behaviour.test.js`
+  - Follow existing patterns from `tokenEnforcement.behaviour.test.js` and `passRedemption.behaviour.test.js`
+  - Use `test.step()` for each numbered step above
+  - 600s timeout (10 minutes — involves VAT submission + multiple API calls)
+  - Extract `userSub` for direct DynamoDB token exhaustion
+  - Use `ensureBundleViaPassApi()` from `behaviour-bundle-steps.js` for both day-guest and resident-pro
+  - Use `consumeToken()` from `dynamoDbBundleRepository.js` for fast token exhaustion
+  - Use `getTokensRemaining()` from `behaviour-bundle-steps.js` for token count verification
+  - Steps that require DynamoDB access (direct token exhaustion) skip gracefully when `BUNDLE_DYNAMODB_TABLE_NAME` is not set
+
+### 11.3 Playwright Configuration
+
+- [ ] Add `paymentBehaviour` project to `playwright.config.js`:
+  ```javascript
+  {
+    name: "paymentBehaviour",
+    testDir: "behaviour-tests",
+    testMatch: ["**/payment.behaviour.test.js"],
+    workers: 1,
+    outputDir: "./target/behaviour-test-results/",
+    timeout: 600_000,  // 10 minutes (involves HMRC submission + multiple steps)
+  }
+  ```
+
+### 11.4 npm Scripts
+
+- [ ] Add to `package.json`:
+  ```
+  "test:paymentBehaviour": "playwright test --project=paymentBehaviour",
+  "test:paymentBehaviour-simulator": "npx dotenv -e .env.simulator -- npm run test:paymentBehaviour",
+  "test:paymentBehaviour-proxy": "npx dotenv -e .env.proxy -- npm run test:paymentBehaviour",
+  "test:paymentBehaviour-ci": "npx dotenv -e .env.ci -- npm run test:paymentBehaviour",
+  "test:paymentBehaviour-prod": "npx dotenv -e .env.prod -- npm run test:paymentBehaviour",
+  ```
+
+### 11.5 CI: Simulator Test in test.yml
+
+- [ ] Add `behaviour-test-simulator-payment` job to `.github/workflows/test.yml`:
+  - Same structure as `behaviour-test-simulator-token-enforcement`
+  - Runs `npm run test:paymentBehaviour-simulator`
+  - Uploads artefacts (screenshots, videos, test context)
+  - Runs in Playwright container
+
+### 11.6 CI: Synthetic Test in deploy.yml
+
+- [ ] Add `web-test-payment` job to `.github/workflows/deploy.yml`:
+  - Same structure as `web-test-token-enforcement`
+  - Uses `./.github/workflows/synthetic-test.yml` with `behaviour-test-suite: 'paymentBehaviour'`
+  - Depends on: `enable-native-auth`, `web-test`, stack deployments
+  - Add to `disable-native-auth` needs list
+
+### 11.7 Synthetic Test Options
+
+- [ ] Add `'paymentBehaviour'` to the `behaviour-test-suite` choice list in `.github/workflows/synthetic-test.yml`
+- [ ] Add `paymentBehaviour` to `allBehaviour` testMatch in `playwright.config.js`
+
+### 11.8 Feature Uplift Assessment
+
+Before this test can pass, the following features must work:
+
+| Feature | Current State | Required State | Gap |
+|---------|--------------|----------------|-----|
+| Day-guest pass creation | Working (admin API) | Working | None |
+| Day-guest bundle allocation | Working (on-pass via pass API) | Working | None |
+| Day-guest tokens (3) | Working | Working | None |
+| Token exhaustion via DynamoDB | Working (consumeToken) | Working | None |
+| Activity disabled when tokens=0 | Working ("Insufficient tokens") | Working | None |
+| Upsell link to bundles page | Partially — `display: "always-with-upsell"` exists in catalogue | Must show "View Bundles" link when tokens exhausted | **Small gap**: verify upsell link renders correctly |
+| Resident-pro pass creation | Working (admin API) | Working | None |
+| Resident-pro bundle allocation | Working (on-pass via pass API) | Working | None |
+| Resident-pro tokens (100) | Working | Working | None |
+| VAT submission consumes token | Working | Working | None |
+| Token usage page (`/usage.html`) | Working (Phase 1) | Working | None |
+| Token consumption events on usage page | Working (Phase 1) | Working | None |
+
+**Verdict**: The app is **already capable of passing this test** in simulator mode. The pass-based allocation path works for both day-guest and resident-pro. The only potential gap is verifying the "View Bundles" upsell link renders when tokens are exhausted — this is a minor UI check that existing tests already partially cover (tokenEnforcement test step 7 verifies the disabled button).
+
+The Stripe checkout path (Phase 7: bundles.html "Subscribe" button → Stripe Checkout → webhook → bundle grant) is a separate flow that requires the bundles.html frontend integration. This Phase 11 test uses the **pass-based** allocation path which is already fully functional, exercising the same conversion funnel journey.
+
+### 11.9 Future: `on-subscription-with-pass` allocation mode
+
+Currently `resident-pro` uses `allocation = "on-pass"`. For production launch, we need `allocation = "on-subscription-with-pass"` — a new allocation mode where the bundle is:
+- **Visible** on the bundles page (not hidden)
+- **Grantable via pass** (for testing, comps, beta testers)
+- **Grantable via Stripe subscription** (for paying customers via webhook)
+
+This lets resident-pro be live on the site while gating access via either passes (admin-controlled) or subscriptions (self-serve payment). The catalogue change is:
+```toml
+allocation = "on-subscription-with-pass"  # accepts both pass and subscription grants
+```
+Implementation: extend `bundlePost.js` allocation logic to accept both pass-based and subscription-based grants for bundles with this allocation type.
+
+### Validation
+
+`npm run test:paymentBehaviour-simulator` passes locally. Simulator test runs in CI via `test.yml`. Synthetic test runs against deployed CI via `deploy.yml`. All 8 steps of the conversion funnel verified: pass → tokens → exhaustion → disabled → upgrade → new bundle → submission → usage page.
+
+---
+
+*Document refreshed: 2026-02-12. Phases 1-4 complete (webhook handler deployed). Phase 11 added (Payment Funnel Behaviour Test). 827 tests passing. Original proposal date: 2026-02-01.*

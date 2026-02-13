@@ -181,13 +181,10 @@
       }
 
       function checkCurrentActivityAndRedirect() {
-        // Get hmrcAccount from sessionStorage if available
-        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-        const requestQueryParams = hmrcAccount === "sandbox" ? "?hmrcAccount=sandbox" : "";
         const currentActivity = sessionStorage.getItem("currentActivity");
         if (currentActivity) {
           console.log("Current activity found:", currentActivity);
-          window.location.href = `${currentActivity}${requestQueryParams}`;
+          window.location.href = currentActivity;
         } else {
           console.log("No current activity found, staying on current page");
         }

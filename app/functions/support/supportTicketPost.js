@@ -13,6 +13,7 @@ import {
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/support/supportTicketPost.js" });
 
@@ -197,6 +198,10 @@ ${description}
     });
 
     logger.info({ message: "GitHub issue created successfully", issueNumber: issue.number, issueUrl: issue.html_url });
+    publishActivityEvent({
+      event: "support-ticket",
+      summary: "Support ticket created",
+    }).catch(() => {});
 
     return http200OkResponse({
       request,

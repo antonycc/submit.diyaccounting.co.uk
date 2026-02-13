@@ -9,6 +9,7 @@ import { createLogger } from "../../lib/logger.js";
 import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { getHeader } from "../../lib/httpResponseHelper.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/auth/customAuthorizer.js" });
 
@@ -174,6 +175,10 @@ function generateAllowPolicy(routeArn, jwtPayload) {
 
 // Generate IAM policy to deny access
 function generateDenyPolicy(routeArn) {
+  publishActivityEvent({
+    event: "auth-denied",
+    summary: "Authorization denied",
+  }).catch(() => {});
   return {
     principalId: "user",
     policyDocument: {

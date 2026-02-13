@@ -934,6 +934,40 @@ jobs:
           retention-days: 7
           path: target/behaviour-test-results/
 
+  behaviour-test-simulator-payment:
+    name: 'simulator - paymentBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+    needs:
+      - names
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:paymentBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: behaviour-test-simulator-payment
+          retention-days: 7
+          path: target/behaviour-test-results/
+
   behaviour-test-simulator-simulator:
     name: 'simulator - simulatorBehaviour'
     runs-on: ubuntu-24.04

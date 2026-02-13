@@ -9,6 +9,9 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -23,12 +26,19 @@ import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cloudwatch.actions.SnsAction;
+import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.events.EventBus;
+import software.amazon.awscdk.services.events.EventPattern;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
+import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
 import software.amazon.awscdk.services.synthetics.ArtifactsBucketLocation;
@@ -48,6 +58,7 @@ public class OpsStack extends Stack {
     public Canary apiCanary;
     public Alarm healthCheckAlarm;
     public Alarm apiCheckAlarm;
+    public software.amazon.awscdk.services.events.EventBus activityBus;
 
     @Value.Immutable
     public interface OpsStackProps extends StackProps, SubmitStackProps {
@@ -76,9 +87,32 @@ public class OpsStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
+        String baseImageTag();
+
         // Alert configuration
         @Value.Default
         default String alertEmail() {
+            return "";
+        }
+
+        // Telegram configuration
+        @Value.Default
+        default String telegramBotTokenArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String telegramTestChatId() {
+            return "";
+        }
+
+        @Value.Default
+        default String telegramLiveChatId() {
+            return "";
+        }
+
+        @Value.Default
+        default String telegramOpsChatId() {
             return "";
         }
 
@@ -138,6 +172,140 @@ public class OpsStack extends Stack {
             this.alertTopic.addSubscription(new EmailSubscription(props.alertEmail()));
             infof("Added email subscription for alerts: %s", props.alertEmail());
         }
+
+        // ============================================================================
+        // EventBridge Custom Activity Bus
+        // ============================================================================
+        this.activityBus = EventBus.Builder.create(this, props.resourceNamePrefix() + "-ActivityBus")
+                .eventBusName(props.sharedNames().activityBusName)
+                .build();
+
+        // Email proof rule: all ActivityEvent detail-types → SNS alertTopic
+        Rule.Builder.create(this, "ActivityEmailProofRule")
+                .ruleName(props.resourceNamePrefix() + "-activity-email-proof")
+                .eventBus(this.activityBus)
+                .eventPattern(EventPattern.builder()
+                        .detailType(List.of("ActivityEvent"))
+                        .build())
+                .targets(List.of(new SnsTopic(this.alertTopic)))
+                .build();
+
+        cfnOutput(this, "ActivityBusName", this.activityBus.getEventBusName());
+        cfnOutput(this, "ActivityBusArn", this.activityBus.getEventBusArn());
+
+        // ============================================================================
+        // Telegram Forwarder Lambda + EventBridge Rule
+        // ============================================================================
+        var telegramForwarderEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.telegramBotTokenArn() != null && !props.telegramBotTokenArn().isBlank()) {
+            telegramForwarderEnv.with("TELEGRAM_BOT_TOKEN_ARN", props.telegramBotTokenArn());
+        }
+        if (props.telegramTestChatId() != null && !props.telegramTestChatId().isBlank()) {
+            telegramForwarderEnv.with("TELEGRAM_TEST_CHAT_ID", props.telegramTestChatId());
+        }
+        if (props.telegramLiveChatId() != null && !props.telegramLiveChatId().isBlank()) {
+            telegramForwarderEnv.with("TELEGRAM_LIVE_CHAT_ID", props.telegramLiveChatId());
+        }
+        if (props.telegramOpsChatId() != null && !props.telegramOpsChatId().isBlank()) {
+            telegramForwarderEnv.with("TELEGRAM_OPS_CHAT_ID", props.telegramOpsChatId());
+        }
+        var telegramForwarderLambda = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().activityTelegramForwarderLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().activityTelegramForwarderLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().activityTelegramForwarderLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().activityTelegramForwarderLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestReservedConcurrency(2)
+                        .ingestLambdaTimeout(Duration.seconds(10))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(telegramForwarderEnv)
+                        .build());
+
+        // Single catch-all rule: the Lambda handles routing to the correct chat IDs
+        // based on (actor, flow, env) in the event detail.
+        Rule.Builder.create(this, "ActivityTelegramRule")
+                .ruleName(props.resourceNamePrefix() + "-activity-telegram")
+                .eventBus(this.activityBus)
+                .eventPattern(EventPattern.builder()
+                        .detailType(List.of("ActivityEvent"))
+                        .build())
+                .targets(List.of(LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda)
+                        .build()))
+                .build();
+
+        if (props.telegramBotTokenArn() != null && !props.telegramBotTokenArn().isBlank()) {
+            var telegramSecretArnWithWildcard = props.telegramBotTokenArn().endsWith("*")
+                    ? props.telegramBotTokenArn()
+                    : props.telegramBotTokenArn() + "-*";
+            telegramForwarderLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(telegramSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for Telegram bot token secret %s",
+                    telegramForwarderLambda.ingestLambda.getFunctionName(), props.telegramBotTokenArn());
+        }
+
+        cfnOutput(
+                this,
+                "TelegramForwarderLambdaArn",
+                telegramForwarderLambda.ingestLambda.getFunctionArn());
+        infof(
+                "Created Telegram Forwarder Lambda %s",
+                telegramForwarderLambda.ingestLambda.getNode().getId());
+
+        // ============================================================================
+        // Default Bus Rules: CloudFormation + CloudWatch → Telegram Forwarder
+        // ============================================================================
+        // These rules match AWS service events on the default EventBridge bus
+        // (no eventBus specified → default bus). AWS service events are free.
+
+        // CloudFormation Stack Status Change → Telegram forwarder
+        // Filter to terminal statuses only to avoid noisy intermediate states
+        Rule.Builder.create(this, "CfnStackStatusRule")
+                .ruleName(props.resourceNamePrefix() + "-cfn-stack-status")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.cloudformation"))
+                        .detailType(List.of("CloudFormation Stack Status Change"))
+                        .detail(java.util.Map.of(
+                                "status-details",
+                                java.util.Map.of(
+                                        "status",
+                                        List.of(
+                                                "CREATE_COMPLETE",
+                                                "UPDATE_COMPLETE",
+                                                "DELETE_COMPLETE",
+                                                "CREATE_FAILED",
+                                                "UPDATE_FAILED",
+                                                "DELETE_FAILED",
+                                                "ROLLBACK_COMPLETE",
+                                                "UPDATE_ROLLBACK_COMPLETE"))))
+                        .build())
+                .targets(List.of(LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda)
+                        .build()))
+                .build();
+
+        // CloudWatch Alarm State Change → Telegram forwarder
+        Rule.Builder.create(this, "AlarmStateChangeRule")
+                .ruleName(props.resourceNamePrefix() + "-alarm-state-change")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.cloudwatch"))
+                        .detailType(List.of("CloudWatch Alarm State Change"))
+                        .build())
+                .targets(List.of(LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda)
+                        .build()))
+                .build();
+
+        infof("Created default bus rules for CloudFormation and CloudWatch alarm events");
 
         // ============================================================================
         // Synthetic Canaries (if baseUrl provided)

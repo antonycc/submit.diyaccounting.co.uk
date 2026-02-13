@@ -64,7 +64,7 @@ if (downloadUrl) {
 document.querySelectorAll(".stripe-donate-link").forEach(function (link) {
   link.addEventListener("click", function () {
     const amount = this.getAttribute("data-amount");
-    const value = amount === "custom" ? 0 : parseInt(amount, 10);
+    const value = amount === "custom" ? 0 : parseFloat(amount);
     trackEvent("begin_checkout", {
       currency: "GBP",
       value: value,

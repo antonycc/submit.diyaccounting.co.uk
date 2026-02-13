@@ -35,6 +35,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnGet.js" });
 
@@ -596,5 +597,9 @@ export async function getVatReturn(
     // Workers of this function may choose to map these to HTTP responses
     return { hmrcResponse, vatReturn: null };
   }
+  publishActivityEvent({
+    event: "vat-return-queried",
+    summary: "VAT return queried",
+  }).catch(() => {});
   return { hmrcResponse, vatReturn: hmrcResponse.data, hmrcRequestUrl };
 }

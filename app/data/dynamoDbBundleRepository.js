@@ -33,13 +33,15 @@ export async function putBundle(userId, bundle) {
     };
 
     // Add expiry with millisecond precision timestamp (ISO format)
-    const expiryDate = new Date(bundle.expiry);
-    item.expiry = expiryDate.toISOString();
+    if (bundle.expiry) {
+      const expiryDate = new Date(bundle.expiry);
+      item.expiry = expiryDate.toISOString();
 
-    // Calculate TTL as 1 month after expiry
-    const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
-    item.ttl = ttl;
-    item.ttl_datestamp = ttl_datestamp;
+      // Calculate TTL as 1 month after expiry
+      const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
+      item.ttl = ttl;
+      item.ttl_datestamp = ttl_datestamp;
+    }
 
     logger.info({
       message: "Storing bundle in DynamoDB as item",
@@ -63,6 +65,48 @@ export async function putBundle(userId, bundle) {
       message: `Error storing bundle in DynamoDB ${error.message}`,
       error,
       userId,
+      bundle,
+    });
+    throw error;
+  }
+}
+
+export async function putBundleByHashedSub(hashedSub, bundle) {
+  logger.info({ message: `putBundleByHashedSub [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
+
+  try {
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    const now = new Date();
+    const item = {
+      ...bundle,
+      hashedSub,
+      createdAt: now.toISOString(),
+    };
+
+    if (bundle.expiry) {
+      const expiryDate = new Date(bundle.expiry);
+      item.expiry = expiryDate.toISOString();
+      const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
+      item.ttl = ttl;
+      item.ttl_datestamp = ttl_datestamp;
+    }
+
+    logger.info({ message: "Storing bundle in DynamoDB by hashedSub", hashedSub, item });
+    await docClient.send(
+      new module.PutCommand({
+        TableName: tableName,
+        Item: item,
+      }),
+    );
+
+    logger.info({ message: "Bundle stored in DynamoDB by hashedSub", hashedSub, item });
+  } catch (error) {
+    logger.error({
+      message: `Error storing bundle by hashedSub in DynamoDB ${error.message}`,
+      error,
+      hashedSub,
       bundle,
     });
     throw error;
@@ -216,6 +260,38 @@ export async function consumeToken(userId, bundleId) {
       return { consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 };
     }
     logger.error({ message: "Error consuming token", error: error.message, userId, bundleId });
+    throw error;
+  }
+}
+
+export async function recordTokenEvent(userId, bundleId, event) {
+  logger.info({ message: `recordTokenEvent [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
+
+  try {
+    const hashedSub = hashSub(userId);
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    const tokenEvent = {
+      ...event,
+      timestamp: new Date().toISOString(),
+    };
+
+    await docClient.send(
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { hashedSub, bundleId },
+        UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event)",
+        ExpressionAttributeValues: {
+          ":empty": [],
+          ":event": [tokenEvent],
+        },
+      }),
+    );
+
+    logger.info({ message: "Token event recorded", hashedSub, bundleId, event: tokenEvent });
+  } catch (error) {
+    logger.error({ message: "Error recording token event", error: error.message, userId, bundleId });
     throw error;
   }
 }

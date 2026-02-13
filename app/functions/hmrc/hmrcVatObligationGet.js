@@ -33,6 +33,7 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
@@ -536,5 +537,9 @@ export async function getVatObligations(
   if (!hmrcResponse.ok) {
     return { hmrcResponse, obligations: null };
   }
+  publishActivityEvent({
+    event: "vat-obligations-queried",
+    summary: "VAT obligations queried",
+  }).catch(() => {});
   return { hmrcResponse, obligations: hmrcResponse.data, hmrcRequestUrl };
 }
