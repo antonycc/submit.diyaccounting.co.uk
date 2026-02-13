@@ -89,7 +89,7 @@ The `passes-output.json` file contains complete metadata:
 ### Generate QR Code Locally
 
 ```javascript
-import { generatePassQrCodeBuffer, generatePassQrCodeText } from './app/lib/qrCodeGenerator.js';
+import { generatePassQrCodeBuffer } from './app/lib/qrCodeGenerator.js';
 import fs from 'fs';
 
 // Generate PNG QR code
@@ -99,14 +99,6 @@ const buffer = await generatePassQrCodeBuffer({
 });
 
 fs.writeFileSync('qr-code.png', buffer);
-
-// Generate terminal QR code
-const text = await generatePassQrCodeText({
-  code: 'my-pass-code',
-  url: 'https://submit.diyaccounting.co.uk/bundles.html?pass=my-pass-code',
-});
-
-console.log(text);
 ```
 
 ### Customize QR Code Options

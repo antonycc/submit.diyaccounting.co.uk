@@ -322,7 +322,7 @@ jobs:
           export NOTES="${NOTES}"
           export CREATED_BY="${CREATED_BY}"
           export PASS_URL_HOST="${{ needs.names.outputs.pass-url-host }}"
-          
+
           node scripts/generate-pass-with-qr.js
 
       - name: Create HMRC sandbox test user
@@ -391,14 +391,6 @@ jobs:
               console.log('| Max uses | ' + pass.maxUses + ' |');
               if (pass.restrictedToEmail) {
                 console.log('| Email | ' + pass.restrictedToEmail + ' |');
-              }
-              console.log('');
-              if (pass.qrCodeText) {
-                console.log('**QR Code** (scan to redeem):');
-                console.log('');
-                console.log('\`\`\`');
-                console.log(pass.qrCodeText);
-                console.log('\`\`\`');
               }
               console.log('');
             }

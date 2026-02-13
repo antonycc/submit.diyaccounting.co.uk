@@ -7,12 +7,7 @@
 
 import { createPass } from "../app/services/passService.js";
 import { initializeEmailHashSecret } from "../app/lib/emailHash.js";
-import {
-  generatePassQrCodeBuffer,
-  generatePassQrCodeText,
-  generateAnnotatedPassQrCodeSvg,
-  buildPassDetails,
-} from "../app/lib/qrCodeGenerator.js";
+import { generatePassQrCodeBuffer, generateAnnotatedPassQrCodeSvg, buildPassDetails } from "../app/lib/qrCodeGenerator.js";
 import fs from "fs";
 import path from "path";
 
@@ -103,12 +98,6 @@ async function main() {
     const svgFilePath = path.join(qrCodesDir, svgFileName);
     fs.writeFileSync(svgFilePath, annotatedSvg, "utf-8");
 
-    // Generate terminal QR code for GitHub Actions output
-    const qrText = await generatePassQrCodeText({
-      code: pass.code,
-      url: passUrl,
-    });
-
     // Build pass details
     const details = buildPassDetails(pass, passUrl, email);
 
@@ -121,7 +110,6 @@ async function main() {
       qrCodeFile: qrFileName,
       qrCodeSvgFile: svgFileName,
       qrCodeBase64: `data:image/png;base64,${qrBase64}`,
-      qrCodeText: qrText,
     });
 
     // Print pass details with QR code in terminal
@@ -138,8 +126,6 @@ async function main() {
     if (notes) {
       console.log(`Notes: ${notes}`);
     }
-    console.log("\nQR Code:");
-    console.log(qrText);
   }
 
   // Write results to JSON

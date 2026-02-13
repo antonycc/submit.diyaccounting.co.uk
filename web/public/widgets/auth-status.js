@@ -218,6 +218,7 @@
     // Redirect to Cognito logout endpoint to invalidate session
     const env = window.__env;
     if (env && env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
+      const logoutUri = window.location.origin + "/auth/signed-out.html";
       const logoutUrl =
         env.COGNITO_BASE_URI.replace(/\/$/, "") +
         "/logout?" +
@@ -225,7 +226,7 @@
         env.COGNITO_CLIENT_ID +
         "&" +
         "logout_uri=" +
-        encodeURIComponent(window.location.origin + "/");
+        encodeURIComponent(logoutUri);
       window.location.href = logoutUrl;
     } else {
       window.location.reload();

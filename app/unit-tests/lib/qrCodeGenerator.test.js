@@ -5,7 +5,6 @@ import { describe, it, expect } from "vitest";
 import {
   generatePassQrCode,
   generatePassQrCodeBuffer,
-  generatePassQrCodeText,
   generateAnnotatedPassQrCodeSvg,
   buildPassDetails,
 } from "../../lib/qrCodeGenerator.js";
@@ -130,38 +129,6 @@ describe("qrCodeGenerator", () => {
 
       expect(Buffer.isBuffer(buffer)).toBe(true);
       expect(buffer.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe("generatePassQrCodeText", () => {
-    it("should generate ASCII art QR code", async () => {
-      const text = await generatePassQrCodeText({
-        code: testPass.code,
-        url: testUrl,
-      });
-
-      expect(typeof text).toBe("string");
-      expect(text.length).toBeGreaterThan(50);
-      // Terminal QR codes use blocks and spaces
-      expect(text).toMatch(/[█▀▄▌▐ ]/);
-    });
-
-    it("should throw error when code is missing", async () => {
-      await expect(
-        generatePassQrCodeText({
-          code: "",
-          url: testUrl,
-        }),
-      ).rejects.toThrow("Pass code is required");
-    });
-
-    it("should throw error when URL is missing", async () => {
-      await expect(
-        generatePassQrCodeText({
-          code: testPass.code,
-          url: "",
-        }),
-      ).rejects.toThrow("Pass URL is required");
     });
   });
 

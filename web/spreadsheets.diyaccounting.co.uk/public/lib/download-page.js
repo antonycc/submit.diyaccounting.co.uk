@@ -10,6 +10,19 @@ function trackEvent(eventName, params) {
 
 let catalogue = null;
 
+function showDownloadAvailable(fileUrl) {
+  var availableSection = document.getElementById("download-available");
+  var availableBtn = document.getElementById("download-available-btn");
+  var availableLink = document.getElementById("download-available-link");
+  if (availableSection) {
+    availableBtn.href = fileUrl;
+    availableLink.href = fileUrl;
+    availableLink.textContent = fileUrl;
+    availableSection.classList.remove("hidden");
+    availableSection.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
 function loadCatalogue() {
   const xhr = new XMLHttpRequest();
   xhr.open("GET", "catalogue.toml", true);
@@ -82,18 +95,7 @@ function initForm() {
         ],
       });
       const fileUrl = "/zips/" + encodeURIComponent(savedFilename);
-      // Show visible download area
-      const availableSection = document.getElementById("download-available");
-      const availableBtn = document.getElementById("download-available-btn");
-      const availableLink = document.getElementById("download-available-link");
-      if (availableSection) {
-        availableBtn.href = fileUrl;
-        availableLink.href = fileUrl;
-        availableLink.textContent = fileUrl;
-        availableSection.classList.remove("hidden");
-        availableSection.scrollIntoView({ behavior: "smooth" });
-      }
-      // Also trigger the browser's automatic download
+      showDownloadAvailable(fileUrl);
       window.location = fileUrl;
       return;
     }
@@ -204,7 +206,8 @@ document.getElementById("download-donate-btn").addEventListener("click", functio
 });
 
 // GA4 ecommerce: add_to_cart when user clicks "Download without donating" (free download)
-document.getElementById("download-direct-btn").addEventListener("click", function () {
+document.getElementById("download-direct-btn").addEventListener("click", function (e) {
+  e.preventDefault();
   const product = getSelectedProduct();
   if (product) {
     trackEvent("add_to_cart", {
@@ -219,6 +222,12 @@ document.getElementById("download-direct-btn").addEventListener("click", functio
         },
       ],
     });
+  }
+  var directBtn = document.getElementById("download-direct-btn");
+  var fileUrl = directBtn.href;
+  if (fileUrl) {
+    showDownloadAvailable(fileUrl);
+    window.location = fileUrl;
   }
 });
 

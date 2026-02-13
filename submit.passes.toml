@@ -8,10 +8,28 @@
 #
 # Pass records store their own bundleId, maxUses, validUntil etc. so this file
 # can evolve independently without affecting existing passes.
+#
+# PASS → BUNDLE MAPPING SUMMARY
+# =============================
+# Pass Type              → Bundle Granted       → Payment Required?
+# test-access            → test                 → No (free, admin-issued)
+# day-trial              → day-guest            → No (free, admin-issued)
+# invited-guest          → invited-guest        → No (free, admin-issued, email-restricted)
+# resident-guest         → resident-guest       → No (free, admin-issued, email-restricted)
+# resident-pro-comp      → resident-pro-comp    → No (free, admin-issued, email-restricted)
+# group-invite           → invited-guest        → No (free, admin-issued)
+# campaign               → invited-guest        → Costs 10 tokens to issue (user-issued, Phase 6)
+# digital-pass           → day-guest            → Costs 10 tokens to issue (user-issued, Phase 6)
+# physical-pass          → day-guest            → Costs 10 tokens to issue (user-issued, Phase 6)
+#
+# See PASSES.md for full documentation and web/public/submit.catalogue.toml for bundle definitions.
 
 version = "1.0.0"
 
-# Test access - sandbox API access for developers and testers
+# test-access → unlocks "test" bundle
+# Grants: sandbox API access only (no production HMRC)
+# Tokens: N/A (test bundle has no token tracking)
+# Payment: None (admin-issued via GitHub Actions)
 [[passTypes]]
 id = "test-access"
 name = "Test Access"
@@ -21,7 +39,10 @@ defaultValidityPeriod = "P7D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
 
-# Day trial - single-day production access for prospective users
+# day-trial → unlocks "day-guest" bundle
+# Grants: 3 tokens, 1 day timeout, production HMRC access
+# Tokens: 3 (enough for 3 VAT submissions; viewing obligations is free)
+# Payment: None (admin-issued via GitHub Actions)
 [[passTypes]]
 id = "day-trial"
 name = "Day Trial"
@@ -31,7 +52,24 @@ defaultValidityPeriod = "P1D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
 
-# Invited guest - month-long access for specific invited users
+# resident-pro → unlocks "day-guest" bundle
+# Grants: 3 tokens, 1 day timeout, production HMRC access
+# Tokens: 3 (enough for 3 VAT submissions; viewing obligations is free)
+# Payment: None (admin-issued via GitHub Actions)
+[[passTypes]]
+id = "resident-pro-access"
+name = "Day Trial"
+description = "Single-day access to production HMRC APIs"
+bundleId = "resident-pro"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+
+
+# invited-guest → unlocks "invited-guest" bundle
+# Grants: 3 tokens refreshing monthly, 1 month timeout, production HMRC access
+# Tokens: 3 per month (refreshes on tokenRefreshInterval)
+# Payment: None (admin-issued, email-restricted to specific user)
 [[passTypes]]
 id = "invited-guest"
 name = "Invited Guest"
@@ -41,7 +79,10 @@ defaultValidityPeriod = "P1M"
 defaultMaxUses = 1
 requiresEmailRestriction = true
 
-# Resident guest - ongoing free access for specific users (existing DIY customers, partners)
+# resident-guest → unlocks "resident-guest" bundle
+# Grants: 3 tokens refreshing monthly, no timeout (unlimited duration), production HMRC access
+# Tokens: 3 per month (refreshes on tokenRefreshInterval)
+# Payment: None (admin-issued, email-restricted; for existing DIY customers and partners)
 # DIY customers: email support, admin sends a resident-guest pass manually
 [[passTypes]]
 id = "resident-guest"
@@ -52,7 +93,10 @@ bundleId = "resident-guest"
 defaultMaxUses = 1
 requiresEmailRestriction = true
 
-# Resident pro (complimentary) - gifted pro access for beta testers and partners
+# resident-pro-comp → unlocks "resident-pro-comp" bundle
+# Grants: 100 tokens refreshing monthly, no timeout, production HMRC access + pass generation
+# Tokens: 100 per month (refreshes on tokenRefreshInterval)
+# Payment: None (admin-issued, email-restricted; gifted to beta testers and partners)
 [[passTypes]]
 id = "resident-pro-comp"
 name = "Resident Pro (Complimentary)"
@@ -62,7 +106,10 @@ defaultValidityPeriod = "P1Y"
 defaultMaxUses = 1
 requiresEmailRestriction = true
 
-# Group invite - shareable invite for workshops, events, promotions
+# group-invite → unlocks "invited-guest" bundle (same as invited-guest pass, but 10 uses)
+# Grants: 3 tokens refreshing monthly per redeemer, 1 month timeout
+# Tokens: 3 per month per redeemer
+# Payment: None (admin-issued, shareable link/QR for workshops and events)
 [[passTypes]]
 id = "group-invite"
 name = "Group Invite"
@@ -72,8 +119,10 @@ defaultValidityPeriod = "P1M"
 defaultMaxUses = 10
 requiresEmailRestriction = false
 
-# Campaign - user-issued passes for referral campaigns (Phase 6)
-# Costs 10 tokens to issue, valid for 3 days, single use
+# campaign → unlocks "invited-guest" bundle
+# Grants: 3 tokens refreshing monthly per redeemer, 3 day validity
+# Tokens: 3 per month per redeemer
+# Payment: Costs 10 tokens from the issuing user's bundle (Phase 6, not yet implemented)
 [[passTypes]]
 id = "campaign"
 name = "Campaign Invite"
@@ -84,7 +133,10 @@ defaultMaxUses = 1
 requiresEmailRestriction = false
 tokenCostToIssue = 10
 
-# Digital pass - time-limited, unlimited capacity
+# digital-pass → unlocks "day-guest" bundle
+# Grants: 3 tokens, 1 day timeout per redeemer, 7 day pass validity, 100 uses
+# Tokens: 3 per redeemer (no refresh for day-guest)
+# Payment: Costs 10 tokens from the issuing user's bundle (Phase 6, not yet implemented)
 # Short validity (7 days) encourages focused digital campaigns.
 # 100 uses allows broad distribution via social media, email, messaging.
 # See PLAN_GENERATE_PASS_ACTIVITY.md
@@ -98,7 +150,10 @@ defaultMaxUses = 100
 requiresEmailRestriction = false
 tokenCostToIssue = 10
 
-# Physical pass - usage-limited, unlimited time
+# physical-pass → unlocks "day-guest" bundle
+# Grants: 3 tokens, 1 day timeout per redeemer, no expiry, 10 uses
+# Tokens: 3 per redeemer (no refresh for day-guest)
+# Payment: Costs 10 tokens from the issuing user's bundle (Phase 6, not yet implemented)
 # No time limit means merchandise retains value indefinitely.
 # 10 uses discourages sharing while rewarding continued display.
 # Designed for t-shirts, mugs, stickers with QR code + 4-word passphrase.

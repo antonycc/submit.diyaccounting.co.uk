@@ -252,6 +252,14 @@
             console.log("No MFA detected. amr:", amrClaims, "federated:", isFederatedLogin, "auth_time:", authTime);
           }
 
+          // Store login provider for logout flow (Google logout requires extra redirect)
+          if (isFederatedLogin) {
+            var providerName = idTokenPayload.identities[0].providerName || idTokenPayload.identities[0].providerType;
+            localStorage.setItem("loginProvider", providerName);
+          } else {
+            localStorage.setItem("loginProvider", "cognito");
+          }
+
           // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle
           showStatus("Authenticated successfully. Redirecting...", "info");
 
