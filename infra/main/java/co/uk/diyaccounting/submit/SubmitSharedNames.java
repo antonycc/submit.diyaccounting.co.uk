@@ -107,6 +107,7 @@ public class SubmitSharedNames {
     public String identityStackId;
     public String apexStackId;
     public String backupStackId;
+    public String activityStackId;
     public String simulatorStackId;
 
     public String appResourceNamePrefix;
@@ -423,6 +424,7 @@ public class SubmitSharedNames {
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);
         this.apexStackId = "%s-env-ApexStack".formatted(props.envName);
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
+        this.activityStackId = "%s-env-ActivityStack".formatted(props.envName);
         this.simulatorStackId = "%s-env-SimulatorStack".formatted(props.envName);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 

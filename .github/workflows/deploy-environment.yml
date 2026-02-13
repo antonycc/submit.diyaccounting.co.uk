@@ -45,6 +45,7 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ApexStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
       # Simulator source code
       - 'web/public-simulator/**'
@@ -319,6 +320,25 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.environment-name }}-env-BackupStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
+  deploy-activity:
+    name: 'deploy activity'
+    needs:
+      - names
+      - create-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-ActivityStack
       force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.environment-name }}

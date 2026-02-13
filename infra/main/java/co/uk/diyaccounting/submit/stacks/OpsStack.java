@@ -58,7 +58,7 @@ public class OpsStack extends Stack {
     public Canary apiCanary;
     public Alarm healthCheckAlarm;
     public Alarm apiCheckAlarm;
-    public software.amazon.awscdk.services.events.EventBus activityBus;
+    public software.amazon.awscdk.services.events.IEventBus activityBus;
 
     @Value.Immutable
     public interface OpsStackProps extends StackProps, SubmitStackProps {
@@ -174,11 +174,10 @@ public class OpsStack extends Stack {
         }
 
         // ============================================================================
-        // EventBridge Custom Activity Bus
+        // EventBridge Custom Activity Bus (imported from env-level ActivityStack)
         // ============================================================================
-        this.activityBus = EventBus.Builder.create(this, props.resourceNamePrefix() + "-ActivityBus")
-                .eventBusName(props.sharedNames().activityBusName)
-                .build();
+        this.activityBus = EventBus.fromEventBusName(
+                this, "ActivityBus", props.sharedNames().activityBusName);
 
         // Email proof rule: all ActivityEvent detail-types → SNS alertTopic
         Rule.Builder.create(this, "ActivityEmailProofRule")
@@ -189,9 +188,6 @@ public class OpsStack extends Stack {
                         .build())
                 .targets(List.of(new SnsTopic(this.alertTopic)))
                 .build();
-
-        cfnOutput(this, "ActivityBusName", this.activityBus.getEventBusName());
-        cfnOutput(this, "ActivityBusArn", this.activityBus.getEventBusArn());
 
         // ============================================================================
         // Telegram Forwarder Lambda + EventBridge Rule

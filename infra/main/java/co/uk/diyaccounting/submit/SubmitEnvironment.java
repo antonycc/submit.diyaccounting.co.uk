@@ -9,6 +9,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
+import co.uk.diyaccounting.submit.stacks.ActivityStack;
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
@@ -29,6 +30,7 @@ public class SubmitEnvironment {
     public final ObservabilityUE1Stack observabilityUE1Stack;
     public final DataStack dataStack;
     public final BackupStack backupStack;
+    public final ActivityStack activityStack;
     public final IdentityStack identityStack;
     public final ApexStack apexStack;
     public final SimulatorStack simulatorStack;
@@ -194,6 +196,23 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .build());
         this.backupStack.addDependency(this.dataStack);
+
+        // Create ActivityStack with the shared EventBridge bus
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.activityStackId, deploymentName, envName);
+        this.activityStack = new ActivityStack(
+                app,
+                sharedNames.activityStackId,
+                ActivityStack.ActivityStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .build());
 
         // Create the identity stack before any user-aware services
         infof(
