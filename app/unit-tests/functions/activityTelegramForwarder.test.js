@@ -6,17 +6,17 @@ import {
   escapeTelegramMarkdown,
   formatMessage,
   resolveTargetChatIds,
+  resolveChatConfig,
   synthesizeFromCloudFormation,
   synthesizeFromCloudWatchAlarm,
   resolveEventDetail,
   handler,
 } from "@app/functions/ops/activityTelegramForwarder.js";
 
-const CHAT_IDS = {
-  "ci-test": "-5250521947",
-  "ci-live": "-5278650420",
-  "prod-test": "-5144319944",
-  "prod-live": "-5177256260",
+const CHAT_CONFIG = {
+  test: "@diy_ci_test",
+  live: "@diy_ci_live",
+  ops: "@diy_ci_ops",
 };
 
 describe("activityTelegramForwarder", () => {
@@ -59,77 +59,82 @@ describe("activityTelegramForwarder", () => {
     });
   });
 
+  describe("resolveChatConfig", () => {
+    const originalEnv = { ...process.env };
+
+    afterEach(() => {
+      process.env = { ...originalEnv };
+    });
+
+    test("reads individual env vars", () => {
+      process.env.TELEGRAM_TEST_CHAT_ID = "@diy_test";
+      process.env.TELEGRAM_LIVE_CHAT_ID = "@diy_live";
+      process.env.TELEGRAM_OPS_CHAT_ID = "@diy_ops";
+      expect(resolveChatConfig()).toEqual({ test: "@diy_test", live: "@diy_live", ops: "@diy_ops" });
+    });
+
+    test("returns empty strings when env vars are not set", () => {
+      delete process.env.TELEGRAM_TEST_CHAT_ID;
+      delete process.env.TELEGRAM_LIVE_CHAT_ID;
+      delete process.env.TELEGRAM_OPS_CHAT_ID;
+      expect(resolveChatConfig()).toEqual({ test: "", live: "", ops: "" });
+    });
+  });
+
   describe("resolveTargetChatIds", () => {
-    // CI environment routing
-    test("routes CI test-user events to ci-test", () => {
-      const detail = { env: "ci", actor: "test-user", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5250521947"]);
+    // User journey routing
+    test("routes test-user events to test channel", () => {
+      const detail = { actor: "test-user", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
     });
 
-    test("routes CI synthetic events to ci-test", () => {
-      const detail = { env: "ci", actor: "synthetic", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5250521947"]);
+    test("routes synthetic events to test channel", () => {
+      const detail = { actor: "synthetic", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
     });
 
-    test("routes CI customer events to ci-live", () => {
-      const detail = { env: "ci", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5278650420"]);
+    test("routes customer events to live channel", () => {
+      const detail = { actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
     });
 
-    test("routes CI visitor events to ci-live", () => {
-      const detail = { env: "ci", actor: "visitor", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5278650420"]);
+    test("routes visitor events to live channel", () => {
+      const detail = { actor: "visitor", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
     });
 
-    test("routes CI infrastructure events to both ci groups", () => {
-      const detail = { env: "ci", actor: "ci-pipeline", flow: "infrastructure" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5250521947", "-5278650420"]);
+    // Infrastructure and operational → ops channel only
+    test("routes infrastructure events to ops channel", () => {
+      const detail = { actor: "ci-pipeline", flow: "infrastructure" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_ops"]);
     });
 
-    test("routes CI operational events to both ci groups", () => {
-      const detail = { env: "ci", actor: "system", flow: "operational" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5250521947", "-5278650420"]);
+    test("routes operational events to ops channel", () => {
+      const detail = { actor: "system", flow: "operational" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_ops"]);
     });
 
-    // Prod environment routing
-    test("routes prod customer events to prod-live", () => {
-      const detail = { env: "prod", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5177256260"]);
-    });
-
-    test("routes prod visitor events to prod-live", () => {
-      const detail = { env: "prod", actor: "visitor", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5177256260"]);
-    });
-
-    test("routes prod test-user events to prod-test", () => {
-      const detail = { env: "prod", actor: "test-user", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5144319944"]);
-    });
-
-    test("routes prod synthetic events to prod-test", () => {
-      const detail = { env: "prod", actor: "synthetic", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5144319944"]);
-    });
-
-    test("routes prod infrastructure events to both prod groups", () => {
-      const detail = { env: "prod", actor: "ci-pipeline", flow: "infrastructure" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5144319944", "-5177256260"]);
-    });
-
-    test("routes prod operational events to both prod groups", () => {
-      const detail = { env: "prod", actor: "system", flow: "operational" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual(["-5144319944", "-5177256260"]);
+    // ci-pipeline user-journey events → test channel
+    test("routes ci-pipeline user-journey events to test channel", () => {
+      const detail = { actor: "ci-pipeline", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
     });
 
     // Edge cases
-    test("returns empty for unknown environment", () => {
-      const detail = { env: "dev", actor: "customer", flow: "user-journey" };
-      expect(resolveTargetChatIds(detail, CHAT_IDS)).toEqual([]);
+    test("returns empty when target channel is not configured", () => {
+      const detail = { actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, { test: "", live: "", ops: "" })).toEqual([]);
     });
 
     test("returns empty for empty detail", () => {
-      expect(resolveTargetChatIds({}, CHAT_IDS)).toEqual([]);
+      expect(resolveTargetChatIds({}, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
+    });
+
+    // Routing is environment-independent (env doesn't affect which channel)
+    test("routing does not depend on env field", () => {
+      const ciDetail = { env: "ci", actor: "customer", flow: "user-journey" };
+      const prodDetail = { env: "prod", actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(ciDetail, CHAT_CONFIG)).toEqual(resolveTargetChatIds(prodDetail, CHAT_CONFIG));
     });
   });
 
@@ -138,7 +143,9 @@ describe("activityTelegramForwarder", () => {
 
     beforeEach(() => {
       process.env.TELEGRAM_BOT_TOKEN = "test-bot-token";
-      process.env.TELEGRAM_CHAT_IDS = JSON.stringify(CHAT_IDS);
+      process.env.TELEGRAM_TEST_CHAT_ID = "@diy_ci_test";
+      process.env.TELEGRAM_LIVE_CHAT_ID = "@diy_ci_live";
+      process.env.TELEGRAM_OPS_CHAT_ID = "@diy_ci_ops";
       process.env.ENVIRONMENT_NAME = "test";
       global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve("{}") });
     });
@@ -148,7 +155,7 @@ describe("activityTelegramForwarder", () => {
       vi.restoreAllMocks();
     });
 
-    test("sends message to correct group for prod customer event", async () => {
+    test("sends message to live channel for customer event", async () => {
       await handler({
         detail: {
           event: "login",
@@ -164,12 +171,12 @@ describe("activityTelegramForwarder", () => {
       const [url, options] = global.fetch.mock.calls[0];
       expect(url).toBe("https://api.telegram.org/bottest-bot-token/sendMessage");
       const body = JSON.parse(options.body);
-      expect(body.chat_id).toBe("-5177256260"); // prod-live
+      expect(body.chat_id).toBe("@diy_ci_live");
       expect(body.text).toContain("submit/prod");
       expect(body.parse_mode).toBe("Markdown");
     });
 
-    test("sends to both groups for infrastructure events", async () => {
+    test("sends to ops channel for infrastructure events", async () => {
       await handler({
         detail: {
           event: "deployment",
@@ -181,30 +188,67 @@ describe("activityTelegramForwarder", () => {
         },
       });
 
-      expect(global.fetch).toHaveBeenCalledTimes(2);
-      const chatIds = global.fetch.mock.calls.map((call) => JSON.parse(call[1].body).chat_id);
-      expect(chatIds).toContain("-5250521947"); // ci-test
-      expect(chatIds).toContain("-5278650420"); // ci-live
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body.chat_id).toBe("@diy_ci_ops");
     });
 
-    test("does not send when no targets match", async () => {
+    test("logs with [[TELEGRAM_LIVE_CHAT]] prefix when live channel is empty", async () => {
+      process.env.TELEGRAM_LIVE_CHAT_ID = "";
+
       await handler({
         detail: {
-          event: "test",
+          event: "login",
           site: "submit",
-          env: "dev",
+          env: "prod",
           actor: "customer",
           flow: "user-journey",
-          summary: "Test",
+          summary: "Login",
         },
       });
 
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    test("handles missing detail gracefully", async () => {
-      await handler({});
+    test("logs with [[TELEGRAM_OPS_CHAT]] prefix when ops channel is empty", async () => {
+      process.env.TELEGRAM_OPS_CHAT_ID = "";
+
+      await handler({
+        detail: {
+          event: "deployment",
+          site: "submit",
+          env: "ci",
+          actor: "ci-pipeline",
+          flow: "infrastructure",
+          summary: "Deployed",
+        },
+      });
+
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test("logs with [[TELEGRAM_TEST_CHAT]] prefix when test channel is empty", async () => {
+      process.env.TELEGRAM_TEST_CHAT_ID = "";
+
+      await handler({
+        detail: {
+          event: "login",
+          site: "submit",
+          env: "ci",
+          actor: "test-user",
+          flow: "user-journey",
+          summary: "Login",
+        },
+      });
+
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test("routes unknown events to test channel", async () => {
+      await handler({});
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body.chat_id).toBe("@diy_ci_test");
     });
 
     test("logs warning on Telegram API error but does not throw", async () => {
@@ -239,10 +283,11 @@ describe("activityTelegramForwarder", () => {
         },
       });
 
-      expect(global.fetch).toHaveBeenCalledTimes(2); // infrastructure → both ci groups
-      const bodies = global.fetch.mock.calls.map((call) => JSON.parse(call[1].body));
-      expect(bodies[0].text).toContain("ci-app-ApiStack");
-      expect(bodies[0].text).toContain("UPDATE\\_COMPLETE");
+      expect(global.fetch).toHaveBeenCalledTimes(1); // infrastructure → ops only
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body.chat_id).toBe("@diy_ci_ops");
+      expect(body.text).toContain("ci-app-ApiStack");
+      expect(body.text).toContain("UPDATE\\_COMPLETE");
     });
 
     test("handles CloudWatch Alarm State Change events", async () => {
@@ -256,11 +301,12 @@ describe("activityTelegramForwarder", () => {
         },
       });
 
-      expect(global.fetch).toHaveBeenCalledTimes(2); // operational → both prod groups
-      const bodies = global.fetch.mock.calls.map((call) => JSON.parse(call[1].body));
-      expect(bodies[0].text).toContain("prod-app-health-failed");
-      expect(bodies[0].text).toContain("OK");
-      expect(bodies[0].text).toContain("ALARM");
+      expect(global.fetch).toHaveBeenCalledTimes(1); // operational → ops only
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body.chat_id).toBe("@diy_ci_ops");
+      expect(body.text).toContain("prod-app-health-failed");
+      expect(body.text).toContain("OK");
+      expect(body.text).toContain("ALARM");
     });
   });
 

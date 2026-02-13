@@ -18,7 +18,6 @@ const logger = createLogger({ source: "app/functions/ops/activityTelegramForward
 const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
 let cachedBotToken = null;
-let cachedChatIds = null;
 
 async function resolveBotToken() {
   if (cachedBotToken) return cachedBotToken;
@@ -36,22 +35,16 @@ async function resolveBotToken() {
   return cachedBotToken;
 }
 
-async function resolveChatIds() {
-  if (cachedChatIds) return cachedChatIds;
-
-  if (process.env.TELEGRAM_CHAT_IDS) {
-    cachedChatIds = JSON.parse(process.env.TELEGRAM_CHAT_IDS);
-    return cachedChatIds;
-  }
-
-  const arn = process.env.TELEGRAM_CHAT_IDS_ARN;
-  if (arn) {
-    const result = await smClient.send(new GetSecretValueCommand({ SecretId: arn }));
-    cachedChatIds = JSON.parse(result.SecretString);
-    return cachedChatIds;
-  }
-
-  throw new Error("Neither TELEGRAM_CHAT_IDS nor TELEGRAM_CHAT_IDS_ARN is set");
+/**
+ * Read Telegram chat IDs from individual env vars.
+ * Returns { test, live, ops } where each is a chat ID string or empty.
+ */
+export function resolveChatConfig() {
+  return {
+    test: process.env.TELEGRAM_TEST_CHAT_ID || "",
+    live: process.env.TELEGRAM_LIVE_CHAT_ID || "",
+    ops: process.env.TELEGRAM_OPS_CHAT_ID || "",
+  };
 }
 
 /**
@@ -75,39 +68,26 @@ export function formatMessage(detail) {
 
 /**
  * Determine which chat IDs to send to based on event attributes.
- * Returns an array of chat IDs (may be multiple for "both" routing).
+ * @param {Object} detail - Event detail with actor, flow fields
+ * @param {Object} chatConfig - { test, live, ops } chat IDs
+ * @returns {string[]} Array of target chat IDs
  */
-export function resolveTargetChatIds(detail, chatIds) {
-  const env = detail.env || process.env.ENVIRONMENT_NAME || "";
+export function resolveTargetChatIds(detail, chatConfig) {
   const actor = detail.actor || "";
   const flow = detail.flow || "";
-  const targets = [];
 
-  if (env === "ci") {
-    // Infrastructure and operational events go to both CI groups
-    if (flow === "infrastructure" || flow === "operational") {
-      if (chatIds["ci-test"]) targets.push(chatIds["ci-test"]);
-      if (chatIds["ci-live"]) targets.push(chatIds["ci-live"]);
-    } else if (actor === "customer" || actor === "visitor") {
-      if (chatIds["ci-live"]) targets.push(chatIds["ci-live"]);
-    } else {
-      // test-user, synthetic, ci-pipeline, system
-      if (chatIds["ci-test"]) targets.push(chatIds["ci-test"]);
-    }
-  } else if (env === "prod") {
-    // Infrastructure and operational events go to both prod groups
-    if (flow === "infrastructure" || flow === "operational") {
-      if (chatIds["prod-test"]) targets.push(chatIds["prod-test"]);
-      if (chatIds["prod-live"]) targets.push(chatIds["prod-live"]);
-    } else if (actor === "customer" || actor === "visitor") {
-      if (chatIds["prod-live"]) targets.push(chatIds["prod-live"]);
-    } else {
-      // test-user, synthetic
-      if (chatIds["prod-test"]) targets.push(chatIds["prod-test"]);
-    }
+  // Infrastructure and operational events → ops channel
+  if (flow === "infrastructure" || flow === "operational") {
+    return chatConfig.ops ? [chatConfig.ops] : [];
   }
 
-  return targets;
+  // User journey events → test or live based on actor
+  if (actor === "customer" || actor === "visitor") {
+    return chatConfig.live ? [chatConfig.live] : [];
+  }
+
+  // test-user, synthetic, ci-pipeline, system → test channel
+  return chatConfig.test ? [chatConfig.test] : [];
 }
 
 /**
@@ -212,16 +192,27 @@ export async function handler(event) {
     env: detail.env,
   });
 
-  const botToken = await resolveBotToken();
-  const chatIds = await resolveChatIds();
-  const targets = resolveTargetChatIds(detail, chatIds);
+  const chatConfig = resolveChatConfig();
+  const targets = resolveTargetChatIds(detail, chatConfig);
+  const message = formatMessage(detail);
 
   if (targets.length === 0) {
-    logger.info({ message: "No target chat IDs matched for event", detail });
+    // Log with channel-specific prefix when no Telegram destination is configured
+    const flow = detail.flow || "";
+    const actor = detail.actor || "";
+    let channel;
+    if (flow === "infrastructure" || flow === "operational") {
+      channel = "TELEGRAM_OPS_CHAT";
+    } else if (actor === "customer" || actor === "visitor") {
+      channel = "TELEGRAM_LIVE_CHAT";
+    } else {
+      channel = "TELEGRAM_TEST_CHAT";
+    }
+    logger.info({ message: `[[${channel}]] ${message}`, detail });
     return;
   }
 
-  const message = formatMessage(detail);
+  const botToken = await resolveBotToken();
 
   const results = await Promise.allSettled(
     targets.map((chatId) => sendTelegramMessage(botToken, chatId, message)),

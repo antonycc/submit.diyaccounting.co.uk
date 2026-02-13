@@ -102,7 +102,17 @@ public class OpsStack extends Stack {
         }
 
         @Value.Default
-        default String telegramChatIds() {
+        default String telegramTestChatId() {
+            return "";
+        }
+
+        @Value.Default
+        default String telegramLiveChatId() {
+            return "";
+        }
+
+        @Value.Default
+        default String telegramOpsChatId() {
             return "";
         }
 
@@ -191,8 +201,14 @@ public class OpsStack extends Stack {
         if (props.telegramBotTokenArn() != null && !props.telegramBotTokenArn().isBlank()) {
             telegramForwarderEnv.with("TELEGRAM_BOT_TOKEN_ARN", props.telegramBotTokenArn());
         }
-        if (props.telegramChatIds() != null && !props.telegramChatIds().isBlank()) {
-            telegramForwarderEnv.with("TELEGRAM_CHAT_IDS", props.telegramChatIds());
+        if (props.telegramTestChatId() != null && !props.telegramTestChatId().isBlank()) {
+            telegramForwarderEnv.with("TELEGRAM_TEST_CHAT_ID", props.telegramTestChatId());
+        }
+        if (props.telegramLiveChatId() != null && !props.telegramLiveChatId().isBlank()) {
+            telegramForwarderEnv.with("TELEGRAM_LIVE_CHAT_ID", props.telegramLiveChatId());
+        }
+        if (props.telegramOpsChatId() != null && !props.telegramOpsChatId().isBlank()) {
+            telegramForwarderEnv.with("TELEGRAM_OPS_CHAT_ID", props.telegramOpsChatId());
         }
         var telegramForwarderLambda = new Lambda(
                 this,

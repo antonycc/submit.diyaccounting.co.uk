@@ -73,7 +73,9 @@ public class SubmitApplication {
         public String stripeTestPriceId;
         public String stripeWebhookSecretArn;
         public String telegramBotTokenArn;
-        public String telegramChatIds;
+        public String telegramTestChatId;
+        public String telegramLiveChatId;
+        public String telegramOpsChatId;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -172,8 +174,12 @@ public class SubmitApplication {
                 "(from stripeWebhookSecretArn in cdk.json)");
         var telegramBotTokenArn = envOr(
                 "TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
-        var telegramChatIds =
-                envOr("TELEGRAM_CHAT_IDS", appProps.telegramChatIds, "(from telegramChatIds in cdk.json)");
+        var telegramTestChatId = envOr(
+                "TELEGRAM_TEST_CHAT_ID", appProps.telegramTestChatId, "(from telegramTestChatId in cdk.json)");
+        var telegramLiveChatId = envOr(
+                "TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
+        var telegramOpsChatId = envOr(
+                "TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
@@ -362,7 +368,9 @@ public class SubmitApplication {
                         .apexDomain(sharedNames.envDomainName)
                         .alertEmail(alertEmail)
                         .telegramBotTokenArn(telegramBotTokenArn != null ? telegramBotTokenArn : "")
-                        .telegramChatIds(telegramChatIds != null ? telegramChatIds : "")
+                        .telegramTestChatId(telegramTestChatId != null ? telegramTestChatId : "")
+                        .telegramLiveChatId(telegramLiveChatId != null ? telegramLiveChatId : "")
+                        .telegramOpsChatId(telegramOpsChatId != null ? telegramOpsChatId : "")
                         .build());
         // this.opsStack.addDependency(hmrcStack);
         // this.opsStack.addDependency(apiStack);
