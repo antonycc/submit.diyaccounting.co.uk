@@ -199,8 +199,8 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   console.log(`[bundle-test]: Empty state - allocated bundles: ${emptyResponse?.bundles?.filter((b) => b.allocated)?.length ?? "?"}`);
   console.log(`[bundle-test]: Empty state - tokensRemaining: ${emptyResponse?.tokensRemaining ?? "?"}`);
 
-  // --- Step 3: Request Test bundle (uncapped, on-request) ---
-  await ensureBundlePresent(page, "Test", screenshotPath, { isHidden: isBundleHidden("Test") });
+  // --- Step 3: Request Day Guest bundle (via test pass for sandbox routing) ---
+  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
 
   // --- Step 4: Verify Day Guest bundle is locked down (on-pass, cap=0 in closed beta) ---
   // Day Guest requires a pass and has cap=0 — assert it's NOT available for allocation

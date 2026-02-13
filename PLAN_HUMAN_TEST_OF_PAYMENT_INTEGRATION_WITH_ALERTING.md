@@ -294,14 +294,17 @@ The `hmrcAccount` header (set from `?hmrcAccount=sandbox` URL parameter via sess
 - HMRC client ID (sandbox vs live)
 - HMRC client secret ARN (sandbox vs live)
 
-### Target
+### Target (IMPLEMENTED)
 
-Same mechanism, but the source of truth moves from the URL parameter to the bundle qualifier:
+The source of truth is the bundle qualifier, transported via `sessionStorage` (not URL parameters):
 
-1. Frontend fetches user's bundles on activity page load
-2. Finds qualifying bundle for the current activity
-3. If `qualifiers.sandbox === true` → sets `sessionStorage.hmrcAccount = "sandbox"`
-4. Everything else works as before (OAuth URL, API headers, Lambda credential selection)
+1. `index.html` fetches user's bundles and checks for `qualifiers.sandbox === true`
+2. If any allocated bundle has the sandbox qualifier → sets `sessionStorage.hmrcAccount = "sandbox"`
+3. HMRC pages (`submitVat.html`, `vatObligations.html`, `viewVatReturn.html`) read from `sessionStorage` only
+4. Inter-page navigation (obligations → submitVat, viewVatReturn → obligations) relies on `sessionStorage`, no URL propagation
+5. `correlation-utils.js` `fetchWithId` reads from `sessionStorage` only
+6. `submitVatCallback.html` redirects without `?hmrcAccount=sandbox` in the URL
+7. The `?hmrcAccount=sandbox` URL parameter has been fully removed — there are no external incoming links
 
 ### Environment Safety Net
 
@@ -325,43 +328,37 @@ In prod, `HMRC_CLIENT_SECRET_ARN` points to the real live secret. Only test-pass
 6. ~~Remove `TELEGRAM_CHAT_IDS` from `.env.*` files~~ — all 7 env files cleaned
 7. Remove `TELEGRAM_CHAT_IDS` GitHub Actions Variable — **deferred** (no longer read by code, can be removed manually)
 
-### Phase B: Pass Test Type + Bundle Qualifier
+### Phase B: Pass Test Type + Bundle Qualifier — **COMPLETE** (commit `c8e2217f`)
 
-1. Add `testPass` field to pass data model (`dynamoDbPassRepository.js`)
-2. Update pass creation API (`passAdminPost.js`) — accept `testPass` parameter
-3. Update pass service (`passService.js`) — return `testPass` in redemption result
-4. Update pass redemption (`passPost.js`) — pass `qualifiers: { sandbox: true }` to `grantBundle` when `testPass === true`
-5. Update `grantBundle` in `bundlePost.js` — store qualifiers in DynamoDB bundle record
-6. Update `bundleGet.js` — return qualifiers in API response
-7. Update unit tests for all changed files
+1. ~~Add `testPass` field to pass data model~~ — `passService.js` stores `testPass: true` on record
+2. ~~Update pass creation API (`passAdminPost.js`)~~ — accepts `testPass` from request, includes in response
+3. ~~Update pass service (`passService.js`)~~ — `buildPassRecord()` accepts `testPass` parameter
+4. ~~Update pass redemption (`passPost.js`)~~ — passes `grantQualifiers: { sandbox: true }` when `testPass === true`
+5. ~~Update `grantBundle` in `bundlePost.js`~~ — stores `grantQualifiers` on DynamoDB record as `qualifiers`
+6. ~~`bundleGet.js` already returns qualifiers~~ — spread operator passes all fields through
+7. ~~Update unit/system tests~~ — added test pass + sandbox qualifier tests in passService and passRedemption
 
-### Phase C: Catalogue Simplification
+### Phase C+D: Catalogue Simplification + Frontend Sandbox Routing — **COMPLETE** (commit `83790b1c`)
 
-1. Remove `test` bundle from `submit.catalogue.toml`
-2. Remove `submit-vat-sandbox`, `vat-obligations-sandbox`, `view-vat-return-sandbox` activities
-3. Update `hmrcVatReturnPost.js` — always use `"submit-vat"` activity ID (remove sandbox branch)
-4. Update `hmrcVatObligationGet.js` — similar
-5. Update `hmrcVatReturnGet.js` — similar
-6. Update unit tests that reference `test` bundle or sandbox activities
-7. Update system tests
+Phases C and D were combined because they're coupled — removing sandbox activities (C) breaks the sandbox flow unless the frontend reads bundle qualifiers (D).
 
-### Phase D: Frontend Sandbox Routing from Bundle Qualifier
+1. ~~Remove `test` bundle from `submit.catalogue.toml`~~
+2. ~~Remove `submit-vat-sandbox`, `vat-obligations-sandbox`, `view-vat-return-sandbox` activities~~
+3. ~~Update `hmrcVatReturnPost.js`~~ — always use `"submit-vat"` activity ID (decoupled from `hmrcAccount`)
+4. ~~Update all 12+ test files~~ — replace `bundleId: "test"` with `"day-guest"` or `"invited-guest"`
+5. ~~Fix `bundleCapacity.system.test.js`~~ — uncapped tests use `invited-guest` (no cap), cap tests keep `day-guest` (cap=0)
+6. ~~Update `index.html`~~ — track `__sandboxBundleIds` from bundle qualifiers, set `sessionStorage.hmrcAccount` directly (no URL param)
+7. ~~Update `behaviour-hmrc-vat-steps.js`~~ — remove sandbox activity name ternaries (always "Submit VAT (HMRC)")
+8. ~~Update `behaviour-bundle-steps.js`~~ — `ensureBundleViaPassApi` accepts `testPass` option
+9. ~~Update `submitVat.behaviour.test.js`~~ — use `day-guest` via test pass with `testPass: true`
+10. ~~Remove `tokenEnforcement.test.js` sandbox activity test~~ — `submit-vat-sandbox` no longer exists
 
-1. Update `submitVat.html` — on page load, fetch bundles, check qualifying bundle's `sandbox` qualifier, set `sessionStorage.hmrcAccount` accordingly
-2. Update `vatObligations.html` — same
-3. Update `viewVatReturn.html` — same
-4. Update `bundles.html` — when creating checkout session, include sandbox qualifier to select test/live Stripe
-5. Keep `?hmrcAccount=sandbox` URL parameter as a fallback (don't break direct links)
-6. Update browser tests
+### Phase E: Remaining Behaviour Test Updates — **DONE**
 
-### Phase E: Behaviour Test Updates
-
-1. Update `submitVatBehaviour` test — use `day-guest` bundle via test pass (not `test` bundle)
-2. Update `paymentBehaviour` test — use test passes for both day-guest and resident-pro
-3. Remove `isSandboxMode()` usage from test step selection (one button: "Submit VAT (HMRC)")
-4. Update `behaviour-bundle-steps.js` — `ensureBundleViaPassApi` creates test passes
-5. Verify all behaviour tests pass in simulator mode
-6. Verify `paymentBehaviour-ci` passes (the original failing test)
+1. ~~Update `paymentBehaviour` test~~ — use test passes for both day-guest and resident-pro, removed `isSandboxMode()` injection workaround
+2. ~~Remove `?hmrcAccount=sandbox` URL parameter transport~~ — replaced with sessionStorage throughout: `index.html`, `correlation-utils.js`, `submitVat.html`, `vatObligations.html`, `viewVatReturn.html`, `submitVatCallback.html`, browser tests
+3. ~~Update other behaviour tests referencing `"test"` bundle~~ — updated `passRedemption`, `tokenEnforcement`, `simulator`, `captureDemo`, `generatePassActivity`, `bundles`, `postVatReturn`, `postVatReturnFraudPreventionHeaders`, `getVatObligations`, `getVatReturn`, `vatSchemes` to use `"Day Guest"` with `{ testPass: true }` instead of `"Test"` bundle
+4. Verify `paymentBehaviour-ci` passes (the original failing test)
 
 ### Phase F: Deploy and Validate
 

@@ -214,9 +214,7 @@ async function setupTestUserAndLogin(page, testInfo) {
   await consentToDataCollection(page, screenshotPath);
 
   await goToBundlesPage(page, screenshotPath);
-  if (isSandboxMode()) {
-    await ensureBundlePresent(page, "Test", screenshotPath);
-  }
+  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
   await goToHomePage(page, screenshotPath);
 
   return { testUsername, testPassword, testVatNumber, testUrl, outputDir };

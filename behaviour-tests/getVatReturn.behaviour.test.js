@@ -204,9 +204,8 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
-  if (isSandboxMode()) await ensureBundlePresent(page, "Test", screenshotPath);
+  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
   if (envName !== "prod") {
-    await ensureBundlePresent(page, "Day Guest", screenshotPath);
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
   }

@@ -72,7 +72,7 @@ test.describe("Capture Demo Videos", () => {
       dynamoDbProcess = await runLocalDynamoDb(testDynamoDb);
       await initializeSalt();
       const demoUserSub = "demo-user-12345";
-      for (const bundleId of ["test", "day-guest"]) {
+      for (const bundleId of ["day-guest"]) {
         await putBundle(demoUserSub, { bundleId, expiry: "2099-12-31", tokensGranted: 10, tokensConsumed: 0 });
       }
       console.log("  Seeded demo user bundles");

@@ -26,7 +26,7 @@ test.describe("Test Data Link Browser Tests", () => {
     test("should show test data link in sandbox mode", async ({ page }) => {
       // Set the page content with sandbox mode query parameter
       await page.setContent(submitVatHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/submitVat.html?hmrcAccount=sandbox",
+        baseURL: "http://localhost:3000/hmrc/vat/submitVat.html",
         waitUntil: "domcontentloaded",
       });
 
@@ -70,7 +70,7 @@ test.describe("Test Data Link Browser Tests", () => {
     test("should populate form when test data link is clicked", async ({ page }) => {
       // Set the page content with sandbox mode
       await page.setContent(submitVatHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/submitVat.html?hmrcAccount=sandbox",
+        baseURL: "http://localhost:3000/hmrc/vat/submitVat.html",
         waitUntil: "domcontentloaded",
       });
 
@@ -110,7 +110,7 @@ test.describe("Test Data Link Browser Tests", () => {
   test.describe("View VAT Return Form - Test Data Link", () => {
     test("should show test data link in sandbox mode", async ({ page }) => {
       await page.setContent(viewVatReturnHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox",
+        baseURL: "http://localhost:3000/hmrc/vat/viewVatReturn.html",
         waitUntil: "domcontentloaded",
       });
 
@@ -131,7 +131,7 @@ test.describe("Test Data Link Browser Tests", () => {
 
     test("should populate form when test data link is clicked", async ({ page }) => {
       await page.setContent(viewVatReturnHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/viewVatReturn.html?hmrcAccount=sandbox",
+        baseURL: "http://localhost:3000/hmrc/vat/viewVatReturn.html",
         waitUntil: "domcontentloaded",
       });
 
@@ -162,7 +162,7 @@ test.describe("Test Data Link Browser Tests", () => {
   test.describe("VAT Obligations Form - Test Data Link", () => {
     test("should show test data link in sandbox mode", async ({ page }) => {
       await page.setContent(vatObligationsHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/vatObligations.html?hmrcAccount=sandbox",
+        baseURL: "http://localhost:3000/hmrc/vat/vatObligations.html",
         waitUntil: "domcontentloaded",
       });
 
@@ -183,7 +183,7 @@ test.describe("Test Data Link Browser Tests", () => {
 
     test("should populate form when test data link is clicked", async ({ page }) => {
       await page.setContent(vatObligationsHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/vatObligations.html?hmrcAccount=sandbox",
+        baseURL: "http://localhost:3000/hmrc/vat/vatObligations.html",
         waitUntil: "domcontentloaded",
       });
 

@@ -223,7 +223,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("STEP 2: Get day-guest via pass");
     console.log("=".repeat(60));
 
-    await ensureBundleViaPassApi(page, "day-guest", screenshotPath);
+    await ensureBundleViaPassApi(page, "day-guest", screenshotPath, { testPass: true });
 
     const tokens = await getTokensRemaining(page, "day-guest");
     console.log(`Day-guest tokens remaining: ${tokens}`);
@@ -346,7 +346,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("STEP 6: Get resident-pro via pass");
     console.log("=".repeat(60));
 
-    await ensureBundleViaPassApi(page, "resident-pro", screenshotPath);
+    await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
 
     const tokens = await getTokensRemaining(page, "resident-pro");
     console.log(`Resident-pro tokens remaining: ${tokens}`);
@@ -364,13 +364,14 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("=".repeat(60));
 
     await goToHomePageUsingMainNav(page, screenshotPath);
-    // Navigate directly to the Submit VAT form — resident-pro maps to the HMRC (live) activity,
-    // not the sandbox activity, so initSubmitVat (which uses isSandboxMode()) would look for the wrong button.
+    // Navigate to Submit VAT — sandbox mode is set in sessionStorage by index.html
+    // because the user's bundle has qualifiers.sandbox = true (from test pass)
     const submitVatButton = page.locator(`button:has-text('Submit VAT (HMRC)')`);
     await expect(submitVatButton).toBeVisible({ timeout: 10_000 });
     await submitVatButton.click();
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#vatSubmissionForm")).toBeVisible();
+
     await fillInVat(
       page,
       hmrcVatNumber,

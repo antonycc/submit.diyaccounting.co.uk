@@ -729,16 +729,10 @@
           allowSandboxObligations,
         };
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const hmrcAccount = urlParams.get("hmrcAccount");
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         const requestData = JSON.stringify(submissionData);
 
         sessionStorage.setItem("submission_data", requestData);
-        if (hmrcAccount === "sandbox") {
-          sessionStorage.setItem("hmrcAccount", hmrcAccount);
-        } else {
-          sessionStorage.removeItem("hmrcAccount");
-        }
 
         // Check if we already have an HMRC access token
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
@@ -1052,7 +1046,7 @@
         const periodKey = urlParams.get("periodKey");
         const periodStart = urlParams.get("periodStart");
         const periodEnd = urlParams.get("periodEnd");
-        const hmrcAccount = urlParams.get("hmrcAccount");
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
         // If URL params provide complete period data, clear any stale submission_data
         // This handles navigation from obligations page where URL params should take precedence
@@ -1077,9 +1071,8 @@
           document.getElementById("periodKey").value = periodKey;
         }
 
-        // Show sandbox indicator and store hmrcAccount if hmrcAccount=sandbox
+        // Show sandbox indicator if in sandbox mode (determined by bundle qualifiers via sessionStorage)
         if (hmrcAccount === "sandbox") {
-          sessionStorage.setItem("hmrcAccount", hmrcAccount);
           const sandboxIndicator = document.getElementById("sandboxIndicator");
           if (sandboxIndicator) {
             sandboxIndicator.classList.add("visible");
@@ -1088,9 +1081,6 @@
           if (testDataLink) {
             testDataLink.classList.add("visible");
           }
-        } else if (hmrcAccount) {
-          // Clear sandbox mode if explicitly set to something else
-          sessionStorage.removeItem("hmrcAccount");
         }
 
         // Developer mode is now controlled by the global toggle via developer-mode.js

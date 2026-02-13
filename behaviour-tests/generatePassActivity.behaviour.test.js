@@ -169,9 +169,9 @@ test.fixme("Click through: Generate digital pass and verify in My Generated Pass
   /*  BUNDLES  */
   /* ********* */
 
-  // Ensure the user has the "test" bundle (required for generate-pass activity entitlement)
+  // Ensure the user has the "day-guest" bundle (required for generate-pass activity entitlement)
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Test", screenshotPath);
+  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
 
   // --- Step 1: Check initial token balance ---
   const initialTokens = await getTokenBalance(page);
@@ -321,7 +321,7 @@ test.fixme("Click through: Generate physical pass and verify design downloads", 
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Test", screenshotPath);
+  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
 
   /* ************************* */
   /*  GENERATE PHYSICAL PASS   */
