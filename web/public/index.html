@@ -193,6 +193,7 @@
     <script>
       // In-memory user bundles state (list of bundleId strings)
       let __userBundles = [];
+      let __sandboxBundleIds = new Set();
       let __tokensRemaining = 0;
       let __hasTokenBundles = false;
       let __fetchBundlesController = null;
@@ -227,11 +228,14 @@
             }
 
             if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-              __userBundles = bundlesData.bundles.filter((b) => b.allocated).map((b) => b.bundleId);
+              const allocated = bundlesData.bundles.filter((b) => b.allocated);
+              __userBundles = allocated.map((b) => b.bundleId);
+              __sandboxBundleIds = new Set(allocated.filter((b) => b.qualifiers?.sandbox === true).map((b) => b.bundleId));
               __tokensRemaining = typeof bundlesData.tokensRemaining === "number" ? bundlesData.tokensRemaining : 0;
               __hasTokenBundles = bundlesData.bundles.some((b) => b.allocated && b.tokensGranted !== undefined);
             } else {
               __userBundles = [];
+              __sandboxBundleIds = new Set();
               __tokensRemaining = 0;
               __hasTokenBundles = false;
             }
@@ -425,6 +429,11 @@
               path = activity.paths.find((p) => p.includes(".html")) || "#";
             } else if (activity.path) {
               path = activity.path;
+            }
+
+            // If the user's qualifying bundle has sandbox qualifier, append ?hmrcAccount=sandbox
+            if (path !== "#" && activity.bundles.some((bid) => __sandboxBundleIds.has(bid))) {
+              path += (path.includes("?") ? "&" : "?") + "hmrcAccount=sandbox";
             }
 
             if (hasNonExpiredAccess || displayRule === "always") {

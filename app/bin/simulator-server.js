@@ -106,7 +106,7 @@ export function createSimulatorServer() {
   // Pre-populate with a demo bundle that grants all activities
   bundles.set("demo-user-12345", [
     { bundleId: "default", expiry: null },
-    { bundleId: "test", expiry: "2099-12-31" },
+    { bundleId: "day-guest", expiry: "2099-12-31" },
     { bundleId: "hmrc-vat-sandbox", expiry: "2099-12-31" },
   ]);
 

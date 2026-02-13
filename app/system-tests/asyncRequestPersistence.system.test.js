@@ -62,7 +62,7 @@ describe("System: async request persistence with dynalite", () => {
       path: "/api/v1/bundle",
       requestId: requestId,
       authorizer: buildAuthorizerContext("test-async-user"),
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
       headers: {
         "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
@@ -100,7 +100,7 @@ describe("System: async request persistence with dynalite", () => {
       path: "/api/v1/bundle",
       requestId: requestId,
       authorizer: buildAuthorizerContext("test-async-user"),
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
       headers: {
         "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
@@ -134,7 +134,7 @@ describe("System: async request persistence with dynalite", () => {
       path: "/api/v1/bundle",
       requestId: requestId,
       authorizer: buildAuthorizerContext("test-async-user"),
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
       headers: {
         "Authorization": `Bearer ${token}`,
         "x-request-id": requestId,
@@ -156,7 +156,7 @@ describe("System: async request persistence with dynalite", () => {
 
     // Call grantBundle directly with requestId
     const decodedToken = { sub: "test-async-user" };
-    const result = await grantBundle("test-async-user", { bundleId: "test" }, decodedToken, requestId);
+    const result = await grantBundle("test-async-user", { bundleId: "day-guest" }, decodedToken, requestId);
     expect(result.statusCode).toBe(201);
 
     // Verify the result was stored
@@ -179,7 +179,7 @@ describe("System: async request persistence with dynalite", () => {
       const event = buildLambdaEvent({
         method: "POST",
         path: "/api/v1/bundle",
-        body: { bundleId: "test" },
+        body: { bundleId: "day-guest" },
         headers: {
           Authorization: `Bearer ${token}`,
         },

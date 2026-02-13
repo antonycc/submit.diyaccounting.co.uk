@@ -18,7 +18,7 @@ import { waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-vat-steps";
 
 export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = isSandboxMode() ? "Submit VAT (HMRC Sandbox)" : "Submit VAT (HMRC)";
+  const activityButtonText = "Submit VAT (HMRC)";
   await test.step(`The user begins a VAT return and sees the ${activityButtonText} form`, async () => {
     // Click "VAT Return Submission" on activities page
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
@@ -572,7 +572,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
 /* VAT Obligations Journey Steps */
 
 export async function initVatObligations(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = isSandboxMode() ? "VAT Obligations (HMRC Sandbox)" : "VAT Obligations (HMRC)";
+  const activityButtonText = "VAT Obligations (HMRC)";
   await test.step(`The user navigates to ${activityButtonText} and sees the obligations form`, async () => {
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
@@ -976,7 +976,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
 /* View VAT Return Journey Steps */
 
 export async function initViewVatReturn(page, screenshotPath = defaultScreenshotPath, hmrcAccount = null) {
-  const activityButtonText = isSandboxMode() ? "View VAT Return (HMRC Sandbox)" : "View VAT Return (HMRC)";
+  const activityButtonText = "View VAT Return (HMRC)";
   await test.step(`The user navigates to ${activityButtonText} and sees the return form`, async () => {
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);

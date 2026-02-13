@@ -398,7 +398,7 @@ export async function ingestHandler(event) {
 
   // Token enforcement: consume 1 token for VAT submission (the "value action") — initial request only
   if (isInitialRequest) {
-    const activityId = hmrcAccount === "sandbox" ? "submit-vat-sandbox" : "submit-vat";
+    const activityId = "submit-vat";
     try {
       const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
       const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");

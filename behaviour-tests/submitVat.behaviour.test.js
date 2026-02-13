@@ -323,7 +323,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
   await goToBundlesPage(page, screenshotPath);
   if (isSandboxMode()) {
-    await ensureBundlePresent(page, "Test", screenshotPath);
+    await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
   }
   // TODO: Support testing in non-sandbox mode with production credentials
   // if (envName !== "prod") {
@@ -337,7 +337,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /*  TOKEN BALANCE (BEFORE)  */
   /* ************************ */
 
-  const tokensBefore = isSandboxMode() ? await getTokensRemaining(page, "test") : null;
+  const tokensBefore = isSandboxMode() ? await getTokensRemaining(page, "day-guest") : null;
   if (tokensBefore !== null) {
     console.log(`[Token check] Tokens before submission: ${tokensBefore}`);
     expect(tokensBefore).toBeGreaterThan(0);
@@ -383,7 +383,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* *********************** */
 
   if (tokensBefore !== null) {
-    const tokensAfter = await getTokensRemaining(page, "test");
+    const tokensAfter = await getTokensRemaining(page, "day-guest");
     console.log(`[Token check] Tokens after submission: ${tokensAfter}`);
     expect(tokensAfter).toBe(tokensBefore - 1);
   }

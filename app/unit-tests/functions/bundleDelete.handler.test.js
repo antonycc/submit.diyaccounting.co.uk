@@ -130,7 +130,7 @@ describe("bundleDelete ingestHandler", () => {
   test("returns 401 when Authorization header is missing", async () => {
     const event = buildLambdaEvent({
       method: "DELETE",
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
       headers: {}, // No Authorization
     });
 
@@ -144,7 +144,7 @@ describe("bundleDelete ingestHandler", () => {
   test("returns 401 when Authorization token is invalid", async () => {
     const event = buildLambdaEvent({
       method: "DELETE",
-      body: { bundleId: "test" },
+      body: { bundleId: "day-guest" },
       headers: { Authorization: "Bearer invalid-token" },
     });
 
@@ -195,13 +195,13 @@ describe("bundleDelete ingestHandler", () => {
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
-        return { Items: [{ bundleId: "test" }], Count: 1 };
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
       }
       return {};
     });
 
     // Then delete it
-    const deleteEvent = buildEventWithToken(token, { bundleId: "test" });
+    const deleteEvent = buildEventWithToken(token, { bundleId: "day-guest" });
     deleteEvent.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(deleteEvent);
 
@@ -215,14 +215,14 @@ describe("bundleDelete ingestHandler", () => {
 
   test("skips async request lookup when x-initial-request header is true", async () => {
     const token = makeIdToken("user-initial");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-initial-request"] = "true";
     event.headers["x-wait-time-ms"] = "30000";
 
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
-        return { Items: [{ bundleId: "test" }], Count: 1 };
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
       }
       return {};
     });
@@ -242,7 +242,7 @@ describe("bundleDelete ingestHandler", () => {
     // Mock multiple bundles
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
-        return { Items: [{ bundleId: "test" }, { bundleId: "default" }], Count: 2 };
+        return { Items: [{ bundleId: "day-guest" }, { bundleId: "default" }], Count: 2 };
       }
       return {};
     });
@@ -263,7 +263,7 @@ describe("bundleDelete ingestHandler", () => {
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
-        return { Items: [{ bundleId: "test" }], Count: 1 };
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
       }
       return {};
     });
@@ -271,7 +271,7 @@ describe("bundleDelete ingestHandler", () => {
     // Delete via path parameter
     const event = {
       ...buildEventWithToken(token, {}),
-      pathParameters: { id: "test" },
+      pathParameters: { id: "day-guest" },
     };
     event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
@@ -289,7 +289,7 @@ describe("bundleDelete ingestHandler", () => {
     // Mock bundle existence
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
-        return { Items: [{ bundleId: "test" }], Count: 1 };
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
       }
       return {};
     });
@@ -297,7 +297,7 @@ describe("bundleDelete ingestHandler", () => {
     // Delete via query parameter
     const event = {
       ...buildEventWithToken(token, {}),
-      queryStringParameters: { bundleId: "test" },
+      queryStringParameters: { bundleId: "day-guest" },
     };
     event.headers["x-wait-time-ms"] = "30000";
     const response = await bundleDeleteHandler(event);
@@ -318,7 +318,7 @@ describe("bundleDelete ingestHandler", () => {
     delete process.env.BUNDLE_DYNAMODB_TABLE_NAME;
 
     const token = makeIdToken("user-error");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "30000";
 
     await expect(bundleDeleteHandler(event)).rejects.toThrow();
@@ -330,7 +330,7 @@ describe("bundleDelete ingestHandler", () => {
 
   test("returns 202 Accepted for async deletion initiation", async () => {
     const token = makeIdToken("user-async-delete");
-    const event = buildEventWithToken(token, { bundleId: "test" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
     event.headers["x-wait-time-ms"] = "0";
 
     const response = await bundleDeleteHandler(event);
@@ -344,7 +344,7 @@ describe("bundleDelete ingestHandler", () => {
     const requestId = "req-sqs-delete-success";
     const payload = {
       userId,
-      bundleToRemove: "test",
+      bundleToRemove: "day-guest",
       removeAll: false,
       requestId,
     };
@@ -353,7 +353,7 @@ describe("bundleDelete ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "test" }], Count: 1 };
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
       }
       if (cmd instanceof lib.PutCommand) {
         const item = cmd.input.Item;

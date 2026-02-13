@@ -128,7 +128,7 @@ describe("System: pass creation and redemption", () => {
     it("should create a pass via admin API", async () => {
       const event = buildAdminPostEvent({
         passTypeId: "test-access",
-        bundleId: "test",
+        bundleId: "day-guest",
         validityPeriod: "P7D",
         maxUses: 3,
         createdBy: "system-test",
@@ -139,7 +139,7 @@ describe("System: pass creation and redemption", () => {
 
       expect(res.statusCode).toBe(200);
       expect(body.code).toBeTruthy();
-      expect(body.bundleId).toBe("test");
+      expect(body.bundleId).toBe("day-guest");
       expect(body.passTypeId).toBe("test-access");
       expect(body.maxUses).toBe(3);
 
@@ -161,7 +161,7 @@ describe("System: pass creation and redemption", () => {
 
       expect(res.statusCode).toBe(200);
       expect(body.valid).toBe(true);
-      expect(body.bundleId).toBe("test");
+      expect(body.bundleId).toBe("day-guest");
       expect(body.usesRemaining).toBe(3);
     });
 
@@ -196,7 +196,7 @@ describe("System: pass creation and redemption", () => {
 
       expect(res.statusCode).toBe(200);
       expect(body.redeemed).toBe(true);
-      expect(body.bundleId).toBe("test");
+      expect(body.bundleId).toBe("day-guest");
       expect(body.grantStatus).toBe("granted");
     });
 
@@ -208,7 +208,7 @@ describe("System: pass creation and redemption", () => {
 
       expect(res.statusCode).toBe(200);
       const allocatedBundles = body.bundles.filter((b) => b.allocated);
-      const testBundle = allocatedBundles.find((b) => b.bundleId === "test");
+      const testBundle = allocatedBundles.find((b) => b.bundleId === "day-guest");
       expect(testBundle).toBeTruthy();
     });
 
@@ -326,7 +326,7 @@ describe("System: pass creation and redemption", () => {
     it("should create a pass that is already expired", async () => {
       const event = buildAdminPostEvent({
         passTypeId: "test-access",
-        bundleId: "test",
+        bundleId: "day-guest",
         validFrom: "2020-01-01T00:00:00.000Z",
         validUntil: "2020-01-02T00:00:00.000Z",
         maxUses: 1,

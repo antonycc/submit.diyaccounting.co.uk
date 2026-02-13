@@ -12,7 +12,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("QR Code Generation System Test", () => {
   const mockPass = {
     code: "tiger-happy-mountain-silver",
-    bundleId: "test",
+    bundleId: "day-guest",
     passTypeId: "test-access",
     maxUses: 1,
     useCount: 0,
@@ -73,7 +73,7 @@ describe("QR Code Generation System Test", () => {
     // Verify all details are present
     expect(details.code).toBe(passWithDetails.code);
     expect(details.url).toBe(url);
-    expect(details.bundleId).toBe("test");
+    expect(details.bundleId).toBe("day-guest");
     expect(details.passTypeId).toBe("test-access");
     expect(details.maxUses).toBe(1);
     expect(details.usesRemaining).toBe(1);

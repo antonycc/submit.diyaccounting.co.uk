@@ -23,19 +23,12 @@ const { consumeTokenForActivity } = await import("../../services/tokenEnforcemen
 const baseCatalog = {
   bundles: [
     { id: "day-guest", tokensGranted: 3 },
-    { id: "test", tokensGranted: 3 },
   ],
   activities: [
     {
       id: "submit-vat",
       tokenCost: 1,
       bundles: ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"],
-      paths: ["^/api/v1/hmrc/vat.*"],
-    },
-    {
-      id: "submit-vat-sandbox",
-      tokenCost: 1,
-      bundles: ["test"],
       paths: ["^/api/v1/hmrc/vat.*"],
     },
     {
@@ -123,16 +116,6 @@ describe("tokenEnforcement", () => {
 
       expect(result.consumed).toBe(false);
       expect(result.reason).toBe("tokens_exhausted");
-    });
-
-    it("should consume from sandbox bundle for sandbox activity", async () => {
-      getUserBundles.mockResolvedValueOnce([{ bundleId: "test", tokensGranted: 3, tokensConsumed: 1 }]);
-      consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 1 });
-
-      const result = await consumeTokenForActivity("user-1", "submit-vat-sandbox", baseCatalog);
-
-      expect(result.consumed).toBe(true);
-      expect(consumeToken).toHaveBeenCalledWith("user-1", "test");
     });
 
     it("should propagate atomic failure from consumeToken", async () => {

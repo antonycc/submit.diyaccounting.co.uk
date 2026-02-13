@@ -190,7 +190,7 @@ describe("bundleGet ingestHandler", () => {
     event.headers["x-wait-time-ms"] = "500";
 
     // Grant a bundle first
-    await bundlePostHandler(buildEventWithToken(token, { bundleId: "test" }));
+    await bundlePostHandler(buildEventWithToken(token, { bundleId: "day-guest" }));
 
     // Get bundles
     const getEvent = buildEventWithToken(token, {});
