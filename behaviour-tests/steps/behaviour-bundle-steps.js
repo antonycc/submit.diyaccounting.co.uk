@@ -430,7 +430,9 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png` });
 
     // Step 3: Call checkout session API
-    const checkoutResult = await page.evaluate(async (bid) => {
+    // Pass sandbox flag when using test passes — same pattern as HMRC hmrcAccount sandbox switching
+    const isSandbox = data?.qualifiers?.sandbox === true || testPass;
+    const checkoutResult = await page.evaluate(async ({ bid, sandbox }) => {
       const idToken = localStorage.getItem("cognitoIdToken");
       if (!idToken) return { ok: false, error: "No auth token" };
       try {
@@ -440,14 +442,16 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
             "Content-Type": "application/json",
             "Authorization": `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ bundleId: bid }),
+          body: JSON.stringify({ bundleId: bid, sandbox }),
         });
         const body = await response.json();
-        return { ok: response.ok, checkoutUrl: body?.data?.checkoutUrl, body };
+        // Handle both response formats: mock returns { data: { checkoutUrl } }, real API returns { checkoutUrl }
+        const checkoutUrl = body?.data?.checkoutUrl || body?.checkoutUrl;
+        return { ok: response.ok, checkoutUrl, body };
       } catch (err) {
         return { ok: false, error: err.message };
       }
-    }, bundleId);
+    }, { bid: bundleId, sandbox: isSandbox });
 
     console.log(`Checkout session result: ${JSON.stringify(checkoutResult)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-03-session-created.png` });

@@ -31,7 +31,7 @@ export function apiEndpoint(app) {
     const params = new URLSearchParams({ session: sessionId, bundleId, ...(userSub && { sub: userSub }) });
     const checkoutUrl = `${baseUrl}simulator/checkout?${params}`;
     logger.info({ message: "Mock checkout session created", sessionId, bundleId, checkoutUrl });
-    res.json({ data: { checkoutUrl } });
+    res.json({ checkoutUrl });
   });
 
   // Mock checkout completion — grants bundle and redirects to success URL
@@ -67,7 +67,7 @@ export function apiEndpoint(app) {
   app.get("/api/v1/billing/portal", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
     logger.info({ message: "Mock billing portal session created" });
-    res.json({ data: { portalUrl: `${baseUrl}bundles.html` } });
+    res.json({ portalUrl: `${baseUrl}bundles.html` });
   });
 
   logger.info({ message: "Mock billing routes registered (Stripe not configured)" });
