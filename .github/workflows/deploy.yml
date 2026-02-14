@@ -1658,6 +1658,7 @@ jobs:
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - names
+      - params
       - set-origins
       - deploy-publish
       - enable-native-auth
