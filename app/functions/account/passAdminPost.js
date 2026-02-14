@@ -16,6 +16,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { createPass } from "../../services/passService.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCatalog.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
 
@@ -59,7 +60,21 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { passTypeId, bundleId, testPass, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
+  const { passTypeId, bundleId, testPass: explicitTestPass, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
+
+  // Derive testPass from pass type definition if not explicitly provided
+  let testPass = explicitTestPass;
+  if (testPass === undefined) {
+    try {
+      const passTypesConfig = loadPassTypesFromRoot();
+      const passTypeDef = getPassTypeById(passTypesConfig, passTypeId);
+      if (passTypeDef?.test) {
+        testPass = true;
+      }
+    } catch (error) {
+      logger.warn({ message: "Could not load pass types config, testPass not auto-derived", error: error.message });
+    }
+  }
 
   logger.info({ message: "Creating admin pass", passTypeId, bundleId, testPass: !!testPass });
 

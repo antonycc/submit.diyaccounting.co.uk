@@ -42,3 +42,14 @@ export function getCatalogBundleById(catalog, bundleId) {
   if (!catalog?.bundles) return null;
   return catalog.bundles.find((b) => b.id === bundleId) || null;
 }
+
+export function loadPassTypesFromRoot() {
+  const filePath = path.join(process.cwd(), "submit.passes.toml");
+  const raw = fs.readFileSync(filePath, "utf-8");
+  return TOML.parse(raw);
+}
+
+export function getPassTypeById(passTypesConfig, passTypeId) {
+  if (!passTypesConfig?.passTypes) return null;
+  return passTypesConfig.passTypes.find((p) => p.id === passTypeId) || null;
+}

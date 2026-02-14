@@ -504,43 +504,94 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-04-stripe-loaded.png` });
 
       // Fill email
+      let filledFields = [];
       const emailInput = page.locator('input[name="email"], input[id="email"]');
       if (await emailInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await emailInput.fill("test@example.com");
+        filledFields.push("email");
       }
 
       // Fill card number (Stripe test card: 4242 4242 4242 4242)
+      let cardFilled = false;
+      // Try Stripe Elements iframe first
       const cardFrame = page.frameLocator('iframe[name*="__privateStripeFrame"]').first();
       const cardInput = cardFrame.locator('input[name="cardnumber"]');
       if (await cardInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await cardInput.fill("4242424242424242");
-      } else {
-        // Stripe Elements v2 — single card input
-        const cardNumberInput = page.locator('input[name="cardNumber"], input[placeholder*="card number" i]');
+        cardFilled = true;
+      }
+      if (!cardFilled) {
+        // Try direct inputs (Stripe Checkout hosted page)
+        const cardNumberInput = page.locator('input[name="cardNumber"], input[placeholder*="card number" i], input[autocomplete="cc-number"]');
         if (await cardNumberInput.isVisible({ timeout: 3000 }).catch(() => false)) {
           await cardNumberInput.fill("4242 4242 4242 4242");
+          cardFilled = true;
         }
       }
+      if (!cardFilled) {
+        // Try broader iframe selector (Stripe may use different iframe names)
+        const broadFrame = page.frameLocator('iframe[title*="card" i], iframe[title*="payment" i], iframe[name*="stripe"]').first();
+        const broadCardInput = broadFrame.locator('input[name="cardnumber"], input[autocomplete="cc-number"]');
+        if (await broadCardInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await broadCardInput.fill("4242424242424242");
+          cardFilled = true;
+        }
+      }
+      if (cardFilled) filledFields.push("card");
 
       // Fill expiry
-      const expiryInput = page.locator('input[name="cardExpiry"], input[placeholder*="MM" i]');
-      if (await expiryInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await expiryInput.fill("12/30");
+      let expiryFilled = false;
+      // Try iframe first (same frame as card)
+      if (cardFilled) {
+        const expiryFrame = page.frameLocator('iframe[name*="__privateStripeFrame"], iframe[title*="card" i], iframe[title*="payment" i], iframe[name*="stripe"]').first();
+        const iframeExpiry = expiryFrame.locator('input[name="exp-date"], input[autocomplete="cc-exp"]');
+        if (await iframeExpiry.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await iframeExpiry.fill("1230");
+          expiryFilled = true;
+        }
       }
+      if (!expiryFilled) {
+        const expiryInput = page.locator('input[name="cardExpiry"], input[placeholder*="MM" i], input[autocomplete="cc-exp"]');
+        if (await expiryInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await expiryInput.fill("12/30");
+          expiryFilled = true;
+        }
+      }
+      if (expiryFilled) filledFields.push("expiry");
 
       // Fill CVC
-      const cvcInput = page.locator('input[name="cardCvc"], input[placeholder*="CVC" i]');
-      if (await cvcInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await cvcInput.fill("123");
+      let cvcFilled = false;
+      if (cardFilled) {
+        const cvcFrame = page.frameLocator('iframe[name*="__privateStripeFrame"], iframe[title*="card" i], iframe[title*="payment" i], iframe[name*="stripe"]').first();
+        const iframeCvc = cvcFrame.locator('input[name="cvc"], input[autocomplete="cc-csc"]');
+        if (await iframeCvc.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await iframeCvc.fill("123");
+          cvcFilled = true;
+        }
       }
+      if (!cvcFilled) {
+        const cvcInput = page.locator('input[name="cardCvc"], input[placeholder*="CVC" i], input[autocomplete="cc-csc"]');
+        if (await cvcInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await cvcInput.fill("123");
+          cvcFilled = true;
+        }
+      }
+      if (cvcFilled) filledFields.push("cvc");
 
       // Fill cardholder name if present
       const nameInput = page.locator('input[name="billingName"], input[placeholder*="name" i]');
       if (await nameInput.isVisible({ timeout: 2000 }).catch(() => false)) {
         await nameInput.fill("Test User");
+        filledFields.push("name");
       }
 
+      console.log(`Stripe checkout: filled fields: [${filledFields.join(", ")}]`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-stripe-filled.png` });
+
+      if (!cardFilled) {
+        console.log("WARNING: Card number was NOT filled — Stripe UI may have changed. Taking diagnostic screenshot.");
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-CARD-NOT-FILLED.png` });
+      }
 
       // Submit payment
       const submitButton = page.locator('button[type="submit"]:has-text("Subscribe"), button:has-text("Pay"), button[data-testid="hosted-payment-submit-button"]');
