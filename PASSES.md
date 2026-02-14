@@ -45,7 +45,7 @@ Pass types ending in `-test-pass` have `test = true` in `submit.passes.toml`. Th
 
 - **Admin-issued passes** (day-guest-test-pass, day-guest-pass, invited-guest, resident-guest, resident-pro-comp, resident-pro-test-pass, resident-pro-pass, group-invite): **No payment** - created by admins via GitHub Actions workflow
 - **User-issued passes** (campaign, digital-pass, physical-pass): **10 tokens** from the issuing user's bundle (Phase 6, not yet implemented)
-- **Subscription** (resident-pro): Checkout and initial bundle grant implemented (Phases 1-4). Renewal, cancellation, and frontend Subscribe button pending (Phases 5, 7).
+- **Subscription** (resident-pro): Pass gates visibility, Stripe Checkout creates subscription, webhook grants bundle. Includes renewal token refresh, cancellation, and Customer Portal management.
 
 ## Bundles
 
@@ -58,7 +58,7 @@ Defined in `web/public/submit.catalogue.toml`. Each bundle is an access tier.
 | `invited-guest` | Guest | 3 | Monthly | 1 month | On-Email-Match | invited-guest, group-invite, campaign |
 | `resident-guest` | Guest | 3 | Monthly | Unlimited | On-Email-Match | resident-guest |
 | `resident-pro-comp` | Pro | 100 | Monthly | Unlimited | On-Email-Match | resident-pro-comp |
-| `resident-pro` | Pro | 100 | Monthly | - | On-Pass (planned: subscription) | resident-pro-test-pass, resident-pro-pass (planned: Stripe subscription) |
+| `resident-pro` | Pro | 100 | Monthly | - | On-Pass-On-Subscription | resident-pro-test-pass, resident-pro-pass, Stripe subscription |
 
 ### Key bundle concepts
 
@@ -229,26 +229,28 @@ The flow is the same: enter code → validate → "Request Resident Pro" button 
 ## Current Status (Closed Beta)
 
 - `day-guest` requires a pass (`enable = "on-pass"`) with capacity cap = 0
-- `resident-pro` requires a pass (`enable = "on-pass"`); planned: `on-pass-on-subscription`
+- `resident-pro` requires a pass then subscription (`allocation = "on-pass-on-subscription"`)
 - All pass generation is admin-only via GitHub Actions
 - User-issued passes (campaign, digital, physical) are defined but Phase 6 is deferred
 
 ### Subscription status
 
-**Implemented (Phases 1-4):**
+**Implemented (Phases 1-5, 7):**
 - Token usage page (`/usage.html`)
 - Stripe SDK integration (`scripts/stripe-setup.js`)
-- BillingStack CDK infrastructure
+- BillingStack CDK infrastructure (checkout, portal, webhook, recover Lambdas)
 - `billingCheckoutPost.js` — creates Stripe Checkout sessions
-- `billingWebhookPost.js` — handles `checkout.session.completed`, grants `resident-pro` bundle with subscription fields
+- `billingWebhookPost.js` — handles `checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+- `billingPortalGet.js` — creates Stripe Customer Portal sessions for subscription management
 - Subscription DynamoDB table and repository
-
-**Not yet implemented (Phases 5, 7):**
-- `on-pass-on-subscription` allocation mode — pass gates access, subscription behind it
-- "Subscribe" button on `bundles.html` for pass-holders
+- `on-pass-on-subscription` allocation mode — pass gates visibility, subscription grants access
+- "Subscribe £9.99/mo" button on `bundles.html` for pass-holders
+- "Manage Subscription" button for users with active subscriptions
+- Checkout success/canceled URL handling on bundles page
 - `invoice.paid` handler (token refresh on renewal)
-- `customer.subscription.updated/deleted` handlers (cancellation)
-- `invoice.payment_failed` handler
+- `customer.subscription.updated/deleted` handlers (status changes, cancellation)
+- `invoice.payment_failed` handler (activity alert)
+- Developer tools: sandbox bundle detection via `qualifiers.sandbox`
 
 ### To reach Public Beta
 
@@ -258,6 +260,6 @@ The flow is the same: enter code → validate → "Request Resident Pro" button 
 
 ### To reach Launch
 
-1. Implement `on-pass-on-subscription` allocation for `resident-pro` — pass gates visibility, subscription enables access
-2. Implement subscription lifecycle (renewal, cancellation, payment failure) — Phases 5, 7
+1. ~~Implement `on-pass-on-subscription` allocation for `resident-pro`~~ — Done
+2. ~~Implement subscription lifecycle (renewal, cancellation, payment failure)~~ — Done
 3. Enable user-issued passes (campaign, digital, physical) — Phase 6

@@ -7,8 +7,8 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
-import { putBundleByHashedSub } from "../../data/dynamoDbBundleRepository.js";
-import { putSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
+import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHashedSub } from "../../data/dynamoDbBundleRepository.js";
+import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { publishActivityEvent, maskEmail } from "../../lib/activityAlert.js";
 
@@ -158,7 +158,54 @@ async function handleInvoicePaid(invoice) {
   }
 
   logger.info({ message: "Processing invoice.paid", subscriptionId, invoiceId: invoice.id });
-  // Renewal token refresh will be implemented in Phase 5
+
+  const subRecord = await getSubscription(`stripe#${subscriptionId}`);
+  if (!subRecord) {
+    logger.warn({ message: "No subscription record found for invoice.paid", subscriptionId });
+    return;
+  }
+
+  const { hashedSub, bundleId } = subRecord;
+  const tokensGranted = getCatalogTokensGranted(bundleId);
+
+  // Retrieve subscription for updated period info
+  let currentPeriodEnd = null;
+  try {
+    const stripe = await getStripeClient();
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    currentPeriodEnd = subscription.current_period_end
+      ? new Date(subscription.current_period_end * 1000).toISOString()
+      : null;
+  } catch (error) {
+    logger.warn({ message: "Failed to retrieve subscription for token refresh", subscriptionId, error: error.message });
+  }
+
+  const nextResetAt = currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Reset tokens for the new billing period
+  await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextResetAt);
+
+  // Update period dates on the bundle
+  await updateBundleSubscriptionFields(hashedSub, bundleId, {
+    currentPeriodEnd: currentPeriodEnd || nextResetAt,
+    expiry: currentPeriodEnd || nextResetAt,
+  });
+
+  // Update subscription record
+  await updateSubscription(`stripe#${subscriptionId}`, {
+    currentPeriodEnd,
+    status: "active",
+  });
+
+  logger.info({ message: "Tokens refreshed on invoice.paid", hashedSub, bundleId, tokensGranted });
+
+  publishActivityEvent({
+    event: "subscription-renewed",
+    site: "submit",
+    summary: `Subscription renewed: ${bundleId}`,
+    flow: "user-journey",
+    detail: { bundleId, subscriptionId },
+  }).catch(() => {});
 }
 
 async function handleSubscriptionUpdated(subscription) {
@@ -167,7 +214,28 @@ async function handleSubscriptionUpdated(subscription) {
     subscriptionId: subscription.id,
     status: subscription.status,
   });
-  // Status change handling will be implemented in Phase 5
+
+  const subRecord = await getSubscription(`stripe#${subscription.id}`);
+  if (!subRecord) {
+    logger.warn({ message: "No subscription record found for subscription.updated", subscriptionId: subscription.id });
+    return;
+  }
+
+  const { hashedSub, bundleId } = subRecord;
+
+  // Update bundle subscription status
+  await updateBundleSubscriptionFields(hashedSub, bundleId, {
+    subscriptionStatus: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+  });
+
+  // Update subscription record
+  await updateSubscription(`stripe#${subscription.id}`, {
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+  });
+
+  logger.info({ message: "Subscription status updated", hashedSub, bundleId, status: subscription.status });
 }
 
 async function handleSubscriptionDeleted(subscription) {
@@ -175,7 +243,36 @@ async function handleSubscriptionDeleted(subscription) {
     message: "Processing customer.subscription.deleted",
     subscriptionId: subscription.id,
   });
-  // Cancellation handling will be implemented in Phase 5
+
+  const subRecord = await getSubscription(`stripe#${subscription.id}`);
+  if (!subRecord) {
+    logger.warn({ message: "No subscription record found for subscription.deleted", subscriptionId: subscription.id });
+    return;
+  }
+
+  const { hashedSub, bundleId } = subRecord;
+
+  // Mark bundle subscription as canceled
+  await updateBundleSubscriptionFields(hashedSub, bundleId, {
+    subscriptionStatus: "canceled",
+    cancelAtPeriodEnd: false,
+  });
+
+  // Update subscription record
+  await updateSubscription(`stripe#${subscription.id}`, {
+    status: "canceled",
+    canceledAt: new Date().toISOString(),
+  });
+
+  logger.info({ message: "Subscription canceled", hashedSub, bundleId });
+
+  publishActivityEvent({
+    event: "subscription-canceled",
+    site: "submit",
+    summary: `Subscription canceled: ${bundleId}`,
+    flow: "user-journey",
+    detail: { bundleId, subscriptionId: subscription.id },
+  }).catch(() => {});
 }
 
 async function handlePaymentFailed(invoice) {
@@ -184,7 +281,23 @@ async function handlePaymentFailed(invoice) {
     subscriptionId: invoice.subscription,
     invoiceId: invoice.id,
   });
-  // Payment failure handling will be implemented in Phase 5
+
+  const subscriptionId = invoice.subscription;
+  if (!subscriptionId) return;
+
+  const subRecord = await getSubscription(`stripe#${subscriptionId}`);
+  if (!subRecord) {
+    logger.warn({ message: "No subscription record found for payment_failed", subscriptionId });
+    return;
+  }
+
+  publishActivityEvent({
+    event: "payment-failed",
+    site: "submit",
+    summary: `Payment failed: ${subRecord.bundleId}`,
+    flow: "user-journey",
+    detail: { bundleId: subRecord.bundleId, subscriptionId },
+  }).catch(() => {});
 }
 
 export async function ingestHandler(event) {

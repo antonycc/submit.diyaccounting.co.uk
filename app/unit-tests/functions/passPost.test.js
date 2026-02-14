@@ -1,0 +1,128 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (C) 2025-2026 DIY Accounting Ltd
+
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
+
+// Mock passService
+const mockRedeemPass = vi.fn();
+vi.mock("@app/services/passService.js", () => ({
+  redeemPass: (...args) => mockRedeemPass(...args),
+}));
+
+// Mock emailHash
+vi.mock("@app/lib/emailHash.js", () => ({
+  initializeEmailHashSecret: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock subHasher
+vi.mock("@app/services/subHasher.js", () => ({
+  initializeSalt: vi.fn().mockResolvedValue(undefined),
+  hashSub: vi.fn((sub) => `hashed_${sub}`),
+}));
+
+// Mock EventBridge
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send() {
+      return {};
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
+// Mock grantBundle
+const mockGrantBundle = vi.fn();
+vi.mock("@app/functions/account/bundlePost.js", () => ({
+  grantBundle: (...args) => mockGrantBundle(...args),
+}));
+
+import { ingestHandler } from "@app/functions/account/passPost.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
+
+describe("passPost", () => {
+  const validToken = makeIdToken("test-user-sub", { email: "user@example.com" });
+
+  beforeEach(() => {
+    mockRedeemPass.mockReset();
+    mockGrantBundle.mockReset();
+    mockGrantBundle.mockResolvedValue({ status: "granted", expiry: "2026-03-01T00:00:00.000Z" });
+    process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
+    process.env.USER_SUB_HASH_SALT = "test-salt-for-unit-tests";
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test("returns 401 when no authorization header", async () => {
+    const event = buildEventWithToken(null, { code: "test-pass-code" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(401);
+  });
+
+  test("returns 400 when code is missing", async () => {
+    const event = buildEventWithToken(validToken, {});
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(400);
+  });
+
+  test("returns requiresSubscription for on-pass-on-subscription bundles", async () => {
+    mockRedeemPass.mockResolvedValue({
+      valid: true,
+      bundleId: "resident-pro",
+      pass: { testPass: false },
+    });
+
+    const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.redeemed).toBe(false);
+    expect(body.valid).toBe(true);
+    expect(body.requiresSubscription).toBe(true);
+    expect(body.bundleId).toBe("resident-pro");
+    // Should NOT have called grantBundle
+    expect(mockGrantBundle).not.toHaveBeenCalled();
+  });
+
+  test("grants bundle for non-subscription bundles", async () => {
+    mockRedeemPass.mockResolvedValue({
+      valid: true,
+      bundleId: "day-guest",
+      pass: { testPass: false },
+    });
+
+    const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.redeemed).toBe(true);
+    expect(body.bundleId).toBe("day-guest");
+    expect(mockGrantBundle).toHaveBeenCalledTimes(1);
+  });
+
+  test("returns error reason for invalid pass", async () => {
+    mockRedeemPass.mockResolvedValue({
+      valid: false,
+      reason: "not_found",
+    });
+
+    const event = buildEventWithToken(validToken, { code: "invalid-code" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.redeemed).toBe(false);
+    expect(body.reason).toBe("not_found");
+  });
+});

@@ -3,7 +3,7 @@
 //
 // Developer Mode Toggle Script
 // Provides a global developer mode toggle that persists in sessionStorage.
-// The toggle icon only appears if the user has the "test" bundle.
+// The toggle icon only appears if the user has a sandbox bundle (qualifiers.sandbox === true).
 // When enabled:
 // - Adds 'developer-mode' class to <body>
 // - Shows header dev info (traceparent, x-request-id, entitlement) with terminal styling
@@ -16,8 +16,8 @@
   // Read current state
   const isEnabled = () => sessionStorage.getItem(KEY) === "true";
 
-  // Check if user has the test bundle
-  async function userHasTestBundle() {
+  // Check if user has a sandbox bundle (granted via test pass)
+  async function userHasSandboxBundle() {
     try {
       const idToken = localStorage.getItem("cognitoIdToken");
       if (!idToken) return false;
@@ -29,9 +29,9 @@
 
       const data = await response.json();
       const bundles = Array.isArray(data?.bundles) ? data.bundles : [];
-      return bundles.some((b) => (b?.bundleId || b) === "test" || String(b).startsWith("test|"));
+      return bundles.some((b) => b?.qualifiers?.sandbox === true);
     } catch (e) {
-      console.warn("Failed to check test bundle for developer mode:", e);
+      console.warn("Failed to check sandbox bundle for developer mode:", e);
       return false;
     }
   }
@@ -184,7 +184,7 @@
     window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled } }));
   }
 
-  // Inject toggle icon into header-left (only if user has test bundle)
+  // Inject toggle icon into header-left (only if user has a sandbox bundle)
   async function injectToggle() {
     const headerLeft = document.querySelector(".header-left");
     if (!headerLeft) return;
@@ -192,9 +192,9 @@
     // Don't inject twice
     if (headerLeft.querySelector(".developer-mode-toggle")) return;
 
-    // Only show icon if user has test bundle
-    const hasTestBundle = await userHasTestBundle();
-    if (!hasTestBundle) return;
+    // Only show icon if user has a sandbox bundle
+    const hasSandboxBundle = await userHasSandboxBundle();
+    if (!hasSandboxBundle) return;
 
     const toggle = document.createElement("a");
     toggle.href = "#";
@@ -576,19 +576,19 @@
     document.head.appendChild(style);
   }
 
-  // Re-check test bundle and inject/remove icon as needed
+  // Re-check sandbox bundle and inject/remove icon as needed
   async function refreshToggleVisibility() {
     const headerLeft = document.querySelector(".header-left");
     if (!headerLeft) return;
 
     const existingToggle = headerLeft.querySelector(".developer-mode-toggle");
-    const hasTestBundle = await userHasTestBundle();
+    const hasSandboxBundle = await userHasSandboxBundle();
 
-    if (hasTestBundle && !existingToggle) {
-      // User now has test bundle, inject the icon
+    if (hasSandboxBundle && !existingToggle) {
+      // User now has sandbox bundle, inject the icon
       await injectToggle();
-    } else if (!hasTestBundle && existingToggle) {
-      // User no longer has test bundle, remove the icon
+    } else if (!hasSandboxBundle && existingToggle) {
+      // User no longer has sandbox bundle, remove the icon
       existingToggle.remove();
       // Also disable developer mode
       sessionStorage.setItem(KEY, "");

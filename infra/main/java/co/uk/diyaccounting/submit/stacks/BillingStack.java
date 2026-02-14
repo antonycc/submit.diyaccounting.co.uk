@@ -209,8 +209,15 @@ public class BillingStack extends Stack {
         // ============================================================================
         var billingPortalGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            billingPortalGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
+            billingPortalGetLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
+        }
         var billingPortalGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -236,12 +243,26 @@ public class BillingStack extends Stack {
         this.billingPortalGetLambdaLogGroup = billingPortalGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.billingPortalGetLambdaProps);
         subscriptionsTable.grantReadData(this.billingPortalGetLambda);
+        bundlesTable.grantReadData(this.billingPortalGetLambda);
         SubHashSaltHelper.grantSaltAccess(this.billingPortalGetLambda, region, account, props.envName());
         this.billingPortalGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            this.billingPortalGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for Stripe secret %s",
+                    this.billingPortalGetLambda.getFunctionName(), props.stripeSecretKeyArn());
+        }
         infof("Created Billing Portal GET Lambda %s", this.billingPortalGetLambda.getNode().getId());
 
         // ============================================================================

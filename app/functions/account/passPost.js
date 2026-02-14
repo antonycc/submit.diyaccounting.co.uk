@@ -82,6 +82,19 @@ export async function ingestHandler(event) {
       });
     }
 
+    // Check if this bundle requires a subscription (on-pass-on-subscription allocation)
+    const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
+    const catalog = loadCatalogFromRoot();
+    const catBundle = (catalog.bundles || []).find((b) => b.id === result.bundleId);
+
+    if (catBundle?.allocation === "on-pass-on-subscription") {
+      return http200OkResponse({
+        request,
+        headers: responseHeaders,
+        data: { redeemed: false, valid: true, bundleId: result.bundleId, requiresSubscription: true },
+      });
+    }
+
     // Pass is valid — grant the bundle to the user
     const { grantBundle } = await import("./bundlePost.js");
     const grantQualifiers = result.pass?.testPass ? { sandbox: true } : undefined;

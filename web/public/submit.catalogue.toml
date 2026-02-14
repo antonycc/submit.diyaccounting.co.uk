@@ -138,23 +138,22 @@ tokensGranted = 100
 tokenRefreshInterval = "P1M"
 
 # resident-pro: Pro subscription access
-# Unlocked by: resident-pro-test-pass (sandbox), resident-pro-pass (production); planned: on-subscription (Stripe monthly payment)
-# Payment: Checkout + initial bundle grant implemented (Phases 1-4); renewal/cancellation pending (Phases 5, 7)
+# Unlocked by: resident-pro-test-pass (sandbox), resident-pro-pass (production), Stripe monthly subscription
+# Payment: Pass reveals the card, subscription grants the bundle (£9.99/mo via Stripe Checkout)
 # Tokens: 100 granted, refreshing monthly
 # Enables: all activities including generating digital/physical passes (costs 10 tokens each)
-# Access to all authenticated activities including VAT submission for specific users on subscription
+# Access to all authenticated activities including VAT submission for subscribed users
+# Note: resident-pro-comp (above) grants this level for free via on-email-match — comp passes bypass subscription
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
 levelName = "Pro"
 enable = "on-pass"
 hidden = false
-# TODO: 3. Switch to allocation = "on-subscription" for "launch" - AKA public launch with production credentials recognised by HMRC and subscription management
-allocation = "on-pass"
-# allocation = "on-subscription"
-# on-subscription
-# =========================== ????? Is the subscription just a way to get the pass for 1 bundle issued to subscribed users?
-# Allocate this bundle only if the user has an active subscription (subscription management not yet implemented)
+# on-pass-on-subscription: Pass gates visibility (card appears after valid pass), subscription gates access.
+# After entering a valid pass, user sees a "Subscribe £9.99/mo" button instead of "Request".
+# Stripe Checkout creates the subscription; webhook grants the bundle.
+allocation = "on-pass-on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 #listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
