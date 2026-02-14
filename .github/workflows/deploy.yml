@@ -1657,11 +1657,11 @@ jobs:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
-      - params
       - names
       - set-origins
+      - deploy-publish
       - enable-native-auth
-      - web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1672,6 +1672,75 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'authBehaviour'
       generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-token-enforcement:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - web-test-auth
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'tokenEnforcementBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-payment:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - web-test-token-enforcement
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'paymentBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test:
+    if: ${{ !cancelled() }}
+    name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - names
+      - set-origins
+      - deploy-publish
+      - enable-native-auth
+      - web-test-payment
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'submitVatBehaviour'
+      generate-test-reports: 'true'
       skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
@@ -1699,7 +1768,6 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-
   web-test-pass-redemption:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
     name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
@@ -1719,75 +1787,6 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       behaviour-test-suite: 'passRedemptionBehaviour'
       generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-token-enforcement:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
-    needs:
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      - web-test
-    uses: ./.github/workflows/synthetic-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'tokenEnforcementBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-payment:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
-    needs:
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      - web-test
-    uses: ./.github/workflows/synthetic-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'paymentBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test:
-    if: ${{ !cancelled() }}
-    name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
-    needs:
-      - names
-      - set-origins
-      - deploy-publish
-      - enable-native-auth
-      - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'submitVatBehaviour'
-      generate-test-reports: 'true'
       skip-native-auth-disable: 'true'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
