@@ -665,10 +665,6 @@ jobs:
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
 
-          echo "=== Phase 5: Dev stacks ==="
-          delete_stack_in_region "${DEPLOYMENT}-app-DevStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-DevUE1Stack" us-east-1
-
           echo "=== Stack deletion complete ==="
 
       - name: CDK destroy (cleanup pass)

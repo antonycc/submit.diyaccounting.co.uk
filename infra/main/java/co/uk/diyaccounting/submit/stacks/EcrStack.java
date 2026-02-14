@@ -31,14 +31,14 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.constructs.Construct;
 
-public class DevStack extends Stack {
+public class EcrStack extends Stack {
 
     public final IRepository ecrRepository;
     public final ILogGroup ecrLogGroup;
     public final Role ecrPublishRole;
 
     @Value.Immutable
-    public interface DevStackProps extends StackProps, SubmitStackProps {
+    public interface EcrStackProps extends StackProps, SubmitStackProps {
 
         @Override
         Environment getEnv();
@@ -64,34 +64,23 @@ public class DevStack extends Stack {
         @Override
         SubmitSharedNames sharedNames();
 
-        static ImmutableDevStackProps.Builder builder() {
-            return ImmutableDevStackProps.builder();
+        static ImmutableEcrStackProps.Builder builder() {
+            return ImmutableEcrStackProps.builder();
         }
     }
 
-    public DevStack(Construct scope, String id, DevStackProps props) {
-        this(scope, id, null, props);
-    }
-
-    public DevStack(Construct scope, String id, StackProps stackProps, DevStackProps props) {
+    public EcrStack(Construct scope, String id, EcrStackProps props) {
         super(
                 scope,
                 id,
                 StackProps.builder()
-                        .env(props.getEnv()) // enforce region from props
-                        .description(stackProps != null ? stackProps.getDescription() : null)
-                        .stackName(stackProps != null ? stackProps.getStackName() : null)
-                        .terminationProtection(stackProps != null ? stackProps.getTerminationProtection() : null)
-                        .analyticsReporting(stackProps != null ? stackProps.getAnalyticsReporting() : null)
-                        .synthesizer(stackProps != null ? stackProps.getSynthesizer() : null)
-                        .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
+                        .env(props.getEnv())
+                        .crossRegionReferences(props.getCrossRegionReferences())
                         .build());
 
         infof(
-                "Creating DevStack for domain: %s (dashed: %s) in region: %s",
-                Objects.requireNonNull(props.getEnv()).getRegion(),
-                props.sharedNames().deploymentDomainName,
-                props.sharedNames().dashedDeploymentDomainName);
+                "Creating EcrStack %s in region: %s",
+                id, Objects.requireNonNull(props.getEnv()).getRegion());
         String ecrRepositoryName;
         String ecrLogGroupName;
         String ecrPublishRoleName;
@@ -180,8 +169,6 @@ public class DevStack extends Stack {
         cfnOutput(this, "EcrLogGroupArn", this.ecrLogGroup.getLogGroupArn());
         cfnOutput(this, "EcrPublishRoleArn", this.ecrPublishRole.getRoleArn());
 
-        infof(
-                "DevStack %s created successfully for %s",
-                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+        infof("EcrStack %s created successfully", this.getNode().getId());
     }
 }

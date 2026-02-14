@@ -14,7 +14,6 @@ import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.BillingStack;
-import co.uk.diyaccounting.submit.stacks.DevStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
@@ -32,8 +31,6 @@ import software.constructs.Construct;
 
 public class SubmitApplication {
 
-    public final DevStack devStack;
-    public final DevStack ue1DevStack;
     public final AuthStack authStack;
     public final HmrcStack hmrcStack;
     public final AccountStack accountStack;
@@ -185,40 +182,6 @@ public class SubmitApplication {
         var buildNumber = envOr("BUILD_NUMBER", "local");
         var docRootPath = envOr("DOC_ROOT_PATH", appProps.docRootPath, "(from docRootPath in cdk.json)");
 
-        // Create DevStack with resources only used during development or deployment (e.g. ECR)
-        infof(
-                "Synthesizing stack %s for deployment %s to environment %s for region %s",
-                primaryEnv.getRegion(), sharedNames.devStackId, deploymentName, envName);
-        this.devStack = new DevStack(
-                app,
-                sharedNames.devStackId,
-                DevStack.DevStackProps.builder()
-                        .env(primaryEnv)
-                        .crossRegionReferences(false)
-                        .envName(envName)
-                        .deploymentName(deploymentName)
-                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .sharedNames(sharedNames)
-                        .build());
-
-        // Create DevStack for us-east-1 region (for the edge services like CloudFront)
-        infof(
-                "Synthesizing stack %s for deployment %s to environment %s for region us-east-1",
-                sharedNames.ue1DevStackId, deploymentName, envName);
-        this.ue1DevStack = new DevStack(
-                app,
-                sharedNames.ue1DevStackId,
-                DevStack.DevStackProps.builder()
-                        .env(usEast1Env)
-                        .crossRegionReferences(false)
-                        .envName(envName)
-                        .deploymentName(deploymentName)
-                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .sharedNames(sharedNames)
-                        .build());
-
         // Create the AuthStack with resources used in authentication and authorisation
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -239,7 +202,7 @@ public class SubmitApplication {
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .cognitoUserPoolClientId(cognitoUserPoolClientId)
                         .build());
-        // this.authStack.addDependency(devStack);
+
 
         // Create the HmrcStack
         infof(
@@ -265,7 +228,7 @@ public class SubmitApplication {
                         .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
-        // this.hmrcStack.addDependency(devStack);
+
 
         // Create the AccountStack
         infof(
@@ -288,7 +251,7 @@ public class SubmitApplication {
                         .cognitoUserPoolArn(cognitoUserPoolArn)
                         .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
                         .build());
-        // this.accountStack.addDependency(devStack);
+
 
         // Create the BillingStack
         infof(
@@ -312,7 +275,7 @@ public class SubmitApplication {
                         .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")
                         .baseUrl(sharedNames.baseUrl)
                         .build());
-        // this.billingStack.addDependency(devStack);
+
 
         // Create the ApiStack with API Gateway v2 for all Lambda endpoints
         infof(

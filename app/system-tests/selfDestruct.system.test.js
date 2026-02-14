@@ -52,7 +52,6 @@ describe("System: infra/selfDestruct", () => {
       AUTH_STACK_NAME: "auth",
       HMRC_STACK_NAME: "hmrc",
       ACCOUNT_STACK_NAME: "account",
-      DEV_STACK_NAME: "dev",
       SELF_DESTRUCT_STACK_NAME: "self-destruct",
       AWS_REGION: "eu-west-2",
     });

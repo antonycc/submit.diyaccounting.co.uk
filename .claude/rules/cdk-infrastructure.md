@@ -22,10 +22,10 @@ public class ExampleStack extends Stack {
 ## Two CDK Applications
 
 **Environment Stacks** (`cdk-environment/`): Long-lived shared resources
-- ObservabilityStack, DataStack, ApexStack, IdentityStack
+- ObservabilityStack, DataStack, ApexStack, IdentityStack, EcrStack
 
 **Application Stacks** (`cdk-application/`): Per-deployment resources
-- DevStack, AuthStack, HmrcStack, ApiStack, EdgeStack, etc.
+- AuthStack, HmrcStack, ApiStack, EdgeStack, etc.
 
 ## Entry Points
 

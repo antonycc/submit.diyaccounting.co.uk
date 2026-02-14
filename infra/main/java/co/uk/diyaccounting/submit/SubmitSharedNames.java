@@ -109,16 +109,8 @@ public class SubmitSharedNames {
     public String backupStackId;
     public String activityStackId;
     public String simulatorStackId;
-
-    public String appResourceNamePrefix;
-    public String devStackId;
-    public String ue1DevStackId;
-    public String authStackId;
-    public String hmrcStackId;
-    public String accountStackId;
-    public String apiStackId;
-    public String opsStackId;
-    public String selfDestructStackId;
+    public String ecrStackId;
+    public String ue1EcrStackId;
     public String ecrRepositoryArn;
     public String ecrRepositoryName;
     public String ecrLogGroupName;
@@ -127,6 +119,14 @@ public class SubmitSharedNames {
     public String ue1EcrRepositoryName;
     public String ue1EcrLogGroupName;
     public String ue1EcrPublishRoleName;
+
+    public String appResourceNamePrefix;
+    public String authStackId;
+    public String hmrcStackId;
+    public String accountStackId;
+    public String apiStackId;
+    public String opsStackId;
+    public String selfDestructStackId;
 
     public String cognitoTokenPostIngestLambdaHandler;
     public String cognitoTokenPostIngestLambdaFunctionName;
@@ -426,6 +426,18 @@ public class SubmitSharedNames {
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
         this.activityStackId = "%s-env-ActivityStack".formatted(props.envName);
         this.simulatorStackId = "%s-env-SimulatorStack".formatted(props.envName);
+        this.ecrStackId = "%s-env-EcrStack".formatted(props.envName);
+        this.ue1EcrStackId = "%s-env-EcrUE1Stack".formatted(props.envName);
+        this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
+                .formatted(props.regionName, props.awsAccount, this.envResourceNamePrefix);
+        this.ecrRepositoryName = "%s-ecr".formatted(this.envResourceNamePrefix);
+        this.ecrLogGroupName = "/aws/ecr/%s".formatted(this.envResourceNamePrefix);
+        this.ecrPublishRoleName = "%s-ecr-publish-role".formatted(this.envResourceNamePrefix);
+        this.ue1EcrRepositoryArn =
+                "arn:aws:ecr:us-east-1:%s:repository/%s-ecr".formatted(props.awsAccount, this.envResourceNamePrefix);
+        this.ue1EcrRepositoryName = "%s-ecr-us-east-1".formatted(this.envResourceNamePrefix);
+        this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.envResourceNamePrefix);
+        this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(this.envResourceNamePrefix);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         this.receiptsTableName = "%s-receipts".formatted(this.envResourceNamePrefix);
@@ -459,8 +471,6 @@ public class SubmitSharedNames {
         this.apiAccessLogGroupName = "/aws/apigw/%s/access".formatted(this.envResourceNamePrefix);
 
         this.appResourceNamePrefix = "%s-app".formatted(props.deploymentName);
-        this.devStackId = "%s-app-DevStack".formatted(props.deploymentName);
-        this.ue1DevStackId = "%s-app-DevUE1Stack".formatted(props.deploymentName);
         this.authStackId = "%s-app-AuthStack".formatted(props.deploymentName);
         this.hmrcStackId = "%s-app-HmrcStack".formatted(props.deploymentName);
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
@@ -468,16 +478,6 @@ public class SubmitSharedNames {
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
         this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
-        this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
-                .formatted(props.regionName, props.awsAccount, this.appResourceNamePrefix);
-        this.ecrRepositoryName = "%s-ecr".formatted(this.appResourceNamePrefix);
-        this.ecrLogGroupName = "/aws/ecr/%s".formatted(this.appResourceNamePrefix);
-        this.ecrPublishRoleName = "%s-ecr-publish-role".formatted(appResourceNamePrefix);
-        this.ue1EcrRepositoryArn =
-                "arn:aws:ecr:us-east-1:%s:repository/%s-ecr".formatted(props.awsAccount, this.appResourceNamePrefix);
-        this.ue1EcrRepositoryName = "%s-ecr-us-east-1".formatted(this.appResourceNamePrefix);
-        this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.appResourceNamePrefix);
-        this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(appResourceNamePrefix);
 
         this.edgeStackId = "%s-app-EdgeStack".formatted(props.deploymentName);
         this.publishStackId = "%s-app-PublishStack".formatted(props.deploymentName);

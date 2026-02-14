@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       stackName:
-        description: 'Stack name to deploy. e.g. ci-reports-app-DevStack'
+        description: 'Stack name to deploy. e.g. ci-reports-app-AuthStack'
         required: true
       force-stack-deployment:
         description: 'Force re-deploy of all stacks even if they already exist or pass comparison checks'
@@ -339,22 +339,35 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
+      - name: Cache Maven build output
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
+
       - name: Deploy ${{ needs.params.outputs.stackName }} Stack (CDK)
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-${{ needs.params.outputs.cdk-application }} \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.params.outputs.stackName }} \
-                --require-approval never \
-                --ci true \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json \
-            && cd .. \
-          ;
+          if [ ! -f target/submit-${{ needs.params.outputs.cdk-application }}.jar ]; then
+            echo "Maven output not cached, building with profile cdk-${{ needs.params.outputs.cdk-application }}..."
+            ./mvnw --errors clean verify -DskipTests \
+              -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -P cdk-${{ needs.params.outputs.cdk-application }}
+          else
+            echo "Maven output cached (target/submit-${{ needs.params.outputs.cdk-application }}.jar exists), skipping build"
+          fi
+          cd cdk-${{ needs.params.outputs.cdk-application }}
+          cat ../.env.${{ needs.names.outputs.environment-name }}
+          npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+            npx cdk deploy \
+              ${{ needs.params.outputs.stackName }} \
+              --require-approval never \
+              --ci true \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json
+          cd ..
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}

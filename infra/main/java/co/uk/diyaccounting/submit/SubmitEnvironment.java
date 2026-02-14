@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.stacks.ActivityStack;
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
+import co.uk.diyaccounting.submit.stacks.EcrStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
@@ -34,6 +35,8 @@ public class SubmitEnvironment {
     public final IdentityStack identityStack;
     public final ApexStack apexStack;
     public final SimulatorStack simulatorStack;
+    public final EcrStack ecrStack;
+    public final EcrStack ue1EcrStack;
 
     public static class SubmitEnvironmentProps {
 
@@ -292,6 +295,40 @@ public class SubmitEnvironment {
                     simulatorCodePath);
             this.simulatorStack = null;
         }
+
+        // Create EcrStack for ECR repositories (eu-west-2)
+        infof(
+                "Synthesizing stack %s for environment %s in region %s",
+                sharedNames.ecrStackId, envName, primaryEnv.getRegion());
+        this.ecrStack = new EcrStack(
+                app,
+                sharedNames.ecrStackId,
+                EcrStack.EcrStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .build());
+
+        // Create EcrStack for us-east-1 region (for edge Lambda images)
+        infof(
+                "Synthesizing stack %s for environment %s in region us-east-1",
+                sharedNames.ue1EcrStackId, envName);
+        this.ue1EcrStack = new EcrStack(
+                app,
+                sharedNames.ue1EcrStackId,
+                EcrStack.EcrStackProps.builder()
+                        .env(usEast1Env)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .build());
     }
 
     // load context from cdk.json like existing apps

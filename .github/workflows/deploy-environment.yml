@@ -47,6 +47,7 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java'
       # Simulator source code
       - 'web/public-simulator/**'
       # Shared utilities and entry point
@@ -339,6 +340,44 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.environment-name }}-env-ActivityStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
+  deploy-ecr:
+    name: 'deploy ecr'
+    needs:
+      - names
+      - create-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-EcrStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
+  deploy-ecr-us-east-1:
+    name: 'deploy ecr us-east-1'
+    needs:
+      - names
+      - create-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-EcrUE1Stack
       force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.environment-name }}
