@@ -348,6 +348,26 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
       }, bundleId);
       console.log(`Direct bundle grant result: ${JSON.stringify(grantResult)}`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03b-direct-grant.png` });
+
+      // 202 means async — poll until the bundle appears as allocated
+      if (grantResult.status === 202 || !grantResult.message?.includes("already allocated")) {
+        const maxPolls = 10;
+        for (let i = 0; i < maxPolls; i++) {
+          await page.waitForTimeout(1000);
+          const allocated = await page.evaluate(async (bid) => {
+            const idToken = localStorage.getItem("cognitoIdToken");
+            if (!idToken) return false;
+            const resp = await fetch("/api/v1/bundle", { headers: { Authorization: `Bearer ${idToken}` } });
+            const d = await resp.json();
+            return (d.bundles || []).some((b) => b.bundleId === bid && b.allocated);
+          }, bundleId);
+          if (allocated) {
+            console.log(`[polling for grant]: Bundle ${bundleId} now allocated (poll ${i + 1}/${maxPolls})`);
+            break;
+          }
+          console.log(`[polling for grant]: Bundle ${bundleId} not yet allocated, waiting... (${i + 1}/${maxPolls})`);
+        }
+      }
     }
 
     // Clear bundle cache so fetchUserBundles hits the API fresh after reload
@@ -478,7 +498,9 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
     } else if (isStripeCheckout) {
       // Real Stripe test checkout: fill in test card details
       console.log("Stripe test checkout: filling in test card details...");
-      await page.waitForLoadState("networkidle", { timeout: 30_000 });
+      // Use "load" instead of "networkidle" — Stripe checkout continuously loads CDN resources
+      // (AmazonPay buttons, analytics) that prevent networkidle from being reached in CI.
+      await page.waitForLoadState("load", { timeout: 30_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-04-stripe-loaded.png` });
 
       // Fill email

@@ -73,6 +73,7 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 const runFraudPreventionHeaderValidation = isSandboxMode();
+const allowSandboxObligations = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
@@ -233,6 +234,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
       undefined,
       runFraudPreventionHeaderValidation,
       screenshotPath,
+      allowSandboxObligations,
     );
 
     // Submit the form
@@ -541,6 +543,7 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
       undefined,
       runFraudPreventionHeaderValidation,
       screenshotPath,
+      allowSandboxObligations,
     );
 
     await page.locator("#submitBtn").click();
