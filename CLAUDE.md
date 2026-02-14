@@ -1,5 +1,36 @@
 # Claude Code Memory - DIY Accounting Submit
 
+## Context Survival (CRITICAL — read this first after every compaction)
+
+**After compaction or at session start:**
+1. Read all `PLAN_*.md` files in the project root — these are the active goals
+2. Run `TaskList` to see tracked tasks with status
+3. Do NOT start new work without checking these first
+
+**During work:**
+- When the user gives a new requirement, add it to the relevant `PLAN_*.md` or create a new one
+- Track all user goals as Tasks with status (pending → in_progress → completed)
+- Update `PLAN_*.md` with progress before context gets large
+
+**When compacting, preserve:**
+- ALL user requests and their current status (not started / in progress / done)
+- Current task goals and blocking issues
+- Which `PLAN_*.md` files are active
+- What test is currently being run and what the last result was
+
+**PLAN file pattern:**
+- Active plans live at project root: `PLAN_<DESCRIPTION>.md`
+- Each plan has user assertions verbatim at the top (non-negotiable requirements)
+- Plans track problems, fixes applied, and verification criteria
+- If no plan file exists for the current work, create one before starting
+- Never nest plans in subdirectories — always project root
+
+**Anti-patterns to avoid:**
+- Do NOT drift to side issues when a plan file defines the priority
+- Do NOT silently fail and move on (e.g., card filling fails → throw, don't skip)
+- Do NOT overfit to the simulator — always verify against proxy/CI with real services
+- Do NOT ask obvious questions (which URL, which branch) — read the plan file
+
 ## Quick Reference
 
 **Primary documentation**: See `REPORT_REPOSITORY_CONTENTS.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
@@ -45,29 +76,22 @@ npm test                              # Unit + system tests (~4s)
 npm run test:submitVatBehaviour-proxy # E2E behaviour tests
 ```
 
-Capture output for analysis:
-```bash
-npm test > target/test.txt 2>&1
-./mvnw clean verify > target/mvnw.txt 2>&1
-npm run test:submitVatBehaviour-proxy > target/behaviour.txt 2>&1
-```
+Behaviour tests automatically tee output to `<projectName>.log` in the project root (e.g. `submitVatBehaviour.log`, `paymentBehaviour.log`). No manual piping needed.
 
 Find failures:
 ```bash
-grep -i -n -A 20 -E 'fail|error' target/test.txt
+grep -i -n -A 20 -E 'fail|error' submitVatBehaviour.log
 ```
-
-**Important**: Behaviour tests generate too much output to read directly - always pipe to file.
 
 ## Active Test Monitoring (CRITICAL)
 
 **You MUST actively monitor running tests, not sit waiting for an exit code.**
 
-Behaviour tests (`npm run test:submitVatBehaviour-*`) take approximately 2-3 minutes. If a test appears stuck:
+Behaviour tests (`npm run test:*Behaviour-*`) take approximately 2-3 minutes. Output is automatically teed to `<projectName>.log` in the project root. If a test appears stuck:
 
-1. **Tail the output file** to see progress:
+1. **Tail the log file** to see progress:
    ```bash
-   tail -f target/behaviour.txt
+   tail -f paymentBehaviour.log  # or submitVatBehaviour.log, etc.
    ```
 
 2. **Kill stuck processes** if no progress for 60+ seconds:
@@ -97,12 +121,13 @@ See `_developers/archive/OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
 ## Target Directory Access
 
 The `./target` directory is always accessible - you do not need to ask about accessing it. This directory contains:
-- Test output files (e.g., `target/test.txt`, `target/behaviour.txt`)
 - Build artifacts from Maven CDK builds
 - Browser test results and screenshots
 - Playwright reports and traces
 
-Use this directory freely for capturing test output, reading results, and debugging. Do not ask for permission to access files in `./target`.
+Behaviour test logs are in the project root (e.g. `submitVatBehaviour.log`, `paymentBehaviour.log`) — automatically created by the npm scripts via `tee`.
+
+Use `./target` freely for build artifacts, results, and debugging. Do not ask for permission to access files in `./target`.
 
 ## Bash Command Construction (Permission System)
 
@@ -122,14 +147,11 @@ pkill -f "playwright|ngrok|server.js"
 # Step 2: Wait
 sleep 2
 
-# Step 3: Run test with output capture (use tee, not redirect)
-npm run test:submitVatBehaviour-proxy 2>&1 | tee target/behaviour.txt
+# Step 3: Run test (output is automatically teed to <projectName>.log)
+npm run test:submitVatBehaviour-proxy
 ```
 
-**For output capture**, use `| tee target/filename.txt` instead of `> target/filename.txt` because:
-- `npm run:*` is already in the allow list
-- `tee` is already in the allow list
-- Redirects with `>` create a new command pattern that may not be allowed
+Behaviour test npm scripts already include `2>&1 | tee <projectName>.log`, so no manual output capture is needed.
 
 ## Deployment & Infrastructure Workflow
 
@@ -255,6 +277,10 @@ When implementing features that require infrastructure validation:
 | proxy | `.env.proxy` | Local dev (ngrok, Docker OAuth2, dynalite) |
 | ci | `.env.ci` | CI with real AWS |
 | prod | `.env.prod` | Production |
+
+**Secrets in `.env` (gitignored):** The root `.env` file contains real API keys and secrets (Stripe, HMRC, Telegram, ngrok, Google, Cognito). Environment-specific `.env.*` files reference price IDs and ARNs but NOT secret keys — those come from `.env` (local) or AWS Secrets Manager (deployed). When proxy/CI/prod need different webhook secrets, the local `.env` holds the proxy value and deployed environments resolve from Secrets Manager ARNs.
+
+**Stripe webhook setup:** Run `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js` to create/verify webhook endpoints for proxy (ngrok), CI, and prod. The proxy webhook secret goes in `.env` as `STRIPE_WEBHOOK_SECRET`.
 
 ## Naming Conventions
 

@@ -96,6 +96,12 @@ async function main() {
   const product = await findOrCreateProduct();
   const price = await findOrCreatePrice(product.id);
 
+  // Proxy webhook (ngrok — for local dev with real Stripe)
+  const proxyWebhook = await findOrCreateWebhook(
+    "https://wanted-finally-anteater.ngrok-free.app/api/v1/billing/webhook",
+    "Proxy environment webhook (ngrok)",
+  );
+
   // CI webhook
   const ciWebhook = await findOrCreateWebhook(
     "https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook",
@@ -112,11 +118,14 @@ async function main() {
   console.log(`\n=== Stripe Setup Complete (${mode} mode) ===`);
   console.log("Product ID:", product.id);
   console.log("Price ID:", price.id);
+  console.log("Proxy Webhook ID:", proxyWebhook.id);
+  console.log("Proxy Webhook Secret:", proxyWebhook.secret || "(already exists — retrieve from Dashboard)");
   console.log("CI Webhook ID:", ciWebhook.id);
   console.log("CI Webhook Secret:", ciWebhook.secret || "(already exists — retrieve from Dashboard)");
   console.log("Prod Webhook ID:", prodWebhook.id);
   console.log("Prod Webhook Secret:", prodWebhook.secret || "(already exists — retrieve from Dashboard)");
   console.log("\nNext: run scripts/stripe-setup-secrets.sh to store IDs in AWS Secrets Manager");
+  console.log("For proxy: set STRIPE_WEBHOOK_SECRET in .env.proxy to the proxy webhook secret");
 }
 
 main().catch((err) => {

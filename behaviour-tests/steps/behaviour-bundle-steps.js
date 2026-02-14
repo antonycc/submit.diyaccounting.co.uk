@@ -496,105 +496,92 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
       await page.waitForSelector('text=Subscription activated', { timeout: 15_000 });
       console.log("Simulator checkout completed successfully");
     } else if (isStripeCheckout) {
-      // Real Stripe test checkout: fill in test card details
-      console.log("Stripe test checkout: filling in test card details...");
-      // Use "load" instead of "networkidle" — Stripe checkout continuously loads CDN resources
-      // (AmazonPay buttons, analytics) that prevent networkidle from being reached in CI.
-      await page.waitForLoadState("load", { timeout: 30_000 });
+      // Real Stripe test checkout: fill in test card details.
+      // Stripe Checkout hosted page is a JS SPA with an accordion UI for payment methods.
+      // Card inputs are NOT rendered until the "Card" accordion item is clicked/expanded.
+      // After expansion, card/expiry/CVC/name appear as direct <input> elements on the page.
+      console.log("Stripe test checkout: waiting for Stripe form to render...");
+
+      // Wait for the submit button (proves the SPA has loaded).
+      const submitButton = page.locator('[data-testid="hosted-payment-submit-button"], button[type="submit"]');
+      await submitButton.first().waitFor({ state: "visible", timeout: 60_000 });
+      console.log("Stripe checkout form rendered (submit button visible)");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-04-stripe-loaded.png` });
 
-      // Fill email
       let filledFields = [];
-      const emailInput = page.locator('input[name="email"], input[id="email"]');
-      if (await emailInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await emailInput.fill("test@example.com");
-        filledFields.push("email");
+
+      // Skip email — Stripe's Link feature intercepts the email input and opens
+      // an auth overlay that blocks Playwright. Email is not required for test payments.
+
+      // Wait for Stripe SPA to fully initialize (submit button visible is not enough —
+      // the accordion, Link overlay, and payment methods need time to finish rendering).
+      await page.waitForTimeout(3000);
+
+      // Click the "Card" payment method to expand the accordion and reveal card inputs.
+      // Use force:true because Stripe overlays (Link, express checkout) can obscure the radio.
+      const cardRadio = page.locator('#payment-method-accordion-item-title-card');
+      if (await cardRadio.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await cardRadio.click({ force: true });
+        console.log("Clicked Card payment method accordion");
+      } else {
+        // Try clicking by label text as fallback
+        const cardLabel = page.locator('text=Card').first();
+        if (await cardLabel.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await cardLabel.click({ force: true });
+          console.log("Clicked Card label text");
+        } else {
+          console.log("Card radio/label not found — card fields may already be visible");
+        }
       }
 
-      // Fill card number (Stripe test card: 4242 4242 4242 4242)
-      let cardFilled = false;
-      // Try Stripe Elements iframe first
-      const cardFrame = page.frameLocator('iframe[name*="__privateStripeFrame"]').first();
-      const cardInput = cardFrame.locator('input[name="cardnumber"]');
-      if (await cardInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await cardInput.fill("4242424242424242");
-        cardFilled = true;
-      }
-      if (!cardFilled) {
-        // Try direct inputs (Stripe Checkout hosted page)
-        const cardNumberInput = page.locator('input[name="cardNumber"], input[placeholder*="card number" i], input[autocomplete="cc-number"]');
-        if (await cardNumberInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await cardNumberInput.fill("4242 4242 4242 4242");
-          cardFilled = true;
-        }
-      }
-      if (!cardFilled) {
-        // Try broader iframe selector (Stripe may use different iframe names)
-        const broadFrame = page.frameLocator('iframe[title*="card" i], iframe[title*="payment" i], iframe[name*="stripe"]').first();
-        const broadCardInput = broadFrame.locator('input[name="cardnumber"], input[autocomplete="cc-number"]');
-        if (await broadCardInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await broadCardInput.fill("4242424242424242");
-          cardFilled = true;
-        }
-      }
-      if (cardFilled) filledFields.push("card");
+      // Wait for card number input to appear (proves accordion expanded)
+      const cardNumberInput = page.locator('#cardNumber, input[name="cardNumber"], input[autocomplete="cc-number"]');
+      await cardNumberInput.first().waitFor({ state: "visible", timeout: 15_000 });
+      console.log("Card number input visible");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-04b-card-accordion-expanded.png` });
+
+      // Fill card number
+      await cardNumberInput.first().click({ force: true });
+      await cardNumberInput.first().fill("4242 4242 4242 4242");
+      filledFields.push("card");
+      console.log("Card number filled");
 
       // Fill expiry
-      let expiryFilled = false;
-      // Try iframe first (same frame as card)
-      if (cardFilled) {
-        const expiryFrame = page.frameLocator('iframe[name*="__privateStripeFrame"], iframe[title*="card" i], iframe[title*="payment" i], iframe[name*="stripe"]').first();
-        const iframeExpiry = expiryFrame.locator('input[name="exp-date"], input[autocomplete="cc-exp"]');
-        if (await iframeExpiry.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await iframeExpiry.fill("1230");
-          expiryFilled = true;
-        }
+      const expiryInput = page.locator('#cardExpiry, input[name="cardExpiry"], input[autocomplete="cc-exp"]');
+      if (await expiryInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await expiryInput.first().click({ force: true });
+        await expiryInput.first().fill("12 / 30");
+        filledFields.push("expiry");
+        console.log("Expiry filled");
       }
-      if (!expiryFilled) {
-        const expiryInput = page.locator('input[name="cardExpiry"], input[placeholder*="MM" i], input[autocomplete="cc-exp"]');
-        if (await expiryInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await expiryInput.fill("12/30");
-          expiryFilled = true;
-        }
-      }
-      if (expiryFilled) filledFields.push("expiry");
 
       // Fill CVC
-      let cvcFilled = false;
-      if (cardFilled) {
-        const cvcFrame = page.frameLocator('iframe[name*="__privateStripeFrame"], iframe[title*="card" i], iframe[title*="payment" i], iframe[name*="stripe"]').first();
-        const iframeCvc = cvcFrame.locator('input[name="cvc"], input[autocomplete="cc-csc"]');
-        if (await iframeCvc.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await iframeCvc.fill("123");
-          cvcFilled = true;
-        }
+      const cvcInput = page.locator('#cardCvc, input[name="cardCvc"], input[autocomplete="cc-csc"]');
+      if (await cvcInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await cvcInput.first().click({ force: true });
+        await cvcInput.first().fill("123");
+        filledFields.push("cvc");
+        console.log("CVC filled");
       }
-      if (!cvcFilled) {
-        const cvcInput = page.locator('input[name="cardCvc"], input[placeholder*="CVC" i], input[autocomplete="cc-csc"]');
-        if (await cvcInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await cvcInput.fill("123");
-          cvcFilled = true;
-        }
-      }
-      if (cvcFilled) filledFields.push("cvc");
 
-      // Fill cardholder name if present
-      const nameInput = page.locator('input[name="billingName"], input[placeholder*="name" i]');
-      if (await nameInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await nameInput.fill("Test User");
+      // Fill cardholder name
+      const nameInput = page.locator('#billingName, input[name="billingName"], input[autocomplete="cc-name"]');
+      if (await nameInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await nameInput.first().click({ force: true });
+        await nameInput.first().fill("Test User");
         filledFields.push("name");
+        console.log("Cardholder name filled");
       }
 
       console.log(`Stripe checkout: filled fields: [${filledFields.join(", ")}]`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-stripe-filled.png` });
 
-      if (!cardFilled) {
-        console.log("WARNING: Card number was NOT filled — Stripe UI may have changed. Taking diagnostic screenshot.");
-        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-CARD-NOT-FILLED.png` });
+      if (!filledFields.includes("card")) {
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-CARD-NOT-FILLED.png`, fullPage: true });
+        throw new Error("Stripe card number could not be filled — check diagnostic screenshots.");
       }
 
-      // Submit payment
-      const submitButton = page.locator('button[type="submit"]:has-text("Subscribe"), button:has-text("Pay"), button[data-testid="hosted-payment-submit-button"]');
+      // Click the submit/pay button
       await submitButton.first().click();
       console.log("Stripe checkout: payment submitted, waiting for redirect...");
 
