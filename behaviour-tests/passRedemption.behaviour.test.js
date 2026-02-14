@@ -174,19 +174,20 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
     console.log(`[pass-test]: Day Guest bundle button disabled: ${isDisabled} (expected: true)`);
   }
 
-  // --- Step 2: Create a test pass via admin API (testPass: true for sandbox qualifiers) ---
+  // --- Step 2: Create a test pass via admin API ---
+  // Use passTypeId "day-guest-test-pass" which has test=true in submit.passes.toml.
+  // Do NOT pass testPass explicitly — the admin endpoint must auto-derive it from the pass type.
   const createResult = await page.evaluate(async () => {
     try {
       const response = await fetch("/api/v1/pass/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          passTypeId: "day-guest",
+          passTypeId: "day-guest-test-pass",
           bundleId: "day-guest",
           validityPeriod: "P1D",
           maxUses: 1,
           createdBy: "pass-behaviour-test",
-          testPass: true,
         }),
       });
       const body = await response.json();
@@ -199,6 +200,8 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   console.log(`[pass-test]: Pass creation result: ${JSON.stringify(createResult)}`);
   expect(createResult.ok).toBe(true);
   expect(createResult.code).toBeTruthy();
+  // Verify testPass was auto-derived from the pass type definition (test=true in submit.passes.toml)
+  expect(createResult.body?.testPass).toBe(true);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-02-pass-created.png` });
 
   const passCode = createResult.code;
