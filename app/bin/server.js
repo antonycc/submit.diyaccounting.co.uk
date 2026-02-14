@@ -10,6 +10,7 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
 import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
+import { apiEndpoint as mockBillingApiEndpoint } from "../functions/non-lambda-mocks/mockBilling.js";
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
@@ -173,6 +174,11 @@ if (process.env.TEST_AUTH_PROVIDER === "mock" || process.env.TEST_AUTH_PROVIDER 
   mockAuthUrlGetApiEndpoint(app);
   mockTokenPostApiEndpoint(app);
   console.log(`Mock OAuth routes registered (TEST_AUTH_PROVIDER=${process.env.TEST_AUTH_PROVIDER})`);
+}
+// Register mock billing routes when Stripe is not configured (simulator environment)
+// Must be registered BEFORE real billing endpoints so Express matches mock routes first
+if (!process.env.STRIPE_PRICE_ID && !process.env.STRIPE_TEST_PRICE_ID) {
+  mockBillingApiEndpoint(app);
 }
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);

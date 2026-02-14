@@ -550,6 +550,8 @@
       function updateBundleStatus() {
         const bundles = parseUserBundles();
         document.querySelectorAll("button[data-bundle-id]").forEach((btn) => {
+          // Skip subscription-specific buttons — their text is managed by cardHtml()
+          if (btn.hasAttribute("data-subscribe") || btn.hasAttribute("data-manage-subscription")) return;
           const id = btn.getAttribute("data-bundle-id");
           const name = btn.getAttribute("data-bundle-name") || id;
           if (hasBundle(bundles, id)) {
@@ -685,10 +687,20 @@
             const infoLine =
               fragments.length > 0 ? `<div style="font-size: 0.85em; color: #666; margin-top: 0.25em;">${fragments.join(" · ")}</div>` : "";
 
+            // Show Manage Subscription button if bundle has an active subscription
+            const hasSubscription = fullData?.stripeSubscriptionId;
+            const manageBtn = hasSubscription
+              ? `<button type="button" class="btn" data-manage-subscription="true" data-bundle-id="${bundleId}"
+                  style="background-color: #17a2b8; border-color: #17a2b8; color: white; font-size: 0.8em; padding: 0.15em 0.5em; min-width: unset; width:auto; display:inline-flex; align-items:center;">
+                    Manage Subscription
+                </button>`
+              : "";
+
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
               <span style="display:flex; align-items:center; gap:0.75em">
                 <span>${displayName}</span>
+                ${manageBtn}
                 <button type="button" class="btn" data-remove-bundle-id="${bundleId}"
                   style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.15em 0.5em; min-width: unset; width:auto; display:inline-flex; align-items:center;">
                     Remove

@@ -104,10 +104,11 @@ export function createSimulatorServer() {
   // In-memory bundle store (no DynamoDB)
   const bundles = new Map();
   // Pre-populate with a demo bundle that grants all activities
+  // qualifiers.sandbox drives developer tools (wrench icon) and HMRC sandbox routing
   bundles.set("demo-user-12345", [
-    { bundleId: "default", expiry: null },
-    { bundleId: "day-guest", expiry: "2099-12-31" },
-    { bundleId: "hmrc-vat-sandbox", expiry: "2099-12-31" },
+    { bundleId: "default", expiry: null, allocated: true, qualifiers: { sandbox: true } },
+    { bundleId: "day-guest", expiry: "2099-12-31", allocated: true, qualifiers: { sandbox: true }, tokensGranted: 3, tokensRemaining: 3 },
+    { bundleId: "hmrc-vat-sandbox", expiry: "2099-12-31", allocated: true, qualifiers: { sandbox: true } },
   ]);
 
   // Bundle API endpoints (mock implementation)
@@ -123,7 +124,7 @@ export function createSimulatorServer() {
     }
     const userBundles = bundles.get(req.user.sub) || [];
     if (!userBundles.some((b) => b.bundleId === bundleId)) {
-      userBundles.push({ bundleId, expiry: "2099-12-31" });
+      userBundles.push({ bundleId, expiry: "2099-12-31", allocated: true, qualifiers: { sandbox: true } });
       bundles.set(req.user.sub, userBundles);
     }
     res.status(201).json({ bundleId, status: "granted" });
@@ -135,6 +136,50 @@ export function createSimulatorServer() {
     const filtered = userBundles.filter((b) => b.bundleId !== bundleId);
     bundles.set(req.user.sub, filtered);
     res.status(204).end();
+  });
+
+  // Mock billing endpoints — fakes Stripe like the simulator fakes OAuth
+  app.post("/api/v1/billing/checkout-session", (req, res) => {
+    const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
+    const bundleId = req.body?.bundleId || "resident-pro";
+    const sessionId = `sim_cs_${Date.now()}`;
+    const checkoutUrl = `${baseUrl}simulator/checkout?session=${sessionId}&bundleId=${bundleId}`;
+    res.json({ data: { checkoutUrl } });
+  });
+
+  app.get("/simulator/checkout", (req, res) => {
+    const { bundleId = "resident-pro" } = req.query;
+    // Auto-complete checkout: grant the bundle and redirect to success
+    const userBundles = bundles.get(req.user.sub) || [];
+    const existing = userBundles.find((b) => b.bundleId === bundleId);
+    if (existing) {
+      // Update existing bundle with subscription fields
+      existing.allocated = true;
+      existing.stripeSubscriptionId = `sim_sub_${Date.now()}`;
+      existing.stripeCustomerId = `sim_cus_${Date.now()}`;
+      existing.tokensGranted = 100;
+      existing.tokensRemaining = 100;
+      existing.qualifiers = { sandbox: true };
+    } else {
+      userBundles.push({
+        bundleId,
+        expiry: "2099-12-31",
+        allocated: true,
+        stripeSubscriptionId: `sim_sub_${Date.now()}`,
+        stripeCustomerId: `sim_cus_${Date.now()}`,
+        tokensGranted: 100,
+        tokensRemaining: 100,
+        qualifiers: { sandbox: true },
+      });
+      bundles.set(req.user.sub, userBundles);
+    }
+    const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
+    res.redirect(`${baseUrl}bundles.html?checkout=success`);
+  });
+
+  app.get("/api/v1/billing/portal", (req, res) => {
+    const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
+    res.json({ data: { portalUrl: `${baseUrl}bundles.html` } });
   });
 
   // In-memory receipts store

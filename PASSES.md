@@ -2,6 +2,11 @@
 
 This document explains how passes, bundles, and tokens work together in DIY Accounting Submit.
 
+```
+When you get all this stabilised again and you have run the behaviour tests that have been changed against the simulator, re-test submitVatBehaviours test the payment behaviour test in
+  proxy mode, which would ideally be invoking the real stripe apis using the stripe tes
+```
+
 ## Overview
 
 The system uses a three-tier model:
@@ -263,3 +268,63 @@ The flow is the same: enter code → validate → "Request Resident Pro" button 
 1. ~~Implement `on-pass-on-subscription` allocation for `resident-pro`~~ — Done
 2. ~~Implement subscription lifecycle (renewal, cancellation, payment failure)~~ — Done
 3. Enable user-issued passes (campaign, digital, physical) — Phase 6
+
+## Human Behaviour Tests
+
+The behaviour test suite exercises passes, bundles, tokens, and payment across both day-guest and resident-pro bundles. These tests constitute "The Human Test Journey" — the path a real user follows from first login through to subscription.
+
+### The Human Test Journey
+
+Implemented in `behaviour-tests/payment.behaviour.test.js`:
+
+1. **Login** via Cognito (native in CI, Google in prod, mock in proxy/simulator)
+2. **Redeem a test pass for day-guest** — gets 3 tokens (pass bypasses capacity cap)
+3. **Use all 3 tokens** — submit VAT to sandbox HMRC (test pass → sandbox routing)
+4. **See activities disabled** — "Insufficient tokens", upsell link to bundles page
+5. **Redeem a test pass for resident-pro** — pass validation shows Subscribe button
+6. **Pay via test Stripe** — checkout session uses test price ID, no real charges
+7. **Submit VAT return** — goes to sandbox HMRC, consumes 1 resident-pro token
+8. **Check token usage page** — `/usage.html` shows correct sources and consumption
+9. **Verify Telegram alerts** — each step generates a message in the correct channel
+
+### Payment across environments
+
+| Environment | Stripe Behaviour | How it works |
+|-------------|-----------------|--------------|
+| **Simulator** | Auto-completes (fakes Stripe) | Mock billing endpoints in `mockBilling.js` redirect to `/simulator/checkout` which grants the bundle and redirects to `bundles.html?checkout=success` |
+| **Proxy** | Real Stripe test mode | Express server calls Stripe test API; test fills in card `4242 4242 4242 4242` |
+| **CI** | Real Stripe test mode | Deployed Lambda calls Stripe test API; test fills in test card |
+| **Prod** | Stripe test when `testPass`, live otherwise | Bundle `qualifiers.sandbox` determines test vs live Stripe key |
+
+### Behaviour test files
+
+| Test file | Bundles tested | What it tests |
+|-----------|---------------|---------------|
+| `payment.behaviour.test.js` | day-guest (3 tokens), resident-pro (100 tokens) | Full conversion funnel: guest → exhaustion → checkout → submission → usage |
+| `passRedemption.behaviour.test.js` | day-guest (direct grant), resident-pro (Subscribe button) | Pass create → validate → redeem → verify bundle granted, and subscription flow |
+| `tokenEnforcement.behaviour.test.js` | day-guest (3 tokens → exhaust → disabled), resident-pro (100 tokens → consume 1 → verify 99) | Token consumption, exhaustion, activity disabling, different token limits |
+| `generatePassActivity.behaviour.test.js` | resident-pro (100 tokens) | Generate digital/physical passes (requires resident-pro entitlement) |
+
+### Running behaviour tests
+
+```bash
+# Simulator (local, fakes payment)
+npm run test:paymentBehaviour-simulator
+
+# Proxy (local + ngrok, real Stripe test)
+npm run test:paymentBehaviour-proxy
+
+# CI (deployed to AWS)
+npm run test:paymentBehaviour-ci
+
+# Production
+npm run test:paymentBehaviour-prod
+```
+
+### Test pass routing
+
+All behaviour tests use test passes (`testPass: true`), which set `qualifiers.sandbox = true` on the granted bundle. This drives:
+- **HMRC**: Sandbox API (not live) — controlled by `sessionStorage.hmrcAccount`
+- **Stripe**: Test mode (not live) — controlled by `STRIPE_TEST_PRICE_ID`
+- **Telegram**: Test channel (not live) — controlled by actor classification
+- **Developer tools**: Wrench icon appears (sandbox bundle detected)

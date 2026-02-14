@@ -4,8 +4,10 @@
 // behaviour-tests/payment.behaviour.test.js
 //
 // Payment funnel behaviour test — exercises the entire conversion journey:
-// Free guest → token exhaustion → upgrade to pro → verified token usage.
-// This is the core business conversion funnel.
+// Free guest → token exhaustion → upgrade to pro via checkout → verified token usage.
+// This is the core business conversion funnel (The Human Test Journey).
+// Simulator: checkout auto-completes (fakes Stripe like it fakes OAuth login).
+// Proxy/CI/Prod: real Stripe test checkout with test card 4242 4242 4242 4242.
 
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
@@ -36,9 +38,13 @@ import {
   clearBundles,
   ensureBundlePresent,
   ensureBundleViaPassApi,
+  ensureBundleViaCheckout,
   getTokensRemaining,
   goToBundlesPage,
+  goToUsagePage,
   verifyBundleApiResponse,
+  verifyTokenConsumption,
+  verifyTokenSources,
 } from "./steps/behaviour-bundle-steps.js";
 import { fillInVat } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
@@ -339,14 +345,17 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
   });
 
   // ============================================================
-  // STEP 6: Get resident-pro via generated pass (100 tokens)
+  // STEP 6: Get resident-pro via pass + checkout (100 tokens)
+  // Simulator: checkout auto-completes (fakes Stripe like OAuth)
+  // Proxy/CI/Prod: real Stripe test checkout with test card
   // ============================================================
-  await test.step("Get resident-pro bundle via pass (100 tokens)", async () => {
+  await test.step("Get resident-pro bundle via pass + checkout (100 tokens)", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 6: Get resident-pro via pass");
+    console.log("STEP 6: Get resident-pro via pass + checkout");
     console.log("=".repeat(60));
 
-    await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
+    await goToBundlesPage(page, screenshotPath);
+    await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { testPass: true });
 
     const tokens = await getTokensRemaining(page, "resident-pro");
     console.log(`Resident-pro tokens remaining: ${tokens}`);
@@ -438,33 +447,34 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
   // ============================================================
   await test.step("Check token usage page shows correct transactions", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 9: Verify token usage page");
+    console.log("[payment-test]: STEP 9: Verify token usage page");
     console.log("=".repeat(60));
 
-    // Navigate to usage page (use current page origin to avoid 127.0.0.1 vs localhost mismatch)
-    const currentOrigin = new URL(page.url()).origin;
-    await page.goto(`${currentOrigin}/usage.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-usage-page.png` });
+    await goToUsagePage(page, screenshotPath);
 
-    // Verify the page loaded (look for token sources or consumption tables)
-    const usagePageContent = await page.textContent("body");
-    console.log(`Usage page content length: ${usagePageContent.length}`);
+    // Verify Token Sources table: resident-pro bundle should be present with 100 granted, 99 remaining
+    // (day-guest may or may not appear depending on whether exhausted bundles are shown)
+    await verifyTokenSources(page, [
+      {
+        bundleId: "resident-pro",
+        tokensGranted: 100,
+        tokensRemainingAtLeast: 98,
+        tokensRemainingAtMost: 100,
+      },
+    ], screenshotPath);
 
-    // Check for token sources table showing resident-pro bundle
-    const hasResidentPro = usagePageContent.includes("Resident Pro") || usagePageContent.includes("resident-pro");
-    console.log(`Usage page shows Resident Pro: ${hasResidentPro}`);
-    expect(hasResidentPro).toBe(true);
-
-    // Check for token consumption entries
-    // The consumption table should show at least 1 entry from the VAT submission
-    const hasConsumptionEntry = usagePageContent.includes("submit-vat") || usagePageContent.includes("Submit VAT");
-    console.log(`Usage page shows consumption entry: ${hasConsumptionEntry}`);
-    // Note: consumption entry may not appear if the usage page only shows resident-pro
-    // (day-guest consumption events happened before resident-pro was granted)
+    // Verify Token Consumption table: at least 1 submit-vat entry from the VAT submission in Step 7
+    // The resident-pro bundle should have at least 1 consumption event
+    await verifyTokenConsumption(page, [
+      {
+        activity: "submit-vat",
+        minCount: 1,
+        tokensUsed: 1,
+      },
+    ], screenshotPath);
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-usage-page-full.png`, fullPage: true });
+    console.log("[payment-test]: Usage page verification complete.");
   });
 
   // ============================================================
@@ -488,7 +498,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     testId: "paymentBehaviour",
     name: testInfo.title,
     title: "Payment Funnel (App UI)",
-    description: "Exercises the full conversion funnel: day-guest pass → token exhaustion → upgrade to resident-pro → VAT submission → token usage verification.",
+    description: "Exercises the full conversion funnel (The Human Test Journey): day-guest pass → token exhaustion → upgrade to resident-pro via checkout → VAT submission → token usage verification.",
     hmrcApi: isSandboxMode() ? "sandbox" : "live",
     env: {
       envName,

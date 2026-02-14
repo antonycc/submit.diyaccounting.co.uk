@@ -46,6 +46,18 @@ test.describe("Bundles page subscription UI", () => {
       { loggedIn, passValidation },
     );
 
+    // Serve the modified bundles.html via route so page.goto establishes a proper HTTP origin
+    // (page.setContent creates an opaque origin where sessionStorage/localStorage are inaccessible)
+    const modifiedHtml = bundlesHtmlContent
+      .replace("<head>", '<head><base href="http://localhost:3000/">')
+      .replace(
+        "<body>",
+        `<body><script>\nwindow.showStatus = window.showStatus || function(){};\nwindow.checkAuthStatus = window.checkAuthStatus || function(){};\nwindow.toggleMenu = window.toggleMenu || function(){};\n</script>`,
+      );
+    await page.route("**/bundles.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: modifiedHtml });
+    });
+
     await page.route("**/*.js", async (route) => {
       const request = route.request();
       const resourceType = request.resourceType();
@@ -95,18 +107,7 @@ tokensGranted = 100
   }
 
   async function loadPage(page) {
-    const modifiedHtml = bundlesHtmlContent
-      .replace("<head>", '<head><base href="http://localhost:3000/">')
-      .replace(
-        "<body>",
-        `<body><script>\nwindow.showStatus = window.showStatus || function(){};\nwindow.checkAuthStatus = window.checkAuthStatus || function(){};\nwindow.toggleMenu = window.toggleMenu || function(){};\n</script>`,
-      );
-
-    await page.setContent(modifiedHtml, {
-      url: "http://localhost:3000/bundles.html",
-      waitUntil: "domcontentloaded",
-    });
-
+    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "domcontentloaded" });
     await delay(400);
   }
 
@@ -140,9 +141,13 @@ tokensGranted = 100
     });
     await loadPage(page);
 
-    const manageBtn = page.locator('button[data-manage-subscription="true"]');
-    await expect(manageBtn).toHaveCount(1);
-    await expect(manageBtn).toContainText("Manage Subscription");
+    // Manage Subscription appears in both the catalogue card and Your Current Bundles section
+    const manageBtns = page.locator('button[data-manage-subscription="true"]');
+    await expect(manageBtns).toHaveCount(2);
+    // Verify catalogue card button
+    const catalogueBtn = page.locator('#catalogBundles button[data-manage-subscription="true"]');
+    await expect(catalogueBtn).toHaveCount(1);
+    await expect(catalogueBtn).toContainText("Manage Subscription");
   });
 
   test("shows Pass required for on-pass-on-subscription bundle without valid pass", async ({ page }) => {
@@ -151,7 +156,8 @@ tokensGranted = 100
     await loadPage(page);
 
     // resident-pro should show Pass required since no pass validation
-    const passRequiredBtn = page.locator('button[data-disabled-reason="on-pass"]');
+    // Both day-guest and resident-pro show "Pass required" (both have enable="on-pass")
+    const passRequiredBtn = page.locator('button[data-bundle-id="resident-pro"][data-disabled-reason="on-pass"]');
     await expect(passRequiredBtn).toHaveCount(1);
     await expect(passRequiredBtn).toContainText("Pass required");
   });

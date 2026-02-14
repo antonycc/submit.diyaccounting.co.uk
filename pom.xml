@@ -235,64 +235,8 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <id>replicate-and-retag-manifests</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>verify</phase>
-                        <configuration>
-                            <target>
-                                <!-- Create copies with desired names from the base shaded jar -->
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"></copy>
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"></copy>
-
-                                <!-- Update manifests in-place for each variant -->
-                                <jar jarfile="${project.build.directory}/submit-application.jar" update="true" zip64Mode="as-needed">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"></attribute>
-                                    </manifest>
-                                </jar>
-
-                                <jar jarfile="${project.build.directory}/submit-environment.jar" update="true" zip64Mode="as-needed">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitEnvironment"></attribute>
-                                    </manifest>
-                                </jar>
-
-                                <!-- Gateway account: S3 + CloudFront static site -->
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-gateway.jar"></copy>
-                                <jar jarfile="${project.build.directory}/submit-gateway.jar" update="true" zip64Mode="as-needed">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.GatewayEnvironment"></attribute>
-                                    </manifest>
-                                </jar>
-
-                                <!-- Spreadsheets site: S3 + CloudFront static site -->
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-spreadsheets.jar"></copy>
-                                <jar jarfile="${project.build.directory}/submit-spreadsheets.jar" update="true" zip64Mode="as-needed">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SpreadsheetsEnvironment"></attribute>
-                                    </manifest>
-                                </jar>
-
-                                <!-- Root account: DNS management -->
-                                <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-root.jar"></copy>
-                                <jar jarfile="${project.build.directory}/submit-root.jar" update="true" zip64Mode="as-needed">
-                                    <manifest>
-                                        <attribute name="Main-Class" value="co.uk.diyaccounting.submit.RootEnvironment"></attribute>
-                                    </manifest>
-                                </jar>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+            <!-- CDK jar creation is handled by profiles (see <profiles> section below).
+                 Default: all jars built. Use -P cdk-application etc. for deployment-specific builds. -->
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.0</version>
@@ -449,34 +393,7 @@
                     <mavenVersion>3.9.10</mavenVersion>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-variants</id>
-                        <goals>
-                            <goal>attach-artifact</goal>
-                        </goals>
-                        <phase>verify</phase>
-                        <configuration>
-                            <artifacts>
-                                <artifact>
-                                    <file>${project.build.directory}/submit-application.jar</file>
-                                    <type>jar</type>
-                                    <classifier>submit-application</classifier>
-                                </artifact>
-                                <artifact>
-                                    <file>${project.build.directory}/submit-environment.jar</file>
-                                    <type>jar</type>
-                                    <classifier>submit-environment</classifier>
-                                </artifact>
-                            </artifacts>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+            <!-- CDK artifact attachment is handled by profiles (see <profiles> section below). -->
             <!-- Generate OpenAPI/Swagger documentation -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -508,5 +425,300 @@
         <testSourceDirectory>infra/test/java</testSourceDirectory>
     </build>
 
-    <profiles></profiles>
+    <!-- CDK jar profiles: control which deployment jars are created.
+         Default (no -P flag): cdk-all builds everything (backwards compatible).
+         Deployment workflows use -P cdk-application etc. to build only the needed jar. -->
+    <profiles>
+        <profile>
+            <id>cdk-all</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>replicate-and-retag-manifests</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-application.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"></attribute>
+                                            </manifest>
+                                        </jar>
+
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-environment.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-gateway.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-gateway.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.GatewayEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-spreadsheets.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-spreadsheets.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SpreadsheetsEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-root.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-root.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.RootEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-variants</id>
+                                <goals>
+                                    <goal>attach-artifact</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>${project.build.directory}/submit-application.jar</file>
+                                            <type>jar</type>
+                                            <classifier>submit-application</classifier>
+                                        </artifact>
+                                        <artifact>
+                                            <file>${project.build.directory}/submit-environment.jar</file>
+                                            <type>jar</type>
+                                            <classifier>submit-environment</classifier>
+                                        </artifact>
+                                    </artifacts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>cdk-application</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>retag-application</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-application.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-application.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitApplication"></attribute>
+                                            </manifest>
+                                        </jar>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-application</id>
+                                <goals>
+                                    <goal>attach-artifact</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>${project.build.directory}/submit-application.jar</file>
+                                            <type>jar</type>
+                                            <classifier>submit-application</classifier>
+                                        </artifact>
+                                    </artifacts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>cdk-environment</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>retag-environment</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-environment.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-environment.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-environment</id>
+                                <goals>
+                                    <goal>attach-artifact</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>${project.build.directory}/submit-environment.jar</file>
+                                            <type>jar</type>
+                                            <classifier>submit-environment</classifier>
+                                        </artifact>
+                                    </artifacts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>cdk-gateway</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>retag-gateway</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-gateway.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-gateway.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.GatewayEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>cdk-spreadsheets</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>retag-spreadsheets</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-spreadsheets.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-spreadsheets.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SpreadsheetsEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>cdk-root</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>retag-root</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-root.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-root.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.RootEnvironment"></attribute>
+                                            </manifest>
+                                        </jar>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
