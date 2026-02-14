@@ -142,10 +142,10 @@ The simulator environment runs entirely locally with dynalite, a mock OAuth serv
 
 ```bash
 # 1. Start the simulator
-npm start
+#npm start
 
 # 2. Create a day-guest pass
-curl -s -X POST http://localhost:3000/api/v1/pass/admin \
+PASS_CODE=$(curl -s -X POST http://localhost:3000/api/v1/pass/admin \
   -H "Content-Type: application/json" \
   -d '{
     "passTypeId": "day-guest-test-pass",
@@ -153,11 +153,14 @@ curl -s -X POST http://localhost:3000/api/v1/pass/admin \
     "validityPeriod": "P1D",
     "maxUses": 1,
     "createdBy": "manual"
-  }'
+  }' | jq '.code' --raw-output) \
+&& echo "Generated pass code: $PASS_CODE" \
+&& open "http://localhost:3000/bundles.html?pass=$PASS_CODE" \
+;
 # Returns: {"code":"tiger-happy-mountain-silver", "bundleId":"day-guest", ...}
 
 # 3. Open the bundles page with the pass code
-open "http://localhost:3000/bundles.html?pass=tiger-happy-mountain-silver"
+#open "http://localhost:3000/bundles.html?pass=tiger-happy-mountain-silver"
 ```
 
 Or log in first, then enter the code manually in the pass input field.
@@ -168,7 +171,7 @@ The flow: enter code → "Redeem Pass" → pass validated → "Request Day Guest
 
 ```bash
 # Create a resident-pro pass
-curl -s -X POST http://localhost:3000/api/v1/pass/admin \
+PASS_CODE=$(curl -s -X POST http://localhost:3000/api/v1/pass/admin \
   -H "Content-Type: application/json" \
   -d '{
     "passTypeId": "resident-pro-test-pass",
@@ -176,10 +179,13 @@ curl -s -X POST http://localhost:3000/api/v1/pass/admin \
     "validityPeriod": "P1D",
     "maxUses": 1,
     "createdBy": "manual"
-  }'
+  }' | jq '.code' --raw-output) \
+&& echo "Generated pass code: $PASS_CODE" \
+&& open "http://localhost:3000/bundles.html?pass=$PASS_CODE" \
+;
 
 # Open with the returned code
-open "http://localhost:3000/bundles.html?pass=<returned-code>"
+#open "http://localhost:3000/bundles.html?pass=<returned-code>"
 ```
 
 The flow is the same: enter code → validate → "Request Resident Pro" button appears → click → bundle granted with 100 tokens.
