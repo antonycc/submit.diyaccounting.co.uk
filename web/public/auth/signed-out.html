@@ -16,7 +16,6 @@
     </main>
     <script>
       (function () {
-        var loginProvider = localStorage.getItem("loginProvider");
         // Clear all auth-related localStorage
         localStorage.removeItem("loginProvider");
         localStorage.removeItem("cognitoAccessToken");
@@ -25,13 +24,12 @@
         localStorage.removeItem("userInfo");
         localStorage.removeItem("authState");
 
-        if (loginProvider === "Google") {
-          document.getElementById("status-message").textContent =
-            "Redirecting to Google to complete sign-out...";
-          window.location.href = "https://accounts.google.com/Logout";
-        } else {
-          window.location.href = "/";
-        }
+        // ALWAYS redirect to Google logout to terminate any active Google session.
+        // This prevents silent re-authentication when clicking "Login using your Google account".
+        // For users without a Google session, Google just shows its signed-out page.
+        document.getElementById("status-message").textContent =
+          "Redirecting to Google to complete sign-out...";
+        window.location.href = "https://accounts.google.com/Logout";
       })();
     </script>
   </body>
