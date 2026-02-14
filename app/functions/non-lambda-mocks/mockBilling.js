@@ -34,24 +34,48 @@ export function apiEndpoint(app) {
     res.json({ checkoutUrl });
   });
 
-  // Mock checkout completion — grants bundle and redirects to success URL
+  // Mock checkout completion — grants bundle with subscription fields and redirects to success URL.
+  // Matches the shape of bundle records created by billingWebhookPost.js:handleCheckoutComplete()
+  // so that "Manage Subscription" buttons render in the simulator.
   app.get("/simulator/checkout", async (req, res) => {
     const { bundleId = "resident-pro", sub: userSub } = req.query;
     logger.info({ message: "Mock checkout auto-completing", bundleId, userSub });
 
-    // Grant the bundle via the real grantBundle function
     if (userSub) {
       try {
-        const { grantBundle } = await import("../account/bundlePost.js");
+        const { putBundle } = await import("../../data/dynamoDbBundleRepository.js");
         const { initializeSalt } = await import("../../services/subHasher.js");
+        const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
 
         await initializeSalt();
 
-        await grantBundle(userSub, { bundleId, qualifiers: {} }, { sub: userSub }, null, {
-          skipCapCheck: true,
-          grantQualifiers: { sandbox: true },
-        });
-        logger.info({ message: "Mock checkout granted bundle", bundleId, userId: userSub });
+        // Look up tokensGranted from the catalog, matching billingWebhookPost.js:getCatalogTokensGranted()
+        let tokensGranted = 100;
+        try {
+          const catalog = loadCatalogFromRoot();
+          const catalogBundle = (catalog.bundles || []).find((b) => b.id === bundleId);
+          tokensGranted = catalogBundle?.tokensGranted ?? 100;
+        } catch {
+          // Fall back to 100
+        }
+
+        const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const bundleRecord = {
+          bundleId,
+          expiry: periodEnd,
+          qualifiers: { sandbox: true },
+          tokensGranted,
+          tokensConsumed: 0,
+          tokenResetAt: periodEnd,
+          stripeSubscriptionId: `sim_sub_${Date.now()}`,
+          stripeCustomerId: `sim_cus_${Date.now()}`,
+          subscriptionStatus: "active",
+          currentPeriodEnd: periodEnd,
+          cancelAtPeriodEnd: false,
+        };
+
+        await putBundle(userSub, bundleRecord);
+        logger.info({ message: "Mock checkout granted bundle with subscription fields", bundleId, userId: userSub, tokensGranted });
       } catch (error) {
         logger.warn({ message: "Mock checkout: bundle grant failed", error: error.message });
       }
