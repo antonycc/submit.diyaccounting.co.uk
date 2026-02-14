@@ -73,7 +73,7 @@ function getCatalogTokensGranted(bundleId) {
   }
 }
 
-async function handleCheckoutComplete(session) {
+async function handleCheckoutComplete(session, { test = false } = {}) {
   const hashedSub = session.metadata?.hashedSub || session.client_reference_id;
   const bundleId = session.metadata?.bundleId || "resident-pro";
   const subscriptionId = session.subscription;
@@ -92,7 +92,7 @@ async function handleCheckoutComplete(session) {
   let currentPeriodStart = null;
   if (subscriptionId) {
     try {
-      const stripe = await getStripeClient();
+      const stripe = await getStripeClient({ test });
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       currentPeriodEnd = subscription.current_period_end
         ? new Date(subscription.current_period_end * 1000).toISOString()
@@ -112,6 +112,7 @@ async function handleCheckoutComplete(session) {
   const bundleRecord = {
     bundleId,
     expiry: currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    qualifiers: { sandbox: test },
     tokensGranted,
     tokensConsumed: 0,
     tokenResetAt: tokenRefreshDate,
@@ -150,7 +151,7 @@ async function handleCheckoutComplete(session) {
   }).catch(() => {});
 }
 
-async function handleInvoicePaid(invoice) {
+async function handleInvoicePaid(invoice, { test = false } = {}) {
   const subscriptionId = invoice.subscription;
   if (!subscriptionId) {
     logger.info({ message: "invoice.paid without subscription, skipping", invoiceId: invoice.id });
@@ -171,7 +172,7 @@ async function handleInvoicePaid(invoice) {
   // Retrieve subscription for updated period info
   let currentPeriodEnd = null;
   try {
-    const stripe = await getStripeClient();
+    const stripe = await getStripeClient({ test });
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     currentPeriodEnd = subscription.current_period_end
       ? new Date(subscription.current_period_end * 1000).toISOString()
@@ -323,14 +324,17 @@ export async function ingestHandler(event) {
 
   logger.info({ message: "Webhook event received", type: stripeEvent.type, eventId: stripeEvent.id });
 
+  // Stripe sets livemode=false for test mode events — use this to select the correct API key
+  const test = stripeEvent.livemode === false;
+
   // Route events to handlers
   try {
     switch (stripeEvent.type) {
       case "checkout.session.completed":
-        await handleCheckoutComplete(stripeEvent.data.object);
+        await handleCheckoutComplete(stripeEvent.data.object, { test });
         break;
       case "invoice.paid":
-        await handleInvoicePaid(stripeEvent.data.object);
+        await handleInvoicePaid(stripeEvent.data.object, { test });
         break;
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(stripeEvent.data.object);

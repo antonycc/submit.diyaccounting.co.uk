@@ -112,9 +112,16 @@ The user expects to see subscription management somewhere in the UI (bundles pag
 
 ## Verification Criteria
 
-- [ ] User redeems `resident-pro-test-pass` at `https://ci-submit.diyaccounting.co.uk/bundles.html` and sees "Subscribe £9.99/mo" button (not "Request")
-- [ ] Clicking Subscribe redirects to Stripe Checkout
-- [ ] Completing Stripe test payment redirects back to bundles page
-- [ ] Bundle is granted with 100 tokens
-- [ ] Subscription management / billing admin is visible
-- [ ] `paymentBehaviour-ci` test passes in GitHub Actions
+- [x] User redeems `resident-pro-test-pass` at `https://ci-submit.diyaccounting.co.uk/bundles.html` and sees "Subscribe £9.99/mo" button (not "Request")
+- [x] Clicking Subscribe redirects to Stripe Checkout
+- [x] Completing Stripe test payment redirects back to bundles page
+- [x] Bundle is granted with 100 tokens
+- [x] Subscription management / billing admin is visible
+- [x] `paymentBehaviour-ci` test passes in GitHub Actions — https://github.com/antonycc/submit.diyaccounting.co.uk/actions/runs/22020533533
+
+## Fixes Applied (Feb 14 2026)
+
+1. **Stripe card filling**: Stripe Checkout uses accordion UI — click Card radio first (`#payment-method-accordion-item-title-card`), then fill direct `#cardNumber`/`#cardExpiry`/`#cardCvc`/`#billingName` inputs with `force: true`. Skip email (Stripe Link intercepts it).
+2. **Stripe webhook for proxy**: Added ngrok webhook endpoint to `scripts/stripe-setup.js` and created it in Stripe test mode (`we_1T0l81FdFHdRoTOj5kIK00IC`).
+3. **Raw body for webhook signature**: Added `verify` callback to `express.json()` in `server.js` to preserve raw body for `/api/v1/billing/webhook`. Updated `httpServerToLambdaAdaptor.js` to prefer `req.rawBody` over `JSON.stringify(req.body)`.
+4. **Stripe test/live mode for portal and webhooks**: `billingPortalGet.js` now uses `qualifiers.sandbox` to select test vs live Stripe client. `billingWebhookPost.js` uses `stripeEvent.livemode` to select the correct client and stores `qualifiers.sandbox` in the bundle record. Added Step 6b test in `payment.behaviour.test.js` that verifies "Manage Subscription" button visibility and billing portal API.

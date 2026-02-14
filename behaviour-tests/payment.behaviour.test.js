@@ -43,6 +43,7 @@ import {
   goToBundlesPage,
   goToUsagePage,
   verifyBundleApiResponse,
+  verifySubscriptionManagement,
   verifyTokenConsumption,
   verifyTokenSources,
 } from "./steps/behaviour-bundle-steps.js";
@@ -362,6 +363,25 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     expect(tokens).toBe(100);
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-resident-pro-granted.png` });
+  });
+
+  // ============================================================
+  // STEP 6b: Verify subscription management is visible
+  // After checkout, the "Manage Subscription" button should appear
+  // and the billing portal API should return a valid portal URL.
+  // ============================================================
+  await test.step("Verify subscription management is visible", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 6b: Verify subscription management");
+    console.log("=".repeat(60));
+
+    await goToBundlesPage(page, screenshotPath);
+    const result = await verifySubscriptionManagement(page, "resident-pro", screenshotPath);
+    console.log(`Subscription management verified: button visible, portal URL obtained`);
+    expect(result.manageButtonVisible).toBe(true);
+    expect(result.portalUrl).toBeTruthy();
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06b-manage-subscription.png` });
   });
 
   // ============================================================

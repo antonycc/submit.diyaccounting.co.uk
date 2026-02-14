@@ -625,6 +625,39 @@ export async function getTokensRemaining(page, bundleId) {
   }, bundleId);
 }
 
+export async function verifySubscriptionManagement(page, bundleName, screenshotPath) {
+  // Verify "Manage Subscription" button is visible for a bundle with an active subscription.
+  // The button appears in two places: the catalogue section and the current bundles section.
+  // We check for either occurrence via the data-manage-subscription attribute.
+  const manageBtn = page.locator(`button[data-manage-subscription="true"]`);
+  await expect(manageBtn.first()).toBeVisible({ timeout: 10_000 });
+  console.log(`"Manage Subscription" button visible for ${bundleName}`);
+
+  if (screenshotPath) {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-manage-subscription-visible.png` });
+  }
+
+  // Verify clicking it calls the billing portal API and gets a portal URL
+  // (We intercept the navigation to avoid leaving the test page)
+  const portalResponse = await page.evaluate(async () => {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    if (!idToken) return { error: "No auth token" };
+    const response = await fetch("/api/v1/billing/portal", {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = await response.json();
+    return { status: response.status, portalUrl: data.portalUrl || null, error: data.message || null };
+  });
+
+  console.log(`Billing portal API response: status=${portalResponse.status}, hasUrl=${!!portalResponse.portalUrl}`);
+
+  if (portalResponse.status !== 200 || !portalResponse.portalUrl) {
+    throw new Error(`Billing portal API failed: status=${portalResponse.status}, error=${portalResponse.error}`);
+  }
+
+  return { manageButtonVisible: true, portalUrl: portalResponse.portalUrl };
+}
+
 export async function requestBundleViaApi(page, bundleId) {
   return await page.evaluate(async (bid) => {
     const idToken = localStorage.getItem("cognitoIdToken");

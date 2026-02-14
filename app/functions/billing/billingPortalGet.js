@@ -68,7 +68,8 @@ export async function ingestHandler(event) {
     }
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
-    const stripe = await getStripeClient();
+    const isSandbox = subscriptionBundle.qualifiers?.sandbox === true;
+    const stripe = await getStripeClient({ test: isSandbox });
 
     const session = await stripe.billingPortal.sessions.create({
       customer: subscriptionBundle.stripeCustomerId,
