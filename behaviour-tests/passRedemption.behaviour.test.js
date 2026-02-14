@@ -26,7 +26,6 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { goToBundlesPage, clearBundles, verifyBundleApiResponse } from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -38,10 +37,6 @@ import {
 } from "./helpers/fileHelper.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
-
-// Load catalogue to determine bundle properties (hidden, enable, cap, etc.)
-const catalogue = loadCatalogFromRoot();
-const isDayGuestBundleHidden = !!catalogue.bundles?.find((b) => b.id === "day-guest")?.hidden;
 
 const screenshotPath = "target/behaviour-test-results/screenshots/pass-redemption-behaviour-test";
 
@@ -164,33 +159,19 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
 
   // --- Step 1: Verify clean state ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
+  // Day Guest is an on-pass bundle — verify it appears as disabled card before pass entry
   const requestDayGuestBtn = page.locator('button[data-bundle-id="day-guest"]');
   const requestDayGuestVisible = await requestDayGuestBtn
     .first()
     .isVisible({ timeout: 5000 })
     .catch(() => false);
-  if (isDayGuestBundleHidden) {
-    // Hidden bundles should NOT appear in the catalogue
-    console.log(`[pass-test]: Day Guest bundle hidden=true, button visible: ${requestDayGuestVisible} (expected: false)`);
-    expect(requestDayGuestVisible).toBe(false);
-  } else {
-    // Visible on-pass bundles appear as disabled cards
-    console.log(`[pass-test]: Day Guest bundle button visible: ${requestDayGuestVisible} (expected: true, but disabled for on-pass bundle)`);
-    if (requestDayGuestVisible) {
-      const isDisabled = await requestDayGuestBtn
-        .first()
-        .isDisabled()
-        .catch(() => false);
-      console.log(`[pass-test]: Day Guest bundle button disabled: ${isDisabled} (expected: true)`);
-      const btnText = await requestDayGuestBtn
-        .first()
-        .textContent()
-        .catch(() => "");
-      console.log(`[pass-test]: Button text: "${btnText}" (expected: "Pass required" prefix)`);
-      const annotation = page.locator('.service-item:has(button[data-bundle-id="day-guest"]) p');
-      const annotationText = await annotation.textContent().catch(() => "");
-      console.log(`[pass-test]: Annotation text: "${annotationText}"`);
-    }
+  console.log(`[pass-test]: Day Guest bundle button visible: ${requestDayGuestVisible} (expected: true, but disabled for on-pass bundle)`);
+  if (requestDayGuestVisible) {
+    const isDisabled = await requestDayGuestBtn
+      .first()
+      .isDisabled()
+      .catch(() => false);
+    console.log(`[pass-test]: Day Guest bundle button disabled: ${isDisabled} (expected: true)`);
   }
 
   // --- Step 2: Create a pass via admin API ---
@@ -254,35 +235,24 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   const statusText = await passStatus.textContent();
   console.log(`[pass-test]: Pass status message: ${statusText}`);
 
-  if (isDayGuestBundleHidden) {
-    // Hidden bundles auto-redeem: status shows adding/redeemed message
-    expect(statusText).toMatch(/valid|Adding|redeemed/i);
-    console.log("[pass-test]: Hidden bundle — auto-redeem triggered, waiting for bundle to appear...");
-    // Wait for auto-redeem to complete (Remove button appears in current bundles)
-    const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
-    await expect(removeDayGuestBtn).toBeVisible({ timeout: 30000 });
-    console.log("[pass-test]: Day Guest bundle shows in Current Bundles with Remove button (auto-redeemed)");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
-  } else {
-    // Visible bundles: validate → enable Request button → click → verify
-    expect(statusText).toMatch(/valid|Request/i);
-    const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day Guest"):not([disabled])');
-    await expect(enabledDayGuestBtn).toBeVisible({ timeout: 10000 });
-    console.log("[pass-test]: Day Guest bundle button is now enabled after pass validation");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
+  // All bundles follow the same flow: validate → card appears → click Request → bundle granted
+  expect(statusText).toMatch(/valid|Request/i);
+  const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day Guest"):not([disabled])');
+  await expect(enabledDayGuestBtn).toBeVisible({ timeout: 10000 });
+  console.log("[pass-test]: Day Guest bundle button is now enabled after pass validation");
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
 
-    await enabledDayGuestBtn.click();
-    console.log("[pass-test]: Clicked enabled Day Guest bundle button to redeem pass");
+  await enabledDayGuestBtn.click();
+  console.log("[pass-test]: Clicked enabled Day Guest bundle button to redeem pass");
 
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
 
-    // --- Step 6: Verify the Day Guest bundle is now granted ---
-    const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
-    await expect(removeDayGuestBtn).toBeVisible({ timeout: 15000 });
-    console.log("[pass-test]: Day Guest bundle shows in Current Bundles with Remove button");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
-  }
+  // --- Step 6: Verify the Day Guest bundle is now granted ---
+  const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
+  await expect(removeDayGuestBtn).toBeVisible({ timeout: 15000 });
+  console.log("[pass-test]: Day Guest bundle shows in Current Bundles with Remove button");
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
 
   // --- Step 7: Verify via API that the bundle is allocated ---
   const apiResponse = await verifyBundleApiResponse(page, screenshotPath);

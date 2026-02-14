@@ -13,7 +13,7 @@ describe("QR Code Generation System Test", () => {
   const mockPass = {
     code: "tiger-happy-mountain-silver",
     bundleId: "day-guest",
-    passTypeId: "test-access",
+    passTypeId: "day-guest-test-pass",
     maxUses: 1,
     useCount: 0,
     validFrom: "2026-01-01T00:00:00.000Z",
@@ -74,7 +74,7 @@ describe("QR Code Generation System Test", () => {
     expect(details.code).toBe(passWithDetails.code);
     expect(details.url).toBe(url);
     expect(details.bundleId).toBe("day-guest");
-    expect(details.passTypeId).toBe("test-access");
+    expect(details.passTypeId).toBe("day-guest-test-pass");
     expect(details.maxUses).toBe(1);
     expect(details.usesRemaining).toBe(1);
     expect(details.restrictedToEmail).toBe("test@example.com");

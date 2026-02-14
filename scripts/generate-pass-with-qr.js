@@ -15,7 +15,7 @@ import path from "path";
  * Generate passes with QR codes for the generate-pass.yml workflow.
  *
  * Environment variables:
- * - PASS_TYPE: Pass type ID (e.g., "test-access")
+ * - PASS_TYPE: Pass type ID (e.g., "day-guest-test-pass")
  * - BUNDLE_ID: Bundle ID to grant
  * - MAX_USES: Maximum number of uses
  * - VALIDITY_PERIOD: ISO 8601 duration (e.g., "P7D")
@@ -24,6 +24,7 @@ import path from "path";
  * - NOTES: Admin notes (optional)
  * - CREATED_BY: Creator identifier
  * - PASS_URL_HOST: Host for pass redemption URL
+ * - TEST_PASS: If "true", sets testPass: true (routes to HMRC sandbox)
  */
 
 async function main() {
@@ -36,6 +37,7 @@ async function main() {
   const notes = process.env.NOTES || undefined;
   const createdBy = process.env.CREATED_BY || "manual";
   const passUrlHost = process.env.PASS_URL_HOST || "ci.submit.diyaccounting.co.uk";
+  const testPass = process.env.TEST_PASS === "true";
 
   console.log(`Generating ${quantity} ${passTypeId} pass(es) with QR codes...`);
   console.log(`  Bundle: ${bundleId}`);
@@ -68,6 +70,7 @@ async function main() {
       restrictedToEmail: email || undefined,
       createdBy,
       notes: notes || undefined,
+      ...(testPass ? { testPass: true } : {}),
     });
 
     const passUrl = `https://${passUrlHost}/bundles.html?pass=${pass.code}`;

@@ -12,11 +12,13 @@
 # PASS → BUNDLE MAPPING SUMMARY
 # =============================
 # Pass Type              → Bundle Granted       → Payment Required?
-# test-access            → test                 → No (free, admin-issued)
-# day-trial              → day-guest            → No (free, admin-issued)
+# day-guest-test-pass    → day-guest            → No (free, admin-issued, test/sandbox)
+# day-guest-pass         → day-guest            → No (free, admin-issued, production)
 # invited-guest          → invited-guest        → No (free, admin-issued, email-restricted)
 # resident-guest         → resident-guest       → No (free, admin-issued, email-restricted)
 # resident-pro-comp      → resident-pro-comp    → No (free, admin-issued, email-restricted)
+# resident-pro-test-pass → resident-pro         → No (free, admin-issued, test/sandbox)
+# resident-pro-pass      → resident-pro         → No (free, admin-issued, production)
 # group-invite           → invited-guest        → No (free, admin-issued)
 # campaign               → invited-guest        → Costs 10 tokens to issue (user-issued, Phase 6)
 # digital-pass           → day-guest            → Costs 10 tokens to issue (user-issued, Phase 6)
@@ -26,40 +28,55 @@
 
 version = "1.0.0"
 
-# test-access → unlocks "test" bundle
-# Grants: sandbox API access only (no production HMRC)
-# Tokens: N/A (test bundle has no token tracking)
-# Payment: None (admin-issued via GitHub Actions)
+# day-guest-test-pass → unlocks "day-guest" bundle (test/sandbox)
+# Grants: 3 tokens, 1 day timeout, HMRC sandbox access (testPass: true)
+# Tokens: 3 (enough for 3 VAT submissions; viewing obligations is free)
+# Payment: None (admin-issued via GitHub Actions for automated tests and CI)
 [[passTypes]]
-id = "test-access"
-name = "Test Access"
-description = "Access to HMRC Sandbox APIs for testing"
-bundleId = "test"
-defaultValidityPeriod = "P7D"
+id = "day-guest-test-pass"
+name = "Day Guest Test Pass"
+description = "Single-day access to HMRC Sandbox APIs for testing"
+bundleId = "day-guest"
+defaultValidityPeriod = "P1D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
+test = true
 
-# day-trial → unlocks "day-guest" bundle
+# day-guest-pass → unlocks "day-guest" bundle (production)
 # Grants: 3 tokens, 1 day timeout, production HMRC access
 # Tokens: 3 (enough for 3 VAT submissions; viewing obligations is free)
-# Payment: None (admin-issued via GitHub Actions)
+# Payment: None (admin-issued via GitHub Actions for real users)
 [[passTypes]]
-id = "day-trial"
-name = "Day Trial"
+id = "day-guest-pass"
+name = "Day Guest Pass"
 description = "Single-day access to production HMRC APIs"
 bundleId = "day-guest"
 defaultValidityPeriod = "P1D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
 
-# resident-pro → unlocks "day-guest" bundle
-# Grants: 3 tokens, 1 day timeout, production HMRC access
-# Tokens: 3 (enough for 3 VAT submissions; viewing obligations is free)
-# Payment: None (admin-issued via GitHub Actions)
+# resident-pro-test-pass → unlocks "resident-pro" bundle (test/sandbox)
+# Grants: 100 tokens, refreshing monthly, HMRC sandbox access (testPass: true)
+# Tokens: 100 per month
+# Payment: None (admin-issued via GitHub Actions for automated tests and CI)
 [[passTypes]]
-id = "resident-pro-access"
-name = "Day Trial"
-description = "Single-day access to production HMRC APIs"
+id = "resident-pro-test-pass"
+name = "Resident Pro Test Pass"
+description = "Pro subscription access to HMRC Sandbox APIs for testing"
+bundleId = "resident-pro"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+test = true
+
+# resident-pro-pass → unlocks "resident-pro" bundle (production)
+# Grants: 100 tokens, refreshing monthly, production HMRC access
+# Tokens: 100 per month
+# Payment: None (admin-issued via GitHub Actions for real users)
+[[passTypes]]
+id = "resident-pro-pass"
+name = "Resident Pro Pass"
+description = "Pro subscription access to production HMRC APIs"
 bundleId = "resident-pro"
 defaultValidityPeriod = "P1D"
 defaultMaxUses = 1

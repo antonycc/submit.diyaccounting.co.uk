@@ -473,7 +473,18 @@
         const cards = (__catalogueData.bundles || [])
           .filter((b) => b["allocation"] && b["allocation"] !== "automatic")
           .filter((b) => b["enable"] !== "never")
-          .filter((b) => !b.hidden)
+          .filter((b) => {
+            if (!b.hidden) return true;
+            // Show hidden bundles if a valid pass unlocks them
+            try {
+              const pv = sessionStorage.getItem("passValidation");
+              if (pv) {
+                const parsed = JSON.parse(pv);
+                if (parsed.bundleId === b.id && parsed.valid) return true;
+              }
+            } catch {}
+            return false;
+          })
           .filter((b) => {
             const listed = b?.listedInEnvironments;
             if (!Array.isArray(listed) || listed.length === 0) return true;
@@ -795,31 +806,17 @@
           const bundleName = catBundle?.name || bundleId;
           const isHidden = !!catBundle?.hidden;
 
-          if (isHidden) {
-            // Hidden bundles have no catalogue card — auto-redeem directly
-            if (isLoggedIn) {
-              showPassStatus(`Pass valid! Adding "${bundleName}" bundle...`, "info");
-              await redeemPassCode(code);
-            } else {
-              try {
-                sessionStorage.setItem("pendingPass", code);
-                sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
-              } catch {}
-              showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
-            }
-          } else if (isLoggedIn) {
+          if (isLoggedIn) {
             showPassStatus(`Pass valid! Click "Request ${bundleName}" to add the bundle.`, "success");
-            // Re-render catalogue to enable the pass-unlocked bundle
-            renderCatalogueBundles();
           } else {
             try {
               sessionStorage.setItem("pendingPass", code);
               sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
             } catch {}
             showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
-            // Re-render catalogue to show the pass-unlocked bundle (disabled until login)
-            renderCatalogueBundles();
           }
+          // Re-render catalogue to show the pass-unlocked bundle
+          renderCatalogueBundles();
         } catch (err) {
           showPassStatus(`Failed to check pass: ${err?.message || err}`, "error");
         } finally {
@@ -925,14 +922,8 @@
         if (passFromUrl) {
           const input = document.getElementById("passInput");
           if (input) input.value = passFromUrl;
-          // Check for pending pass returning from login — auto-redeem directly
-          const pendingPass = sessionStorage.getItem("pendingPass");
-          if (pendingPass && getIdToken() && pendingPass === passFromUrl) {
-            redeemPassCode(passFromUrl.trim().toLowerCase());
-          } else {
-            // New pass entry — validate first
-            handlePassEntry(passFromUrl.trim().toLowerCase());
-          }
+          // Validate pass (whether new or returning from login)
+          handlePassEntry(passFromUrl.trim().toLowerCase());
         } else {
           // Check for pending pass from previous session (saved before login redirect)
           try {
@@ -940,7 +931,7 @@
             if (pendingPass && getIdToken()) {
               const input = document.getElementById("passInput");
               if (input) input.value = pendingPass;
-              redeemPassCode(pendingPass.trim().toLowerCase());
+              handlePassEntry(pendingPass.trim().toLowerCase());
             }
           } catch {}
         }

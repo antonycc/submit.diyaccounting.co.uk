@@ -16,7 +16,7 @@ The system uses a three-tier model:
 2. The pass is a four-word code (e.g. `tiger-happy-mountain-silver`) with a URL and QR code
 3. User visits the URL or enters the code on the bundles page
 4. The pass is validated (not expired, not exhausted, email matches if restricted)
-5. The pass grants the associated bundle to the user
+5. The bundle card appears in the catalogue (even if normally hidden) — user clicks "Request" to add it
 6. The bundle provides tokens for metered activities
 
 ## Pass Types
@@ -25,21 +25,27 @@ Defined in `submit.passes.toml`. Each pass type is a template with defaults.
 
 | Pass Type | Bundle Granted | Max Uses | Validity | Email Required | Payment |
 |-----------|---------------|----------|----------|---------------|---------|
-| `test-access` | test | 1 | 7 days | No | Free (admin) |
-| `day-trial` | day-guest | 1 | 1 day | No | Free (admin) |
+| `day-guest-test-pass` | day-guest | 1 | 1 day | No | Free (admin, sandbox) |
+| `day-guest-pass` | day-guest | 1 | 1 day | No | Free (admin, production) |
 | `invited-guest` | invited-guest | 1 | 1 month | Yes | Free (admin) |
 | `resident-guest` | resident-guest | 1 | Unlimited | Yes | Free (admin) |
 | `resident-pro-comp` | resident-pro-comp | 1 | 1 year | Yes | Free (admin) |
+| `resident-pro-test-pass` | resident-pro | 1 | 1 day | No | Free (admin, sandbox) |
+| `resident-pro-pass` | resident-pro | 1 | 1 day | No | Free (admin, production) |
 | `group-invite` | invited-guest | 10 | 1 month | No | Free (admin) |
 | `campaign` | invited-guest | 1 | 3 days | No | 10 tokens (user-issued, Phase 6) |
 | `digital-pass` | day-guest | 100 | 7 days | No | 10 tokens (user-issued, Phase 6) |
 | `physical-pass` | day-guest | 10 | Unlimited | No | 10 tokens (user-issued, Phase 6) |
 
+### Test vs production pass types
+
+Pass types ending in `-test-pass` have `test = true` in `submit.passes.toml`. This sets `testPass: true` on the pass record, which routes HMRC API calls to the sandbox. Use these for automated tests and CI. Use the non-test variants (e.g. `day-guest-pass`) for real users with production HMRC access.
+
 ### When is payment required?
 
-- **Admin-issued passes** (test-access, day-trial, invited-guest, resident-guest, resident-pro-comp, group-invite): **No payment** - created by admins via GitHub Actions workflow
+- **Admin-issued passes** (day-guest-test-pass, day-guest-pass, invited-guest, resident-guest, resident-pro-comp, resident-pro-test-pass, resident-pro-pass, group-invite): **No payment** - created by admins via GitHub Actions workflow
 - **User-issued passes** (campaign, digital-pass, physical-pass): **10 tokens** from the issuing user's bundle (Phase 6, not yet implemented)
-- **Subscription** (resident-pro): **Planned £9.99/month** via Stripe (not yet implemented)
+- **Subscription** (resident-pro): Checkout and initial bundle grant implemented (Phases 1-4). Renewal, cancellation, and frontend Subscribe button pending (Phases 5, 7).
 
 ## Bundles
 
@@ -48,12 +54,11 @@ Defined in `web/public/submit.catalogue.toml`. Each bundle is an access tier.
 | Bundle | Level | Tokens | Refresh | Timeout | Allocation | Unlocked By |
 |--------|-------|--------|---------|---------|------------|-------------|
 | `default` | - | - | - | - | Automatic | All authenticated users |
-| `day-guest` | Guest | 3 | None | 1 day | On-Request | day-trial, digital-pass, physical-pass |
+| `day-guest` | Guest | 3 | None | 1 day | On-Request | day-guest-test-pass, day-guest-pass, digital-pass, physical-pass |
 | `invited-guest` | Guest | 3 | Monthly | 1 month | On-Email-Match | invited-guest, group-invite, campaign |
 | `resident-guest` | Guest | 3 | Monthly | Unlimited | On-Email-Match | resident-guest |
 | `resident-pro-comp` | Pro | 100 | Monthly | Unlimited | On-Email-Match | resident-pro-comp |
-| `resident-pro` | Pro | 100 | Monthly | - | On-Pass (planned: subscription) | (planned: Stripe subscription) |
-| `test` | - | - | - | - | On-Pass | test-access |
+| `resident-pro` | Pro | 100 | Monthly | - | On-Pass (planned: subscription) | resident-pro-test-pass, resident-pro-pass (planned: Stripe subscription) |
 
 ### Key bundle concepts
 
@@ -91,7 +96,7 @@ The `generate-pass.yml` workflow creates passes and stores them in DynamoDB.
 - **generate-cognito-user**: Creates a Cognito native login user for debugging
 
 **Automatic triggers**:
-- Daily at 09:00 UTC: Generates a `test-access` pass for CI
+- Daily at 09:00 UTC: Generates a `day-guest-test-pass` pass for CI
 - On push to `submit.passes.toml` or related files: Generates a test pass
 
 **Output**: The workflow produces:
@@ -108,9 +113,9 @@ The `generate-pass.yml` workflow creates passes and stores them in DynamoDB.
 1. User receives pass URL: `https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver`
 2. If not logged in, redirected to login, then back to pass URL
 3. Pass validation checks: not revoked, not expired, uses remaining, email matches
-4. Pass `useCount` atomically incremented
-5. Bundle granted to user with tokens
-6. User redirected to home with success message
+4. Bundle card appears in catalogue (even if normally hidden) — user clicks "Request" to add it
+5. Pass `useCount` atomically incremented
+6. Bundle granted to user with tokens
 
 ### Validation failure reasons
 
@@ -123,6 +128,63 @@ The `generate-pass.yml` workflow creates passes and stores them in DynamoDB.
 | `exhausted` | All uses consumed (useCount >= maxUses) |
 | `wrong_email` | User's email doesn't match restriction |
 | `email_required` | Pass requires email but none available |
+
+## Using a pass with `npm start` (simulator)
+
+The simulator environment runs entirely locally with dynalite, a mock OAuth server, and HMRC sandbox simulator. The pass admin API is available at `/api/v1/pass/admin`.
+
+### Day Guest example
+
+```bash
+# 1. Start the simulator
+npm start
+
+# 2. Create a day-guest pass
+curl -s -X POST http://localhost:3000/api/v1/pass/admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "passTypeId": "day-guest-test-pass",
+    "bundleId": "day-guest",
+    "validityPeriod": "P1D",
+    "maxUses": 1,
+    "createdBy": "manual"
+  }'
+# Returns: {"code":"tiger-happy-mountain-silver", "bundleId":"day-guest", ...}
+
+# 3. Open the bundles page with the pass code
+open "http://localhost:3000/bundles.html?pass=tiger-happy-mountain-silver"
+```
+
+Or log in first, then enter the code manually in the pass input field.
+
+The flow: enter code → "Redeem Pass" → pass validated → "Request Day Guest" button appears → click it → bundle granted.
+
+### Resident Pro example
+
+```bash
+# Create a resident-pro pass
+curl -s -X POST http://localhost:3000/api/v1/pass/admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "passTypeId": "resident-pro-test-pass",
+    "bundleId": "resident-pro",
+    "validityPeriod": "P1D",
+    "maxUses": 1,
+    "createdBy": "manual"
+  }'
+
+# Open with the returned code
+open "http://localhost:3000/bundles.html?pass=<returned-code>"
+```
+
+The flow is the same: enter code → validate → "Request Resident Pro" button appears → click → bundle granted with 100 tokens.
+
+### Notes
+
+- The simulator uses `testPass: true` passes which route to the HMRC sandbox
+- Passes are stored in local dynalite (port 9001), not real DynamoDB
+- Mock OAuth means no real login — the simulator auto-authenticates
+- Pass codes are four random words (e.g. `tiger-happy-mountain-silver`)
 
 ## Architecture
 
@@ -167,9 +229,26 @@ The `generate-pass.yml` workflow creates passes and stores them in DynamoDB.
 ## Current Status (Closed Beta)
 
 - `day-guest` requires a pass (`enable = "on-pass"`) with capacity cap = 0
-- `resident-pro` requires a pass (planned: Stripe subscription)
+- `resident-pro` requires a pass (`enable = "on-pass"`); planned: `on-pass-on-subscription`
 - All pass generation is admin-only via GitHub Actions
 - User-issued passes (campaign, digital, physical) are defined but Phase 6 is deferred
+
+### Subscription status
+
+**Implemented (Phases 1-4):**
+- Token usage page (`/usage.html`)
+- Stripe SDK integration (`scripts/stripe-setup.js`)
+- BillingStack CDK infrastructure
+- `billingCheckoutPost.js` — creates Stripe Checkout sessions
+- `billingWebhookPost.js` — handles `checkout.session.completed`, grants `resident-pro` bundle with subscription fields
+- Subscription DynamoDB table and repository
+
+**Not yet implemented (Phases 5, 7):**
+- `on-pass-on-subscription` allocation mode — pass gates access, subscription behind it
+- "Subscribe" button on `bundles.html` for pass-holders
+- `invoice.paid` handler (token refresh on renewal)
+- `customer.subscription.updated/deleted` handlers (cancellation)
+- `invoice.payment_failed` handler
 
 ### To reach Public Beta
 
@@ -179,5 +258,6 @@ The `generate-pass.yml` workflow creates passes and stores them in DynamoDB.
 
 ### To reach Launch
 
-1. Implement `resident-pro` subscription via Stripe (`allocation = "on-subscription"`)
-2. Enable user-issued passes (campaign, digital, physical) - Phase 6
+1. Implement `on-pass-on-subscription` allocation for `resident-pro` — pass gates visibility, subscription enables access
+2. Implement subscription lifecycle (renewal, cancellation, payment failure) — Phases 5, 7
+3. Enable user-issued passes (campaign, digital, physical) — Phase 6

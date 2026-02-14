@@ -22,7 +22,7 @@ Actions → Generate Pass → Run workflow
 ```
 
 Configure:
-- **Pass Type**: Select from dropdown (test-access, day-trial, etc.)
+- **Pass Type**: Select from dropdown (day-guest-test-pass, day-guest-pass, etc.)
 - **Environment**: ci or prod
 - **Quantity**: Number of passes to generate
 - **Email**: (Optional) Restrict pass to specific email
@@ -72,8 +72,8 @@ The `passes-output.json` file contains complete metadata:
   {
     "code": "tiger-happy-mountain-silver",
     "url": "https://submit.diyaccounting.co.uk/bundles.html?pass=tiger-happy-mountain-silver",
-    "bundleId": "test",
-    "passTypeId": "test-access",
+    "bundleId": "day-guest",
+    "passTypeId": "day-guest-test-pass",
     "maxUses": 1,
     "usesRemaining": 1,
     "validFrom": "2026-01-01T00:00:00.000Z",

@@ -2,14 +2,13 @@ version = "1.1.0"
 
 # BUNDLE → PASS MAPPING SUMMARY
 # ==============================
-# Bundle ID          → Unlocked by pass types                → Payment required?
-# default            → (automatic, no pass needed)            → No
-# day-guest          → day-trial, digital-pass, physical-pass → No (admin passes) / 10 tokens (user-issued passes, Phase 6)
-# invited-guest      → invited-guest, group-invite, campaign  → No (admin passes) / 10 tokens (campaign, Phase 6)
-# resident-guest     → resident-guest                         → No (admin-issued, email-restricted)
-# resident-pro-comp  → resident-pro-comp                      → No (admin-issued, email-restricted)
-# resident-pro       → (planned: on-subscription via Stripe)  → Subscription payment (not yet implemented)
-# test               → test-access                            → No (admin-issued)
+# Bundle ID          → Unlocked by pass types                                     → Payment required?
+# default            → (automatic, no pass needed)                                 → No
+# day-guest          → day-guest-test-pass, day-guest-pass, digital-pass, physical-pass → No (admin passes) / 10 tokens (user-issued passes, Phase 6)
+# invited-guest      → invited-guest, group-invite, campaign                       → No (admin passes) / 10 tokens (campaign, Phase 6)
+# resident-guest     → resident-guest                                              → No (admin-issued, email-restricted)
+# resident-pro-comp  → resident-pro-comp                                           → No (admin-issued, email-restricted)
+# resident-pro       → resident-pro-test-pass, resident-pro-pass (planned: on-subscription via Stripe) → Checkout + initial grant done (Phases 1-4); renewal/cancellation pending (Phases 5, 7)
 #
 # See PASSES.md for full documentation and submit.passes.toml for pass type definitions.
 
@@ -23,8 +22,8 @@ name = "Default"
 enable = "never"
 allocation = "automatic"
 
-# day-guest: Short-term production HMRC access
-# Unlocked by: day-trial pass (admin), digital-pass (user, 10 tokens), physical-pass (user, 10 tokens)
+# day-guest: Short-term HMRC access
+# Unlocked by: day-guest-test-pass (sandbox), day-guest-pass (production), digital-pass (user, 10 tokens), physical-pass (user, 10 tokens)
 # Payment: None for admin-issued passes; 10 tokens to issue digital/physical passes (Phase 6)
 # Tokens: 3 granted (enough for 3 VAT submissions), no refresh (single use period)
 # Access to free authenticated activities including VAT submission for a limited time
@@ -138,9 +137,9 @@ allocation = "on-email-match"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 
-# resident-pro: Paid subscription access (not yet implemented)
-# Unlocked by: currently on-pass (admin-issued); planned: on-subscription (Stripe monthly payment)
-# Payment: Planned £9.99/month Stripe subscription (see scripts/stripe-setup.js)
+# resident-pro: Pro subscription access
+# Unlocked by: resident-pro-test-pass (sandbox), resident-pro-pass (production); planned: on-subscription (Stripe monthly payment)
+# Payment: Checkout + initial bundle grant implemented (Phases 1-4); renewal/cancellation pending (Phases 5, 7)
 # Tokens: 100 granted, refreshing monthly
 # Enables: all activities including generating digital/physical passes (costs 10 tokens each)
 # Access to all authenticated activities including VAT submission for specific users on subscription
