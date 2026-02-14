@@ -77,7 +77,7 @@ MCP Client (Claude Desktop / Claude Code / any MCP client)
                | HTTPS (fetch)
                v
         Existing Deployed API
-        https://{env}.submit.diyaccounting.co.uk/api/v1/*
+        https://{env}-submit.diyaccounting.co.uk/api/v1/*
                |
                +-- /api/v1/cognito/token     (Cognito code exchange, refresh)
                +-- /api/v1/hmrc/token        (HMRC code exchange, holds client_secret)

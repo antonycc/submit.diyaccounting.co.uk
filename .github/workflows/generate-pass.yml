@@ -202,7 +202,7 @@ jobs:
           if [ "$ENV_NAME" = "prod" ]; then
             echo "pass-url-host=submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "pass-url-host=${ENV_NAME}.submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
+            echo "pass-url-host=${ENV_NAME}-submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
           fi
     outputs:
       environment-name: ${{ steps.resolve.outputs.environment-name }}

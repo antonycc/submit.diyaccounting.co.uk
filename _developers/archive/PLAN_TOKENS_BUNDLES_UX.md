@@ -438,7 +438,7 @@ These tests don't interact with the changed pages/flows and need no changes:
 **Requires deployment**: **Yes**. The Cognito logout redirect targets `https://{env}-auth.submit.diyaccounting.co.uk/logout`. This needs a live Cognito instance to verify:
 1. The redirect URL is accepted by Cognito (registered in `logoutUrls`)
 2. The Cognito session is actually invalidated
-3. The `logout_uri` redirect back to `https://{env}.submit.diyaccounting.co.uk/` works
+3. The `logout_uri` redirect back to `https://{env}-submit.diyaccounting.co.uk/` works
 
 **Does NOT require `deploy-environment.yml`**: The logout URL `https://{envDomainName}/` is already registered in `IdentityStack.java:205`. No Cognito client config change needed.
 
