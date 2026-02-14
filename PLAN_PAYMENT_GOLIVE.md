@@ -1,0 +1,447 @@
+# Payment Go-Live Plan
+
+**Created**: 14 February 2026
+**Status**: Phase 1 in progress
+**Branch**: `claude/ux-fixes-jane-feedback` (current), merging to `main` after Phase 1
+
+**Consolidates remaining work from**:
+- `PLAN_PAYMENT_INTEGRATION.md` (Phases 5, 7, 8, 9, 10)
+- `_developers/PLAN_HUMAN_TEST_OF_PAYMENT_INTEGRATION_WITH_ALERTING.md` (Phase F + Human Test Journey)
+
+**Prerequisite work already complete**:
+- Phases 1-4 + 11 of `PLAN_PAYMENT_INTEGRATION.md` (token usage, Stripe SDK, checkout session, webhook handler, payment funnel behaviour test)
+- Phases A-E of `PLAN_HUMAN_TEST_OF_PAYMENT_INTEGRATION_WITH_ALERTING.md` (Telegram config, testPass field, catalogue simplification, sandbox routing via bundle qualifiers, all behaviour tests updated)
+- Architecture: credential routing (HMRC + Stripe) decoupled from activities, driven by bundle qualifier (`sandbox: true/false`) set by test vs non-test passes
+
+---
+
+## The Human Test Journey
+
+This is the target experience for a human tester — the same journey that synthetic tests will automate. It works in both CI and prod because credential routing is driven by the pass type, not the environment.
+
+1. **Login** via Cognito (native in CI, Google in prod)
+2. **Redeem a test pass for day-guest** — gets 3 tokens despite `cap = 0` (pass bypasses cap)
+3. **Use all 3 tokens** — submit VAT to sandbox HMRC (not live)
+4. **See activities disabled** — "Insufficient tokens", upsell link to bundles page
+5. **Redeem a test pass for resident-pro** — gets 100 tokens
+6. **Pay via test Stripe** — checkout session uses test price ID, no real charges
+7. **Submit VAT return** — goes to sandbox HMRC, consumes 1 resident-pro token
+8. **Check token usage page** — `/usage.html` shows correct sources and consumption
+9. **Verify Telegram alerts** — each step generates a message in the correct channel
+
+**Routing rules** (same code path, different credentials):
+
+| Concern | Test pass (`testPass: true`) | Live pass (`testPass: false`) |
+|---------|------------------------------|-------------------------------|
+| HMRC credentials | Sandbox | Production |
+| Stripe key + price ID | Test | Live |
+| Telegram channel | Test channel | Live channel |
+| Bundle + activity | Same real bundles and activities | Same real bundles and activities |
+
+**Test pass issuance**:
+
+```bash
+# Synthetic tests — automatic via admin API
+const pass = await createTestPass({ bundleId: "day-guest" });
+# pass.testPass = true automatically
+
+# Human testers — admin creates via API
+curl -X POST /api/v1/admin/pass \
+  -d '{"bundleId":"day-guest","testPass":true,"maxUses":5,"notes":"Manual tester"}'
+
+# Real customers — non-test pass (live HMRC + live Stripe)
+curl -X POST /api/v1/admin/pass \
+  -d '{"bundleId":"day-guest","testPass":false,"maxUses":1,"notes":"Beta customer"}'
+```
+
+---
+
+## Phase 1: CI Validation Before Merge
+
+**Goal**: Verify the current deployment (Phases A-E architectural rework) works on CI. Gate for merging `eventandpayment` branch to `main`.
+
+| Step | Description | Status |
+|------|-------------|--------|
+| 1.1 | `npm test` — all unit + system tests pass | Done |
+| 1.2 | `./mvnw clean verify` — CDK builds | Done |
+| 1.3 | `npm run test:paymentBehaviour-simulator` — simulator passes | Done |
+| 1.4 | Commit, push to feature branch | Done — deploying now |
+| 1.5 | Monitor CI deployment | In progress |
+| 1.6 | Run `paymentBehaviour-ci` — verify full conversion funnel | |
+| 1.7 | Run `submitVatBehaviour-ci` — verify VAT submission still works | |
+| 1.8 | Verify Telegram messages arrive in correct channels (test channel for synthetic user) | |
+| 1.9 | Merge to `main` | After 1.6-1.8 pass |
+
+### Validation criteria
+
+- `paymentBehaviour-ci` passes: day-guest pass → exhaust tokens → resident-pro pass → VAT submission → usage page
+- `submitVatBehaviour-ci` passes: day-guest via test pass → sandbox HMRC submission → obligations → view return
+- Telegram test channel receives messages for synthetic user activity
+- No regressions in other CI synthetic tests
+
+---
+
+## Phase 2: Subscription Lifecycle Handlers
+
+**Goal**: Handle Stripe renewal, cancellation, and payment failure events. Currently only `checkout.session.completed` is handled — the webhook ignores all other events.
+
+### 2.1 handleInvoicePaid (renewal)
+
+On `invoice.paid`:
+- Retrieve subscription from Stripe
+- Extract hashedSub from subscription metadata
+- Refresh tokens: reset `tokensConsumed = 0`, update `tokenResetAt`
+- Update `currentPeriodEnd` on bundle record
+- Update subscription record in subscriptions table
+
+### 2.2 handleSubscriptionUpdated
+
+On `customer.subscription.updated`:
+- Update `subscriptionStatus` on bundle record
+- Update `cancelAtPeriodEnd` if user requested cancellation
+- Handle `past_due` status (log, emit CloudWatch metric)
+
+### 2.3 handleSubscriptionDeleted (cancellation complete)
+
+On `customer.subscription.deleted`:
+- Mark bundle `subscriptionStatus = "canceled"`
+- Bundle remains usable until `currentPeriodEnd`
+- After `currentPeriodEnd`, standard expiry logic handles removal
+
+### 2.4 handlePaymentFailed
+
+On `invoice.payment_failed`:
+- Update `subscriptionStatus = "past_due"` on bundle record
+- Emit CloudWatch metric for alerting
+- Stripe handles retry automatically
+
+### 2.5 handleRefund and handleDispute
+
+- On `charge.refunded`: log for audit, don't revoke access (subscription status drives access)
+- On `charge.dispute.created`: log and emit CloudWatch alarm metric
+
+### 2.6 Tests
+
+- Unit tests: `app/unit-tests/functions/billingWebhookLifecycle.test.js` — token refresh, status transitions, payment failure logging
+- System tests: `app/system-tests/billing/billingLifecycle.system.test.js` — full lifecycle against Stripe simulator + dynalite (checkout → invoice.paid → subscription.deleted)
+
+### Validation
+
+Deploy to CI. All lifecycle events handled correctly. Token refresh on renewal verified. Cancellation preserves access until period end. `npm test` and `./mvnw clean verify` pass.
+
+---
+
+## Phase 3: Frontend Subscribe Button
+
+**Goal**: Users can subscribe to resident-pro from `bundles.html` via Stripe Checkout. Full end-to-end from button click through payment to active bundle.
+
+### 3.1 bundles.html subscription UI
+
+- "Subscribe" button for `resident-pro` bundle
+  - Only shown when user is authenticated and does not hold resident-pro
+  - Calls `POST /api/v1/billing/checkout-session`
+  - Redirects to Stripe Checkout URL
+- Handle `?checkout=success` URL parameter — show success message, refresh bundle list
+- Handle `?checkout=canceled` URL parameter — show info message
+- "Manage Subscription" link for active resident-pro subscribers (links to usage page initially, Stripe Portal later)
+
+### 3.2 Catalogue update
+
+Update `submit.catalogue.toml` for resident-pro:
+- `allocation = "on-subscription-with-pass"` — accepts both pass-based and subscription-based grants
+- `price = "9.99/month"` (display only)
+
+### 3.3 Bundle display logic
+
+Update `bundles.html` to handle `allocation = "on-subscription-with-pass"`:
+- Show price and "Subscribe" button (not "Request")
+- Show "Active" badge for current subscribers
+- Show subscription status (active, canceling, past_due)
+
+### 3.4 Behaviour tests
+
+- Extend `paymentBehaviour` test to verify "Subscribe" button appears, checkout redirect works
+- Verify success/cancel URL handling after Stripe redirect
+
+### Validation
+
+Deploy to CI. "Subscribe" button visible on bundles page. Checkout redirect works. Success/cancel handling correct. `paymentBehaviour-ci` passes.
+
+---
+
+## Phase 4: Human Test in Prod with Test Passes
+
+**Goal**: A human tester walks through the full journey on the production site using test passes. This validates the real prod environment (Cognito Google login, real CloudFront, real Lambda) without touching live HMRC or charging real money.
+
+### Prerequisites
+
+- Phases 1-3 merged to `main` and deployed to prod
+- Prod environment has both live and sandbox HMRC secrets
+- Prod environment has both live and test Stripe secrets
+
+### Environment configuration (already planned in `.env.prod`)
+
+```ini
+# HMRC — separate live and sandbox
+HMRC_CLIENT_SECRET_ARN=arn:...prod/submit/hmrc/client_secret       # real live
+HMRC_SANDBOX_CLIENT_SECRET_ARN=arn:...prod/submit/hmrc/sandbox_client_secret
+
+# Stripe — separate live and test
+STRIPE_SECRET_KEY_ARN=arn:...prod/submit/stripe/secret_key         # real live
+STRIPE_TEST_SECRET_KEY_ARN=arn:...prod/submit/stripe/test_secret_key
+STRIPE_PRICE_ID=price_1SzkPBCD0Ld2ukzIqbEweRSk
+STRIPE_TEST_PRICE_ID=price_1Szjt0FdFHdRoTOjHDXcuuq8
+
+# Telegram
+TELEGRAM_TEST_CHAT_ID=@diy_prod_test
+TELEGRAM_LIVE_CHAT_ID=@diy_prod_live
+TELEGRAM_OPS_CHAT_ID=@diy_prod_ops
+```
+
+### 4.1 Admin creates test passes
+
+```bash
+# Day-guest test pass (sandbox HMRC, test Stripe)
+curl -X POST https://submit.diyaccounting.co.uk/api/v1/admin/pass \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"bundleId":"day-guest","testPass":true,"maxUses":10,"notes":"Human test - prod validation"}'
+
+# Resident-pro test pass (sandbox HMRC, test Stripe)
+curl -X POST https://submit.diyaccounting.co.uk/api/v1/admin/pass \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"bundleId":"resident-pro","testPass":true,"maxUses":10,"notes":"Human test - prod validation"}'
+```
+
+### 4.2 Human tester walks through the journey
+
+Execute the Human Test Journey (steps 1-9 above) on `submit.diyaccounting.co.uk`:
+1. Login via Google
+2. Redeem day-guest test pass → 3 tokens, sandbox HMRC
+3. Use all 3 tokens submitting to sandbox HMRC
+4. See activities disabled, upsell to bundles
+5. Redeem resident-pro test pass → 100 tokens
+6. Click "Subscribe" → test Stripe checkout (use card `4242 4242 4242 4242`)
+7. Submit VAT to sandbox HMRC → token consumed
+8. Check `/usage.html` → correct sources and consumption
+9. Check Telegram `@diy_prod_test` channel → messages for each step
+
+### 4.3 Verify isolation
+
+- Confirm sandbox HMRC was used (no submissions to live HMRC)
+- Confirm test Stripe was used (no real charges in Stripe live dashboard)
+- Confirm Telegram messages went to test channel, not live channel
+
+### Validation
+
+Human tester completes all 9 steps successfully. No live HMRC submissions. No real Stripe charges. Telegram test channel has full audit trail.
+
+---
+
+## Phase 5: Synthetic Tests in Prod with Test Passes
+
+**Goal**: Automate the human test journey as a synthetic test that runs in prod on every deployment. Uses test passes exclusively — sandbox HMRC, test Stripe, test Telegram channel.
+
+### 5.1 Prod synthetic test configuration
+
+The existing `paymentBehaviour` test already uses test passes via `ensureBundleViaPassApi({ testPass: true })`. It works against any environment:
+
+```bash
+# Run against prod
+npm run test:paymentBehaviour-prod
+```
+
+This test:
+- Creates test passes via admin API → `testPass: true` → `sandbox: true` qualifier
+- All HMRC calls go to sandbox (bundle qualifier drives routing)
+- All Stripe calls use test mode (bundle qualifier drives routing)
+- Telegram messages go to `@diy_prod_test` (synthetic actor classification)
+
+### 5.2 Add paymentBehaviour to prod synthetic test workflow
+
+Add `paymentBehaviour` to `synthetic-test.yml` choices and to the `deploy.yml` post-deployment test matrix:
+
+```yaml
+# In deploy.yml — add web-test-payment job
+web-test-payment:
+  uses: ./.github/workflows/synthetic-test.yml
+  with:
+    behaviour-test-suite: 'paymentBehaviour'
+    environment-name: ${{ needs.names.outputs.environment-name }}
+```
+
+### 5.3 Enable Cognito native auth for prod synthetic tests
+
+Prod synthetic tests need native auth (email/password) since Google OAuth can't be automated:
+- `npm run test:enableCognitoNative -- prod` before test run
+- `npm run test:disableCognitoNative -- prod` after test run
+- Same pattern already used for CI synthetic tests in `deploy.yml`
+
+### 5.4 Monitoring
+
+- Synthetic test results visible in GitHub Actions
+- Failed synthetic tests → Telegram ops channel alert
+- Prod test passes create no live side effects (sandbox HMRC, test Stripe)
+
+### Validation
+
+`npm run test:paymentBehaviour-prod` passes. Synthetic test runs automatically on prod deployment. No live HMRC submissions or real Stripe charges from synthetic tests.
+
+---
+
+## Phase 6: Compliance and Abuse Protection
+
+**Goal**: Accessibility scanning, security scanning, documentation updates, and Stripe hardening before opening payments to real customers.
+
+### 6.1 Accessibility scanning
+
+- Add `/usage.html` and `/bundles.html` (with subscribe button) to `.pa11yci.prod.json`
+- Verify axe-core WCAG 2.1 and 2.2 scans include billing paths
+- Verify Lighthouse scan includes billing paths
+- Run: `npm run accessibility:pa11y-prod`
+
+### 6.2 Security scanning
+
+- Verify OWASP ZAP baseline scan covers billing API paths (`/api/v1/billing/*`)
+- Verify ESLint security scan covers billing Lambda files
+- Verify npm audit includes `stripe` dependency
+
+### 6.3 Documentation updates
+
+- Add FAQ entries for payments in `faqs.toml`:
+  - "How do I subscribe to Resident Pro?"
+  - "How do I cancel my subscription?"
+  - "What happens if my payment fails?"
+  - "How do tokens relate to my subscription?"
+- Update guide page with subscription section
+- Update about page with Resident Pro benefit card and pricing
+- Update accessibility statement with new pages
+
+### 6.4 Stripe hardening
+
+- Stripe Radar: verify enabled (on by default)
+- Configure 3D Secure for transactions
+- Set weekly payout schedule (7-10 day chargeback buffer)
+- UK Distance Selling compliance: consent collection on Checkout (terms of service required, 14-day cooling-off waiver for immediate digital access)
+
+### 6.5 CloudWatch billing metrics
+
+Emit EMF metrics from billing Lambdas:
+- `BillingCheckoutCreated` (count per bundleId)
+- `BillingBundleGranted` (count per bundleId)
+- `BillingPaymentFailed` (count)
+- `BillingSubscriptionCanceled` (count)
+- `BillingDisputeCreated` (count)
+
+CloudWatch alarms:
+- Payment failure rate spike
+- Any dispute created
+- Webhook delivery failures
+
+### Validation
+
+Pa11y, axe, Lighthouse pass for all billing paths. ZAP finds no new issues. FAQ and guide pages include payment information. Stripe Radar active. CloudWatch metrics visible.
+
+---
+
+## Phase 7: Production Go-Live with Live Passes
+
+**Goal**: Issue non-test passes that route to live HMRC and live Stripe. Real customers can subscribe and submit VAT returns for real.
+
+### 7.1 Verify dual-credential routing in prod
+
+Before issuing any live passes, confirm the routing works correctly:
+- Test pass holder → sandbox HMRC + test Stripe (already verified in Phases 4-5)
+- Non-test pass holder → live HMRC + live Stripe (verify this path)
+
+### 7.2 End-to-end live validation
+
+Issue a non-test pass for a known test user:
+
+```bash
+# Live pass — real HMRC, real Stripe
+curl -X POST https://submit.diyaccounting.co.uk/api/v1/admin/pass \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"bundleId":"day-guest","testPass":false,"maxUses":1,"notes":"Live validation"}'
+```
+
+Walk through the journey manually:
+1. Login via Google
+2. Redeem the live pass → bundle has no sandbox qualifier
+3. Click "Subscribe" → **live** Stripe checkout (use a real card, GBP 9.99 charge)
+4. Verify bundle granted with `subscriptionStatus: "active"`
+5. Submit VAT → **live** HMRC (sandbox header NOT set)
+6. Verify Telegram `@diy_prod_live` channel receives messages
+7. Cancel subscription via Stripe → verify access until period end
+8. Refund the GBP 9.99 test charge in Stripe dashboard
+
+### 7.3 Catalogue visibility
+
+Update `submit.catalogue.toml`:
+- Add `resident-pro` to `listedInEnvironments` for production
+- Verify resident-pro appears on `bundles.html` in production with "Subscribe" button
+
+### 7.4 Synthetic test coexistence
+
+After go-live, both test and live passes coexist in prod:
+
+| Actor | Pass type | HMRC | Stripe | Telegram |
+|-------|-----------|------|--------|----------|
+| Synthetic test (deploy.yml) | Test pass | Sandbox | Test | `@diy_prod_test` |
+| Human tester (manual) | Test pass | Sandbox | Test | `@diy_prod_test` |
+| Real customer | Live pass / subscription | Production | Live | `@diy_prod_live` |
+
+Synthetic tests never create live side effects. Real customer activity is isolated to the live channel.
+
+### 7.5 Monitoring first real transactions
+
+- Watch CloudWatch dashboard for billing metrics
+- Watch Stripe dashboard for webhook delivery success
+- Watch Telegram `@diy_prod_live` for real customer activity
+- Verify Stripe Radar is scoring transactions
+
+### Validation
+
+One real GBP 9.99 charge processed and refunded. Live HMRC submission succeeds. Subscription lifecycle (create → cancel → period end) works end-to-end. Synthetic tests continue passing alongside live traffic. Telegram channels correctly separate test and live activity.
+
+---
+
+## Phase Dependencies
+
+```
+Phase 1: CI Validation (current)
+    |
+    v
+Phase 2: Subscription Lifecycle Handlers
+    |
+    v
+Phase 3: Frontend Subscribe Button
+    |
+    v
+Phase 4: Human Test in Prod (test passes)
+    |
+    v
+Phase 5: Synthetic Tests in Prod (test passes)
+    |
+    v
+Phase 6: Compliance & Abuse Protection
+    |
+    v
+Phase 7: Production Go-Live (live passes)
+```
+
+Phases are strictly sequential. Each phase validates before proceeding.
+
+---
+
+## Safety Net Summary
+
+| Environment | HMRC "live" key | Stripe "live" key | Risk if qualifier missing |
+|-------------|-----------------|-------------------|---------------------------|
+| CI | Points to sandbox | Points to test | Zero — can't hit real services |
+| Prod | Points to real live | Points to real live | Live HMRC + live Stripe charges |
+
+The qualifier-based routing is critical in prod. CI is safe by design (both "live" and "sandbox" secrets point to sandbox/test). In prod, only non-test passes trigger live credentials.
+
+---
+
+*Document created: 14 February 2026. Consolidates remaining work from PLAN_PAYMENT_INTEGRATION.md (Phases 5, 7-10) and the Human Test Journey from PLAN_HUMAN_TEST_OF_PAYMENT_INTEGRATION_WITH_ALERTING.md.*
