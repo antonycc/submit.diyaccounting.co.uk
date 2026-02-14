@@ -53,14 +53,22 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 
 // Mock DynamoDB bundle repository
 const mockPutBundleByHashedSub = vi.fn();
+const mockUpdateBundleSubscriptionFields = vi.fn();
+const mockResetTokensByHashedSub = vi.fn();
 vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   putBundleByHashedSub: (...args) => mockPutBundleByHashedSub(...args),
+  updateBundleSubscriptionFields: (...args) => mockUpdateBundleSubscriptionFields(...args),
+  resetTokensByHashedSub: (...args) => mockResetTokensByHashedSub(...args),
 }));
 
 // Mock DynamoDB subscription repository
 const mockPutSubscription = vi.fn();
+const mockGetSubscription = vi.fn();
+const mockUpdateSubscription = vi.fn();
 vi.mock("@app/data/dynamoDbSubscriptionRepository.js", () => ({
   putSubscription: (...args) => mockPutSubscription(...args),
+  getSubscription: (...args) => mockGetSubscription(...args),
+  updateSubscription: (...args) => mockUpdateSubscription(...args),
 }));
 
 import { ingestHandler } from "@app/functions/billing/billingWebhookPost.js";
@@ -108,9 +116,17 @@ describe("billingWebhookPost", () => {
     mockSubscriptionsRetrieve.mockReset();
     mockPutBundleByHashedSub.mockReset();
     mockPutSubscription.mockReset();
+    mockGetSubscription.mockReset();
+    mockUpdateSubscription.mockReset();
+    mockUpdateBundleSubscriptionFields.mockReset();
+    mockResetTokensByHashedSub.mockReset();
 
     mockPutBundleByHashedSub.mockResolvedValue(undefined);
     mockPutSubscription.mockResolvedValue(undefined);
+    mockUpdateSubscription.mockResolvedValue(undefined);
+    mockUpdateBundleSubscriptionFields.mockResolvedValue(undefined);
+    mockResetTokensByHashedSub.mockResolvedValue(undefined);
+    mockGetSubscription.mockResolvedValue(null);
     mockSubscriptionsRetrieve.mockResolvedValue({
       id: "sub_test_456",
       status: "active",
@@ -229,7 +245,18 @@ describe("billingWebhookPost", () => {
     expect(bundle.currentPeriodEnd).toBeNull();
   });
 
-  test("returns 200 for invoice.paid event (Phase 5 stub)", async () => {
+  test("invoice.paid refreshes tokens when subscription record exists", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+    const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+    mockSubscriptionsRetrieve.mockResolvedValue({
+      id: "sub_test_456",
+      current_period_end: periodEnd,
+    });
+
     const payload = {
       id: "evt_test_invoice",
       type: "invoice.paid",
@@ -243,14 +270,25 @@ describe("billingWebhookPost", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledTimes(1);
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith(
+      "hashed_sub_value",
+      "resident-pro",
+      100,
+      expect.any(String),
+    );
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledTimes(1);
+    expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
   });
 
-  test("returns 200 for customer.subscription.updated event (Phase 5 stub)", async () => {
+  test("invoice.paid skips when no subscription record found", async () => {
+    mockGetSubscription.mockResolvedValue(null);
+
     const payload = {
-      id: "evt_test_sub_update",
-      type: "customer.subscription.updated",
+      id: "evt_test_invoice",
+      type: "invoice.paid",
       data: {
-        object: { id: "sub_test_456", status: "past_due" },
+        object: { id: "in_test_123", subscription: "sub_test_456" },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -259,9 +297,47 @@ describe("billingWebhookPost", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);
+    expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
   });
 
-  test("returns 200 for customer.subscription.deleted event (Phase 5 stub)", async () => {
+  test("customer.subscription.updated updates bundle status", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_sub_update",
+      type: "customer.subscription.updated",
+      data: {
+        object: { id: "sub_test_456", status: "past_due", cancel_at_period_end: false },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith(
+      "hashed_sub_value",
+      "resident-pro",
+      { subscriptionStatus: "past_due", cancelAtPeriodEnd: false },
+    );
+    expect(mockUpdateSubscription).toHaveBeenCalledWith(
+      "stripe#sub_test_456",
+      { status: "past_due", cancelAtPeriodEnd: false },
+    );
+  });
+
+  test("customer.subscription.deleted marks bundle as canceled", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+
     const payload = {
       id: "evt_test_sub_delete",
       type: "customer.subscription.deleted",
@@ -275,6 +351,15 @@ describe("billingWebhookPost", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith(
+      "hashed_sub_value",
+      "resident-pro",
+      { subscriptionStatus: "canceled", cancelAtPeriodEnd: false },
+    );
+    expect(mockUpdateSubscription).toHaveBeenCalledWith(
+      "stripe#sub_test_456",
+      expect.objectContaining({ status: "canceled" }),
+    );
   });
 
   test("returns 200 for unhandled event types", async () => {

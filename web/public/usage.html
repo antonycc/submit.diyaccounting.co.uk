@@ -100,6 +100,12 @@
             </tbody>
           </table>
         </div>
+
+        <div id="subscriptionManagement" style="margin-top: 2em; text-align: left; display: none">
+          <h3>Subscription</h3>
+          <p style="color: #666; margin-bottom: 0.5em">Manage your subscription billing, payment method, and cancellation.</p>
+          <button type="button" id="manageSubscriptionBtn" class="btn" style="background-color: #17a2b8; border-color: #17a2b8; min-width: 200px">Manage Subscription</button>
+        </div>
       </div>
     </main>
 
@@ -120,6 +126,12 @@
       </div>
     </footer>
 
+    <script src="lib/env-loader.js"></script>
+    <script>
+      (async function () {
+        try { await window.loadEnv(); } catch (e) { console.warn("Failed to load environment:", e); }
+      })();
+    </script>
     <script type="module" src="submit.js"></script>
     <script src="developer-mode.js"></script>
     <script src="lib/request-cache.js"></script>
@@ -270,7 +282,40 @@
         if (!data) return;
         renderTokenSources(data.bundles || []);
         renderTokenConsumption(data.bundles || []);
+        renderSubscriptionManagement(data.bundles || []);
       }
+
+      function renderSubscriptionManagement(bundles) {
+        var section = document.getElementById("subscriptionManagement");
+        var hasSubscription = (bundles || []).some(function (b) {
+          return b.allocated && b.stripeSubscriptionId;
+        });
+        section.style.display = hasSubscription ? "block" : "none";
+      }
+
+      document.getElementById("manageSubscriptionBtn").addEventListener("click", async function () {
+        var btn = document.getElementById("manageSubscriptionBtn");
+        btn.textContent = "Loading...";
+        btn.disabled = true;
+        try {
+          var response = await window.fetchWithIdToken("/api/v1/billing/portal", {});
+          if (response.ok) {
+            var result = await response.json();
+            var portalUrl = result.data ? result.data.portalUrl : result.portalUrl;
+            if (portalUrl) {
+              window.location.href = portalUrl;
+              return;
+            }
+          }
+          btn.textContent = "Manage Subscription";
+          btn.disabled = false;
+          if (window.showStatus) window.showStatus("Unable to open subscription management. Please try again.", "error");
+        } catch (err) {
+          btn.textContent = "Manage Subscription";
+          btn.disabled = false;
+          if (window.showStatus) window.showStatus("Failed to connect to billing service.", "error");
+        }
+      });
 
       document.getElementById("refreshUsageBtn").addEventListener("click", function () {
         if (__rc && typeof __rc.invalidate === "function") {

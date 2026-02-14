@@ -29,6 +29,19 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
+/**
+ * Resolve the Stripe price ID based on sandbox mode.
+ * Same pattern as HMRC sandbox/live selection via hmrcAccount.
+ */
+function resolveStripePriceId(isSandbox) {
+  if (isSandbox) {
+    const testPrice = process.env.STRIPE_TEST_PRICE_ID;
+    if (testPrice) return testPrice;
+    logger.warn({ message: "Sandbox mode requested but no STRIPE_TEST_PRICE_ID configured, falling back to STRIPE_PRICE_ID" });
+  }
+  return process.env.STRIPE_PRICE_ID;
+}
+
 export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
@@ -60,8 +73,12 @@ export async function ingestHandler(event) {
     await initializeSalt();
     const hashedSub = hashSub(userSub);
 
+    // Determine sandbox mode from request — same pattern as HMRC hmrcAccount header
+    const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body || {};
+    const isSandbox = body.sandbox === true || event.headers?.["hmrcaccount"] === "sandbox";
+
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
-    const priceId = process.env.STRIPE_PRICE_ID || process.env.STRIPE_TEST_PRICE_ID;
+    const priceId = resolveStripePriceId(isSandbox);
 
     if (!priceId) {
       logger.error({ message: "No Stripe price ID configured" });
@@ -72,22 +89,26 @@ export async function ingestHandler(event) {
       });
     }
 
-    const stripe = await getStripeClient();
+    const stripe = await getStripeClient({ test: isSandbox });
+
+    logger.info({ message: "Creating checkout session", isSandbox, priceId: priceId.substring(0, 20) + "..." });
+
+    const bundleId = body.bundleId || "resident-pro";
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_email: userEmail,
       client_reference_id: hashedSub,
-      metadata: { hashedSub, bundleId: "resident-pro" },
+      metadata: { hashedSub, bundleId },
       subscription_data: {
-        metadata: { hashedSub, bundleId: "resident-pro" },
+        metadata: { hashedSub, bundleId },
       },
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${baseUrl}bundles.html?checkout=success`,
       cancel_url: `${baseUrl}bundles.html?checkout=canceled`,
     });
 
-    logger.info({ message: "Checkout session created", sessionId: session.id, hashedSub });
+    logger.info({ message: "Checkout session created", sessionId: session.id, hashedSub, isSandbox });
 
     publishActivityEvent({
       event: "checkout-session-created",

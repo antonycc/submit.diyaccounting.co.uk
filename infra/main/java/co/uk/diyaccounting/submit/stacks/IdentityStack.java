@@ -255,8 +255,10 @@ public class IdentityStack extends Stack {
 
     private static List<String> buildLogoutUrls(SubmitSharedNames sharedNames) {
         var urls = new java.util.ArrayList<>(List.of("https://" + sharedNames.publicDomainName + "/"));
+        urls.add("https://" + sharedNames.publicDomainName + "/auth/signed-out.html");
         if (!sharedNames.publicDomainName.equals(sharedNames.envDomainName)) {
             urls.add("https://" + sharedNames.envDomainName + "/");
+            urls.add("https://" + sharedNames.envDomainName + "/auth/signed-out.html");
         }
         return urls;
     }

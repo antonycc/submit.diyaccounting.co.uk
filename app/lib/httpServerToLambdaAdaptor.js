@@ -78,7 +78,10 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   if (httpRequest.query) {
     lambdaEvent.queryStringParameters = httpRequest.query;
   }
-  if (httpRequest.body) {
+  if (httpRequest.rawBody) {
+    // Use preserved raw body (e.g. for Stripe webhook signature verification)
+    lambdaEvent.body = httpRequest.rawBody;
+  } else if (httpRequest.body) {
     lambdaEvent.body = JSON.stringify(httpRequest.body);
   }
   return lambdaEvent;

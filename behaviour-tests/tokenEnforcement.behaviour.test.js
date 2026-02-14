@@ -27,7 +27,16 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlePresent, getTokensRemaining, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import {
+  ensureBundlePresent,
+  ensureBundleViaPassApi,
+  getTokensRemaining,
+  goToBundlesPage,
+  goToUsagePage,
+  clearBundles,
+  verifyTokenConsumption,
+  verifyTokenSources,
+} from "./steps/behaviour-bundle-steps.js";
 import { fillInVat, initSubmitVat, submitFormVat } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
@@ -64,6 +73,7 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 const runFraudPreventionHeaderValidation = isSandboxMode();
+const allowSandboxObligations = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
@@ -224,6 +234,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
       undefined,
       runFraudPreventionHeaderValidation,
       screenshotPath,
+      allowSandboxObligations,
     );
 
     // Submit the form
@@ -381,11 +392,247 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 9: Logout
+  // STEP 9: Verify usage page shows consumption entries
+  // ============================================================
+  await test.step("Verify usage page shows day-guest consumption entries", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("[token-enforcement-test]: STEP 9: Verify usage page after day-guest exhaustion");
+    console.log("=".repeat(60));
+
+    await goToUsagePage(page, screenshotPath);
+
+    // Verify Token Sources table: day-guest should show 0 remaining
+    // (only verify if DynamoDB was available for the exhaustion steps)
+    if (bundleTableName) {
+      await verifyTokenSources(page, [
+        {
+          bundleId: "day-guest",
+          tokensGranted: 3,
+          tokensRemainingAtLeast: 0,
+          tokensRemainingAtMost: 0,
+        },
+      ], screenshotPath);
+    } else {
+      // Without DynamoDB, tokens were only consumed via the UI submission (Step 4)
+      await verifyTokenSources(page, [
+        {
+          bundleId: "day-guest",
+          tokensGranted: 3,
+          tokensRemainingAtLeast: 0,
+          tokensRemainingAtMost: 2,
+        },
+      ], screenshotPath);
+    }
+
+    // Verify Token Consumption table: at least 1 submit-vat entry from the VAT submission in Step 4
+    // (3 total entries if DynamoDB was available for the direct consumption in Step 6)
+    await verifyTokenConsumption(page, [
+      {
+        activity: "submit-vat",
+        minCount: 1,
+        tokensUsed: 1,
+      },
+    ], screenshotPath);
+
+    await page.screenshot({ path: `${screenshotPath}/09-usage-page-day-guest.png`, fullPage: true });
+    console.log("[token-enforcement-test]: Usage page verification complete for day-guest.");
+  });
+
+  // ============================================================
+  // STEP 10: Logout
   // ============================================================
   await test.step("Logout", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 9: Logout");
+    console.log("STEP 10: Logout");
+    console.log("=".repeat(60));
+
+    await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+  });
+});
+
+test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInfo) => {
+  const testUrl =
+    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
+      ? `http://127.0.0.1:${httpServerPort}/`
+      : baseUrl;
+
+  addOnPageLogging(page);
+
+  // Use HMRC test credentials
+  let currentTestUsername = hmrcTestUsername;
+  let currentTestPassword = hmrcTestPassword;
+  let testVatNumber = hmrcTestVatNumber;
+  if (!hmrcTestUsername) {
+    const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
+    if (hmrcClientId && hmrcClientSecret) {
+      const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames: ["mtd-vat"] });
+      currentTestUsername = testUser.userId;
+      currentTestPassword = testUser.password;
+      testVatNumber = testUser.vrn;
+      const outputDir = testInfo.outputPath("");
+      const repoRoot = path.resolve(process.cwd());
+      saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
+    }
+  }
+
+  const hmrcVatNumber = testVatNumber || "123456789";
+  const hmrcVatDueAmount = "500.00";
+  const { periodStart, periodEnd } = generatePeriodDates();
+
+  // ============================================================
+  // STEP 1: Login
+  // ============================================================
+  await test.step("Login", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("RESIDENT-PRO STEP 1: Login");
+    console.log("=".repeat(60));
+
+    await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+    await clickLogIn(page, screenshotPath);
+    await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+    await verifyLoggedInStatus(page, screenshotPath);
+    await consentToDataCollection(page, screenshotPath);
+  });
+
+  // ============================================================
+  // STEP 2: Clear bundles and grant resident-pro via pass
+  // ============================================================
+  await test.step("Grant resident-pro bundle via pass (100 tokens)", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("RESIDENT-PRO STEP 2: Grant resident-pro");
+    console.log("=".repeat(60));
+
+    await goToBundlesPage(page, screenshotPath);
+    await clearBundles(page, screenshotPath);
+    await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
+  });
+
+  // ============================================================
+  // STEP 3: Verify initial token count (100)
+  // ============================================================
+  await test.step("Verify initial token count is 100", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("RESIDENT-PRO STEP 3: Verify initial tokens = 100");
+    console.log("=".repeat(60));
+
+    const initialTokens = await getTokensRemaining(page, "resident-pro");
+    console.log(`Resident-pro initial tokens remaining: ${initialTokens}`);
+    expect(initialTokens).toBe(100);
+
+    userSub = await extractUserSub(page);
+    console.log(`User sub: ${userSub}`);
+    expect(userSub).toBeTruthy();
+  });
+
+  // ============================================================
+  // STEP 4: Submit VAT return (consumes 1 token → 99 remaining)
+  // ============================================================
+  await test.step("Submit VAT return (consumes 1 token from resident-pro)", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("RESIDENT-PRO STEP 4: Submit VAT return");
+    console.log("=".repeat(60));
+
+    await goToHomePageUsingMainNav(page, screenshotPath);
+    await initSubmitVat(page, screenshotPath);
+    await fillInVat(
+      page,
+      hmrcVatNumber,
+      { periodStart, periodEnd },
+      hmrcVatDueAmount,
+      undefined,
+      runFraudPreventionHeaderValidation,
+      screenshotPath,
+      allowSandboxObligations,
+    );
+
+    await page.locator("#submitBtn").click();
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(1000);
+
+    const isHmrcAuthPage = await page
+      .locator("#appNameParagraph")
+      .isVisible()
+      .catch(() => false);
+    if (isHmrcAuthPage) {
+      await acceptCookiesHmrc(page, screenshotPath);
+      await goToHmrcAuth(page, screenshotPath);
+      await initHmrcAuth(page, screenshotPath);
+      await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
+      await submitHmrcAuth(page, screenshotPath);
+      await grantPermissionHmrcAuth(page, screenshotPath);
+    }
+
+    const receiptOrError = page.locator("#receiptDisplay, #statusMessagesContainer:has-text('failed')");
+    await receiptOrError.first().waitFor({ state: "visible", timeout: 120_000 });
+
+    const receiptVisible = await page
+      .locator("#receiptDisplay")
+      .isVisible()
+      .catch(() => false);
+    expect(receiptVisible).toBeTruthy();
+    console.log("VAT return submitted successfully with resident-pro");
+
+    await page.screenshot({ path: `${screenshotPath}/pro-04-vat-submitted.png` });
+  });
+
+  // ============================================================
+  // STEP 5: Verify token consumed (99 remaining)
+  // ============================================================
+  await test.step("Verify token consumed - 99 remaining", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("RESIDENT-PRO STEP 5: Verify tokens = 99");
+    console.log("=".repeat(60));
+
+    await goToHomePageUsingMainNav(page, screenshotPath);
+    await goToBundlesPage(page, screenshotPath);
+
+    const tokensAfterSubmission = await getTokensRemaining(page, "resident-pro");
+    console.log(`Resident-pro tokens remaining after submission: ${tokensAfterSubmission}`);
+    expect(tokensAfterSubmission).toBe(99);
+
+    await page.screenshot({ path: `${screenshotPath}/pro-05-tokens-after-submission.png` });
+  });
+
+  // ============================================================
+  // STEP 6: Verify usage page shows resident-pro consumption
+  // ============================================================
+  await test.step("Verify usage page shows resident-pro consumption entry", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("[token-enforcement-test]: RESIDENT-PRO STEP 6: Verify usage page");
+    console.log("=".repeat(60));
+
+    await goToUsagePage(page, screenshotPath);
+
+    // Verify Token Sources table: resident-pro should show 100 granted, 99 remaining
+    await verifyTokenSources(page, [
+      {
+        bundleId: "resident-pro",
+        tokensGranted: 100,
+        tokensRemainingAtLeast: 98,
+        tokensRemainingAtMost: 100,
+      },
+    ], screenshotPath);
+
+    // Verify Token Consumption table: at least 1 submit-vat entry from the VAT submission in Step 4
+    await verifyTokenConsumption(page, [
+      {
+        activity: "submit-vat",
+        minCount: 1,
+        tokensUsed: 1,
+      },
+    ], screenshotPath);
+
+    await page.screenshot({ path: `${screenshotPath}/pro-06-usage-page-resident-pro.png`, fullPage: true });
+    console.log("[token-enforcement-test]: Usage page verification complete for resident-pro.");
+  });
+
+  // ============================================================
+  // STEP 7: Logout
+  // ============================================================
+  await test.step("Logout", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("RESIDENT-PRO STEP 7: Logout");
     console.log("=".repeat(60));
 
     await logOutAndExpectToBeLoggedOut(page, screenshotPath);

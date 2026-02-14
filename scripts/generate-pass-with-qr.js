@@ -7,12 +7,7 @@
 
 import { createPass } from "../app/services/passService.js";
 import { initializeEmailHashSecret } from "../app/lib/emailHash.js";
-import {
-  generatePassQrCodeBuffer,
-  generatePassQrCodeText,
-  generateAnnotatedPassQrCodeSvg,
-  buildPassDetails,
-} from "../app/lib/qrCodeGenerator.js";
+import { generatePassQrCodeBuffer, generateAnnotatedPassQrCodeSvg, buildPassDetails } from "../app/lib/qrCodeGenerator.js";
 import fs from "fs";
 import path from "path";
 
@@ -20,7 +15,7 @@ import path from "path";
  * Generate passes with QR codes for the generate-pass.yml workflow.
  *
  * Environment variables:
- * - PASS_TYPE: Pass type ID (e.g., "test-access")
+ * - PASS_TYPE: Pass type ID (e.g., "day-guest-test-pass")
  * - BUNDLE_ID: Bundle ID to grant
  * - MAX_USES: Maximum number of uses
  * - VALIDITY_PERIOD: ISO 8601 duration (e.g., "P7D")
@@ -29,6 +24,7 @@ import path from "path";
  * - NOTES: Admin notes (optional)
  * - CREATED_BY: Creator identifier
  * - PASS_URL_HOST: Host for pass redemption URL
+ * - TEST_PASS: If "true", sets testPass: true (routes to HMRC sandbox)
  */
 
 async function main() {
@@ -41,6 +37,7 @@ async function main() {
   const notes = process.env.NOTES || undefined;
   const createdBy = process.env.CREATED_BY || "manual";
   const passUrlHost = process.env.PASS_URL_HOST || "ci.submit.diyaccounting.co.uk";
+  const testPass = process.env.TEST_PASS === "true";
 
   console.log(`Generating ${quantity} ${passTypeId} pass(es) with QR codes...`);
   console.log(`  Bundle: ${bundleId}`);
@@ -73,6 +70,7 @@ async function main() {
       restrictedToEmail: email || undefined,
       createdBy,
       notes: notes || undefined,
+      ...(testPass ? { testPass: true } : {}),
     });
 
     const passUrl = `https://${passUrlHost}/bundles.html?pass=${pass.code}`;
@@ -103,12 +101,6 @@ async function main() {
     const svgFilePath = path.join(qrCodesDir, svgFileName);
     fs.writeFileSync(svgFilePath, annotatedSvg, "utf-8");
 
-    // Generate terminal QR code for GitHub Actions output
-    const qrText = await generatePassQrCodeText({
-      code: pass.code,
-      url: passUrl,
-    });
-
     // Build pass details
     const details = buildPassDetails(pass, passUrl, email);
 
@@ -121,7 +113,6 @@ async function main() {
       qrCodeFile: qrFileName,
       qrCodeSvgFile: svgFileName,
       qrCodeBase64: `data:image/png;base64,${qrBase64}`,
-      qrCodeText: qrText,
     });
 
     // Print pass details with QR code in terminal
@@ -138,8 +129,6 @@ async function main() {
     if (notes) {
       console.log(`Notes: ${notes}`);
     }
-    console.log("\nQR Code:");
-    console.log(qrText);
   }
 
   // Write results to JSON

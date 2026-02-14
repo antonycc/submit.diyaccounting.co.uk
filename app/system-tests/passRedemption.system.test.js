@@ -127,7 +127,7 @@ describe("System: pass creation and redemption", () => {
   describe("admin pass creation", () => {
     it("should create a pass via admin API", async () => {
       const event = buildAdminPostEvent({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         validityPeriod: "P7D",
         maxUses: 3,
@@ -140,14 +140,14 @@ describe("System: pass creation and redemption", () => {
       expect(res.statusCode).toBe(200);
       expect(body.code).toBeTruthy();
       expect(body.bundleId).toBe("day-guest");
-      expect(body.passTypeId).toBe("test-access");
+      expect(body.passTypeId).toBe("day-guest-test-pass");
       expect(body.maxUses).toBe(3);
 
       createdPassCode = body.code;
     });
 
     it("should reject creation with missing required fields", async () => {
-      const event = buildAdminPostEvent({ passTypeId: "test-access" });
+      const event = buildAdminPostEvent({ passTypeId: "day-guest-test-pass" });
       const res = await passAdminPostHandler(event);
       expect(res.statusCode).toBe(400);
     });
@@ -279,7 +279,7 @@ describe("System: pass creation and redemption", () => {
 
     it("should create a test pass with testPass: true", async () => {
       const event = buildAdminPostEvent({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         testPass: true,
         validityPeriod: "P30D",
@@ -325,7 +325,7 @@ describe("System: pass creation and redemption", () => {
 
     it("should create a pass that is already expired", async () => {
       const event = buildAdminPostEvent({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         validFrom: "2020-01-01T00:00:00.000Z",
         validUntil: "2020-01-02T00:00:00.000Z",

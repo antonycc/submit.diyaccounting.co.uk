@@ -24,9 +24,8 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { goToBundlesPage, clearBundles, verifyBundleApiResponse } from "./steps/behaviour-bundle-steps.js";
+import { goToBundlesPage, clearBundles, verifyBundleApiResponse, ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
-import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -38,10 +37,6 @@ import {
 } from "./helpers/fileHelper.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
-
-// Load catalogue to determine bundle properties (hidden, enable, cap, etc.)
-const catalogue = loadCatalogFromRoot();
-const isDayGuestBundleHidden = !!catalogue.bundles?.find((b) => b.id === "day-guest")?.hidden;
 
 const screenshotPath = "target/behaviour-test-results/screenshots/pass-redemption-behaviour-test";
 
@@ -164,43 +159,31 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
 
   // --- Step 1: Verify clean state ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
+  // Day Guest is an on-pass bundle — verify it appears as disabled card before pass entry
   const requestDayGuestBtn = page.locator('button[data-bundle-id="day-guest"]');
   const requestDayGuestVisible = await requestDayGuestBtn
     .first()
     .isVisible({ timeout: 5000 })
     .catch(() => false);
-  if (isDayGuestBundleHidden) {
-    // Hidden bundles should NOT appear in the catalogue
-    console.log(`[pass-test]: Day Guest bundle hidden=true, button visible: ${requestDayGuestVisible} (expected: false)`);
-    expect(requestDayGuestVisible).toBe(false);
-  } else {
-    // Visible on-pass bundles appear as disabled cards
-    console.log(`[pass-test]: Day Guest bundle button visible: ${requestDayGuestVisible} (expected: true, but disabled for on-pass bundle)`);
-    if (requestDayGuestVisible) {
-      const isDisabled = await requestDayGuestBtn
-        .first()
-        .isDisabled()
-        .catch(() => false);
-      console.log(`[pass-test]: Day Guest bundle button disabled: ${isDisabled} (expected: true)`);
-      const btnText = await requestDayGuestBtn
-        .first()
-        .textContent()
-        .catch(() => "");
-      console.log(`[pass-test]: Button text: "${btnText}" (expected: "Pass required" prefix)`);
-      const annotation = page.locator('.service-item:has(button[data-bundle-id="day-guest"]) p');
-      const annotationText = await annotation.textContent().catch(() => "");
-      console.log(`[pass-test]: Annotation text: "${annotationText}"`);
-    }
+  console.log(`[pass-test]: Day Guest bundle button visible: ${requestDayGuestVisible} (expected: true, but disabled for on-pass bundle)`);
+  if (requestDayGuestVisible) {
+    const isDisabled = await requestDayGuestBtn
+      .first()
+      .isDisabled()
+      .catch(() => false);
+    console.log(`[pass-test]: Day Guest bundle button disabled: ${isDisabled} (expected: true)`);
   }
 
-  // --- Step 2: Create a pass via admin API ---
+  // --- Step 2: Create a test pass via admin API ---
+  // Use passTypeId "day-guest-test-pass" which has test=true in submit.passes.toml.
+  // Do NOT pass testPass explicitly — the admin endpoint must auto-derive it from the pass type.
   const createResult = await page.evaluate(async () => {
     try {
       const response = await fetch("/api/v1/pass/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          passTypeId: "day-guest",
+          passTypeId: "day-guest-test-pass",
           bundleId: "day-guest",
           validityPeriod: "P1D",
           maxUses: 1,
@@ -217,6 +200,8 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   console.log(`[pass-test]: Pass creation result: ${JSON.stringify(createResult)}`);
   expect(createResult.ok).toBe(true);
   expect(createResult.code).toBeTruthy();
+  // Verify testPass was auto-derived from the pass type definition (test=true in submit.passes.toml)
+  expect(createResult.body?.testPass).toBe(true);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-02-pass-created.png` });
 
   const passCode = createResult.code;
@@ -254,35 +239,24 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   const statusText = await passStatus.textContent();
   console.log(`[pass-test]: Pass status message: ${statusText}`);
 
-  if (isDayGuestBundleHidden) {
-    // Hidden bundles auto-redeem: status shows adding/redeemed message
-    expect(statusText).toMatch(/valid|Adding|redeemed/i);
-    console.log("[pass-test]: Hidden bundle — auto-redeem triggered, waiting for bundle to appear...");
-    // Wait for auto-redeem to complete (Remove button appears in current bundles)
-    const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
-    await expect(removeDayGuestBtn).toBeVisible({ timeout: 30000 });
-    console.log("[pass-test]: Day Guest bundle shows in Current Bundles with Remove button (auto-redeemed)");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
-  } else {
-    // Visible bundles: validate → enable Request button → click → verify
-    expect(statusText).toMatch(/valid|Request/i);
-    const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day Guest"):not([disabled])');
-    await expect(enabledDayGuestBtn).toBeVisible({ timeout: 10000 });
-    console.log("[pass-test]: Day Guest bundle button is now enabled after pass validation");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
+  // All bundles follow the same flow: validate → card appears → click Request → bundle granted
+  expect(statusText).toMatch(/valid|Request/i);
+  const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day Guest"):not([disabled])');
+  await expect(enabledDayGuestBtn).toBeVisible({ timeout: 10000 });
+  console.log("[pass-test]: Day Guest bundle button is now enabled after pass validation");
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
 
-    await enabledDayGuestBtn.click();
-    console.log("[pass-test]: Clicked enabled Day Guest bundle button to redeem pass");
+  await enabledDayGuestBtn.click();
+  console.log("[pass-test]: Clicked enabled Day Guest bundle button to redeem pass");
 
-    await page.waitForTimeout(3000);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
 
-    // --- Step 6: Verify the Day Guest bundle is now granted ---
-    const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
-    await expect(removeDayGuestBtn).toBeVisible({ timeout: 15000 });
-    console.log("[pass-test]: Day Guest bundle shows in Current Bundles with Remove button");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
-  }
+  // --- Step 6: Verify the Day Guest bundle is now granted ---
+  const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
+  await expect(removeDayGuestBtn).toBeVisible({ timeout: 15000 });
+  console.log("[pass-test]: Day Guest bundle shows in Current Bundles with Remove button");
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
 
   // --- Step 7: Verify via API that the bundle is allocated ---
   const apiResponse = await verifyBundleApiResponse(page, screenshotPath);
@@ -290,6 +264,42 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   const testBundle = allocatedBundles.find((b) => b.bundleId === "day-guest");
   console.log(`[pass-test]: Allocated bundles: ${allocatedBundles.map((b) => b.bundleId).join(", ")}`);
   expect(testBundle).toBeTruthy();
+
+  // --- Step 7b: Verify sandbox qualifier is set on the bundle ---
+  const sandboxBundle = allocatedBundles.find((b) => b.qualifiers?.sandbox === true);
+  console.log(`[pass-test]: Sandbox qualifier bundle: ${sandboxBundle?.bundleId || "none"}`);
+  expect(sandboxBundle).toBeTruthy();
+
+  // --- Step 7c: Verify developer tools wrench icon appears ---
+  // The wrench icon is injected by developer-mode.js when a sandbox bundle is detected.
+  // Navigate to home page where the header with the wrench is rendered.
+  const currentOrigin = new URL(page.url()).origin;
+  await page.goto(`${currentOrigin}/`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(3000); // Give developer-mode.js time to check bundles and inject toggle
+
+  const wrenchIcon = page.locator(".developer-mode-toggle");
+  const wrenchVisible = await wrenchIcon.isVisible({ timeout: 10000 }).catch(() => false);
+  console.log(`[pass-test]: Developer tools wrench icon visible: ${wrenchVisible}`);
+  expect(wrenchVisible).toBe(true);
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06b-developer-tools-wrench.png` });
+
+  // Click the wrench to enable developer mode and verify dev elements appear
+  await wrenchIcon.click();
+  await page.waitForTimeout(1000);
+  const devModeActive = await page.evaluate(() => document.body.classList.contains("developer-mode"));
+  console.log(`[pass-test]: Developer mode active (body class): ${devModeActive}`);
+  expect(devModeActive).toBe(true);
+  // Verify dev float elements are created (datetime, deployment, etc.)
+  const devDatetimeVisible = await page.locator("#dev-datetime").isVisible({ timeout: 5000 }).catch(() => false);
+  console.log(`[pass-test]: Dev datetime float visible: ${devDatetimeVisible}`);
+  expect(devDatetimeVisible).toBe(true);
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06c-developer-mode-enabled.png` });
+
+  // Navigate back to bundles page for the remaining pass tests
+  await page.goto(`${currentOrigin}/bundles.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1000);
 
   // --- Step 8: Try to redeem the same pass again (should fail - exhausted) ---
   await passInput.fill(passCode);
@@ -412,4 +422,179 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
       console.error("[DynamoDB Export]: Failed to export tables:", error);
     }
   }
+});
+
+test("Click through: Resident-pro pass shows Subscribe button (on-pass-on-subscription)", async ({ page }, testInfo) => {
+  const testUrl =
+    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
+      ? `http://127.0.0.1:${httpServerPort}/`
+      : baseUrl;
+
+  addOnPageLogging(page);
+
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  // Capture traceparent
+  page.on("response", (response) => {
+    try {
+      if (observedTraceparent) return;
+      const headers = response.headers?.() ?? {};
+      const h = typeof headers === "function" ? headers() : headers;
+      const tp = (h && (h["traceparent"] || h["Traceparent"])) || null;
+      if (tp) observedTraceparent = tp;
+    } catch (_e) {}
+  });
+
+  /* ****** */
+  /*  HOME  */
+  /* ****** */
+
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+
+  /* ******* */
+  /*  LOGIN  */
+  /* ******* */
+
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+
+  /* ********* */
+  /*  BUNDLES  */
+  /* ********* */
+
+  await goToBundlesPage(page, screenshotPath);
+  await clearBundles(page, screenshotPath);
+  await page.waitForTimeout(2_000);
+
+  // --- Step 1: Verify clean state - resident-pro shows Pass required ---
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-01-clean-state.png` });
+  const passRequiredBtn = page.locator('button[data-disabled-reason="on-pass"]');
+  const passRequiredVisible = await passRequiredBtn
+    .first()
+    .isVisible({ timeout: 5000 })
+    .catch(() => false);
+  console.log(`[pro-pass-test]: Pass required button visible: ${passRequiredVisible}`);
+
+  // --- Step 2: Create a resident-pro pass via admin API ---
+  const createResult = await page.evaluate(async () => {
+    try {
+      const response = await fetch("/api/v1/pass/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          passTypeId: "resident-pro",
+          bundleId: "resident-pro",
+          validityPeriod: "P1D",
+          maxUses: 1,
+          createdBy: "pass-behaviour-test",
+          testPass: true,
+        }),
+      });
+      const body = await response.json();
+      return { ok: response.ok, status: response.status, code: body?.code, body };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  console.log(`[pro-pass-test]: Pass creation result: ${JSON.stringify(createResult)}`);
+  expect(createResult.ok).toBe(true);
+  expect(createResult.code).toBeTruthy();
+
+  const passCode = createResult.code;
+  console.log(`[pro-pass-test]: Created resident-pro pass with code: ${passCode}`);
+
+  // --- Step 3: Enter pass code and validate ---
+  const passInput = page.locator("#passInput");
+  await expect(passInput).toBeVisible({ timeout: 5000 });
+  await passInput.fill(passCode);
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-02-code-entered.png` });
+
+  const redeemBtn = page.locator("#redeemPassBtn");
+  await expect(redeemBtn).toBeVisible({ timeout: 5000 });
+  await redeemBtn.click();
+  console.log("[pro-pass-test]: Clicked Redeem Pass button");
+
+  // --- Step 4: Verify Subscribe button appears (not Request button) ---
+  const passStatus = page.locator("#passStatus");
+  await expect(passStatus).toBeVisible({ timeout: 15000 });
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-03-validation-status.png` });
+
+  const statusText = await passStatus.textContent();
+  console.log(`[pro-pass-test]: Pass status message: ${statusText}`);
+
+  // For on-pass-on-subscription bundles, the Subscribe button should appear
+  const subscribeBtn = page.locator('button[data-subscribe="true"]:has-text("Subscribe")');
+  const subscribeBtnVisible = await subscribeBtn
+    .first()
+    .isVisible({ timeout: 10000 })
+    .catch(() => false);
+  console.log(`[pro-pass-test]: Subscribe button visible: ${subscribeBtnVisible}`);
+  expect(subscribeBtnVisible).toBe(true);
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-04-subscribe-button.png` });
+
+  // Verify the Subscribe button has pricing info
+  const subscribeBtnText = await subscribeBtn.first().textContent();
+  console.log(`[pro-pass-test]: Subscribe button text: ${subscribeBtnText}`);
+  expect(subscribeBtnText).toContain("9.99");
+
+  // Verify NO "Request Resident Pro" button (subscription flow, not direct grant)
+  const requestBtn = page.locator('button.service-btn:has-text("Request Resident Pro")');
+  const requestBtnVisible = await requestBtn
+    .first()
+    .isVisible({ timeout: 2000 })
+    .catch(() => false);
+  console.log(`[pro-pass-test]: Request button visible: ${requestBtnVisible} (expected: false)`);
+  expect(requestBtnVisible).toBe(false);
+
+  /* ****************** */
+  /*  Extract user sub  */
+  /* ****************** */
+
+  userSub = await extractUserSubFromLocalStorage(page, testInfo);
+
+  /* ********* */
+  /*  LOG OUT  */
+  /* ********* */
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+
+  /* ****************** */
+  /*  TEST CONTEXT JSON */
+  /* ****************** */
+
+  const testContext = {
+    testId: "passRedemptionBehaviour",
+    name: testInfo.title,
+    title: "Resident Pro Pass Redemption — Subscribe Button (App UI)",
+    description: "Creates a resident-pro pass, validates it, verifies Subscribe button appears for on-pass-on-subscription bundle.",
+    hmrcApi: null,
+    env: {
+      envName,
+      baseUrl,
+      serverPort: httpServerPort,
+      runTestServer,
+      runProxy,
+      runMockOAuth2,
+      testAuthProvider,
+      testAuthUsername,
+      bundleTableName,
+    },
+    testData: {
+      userSub,
+      observedTraceparent,
+      testUrl,
+      passCode,
+    },
+    artefactsDir: outputDir,
+    screenshotPath,
+    testStartTime: new Date().toISOString(),
+  };
+  try {
+    fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
+  } catch (_e) {}
 });

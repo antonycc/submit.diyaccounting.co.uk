@@ -228,6 +228,33 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
   }
 }
 
+export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextResetAt) {
+  logger.info({ message: `resetTokensByHashedSub [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
+
+  try {
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    await docClient.send(
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { hashedSub, bundleId },
+        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt",
+        ExpressionAttributeValues: {
+          ":zero": 0,
+          ":granted": tokensGranted,
+          ":resetAt": nextResetAt,
+        },
+      }),
+    );
+
+    logger.info({ message: "Tokens reset by hashedSub", hashedSub, bundleId, tokensGranted, nextResetAt });
+  } catch (error) {
+    logger.error({ message: "Error resetting tokens by hashedSub", error: error.message, hashedSub, bundleId });
+    throw error;
+  }
+}
+
 export async function consumeToken(userId, bundleId) {
   logger.info({ message: `consumeToken [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
@@ -292,6 +319,42 @@ export async function recordTokenEvent(userId, bundleId, event) {
     logger.info({ message: "Token event recorded", hashedSub, bundleId, event: tokenEvent });
   } catch (error) {
     logger.error({ message: "Error recording token event", error: error.message, userId, bundleId });
+    throw error;
+  }
+}
+
+export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields) {
+  logger.info({ message: `updateBundleSubscriptionFields [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
+
+  try {
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    const expressions = [];
+    const values = {};
+    const names = {};
+
+    for (const [key, value] of Object.entries(fields)) {
+      const attrName = `#${key}`;
+      const attrValue = `:${key}`;
+      expressions.push(`${attrName} = ${attrValue}`);
+      names[attrName] = key;
+      values[attrValue] = value;
+    }
+
+    await docClient.send(
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { hashedSub, bundleId },
+        UpdateExpression: "SET " + expressions.join(", "),
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      }),
+    );
+
+    logger.info({ message: "Bundle subscription fields updated", hashedSub, bundleId, fields });
+  } catch (error) {
+    logger.error({ message: "Error updating bundle subscription fields", error: error.message, hashedSub, bundleId });
     throw error;
   }
 }

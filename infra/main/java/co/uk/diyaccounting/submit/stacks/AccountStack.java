@@ -36,6 +36,7 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
 import software.constructs.Construct;
 
 public class AccountStack extends Stack {
@@ -503,6 +504,7 @@ public class AccountStack extends Stack {
         var waitlistTopic = Topic.Builder.create(this, "%s-waitlist".formatted(props.resourceNamePrefix()))
                 .topicName("%s-waitlist".formatted(props.resourceNamePrefix()))
                 .build();
+        waitlistTopic.addSubscription(new EmailSubscription("antony@diyaccounting.co.uk"));
 
         var interestPostLambdaEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())

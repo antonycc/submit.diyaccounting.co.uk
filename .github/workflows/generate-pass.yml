@@ -1,5 +1,5 @@
 name: Generate Pass
-run-name: "generate ${{ inputs.pass-type || 'test-access' }} pass for ${{ inputs.environment || inputs.environment-name || 'ci' }}"
+run-name: "generate ${{ inputs.pass-type || 'day-guest-test-pass' }} pass for ${{ inputs.environment || inputs.environment-name || 'ci' }}"
 
 on:
   workflow_dispatch:
@@ -9,8 +9,10 @@ on:
         required: true
         type: choice
         options:
-          - test-access
-          - day-trial
+          - day-guest-test-pass
+          - day-guest-pass
+          - resident-pro-test-pass
+          - resident-pro-pass
           - invited-guest
           - resident-guest
           - resident-pro-comp
@@ -64,7 +66,7 @@ on:
         type: string
         description: 'Pass type from submit.passes.toml'
         required: false
-        default: 'test-access'
+        default: 'day-guest-test-pass'
       email:
         type: string
         description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
@@ -157,8 +159,8 @@ jobs:
           ENV='${{ inputs.environment }}'
           ENV_NAME='${{ inputs.environment-name }}'
           echo "environment=${ENV:-${ENV_NAME:-ci}}" | tee -a "$GITHUB_OUTPUT"
-          # pass-type: default to test-access for schedule/push
-          X='${{ inputs.pass-type }}' ; echo "pass-type=${X:-test-access}" | tee -a "$GITHUB_OUTPUT"
+          # pass-type: default to day-guest-test-pass for schedule/push
+          X='${{ inputs.pass-type }}' ; echo "pass-type=${X:-day-guest-test-pass}" | tee -a "$GITHUB_OUTPUT"
           # quantity: default to 1
           X='${{ inputs.quantity }}' ; echo "quantity=${X:-1}" | tee -a "$GITHUB_OUTPUT"
           # Pass through optional inputs
@@ -200,7 +202,7 @@ jobs:
           if [ "$ENV_NAME" = "prod" ]; then
             echo "pass-url-host=submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "pass-url-host=${ENV_NAME}.submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
+            echo "pass-url-host=${ENV_NAME}-submit.diyaccounting.co.uk" | tee -a "$GITHUB_OUTPUT"
           fi
     outputs:
       environment-name: ${{ steps.resolve.outputs.environment-name }}
@@ -270,6 +272,7 @@ jobs:
             console.log('DEFAULT_MAX_USES=' + (passType.defaultMaxUses || 1));
             console.log('REQUIRES_EMAIL=' + (passType.requiresEmailRestriction || false));
             console.log('PASS_TYPE_NAME=' + passType.name);
+            console.log('TEST_PASS=' + (passType.test ? 'true' : ''));
           " >> "$GITHUB_OUTPUT"
 
       - name: Validate inputs
@@ -322,7 +325,8 @@ jobs:
           export NOTES="${NOTES}"
           export CREATED_BY="${CREATED_BY}"
           export PASS_URL_HOST="${{ needs.names.outputs.pass-url-host }}"
-          
+          export TEST_PASS="${{ steps.pass-type.outputs.TEST_PASS }}"
+
           node scripts/generate-pass-with-qr.js
 
       - name: Create HMRC sandbox test user
@@ -391,14 +395,6 @@ jobs:
               console.log('| Max uses | ' + pass.maxUses + ' |');
               if (pass.restrictedToEmail) {
                 console.log('| Email | ' + pass.restrictedToEmail + ' |');
-              }
-              console.log('');
-              if (pass.qrCodeText) {
-                console.log('**QR Code** (scan to redeem):');
-                console.log('');
-                console.log('\`\`\`');
-                console.log(pass.qrCodeText);
-                console.log('\`\`\`');
               }
               console.log('');
             }

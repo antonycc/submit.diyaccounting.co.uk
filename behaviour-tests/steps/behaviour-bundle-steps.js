@@ -322,6 +322,54 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     console.log(`Pass redemption result: ${JSON.stringify(redeemResult)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png` });
 
+    // Step 3: If bundle requires subscription, grant directly via bundle API
+    // This bypasses Stripe for tests that need the bundle but aren't testing payment
+    const data = redeemResult?.data || redeemResult;
+    if (data?.requiresSubscription) {
+      console.log(`Bundle ${bundleId} requires subscription — granting directly via bundle API for test setup`);
+      const grantResult = await page.evaluate(async (bid) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { ok: false, error: "No auth token" };
+        try {
+          const response = await fetch("/api/v1/bundle", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`,
+              "x-initial-request": "true",
+            },
+            body: JSON.stringify({ bundleId: bid, qualifiers: {} }),
+          });
+          const body = await response.json();
+          return { ok: response.ok, status: response.status, ...body };
+        } catch (err) {
+          return { ok: false, error: err.message };
+        }
+      }, bundleId);
+      console.log(`Direct bundle grant result: ${JSON.stringify(grantResult)}`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03b-direct-grant.png` });
+
+      // 202 means async — poll until the bundle appears as allocated
+      if (grantResult.status === 202 || !grantResult.message?.includes("already allocated")) {
+        const maxPolls = 10;
+        for (let i = 0; i < maxPolls; i++) {
+          await page.waitForTimeout(1000);
+          const allocated = await page.evaluate(async (bid) => {
+            const idToken = localStorage.getItem("cognitoIdToken");
+            if (!idToken) return false;
+            const resp = await fetch("/api/v1/bundle", { headers: { Authorization: `Bearer ${idToken}` } });
+            const d = await resp.json();
+            return (d.bundles || []).some((b) => b.bundleId === bid && b.allocated);
+          }, bundleId);
+          if (allocated) {
+            console.log(`[polling for grant]: Bundle ${bundleId} now allocated (poll ${i + 1}/${maxPolls})`);
+            break;
+          }
+          console.log(`[polling for grant]: Bundle ${bundleId} not yet allocated, waiting... (${i + 1}/${maxPolls})`);
+        }
+      }
+    }
+
     // Clear bundle cache so fetchUserBundles hits the API fresh after reload
     await page.evaluate(async () => {
       try {
@@ -340,6 +388,230 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
   });
 }
 
+/**
+ * Ensure a bundle is granted via the full checkout flow (pass → checkout → bundle grant).
+ * In simulator: checkout auto-completes (mock billing endpoints).
+ * In proxy/ci/prod: navigates to real Stripe test checkout and fills in test card.
+ */
+export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = defaultScreenshotPath, { testPass = false } = {}) {
+  return await test.step(`Ensure ${bundleId} bundle via checkout flow`, async () => {
+    console.log(`Creating pass and starting checkout for bundle ${bundleId} (testPass=${testPass})...`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-01-starting.png` });
+
+    // Step 1: Create a pass via admin API
+    const createResult = await page.evaluate(async ({ bid, isTestPass }) => {
+      try {
+        const passBody = {
+          passTypeId: bid,
+          bundleId: bid,
+          validityPeriod: "P1D",
+          maxUses: 1,
+          createdBy: "behaviour-test",
+        };
+        if (isTestPass) passBody.testPass = true;
+        const response = await fetch("/api/v1/pass/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(passBody),
+        });
+        const body = await response.json();
+        return { ok: response.ok, code: body?.data?.code || body?.code, body };
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }, { bid: bundleId, isTestPass: testPass });
+
+    console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
+    if (!createResult.ok || !createResult.code) {
+      throw new Error(`Failed to create pass for ${bundleId}: ${JSON.stringify(createResult)}`);
+    }
+
+    // Step 2: Redeem pass (expects requiresSubscription response)
+    const redeemResult = await page.evaluate(async (code) => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { ok: false, error: "No auth token" };
+      try {
+        const response = await fetch("/api/v1/pass", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ code }),
+        });
+        return await response.json();
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }, createResult.code);
+
+    const data = redeemResult?.data || redeemResult;
+    console.log(`Pass redemption result: ${JSON.stringify(data)}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png` });
+
+    // Step 3: Call checkout session API
+    // Pass sandbox flag when using test passes — same pattern as HMRC hmrcAccount sandbox switching
+    const isSandbox = data?.qualifiers?.sandbox === true || testPass;
+    const checkoutResult = await page.evaluate(async ({ bid, sandbox }) => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { ok: false, error: "No auth token" };
+      try {
+        const response = await fetch("/api/v1/billing/checkout-session", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ bundleId: bid, sandbox }),
+        });
+        const body = await response.json();
+        // Handle both response formats: mock returns { data: { checkoutUrl } }, real API returns { checkoutUrl }
+        const checkoutUrl = body?.data?.checkoutUrl || body?.checkoutUrl;
+        return { ok: response.ok, checkoutUrl, body };
+      } catch (err) {
+        return { ok: false, error: err.message };
+      }
+    }, { bid: bundleId, sandbox: isSandbox });
+
+    console.log(`Checkout session result: ${JSON.stringify(checkoutResult)}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-03-session-created.png` });
+
+    if (!checkoutResult.ok || !checkoutResult.checkoutUrl) {
+      throw new Error(`Failed to create checkout session: ${JSON.stringify(checkoutResult)}`);
+    }
+
+    // Step 4: Navigate to checkout URL
+    const checkoutUrl = checkoutResult.checkoutUrl;
+    const isSimulatorCheckout = checkoutUrl.includes("simulator/checkout");
+    const isStripeCheckout = checkoutUrl.includes("checkout.stripe.com");
+    console.log(`Checkout URL: ${checkoutUrl} (simulator=${isSimulatorCheckout}, stripe=${isStripeCheckout})`);
+
+    await page.goto(checkoutUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+
+    if (isSimulatorCheckout) {
+      // Simulator: auto-completes — server grants bundle and redirects to bundles.html?checkout=success.
+      // Wait for the success message rather than the URL, because bundles.html clears the
+      // ?checkout=success param via history.replaceState before Playwright can observe it.
+      console.log("Simulator checkout: auto-completing...");
+      await page.waitForSelector('text=Subscription activated', { timeout: 15_000 });
+      console.log("Simulator checkout completed successfully");
+    } else if (isStripeCheckout) {
+      // Real Stripe test checkout: fill in test card details.
+      // Stripe Checkout hosted page is a JS SPA with an accordion UI for payment methods.
+      // Card inputs are NOT rendered until the "Card" accordion item is clicked/expanded.
+      // After expansion, card/expiry/CVC/name appear as direct <input> elements on the page.
+      console.log("Stripe test checkout: waiting for Stripe form to render...");
+
+      // Wait for the submit button (proves the SPA has loaded).
+      const submitButton = page.locator('[data-testid="hosted-payment-submit-button"], button[type="submit"]');
+      await submitButton.first().waitFor({ state: "visible", timeout: 60_000 });
+      console.log("Stripe checkout form rendered (submit button visible)");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-04-stripe-loaded.png` });
+
+      let filledFields = [];
+
+      // Skip email — Stripe's Link feature intercepts the email input and opens
+      // an auth overlay that blocks Playwright. Email is not required for test payments.
+
+      // Wait for Stripe SPA to fully initialize (submit button visible is not enough —
+      // the accordion, Link overlay, and payment methods need time to finish rendering).
+      await page.waitForTimeout(3000);
+
+      // Click the "Card" payment method to expand the accordion and reveal card inputs.
+      // Use force:true because Stripe overlays (Link, express checkout) can obscure the radio.
+      const cardRadio = page.locator('#payment-method-accordion-item-title-card');
+      if (await cardRadio.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await cardRadio.click({ force: true });
+        console.log("Clicked Card payment method accordion");
+      } else {
+        // Try clicking by label text as fallback
+        const cardLabel = page.locator('text=Card').first();
+        if (await cardLabel.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await cardLabel.click({ force: true });
+          console.log("Clicked Card label text");
+        } else {
+          console.log("Card radio/label not found — card fields may already be visible");
+        }
+      }
+
+      // Wait for card number input to appear (proves accordion expanded)
+      const cardNumberInput = page.locator('#cardNumber, input[name="cardNumber"], input[autocomplete="cc-number"]');
+      await cardNumberInput.first().waitFor({ state: "visible", timeout: 15_000 });
+      console.log("Card number input visible");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-04b-card-accordion-expanded.png` });
+
+      // Fill card number
+      await cardNumberInput.first().click({ force: true });
+      await cardNumberInput.first().fill("4242 4242 4242 4242");
+      filledFields.push("card");
+      console.log("Card number filled");
+
+      // Fill expiry
+      const expiryInput = page.locator('#cardExpiry, input[name="cardExpiry"], input[autocomplete="cc-exp"]');
+      if (await expiryInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await expiryInput.first().click({ force: true });
+        await expiryInput.first().fill("12 / 30");
+        filledFields.push("expiry");
+        console.log("Expiry filled");
+      }
+
+      // Fill CVC
+      const cvcInput = page.locator('#cardCvc, input[name="cardCvc"], input[autocomplete="cc-csc"]');
+      if (await cvcInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await cvcInput.first().click({ force: true });
+        await cvcInput.first().fill("123");
+        filledFields.push("cvc");
+        console.log("CVC filled");
+      }
+
+      // Fill cardholder name
+      const nameInput = page.locator('#billingName, input[name="billingName"], input[autocomplete="cc-name"]');
+      if (await nameInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await nameInput.first().click({ force: true });
+        await nameInput.first().fill("Test User");
+        filledFields.push("name");
+        console.log("Cardholder name filled");
+      }
+
+      console.log(`Stripe checkout: filled fields: [${filledFields.join(", ")}]`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-stripe-filled.png` });
+
+      if (!filledFields.includes("card")) {
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-CARD-NOT-FILLED.png`, fullPage: true });
+        throw new Error("Stripe card number could not be filled — check diagnostic screenshots.");
+      }
+
+      // Click the submit/pay button
+      await submitButton.first().click();
+      console.log("Stripe checkout: payment submitted, waiting for redirect...");
+
+      // Wait for redirect back to bundles page
+      await page.waitForURL(/bundles\.html/, { timeout: 120_000 });
+      console.log("Stripe checkout completed — redirected to bundles page");
+    } else {
+      // Unknown checkout URL — wait for redirect back to bundles page
+      console.log(`Unknown checkout URL type, waiting for bundles redirect...`);
+      await page.waitForURL(/bundles\.html/, { timeout: 60_000 });
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-06-completed.png` });
+
+    // Clear bundle cache and wait for bundle to appear
+    await page.evaluate(async () => {
+      try {
+        const uij = localStorage.getItem("userInfo");
+        const uid = uij && JSON.parse(uij)?.sub;
+        if (uid && window.bundleCache) await window.bundleCache.clearBundles(uid);
+      } catch {}
+    });
+
+    await page.waitForLoadState("networkidle");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-07-bundle-granted.png` });
+
+    return { checkoutCompleted: true, checkoutUrl };
+  });
+}
+
 export async function getTokensRemaining(page, bundleId) {
   return page.evaluate(async (bid) => {
     const idToken = localStorage.getItem("cognitoIdToken");
@@ -351,6 +623,39 @@ export async function getTokensRemaining(page, bundleId) {
     const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
     return bundle?.tokensRemaining ?? null;
   }, bundleId);
+}
+
+export async function verifySubscriptionManagement(page, bundleName, screenshotPath) {
+  // Verify "Manage Subscription" button is visible for a bundle with an active subscription.
+  // The button appears in two places: the catalogue section and the current bundles section.
+  // We check for either occurrence via the data-manage-subscription attribute.
+  const manageBtn = page.locator(`button[data-manage-subscription="true"]`);
+  await expect(manageBtn.first()).toBeVisible({ timeout: 10_000 });
+  console.log(`"Manage Subscription" button visible for ${bundleName}`);
+
+  if (screenshotPath) {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-manage-subscription-visible.png` });
+  }
+
+  // Verify clicking it calls the billing portal API and gets a portal URL
+  // (We intercept the navigation to avoid leaving the test page)
+  const portalResponse = await page.evaluate(async () => {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    if (!idToken) return { error: "No auth token" };
+    const response = await fetch("/api/v1/billing/portal", {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = await response.json();
+    return { status: response.status, portalUrl: data.portalUrl || null, error: data.message || null };
+  });
+
+  console.log(`Billing portal API response: status=${portalResponse.status}, hasUrl=${!!portalResponse.portalUrl}`);
+
+  if (portalResponse.status !== 200 || !portalResponse.portalUrl) {
+    throw new Error(`Billing portal API failed: status=${portalResponse.status}, error=${portalResponse.error}`);
+  }
+
+  return { manageButtonVisible: true, portalUrl: portalResponse.portalUrl };
 }
 
 export async function requestBundleViaApi(page, bundleId) {
@@ -372,6 +677,146 @@ export async function requestBundleViaApi(page, bundleId) {
       return { error: err.message };
     }
   }, bundleId);
+}
+
+/**
+ * Navigate to the usage page (/usage.html) from the current page.
+ * Uses the current page origin to avoid 127.0.0.1 vs localhost mismatch.
+ */
+export async function goToUsagePage(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the Token Usage page", async () => {
+    console.log("Navigating to usage.html...");
+    const currentOrigin = new URL(page.url()).origin;
+    await page.goto(`${currentOrigin}/usage.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-usage-page-loaded.png` });
+    console.log("Usage page loaded.");
+  });
+}
+
+/**
+ * Verify the Token Sources table on the usage page contains the expected bundles.
+ *
+ * @param {import('@playwright/test').Page} page - Playwright page
+ * @param {Array<{bundleId: string, tokensGranted?: number, tokensRemainingAtLeast?: number, tokensRemainingAtMost?: number}>} expectedBundles
+ *   Each entry should have a bundleId (e.g. "resident-pro") and optional approximate token counts.
+ * @param {string} screenshotPath - Screenshot directory path
+ */
+export async function verifyTokenSources(page, expectedBundles, screenshotPath = defaultScreenshotPath) {
+  await test.step("Verify Token Sources table on usage page", async () => {
+    console.log(`Verifying Token Sources table for ${expectedBundles.length} expected bundle(s)...`);
+
+    const sourcesBody = page.locator("#tokenSourcesBody");
+    await expect(sourcesBody).toBeVisible({ timeout: 10_000 });
+
+    // Wait for the table to be populated (not showing "Loading..." or "No token bundles found")
+    await expect(sourcesBody.locator("tr")).not.toHaveCount(0, { timeout: 10_000 });
+
+    const rows = sourcesBody.locator("tr");
+    const rowCount = await rows.count();
+    console.log(`Token Sources table has ${rowCount} row(s).`);
+
+    for (const expected of expectedBundles) {
+      console.log(`  Checking for bundle: ${expected.bundleId}`);
+
+      // Find the row containing the bundle ID text
+      const bundleRow = sourcesBody.locator(`tr:has(td:text-is("${expected.bundleId}"))`);
+      const bundleRowCount = await bundleRow.count();
+      console.log(`  Found ${bundleRowCount} row(s) matching bundleId "${expected.bundleId}".`);
+      expect(bundleRowCount, `Expected at least one row for bundle "${expected.bundleId}" in Token Sources table`).toBeGreaterThanOrEqual(1);
+
+      // Get the cells from the first matching row
+      const cells = bundleRow.first().locator("td");
+      const cellCount = await cells.count();
+      expect(cellCount, `Expected 4 cells in Token Sources row for "${expected.bundleId}"`).toBe(4);
+
+      const bundleName = (await cells.nth(0).textContent()).trim();
+      const tokensGranted = parseInt((await cells.nth(1).textContent()).trim(), 10);
+      const tokensRemaining = parseInt((await cells.nth(2).textContent()).trim(), 10);
+      const expiryInfo = (await cells.nth(3).textContent()).trim();
+
+      console.log(`  Bundle: ${bundleName}, Granted: ${tokensGranted}, Remaining: ${tokensRemaining}, Expiry: ${expiryInfo}`);
+
+      expect(bundleName).toBe(expected.bundleId);
+
+      if (expected.tokensGranted !== undefined) {
+        expect(tokensGranted, `Expected tokensGranted=${expected.tokensGranted} for "${expected.bundleId}"`).toBe(expected.tokensGranted);
+      }
+
+      if (expected.tokensRemainingAtLeast !== undefined) {
+        expect(tokensRemaining, `Expected tokensRemaining >= ${expected.tokensRemainingAtLeast} for "${expected.bundleId}"`).toBeGreaterThanOrEqual(expected.tokensRemainingAtLeast);
+      }
+
+      if (expected.tokensRemainingAtMost !== undefined) {
+        expect(tokensRemaining, `Expected tokensRemaining <= ${expected.tokensRemainingAtMost} for "${expected.bundleId}"`).toBeLessThanOrEqual(expected.tokensRemainingAtMost);
+      }
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-usage-token-sources-verified.png` });
+    console.log("Token Sources table verification complete.");
+  });
+}
+
+/**
+ * Verify the Token Consumption table on the usage page contains the expected activity entries.
+ *
+ * @param {import('@playwright/test').Page} page - Playwright page
+ * @param {Array<{activity: string, minCount?: number, tokensUsed?: number}>} expectedActivities
+ *   Each entry should have an activity name (e.g. "submit-vat") and optional minimum count of matching rows.
+ * @param {string} screenshotPath - Screenshot directory path
+ */
+export async function verifyTokenConsumption(page, expectedActivities, screenshotPath = defaultScreenshotPath) {
+  await test.step("Verify Token Consumption table on usage page", async () => {
+    console.log(`Verifying Token Consumption table for ${expectedActivities.length} expected activity type(s)...`);
+
+    const consumptionBody = page.locator("#tokenConsumptionBody");
+    await expect(consumptionBody).toBeVisible({ timeout: 10_000 });
+
+    const rows = consumptionBody.locator("tr");
+    const rowCount = await rows.count();
+    console.log(`Token Consumption table has ${rowCount} row(s).`);
+
+    // Check if the table is showing "No token consumption recorded." placeholder
+    if (rowCount === 1) {
+      const firstRowText = (await rows.first().textContent()).trim();
+      if (firstRowText.includes("No token consumption recorded")) {
+        console.log("  Token Consumption table shows 'No token consumption recorded.'");
+        // If we expected activities, this is a failure
+        for (const expected of expectedActivities) {
+          if ((expected.minCount || 1) > 0) {
+            expect(false, `Expected at least ${expected.minCount || 1} "${expected.activity}" entries but table is empty`).toBe(true);
+          }
+        }
+        return;
+      }
+    }
+
+    for (const expected of expectedActivities) {
+      const minCount = expected.minCount !== undefined ? expected.minCount : 1;
+      console.log(`  Checking for activity: "${expected.activity}" (minCount=${minCount})`);
+
+      // Find rows where the first cell (Activity column) contains the expected activity text
+      const activityRows = consumptionBody.locator(`tr:has(td:nth-child(1):text-is("${expected.activity}"))`);
+      const matchCount = await activityRows.count();
+      console.log(`  Found ${matchCount} row(s) matching activity "${expected.activity}".`);
+      expect(matchCount, `Expected at least ${minCount} "${expected.activity}" entries in Token Consumption table`).toBeGreaterThanOrEqual(minCount);
+
+      // If tokensUsed is specified, verify it in the matching rows
+      if (expected.tokensUsed !== undefined) {
+        for (let i = 0; i < matchCount; i++) {
+          const cells = activityRows.nth(i).locator("td");
+          const tokensUsedText = (await cells.nth(2).textContent()).trim();
+          const tokensUsed = parseInt(tokensUsedText, 10);
+          console.log(`    Row ${i}: tokensUsed=${tokensUsed}`);
+          expect(tokensUsed, `Expected tokensUsed=${expected.tokensUsed} for "${expected.activity}" row ${i}`).toBe(expected.tokensUsed);
+        }
+      }
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-usage-token-consumption-verified.png` });
+    console.log("Token Consumption table verification complete.");
+  });
 }
 
 export async function verifyAlreadyGranted(page, bundleId, screenshotPath = defaultScreenshotPath) {

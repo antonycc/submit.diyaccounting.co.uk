@@ -32,7 +32,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { goToBundlesPage, ensureBundlePresent, getTokensRemaining } from "./steps/behaviour-bundle-steps.js";
+import { goToBundlesPage, ensureBundlePresent, ensureBundleViaPassApi, getTokensRemaining } from "./steps/behaviour-bundle-steps.js";
 import {
   goToGenerateDigitalPassPage,
   goToGeneratePhysicalPassPage,
@@ -169,13 +169,14 @@ test.fixme("Click through: Generate digital pass and verify in My Generated Pass
   /*  BUNDLES  */
   /* ********* */
 
-  // Ensure the user has the "day-guest" bundle (required for generate-pass activity entitlement)
+  // Ensure the user has resident-pro bundle (required for generate-pass activity entitlement)
+  // Generate-pass activities require resident-pro-comp or resident-pro per catalogue
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
 
   // --- Step 1: Check initial token balance ---
   const initialTokens = await getTokenBalance(page);
-  console.log(`[generate-pass-test]: Initial token balance: ${initialTokens}`);
+  console.log(`[generate-pass-test]: Initial token balance: ${initialTokens} (expected: 100 for resident-pro)`);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-digital-01-initial-tokens.png` });
 
   /* ************************ */
@@ -320,8 +321,9 @@ test.fixme("Click through: Generate physical pass and verify design downloads", 
   /*  BUNDLES  */
   /* ********* */
 
+  // Ensure the user has resident-pro bundle (required for generate-pass activity entitlement)
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident-pro", screenshotPath, { testPass: true });
 
   /* ************************* */
   /*  GENERATE PHYSICAL PASS   */

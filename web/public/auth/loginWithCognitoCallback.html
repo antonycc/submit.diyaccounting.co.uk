@@ -70,6 +70,12 @@
       </div>
     </footer>
 
+    <script src="../lib/env-loader.js"></script>
+    <script>
+      (async function () {
+        try { await window.loadEnv(); } catch (e) { console.warn("Failed to load environment:", e); }
+      })();
+    </script>
     <script type="module" src="../submit.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
@@ -250,6 +256,14 @@
             // No MFA detected - remove any existing metadata
             sessionStorage.removeItem("mfaMetadata");
             console.log("No MFA detected. amr:", amrClaims, "federated:", isFederatedLogin, "auth_time:", authTime);
+          }
+
+          // Store login provider for logout flow (Google logout requires extra redirect)
+          if (isFederatedLogin) {
+            var providerName = idTokenPayload.identities[0].providerName || idTokenPayload.identities[0].providerType;
+            localStorage.setItem("loginProvider", providerName);
+          } else {
+            localStorage.setItem("loginProvider", "cognito");
           }
 
           // No longer store bundles in localStorage; bundles will be fetched by pages as needed from /api/v1/bundle

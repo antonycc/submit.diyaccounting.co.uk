@@ -1,11 +1,31 @@
 version = "1.1.0"
 
+# BUNDLE → PASS MAPPING SUMMARY
+# ==============================
+# Bundle ID          → Unlocked by pass types                                     → Payment required?
+# default            → (automatic, no pass needed)                                 → No
+# day-guest          → day-guest-test-pass, day-guest-pass, digital-pass, physical-pass → No (admin passes) / 10 tokens (user-issued passes, Phase 6)
+# invited-guest      → invited-guest, group-invite, campaign                       → No (admin passes) / 10 tokens (campaign, Phase 6)
+# resident-guest     → resident-guest                                              → No (admin-issued, email-restricted)
+# resident-pro-comp  → resident-pro-comp                                           → No (admin-issued, email-restricted)
+# resident-pro       → resident-pro-test-pass, resident-pro-pass (planned: on-subscription via Stripe) → Checkout + initial grant done (Phases 1-4); renewal/cancellation pending (Phases 5, 7)
+#
+# See PASSES.md for full documentation and submit.passes.toml for pass type definitions.
+
+# default: Automatic bundle for all authenticated users
+# Unlocked by: No pass required (automatic allocation)
+# Payment: None
+# Activities: bundle management, receipts, help
 [[bundles]]
 id = "default"
 name = "Default"
 enable = "never"
 allocation = "automatic"
 
+# day-guest: Short-term HMRC access
+# Unlocked by: day-guest-test-pass (sandbox), day-guest-pass (production), digital-pass (user, 10 tokens), physical-pass (user, 10 tokens)
+# Payment: None for admin-issued passes; 10 tokens to issue digital/physical passes (Phase 6)
+# Tokens: 3 granted (enough for 3 VAT submissions), no refresh (single use period)
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
 id = "day-guest"
@@ -57,7 +77,11 @@ tokensGranted = 3
 #  "tokensRemaining": 1
 #}
 
-# Access to free authenticated activities including VAT submission for specfic users with a pass for a longer time
+# invited-guest: Month-long access for specific invited users
+# Unlocked by: invited-guest pass (email-restricted), group-invite pass (shareable), campaign pass (user-issued, 10 tokens)
+# Payment: None for admin-issued passes; 10 tokens to issue campaign passes (Phase 6)
+# Tokens: 3 granted, refreshing monthly (tokenRefreshInterval = P1M)
+# Access to free authenticated activities including VAT submission for specific users with a pass for a longer time
 [[bundles]]
 id = "invited-guest"
 name = "Invited Guest"
@@ -79,7 +103,11 @@ tokenRefreshInterval = "P1M"
 # GET /api/v1/tokens/ [ { "bundle": "day-guest", "tokens": 2, "expires": "2024-06-30T12:34:56Z" } ]
 # GET /api/v1/activities/ [ { "activity": "submit-vat", "tokens": 1, "started": "2024-05-30T12:34:56Z", "completed": "2024-05-30T12:34:56Z", requestId: "abc-123-def-456" } ]
 
-# Access to free authenticated activities including VAT submission for specfic users with a pass without time limit
+# resident-guest: Permanent free access for existing DIY customers and partners
+# Unlocked by: resident-guest pass (email-restricted, admin-issued)
+# Payment: None (admin manually sends pass to verified customers via email support)
+# Tokens: 3 granted, refreshing monthly, no timeout (unlimited duration)
+# Access to free authenticated activities including VAT submission for specific users with a pass without time limit
 [[bundles]]
 id = "resident-guest"
 name = "Resident Guest"
@@ -93,6 +121,11 @@ allocation = "on-email-match"
 tokensGranted = 3
 tokenRefreshInterval = "P1M"
 
+# resident-pro-comp: Complimentary pro access for beta testers and partners
+# Unlocked by: resident-pro-comp pass (email-restricted, admin-issued)
+# Payment: None (gifted to beta testers who validate production HMRC credentials)
+# Tokens: 100 granted, refreshing monthly, no timeout (unlimited duration)
+# Enables: all activities including generating digital/physical passes (costs 10 tokens each)
 # Complimentary pro access for specific users via a pass (beta testers, partners)
 [[bundles]]
 id = "resident-pro-comp"
@@ -104,19 +137,23 @@ allocation = "on-email-match"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 
-# Access to all authenticated activities including VAT submission for specfic users on subscription
+# resident-pro: Pro subscription access
+# Unlocked by: resident-pro-test-pass (sandbox), resident-pro-pass (production), Stripe monthly subscription
+# Payment: Pass reveals the card, subscription grants the bundle (£9.99/mo via Stripe Checkout)
+# Tokens: 100 granted, refreshing monthly
+# Enables: all activities including generating digital/physical passes (costs 10 tokens each)
+# Access to all authenticated activities including VAT submission for subscribed users
+# Note: resident-pro-comp (above) grants this level for free via on-email-match — comp passes bypass subscription
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
 levelName = "Pro"
 enable = "on-pass"
 hidden = false
-# TODO: 3. Switch to allocation = "on-subscription" for "launch" - AKA public launch with production credentials recognised by HMRC and subscription management
-allocation = "on-pass"
-# allocation = "on-subscription"
-# on-subscription
-# =========================== ????? Is the subscription just a way to get the pass for 1 bundle issued to subscribed users?
-# Allocate this bundle only if the user has an active subscription (subscription management not yet implemented)
+# on-pass-on-subscription: Pass gates visibility (card appears after valid pass), subscription gates access.
+# After entering a valid pass, user sees a "Subscribe £9.99/mo" button instead of "Request".
+# Stripe Checkout creates the subscription; webhook grants the bundle.
+allocation = "on-pass-on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 #listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]

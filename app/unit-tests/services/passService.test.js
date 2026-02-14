@@ -58,7 +58,7 @@ describe("passService", () => {
   describe("buildPassRecord", () => {
     it("should build a pass record with required fields", () => {
       const pass = buildPassRecord({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
@@ -67,7 +67,7 @@ describe("passService", () => {
       expect(pass.pk).toMatch(/^pass#/);
       expect(pass.code).toBeTruthy();
       expect(pass.bundleId).toBe("day-guest");
-      expect(pass.passTypeId).toBe("test-access");
+      expect(pass.passTypeId).toBe("day-guest-test-pass");
       expect(pass.maxUses).toBe(1);
       expect(pass.useCount).toBe(0);
       expect(pass.revokedAt).toBeUndefined();
@@ -82,7 +82,7 @@ describe("passService", () => {
     it("should calculate validUntil from validityPeriod", () => {
       const now = new Date();
       const pass = buildPassRecord({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         validityPeriod: "P1D",
         createdBy: "admin",
@@ -135,7 +135,7 @@ describe("passService", () => {
 
     it("should set testPass when true", () => {
       const pass = buildPassRecord({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         testPass: true,
         validityPeriod: "P30D",
@@ -149,7 +149,7 @@ describe("passService", () => {
 
     it("should omit testPass when false or undefined", () => {
       const pass = buildPassRecord({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
@@ -176,7 +176,7 @@ describe("passService", () => {
       putPass.mockResolvedValueOnce(undefined);
 
       const pass = await createPass({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
@@ -191,7 +191,7 @@ describe("passService", () => {
       putPass.mockRejectedValueOnce(new Error("Pass code collision")).mockResolvedValueOnce(undefined);
 
       const pass = await createPass({
-        passTypeId: "test-access",
+        passTypeId: "day-guest-test-pass",
         bundleId: "day-guest",
         validityPeriod: "P7D",
         createdBy: "admin",
@@ -206,7 +206,7 @@ describe("passService", () => {
 
       await expect(
         createPass({
-          passTypeId: "test-access",
+          passTypeId: "day-guest-test-pass",
           bundleId: "day-guest",
           validityPeriod: "P7D",
           createdBy: "admin",

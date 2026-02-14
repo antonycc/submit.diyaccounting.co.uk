@@ -1091,11 +1091,13 @@
 
         function updateDeveloperSectionVisibility() {
           const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          // Re-read hmrcAccount from sessionStorage each time (may have been set by async bundle loading)
+          const currentHmrcAccount = sessionStorage.getItem("hmrcAccount");
           if (devSection) {
             devSection.style.display = developerModeEnabled ? "block" : "none";
           }
           // Show sandbox obligations option only in sandbox mode when developer mode is on
-          if (sandboxObligationsOption && hmrcAccount === "sandbox" && developerModeEnabled) {
+          if (sandboxObligationsOption && currentHmrcAccount === "sandbox" && developerModeEnabled) {
             sandboxObligationsOption.style.display = "block";
           } else if (sandboxObligationsOption) {
             sandboxObligationsOption.style.display = "none";

@@ -5,21 +5,23 @@
 // Generate a pass locally using assumed AWS credentials
 //
 // Usage: node scripts/generate-pass.js [pass-type] [environment] [options]
-// Example: node scripts/generate-pass.js test-access ci
+// Example: node scripts/generate-pass.js day-guest-test-pass ci
 //          node scripts/generate-pass.js invited-guest ci --email user@example.com
-//          node scripts/generate-pass.js day-trial prod --max-uses 5 --validity-period P30D
-//          node scripts/generate-pass.js                  (defaults: test-access, ci)
+//          node scripts/generate-pass.js day-guest-pass prod --max-uses 5 --validity-period P30D
+//          node scripts/generate-pass.js                  (defaults: day-guest-test-pass, ci)
 //
 // Prerequisites: AWS credentials must be assumed first:
 //   . ./scripts/aws-assume-submit-deployment-role.sh
 //
 // Pass types (from submit.passes.toml):
-//   test-access       - Sandbox API access (7 days, 1 use)
-//   day-trial         - Single-day production access (1 day, 1 use)
-//   invited-guest     - Month-long access for invited users (1 month, 1 use, email required)
-//   resident-guest    - Ongoing free access (unlimited, 1 use, email required)
-//   resident-pro-comp - Complimentary pro subscription (1 year, 1 use, email required)
-//   group-invite      - Shareable invite (1 month, 10 uses)
+//   day-guest-test-pass    - Day guest sandbox access (1 day, 1 use, testPass: true)
+//   day-guest-pass         - Day guest production access (1 day, 1 use)
+//   resident-pro-test-pass - Resident pro sandbox access (1 day, 1 use, testPass: true)
+//   resident-pro-pass      - Resident pro production access (1 day, 1 use)
+//   invited-guest          - Month-long access for invited users (1 month, 1 use, email required)
+//   resident-guest         - Ongoing free access (unlimited, 1 use, email required)
+//   resident-pro-comp      - Complimentary pro subscription (1 year, 1 use, email required)
+//   group-invite           - Shareable invite (1 month, 10 uses)
 
 import fs from "fs";
 import path from "path";
@@ -32,7 +34,7 @@ const projectRoot = path.resolve(__dirname, "..");
 // Parse CLI arguments
 function parseArgs(args) {
   const result = {
-    passType: "test-access",
+    passType: "day-guest-test-pass",
     environment: "ci",
     email: null,
     maxUses: null,
@@ -70,7 +72,7 @@ function printUsage() {
   console.log(`Usage: node scripts/generate-pass.js [pass-type] [environment] [options]
 
 Positional arguments:
-  pass-type         Pass type from submit.passes.toml (default: test-access)
+  pass-type         Pass type from submit.passes.toml (default: day-guest-test-pass)
   environment       Target environment: ci or prod (default: ci)
 
 Options:
@@ -161,6 +163,7 @@ async function main() {
       restrictedToEmail: args.email || undefined,
       createdBy: `local-script#${process.env.USER || "unknown"}`,
       notes: args.notes || undefined,
+      ...(passType.test ? { testPass: true } : {}),
     });
     results.push(pass);
   }

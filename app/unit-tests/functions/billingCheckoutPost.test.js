@@ -64,6 +64,7 @@ describe("billingCheckoutPost", () => {
     });
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
     process.env.STRIPE_PRICE_ID = "price_test_123";
+    process.env.STRIPE_TEST_PRICE_ID = "price_test_sandbox_456";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
     process.env.USER_SUB_HASH_SALT = "test-salt-for-unit-tests";
   });
@@ -118,7 +119,6 @@ describe("billingCheckoutPost", () => {
 
   test("returns 500 when no price ID configured", async () => {
     delete process.env.STRIPE_PRICE_ID;
-    delete process.env.STRIPE_TEST_PRICE_ID;
     const event = buildEventWithToken(validToken);
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
@@ -133,13 +133,19 @@ describe("billingCheckoutPost", () => {
     expect(result.statusCode).toBe(500);
   });
 
-  test("uses STRIPE_TEST_PRICE_ID as fallback when STRIPE_PRICE_ID not set", async () => {
-    delete process.env.STRIPE_PRICE_ID;
-    process.env.STRIPE_TEST_PRICE_ID = "price_test_fallback";
-    const event = buildEventWithToken(validToken);
+  test("uses STRIPE_TEST_PRICE_ID when sandbox flag is set in request body", async () => {
+    const event = buildEventWithToken(validToken, { sandbox: true });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_test_fallback");
+    expect(params.line_items[0].price).toBe("price_test_sandbox_456");
+  });
+
+  test("uses STRIPE_PRICE_ID when no sandbox flag", async () => {
+    const event = buildEventWithToken(validToken, { bundleId: "resident-pro" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_test_123");
   });
 });

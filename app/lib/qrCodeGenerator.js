@@ -76,36 +76,6 @@ export async function generatePassQrCodeBuffer({ code, url, options = {} }) {
 }
 
 /**
- * Generate a text-based QR code for terminal display (useful for debugging).
- *
- * @param {Object} params
- * @param {string} params.code - The pass code
- * @param {string} params.url - The full URL to the pass redemption page
- * @param {Object} [params.options] - QRCode generation options
- * @returns {Promise<string>} ASCII art QR code
- */
-export async function generatePassQrCodeText({ code, url, options = {} }) {
-  if (!code) {
-    throw new Error("Pass code is required");
-  }
-  if (!url) {
-    throw new Error("Pass URL is required");
-  }
-
-  const qrOptions = {
-    errorCorrectionLevel: options.errorCorrectionLevel || "M",
-    type: "terminal",
-  };
-
-  try {
-    const text = await QRCode.toString(url, qrOptions);
-    return text;
-  } catch (error) {
-    throw new Error(`Failed to generate text QR code for pass ${code}: ${error.message}`);
-  }
-}
-
-/**
  * Escape a string for safe inclusion in SVG text elements.
  *
  * @param {string} str - Raw string
