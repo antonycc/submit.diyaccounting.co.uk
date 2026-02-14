@@ -281,12 +281,16 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   expect(wrenchVisible).toBe(true);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06b-developer-tools-wrench.png` });
 
-  // Click the wrench to enable developer mode and verify dev info appears
+  // Click the wrench to enable developer mode and verify dev elements appear
   await wrenchIcon.click();
   await page.waitForTimeout(1000);
-  const devInfoVisible = await page.locator(".header-dev-info").isVisible({ timeout: 5000 }).catch(() => false);
-  console.log(`[pass-test]: Developer info panel visible after clicking wrench: ${devInfoVisible}`);
-  expect(devInfoVisible).toBe(true);
+  const devModeActive = await page.evaluate(() => document.body.classList.contains("developer-mode"));
+  console.log(`[pass-test]: Developer mode active (body class): ${devModeActive}`);
+  expect(devModeActive).toBe(true);
+  // Verify dev float elements are created (datetime, deployment, etc.)
+  const devDatetimeVisible = await page.locator("#dev-datetime").isVisible({ timeout: 5000 }).catch(() => false);
+  console.log(`[pass-test]: Dev datetime float visible: ${devDatetimeVisible}`);
+  expect(devDatetimeVisible).toBe(true);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06c-developer-mode-enabled.png` });
 
   // Navigate back to bundles page for the remaining pass tests

@@ -12,43 +12,51 @@ const logger = createLogger({ source: "app/functions/non-lambda-mocks/mockBillin
 
 export function apiEndpoint(app) {
   // Mock checkout session — returns a local auto-complete URL instead of a Stripe hosted page
-  app.post("/api/v1/billing/checkout-session", (req, res) => {
+  app.post("/api/v1/billing/checkout-session", async (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
     const bundleId = req.body?.bundleId || "resident-pro";
     const sessionId = `sim_cs_${Date.now()}`;
-    const checkoutUrl = `${baseUrl}simulator/checkout?session=${sessionId}&bundleId=${bundleId}`;
+
+    // Extract user sub from auth header so the GET /simulator/checkout can grant the bundle
+    // (browser navigation to GET doesn't carry the Authorization header)
+    let userSub = "";
+    try {
+      const { decodeJwtToken } = await import("../../lib/jwtHelper.js");
+      const decoded = decodeJwtToken(req.headers);
+      userSub = decoded.sub || "";
+    } catch {
+      logger.warn({ message: "Mock checkout session: could not decode JWT, bundle grant may fail" });
+    }
+
+    const params = new URLSearchParams({ session: sessionId, bundleId, ...(userSub && { sub: userSub }) });
+    const checkoutUrl = `${baseUrl}simulator/checkout?${params}`;
     logger.info({ message: "Mock checkout session created", sessionId, bundleId, checkoutUrl });
     res.json({ data: { checkoutUrl } });
   });
 
   // Mock checkout completion — grants bundle and redirects to success URL
   app.get("/simulator/checkout", async (req, res) => {
-    const { bundleId = "resident-pro" } = req.query;
-    logger.info({ message: "Mock checkout auto-completing", bundleId });
+    const { bundleId = "resident-pro", sub: userSub } = req.query;
+    logger.info({ message: "Mock checkout auto-completing", bundleId, userSub });
 
     // Grant the bundle via the real grantBundle function
-    try {
-      const { decodeJwtToken } = await import("../../lib/jwtHelper.js");
-      const { grantBundle } = await import("../account/bundlePost.js");
-      const { initializeSalt } = await import("../../services/subHasher.js");
+    if (userSub) {
+      try {
+        const { grantBundle } = await import("../account/bundlePost.js");
+        const { initializeSalt } = await import("../../services/subHasher.js");
 
-      await initializeSalt();
+        await initializeSalt();
 
-      // Decode the auth token from the cookie or header
-      const authHeader = req.headers.authorization;
-      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-      if (token) {
-        const decoded = decodeJwtToken({ authorization: `Bearer ${token}` });
-        await grantBundle(decoded.sub, { bundleId, qualifiers: {} }, decoded, null, {
+        await grantBundle(userSub, { bundleId, qualifiers: {} }, { sub: userSub }, null, {
           skipCapCheck: true,
           grantQualifiers: { sandbox: true },
         });
-        logger.info({ message: "Mock checkout granted bundle", bundleId, userId: decoded.sub });
-      } else {
-        logger.warn({ message: "Mock checkout: no auth token, granting via direct bundle API" });
+        logger.info({ message: "Mock checkout granted bundle", bundleId, userId: userSub });
+      } catch (error) {
+        logger.warn({ message: "Mock checkout: bundle grant failed", error: error.message });
       }
-    } catch (error) {
-      logger.warn({ message: "Mock checkout: bundle grant skipped (may need manual grant)", error: error.message });
+    } else {
+      logger.warn({ message: "Mock checkout: no user sub in query, cannot grant bundle" });
     }
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";

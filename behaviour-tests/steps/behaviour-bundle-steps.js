@@ -465,9 +465,11 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
     await page.goto(checkoutUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
 
     if (isSimulatorCheckout) {
-      // Simulator: auto-completes — redirects to bundles.html?checkout=success
+      // Simulator: auto-completes — server grants bundle and redirects to bundles.html?checkout=success.
+      // Wait for the success message rather than the URL, because bundles.html clears the
+      // ?checkout=success param via history.replaceState before Playwright can observe it.
       console.log("Simulator checkout: auto-completing...");
-      await page.waitForURL(/bundles\.html.*checkout=success/, { timeout: 15_000 });
+      await page.waitForSelector('text=Subscription activated', { timeout: 15_000 });
       console.log("Simulator checkout completed successfully");
     } else if (isStripeCheckout) {
       // Real Stripe test checkout: fill in test card details
