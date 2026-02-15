@@ -1,24 +1,40 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Sun, 15 Feb 2026 14:28:03",
-	"created": "2026-02-15T14:28:03.608770860Z",
+	"@generated": "Sun, 15 Feb 2026 22:10:36",
+	"created": "2026-02-15T22:10:36.899307949Z",
 	"insights":[
-		{
-			"level": "Low",
-			"reason": "Warning",
-			"site": "",
-			"key": "insight.log.warn",
-			"description": "ZAP warnings logged - see the zap.log file for details",
-			"statistic": "1"
-		},
 		{
 			"level": "Low",
 			"reason": "Exceeded High",
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.response.slow",
 			"description": "Percentage of slow responses",
-			"statistic": "95"
+			"statistic": "91"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://client.rum.us-east-1.amazonaws.com",
+			"key": "insight.endpoint.ctype.text/javascript",
+			"description": "Percentage of endpoints with content type text/javascript",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://client.rum.us-east-1.amazonaws.com",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://client.rum.us-east-1.amazonaws.com",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "1"
 		},
 		{
 			"level": "Info",
@@ -34,7 +50,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.code.3xx",
 			"description": "Percentage of responses with status code 3xx",
-			"statistic": "87"
+			"statistic": "86"
 		},
 		{
 			"level": "Info",
@@ -90,7 +106,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/html",
 			"description": "Percentage of endpoints with content type text/html",
-			"statistic": "20"
+			"statistic": "22"
 		},
 		{
 			"level": "Info",
@@ -98,7 +114,7 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.ctype.text/javascript",
 			"description": "Percentage of endpoints with content type text/javascript",
-			"statistic": "46"
+			"statistic": "45"
 		},
 		{
 			"level": "Info",
@@ -130,10 +146,18 @@
 			"site": "https://submit.diyaccounting.co.uk",
 			"key": "insight.endpoint.total",
 			"description": "Count of total endpoints",
-			"statistic": "58"
+			"statistic": "59"
 		}
 	],
 	"site":[ 
+		{
+			"@name": "https://client.rum.us-east-1.amazonaws.com",
+			"@host": "client.rum.us-east-1.amazonaws.com",
+			"@port": "443",
+			"@ssl": "true",
+			"alerts": [ 
+			]
+		},
 		{
 			"@name": "https://submit.diyaccounting.co.uk",
 			"@host": "submit.diyaccounting.co.uk",
@@ -161,7 +185,7 @@
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "12",
+							"id": "21",
 							"uri": "https://submit.diyaccounting.co.uk/",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
@@ -171,7 +195,7 @@
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "9",
+							"id": "8",
 							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
 							"method": "GET",
@@ -181,7 +205,7 @@
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "7",
+							"id": "11",
 							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
 							"method": "GET",
@@ -191,7 +215,7 @@
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "19",
+							"id": "33",
 							"uri": "https://submit.diyaccounting.co.uk/api/session/beacon",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/api\/session\/beacon ()({page})",
 							"method": "POST",
@@ -231,7 +255,7 @@
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "13",
+							"id": "22",
 							"uri": "https://submit.diyaccounting.co.uk/",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
@@ -241,7 +265,7 @@
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "10",
+							"id": "9",
 							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
 							"method": "GET",
@@ -251,7 +275,7 @@
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "8",
+							"id": "12",
 							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
 							"method": "GET",
@@ -261,7 +285,7 @@
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "20",
+							"id": "34",
 							"uri": "https://submit.diyaccounting.co.uk/api/session/beacon",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/api\/session\/beacon ()({page})",
 							"method": "POST",
@@ -281,6 +305,76 @@
 					"sourceid": "6"
 				},
 				{
+					"pluginid": "90004",
+					"alertRef": "90004-2",
+					"alert": "Insufficient Site Isolation Against Spectre Vulnerability",
+					"name": "Insufficient Site Isolation Against Spectre Vulnerability",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Low (Medium)",
+					"desc": "<p>Cross-Origin-Embedder-Policy header is a response header that prevents a document from loading any cross-origin resources that don't explicitly grant the document permission (using CORP or CORS).</p>",
+					"instances":[ 
+						{
+							"id": "15",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "28",
+							"uri": "https://submit.diyaccounting.co.uk/",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "71",
+							"uri": "https://submit.diyaccounting.co.uk/about.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "82",
+							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						},
+						{
+							"id": "54",
+							"uri": "https://submit.diyaccounting.co.uk/index.html",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
+							"method": "GET",
+							"param": "Cross-Origin-Embedder-Policy",
+							"attack": "",
+							"evidence": "unsafe-none",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>Ensure that the application/web server sets the Cross-Origin-Embedder-Policy header appropriately, and that it sets the Cross-Origin-Embedder-Policy header to 'require-corp' for documents.</p><p>If possible, ensure that the end user uses a standards-compliant and modern web browser that supports the Cross-Origin-Embedder-Policy header (https://caniuse.com/mdn-http_headers_cross-origin-embedder-policy).</p>",
+					"otherinfo": "",
+					"reference": "<p>https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Embedder-Policy</p>",
+					"cweid": "693",
+					"wascid": "14",
+					"sourceid": "1"
+				},
+				{
 					"pluginid": "10096",
 					"alertRef": "10096",
 					"alert": "Timestamp Disclosure - Unix",
@@ -291,7 +385,7 @@
 					"desc": "<p>A timestamp was disclosed by the application/web server. - Unix</p>",
 					"instances":[ 
 						{
-							"id": "33",
+							"id": "44",
 							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
 							"method": "GET",
@@ -301,7 +395,7 @@
 							"otherinfo": "1742169599, which evaluates to: 2025-03-16 23:59:59."
 						},
 						{
-							"id": "31",
+							"id": "43",
 							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
 							"method": "GET",
@@ -341,7 +435,7 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "14",
+							"id": "23",
 							"uri": "https://submit.diyaccounting.co.uk/",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
@@ -351,7 +445,7 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "18",
+							"id": "29",
 							"uri": "https://submit.diyaccounting.co.uk/developer-mode.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/developer-mode.js",
 							"method": "GET",
@@ -361,7 +455,7 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// The toggle icon only appears if the user has a sandbox bundle (qualifiers.sandbox === true).\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "21",
+							"id": "31",
 							"uri": "https://submit.diyaccounting.co.uk/lib/feature-flags.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/feature-flags.js",
 							"method": "GET",
@@ -371,7 +465,7 @@
 							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// Future: extend with rolloutPercent, user-segment targeting, and variant\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "17",
+							"id": "35",
 							"uri": "https://submit.diyaccounting.co.uk/lib/request-cache.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/request-cache.js",
 							"method": "GET",
@@ -381,7 +475,7 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "26",
+							"id": "40",
 							"uri": "https://submit.diyaccounting.co.uk/lib/utils/crypto-utils.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/crypto-utils.js",
 							"method": "GET",
@@ -391,7 +485,7 @@
 							"otherinfo": "The following pattern was used: \\bWHERE\\b and was detected in likely comment: \"// Prefer cryptographically secure random values where available\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "25",
+							"id": "39",
 							"uri": "https://submit.diyaccounting.co.uk/lib/utils/jwt-utils.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/jwt-utils.js",
 							"method": "GET",
@@ -401,7 +495,7 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Parse JWT claims from a token\n * @param {string} jwt - JWT token string\n * @returns {object|null} Parsed claims or null i\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "27",
+							"id": "41",
 							"uri": "https://submit.diyaccounting.co.uk/lib/utils/storage-utils.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/storage-utils.js",
 							"method": "GET",
@@ -411,7 +505,7 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Safely get item from localStorage\n * @param {string} key - Storage key\n * @returns {string|null} Stored value or null\n */\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "16",
+							"id": "25",
 							"uri": "https://submit.diyaccounting.co.uk/submit.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.js",
 							"method": "GET",
@@ -421,7 +515,7 @@
 							"otherinfo": "The following pattern was used: \\bDEBUG\\b and was detected in likely comment: \"// Debug widgets initial setup\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "24",
+							"id": "37",
 							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
 							"method": "GET",
@@ -431,7 +525,7 @@
 							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// the href from \"#\" to \"../auth/login.html\" and the browser's default <a> click\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "22",
+							"id": "36",
 							"uri": "https://submit.diyaccounting.co.uk/widgets/entitlement-status.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
 							"method": "GET",
@@ -441,7 +535,7 @@
 							"otherinfo": "The following pattern was used: \\bQUERY\\b and was detected in likely comment: \"// Normalize path - remove leading slash and query parameters\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "23",
+							"id": "38",
 							"uri": "https://submit.diyaccounting.co.uk/widgets/view-source-link.js",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/view-source-link.js",
 							"method": "GET",
@@ -481,7 +575,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "15",
+							"id": "24",
 							"uri": "https://submit.diyaccounting.co.uk/",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
@@ -491,7 +585,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "54",
+							"id": "70",
 							"uri": "https://submit.diyaccounting.co.uk/about.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
 							"method": "GET",
@@ -501,7 +595,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "56",
+							"id": "81",
 							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
 							"method": "GET",
@@ -511,7 +605,7 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "39",
+							"id": "53",
 							"uri": "https://submit.diyaccounting.co.uk/index.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
@@ -529,6 +623,56 @@
 					"cweid": "-1",
 					"wascid": "-1",
 					"sourceid": "1"
+				},
+				{
+					"pluginid": "10049",
+					"alertRef": "10049-1",
+					"alert": "Non-Storable Content",
+					"name": "Non-Storable Content",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>The response contents are not storable by caching components such as proxy servers. If the response does not contain sensitive, personal or user-specific information, it may benefit from being stored and cached, to improve performance.</p>",
+					"instances":[ 
+						{
+							"id": "7",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "403",
+							"otherinfo": ""
+						},
+						{
+							"id": "10",
+							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "403",
+							"otherinfo": ""
+						},
+						{
+							"id": "13",
+							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "403",
+							"otherinfo": ""
+						}
+					],
+					"count": "3",
+					"systemic": true,
+					"solution": "<p>The content may be marked as storable by ensuring that the following conditions are satisfied:</p><p>The request method must be understood by the cache and defined as being cacheable (\"GET\", \"HEAD\", and \"POST\" are currently defined as cacheable)</p><p>The response status code must be understood by the cache (one of the 1XX, 2XX, 3XX, 4XX, or 5XX response classes are generally understood)</p><p>The \"no-store\" cache directive must not appear in the request or response header fields</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"private\" response directive must not appear in the response</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"Authorization\" header field must not appear in the request, unless the response explicitly allows it (using one of the \"must-revalidate\", \"public\", or \"s-maxage\" Cache-Control response directives)</p><p>In addition to the conditions above, at least one of the following conditions must also be satisfied by the response:</p><p>It must contain an \"Expires\" header field</p><p>It must contain a \"max-age\" response directive</p><p>For \"shared\" caches such as \"proxy\" caches, it must contain a \"s-maxage\" response directive</p><p>It must contain a \"Cache Control Extension\" that allows it to be cached</p><p>It must have a status code that is defined as cacheable by default (200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501).</p>",
+					"otherinfo": "",
+					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
+					"cweid": "524",
+					"wascid": "13",
+					"sourceid": "6"
 				},
 				{
 					"pluginid": "10015",
@@ -551,7 +695,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "11",
+							"id": "19",
 							"uri": "https://submit.diyaccounting.co.uk/",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
 							"method": "GET",
@@ -561,7 +705,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "38",
+							"id": "52",
 							"uri": "https://submit.diyaccounting.co.uk/index.html",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
 							"method": "GET",
@@ -571,7 +715,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "28",
+							"id": "42",
 							"uri": "https://submit.diyaccounting.co.uk/submit.deployment-name.txt",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.deployment-name.txt",
 							"method": "GET",
@@ -581,7 +725,7 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "34",
+							"id": "48",
 							"uri": "https://submit.diyaccounting.co.uk/submit.version.txt",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.version.txt",
 							"method": "GET",
@@ -611,37 +755,7 @@
 					"desc": "<p>The content was retrieved from a shared cache. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
 					"instances":[ 
 						{
-							"id": "57",
-							"uri": "https://submit.diyaccounting.co.uk/index.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "61",
-							"uri": "https://submit.diyaccounting.co.uk/lib/analytics.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/analytics.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "60",
-							"uri": "https://submit.diyaccounting.co.uk/lib/session-beacon.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/session-beacon.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "29",
+							"id": "45",
 							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
 							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
 							"method": "GET",
@@ -651,9 +765,39 @@
 							"otherinfo": ""
 						},
 						{
-							"id": "62",
-							"uri": "https://submit.diyaccounting.co.uk/submit.css",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.css",
+							"id": "68",
+							"uri": "https://submit.diyaccounting.co.uk/submit.version.txt",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.version.txt",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Hit from cloudfront",
+							"otherinfo": ""
+						},
+						{
+							"id": "73",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Hit from cloudfront",
+							"otherinfo": ""
+						},
+						{
+							"id": "72",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/entitlement-status.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "Hit from cloudfront",
+							"otherinfo": ""
+						},
+						{
+							"id": "74",
+							"uri": "https://submit.diyaccounting.co.uk/widgets/view-source-link.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/view-source-link.js",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -668,7 +812,77 @@
 					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.rfc-editor.org/rfc/rfc9110.html</p>",
 					"cweid": "525",
 					"wascid": "-1",
-					"sourceid": "231"
+					"sourceid": "46"
+				},
+				{
+					"pluginid": "10049",
+					"alertRef": "10049-3",
+					"alert": "Storable and Cacheable Content",
+					"name": "Storable and Cacheable Content",
+					"riskcode": "0",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
+					"desc": "<p>The response contents are storable by caching components such as proxy servers, and may be retrieved directly from the cache, rather than from the origin server by the caching servers, in response to similar requests from other users. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where \"shared\" caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
+					"instances":[ 
+						{
+							"id": "14",
+							"uri": "https://submit.diyaccounting.co.uk",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+						},
+						{
+							"id": "16",
+							"uri": "https://submit.diyaccounting.co.uk/lib/analytics.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/analytics.js",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+						},
+						{
+							"id": "20",
+							"uri": "https://submit.diyaccounting.co.uk/lib/env-loader.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/env-loader.js",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+						},
+						{
+							"id": "17",
+							"uri": "https://submit.diyaccounting.co.uk/lib/session-beacon.js",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/session-beacon.js",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+						},
+						{
+							"id": "18",
+							"uri": "https://submit.diyaccounting.co.uk/submit.css",
+							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.css",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>Validate that the response does not contain sensitive, personal or user-specific information. If it does, consider the use of the following HTTP response headers, to limit, or prevent the content being stored and retrieved from the cache by another user:</p><p>Cache-Control: no-cache, no-store, must-revalidate, private</p><p>Pragma: no-cache</p><p>Expires: 0</p><p>This configuration directs both HTTP 1.0 and HTTP 1.1 compliant caching servers to not store the response, and to not retrieve the response (without validation) from the cache, in response to a similar request.</p>",
+					"otherinfo": "<p>The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives.</p>",
+					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
+					"cweid": "524",
+					"wascid": "13",
+					"sourceid": "1"
 				}
 			]
 		}

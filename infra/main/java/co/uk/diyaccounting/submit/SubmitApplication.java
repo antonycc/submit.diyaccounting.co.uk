@@ -70,6 +70,7 @@ public class SubmitApplication {
         public String stripePriceId;
         public String stripeTestPriceId;
         public String stripeWebhookSecretArn;
+        public String stripeTestWebhookSecretArn;
         public String telegramBotTokenArn;
         public String telegramTestChatId;
         public String telegramLiveChatId;
@@ -174,6 +175,10 @@ public class SubmitApplication {
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
                 "(from stripeWebhookSecretArn in cdk.json)");
+        var stripeTestWebhookSecretArn = envOr(
+                "STRIPE_TEST_WEBHOOK_SECRET_ARN",
+                appProps.stripeTestWebhookSecretArn,
+                "(from stripeTestWebhookSecretArn in cdk.json)");
         var telegramBotTokenArn =
                 envOr("TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
         var telegramTestChatId =
@@ -276,6 +281,8 @@ public class SubmitApplication {
                         .stripePriceId(stripePriceId != null ? stripePriceId : "")
                         .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
                         .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")
+                        .stripeTestWebhookSecretArn(
+                                stripeTestWebhookSecretArn != null ? stripeTestWebhookSecretArn : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .build());
 
