@@ -88,10 +88,11 @@ export async function ingestHandler(event) {
     const catBundle = (catalog.bundles || []).find((b) => b.id === result.bundleId);
 
     if (catBundle?.allocation === "on-pass-on-subscription") {
+      const testPass = result.pass?.testPass || false;
       return http200OkResponse({
         request,
         headers: responseHeaders,
-        data: { redeemed: false, valid: true, bundleId: result.bundleId, requiresSubscription: true },
+        data: { redeemed: false, valid: true, bundleId: result.bundleId, requiresSubscription: true, testPass },
       });
     }
 
@@ -110,6 +111,7 @@ export async function ingestHandler(event) {
       detail: { bundleId: result?.bundleId },
     }).catch(() => {});
 
+    const testPass = result.pass?.testPass || false;
     return http200OkResponse({
       request,
       headers: responseHeaders,
@@ -118,6 +120,7 @@ export async function ingestHandler(event) {
         bundleId: result.bundleId,
         expiry: grantResult.expiry || null,
         grantStatus: grantResult.status,
+        testPass,
       },
     });
   } catch (error) {

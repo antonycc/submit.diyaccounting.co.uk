@@ -37,7 +37,6 @@ Defined in `submit.passes.toml`. Each pass type is a template with defaults.
 | `resident-pro-comp` | resident-pro-comp | 1 | 1 year | Yes | Free (admin) |
 | `resident-pro-test-pass` | resident-pro | 1 | 1 day | No | Free (admin, sandbox) |
 | `resident-pro-pass` | resident-pro | 1 | 1 day | No | Free (admin, production) |
-| `group-invite` | invited-guest | 10 | 1 month | No | Free (admin) |
 | `campaign` | invited-guest | 1 | 3 days | No | 10 tokens (user-issued, Phase 6) |
 | `digital-pass` | day-guest | 100 | 7 days | No | 10 tokens (user-issued, Phase 6) |
 | `physical-pass` | day-guest | 10 | Unlimited | No | 10 tokens (user-issued, Phase 6) |
@@ -48,7 +47,7 @@ Pass types ending in `-test-pass` have `test = true` in `submit.passes.toml`. Th
 
 ### When is payment required?
 
-- **Admin-issued passes** (day-guest-test-pass, day-guest-pass, invited-guest, resident-guest, resident-pro-comp, resident-pro-test-pass, resident-pro-pass, group-invite): **No payment** - created by admins via GitHub Actions workflow
+- **Admin-issued passes** (day-guest-test-pass, day-guest-pass, invited-guest, resident-guest, resident-pro-comp, resident-pro-test-pass, resident-pro-pass): **No payment** - created by admins via GitHub Actions workflow
 - **User-issued passes** (campaign, digital-pass, physical-pass): **10 tokens** from the issuing user's bundle (Phase 6, not yet implemented)
 - **Subscription** (resident-pro): Pass gates visibility, Stripe Checkout creates subscription, webhook grants bundle. Includes renewal token refresh, cancellation, and Customer Portal management.
 
@@ -60,7 +59,7 @@ Defined in `web/public/submit.catalogue.toml`. Each bundle is an access tier.
 |--------|-------|--------|---------|---------|------------|-------------|
 | `default` | - | - | - | - | Automatic | All authenticated users |
 | `day-guest` | Guest | 3 | None | 1 day | On-Request | day-guest-test-pass, day-guest-pass, digital-pass, physical-pass |
-| `invited-guest` | Guest | 3 | Monthly | 1 month | On-Email-Match | invited-guest, group-invite, campaign |
+| `invited-guest` | Guest | 3 | Monthly | 1 month | On-Email-Match | invited-guest, campaign |
 | `resident-guest` | Guest | 3 | Monthly | Unlimited | On-Email-Match | resident-guest |
 | `resident-pro-comp` | Pro | 100 | Monthly | Unlimited | On-Email-Match | resident-pro-comp |
 | `resident-pro` | Pro | 100 | Monthly | - | On-Pass-On-Subscription | resident-pro-test-pass, resident-pro-pass, Stripe subscription |

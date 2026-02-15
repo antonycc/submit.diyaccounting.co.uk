@@ -852,8 +852,13 @@
           if (body.requiresSubscription) {
             // Pass is valid but bundle requires subscription — store validation and re-render
             try {
-              sessionStorage.setItem("passValidation", JSON.stringify({ code, bundleId: body.bundleId, valid: true }));
+              sessionStorage.setItem("passValidation", JSON.stringify({ code, bundleId: body.bundleId, valid: true, testPass: body.testPass || false }));
             } catch {}
+            // If test pass, activate sandbox mode so checkout uses test Stripe
+            if (body.testPass) {
+              sessionStorage.setItem("hmrcAccount", "sandbox");
+              window.dispatchEvent(new CustomEvent("bundle-changed"));
+            }
             showPassStatus(`Pass valid! Click "Subscribe" to start your subscription.`, "success");
             renderCatalogueBundles();
             return true;
@@ -861,6 +866,10 @@
 
           if (body.redeemed) {
             showPassStatus(`Pass redeemed! Bundle "${body.bundleId}" has been added.`, "success");
+            // If test pass, activate sandbox mode immediately
+            if (body.testPass) {
+              sessionStorage.setItem("hmrcAccount", "sandbox");
+            }
             // Update local state
             if (!hasBundle(__userBundles, body.bundleId)) {
               __userBundles.push(body.bundleId);
@@ -1070,21 +1079,22 @@
           const url = new URL(window.location);
           url.searchParams.delete("checkout");
           window.history.replaceState({}, "", url);
-          // Invalidate bundle cache and re-fetch
-          invalidate("/api/v1/bundle");
-          try {
-            const uij = localStorage.getItem("userInfo");
-            const uid = uij && JSON.parse(uij)?.sub;
-            if (uid) window.bundleCache.clearBundles(uid);
-          } catch {}
-          fetchUserBundles().then(() => {
+          // Invalidate bundle cache and re-fetch (retry if webhook hasn't fired yet)
+          const refreshBundles = async () => {
+            invalidate("/api/v1/bundle");
             try {
-              renderCurrentBundles();
+              const uij = localStorage.getItem("userInfo");
+              const uid = uij && JSON.parse(uij)?.sub;
+              if (uid) await window.bundleCache.clearBundles(uid);
             } catch {}
-            try {
-              renderCatalogueBundles();
-            } catch {}
+            await fetchUserBundles();
+            try { renderCurrentBundles(); } catch {}
+            try { renderCatalogueBundles(); } catch {}
             window.dispatchEvent(new CustomEvent("bundle-changed"));
+          };
+          // First attempt immediately, then retry after 3s if bundle not yet granted by webhook
+          refreshBundles().then(() => {
+            setTimeout(refreshBundles, 3000);
           });
         } else if (checkoutResult === "canceled") {
           showStatus("Checkout was canceled. You can try again when you're ready.", "info");

@@ -334,26 +334,31 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     // This bypasses Stripe for tests that need the bundle but aren't testing payment
     const data = redeemResult?.data || redeemResult;
     if (data?.requiresSubscription) {
-      console.log(`Bundle ${bundleId} requires subscription — granting directly via bundle API for test setup`);
-      const grantResult = await page.evaluate(async (bid) => {
-        const idToken = localStorage.getItem("cognitoIdToken");
-        if (!idToken) return { ok: false, error: "No auth token" };
-        try {
-          const response = await fetch("/api/v1/bundle", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`,
-              "x-initial-request": "true",
-            },
-            body: JSON.stringify({ bundleId: bid, qualifiers: {} }),
-          });
-          const body = await response.json();
-          return { ok: response.ok, status: response.status, ...body };
-        } catch (err) {
-          return { ok: false, error: err.message };
-        }
-      }, bundleId);
+      const isSandbox = data?.testPass || testPass;
+      console.log(`Bundle ${bundleId} requires subscription — granting directly via bundle API for test setup (sandbox=${isSandbox})`);
+      const grantResult = await page.evaluate(
+        async ({ bid, sandbox }) => {
+          const idToken = localStorage.getItem("cognitoIdToken");
+          if (!idToken) return { ok: false, error: "No auth token" };
+          try {
+            const qualifiers = sandbox ? { sandbox: true } : {};
+            const response = await fetch("/api/v1/bundle", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${idToken}`,
+                "x-initial-request": "true",
+              },
+              body: JSON.stringify({ bundleId: bid, qualifiers }),
+            });
+            const body = await response.json();
+            return { ok: response.ok, status: response.status, ...body };
+          } catch (err) {
+            return { ok: false, error: err.message };
+          }
+        },
+        { bid: bundleId, sandbox: isSandbox },
+      );
       console.log(`Direct bundle grant result: ${JSON.stringify(grantResult)}`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03b-direct-grant.png` });
 

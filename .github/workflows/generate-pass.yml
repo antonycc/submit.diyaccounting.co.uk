@@ -16,7 +16,6 @@ on:
           - invited-guest
           - resident-guest
           - resident-pro-comp
-          - group-invite
       email:
         description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
         required: false
