@@ -33,18 +33,42 @@ function jsonResponse(statusCode, body) {
 }
 
 let cachedWebhookSecret = null;
+let cachedTestWebhookSecret = null;
 
-async function resolveWebhookSecret() {
+async function resolveWebhookSecret({ test = false } = {}) {
+  if (test) {
+    if (cachedTestWebhookSecret) return cachedTestWebhookSecret;
+
+    // Local dev: direct env var
+    const testSecret = process.env.STRIPE_TEST_WEBHOOK_SECRET;
+    if (testSecret && !testSecret.startsWith("arn:")) {
+      cachedTestWebhookSecret = testSecret;
+      return testSecret;
+    }
+
+    // AWS: resolve from Secrets Manager ARN
+    const testArn = testSecret || process.env.STRIPE_TEST_WEBHOOK_SECRET_ARN;
+    if (testArn && testArn.startsWith("arn:")) {
+      const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
+      const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
+      const result = await smClient.send(new GetSecretValueCommand({ SecretId: testArn }));
+      cachedTestWebhookSecret = result.SecretString;
+      return cachedTestWebhookSecret;
+    }
+
+    // Fall through to live secret if no test secret configured
+    logger.warn({ message: "No test webhook secret configured, falling through to live secret" });
+  }
+
+  // Live mode (or fallback from test when no test secret configured)
   if (cachedWebhookSecret) return cachedWebhookSecret;
 
-  // Local dev: use env var directly
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (secret && !secret.startsWith("arn:")) {
     cachedWebhookSecret = secret;
     return secret;
   }
 
-  // AWS: resolve from Secrets Manager ARN
   const arn = secret || process.env.STRIPE_WEBHOOK_SECRET_ARN;
   if (arn && arn.startsWith("arn:")) {
     const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
@@ -52,12 +76,6 @@ async function resolveWebhookSecret() {
     const result = await smClient.send(new GetSecretValueCommand({ SecretId: arn }));
     cachedWebhookSecret = result.SecretString;
     return cachedWebhookSecret;
-  }
-
-  const testSecret = process.env.STRIPE_TEST_WEBHOOK_SECRET;
-  if (testSecret) {
-    cachedWebhookSecret = testSecret;
-    return testSecret;
   }
 
   throw new Error("No Stripe webhook secret configured");
@@ -305,18 +323,28 @@ export async function ingestHandler(event) {
     return jsonResponse(400, { error: "Missing stripe-signature header" });
   }
 
-  // Verify webhook signature
+  // Peek at raw body to determine test/live mode BEFORE signature verification.
+  // This is safe: we don't trust the body until after constructEvent succeeds.
+  let isTestMode = false;
+  try {
+    const parsed = JSON.parse(rawBody);
+    isTestMode = parsed.livemode === false;
+  } catch {
+    // If body isn't valid JSON, Stripe verification will fail anyway
+  }
+
+  // Verify webhook signature using the correct secret for test/live mode
   let stripeEvent;
   try {
-    const webhookSecret = await resolveWebhookSecret();
+    const webhookSecret = await resolveWebhookSecret({ test: isTestMode });
     const stripe = await getStripeClient();
     stripeEvent = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (error) {
-    logger.warn({ message: "Webhook signature verification failed", error: error.message });
+    logger.warn({ message: "Webhook signature verification failed", error: error.message, isTestMode });
     return jsonResponse(400, { error: "Invalid webhook signature" });
   }
 
-  logger.info({ message: "Webhook event received", type: stripeEvent.type, eventId: stripeEvent.id });
+  logger.info({ message: "Webhook event received", type: stripeEvent.type, eventId: stripeEvent.id, isTestMode });
 
   // Stripe sets livemode=false for test mode events — use this to select the correct API key
   const test = stripeEvent.livemode === false;
