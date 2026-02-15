@@ -4,7 +4,7 @@
 // app/data/dynamoDbBundleRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { hashSub } from "../services/subHasher.js";
+import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
 import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
 import { calculateOneMonthTtl } from "../lib/dateUtils.js";
 
@@ -29,6 +29,7 @@ export async function putBundle(userId, bundle) {
     const item = {
       ...bundle,
       hashedSub,
+      saltVersion: getSaltVersion(),
       createdAt: now.toISOString(),
     };
 
@@ -82,6 +83,7 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
     const item = {
       ...bundle,
       hashedSub,
+      saltVersion: getSaltVersion(),
       createdAt: now.toISOString(),
     };
 
@@ -212,11 +214,12 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
       new module.UpdateCommand({
         TableName: tableName,
         Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt",
+        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
         ExpressionAttributeValues: {
           ":zero": 0,
           ":granted": tokensGranted,
           ":resetAt": nextResetAt,
+          ":saltVersion": getSaltVersion(),
         },
       }),
     );
@@ -239,11 +242,12 @@ export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted,
       new module.UpdateCommand({
         TableName: tableName,
         Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt",
+        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
         ExpressionAttributeValues: {
           ":zero": 0,
           ":granted": tokensGranted,
           ":resetAt": nextResetAt,
+          ":saltVersion": getSaltVersion(),
         },
       }),
     );
@@ -267,11 +271,12 @@ export async function consumeToken(userId, bundleId) {
       new module.UpdateCommand({
         TableName: tableName,
         Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc",
+        UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
         ConditionExpression: "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
         ExpressionAttributeValues: {
           ":zero": 0,
           ":inc": 1,
+          ":saltVersion": getSaltVersion(),
         },
         ReturnValues: "ALL_NEW",
       }),
@@ -308,10 +313,11 @@ export async function recordTokenEvent(userId, bundleId, event) {
       new module.UpdateCommand({
         TableName: tableName,
         Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event)",
+        UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion",
         ExpressionAttributeValues: {
           ":empty": [],
           ":event": [tokenEvent],
+          ":saltVersion": getSaltVersion(),
         },
       }),
     );
@@ -341,6 +347,11 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
       names[attrName] = key;
       values[attrValue] = value;
     }
+
+    // Always write saltVersion
+    expressions.push("#saltVersion = :saltVersion");
+    names["#saltVersion"] = "saltVersion";
+    values[":saltVersion"] = getSaltVersion();
 
     await docClient.send(
       new module.UpdateCommand({
@@ -379,16 +390,31 @@ export async function getUserBundles(userId) {
     );
     logger.info({ message: "Queried DynamoDB for user bundles", hashedSub, itemCount: response.Count });
 
-    // Convert DynamoDB items to bundle strings
-    const bundles = (response.Items || []).map((item) => item);
+    if (response.Items && response.Items.length > 0) {
+      logger.info({ message: "Retrieved bundles from DynamoDB", hashedSub, count: response.Items.length });
+      return response.Items;
+    }
 
-    logger.info({
-      message: "Retrieved bundles from DynamoDB",
-      hashedSub,
-      count: bundles.length,
-    });
+    // Fall back to previous salt versions during migration window
+    for (const version of getPreviousVersions()) {
+      const oldHash = hashSubWithVersion(userId, version);
+      const fallbackResponse = await docClient.send(
+        new module.QueryCommand({
+          TableName: tableName,
+          KeyConditionExpression: "hashedSub = :hashedSub",
+          ExpressionAttributeValues: {
+            ":hashedSub": oldHash,
+          },
+        }),
+      );
+      if (fallbackResponse.Items && fallbackResponse.Items.length > 0) {
+        logger.warn({ message: "Found bundles at old salt version", version, hashedSub: oldHash });
+        return fallbackResponse.Items;
+      }
+    }
 
-    return bundles;
+    logger.info({ message: "No bundles found for user", hashedSub });
+    return [];
   } catch (error) {
     logger.error({
       message: `Error retrieving bundles from DynamoDB table ${getTableName()}`,

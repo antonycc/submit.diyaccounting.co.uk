@@ -55,7 +55,7 @@ describe("passPost", () => {
     mockGrantBundle.mockResolvedValue({ status: "granted", expiry: "2026-03-01T00:00:00.000Z" });
     process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
-    process.env.USER_SUB_HASH_SALT = "test-salt-for-unit-tests";
+    process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
   });
 
   afterEach(() => {

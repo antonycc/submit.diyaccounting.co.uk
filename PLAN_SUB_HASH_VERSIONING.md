@@ -910,12 +910,533 @@ Migration 001 is `pre-deploy` (must run before new code). Migrations 002+ are `p
 | `app/services/subHasher.js` | Parse registry format, expose `hashSub()`, `hashSubWithVersion()`, `getSaltVersion()`, `getPreviousVersions()` |
 | `app/data/dynamoDbBundleRepository.js` | Add `saltVersion` to writes, read-path version fallback to `getUserBundles()` |
 | `app/data/dynamoDbReceiptRepository.js` | Add `saltVersion` to writes, read-path version fallback to reads |
-| `app/data/dynamoDbHmrcApiRequestRepository.js` | Add `saltVersion` to writes, read-path version fallback to reads |
+| `app/data/dynamoDbHmrcApiRequestRepository.js` | Add `saltVersion` to writes (write-only repo — no read-path fallback needed) |
 | `app/data/dynamoDbAsyncRequestRepository.js` | Add `saltVersion` to writes, read-path version fallback to `getAsyncRequest()` |
 | `.github/workflows/manage-secrets.yml` | Update backup/restore for registry format |
-| `.github/workflows/deploy.yml` | Add migration runner steps (pre-deploy, post-deploy) |
+| `.github/workflows/run-migrations.yml` | **New** — Standalone migration workflow (callable from deploy.yml later) |
 | `app/unit-tests/services/subHasher.test.js` | Registry parsing, multi-version hashing, fallback version list |
 | `app/unit-tests/data/*.test.js` | Read-path version fallback tests |
 | `RUNBOOK_INFORMATION_SECURITY.md` | Rewrite Section 4 with scenarios A-M |
 | `AWS_ARCHITECTURE.md` | Add KMS key note, account separation reminder |
 | `PLAN_AWS_ACCOUNTS.md` | Add KMS key migration to checklist |
+| `.env.test` | Change `USER_SUB_HASH_SALT` from plain string to JSON registry |
+| `.env.simulator` | Change `USER_SUB_HASH_SALT` from plain string to JSON registry |
+| `.env.proxy` | Change `USER_SUB_HASH_SALT` from plain string to JSON registry |
+| `app/system-tests/*.system.test.js` | Update `USER_SUB_HASH_SALT` assignments to JSON registry format (5+ files) |
+| `.github/workflows/deploy-environment.yml` | Update salt creation to write JSON registry format |
+
+---
+
+## 10. Decisions from Q&A (15 Feb 2026)
+
+| Question | Decision |
+|----------|----------|
+| **Env var format** | `USER_SUB_HASH_SALT` env var MUST be JSON registry format everywhere — `.env.*` files, system tests, all test helpers |
+| **Migration 003 passphrase** | Auto-generate 8-word passphrase and print to stdout for operator to record |
+| **KMS key for Path 3** | Create KMS CMK via CDK in this PR and implement the encrypted DynamoDB item |
+| **deploy.yml integration** | Create a **separate** `run-migrations.yml` workflow. Add a commented-out call from `deploy.yml`. Manual invocation for now. |
+| **manage-secrets.yml** | Update backup/restore for registry format — in scope for this PR |
+
+---
+
+## 11. Cross-Check Corrections
+
+Corrections from comparing the plan against actual code (15 Feb 2026):
+
+### 11.1 Function name mismatches
+
+| Plan says | Actual code | File |
+|-----------|-------------|------|
+| `getUserHmrcApiRequests()` | **Does not exist** — write-only repo, no read function | `dynamoDbHmrcApiRequestRepository.js` |
+| `getUserReceipts()` | `listUserReceipts(userSub)` and `getReceipt(userSub, receiptId)` | `dynamoDbReceiptRepository.js` |
+
+**Consequence**: `dynamoDbHmrcApiRequestRepository.js` needs `saltVersion` on writes but **no read-path version fallback** (there's nothing to fall back on).
+
+### 11.2 Lambda handler count
+
+Plan says 14 handlers. Actual count from `grep`:
+
+| Category | Handlers | Count |
+|----------|----------|-------|
+| Account | `bundleGet.js`, `bundlePost.js`, `bundleDelete.js`, `passPost.js` | 4 |
+| Auth | `cognitoTokenPost.js`, `customAuthorizer.js` | 2 |
+| Billing | `billingCheckoutPost.js`, `billingPortalGet.js` | 2 |
+| HMRC | `hmrcTokenPost.js`, `hmrcReceiptGet.js`, `hmrcVatReturnPost.js`, `hmrcVatReturnGet.js`, `hmrcVatObligationGet.js` | 5 |
+| **Total** | | **13** |
+
+Plus `mockBilling.js` (non-Lambda mock, dynamic import). None of these handlers need code changes — they call `initializeSalt()` which parses the registry internally.
+
+### 11.3 Bundle repository "byHashedSub" functions
+
+Three functions accept a pre-hashed sub (not a userId):
+- `putBundleByHashedSub(hashedSub, bundle)` — line 74
+- `resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextResetAt)` — line 231
+- `updateBundleSubscriptionFields(hashedSub, bundleId, fields)` — line 326
+
+These **can** add `saltVersion` to writes (using `getSaltVersion()`), but **cannot** do read-path fallback because they don't know the original userId. The callers of these functions must ensure they pass the correct hashedSub for the current version.
+
+### 11.4 emailHash.js location and pattern
+
+- Located at `app/lib/emailHash.js` (not `app/services/`)
+- `_setTestEmailHashSecret(secret, version = "test-v1")` — takes secret + version separately
+- This is the **model** for the updated `_setTestSalt(salt, version = "v1")` signature
+
+### 11.5 Repositories NOT using hashSub (confirmed)
+
+- `dynamoDbPassRepository.js` — uses pass codes as keys, not hashedSub
+- `dynamoDbCapacityRepository.js` — global counters, not per-user
+- `dynamoDbSubscriptionRepository.js` — Stripe subscription tracking, not per-hashedSub
+
+These do NOT need saltVersion.
+
+---
+
+## 12. Refined Implementation Details
+
+### 12.1 `subHasher.js` — Registry parsing
+
+**Current internal state** (lines 11-12):
+```javascript
+let __cachedSalt = null;
+let __initPromise = null;
+```
+
+**New internal state**:
+```javascript
+let __saltRegistry = null;  // { current: "v1", versions: { "v1": "salt..." } }
+let __initPromise = null;
+```
+
+**`initializeSalt()` changes** — parse JSON from both env var and Secrets Manager:
+```javascript
+// Line 40-43: currently reads raw string from env
+// CHANGE TO:
+if (process.env.USER_SUB_HASH_SALT) {
+  logger.info({ message: "Using USER_SUB_HASH_SALT from environment (local dev/test)" });
+  __saltRegistry = parseSaltRegistry(process.env.USER_SUB_HASH_SALT);
+  return;
+}
+// Line 69: currently stores raw string from Secrets Manager
+// CHANGE TO:
+__saltRegistry = parseSaltRegistry(response.SecretString);
+```
+
+**New helper function**:
+```javascript
+function parseSaltRegistry(raw) {
+  let registry;
+  try {
+    registry = JSON.parse(raw);
+  } catch {
+    throw new Error(
+      "Salt secret is not valid JSON. Expected format: " +
+      '{"current":"v1","versions":{"v1":"salt-value"}}. ' +
+      "Run Migration 001 to convert from raw string format."
+    );
+  }
+  if (!registry.current || !registry.versions || !registry.versions[registry.current]) {
+    throw new Error(
+      `Salt registry missing required fields. Got current="${registry.current}" ` +
+      `but versions has keys: [${Object.keys(registry.versions || {})}]`
+    );
+  }
+  return registry;
+}
+```
+
+**New exported functions**:
+```javascript
+export function hashSub(sub) {
+  // Same validation as before...
+  if (!__saltRegistry) throw new Error("Salt not initialized...");
+  const salt = __saltRegistry.versions[__saltRegistry.current];
+  return crypto.createHmac("sha256", salt).update(sub).digest("hex");
+}
+
+export function hashSubWithVersion(sub, version) {
+  if (!sub || typeof sub !== "string") throw new Error("Invalid sub");
+  if (!__saltRegistry) throw new Error("Salt not initialized");
+  const salt = __saltRegistry.versions[version];
+  if (!salt) throw new Error(`Salt version "${version}" not found in registry`);
+  return crypto.createHmac("sha256", salt).update(sub).digest("hex");
+}
+
+export function getSaltVersion() {
+  if (!__saltRegistry) throw new Error("Salt not initialized");
+  return __saltRegistry.current;
+}
+
+export function getPreviousVersions() {
+  if (!__saltRegistry) throw new Error("Salt not initialized");
+  return Object.keys(__saltRegistry.versions).filter(v => v !== __saltRegistry.current);
+}
+
+export function isSaltInitialized() {
+  return __saltRegistry !== null;
+}
+```
+
+**Updated test helpers** (following emailHash.js pattern):
+```javascript
+export function _setTestSalt(salt, version = "v1") {
+  if (process.env.NODE_ENV !== "test") throw new Error("_setTestSalt can only be used in test environment");
+  __saltRegistry = { current: version, versions: { [version]: salt } };
+  __initPromise = null;
+}
+
+export function _clearSalt() {
+  if (process.env.NODE_ENV !== "test") throw new Error("_clearSalt can only be used in test environment");
+  __saltRegistry = null;
+  __initPromise = null;
+}
+```
+
+### 12.2 Repository changes — exact code locations
+
+#### `dynamoDbBundleRepository.js` (401 lines)
+
+**Import change** (line 7):
+```javascript
+// FROM:
+import { hashSub } from "../services/subHasher.js";
+// TO:
+import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
+```
+
+**Write changes** — add `saltVersion: getSaltVersion()` to every item creation:
+
+| Function | Line | Change |
+|----------|------|--------|
+| `putBundle()` | 31 | Add `saltVersion: getSaltVersion()` to `item` object |
+| `putBundleByHashedSub()` | 84 | Add `saltVersion: getSaltVersion()` to `item` object |
+| `resetTokens()` | 211-222 | Add `saltVersion` to UpdateExpression SET clause |
+| `resetTokensByHashedSub()` | 238-249 | Add `saltVersion` to UpdateExpression SET clause |
+| `consumeToken()` | 266-278 | Add `saltVersion` to UpdateExpression SET clause |
+| `recordTokenEvent()` | 307-317 | Add `saltVersion` to UpdateExpression SET clause |
+| `updateBundleSubscriptionFields()` | 345-353 | Add `saltVersion` to dynamic UpdateExpression |
+
+**Read-path fallback** — `getUserBundles()` (line 362-400):
+```javascript
+export async function getUserBundles(userId) {
+  // ... existing setup ...
+  const hashedSub = hashSub(userId);
+  // Try current version first
+  let response = await docClient.send(new module.QueryCommand({
+    TableName: tableName,
+    KeyConditionExpression: "hashedSub = :hashedSub",
+    ExpressionAttributeValues: { ":hashedSub": hashedSub },
+  }));
+  if (response.Items && response.Items.length > 0) {
+    return response.Items;
+  }
+  // Fall back to previous versions during migration window
+  for (const version of getPreviousVersions()) {
+    const oldHash = hashSubWithVersion(userId, version);
+    response = await docClient.send(new module.QueryCommand({
+      TableName: tableName,
+      KeyConditionExpression: "hashedSub = :hashedSub",
+      ExpressionAttributeValues: { ":hashedSub": oldHash },
+    }));
+    if (response.Items && response.Items.length > 0) {
+      logger.warn({ message: "Found bundles at old salt version", version });
+      return response.Items;
+    }
+  }
+  return [];
+}
+```
+
+#### `dynamoDbReceiptRepository.js` (205 lines)
+
+**Import change** (line 7): Same as bundle repo.
+
+**Write changes**:
+
+| Function | Line | Change |
+|----------|------|--------|
+| `putReceipt()` | 36 | Add `saltVersion: getSaltVersion()` to `item` object |
+
+**Read-path fallback** — two functions:
+
+| Function | Lines | Fallback needed |
+|----------|-------|-----------------|
+| `getReceipt(userSub, receiptId)` | 82-126 | Yes — try current hash, then fall back through previous versions with same receiptId |
+| `listUserReceipts(userSub)` | 133-204 | Yes — query current hash, then fall back through previous versions |
+
+#### `dynamoDbHmrcApiRequestRepository.js` (102 lines)
+
+**Import change** (line 7):
+```javascript
+import { hashSub, getSaltVersion } from "../services/subHasher.js";
+```
+(No `hashSubWithVersion` or `getPreviousVersions` needed — write-only repo.)
+
+**Write changes**:
+
+| Function | Line | Change |
+|----------|------|--------|
+| `putHmrcApiRequest()` | 61 | Add `saltVersion: getSaltVersion()` to `item` object |
+
+**No read-path fallback needed** — this is a write-only audit log.
+
+#### `dynamoDbAsyncRequestRepository.js` (165 lines)
+
+**Import change** (line 7):
+```javascript
+import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
+```
+
+**Write changes**:
+
+| Function | Lines | Change |
+|----------|-------|--------|
+| `putAsyncRequest()` | 59-60 | Add `#saltVersion = :saltVersion` to UpdateExpression, add to names/values maps |
+
+**Read-path fallback** — `getAsyncRequest()` (line 110-164):
+Try current hash first, then fall back through previous versions.
+
+### 12.3 Env var format changes
+
+**`.env.test`** (line 30):
+```
+# FROM:
+USER_SUB_HASH_SALT=test-salt-for-unit-tests
+# TO:
+USER_SUB_HASH_SALT={"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}
+```
+
+**`.env.simulator`** (line 36):
+```
+# FROM:
+USER_SUB_HASH_SALT=local-development-salt-not-for-production
+# TO:
+USER_SUB_HASH_SALT={"current":"v1","versions":{"v1":"local-development-salt-not-for-production"}}
+```
+
+**`.env.proxy`** (line 33):
+```
+# FROM:
+USER_SUB_HASH_SALT=local-development-salt-not-for-production
+# TO:
+USER_SUB_HASH_SALT={"current":"v1","versions":{"v1":"local-development-salt-not-for-production"}}
+```
+
+### 12.4 System tests needing `USER_SUB_HASH_SALT` update
+
+These system tests set `USER_SUB_HASH_SALT` directly as a plain string:
+
+| File | Line | Current value |
+|------|------|---------------|
+| `app/system-tests/passRedemption.system.test.js` | 105 | `"test-salt-for-pass-tests"` |
+| `app/system-tests/bundleCapacity.system.test.js` | ~87 | Via env or direct set |
+| `app/system-tests/dynamoDbBundleStore.system.test.js` | ~54 | Via env or direct set |
+| `app/system-tests/dynamoDbReceiptStore.system.test.js` | ~57 | Via env or direct set |
+| `app/system-tests/bundleManagement.system.test.js` | ~87 | Via env or direct set |
+| `app/system-tests/bundleManagement.journeys.system.test.js` | ~104 | Via env or direct set |
+| `app/system-tests/hmrcVatJourney.system.test.js` | ~124 | Via env or direct set |
+| `app/system-tests/hmrcVatScenarios.system.test.js` | ~63 | Via env or direct set |
+| `app/system-tests/hmrcVatObligationJourney.system.test.js` | ~63 | Via env or direct set |
+| `app/system-tests/accountBundles.system.test.js` | ~33 | Via env or direct set |
+| `app/system-tests/asyncRequestPersistence.system.test.js` | ~35 | Via env or direct set |
+| `app/system-tests/tokenConsumption.system.test.js` | ~43 | Via env or direct set |
+
+**Two patterns** in system tests:
+1. **Direct env set**: `process.env.USER_SUB_HASH_SALT = "value"` then `initializeSalt()` — these need JSON format value
+2. **Via `.env.test`**: `dotenvConfigIfNotBlank({ path: ".env.test" })` — these pick up the `.env.test` change automatically
+
+Most system tests use pattern 2 (load from `.env.test`). Only `passRedemption.system.test.js` explicitly sets the env var to a custom value — that one needs direct update.
+
+### 12.5 Unit test callers of `_setTestSalt`
+
+These use `_setTestSalt(salt)` (will become `_setTestSalt(salt, version)`):
+
+| File | Line | Current call |
+|------|------|-------------|
+| `app/unit-tests/services/subHasher.test.js` | 15, 75, 82, 94 | `_setTestSalt(TEST_SALT)` |
+| `app/unit-tests/data/dynamoDbAsyncRequestRepository.test.js` | 7 | Import, called in beforeAll |
+| `app/unit-tests/data/dynamoDbHmrcApiRequestStore.test.js` | 8 | Import, called in beforeAll |
+| `app/unit-tests/lib/buildFraudHeaders.test.js` | 9 | Import, called in setup |
+
+The new `_setTestSalt(salt, version = "v1")` has a default for `version`, so **existing callers remain compatible** — `_setTestSalt("test-salt")` still works (defaults to version "v1").
+
+### 12.6 `deploy-environment.yml` salt creation update
+
+Current salt creation (lines 234-250) generates raw base64 string.
+
+**Change to**: Create JSON registry:
+```bash
+SALT=$(openssl rand -base64 32)
+REGISTRY=$(printf '{"current":"v1","versions":{"v1":"%s"}}' "$SALT")
+aws secretsmanager create-secret \
+  --name "$SECRET_NAME" \
+  --secret-string "$REGISTRY" \
+  ...
+```
+
+**Idempotency**: Only runs when secret doesn't exist. Existing secrets (raw format) need Migration 001 to convert.
+
+### 12.7 `manage-secrets.yml` changes
+
+**`check-salt` action**: Update validation to:
+- Parse as JSON
+- Verify `current` and `versions` fields exist
+- Verify `versions[current]` has a value
+- Report number of versions in registry
+
+**`backup-salt` action**: Display the full JSON registry (operator copies entire JSON).
+
+**`restore-salt` action**: Accept JSON registry string. Validate format before writing.
+
+### 12.8 Migration workflow (`run-migrations.yml`)
+
+Standalone workflow that can be triggered manually or called by deploy.yml:
+
+```yaml
+name: Run data migrations
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment (ci or prod)"
+        required: true
+        type: choice
+        options: [ci, prod]
+      phase:
+        description: "Migration phase"
+        required: true
+        type: choice
+        options: [pre-deploy, post-deploy, all]
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      phase:
+        required: true
+        type: string
+```
+
+In `deploy.yml`, add (commented out for now):
+```yaml
+# - name: Run pre-deploy migrations
+#   uses: ./.github/workflows/run-migrations.yml
+#   with:
+#     environment: ${{ env.ENV_NAME }}
+#     phase: pre-deploy
+```
+
+### 12.9 KMS key for Path 3 (CDK)
+
+Create a KMS CMK in the environment stack for salt encryption:
+
+**In `EnvironmentStack.java` (or `DataStack.java`)**:
+```java
+// KMS key for encrypting salt backup in DynamoDB (Path 3)
+Key saltEncryptionKey = Key.Builder.create(this, "SaltEncryptionKey")
+    .alias(envName + "-salt-encryption")
+    .description("Encrypts salt backup stored in DynamoDB for disaster recovery")
+    .enableKeyRotation(true)
+    .removalPolicy(RemovalPolicy.RETAIN)  // Exception to DESTROY rule: losing this key = losing Path 3 backup
+    .build();
+```
+
+Grant Lambda functions access to encrypt/decrypt with this key for the migration scripts. The key ARN is stored as a CDK output / SSM parameter for the migration runner to use.
+
+---
+
+## 13. Test Uplift Strategy
+
+### Phase 1: Lock in current behaviour BEFORE code changes
+
+These tests should be uplifted first to verify they pass with the current code, then re-run after each change to detect regressions.
+
+**13.1 Unit tests that pin current `hashSub` behaviour:**
+- `subHasher.test.js` — already comprehensive. Add one test for deterministic hash VALUE (not just format) so we can verify the hash output doesn't change when we refactor internals:
+```javascript
+test("should produce known hash for known input and salt", () => {
+  _setTestSalt("test-salt-for-unit-tests");
+  const hash = hashSub("user-12345");
+  // Pin the exact expected hash value
+  const expected = crypto.createHmac("sha256", "test-salt-for-unit-tests")
+    .update("user-12345").digest("hex");
+  expect(hash).toBe(expected);
+});
+```
+
+**13.2 Unit tests that pin current repository write shapes:**
+- `dynamoDbAsyncRequestRepository.test.js` — verify the DynamoDB `Item` shape in PutCommand/UpdateCommand mock calls. These tests already check the UpdateExpression; ensure they assert **no** `saltVersion` field is present initially, then flip to assert it IS present after the change.
+- `dynamoDbHmrcApiRequestStore.test.js` — same approach for PutCommand Item shape.
+
+**13.3 Run full test suite to establish baseline:**
+```bash
+npm test                              # Unit + system tests
+./mvnw clean verify                   # CDK build
+```
+
+### Phase 2: Add new tests alongside code changes
+
+| New test | What it verifies |
+|----------|-----------------|
+| `subHasher.test.js` — "should parse JSON registry from env var" | `initializeSalt()` with JSON `USER_SUB_HASH_SALT` |
+| `subHasher.test.js` — "should reject non-JSON salt" | Throws meaningful error for raw string |
+| `subHasher.test.js` — "should reject registry with missing current" | Validates registry structure |
+| `subHasher.test.js` — "hashSubWithVersion returns correct hash" | Specific version hashing |
+| `subHasher.test.js` — "getSaltVersion returns current" | Version accessor |
+| `subHasher.test.js` — "getPreviousVersions excludes current" | Previous version list |
+| `subHasher.test.js` — "hashSubWithVersion throws for unknown version" | Error for missing version |
+| `dynamoDbBundleRepository.test.js` — "writes saltVersion on putBundle" | saltVersion in DynamoDB item |
+| `dynamoDbBundleRepository.test.js` — "getUserBundles falls back to previous version" | Read-path fallback |
+| `dynamoDbAsyncRequestRepository.test.js` — "writes saltVersion on putAsyncRequest" | saltVersion in UpdateExpression |
+| `dynamoDbAsyncRequestRepository.test.js` — "getAsyncRequest falls back to previous version" | Read-path fallback |
+
+---
+
+## 14. Implementation Order (Refined)
+
+Given the decisions above, the implementation order within this PR:
+
+```
+Phase A: Foundation (no behaviour change)
+  A1. Add pinning tests to lock current hash output values
+  A2. Run full test suite to confirm baseline passes
+
+Phase B: subHasher.js changes
+  B1. Rewrite subHasher.js with registry parsing + new functions
+  B2. Update _setTestSalt(salt, version) signature
+  B3. Update .env.test, .env.simulator, .env.proxy to JSON format
+  B4. Update system tests that set USER_SUB_HASH_SALT directly
+  B5. Add new subHasher unit tests (registry, versioning, errors)
+  B6. Run full test suite — all existing tests must still pass
+
+Phase C: Repository changes
+  C1. Add saltVersion to all write operations (4 repos)
+  C2. Add read-path version fallback (3 repos — not hmrcApiRequest)
+  C3. Add repository unit tests for saltVersion writes and fallback
+  C4. Run full test suite
+
+Phase D: Migration framework
+  D1. Create scripts/migrations/runner.js
+  D2. Create 001-convert-salt-to-registry.js
+  D3. Create 002-backfill-salt-version-v1.js
+  D4. Create 003-rotate-salt-to-passphrase.js (auto-generates 8-word passphrase)
+  D5. Unit test the migration runner
+
+Phase E: Workflows and infrastructure
+  E1. Create run-migrations.yml workflow
+  E2. Update manage-secrets.yml for registry format
+  E3. Update deploy-environment.yml salt creation to JSON registry
+  E4. Add commented-out migration call in deploy.yml
+  E5. Add KMS key to CDK stack
+  E6. ./mvnw clean verify
+
+Phase F: Documentation
+  F1. Update RUNBOOK_INFORMATION_SECURITY.md Section 4
+  F2. Update AWS_ARCHITECTURE.md
+  F3. Update PLAN_AWS_ACCOUNTS.md
+
+Phase G: Final verification
+  G1. npm test (unit + system)
+  G2. ./mvnw clean verify (CDK build)
+  G3. npm run test:submitVatBehaviour-proxy (E2E locally)
+  G4. Commit, push, monitor CI pipelines
+```

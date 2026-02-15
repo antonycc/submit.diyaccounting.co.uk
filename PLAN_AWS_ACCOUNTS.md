@@ -99,6 +99,7 @@ Supporting domains (submit only):
 |----------|-------------|
 | Cognito | User authentication at `{env}-auth.diyaccounting.co.uk` |
 | WAF | Web application firewall |
+| KMS (salt encryption) | Encrypts salt backup in DynamoDB (DataStack). **Must move to submit-backup during account separation.** |
 
 ### Backup Resources
 
@@ -205,6 +206,12 @@ Supporting domains (submit only):
 | Resource | Description |
 |----------|-------------|
 | Vault access policy | Allows prod/ci to copy in |
+
+### Planned Resources (Account Separation)
+
+| Resource | Description |
+|----------|-------------|
+| KMS key (salt encryption) | Moved from submit-prod DataStack. Encrypts salt backup in DynamoDB. |
 
 ### What's NOT Here
 

@@ -4,7 +4,7 @@
 // app/data/dynamoDbReceiptRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { hashSub } from "../services/subHasher.js";
+import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
 import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
 import { calculateHmrcTaxRecordTtl } from "../lib/dateUtils.js";
 
@@ -36,6 +36,7 @@ export async function putReceipt(userSub, receiptId, receipt) {
       hashedSub,
       receiptId,
       receipt,
+      saltVersion: getSaltVersion(),
       createdAt: now.toISOString(),
     };
 
@@ -102,18 +103,31 @@ export async function getReceipt(userSub, receiptId) {
       }),
     );
 
-    if (!response.Item) {
-      logger.info({ message: "Receipt not found in DynamoDB", hashedSub, receiptId });
-      return null;
+    if (response.Item) {
+      logger.info({ message: "Retrieved receipt from DynamoDB", hashedSub, receiptId });
+      return response.Item.receipt;
     }
 
-    logger.info({
-      message: "Retrieved receipt from DynamoDB",
-      hashedSub,
-      receiptId,
-    });
+    // Fall back to previous salt versions during migration window
+    for (const version of getPreviousVersions()) {
+      const oldHash = hashSubWithVersion(userSub, version);
+      const fallbackResponse = await docClient.send(
+        new module.GetCommand({
+          TableName: tableName,
+          Key: {
+            hashedSub: oldHash,
+            receiptId,
+          },
+        }),
+      );
+      if (fallbackResponse.Item) {
+        logger.warn({ message: "Found receipt at old salt version", version, hashedSub: oldHash, receiptId });
+        return fallbackResponse.Item.receipt;
+      }
+    }
 
-    return response.Item.receipt;
+    logger.info({ message: "Receipt not found in DynamoDB", hashedSub, receiptId });
+    return null;
   } catch (error) {
     logger.error({
       message: "Error retrieving receipt from DynamoDB",
@@ -142,7 +156,7 @@ export async function listUserReceipts(userSub) {
     const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    const response = await docClient.send(
+    let response = await docClient.send(
       new module.QueryCommand({
         TableName: tableName,
         KeyConditionExpression: "hashedSub = :hashedSub",
@@ -152,6 +166,26 @@ export async function listUserReceipts(userSub) {
       }),
     );
     logger.info({ message: "Queried DynamoDB for user receipts", hashedSub, itemCount: response.Count });
+
+    // Fall back to previous salt versions during migration window
+    if (!response.Items || response.Items.length === 0) {
+      for (const version of getPreviousVersions()) {
+        const oldHash = hashSubWithVersion(userSub, version);
+        response = await docClient.send(
+          new module.QueryCommand({
+            TableName: tableName,
+            KeyConditionExpression: "hashedSub = :hashedSub",
+            ExpressionAttributeValues: {
+              ":hashedSub": oldHash,
+            },
+          }),
+        );
+        if (response.Items && response.Items.length > 0) {
+          logger.warn({ message: "Found receipts at old salt version", version, hashedSub: oldHash });
+          break;
+        }
+      }
+    }
 
     // Convert DynamoDB items to receipt metadata
     const receipts = (response.Items || []).map((item) => {

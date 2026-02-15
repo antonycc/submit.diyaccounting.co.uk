@@ -238,13 +238,15 @@ jobs:
             echo "Creating new salt secret: $SECRET_NAME"
             # Generate 32-byte cryptographically secure random salt, base64 encoded
             SALT=$(openssl rand -base64 32)
+            # Store as JSON registry format for multi-version salt support
+            REGISTRY=$(jq -n --arg salt "$SALT" '{"current":"v1","versions":{"v1":$salt}}')
             aws secretsmanager create-secret \
               --name "$SECRET_NAME" \
-              --description "Salt for hashing user subs - DO NOT DELETE (required for data recovery)" \
-              --secret-string "$SALT" \
+              --description "Salt registry for hashing user subs - DO NOT DELETE (required for data recovery)" \
+              --secret-string "$REGISTRY" \
               --region ${{ env.AWS_REGION }} \
               --tags Key=Purpose,Value=user-sub-hashing Key=Critical,Value=true Key=BackupRequired,Value=true
-            echo "Salt secret created successfully"
+            echo "Salt secret created in registry format (current: v1)"
           else
             echo "Salt secret $SECRET_NAME already exists - preserving existing value"
           fi

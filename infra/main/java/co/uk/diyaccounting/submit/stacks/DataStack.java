@@ -11,10 +11,13 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTable;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.kms.Key;
 import software.constructs.Construct;
 
 public class DataStack extends Stack {
@@ -30,6 +33,7 @@ public class DataStack extends Stack {
     public ITable passesTable;
     public ITable bundleCapacityTable;
     public ITable subscriptionsTable;
+    public Key saltEncryptionKey;
 
     @Value.Immutable
     public interface DataStackProps extends StackProps, SubmitStackProps {
@@ -224,6 +228,19 @@ public class DataStack extends Stack {
         cfnOutput(this, "BundleCapacityTableArn", this.bundleCapacityTable.getTableArn());
         cfnOutput(this, "SubscriptionsTableName", this.subscriptionsTable.getTableName());
         cfnOutput(this, "SubscriptionsTableArn", this.subscriptionsTable.getTableArn());
+
+        // KMS key for encrypting salt backup stored in DynamoDB (Path 3 recovery).
+        // Used by migration 003 to encrypt the passphrase salt as a system#config item.
+        // Must move to submit-backup account during account separation (see PLAN_AWS_ACCOUNTS.md).
+        this.saltEncryptionKey = Key.Builder.create(this, props.resourceNamePrefix() + "-SaltEncryptionKey")
+                .alias("alias/" + props.resourceNamePrefix() + "-salt-encryption")
+                .enableKeyRotation(true)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .pendingWindow(Duration.days(7))
+                .description("KMS key for encrypting salt backup in DynamoDB - " + props.resourceNamePrefix())
+                .build();
+
+        cfnOutput(this, "SaltEncryptionKeyArn", this.saltEncryptionKey.getKeyArn());
 
         infof(
                 "DataStack %s created successfully for %s",

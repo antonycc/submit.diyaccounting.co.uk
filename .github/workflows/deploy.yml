@@ -1491,6 +1491,24 @@ jobs:
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
+  # TODO: Uncomment to enable data migrations in the deploy pipeline.
+  # Pre-deploy migrations (e.g., salt format conversion) run before CDK deploy.
+  # Post-deploy migrations (e.g., backfill saltVersion) run after CDK deploy.
+  # For now, run migrations manually via the run-migrations.yml workflow.
+  #
+  # run-post-deploy-migrations:
+  #   name: 'run post-deploy migrations'
+  #   needs:
+  #     - names
+  #     - deploy-publish
+  #   uses: ./.github/workflows/run-migrations.yml
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   with:
+  #     environment-name: ${{ needs.names.outputs.environment-name }}
+  #     phase: 'post-deploy'
+
   enable-native-auth:
     if: ${{ !cancelled() }}
     name: 'enable native auth for behaviour tests'

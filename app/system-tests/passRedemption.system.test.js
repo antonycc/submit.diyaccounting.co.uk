@@ -102,7 +102,7 @@ beforeAll(async () => {
   process.env.PASSES_DYNAMODB_TABLE_NAME = passesTableName;
   process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundleTableName;
   process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME = capacityTableName;
-  process.env.USER_SUB_HASH_SALT = "test-salt-for-pass-tests";
+  process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-pass-tests"}}';
 
   const { initializeSalt } = await import("../services/subHasher.js");
   await initializeSalt();

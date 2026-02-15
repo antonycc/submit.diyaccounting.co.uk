@@ -55,7 +55,7 @@ beforeAll(async () => {
   process.env.RECEIPTS_DYNAMODB_TABLE_NAME = tableName;
 
   // Set salt for hashing user subs (required by subHasher.js)
-  process.env.USER_SUB_HASH_SALT = "test-salt-for-system-tests";
+  process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-system-tests"}}';
 
   // Initialize the salt before importing modules that use hashSub
   const { initializeSalt } = await import("../services/subHasher.js");

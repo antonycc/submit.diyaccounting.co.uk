@@ -38,7 +38,7 @@ beforeAll(async () => {
   process.env.AWS_ENDPOINT_URL = endpoint;
   process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
   process.env.BUNDLE_DYNAMODB_TABLE_NAME = bundleTableName;
-  process.env.USER_SUB_HASH_SALT = "test-salt-for-token-tests";
+  process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-token-tests"}}';
 
   const { initializeSalt } = await import("../services/subHasher.js");
   await initializeSalt();

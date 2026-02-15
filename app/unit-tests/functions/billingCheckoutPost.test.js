@@ -74,7 +74,7 @@ describe("billingCheckoutPost", () => {
     process.env.STRIPE_PRICE_ID = "price_test_123";
     process.env.STRIPE_TEST_PRICE_ID = "price_test_sandbox_456";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
-    process.env.USER_SUB_HASH_SALT = "test-salt-for-unit-tests";
+    process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
   });
 
   afterEach(() => {

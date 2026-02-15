@@ -82,7 +82,7 @@ beforeAll(async () => {
   process.env.AWS_ENDPOINT_URL_DYNAMODB = endpoint;
   process.env.BUNDLE_DYNAMODB_TABLE_NAME = tableName;
   process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME = capacityTableName;
-  process.env.USER_SUB_HASH_SALT = "test-salt-for-capacity-tests";
+  process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-capacity-tests"}}';
 
   const { initializeSalt } = await import("../services/subHasher.js");
   await initializeSalt();

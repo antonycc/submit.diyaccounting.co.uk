@@ -177,7 +177,7 @@ This verifies all required secrets exist and have values.
 | Google Client Secret | Annually | 2026-01-24 | 2027-01-24 |
 | HMRC Client Secret | Annually | 2025-07-24 | 2026-07-24 |
 | HMRC Sandbox Client Secret | Annually | 2026-01-24 | 2027-01-24 |
-| User Sub Hash Salt | **Never rotate** | N/A | N/A |
+| User Sub Hash Salt | Via migration framework | See Section 4 | See Section 4 |
 
 ### 3.4 Other Repository Secrets
 
@@ -197,24 +197,41 @@ These secrets are used for CI/CD and testing, not runtime OAuth:
 
 ### 4.1 Why the Salt is Critical
 
-The user sub hash salt creates the link between Cognito user identities and DynamoDB data.
+The user sub hash salt creates the link between Cognito user identities and DynamoDB data via `HMAC-SHA256(salt, userSub)`. Every DynamoDB item uses the resulting 64-character hex hash as its partition key (`hashedSub`).
 
 | If the salt is... | Impact |
 |-------------------|--------|
 | **Missing** | All Lambda functions fail on cold start |
-| **Wrong value** | All user data becomes orphaned (hashes don't match) |
-| **Compromised** | Attacker could correlate users across datasets |
+| **Wrong value** | New writes go to unreachable partition keys (silent data loss) |
+| **Compromised** | Attacker could de-anonymise users if they also have DynamoDB access |
 
-**The salt value must remain constant** for the lifetime of user data. It is **never rotated** under normal circumstances.
+### 4.2 Multi-Version Salt Registry
 
-### 4.2 Architecture
+The salt is stored in Secrets Manager as a JSON registry supporting multiple versions:
+
+```json
+{
+  "current": "v2",
+  "versions": {
+    "v1": "Abc123...base64...",
+    "v2": "tiger-happy-castle-river-noble-frost-plume-brave"
+  }
+}
+```
+
+- **`current`**: The version used for all new writes
+- **`versions`**: All known salt values (old versions kept for read-path fallback during migration windows)
+- Lambda functions read the registry on cold start and cache the parsed result
+- All DynamoDB items include a `saltVersion` field indicating which version was used
+
+### 4.3 Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Secrets Manager                              │
 │  ┌─────────────────────────────────────────────────────────┐    │
 │  │ {env}/submit/user-sub-hash-salt                         │    │
-│  │ Value: "Abc123...base64..." (44 chars)                  │    │
+│  │ Value: {"current":"v2","versions":{"v1":"...","v2":"..."}}│   │
 │  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -222,75 +239,105 @@ The user sub hash salt creates the link between Cognito user identities and Dyna
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Lambda Functions                              │
-│  AuthStack: cognitoTokenPost, customAuthorizer                  │
-│  HmrcStack: hmrcTokenPost, vatObligations, vatReturns, etc.     │
-│  AccountStack: bundleGet, bundlePost, bundleDelete              │
+│  subHasher.js: hashSub() uses current version for writes        │
+│                getPreviousVersions() for read-path fallback      │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               │ hashSub(userSub) → HMAC-SHA256
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     DynamoDB Tables                              │
-│  bundles, receipts, hmrc-api-requests                           │
+│  bundles, receipts, hmrc-api-requests, async-requests (5)       │
 │  Partition Key: hashedSub (64-char hex)                         │
+│  Each item stores: saltVersion ("v1", "v2", etc.)               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.3 Salt Creation
+### 4.4 Three Recovery Paths
+
+If the salt is lost from Secrets Manager, three independent recovery paths exist:
+
+| Path | Location | Recovery Method |
+|------|----------|-----------------|
+| **Path 1** | Secrets Manager | Soft-delete recovery (7-30 day window) |
+| **Path 2** | Physical card | 8-word passphrase printed on card in fire safe |
+| **Path 3** | DynamoDB `system#config` item | KMS-encrypted salt, decrypted with DataStack KMS key |
+
+**Path 2 detail**: The current salt (v2) is an 8-word passphrase (~82 bits entropy) that can be typed manually into the `restore-salt` workflow.
+
+### 4.5 Salt Creation
 
 The salt is automatically created by `deploy-environment.yml` in the `create-secrets` job:
 - Only created if it doesn't exist (idempotent)
-- 32-byte cryptographically secure random value (base64 encoded)
+- Initial v1: 32-byte random value (base64 encoded), wrapped in JSON registry format
 - Tagged as `Critical=true`, `BackupRequired=true`
 
-**Source**: `.github/workflows/deploy-environment.yml` lines 182-198
+Migration 003 rotates from v1 to v2 (8-word passphrase) and re-keys all items.
 
-### 4.4 Salt Backup Procedure
-
-**Recommended**: Monthly backup to secure location.
+### 4.6 Salt Backup Procedure
 
 1. Go to **Actions** → **manage secrets**
 2. Select **Action**: `backup-salt`
 3. Select **Environment**: `prod` (or `ci`)
 4. Click **Run workflow**
-5. View the workflow run output
-6. Copy the salt value displayed
-7. Store securely (password manager, encrypted file)
-8. **Delete the workflow run** from Actions history
+5. Copy the **full JSON registry** from the output
+6. Store securely (password manager, encrypted file)
+7. **Delete the workflow run** from Actions history
 
-### 4.5 Salt Recovery Procedures
+The `check-salt` action validates registry format and shows version details without exposing values.
 
-**Scenario 1: Salt accidentally deleted**
+### 4.7 Salt Recovery Procedures
 
-Symptoms:
-- Lambdas fail with "ResourceNotFoundException"
-- All authenticated API calls return 500 errors
+**Scenario: Salt accidentally deleted**
 
-Recovery (with backup):
-1. Go to **Actions** → **manage secrets**
-2. Select **Action**: `restore-salt`
-3. Enter the backed-up salt value
-4. Click **Run workflow**
-5. **Delete the workflow run**
-6. Redeploy or wait for Lambda cold start
+Symptoms: Lambdas fail with "ResourceNotFoundException" on cold start.
 
-Recovery (without backup):
-- **DATA WILL BE LOST** - all user data becomes orphaned
-- Run `deploy environment` workflow to create new salt
-- Users will appear as "new"
+Recovery (try in order):
+1. **Path 1**: Check Secrets Manager soft-delete recovery (7-30 day window)
+2. **Path 3**: Decrypt `system#config`/`salt-v2` item from bundles table using KMS key
+3. **Path 2**: Type the 8-word passphrase from the physical backup card
 
-**Scenario 2: Wrong salt value**
+After recovering the value:
+1. Go to **Actions** → **manage secrets** → `restore-salt`
+2. Enter the full JSON registry value
+3. **Delete the workflow run**
+4. Redeploy or wait for Lambda cold start
 
-Symptoms:
-- Users can't access existing data
-- No error messages (hashing works, just wrong values)
+**Scenario: Salt tampered (wrong value)**
+
+Symptoms: Users can't access data; no errors (hashing works, just wrong values). Detected by salt health canary — a `system#canary` item in the bundles table with a known expected hash.
 
 Recovery:
-1. Identify correct salt from backup
-2. Use `restore-salt` action
+1. Restore correct salt from Path 2 or Path 3
+2. Use `restore-salt` action with the correct registry JSON
 3. Force Lambda cold starts (redeploy)
 
-### 4.6 IAM Access
+**Scenario: Total salt loss (all paths fail)**
+
+If Secrets Manager, physical card, and KMS-encrypted backup are all lost:
+- The HMAC is irreversible by design — user data cannot be reconnected to users
+- Generate a new salt, existing data becomes orphaned (TTLs will clean up over time)
+
+### 4.8 Salt Rotation (Migration Framework)
+
+Salt rotation uses the EF-style migration framework at `scripts/migrations/`:
+
+```bash
+# Run manually via workflow or CLI
+ENVIRONMENT_NAME=ci node scripts/migrations/runner.js --phase post-deploy
+```
+
+Migrations are tracked in the bundles table under `system#migrations` partition key. The runner skips already-applied migrations (idempotent).
+
+| Migration | Phase | Purpose |
+|-----------|-------|---------|
+| 001-convert-salt-to-registry | pre-deploy | Convert raw string to JSON registry |
+| 002-backfill-salt-version-v1 | post-deploy | Add `saltVersion="v1"` to existing items |
+| 003-rotate-salt-to-passphrase | post-deploy | Generate 8-word passphrase, re-key all items |
+
+During rotation, the read-path version fallback ensures users can access data at any salt version in the registry. No user experiences data loss during migration.
+
+### 4.9 IAM Access
 
 Lambda functions are granted access via CDK helper:
 
