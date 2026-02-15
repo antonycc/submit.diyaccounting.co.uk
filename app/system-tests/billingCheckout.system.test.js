@@ -3,10 +3,15 @@
 
 // app/system-tests/billingCheckout.system.test.js
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
+import { describe, test, expect, vi, beforeAll, afterAll } from "vitest";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { startStripeSimulator } from "../test-support/stripeSimulator.js";
 import { makeIdToken, buildEventWithToken } from "../test-helpers/eventBuilders.js";
+
+// Mock DynamoDB bundle repository (getUserBundles for sandbox auto-detection)
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: vi.fn().mockResolvedValue([]),
+}));
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

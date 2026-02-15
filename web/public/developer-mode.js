@@ -192,6 +192,14 @@
 
     // Only show icon if user has a sandbox bundle
     const hasSandboxBundle = await userHasSandboxBundle();
+
+    // Set sessionStorage for sandbox mode based on bundle qualifiers (single source of truth)
+    if (hasSandboxBundle) {
+      sessionStorage.setItem("hmrcAccount", "sandbox");
+    } else {
+      sessionStorage.removeItem("hmrcAccount");
+    }
+
     if (!hasSandboxBundle) return;
 
     const toggle = document.createElement("a");
@@ -497,6 +505,13 @@
 
     const existingToggle = headerLeft.querySelector(".developer-mode-toggle");
     const hasSandboxBundle = await userHasSandboxBundle();
+
+    // Update sessionStorage for sandbox mode based on bundle qualifiers (single source of truth)
+    if (hasSandboxBundle) {
+      sessionStorage.setItem("hmrcAccount", "sandbox");
+    } else {
+      sessionStorage.removeItem("hmrcAccount");
+    }
 
     if (hasSandboxBundle && !existingToggle) {
       // User now has sandbox bundle, inject the icon

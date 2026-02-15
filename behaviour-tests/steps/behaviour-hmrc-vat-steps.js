@@ -166,14 +166,19 @@ export async function fillInVat(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
+      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
+      if (isSandboxMode()) {
+        await page.waitForFunction(
+          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
+          { timeout: 10000 },
+        );
+      }
       // Enable developer mode via sessionStorage and trigger UI update
-      // Also ensure hmrcAccount is set — async bundle load may not have completed yet.
-      await page.evaluate((sandboxMode) => {
+      await page.evaluate(() => {
         sessionStorage.setItem("showDeveloperOptions", "true");
-        if (sandboxMode) sessionStorage.setItem("hmrcAccount", "sandbox");
         document.body.classList.add("developer-mode");
         window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
-      }, isSandboxMode());
+      });
       console.log("Enabled developer mode for test scenario");
 
       // Wait for developer section to be visible
@@ -324,14 +329,19 @@ export async function fillInVat9Box(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
+      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
+      if (isSandboxMode()) {
+        await page.waitForFunction(
+          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
+          { timeout: 10000 },
+        );
+      }
       // Enable developer mode via sessionStorage and trigger UI update
-      // Also ensure hmrcAccount is set — async bundle load may not have completed yet.
-      await page.evaluate((sandboxMode) => {
+      await page.evaluate(() => {
         sessionStorage.setItem("showDeveloperOptions", "true");
-        if (sandboxMode) sessionStorage.setItem("hmrcAccount", "sandbox");
         document.body.classList.add("developer-mode");
         window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
-      }, isSandboxMode());
+      });
       console.log("Enabled developer mode for test scenario");
 
       const devSection = page.locator("#developerSection");
@@ -647,14 +657,19 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
     if (testScenario || runFraudPreventionHeaderValidation) {
+      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
+      if (isSandboxMode()) {
+        await page.waitForFunction(
+          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
+          { timeout: 10000 },
+        );
+      }
       // Enable developer mode via sessionStorage and trigger UI update
-      // Also ensure hmrcAccount is set — async bundle load may not have completed yet.
-      await page.evaluate((sandboxMode) => {
+      await page.evaluate(() => {
         sessionStorage.setItem("showDeveloperOptions", "true");
-        if (sandboxMode) sessionStorage.setItem("hmrcAccount", "sandbox");
         document.body.classList.add("developer-mode");
         window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
-      }, isSandboxMode());
+      });
       console.log("Enabled developer mode for test scenario");
 
       const devSection = page.locator("#developerSection");
@@ -1050,14 +1065,19 @@ export async function fillInViewVatReturn(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-view-vat-fill-in.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation) {
+      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
+      if (isSandboxMode()) {
+        await page.waitForFunction(
+          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
+          { timeout: 10000 },
+        );
+      }
       // Enable developer mode via sessionStorage and trigger UI update
-      // Also ensure hmrcAccount is set — async bundle load may not have completed yet.
-      await page.evaluate((sandboxMode) => {
+      await page.evaluate(() => {
         sessionStorage.setItem("showDeveloperOptions", "true");
-        if (sandboxMode) sessionStorage.setItem("hmrcAccount", "sandbox");
         document.body.classList.add("developer-mode");
         window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
-      }, isSandboxMode());
+      });
       console.log("Enabled developer mode for test scenario");
 
       const devSection = page.locator("#developerSection");

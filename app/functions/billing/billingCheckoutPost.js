@@ -15,6 +15,7 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingCheckoutPost.js" });
@@ -73,9 +74,14 @@ export async function ingestHandler(event) {
     await initializeSalt();
     const hashedSub = hashSub(userSub);
 
-    // Determine sandbox mode from request — same pattern as HMRC hmrcAccount header
+    // Determine sandbox mode: bundle qualifiers are the source of truth (same pattern as billingPortalGet.js)
+    const userBundles = await getUserBundles(userSub);
+    const hasSandboxBundle = userBundles.some((b) => b.qualifiers?.sandbox === true);
+
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body || {};
-    const isSandbox = body.sandbox === true || event.headers?.["hmrcaccount"] === "sandbox";
+    const isSandbox = hasSandboxBundle || body.sandbox === true || event.headers?.["hmrcaccount"] === "sandbox";
+    const sandboxSource = hasSandboxBundle ? "bundle-qualifier" : body.sandbox === true ? "request-body" : event.headers?.["hmrcaccount"] === "sandbox" ? "hmrcaccount-header" : "none";
+    logger.info({ message: "Sandbox mode resolved", isSandbox, sandboxSource });
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
     const priceId = resolveStripePriceId(isSandbox);
