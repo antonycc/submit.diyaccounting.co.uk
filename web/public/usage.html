@@ -351,6 +351,15 @@
         }
       }
 
+      // Allowlist: only these keys have their values displayed.
+      // Everything else is redacted by default to avoid leaking internal state.
+      var STORAGE_ALLOWLIST = new Set([
+        "cognitoIdToken", "cognitoAccessToken", "cognitoRefreshToken",
+        "userInfo", "loginProvider", "authState", "auth:lastUpdate",
+        "consent.rum", "consent.analytics",
+        "waitlistRegistered",
+      ]);
+
       function redactValue(key, value) {
         if (/^cognito.*Token$/.test(key)) {
           var claims = window.parseJwtClaims ? window.parseJwtClaims(value) : null;
@@ -369,6 +378,9 @@
             if (info.email) parts.push(info.email);
             return parts.length > 0 ? parts.join(", ") : value;
           } catch (e) { return value; }
+        }
+        if (!STORAGE_ALLOWLIST.has(key)) {
+          return "[redacted]";
         }
         return value || "(empty)";
       }
