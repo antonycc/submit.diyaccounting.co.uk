@@ -106,6 +106,11 @@ public class BillingStack extends Stack {
             return "";
         }
 
+        @Value.Default
+        default String stripeTestWebhookSecretArn() {
+            return "";
+        }
+
         static ImmutableBillingStackProps.Builder builder() {
             return ImmutableBillingStackProps.builder();
         }
@@ -368,6 +373,10 @@ public class BillingStack extends Stack {
                 && !props.stripeWebhookSecretArn().isBlank()) {
             billingWebhookPostLambdaEnv.with("STRIPE_WEBHOOK_SECRET_ARN", props.stripeWebhookSecretArn());
         }
+        if (props.stripeTestWebhookSecretArn() != null
+                && !props.stripeTestWebhookSecretArn().isBlank()) {
+            billingWebhookPostLambdaEnv.with("STRIPE_TEST_WEBHOOK_SECRET_ARN", props.stripeTestWebhookSecretArn());
+        }
         var billingWebhookPostApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -429,6 +438,17 @@ public class BillingStack extends Stack {
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
                     .resources(List.of(webhookSecretArnWithWildcard))
+                    .build());
+        }
+        if (props.stripeTestWebhookSecretArn() != null
+                && !props.stripeTestWebhookSecretArn().isBlank()) {
+            var testWebhookSecretArnWithWildcard = props.stripeTestWebhookSecretArn().endsWith("*")
+                    ? props.stripeTestWebhookSecretArn()
+                    : props.stripeTestWebhookSecretArn() + "-*";
+            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(testWebhookSecretArnWithWildcard))
                     .build());
         }
         infof(

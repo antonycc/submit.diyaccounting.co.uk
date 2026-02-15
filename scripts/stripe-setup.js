@@ -110,17 +110,23 @@ async function main() {
   );
 
   const mode = STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE" : "TEST";
+  const secretEnvName = mode === "TEST" ? "STRIPE_TEST_WEBHOOK_SECRET" : "STRIPE_WEBHOOK_SECRET";
   console.log(`\n=== Stripe Setup Complete (${mode} mode) ===`);
   console.log("Product ID:", product.id);
   console.log("Price ID:", price.id);
-  console.log("Proxy Webhook ID:", proxyWebhook.id);
-  console.log("Proxy Webhook Secret:", proxyWebhook.secret || "(already exists — retrieve from Dashboard)");
-  console.log("CI Webhook ID:", ciWebhook.id);
-  console.log("CI Webhook Secret:", ciWebhook.secret || "(already exists — retrieve from Dashboard)");
-  console.log("Prod Webhook ID:", prodWebhook.id);
-  console.log("Prod Webhook Secret:", prodWebhook.secret || "(already exists — retrieve from Dashboard)");
-  console.log("\nNext: run scripts/stripe-setup-secrets.sh to store IDs in AWS Secrets Manager");
-  console.log("For proxy: set STRIPE_WEBHOOK_SECRET in .env.proxy to the proxy webhook secret");
+  console.log(`\nProxy Webhook (${mode}):`);
+  console.log("  ID:", proxyWebhook.id);
+  console.log("  Secret:", proxyWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
+  console.log(`CI Webhook (${mode}):`);
+  console.log("  ID:", ciWebhook.id);
+  console.log("  Secret:", ciWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
+  console.log(`Prod Webhook (${mode}):`);
+  console.log("  ID:", prodWebhook.id);
+  console.log("  Secret:", prodWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
+  console.log(`\nStore these as ${secretEnvName} per environment:`);
+  console.log(`  Proxy: set ${secretEnvName} in .env (gitignored)`);
+  console.log(`  CI:    set ${secretEnvName} in GitHub Environment "ci"`);
+  console.log(`  Prod:  set ${secretEnvName} in GitHub Environment "prod"`);
 }
 
 main().catch((err) => {

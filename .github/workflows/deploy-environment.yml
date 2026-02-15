@@ -209,15 +209,36 @@ jobs:
             aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_TEST_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
           fi
 
-      - name: Create secret in AWS from secrets.STRIPE_WEBHOOK_SECRET
+      - name: Create Stripe webhook secret (live mode) from environment secret
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/webhook_secret"
+          SECRET_VALUE="${{ secrets.STRIPE_WEBHOOK_SECRET }}"
+          if [ -z "$SECRET_VALUE" ]; then
+            echo "No STRIPE_WEBHOOK_SECRET in ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }} environment, skipping"
+            exit 0
+          fi
           if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
             echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_WEBHOOK_SECRET }}" --region ${{ env.AWS_REGION }}
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
           else
             echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_WEBHOOK_SECRET }}" --region ${{ env.AWS_REGION }}
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
+          fi
+
+      - name: Create Stripe test webhook secret from environment secret
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/test_webhook_secret"
+          SECRET_VALUE="${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}"
+          if [ -z "$SECRET_VALUE" ]; then
+            echo "No STRIPE_TEST_WEBHOOK_SECRET in ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }} environment, skipping"
+            exit 0
+          fi
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
           fi
 
       - name: Create secret in AWS from secrets.TELEGRAM_BOT_TOKEN

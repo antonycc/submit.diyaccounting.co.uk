@@ -60,7 +60,7 @@ async function main() {
   const timestamp = Date.now();
   const randomHex = crypto.randomBytes(4).toString("hex");
   const testEmail = `test-${timestamp}-${randomHex}@test.diyaccounting.co.uk`;
-  const testPassword = `Test${crypto.randomBytes(8).toString("hex")}!Aa1`;
+  const testPassword = `Test${crypto.randomBytes(8).toString("hex")}Aa1#`;
 
   console.log(`Creating test user: ${testEmail}`);
 

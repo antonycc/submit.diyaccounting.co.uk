@@ -135,7 +135,8 @@ describe("billingWebhookPost", () => {
     });
 
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
-    process.env.STRIPE_WEBHOOK_SECRET = "whsec_test_mock";
+    process.env.STRIPE_WEBHOOK_SECRET = "whsec_live_mock";
+    process.env.STRIPE_TEST_WEBHOOK_SECRET = "whsec_test_mock";
   });
 
   afterEach(() => {
@@ -362,6 +363,36 @@ describe("billingWebhookPost", () => {
 
     expect(result.statusCode).toBe(200);
     expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+  });
+
+  test("uses test webhook secret for test-mode events (livemode: false)", async () => {
+    const payload = {
+      ...buildCheckoutSessionPayload(),
+      livemode: false,
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    // constructEvent should have been called with the test webhook secret
+    expect(mockWebhooksConstructEvent.mock.calls[0][2]).toBe("whsec_test_mock");
+  });
+
+  test("uses live webhook secret for live-mode events (livemode: true)", async () => {
+    const payload = {
+      ...buildCheckoutSessionPayload(),
+      livemode: true,
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    // constructEvent should have been called with the live webhook secret
+    expect(mockWebhooksConstructEvent.mock.calls[0][2]).toBe("whsec_live_mock");
   });
 
   test("returns 500 when bundle grant fails", async () => {

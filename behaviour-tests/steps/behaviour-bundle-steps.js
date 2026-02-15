@@ -641,7 +641,7 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
     await page.waitForLoadState("networkidle");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-07-bundle-granted.png` });
 
-    return { checkoutCompleted: true, checkoutUrl };
+    return { checkoutCompleted: true, checkoutUrl, isStripeCheckout, isSimulatorCheckout };
   });
 }
 
@@ -939,5 +939,237 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-request-bundle.png` });
     await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).toBeVisible({ timeout: 32000 });
+  });
+}
+
+/**
+ * Poll the bundle API until the bundle has stripeSubscriptionId set,
+ * proving the checkout.session.completed webhook fired and wrote to DynamoDB.
+ */
+export async function waitForBundleWebhookActivation(
+  page,
+  bundleId,
+  screenshotPath = defaultScreenshotPath,
+  { timeoutMs = 30_000, pollIntervalMs = 2_000 } = {},
+) {
+  return await test.step(`Wait for webhook to activate ${bundleId} bundle`, async () => {
+    console.log(`[webhook-activation]: Polling for stripeSubscriptionId on ${bundleId}...`);
+    const startTime = Date.now();
+    let pollCount = 0;
+
+    while (Date.now() - startTime < timeoutMs) {
+      pollCount++;
+      const result = await page.evaluate(async (bid) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { error: "no auth token" };
+        const response = await fetch("/api/v1/bundle", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        const data = await response.json();
+        const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
+        if (!bundle) return { found: false };
+        return {
+          found: true,
+          stripeSubscriptionId: bundle.stripeSubscriptionId || null,
+          subscriptionStatus: bundle.subscriptionStatus || null,
+          cancelAtPeriodEnd: bundle.cancelAtPeriodEnd ?? null,
+          tokensRemaining: bundle.tokensRemaining ?? null,
+        };
+      }, bundleId);
+
+      if (result.found && result.stripeSubscriptionId) {
+        console.log(
+          `[webhook-activation]: Bundle ${bundleId} activated by webhook after ${Date.now() - startTime}ms (${pollCount} polls). stripeSubscriptionId=${result.stripeSubscriptionId}, status=${result.subscriptionStatus}`,
+        );
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-webhook-activation-confirmed.png` });
+        return result;
+      }
+
+      console.log(
+        `[webhook-activation]: Poll ${pollCount} - bundle ${bundleId}: found=${result.found}, stripeSubscriptionId=${result.stripeSubscriptionId}, elapsed=${Date.now() - startTime}ms`,
+      );
+      await page.waitForTimeout(pollIntervalMs);
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-webhook-activation-TIMEOUT.png`, fullPage: true });
+    throw new Error(
+      `Webhook activation timeout: bundle '${bundleId}' was not granted by webhook within ${timeoutMs}ms. ` +
+        `The checkout.session.completed webhook did not fire or failed. Check webhook secret configuration.`,
+    );
+  });
+}
+
+/**
+ * Navigate to the Stripe billing portal by clicking the "Manage Subscription" button.
+ * Returns { isSimulator: true } if the mock portal redirects straight back to bundles.html.
+ */
+export async function navigateToStripePortal(page, bundleId, screenshotPath = defaultScreenshotPath) {
+  return await test.step(`Navigate to Stripe billing portal for ${bundleId}`, async () => {
+    const manageBtn = page.locator('button[data-manage-subscription="true"]').first();
+    await expect(manageBtn).toBeVisible({ timeout: 10_000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-01-manage-btn-visible.png` });
+
+    // The "Manage Subscription" button does: fetch(/api/v1/billing/portal) → window.location.href = portalUrl
+    // The navigation is deferred (after async API call), so we must wait for the URL to LEAVE bundles.html.
+    const beforeUrl = page.url();
+    console.log(`Current URL before portal click: ${beforeUrl}`);
+
+    // Click and wait for the URL to change away from the current page
+    try {
+      await Promise.all([
+        page.waitForURL((url) => url.href !== beforeUrl, { timeout: 15_000 }),
+        manageBtn.click({ force: true }),
+      ]);
+    } catch {
+      // Navigation didn't happen within 15s — still on bundles.html. This is simulator behavior.
+      console.log("Simulator detected: portal button did not navigate away from bundles.html");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-02-simulator-detected.png` });
+      return { isSimulator: true };
+    }
+
+    const currentUrl = page.url();
+    console.log(`Navigated to: ${currentUrl}`);
+
+    if (currentUrl.includes("billing.stripe.com")) {
+      // Real Stripe portal
+      await page.waitForLoadState("domcontentloaded");
+      await page.waitForTimeout(3000); // Wait for Stripe SPA to render
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-02-stripe-loaded.png`, fullPage: true });
+      return { isSimulator: false, portalUrl: currentUrl };
+    }
+
+    // Unexpected URL — might be a different portal implementation
+    console.log(`Unexpected portal URL: ${currentUrl}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-02-unexpected-url.png` });
+    return { isSimulator: false, portalUrl: currentUrl };
+  });
+}
+
+/**
+ * Within the Stripe billing portal, cancel the subscription and navigate back to bundles.html.
+ * The return_url set by billingPortalGet.js is `${baseUrl}bundles.html`.
+ */
+export async function cancelSubscriptionViaPortal(page, returnUrl, screenshotPath = defaultScreenshotPath) {
+  return await test.step("Cancel subscription via Stripe billing portal", async () => {
+    console.log("Looking for 'Cancel plan' in Stripe portal...");
+
+    // Stripe portal shows subscription with a "Cancel plan" link/button
+    const cancelPlanLocator = page.locator(
+      [
+        'button:has-text("Cancel plan")',
+        'a:has-text("Cancel plan")',
+        'button:has-text("Cancel subscription")',
+        'a:has-text("Cancel subscription")',
+      ].join(", "),
+    );
+
+    await cancelPlanLocator.first().waitFor({ state: "visible", timeout: 15_000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-03-cancel-btn-visible.png` });
+    await cancelPlanLocator.first().click({ force: true });
+    console.log("Clicked 'Cancel plan' in Stripe portal");
+
+    await page.waitForTimeout(2000); // Wait for Stripe SPA transition
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-04-cancel-confirmation.png`, fullPage: true });
+
+    // Stripe shows a confirmation page with a second "Cancel plan" button.
+    // Use a submit button or a distinct confirm button — avoid re-matching the same link.
+    const confirmCancelLocator = page.locator(
+      ['button[type="submit"]:has-text("Cancel")', 'button:has-text("Cancel plan")', 'button:has-text("Cancel subscription")'].join(", "),
+    );
+
+    if (
+      await confirmCancelLocator
+        .first()
+        .isVisible({ timeout: 5000 })
+        .catch(() => false)
+    ) {
+      await confirmCancelLocator.first().click({ force: true });
+      console.log("Confirmed cancellation in Stripe portal");
+      await page.waitForTimeout(3000);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-05-post-confirm.png`, fullPage: true });
+    }
+
+    // Verify cancellation succeeded: look for "Cancels" badge or "Don't cancel" button
+    const cancellationConfirmed =
+      (await page
+        .locator('text=Cancels')
+        .first()
+        .isVisible({ timeout: 5000 })
+        .catch(() => false)) ||
+      (await page
+        .locator('button:has-text("Don\'t cancel")')
+        .first()
+        .isVisible({ timeout: 2000 })
+        .catch(() => false));
+    console.log(`Cancellation confirmed in portal UI: ${cancellationConfirmed}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-05b-cancellation-confirmed.png`, fullPage: true });
+
+    // Navigate back to bundles.html. The Stripe portal "Return to" link is an SPA route
+    // that often doesn't trigger a real page navigation when clicked. Use direct navigation.
+    if (!page.url().includes("bundles.html")) {
+      console.log(`Still on Stripe portal (${page.url()}), navigating back to bundles.html...`);
+      await page.goto(returnUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+      await page.waitForLoadState("networkidle");
+    }
+
+    console.log("Back on bundles.html after Stripe portal cancellation");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-portal-06-returned.png` });
+    return { canceled: cancellationConfirmed };
+  });
+}
+
+/**
+ * Poll for cancellation webhook effect on the bundle.
+ * Does NOT throw on timeout — returns { timedOut: true } since webhook delivery is unpredictable.
+ */
+export async function waitForCancellationWebhook(
+  page,
+  bundleId,
+  screenshotPath = defaultScreenshotPath,
+  { timeoutMs = 30_000, pollIntervalMs = 2_000 } = {},
+) {
+  return await test.step(`Wait for cancellation webhook on ${bundleId}`, async () => {
+    console.log(`[cancellation-webhook]: Polling for cancellation effect on ${bundleId}...`);
+    const startTime = Date.now();
+    let pollCount = 0;
+    let lastState = null;
+
+    while (Date.now() - startTime < timeoutMs) {
+      pollCount++;
+      const result = await page.evaluate(async (bid) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { error: "no auth token" };
+        const response = await fetch("/api/v1/bundle", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        const data = await response.json();
+        const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
+        if (!bundle) return { found: false };
+        return {
+          found: true,
+          cancelAtPeriodEnd: bundle.cancelAtPeriodEnd ?? null,
+          subscriptionStatus: bundle.subscriptionStatus || null,
+        };
+      }, bundleId);
+
+      lastState = result;
+
+      if (result.found && (result.cancelAtPeriodEnd === true || result.subscriptionStatus === "canceled")) {
+        console.log(
+          `[cancellation-webhook]: Cancellation confirmed after ${Date.now() - startTime}ms: cancelAtPeriodEnd=${result.cancelAtPeriodEnd}, status=${result.subscriptionStatus}`,
+        );
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-cancellation-webhook-confirmed.png` });
+        return { cancelAtPeriodEnd: result.cancelAtPeriodEnd, subscriptionStatus: result.subscriptionStatus };
+      }
+
+      console.log(
+        `[cancellation-webhook]: Poll ${pollCount} - cancelAtPeriodEnd=${result.cancelAtPeriodEnd}, status=${result.subscriptionStatus}, elapsed=${Date.now() - startTime}ms`,
+      );
+      await page.waitForTimeout(pollIntervalMs);
+    }
+
+    console.warn(`[cancellation-webhook]: Timed out after ${timeoutMs}ms. Last state: ${JSON.stringify(lastState)}`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-cancellation-webhook-TIMEOUT.png`, fullPage: true });
+    return { timedOut: true, lastState };
   });
 }

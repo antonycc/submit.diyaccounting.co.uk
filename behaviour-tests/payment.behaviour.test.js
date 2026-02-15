@@ -46,6 +46,10 @@ import {
   verifySubscriptionManagement,
   verifyTokenConsumption,
   verifyTokenSources,
+  waitForBundleWebhookActivation,
+  navigateToStripePortal,
+  cancelSubscriptionViaPortal,
+  waitForCancellationWebhook,
 } from "./steps/behaviour-bundle-steps.js";
 import { fillInVat } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
@@ -356,7 +360,17 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("=".repeat(60));
 
     await goToBundlesPage(page, screenshotPath);
-    await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { testPass: true });
+    const checkoutResult = await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { testPass: true });
+
+    // If real Stripe checkout was used, wait for the webhook to activate the bundle.
+    // This is the key verification that would catch webhook signature failures.
+    if (checkoutResult?.isStripeCheckout) {
+      console.log("Real Stripe checkout detected — waiting for webhook to activate bundle...");
+      await waitForBundleWebhookActivation(page, "resident-pro", screenshotPath, { timeoutMs: 45_000 });
+      console.log("Webhook activation confirmed — bundle has stripeSubscriptionId");
+    } else {
+      console.log("Simulator checkout — skipping webhook activation wait");
+    }
 
     const tokens = await getTokensRemaining(page, "resident-pro");
     console.log(`Resident-pro tokens remaining: ${tokens}`);
@@ -506,11 +520,53 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
   });
 
   // ============================================================
-  // STEP 10: Logout
+  // STEP 10: Navigate to Stripe portal, cancel subscription
+  // After all business activities are complete, exercise the
+  // Stripe billing portal and cancel the subscription.
+  // Simulator: skips portal (mock redirects straight back).
+  // Proxy/CI/Prod: real Stripe portal, real cancellation.
+  // ============================================================
+  await test.step("Navigate to Stripe portal and cancel subscription", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 10: Navigate to Stripe portal and cancel subscription");
+    console.log("=".repeat(60));
+
+    await goToBundlesPage(page, screenshotPath);
+
+    const portalResult = await navigateToStripePortal(page, "resident-pro", screenshotPath);
+
+    if (portalResult.isSimulator) {
+      console.log("Simulator detected — skipping portal cancellation");
+    } else {
+      // Real Stripe portal: verify subscription visible, then cancel
+      console.log("In Stripe billing portal — cancelling subscription...");
+      const bundlesUrl = new URL("bundles.html", testUrl).href;
+      const cancelResult = await cancelSubscriptionViaPortal(page, bundlesUrl, screenshotPath);
+      console.log(`Cancellation result: ${JSON.stringify(cancelResult)}`);
+
+      // Verify we landed back on bundles.html
+      const currentUrl = page.url();
+      console.log(`Post-cancellation URL: ${currentUrl}`);
+      expect(currentUrl).toContain("bundles.html");
+
+      // Wait for cancellation webhook (soft fail — don't break the test if webhook is slow)
+      const webhookResult = await waitForCancellationWebhook(page, "resident-pro", screenshotPath, { timeoutMs: 30_000 });
+      if (webhookResult.timedOut) {
+        console.warn("WARNING: Cancellation webhook did not fire within 30s — subscription may still show as active");
+      } else {
+        console.log(`Cancellation webhook confirmed: cancelAtPeriodEnd=${webhookResult.cancelAtPeriodEnd}, status=${webhookResult.subscriptionStatus}`);
+      }
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-portal-complete.png` });
+  });
+
+  // ============================================================
+  // STEP 11: Logout
   // ============================================================
   await test.step("Logout", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 10: Logout");
+    console.log("STEP 11: Logout");
     console.log("=".repeat(60));
 
     await logOutAndExpectToBeLoggedOut(page, screenshotPath);
