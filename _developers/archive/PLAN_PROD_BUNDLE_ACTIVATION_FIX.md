@@ -1,10 +1,9 @@
 # Plan: Per-Environment Dual Webhook Secrets for Stripe
 
 **Created**: 15 February 2026
-**Status**: Code changes complete, awaiting GitHub secrets + deployment
-**Branch**: `activate`
+**Status**: Code complete. PR #706 merged. CI pipeline payment test passes (4m36s). Awaiting GitHub secrets + prod deployment.
+**Branch**: `activate` (merged to `main` via PR #705/#706)
 **Related**: PLAN_PAYMENT_GOLIVE.md Phase 4 (Human Test in Prod with Test Passes)
-**Branch**: `activate`
 
 ---
 
@@ -519,12 +518,33 @@ Once this is implemented:
 - [ ] **Manual**: Retrieve test-mode signing secrets from Stripe Dashboard for CI and prod endpoints
 - [ ] **Manual**: Retrieve (or create) live-mode signing secrets from Stripe Dashboard for prod endpoint
 - [ ] **Manual**: Set GitHub Environment secrets (`STRIPE_WEBHOOK_SECRET` + `STRIPE_TEST_WEBHOOK_SECRET` in both `ci` and `prod` environments)
-- [ ] **Code**: Update `billingWebhookPost.js` with dual-secret resolution
-- [ ] **Code**: Update `BillingStack.java` and `SubmitApplication.java` with `stripeTestWebhookSecretArn`
-- [ ] **Code**: Update `.env.ci` and `.env.prod` with `STRIPE_TEST_WEBHOOK_SECRET_ARN`
-- [ ] **Code**: Update `deploy-environment.yml` with per-environment secret creation
-- [ ] **Code**: Update `stripe-setup.js` output labelling
-- [ ] **Code**: Update unit tests for dual-secret logic
-- [ ] **Verify**: `npm test` + `./mvnw clean verify`
-- [ ] **Verify**: Deploy to CI, run `paymentBehaviour-ci`
+- [x] **Code**: Update `billingWebhookPost.js` with dual-secret resolution (PR #706)
+- [x] **Code**: Update `BillingStack.java` and `SubmitApplication.java` with `stripeTestWebhookSecretArn` (PR #706)
+- [x] **Code**: Update `.env.ci` and `.env.prod` with `STRIPE_TEST_WEBHOOK_SECRET_ARN` (PR #706)
+- [x] **Code**: Update `deploy-environment.yml` with per-environment secret creation (PR #706)
+- [x] **Code**: Update `stripe-setup.js` output labelling (PR #706)
+- [x] **Code**: Update unit tests for dual-secret logic (PR #706)
+- [x] **Verify**: `npm test` + `./mvnw clean verify` — passes
+- [x] **Verify**: Deploy to CI, run `paymentBehaviour-ci` — passes (4m36s, synthetic-test workflow run #22043787833)
 - [ ] **Verify**: Deploy to prod, re-attempt human test (Phase 4.2)
+
+## Additional Work Done (15 Feb 2026)
+
+### Payment Behaviour Test Uplift
+
+The `paymentBehaviour` test was extended to exercise the full Stripe lifecycle, catching issues like the webhook failure that caused this plan:
+
+| New Helper | Purpose |
+|------------|---------|
+| `waitForBundleWebhookActivation` | Polls `GET /api/v1/bundle` until `stripeSubscriptionId` appears — proves webhook fired |
+| `navigateToStripePortal` | Clicks "Manage Subscription", waits for navigation to `billing.stripe.com` |
+| `cancelSubscriptionViaPortal` | Cancels subscription in portal, navigates back to bundles page |
+| `waitForCancellationWebhook` | Polls for `cancelAtPeriodEnd: true` (soft timeout — warns, doesn't fail) |
+
+Test now covers: login → day-guest → token drain → activities disabled → upsell → checkout → **webhook activation wait** → VAT submission → token verification → usage page → **portal navigation → cancellation** → logout.
+
+**Files changed**: `behaviour-tests/steps/behaviour-bundle-steps.js`, `behaviour-tests/payment.behaviour.test.js`
+
+### Cognito Test User Password Fix
+
+Changed `scripts/create-cognito-test-user.js` to use `#` instead of `!` as the symbol character in generated passwords. The `!` character caused shell escaping issues when passing credentials via environment variables.

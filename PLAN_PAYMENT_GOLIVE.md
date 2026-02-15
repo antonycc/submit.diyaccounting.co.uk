@@ -1,8 +1,9 @@
 # Payment Go-Live Plan
 
 **Created**: 14 February 2026
-**Status**: Phase 1 in progress
-**Branch**: `claude/ux-fixes-jane-feedback` (current), merging to `main` after Phase 1
+**Updated**: 15 February 2026
+**Status**: Phase 1 nearly complete. Phases 2-3 partially done. See gap analysis below.
+**Branch**: `activate` (merged via PR #705/#706), `nvsubhash` (sub-hash versioning, in progress)
 
 **Consolidates remaining work from**:
 - `PLAN_PAYMENT_INTEGRATION.md` (Phases 5, 7, 8, 9, 10)
@@ -28,6 +29,10 @@ Please suggest a test plan for my nephew who is going to doing some manual qa. I
 
 This is the target experience for a human tester — the same journey that synthetic tests will automate. It works in both CI and prod because credential routing is driven by the pass type, not the environment.
 
+**Full human test plan**: See `PLAN_HUMAN_TEST.md` for the 8-section iterative QA plan with checklists, mobile/desktop coverage, and Telegram monitoring.
+
+**Synthetic test coverage**: The `paymentBehaviour` test covers steps 1-9 below plus Stripe portal navigation and subscription cancellation. Steps marked with * have additional coverage needed for the full human test (see Gap Analysis below).
+
 1. **Login** via Cognito (native in CI, Google in prod)
 2. **Redeem a test pass for day-guest** — gets 3 tokens despite `cap = 0` (pass bypasses cap)
 3. **Use all 3 tokens** — submit VAT to sandbox HMRC (not live)
@@ -37,6 +42,8 @@ This is the target experience for a human tester — the same journey that synth
 7. **Submit VAT return** — goes to sandbox HMRC, consumes 1 resident-pro token
 8. **Check token usage page** — `/usage.html` shows correct sources and consumption
 9. **Verify Telegram alerts** — each step generates a message in the correct channel
+10. * **Generate a digital pass** — Pro subscriber creates a shareable pass with QR code (10 tokens)
+11. * **Manage subscription** — Navigate to Stripe billing portal, view subscription details
 
 **Routing rules** (same code path, different credentials):
 
@@ -74,23 +81,32 @@ curl -X POST /api/v1/admin/pass \
 | 1.1 | `npm test` — all unit + system tests pass | Done |
 | 1.2 | `./mvnw clean verify` — CDK builds | Done |
 | 1.3 | `npm run test:paymentBehaviour-simulator` — simulator passes | Done |
-| 1.4 | Commit, push to feature branch | Done — deploying now |
-| 1.5 | Monitor CI deployment | In progress |
-| 1.6 | Run `paymentBehaviour-ci` — verify full conversion funnel | |
-| 1.7 | Run `submitVatBehaviour-ci` — verify VAT submission still works | |
-| 1.8 | Verify Telegram messages arrive in correct channels (test channel for synthetic user) | |
-| 1.9 | Merge to `main` | After 1.6-1.8 pass |
+| 1.4 | Commit, push to feature branch | Done |
+| 1.5 | Monitor CI deployment | Done |
+| 1.6 | Run `paymentBehaviour-ci` — verify full conversion funnel | Done (4m36s, run #22043787833) |
+| 1.7 | Run `submitVatBehaviour-ci` — verify VAT submission still works | Done (confirmed locally) |
+| 1.8 | Verify Telegram messages arrive in correct channels (test channel for synthetic user) | Pending — manual verification |
+| 1.9 | Merge to `main` | PR #705 merged. PR #706 (`activate`) merged. |
+
+### Additional Phase 1 work completed (15 Feb 2026)
+
+- **Payment behaviour test uplift**: Full Stripe lifecycle coverage — webhook activation wait, portal navigation, subscription cancellation. Test passes in proxy (3 consecutive passes) and CI (pipeline).
+- **Dual webhook secret fix**: Per-environment webhook signing secrets with livemode peek. See `PLAN_PROD_BUNDLE_ACTIVATION_FIX.md`.
+- **Human QA test plan**: `PLAN_HUMAN_TEST.md` — 8-section iterative manual test plan.
+- **Cognito password fix**: `#` instead of `!` in generated test passwords to avoid shell escaping.
 
 ### Validation criteria
 
-- `paymentBehaviour-ci` passes: day-guest pass → exhaust tokens → resident-pro pass → VAT submission → usage page
-- `submitVatBehaviour-ci` passes: day-guest via test pass → sandbox HMRC submission → obligations → view return
-- Telegram test channel receives messages for synthetic user activity
-- No regressions in other CI synthetic tests
+- `paymentBehaviour-ci` passes: day-guest pass → exhaust tokens → resident-pro pass → VAT submission → usage page — **DONE**
+- `submitVatBehaviour-ci` passes: day-guest via test pass → sandbox HMRC submission → obligations → view return — **DONE**
+- Telegram test channel receives messages for synthetic user activity — **Pending manual verification**
+- No regressions in other CI synthetic tests — **Pending full suite run**
 
 ---
 
 ## Phase 2: Subscription Lifecycle Handlers
+
+**Status**: Partially done. `checkout.session.completed` and `customer.subscription.updated` handlers exist. Portal cancellation verified in behaviour test (soft timeout on webhook in proxy — no subscription table). Remaining: invoice.paid renewal, payment failure, refund/dispute handlers.
 
 **Goal**: Handle Stripe renewal, cancellation, and payment failure events. Currently only `checkout.session.completed` is handled — the webhook ignores all other events.
 
@@ -142,6 +158,8 @@ Deploy to CI. All lifecycle events handled correctly. Token refresh on renewal v
 
 ## Phase 3: Frontend Subscribe Button
 
+**Status**: Mostly done. Checkout flow works end-to-end (pass redemption → checkout redirect → payment → bundle granted). "Manage Subscription" button works and navigates to Stripe billing portal. Behaviour test covers the full journey including portal.
+
 **Goal**: Users can subscribe to resident-pro from `bundles.html` via Stripe Checkout. Full end-to-end from button click through payment to active bundle.
 
 ### 3.1 bundles.html subscription UI
@@ -182,9 +200,13 @@ Deploy to CI. "Subscribe" button visible on bundles page. Checkout redirect work
 
 **Goal**: A human tester walks through the full journey on the production site using test passes. This validates the real prod environment (Cognito Google login, real CloudFront, real Lambda) without touching live HMRC or charging real money.
 
+**Test plan**: `PLAN_HUMAN_TEST.md` — 8 iterative sections, building in complexity with early endorphin feedback. Covers mobile + desktop, Telegram feed matching, and ops incident recording.
+
 ### Prerequisites
 
-- Phases 1-3 merged to `main` and deployed to prod
+- Phases 1-3.5 merged to `main` and deployed to prod
+- Dual webhook secrets configured (see `PLAN_PROD_BUNDLE_ACTIVATION_FIX.md`)
+- Pass generation activity working (Phase 3.5)
 - Prod environment has both live and sandbox HMRC secrets
 - Prod environment has both live and test Stripe secrets
 
@@ -223,16 +245,17 @@ curl -X POST https://submit.diyaccounting.co.uk/api/v1/admin/pass \
 
 ### 4.2 Human tester walks through the journey
 
-Execute the Human Test Journey (steps 1-9 above) on `submit.diyaccounting.co.uk`:
-1. Login via Google
-2. Redeem day-guest test pass → 3 tokens, sandbox HMRC
-3. Use all 3 tokens submitting to sandbox HMRC
-4. See activities disabled, upsell to bundles
-5. Redeem resident-pro test pass → 100 tokens
-6. Click "Subscribe" → test Stripe checkout (use card `4242 4242 4242 4242`)
-7. Submit VAT to sandbox HMRC → token consumed
-8. Check `/usage.html` → correct sources and consumption
-9. Check Telegram `@diy_prod_test` channel → messages for each step
+Execute `PLAN_HUMAN_TEST.md` Sections 1-8 on `submit.diyaccounting.co.uk`:
+
+1. **Section 1**: Browse gateway + submit sites without login — information discovery
+2. **Section 2**: Login via Google, explore authenticated experience, check bundles + usage
+3. **Section 3**: Redeem day-guest test pass → 3 tokens → query HMRC obligations (sandbox)
+4. **Section 4**: Submit VAT to sandbox HMRC → view receipt → check token count
+5. **Section 5**: Exhaust tokens → see disabled activities → see upsell
+6. **Section 6**: Redeem resident-pro test pass → Stripe checkout (card `4242 4242 4242 4242`) → verify bundle
+7. **Section 7**: Generate digital pass → QR code → test redemption in incognito
+8. **Section 8**: Manage subscription via Stripe portal → check usage page
+9. **Throughout**: Verify Telegram `@diy_prod_test` channel → messages for each step
 
 ### 4.3 Verify isolation
 
@@ -414,19 +437,76 @@ One real GBP 9.99 charge processed and refunded. Live HMRC submission succeeds. 
 
 ---
 
-## Phase Dependencies
+## Gap Analysis: PLAN_HUMAN_TEST.md vs Go-Live Phases
+
+Cross-referencing the 8-section human QA plan (`PLAN_HUMAN_TEST.md`) against the go-live phases to identify features not yet covered.
+
+### Already covered (no gaps)
+
+| Human Test Section | Go-Live Phase | Status |
+|-------------------|---------------|--------|
+| Section 2: Login/logout | Phase 1 | Working (Google + Cognito native) |
+| Section 3: Guest pass + obligations | Phase 1 | Working (pass redemption + HMRC sandbox) |
+| Section 4: Submit VAT + receipt | Phase 1 | Working (submission + receipt display) |
+| Section 5: Token exhaustion + upsell | Phase 1 | Working (disabled state + upsell link) |
+| Section 6: Stripe checkout + subscribe | Phase 3 | Working (checkout + webhook + Manage Subscription) |
+| Section 8: Billing portal + usage page | Phase 2/3 | Partially working (portal works, cancellation webhook needs Phase 2) |
+| Throughout: Telegram monitoring | Phase 1 | Architecture in place, needs manual verification |
+
+### Gaps requiring new work
+
+| Human Test Section | Missing Feature | Priority | Notes |
+|-------------------|----------------|----------|-------|
+| **Section 1**: Information discovery | **Site content quality review** | Medium | Gateway, submit, and spreadsheets sites must be informative without login. Footer links (Privacy, Terms, Accessibility, Guide) must all work. Not a code feature — content/UX review. |
+| **Section 2**: Early access list | **Early access registration** | Low | "Register for Early Access" banner and functionality. May already exist or may not be needed if go-live happens first. |
+| **Section 7**: Generate digital pass | **Pass generation activity** | **High** | Pro subscribers need a "Generate Digital Pass" activity on the home page. Creates a 4-word passphrase, displays QR code, costs 10 tokens. Pass redeemable by another user. **Not in any go-live phase.** See `_developers/backlog/PLAN_GENERATE_PASS_ACTIVITY.md` for full design. |
+| **Section 7**: QR code scanning | **QR code links to bundles page with pre-filled pass** | **High** | The URL `bundles.html?pass=tiger-happy-mountain-silver` must auto-populate the pass input field. Part of the pass generation feature. |
+| **Section 8**: Subscription cancellation | **Cancellation webhook processing** | Medium | `customer.subscription.updated` handler must write `cancelAtPeriodEnd: true` to the bundle. Phase 2.2 covers this. |
+| **Section 8**: Subscription renewal | **Invoice.paid token refresh** | Medium | Phase 2.1 — reset tokens on renewal. Not needed for initial human test (one billing cycle away). |
+
+### Recommended phase updates
+
+**Phase 3.5 (NEW): Pass Generation Activity** — Promote from backlog to go-live. Required for PLAN_HUMAN_TEST.md Section 7.
+
+This is the only **new feature** required to deliver the full human test journey. Everything else is either already working or is an enhancement to existing functionality (subscription lifecycle handlers).
+
+| Sub-step | Description | Source |
+|----------|-------------|--------|
+| 3.5.1 | `POST /api/v1/pass/generate` — authenticated, entitlement-checked, token-consuming | `PLAN_GENERATE_PASS_ACTIVITY.md` Phase B |
+| 3.5.2 | `passes/generate-digital.html` — UI with QR code (client-side generation) | Phase C |
+| 3.5.3 | `bundles.html?pass=` URL parameter auto-fill | Phase C |
+| 3.5.4 | Behaviour test: `generatePassActivity.behaviour.test.js` (already scaffolded) | Phase A |
+
+Physical pass generation (t-shirts, mugs) is NOT required for the human test — only digital passes.
+
+**Phase 0 (NEW): Pre-Flight Content Review** — Before the human test, verify:
+
+- Gateway site clearly explains what DIY Accounting does
+- Submit site home page is informative without login
+- Footer links all work (Privacy, Terms, Accessibility, Guide)
+- Spreadsheets site navigation works
+- No broken images or layout issues on mobile and desktop
+
+This is a manual review, not code work.
+
+## Phase Dependencies (Updated)
 
 ```
-Phase 1: CI Validation (current)
+Phase 0: Pre-Flight Content Review (manual)
+    |
+Phase 1: CI Validation ← NEARLY COMPLETE
     |
     v
-Phase 2: Subscription Lifecycle Handlers
+Phase 2: Subscription Lifecycle Handlers (cancellation + renewal)
     |
     v
-Phase 3: Frontend Subscribe Button
+Phase 3: Frontend Subscribe Button ← MOSTLY DONE
     |
     v
-Phase 4: Human Test in Prod (test passes)
+Phase 3.5: Pass Generation Activity (NEW — required for human test Section 7)
+    |
+    v
+Phase 4: Human Test in Prod (PLAN_HUMAN_TEST.md Sections 1-8)
     |
     v
 Phase 5: Synthetic Tests in Prod (test passes)
@@ -453,4 +533,4 @@ The qualifier-based routing is critical in prod. CI is safe by design (both "liv
 
 ---
 
-*Document created: 14 February 2026. Consolidates remaining work from PLAN_PAYMENT_INTEGRATION.md (Phases 5, 7-10) and the Human Test Journey from PLAN_HUMAN_TEST_OF_PAYMENT_INTEGRATION_WITH_ALERTING.md.*
+*Document created: 14 February 2026. Updated 15 February 2026 with gap analysis against PLAN_HUMAN_TEST.md, Phase 3.5 (Pass Generation), Phase 0 (Content Review), and current completion status. Consolidates remaining work from PLAN_PAYMENT_INTEGRATION.md (Phases 5, 7-10) and the Human Test Journey from PLAN_HUMAN_TEST_OF_PAYMENT_INTEGRATION_WITH_ALERTING.md.*

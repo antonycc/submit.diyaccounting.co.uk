@@ -1,52 +1,101 @@
 {
   "auditReportVersion": 2,
   "vulnerabilities": {
-    "qs": {
-      "name": "qs",
-      "severity": "low",
+    "cheerio": {
+      "name": "cheerio",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "lodash.pick"
+      ],
+      "effects": [
+        "web-auto-extractor"
+      ],
+      "range": "0.22.0",
+      "nodes": [
+        "node_modules/web-auto-extractor/node_modules/cheerio"
+      ],
+      "fixAvailable": false
+    },
+    "lodash.pick": {
+      "name": "lodash.pick",
+      "severity": "high",
       "isDirect": false,
       "via": [
         {
-          "source": 1113161,
-          "name": "qs",
-          "dependency": "qs",
-          "title": "qs's arrayLimit bypass in comma parsing allows denial of service",
-          "url": "https://github.com/advisories/GHSA-w7fw-mjwx-w883",
-          "severity": "low",
+          "source": 1106907,
+          "name": "lodash.pick",
+          "dependency": "lodash.pick",
+          "title": "Prototype Pollution in lodash",
+          "url": "https://github.com/advisories/GHSA-p6mc-m468-83gw",
+          "severity": "high",
           "cwe": [
-            "CWE-20"
+            "CWE-770",
+            "CWE-1321"
           ],
           "cvss": {
-            "score": 3.7,
-            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L"
+            "score": 7.4,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:H"
           },
-          "range": ">=6.7.0 <=6.14.1"
+          "range": ">=4.0.0 <=4.4.0"
         }
       ],
-      "effects": [],
-      "range": "6.7.0 - 6.14.1",
-      "nodes": [
-        "node_modules/qs"
+      "effects": [
+        "cheerio"
       ],
-      "fixAvailable": true
+      "range": ">=4.0.0",
+      "nodes": [
+        "node_modules/lodash.pick"
+      ],
+      "fixAvailable": false
+    },
+    "structured-data-testing-tool": {
+      "name": "structured-data-testing-tool",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "web-auto-extractor"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/structured-data-testing-tool"
+      ],
+      "fixAvailable": false
+    },
+    "web-auto-extractor": {
+      "name": "web-auto-extractor",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "cheerio"
+      ],
+      "effects": [
+        "structured-data-testing-tool"
+      ],
+      "range": ">=1.0.11",
+      "nodes": [
+        "node_modules/web-auto-extractor"
+      ],
+      "fixAvailable": false
     }
   },
   "metadata": {
     "vulnerabilities": {
       "info": 0,
-      "low": 1,
+      "low": 0,
       "moderate": 0,
-      "high": 0,
+      "high": 4,
       "critical": 0,
-      "total": 1
+      "total": 4
     },
     "dependencies": {
       "prod": 192,
-      "dev": 773,
+      "dev": 831,
       "optional": 74,
       "peer": 0,
       "peerOptional": 0,
-      "total": 964
+      "total": 1022
     }
   }
 }
