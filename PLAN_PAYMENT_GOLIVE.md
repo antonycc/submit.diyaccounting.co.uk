@@ -17,6 +17,15 @@
 
 ## The Human Test Journey
 
+```
+Please suggest a test plan for my nephew who is going to doing some manual qa. I want him to ease into this with iterative journeys of complexity with some endorphen
+   feedback. This would start by trying to find some information on the site 'how will existing customers be able to submit vat', then there is trying to access and
+  joining the early access list, and comming in via a guest pass and querying obligations, and submitting vat and viewing their return, and running out of tokens, and
+  upgrading to pro and issuing a pass and trying the qr code for themselves, plus for all this it should be for both mobile and desktop, and it should match the
+  telegram feed, and any incidents on the ops channel should be noted. Perhaps each one, is just a section to go through building on top of the other.
+
+```
+
 This is the target experience for a human tester — the same journey that synthetic tests will automate. It works in both CI and prod because credential routing is driven by the pass type, not the environment.
 
 1. **Login** via Cognito (native in CI, Google in prod)
