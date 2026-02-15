@@ -1396,47 +1396,53 @@ npm test                              # Unit + system tests
 Given the decisions above, the implementation order within this PR:
 
 ```
-Phase A: Foundation (no behaviour change)
-  A1. Add pinning tests to lock current hash output values
-  A2. Run full test suite to confirm baseline passes
+Phase A: Foundation (no behaviour change) ✅ DONE
+  A1. Add pinning tests to lock current hash output values ✅
+  A2. Run full test suite to confirm baseline passes ✅ (85 files, 914 tests)
 
-Phase B: subHasher.js changes
-  B1. Rewrite subHasher.js with registry parsing + new functions
-  B2. Update _setTestSalt(salt, version) signature
-  B3. Update .env.test, .env.simulator, .env.proxy to JSON format
-  B4. Update system tests that set USER_SUB_HASH_SALT directly
-  B5. Add new subHasher unit tests (registry, versioning, errors)
-  B6. Run full test suite — all existing tests must still pass
+Phase B: subHasher.js changes ✅ DONE
+  B1. Rewrite subHasher.js with registry parsing + new functions ✅
+  B2. Update _setTestSalt(salt, version) signature ✅
+  B3. Update .env.test, .env.simulator, .env.proxy to JSON format ✅
+  B4. Update system tests that set USER_SUB_HASH_SALT directly ✅ (8 system + 3 unit test files)
+  B5. Add new subHasher unit tests (registry, versioning, errors) ✅
+  B6. Run full test suite — all existing tests must still pass ✅ (86 files, 926 tests)
 
-Phase C: Repository changes
-  C1. Add saltVersion to all write operations (4 repos)
-  C2. Add read-path version fallback (3 repos — not hmrcApiRequest)
-  C3. Add repository unit tests for saltVersion writes and fallback
-  C4. Run full test suite
+Phase C: Repository changes ✅ DONE
+  C1. Add saltVersion to all write operations (4 repos) ✅
+  C2. Add read-path version fallback (3 repos — not hmrcApiRequest) ✅
+  C3. Add repository unit tests for saltVersion writes and fallback ✅
+  C4. Run full test suite ✅ (926 tests passed)
 
-Phase D: Migration framework
-  D1. Create scripts/migrations/runner.js
-  D2. Create 001-convert-salt-to-registry.js
-  D3. Create 002-backfill-salt-version-v1.js
-  D4. Create 003-rotate-salt-to-passphrase.js (auto-generates 8-word passphrase)
-  D5. Unit test the migration runner
+Phase D: Migration framework ✅ DONE
+  D1. Create scripts/migrations/runner.js ✅
+  D2. Create 001-convert-salt-to-registry.js ✅
+  D3. Create 002-backfill-salt-version-v1.js ✅
+  D4. Create 003-rotate-salt-to-passphrase.js (auto-generates 8-word passphrase) ✅
+  D5. Unit test the migration runner ✅ (6 tests in app/unit-tests/migrations/runner.test.js)
 
-Phase E: Workflows and infrastructure
-  E1. Create run-migrations.yml workflow
-  E2. Update manage-secrets.yml for registry format
-  E3. Update deploy-environment.yml salt creation to JSON registry
-  E4. Add commented-out migration call in deploy.yml
-  E5. Add KMS key to CDK stack
-  E6. ./mvnw clean verify
+Phase E: Workflows and infrastructure ✅ DONE
+  E1. Create run-migrations.yml workflow ✅
+  E2. Update manage-secrets.yml for registry format ✅
+  E3. Update deploy-environment.yml salt creation to JSON registry ✅
+  E4. Add commented-out migration call in deploy.yml ✅
+  E5. Add KMS key to CDK DataStack ✅
+  E6. ./mvnw clean verify ✅ BUILD SUCCESS
 
-Phase F: Documentation
-  F1. Update RUNBOOK_INFORMATION_SECURITY.md Section 4
-  F2. Update AWS_ARCHITECTURE.md
-  F3. Update PLAN_AWS_ACCOUNTS.md
+Phase F: Documentation ✅ DONE
+  F1. Update RUNBOOK_INFORMATION_SECURITY.md Section 4 ✅ (multi-version registry, 3 recovery paths, migration framework)
+  F2. Update AWS_ARCHITECTURE.md ✅ (salt registry + KMS key in data layer diagram)
+  F3. Update PLAN_AWS_ACCOUNTS.md ✅ (KMS key in security resources, planned move to submit-backup)
 
-Phase G: Final verification
-  G1. npm test (unit + system)
-  G2. ./mvnw clean verify (CDK build)
-  G3. npm run test:submitVatBehaviour-proxy (E2E locally)
-  G4. Commit, push, monitor CI pipelines
+Phase G: Final verification ✅ DONE (committed, pushed, CI in progress)
+  G1. npm test (unit + system) ✅ (86 files, 932 tests passed)
+  G2. ./mvnw clean verify (CDK build) ✅ BUILD SUCCESS
+  G3. npm run test:submitVatBehaviour-proxy (E2E locally) ✅ (1 passed)
+  G4. Commit, push, monitor CI pipelines ✅
+    - Branch: nvsubhash
+    - Commit: 0bb4817b (main) + 36336b07 (actionlint fix)
+    - deploy-environment: ✅ success
+    - test: first run failed (actionlint on run-migrations.yml), fixed and re-pushed
+    - test: second run in progress as of 15 Feb 2026
+    - deploy: pending (waiting on deploy-environment)
 ```
