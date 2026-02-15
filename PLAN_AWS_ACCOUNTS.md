@@ -1,6 +1,6 @@
 # DIY Accounting Submit - AWS Account Overview
 
-**Version**: 3.0 | **Date**: February 2026 | **Status**: Production
+**Version**: 4.0 | **Date**: February 2026 | **Status**: Production
 
 ---
 
@@ -10,13 +10,15 @@
 AWS Organization Root
 └── submit-management (Organization Admin)
     ├── submit-backup ─────── Backup OU
-    ├── submit-ci ──────────── Workloads OU (planned)
-    ├── diy-gateway ─────────── Workloads OU (planned — Phase 2)
-    ├── diy-spreadsheets ────── Workloads OU (planned — Phase 2)
+    ├── submit-ci ──────────── Workloads OU (planned — future)
+    ├── diy-gateway ─────────── Workloads OU (planned — Phase 3)
+    ├── diy-spreadsheets ────── Workloads OU (planned — Phase 3)
     └── submit-prod (887764105431) ── Workloads OU
 ```
 
-**Current state**: All services (submit, gateway, spreadsheets) run in submit-prod. Gateway and spreadsheets are static sites (S3 + CloudFront only). Submit has the full application stack (Lambda, API Gateway, Cognito, DynamoDB).
+**Current state**: All services (submit, gateway, spreadsheets, root DNS) run in submit-prod. Four GitHub repos will deploy here after Phase 2 repo separation (see `PLAN_PRODUCTION_AND_SEPARATION.md` v4.0). Gateway and spreadsheets are static sites (S3 + CloudFront only). Submit has the full application stack (Lambda, API Gateway, Cognito, DynamoDB). Root manages DNS and the holding page.
+
+**Phasing**: Repos separate first (Phase 2), accounts separate later (Phase 3). During Phase 2, all four repos deploy to submit-prod via shared OIDC trust.
 
 ---
 
@@ -48,13 +50,14 @@ AWS Organization Root
 
 ### Services Hosted
 
-All three services currently run in this account:
+All four logical services currently run in this account (deployed from a single repo today, from four repos after Phase 2):
 
-| Service | CI Domain | Prod Domain | Stacks |
-|---------|-----------|-------------|--------|
-| Submit | `ci-submit.diyaccounting.co.uk` | `prod-submit.diyaccounting.co.uk` + `submit.diyaccounting.co.uk` | ApiStack, AuthStack, EdgeStack, HmrcStack, AccountStack, OpsStack, DevStack, SelfDestructStack |
-| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` + `diyaccounting.co.uk` + `www.diyaccounting.co.uk` | GatewayStack |
-| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` + `spreadsheets.diyaccounting.co.uk` | SpreadsheetsStack |
+| Service | CI Domain | Prod Domain | Stacks | Repo (after Phase 2) |
+|---------|-----------|-------------|--------|---------------------|
+| Submit | `ci-submit.diyaccounting.co.uk` | `prod-submit.diyaccounting.co.uk` + `submit.diyaccounting.co.uk` | ApiStack, AuthStack, EdgeStack, HmrcStack, AccountStack, OpsStack, DevStack, SelfDestructStack | submit |
+| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` + `diyaccounting.co.uk` + `www.diyaccounting.co.uk` | GatewayStack | gateway |
+| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` + `spreadsheets.diyaccounting.co.uk` | SpreadsheetsStack | spreadsheets |
+| Root DNS | — | — | RootDnsStack, holding page stack | root |
 
 Supporting domains (submit only):
 
@@ -91,7 +94,7 @@ Supporting domains (submit only):
 | ACM (us-east-1) | Main cert (submit CloudFront), auth cert (Cognito), simulator cert |
 | ACM (eu-west-2) | Regional cert (API Gateway custom domains) |
 
-**Note**: Route 53 hosted zone for `diyaccounting.co.uk` stays in this account. All services use the `{env}-{service}.diyaccounting.co.uk` domain convention. RootDnsStack manages apex/www alias records for submit, gateway, and spreadsheets.
+**Note**: Route 53 hosted zone for `diyaccounting.co.uk` stays in this account. All services use the `{env}-{service}.diyaccounting.co.uk` domain convention. After Phase 2, RootDnsStack is deployed from the root repo (not submit) but still targets this account. Future consideration: move the zone to a management account.
 
 ### Security Resources
 
@@ -112,16 +115,25 @@ Supporting domains (submit only):
 | Resource | Description |
 |----------|-------------|
 | GitHub OIDC provider | For GitHub Actions |
-| github-actions-role | OIDC assumption |
+| github-actions-role | OIDC assumption — trusts all 4 repos after Phase 2 |
 | github-deploy-role | CDK deployments |
 | CDK bootstrap | CloudFormation deployment bucket |
 | Resource lookups | `.github/actions/lookup-resources` discovers Cognito/API GW/CloudFront by domain convention |
 
+**OIDC trust (Phase 2 intermediate state)**: After repo separation, the `submit-github-actions-role` trust policy allows assumptions from four repos:
+```
+repo:antonycc/submit.diyaccounting.co.uk:*
+repo:antonycc/www.diyaccounting.co.uk:*
+repo:antonycc/diy-accounting:*
+repo:antonycc/<root-repo-name>:*
+```
+In Phase 3, gateway and spreadsheets entries move to their own accounts.
+
 ---
 
-## 3. submit-ci (Planned Account)
+## 3. submit-ci (Planned Account — Future)
 
-**Purpose**: CI/CD testing — feature branch deployments. Currently runs in submit-prod alongside production.
+**Purpose**: CI/CD testing — feature branch deployments. Currently runs in submit-prod alongside production. Lower priority than repo separation (Phase 2) and static site account separation (Phase 3) — this is the most complex separation because it requires duplicating environment stacks, secrets, and Cognito pools.
 
 ### Services (same as prod, CI environment)
 
@@ -249,43 +261,64 @@ Supporting domains (submit only):
 
 ## Deployment Flow
 
+### Current state (single repo)
+
 ```
-GitHub Actions (feature branch)
+GitHub Actions (submit.diyaccounting.co.uk repo)
         │
         ▼ OIDC
 ┌───────────────────────────────────────────────────────┐
-│    submit-prod (ci environment)                        │
+│    submit-prod (887764105431)                          │
 │                                                        │
-│  deploy-environment.yml → ci-env-* stacks             │
-│    (IdentityStack, DataStack, ObservabilityStack,     │
-│     SimulatorStack)                                    │
-│                                                        │
+│  deploy-environment.yml → {env}-env-* stacks          │
 │  deploy.yml → {deployment}-app-* stacks               │
-│    (DevStack, AuthStack, HmrcStack, AccountStack,     │
-│     ApiStack, EdgeStack, OpsStack, SelfDestructStack) │
-│                                                        │
-│  deploy-gateway.yml → ci-gateway-GatewayStack         │
-│  deploy-spreadsheets.yml → ci-spreadsheets-*Stack     │
-│  deploy-root.yml → ci-env-RootDnsStack                │
-│                                                        │
-│  Resource discovery: lookup-resources action finds     │
-│  Cognito, API GW, CloudFront by domain convention     │
-└───────────────────────────────────────────────────────┘
-
-GitHub Actions (main branch)
-        │
-        ▼ OIDC
-┌───────────────────────────────────────────────────────┐
-│   submit-prod (prod environment)                       │
-│                                                        │
-│  Same workflow pattern as CI, prod-env-* / prod-*-app-*│
-│  Prod apex aliases: submit.diyaccounting.co.uk,       │
-│    diyaccounting.co.uk, www.diyaccounting.co.uk,      │
-│    spreadsheets.diyaccounting.co.uk                   │
+│  deploy-gateway.yml → {env}-gateway-GatewayStack      │
+│  deploy-spreadsheets.yml → {env}-spreadsheets-*Stack  │
+│  deploy-root.yml → {env}-env-RootDnsStack             │
+│  deploy-holding.yml → {env}-holding stack             │
 └───────────────────────────────────────────────────────┘
 ```
 
-**Note**: Both CI and prod currently deploy to the same AWS account (submit-prod, 887764105431). Separation into dedicated CI/prod accounts is planned (see Account Structure above).
+### After Phase 2 (four repos, same account)
+
+```
+┌──────────────────┐  ┌──────────────────┐
+│  root repo       │  │  gateway repo    │
+│  deploy.yml      │  │  deploy.yml      │
+│  (DNS + holding) │  │  (static site)   │
+└────────┬─────────┘  └────────┬─────────┘
+         │                     │
+┌──────────────────┐  ┌──────────────────┐
+│  spreadsheets    │  │  submit repo     │
+│  repo deploy.yml │  │  deploy.yml +    │
+│  (static site)   │  │  deploy-env.yml  │
+└────────┬─────────┘  └────────┬─────────┘
+         │                     │
+         └──────┬──────┬───────┘
+                │ OIDC │
+                ▼      ▼
+┌───────────────────────────────────────────────────────┐
+│    submit-prod (887764105431)                          │
+│                                                        │
+│  root repo → RootDnsStack, holding stack              │
+│  gateway repo → GatewayStack                          │
+│  spreadsheets repo → SpreadsheetsStack                │
+│  submit repo → env stacks + app stacks                │
+│                                                        │
+│  Shared: OIDC provider, github-actions-role trusts    │
+│  all 4 repos. Same deployment-role for all.           │
+└───────────────────────────────────────────────────────┘
+```
+
+### After Phase 3 (four repos, separate accounts)
+
+```
+root + submit repos ──OIDC──► submit-prod (DNS, submit app, holding)
+gateway repo ─────────OIDC──► diy-gateway (S3 + CloudFront only)
+spreadsheets repo ────OIDC──► diy-spreadsheets (S3 + CloudFront only)
+```
+
+**Note**: Both CI and prod currently deploy to the same AWS account (submit-prod, 887764105431). Account separation is Phase 3, after repo separation (Phase 2). See `PLAN_PRODUCTION_AND_SEPARATION.md` for full phasing.
 
 ---
 
@@ -293,7 +326,7 @@ GitHub Actions (main branch)
 
 ### Current State (Single Account)
 
-All roles live in submit-prod (887764105431). All three services (submit, gateway, spreadsheets) deploy here:
+All roles live in submit-prod (887764105431). All four services (submit, gateway, spreadsheets, root) deploy here. After Phase 2 repo separation, four repos share this OIDC trust:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -402,16 +435,25 @@ Bastion pattern with role chaining across accounts:
 
 ## Account Reference Table
 
-| Account | ID | Email | OU | Purpose |
-|---------|-----|-------|-----|---------|
-| submit-management | TBD | aws-management@diyaccounting.co.uk | Root | Org admin |
-| submit-prod | 887764105431 | (existing) | Workloads | Production (all 3 services) |
-| submit-ci | TBD | aws-ci@diyaccounting.co.uk | Workloads | CI/CD |
-| diy-gateway | TBD | aws-gateway@diyaccounting.co.uk | Workloads | Gateway static site |
-| diy-spreadsheets | TBD | aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets static site |
-| submit-backup | TBD | aws-backup@diyaccounting.co.uk | Backup | DR |
+| Account | ID | Email | OU | Purpose | Phase |
+|---------|-----|-------|-----|---------|-------|
+| submit-prod | 887764105431 | (existing) | Workloads | All services (submit + root DNS + gateway + spreadsheets) | Current |
+| diy-gateway | TBD | aws-gateway@diyaccounting.co.uk | Workloads | Gateway static site (S3 + CloudFront) | Phase 3 |
+| diy-spreadsheets | TBD | aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets static site (S3 + CloudFront) | Phase 3 |
+| submit-management | TBD | aws-management@diyaccounting.co.uk | Root | Org admin (Route53 zone, future) | Future |
+| submit-ci | TBD | aws-ci@diyaccounting.co.uk | Workloads | CI/CD (submit only) | Future |
+| submit-backup | TBD | aws-backup@diyaccounting.co.uk | Backup | DR | Future |
 
 *Update this table with actual account IDs after creation.*
+
+### Repository ↔ Account mapping progression
+
+| Phase | root repo | gateway repo | spreadsheets repo | submit repo |
+|-------|-----------|-------------|-------------------|-------------|
+| Current | N/A (in submit) | N/A (in submit) | N/A (in submit) | submit-prod |
+| Phase 2 (repos) | submit-prod | submit-prod | submit-prod | submit-prod |
+| Phase 3 (accounts) | submit-prod | diy-gateway | diy-spreadsheets | submit-prod |
+| Future | submit-management | diy-gateway | diy-spreadsheets | submit-prod |
 
 ---
 
@@ -447,4 +489,4 @@ Resource discovery uses this convention: the `lookup-resources` composite action
 
 ---
 
-*Updated: February 2026*
+*Updated: February 2026 (v4.0 — aligned with 4-repo direction, repos-before-accounts phasing)*

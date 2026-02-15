@@ -1,12 +1,12 @@
 # Production Launch & Service Separation Plan
 
-**Version**: 3.0 | **Date**: February 2026 | **Status**: In progress
+**Version**: 4.0 | **Date**: February 2026 | **Status**: In progress
 
 ---
 
 ## Current State
 
-Everything runs in the submit-prod AWS account (887764105431). Both gateway and spreadsheets are deployed as CDK stacks within the `submit.diyaccounting.co.uk` repository. CI environments are live and validated:
+Everything runs in the submit-prod AWS account (887764105431). All four logical services (root DNS, gateway, spreadsheets, submit) are deployed as CDK stacks within the `submit.diyaccounting.co.uk` repository. CI environments are live and validated:
 
 | Site | CI URL | CF Distribution | Stack |
 |------|--------|----------------|-------|
@@ -149,74 +149,119 @@ CSP headers updated across all stacks to allow `https://*.google-analytics.com` 
 
 ---
 
-## Phase 2: Separate AWS accounts
+## Phase 2: Separate GitHub repositories
 
-**Goal**: Gateway and spreadsheets each get their own AWS account under the organization. Reduces blast radius, enables independent billing, and prepares for repository separation.
+**Goal**: Each service gets its own GitHub repository with independent CI/CD, versioning, and deployment pipelines. Four repositories total: root (DNS/org-level), gateway, spreadsheets, and submit. All continue deploying to submit-prod initially — account separation is Phase 3.
 
-### Account creation
+**Prerequisite**: Phase 1 complete (production domains live and validated).
 
-| Account | Email | OU | Resources |
+**Why repos before accounts**: Repository separation is lower risk than account separation — repos can deploy to the same AWS account using different OIDC trust entries. This lets us validate each repo's CI/CD pipeline independently before adding the complexity of cross-account roles and new ACM certs.
+
+### Target repositories
+
+| Repository | GitHub URL | Content | Source |
 |---|---|---|---|
-| diy-gateway | aws-gateway@diyaccounting.co.uk | Workloads | S3, CloudFront, ACM cert |
-| diy-spreadsheets | aws-spreadsheets@diyaccounting.co.uk | Workloads | S3, CloudFront, ACM cert |
+| Root | TBD — new repo (see naming below) | Route53 zone, RootDnsStack, holding page | Created fresh from submit |
+| Gateway | `antonycc/www.diyaccounting.co.uk` | Gateway static site, CloudFront Function redirects | Archive-and-overlay existing repo |
+| Spreadsheets | `antonycc/diy-accounting` | Spreadsheets site, package hosting, knowledge base, community discussions | Archive-and-overlay existing repo |
+| Submit | `antonycc/submit.diyaccounting.co.uk` | Submit application (Lambda, Cognito, DynamoDB, API GW) | This repo — remove migrated code |
 
-Neither account needs Route53 — DNS stays in the root zone. Neither needs Lambda, DynamoDB, API Gateway, or Cognito.
+**Repository naming — root repo (open decision)**:
 
-### Steps
+Both existing old repos (`www.diyaccounting.co.uk` for gateway, `diy-accounting` for spreadsheets) are needed for their intended services, so the root repo must be new. Options:
+1. `antonycc/diyaccounting-root` — descriptive, matches its purpose
+2. `antonycc/diyaccounting-web` — "web" grouping name
+3. `antonycc/diy-accounting-infrastructure` — explicit infrastructure focus
+4. Decide at implementation time
 
-| Step | Description |
-|------|-------------|
-| 2.1 | Create `diy-gateway` AWS account under organization |
-| 2.2 | Bootstrap: CDK bootstrap (us-east-1 + eu-west-2), OIDC provider, github-actions-role, deployment-role |
-| 2.3 | Create ACM cert in gateway account. DNS validation via root zone. |
-| 2.4 | Update `deploy-gateway.yml` to target the gateway account (new ACTIONS_ROLE_ARN, DEPLOY_ROLE_ARN) |
-| 2.5 | Update `cdk-gateway/cdk.json` with new account's cert ARN |
-| 2.6 | Deploy gateway to new account. Verify at ci-gateway domain. |
-| 2.7 | Update root DNS alias records to point to new account's CloudFront distributions |
-| 2.8 | Tear down old gateway stacks in submit-prod account |
-| 2.9 | Create `diy-spreadsheets` AWS account under organization |
-| 2.10 | Bootstrap: CDK, OIDC, roles (same pattern as 2.2) |
-| 2.11 | Create ACM cert in spreadsheets account |
-| 2.12 | Update `deploy-spreadsheets.yml` to target the spreadsheets account |
-| 2.13 | Update `cdk-spreadsheets/cdk.json` with new account's cert ARN |
-| 2.14 | Deploy spreadsheets to new account. Verify at ci-spreadsheets domain. |
-| 2.15 | Update root DNS alias records to point to new account's CloudFront distributions |
-| 2.16 | Tear down old spreadsheets stacks in submit-prod account |
-| 2.17 | Create assume-role scripts: `aws-assume-gateway-role.sh`, `aws-assume-spreadsheets-role.sh` |
+**Note**: The `antonycc/diy-accounting` repository already exists and hosts the GitHub Discussions that the community page reads from. The spreadsheets code will land here alongside those discussions.
 
-### Rollback strategy
+### Approach
 
-Keep the old stacks in submit-prod until the new-account versions are validated. DNS cutover is a single alias record update via deploy-root.yml — rollback is running deploy-root.yml again with the old CloudFront domain.
+**Root repo**: Created fresh. Copy relevant files from submit, set up minimal CDK project.
 
----
+**Gateway and spreadsheets repos**: Archive-and-overlay into the **existing** GitHub repositories. This preserves GitHub Discussions, repo settings, stars, and issue history.
 
-## Phase 3: Separate GitHub repositories
-
-**Goal**: Gateway and spreadsheets each get their own GitHub repository with independent CI/CD, versioning, and deployment pipelines. The submit repo retains only submit-specific code.
-
-### Approach: archive-and-overlay
-
-Work happens in the **existing** GitHub repositories (`antonycc/www.diyaccounting.co.uk` and `antonycc/diy-accounting`). This preserves GitHub Discussions, repo settings, stars, and issue history.
-
-For each repo:
+For each existing repo:
 1. Create `archive/` directory and move **all existing repo files** into it (old site content, old build scripts, old README, etc.)
 2. Copy the relevant subset of files from the submit repo into the repo root
 3. Trim the excess submit code (remove submit-specific and other-site code)
 4. Fill gaps from `archive/` — pull back anything useful from the old repo (e.g. older package zips, the original README, historical assets)
 5. Clean up `archive/` at leisure — it stays in git for reference
 
-### Target repositories
+### Execution order
 
-| Repository | GitHub URL | Content |
-|---|---|---|
-| `www.diyaccounting.co.uk` | `antonycc/www.diyaccounting.co.uk` | Gateway site |
-| `diy-accounting` | `antonycc/diy-accounting` | Spreadsheets site (may rename to `diy-accounting-spreadsheets`) |
+Root first (thinnest slice, establishes the pattern), then gateway, then spreadsheets, then submit cleanup. Each repo is independently deployable and testable before moving to the next.
 
-**Note**: The `antonycc/diy-accounting` repository already exists and hosts the GitHub Discussions that the community page reads from. The spreadsheets code will land here alongside those discussions.
+### Steps
 
-### What each new repo carries over
+| Step | Description |
+|------|-------------|
+| | **Root — new repository** |
+| 2.1 | Create new GitHub repository for root |
+| 2.2 | Set up minimal project: `pom.xml` (CDK infra module only), `package.json` (Playwright, Vitest, prettier, eslint, ncu) |
+| 2.3 | Copy root-relevant files from submit repo (see "What goes in the root repo" below) |
+| 2.4 | Adapt `deploy-root.yml` → `deploy.yml` (main workflow), keep `deploy-holding.yml` |
+| 2.5 | Add OIDC trust for the new repo in submit-prod account's GitHub Actions role |
+| 2.6 | Deploy from root repo. Verify DNS records resolve correctly for all services. |
+| 2.7 | Verify holding page deploys from root repo (`{env}-holding.diyaccounting.co.uk`) |
+| | **Gateway — `antonycc/www.diyaccounting.co.uk`** |
+| 2.8 | In existing repo: `mkdir archive && git mv` all current files into `archive/` |
+| 2.9 | Copy relevant submit repo files into the repo root (see "What each site repo carries over") |
+| 2.10 | Remove submit-specific and spreadsheets-specific code (see "What to remove" below) |
+| 2.11 | Trim `package.json` — remove submit-specific deps (aws-sdk, dynamodb, cognito, ngrok, etc.), keep Playwright, Vitest, prettier, eslint, ncu |
+| 2.12 | Trim `pom.xml` — single CDK module, remove Lambda/Docker modules |
+| 2.13 | Trim `CLAUDE.md` — remove submit-specific sections (HMRC obligations, Lambda conventions, system tests, Docker, behaviour test proxy mode), keep CDK rules, git workflow, test commands, deployment workflow |
+| 2.14 | Adapt `playwright.config.js` — keep only `gatewayBehaviour` project |
+| 2.15 | Adapt deploy workflow — rename to `deploy.yml`, remove submit-specific jobs |
+| 2.16 | Fill gaps from `archive/` — pull back useful old assets (README history, any old content worth preserving) |
+| 2.17 | Add OIDC trust for `antonycc/www.diyaccounting.co.uk` in submit-prod account |
+| 2.18 | Deploy from gateway repo. Run `test:gatewayBehaviour-ci`. Verify. |
+| | **Spreadsheets — `antonycc/diy-accounting`** |
+| 2.19 | In existing repo: `mkdir archive && git mv` all current files into `archive/` (preserves GitHub Discussions) |
+| 2.20 | Copy relevant submit repo files into the repo root |
+| 2.21 | Remove submit-specific and gateway-specific code (see "What to remove" below) |
+| 2.22 | Trim `package.json` — same approach as 2.11 |
+| 2.23 | Trim `pom.xml` — single CDK module |
+| 2.24 | Trim `CLAUDE.md` — keep spreadsheets-specific sections |
+| 2.25 | Adapt `playwright.config.js` — keep only `spreadsheetsBehaviour` project |
+| 2.26 | Adapt deploy workflow — rename to `deploy.yml`, remove submit-specific jobs |
+| 2.27 | Fill gaps from `archive/` — pull back old packages, README, build scripts, any historical assets |
+| 2.28 | Add OIDC trust for `antonycc/diy-accounting` in submit-prod account |
+| 2.29 | Deploy from spreadsheets repo. Run `test:spreadsheetsBehaviour-ci`. Verify. |
+| | **Submit repo cleanup** |
+| 2.30 | Remove root files: `RootDnsStack`, `deploy-root.yml`, `deploy-holding.yml`, `web/holding/` |
+| 2.31 | Remove gateway files: `GatewayStack`, `deploy-gateway.yml`, `cdk-gateway/`, `web/www.diyaccounting.co.uk/` |
+| 2.32 | Remove spreadsheets files: `SpreadsheetsStack`, `deploy-spreadsheets.yml`, `cdk-spreadsheets/`, `web/spreadsheets.diyaccounting.co.uk/`, `packages/` |
+| 2.33 | Remove gateway and spreadsheets behaviour tests from submit |
+| 2.34 | Clean up submit `package.json`, `pom.xml` — remove gateway/spreadsheets/root build references |
+| 2.35 | Remove OIDC trust entries for submit repo that targeted gateway/spreadsheets/root deployments (if any were shared) |
 
-The new repositories are this repository with things deleted. Each one keeps:
+### What goes in the root repo
+
+The root repo is thin — it manages the DNS zone and the holding/maintenance page:
+
+| Asset | Purpose |
+|---|---|
+| `RootDnsStack.java` | Route53 alias records for all services (submit, gateway, spreadsheets) |
+| Holding page stack | CloudFront + S3 for `{env}-holding.diyaccounting.co.uk` |
+| `web/holding/` | Holding page content (maintenance page with GA4 analytics) |
+| `deploy.yml` (adapted from `deploy-root.yml`) | DNS deployment workflow |
+| `deploy-holding.yml` | Holding/maintenance page workflow |
+| `cdk-root/cdk.json` | CDK app configuration |
+| Shared CDK lib | `SubmitSharedNames.java`, `KindCdk.java` (subset needed) |
+| `pom.xml` | Minimal — CDK infra module only |
+| `package.json` | Minimal — Playwright (if holding test), Vitest, prettier |
+| `.env.ci`, `.env.prod` | Environment configs (trimmed to DNS/holding vars) |
+| AI assistant configs | `CLAUDE.md` (trimmed), `.claude/`, `.junie/`, copilot instructions |
+
+**What root does NOT have**: Lambda functions, DynamoDB, Cognito, API Gateway, Docker, ngrok, HMRC anything.
+
+**Cross-repo coordination**: All four repos depend on root for DNS. When gateway or spreadsheets change their CloudFront distribution (e.g., during account migration in Phase 3), root must update the alias records. This is the one cross-repo coordination point. A deploy of root does NOT require redeployment of gateway, spreadsheets, or submit — it only updates DNS pointers.
+
+### What each site repo carries over
+
+The site repositories are this repository with things deleted. Each one keeps:
 
 #### Behaviour tests (run against local or deployed)
 
@@ -241,7 +286,7 @@ Environment files: `.env.ci`, `.env.prod` (trimmed to relevant vars only: `GATEW
 
 #### Library update scripts
 
-| Script | Purpose | Both repos |
+| Script | Purpose | All site repos |
 |---|---|---|
 | `scripts/update.sh` | General dependency update | Yes |
 | `scripts/update-java.sh` | Java/Maven dependency update | Yes |
@@ -251,7 +296,7 @@ Environment files: `.env.ci`, `.env.prod` (trimmed to relevant vars only: `GATEW
 
 #### AI assistant configuration
 
-| File/Dir | Purpose | Both repos |
+| File/Dir | Purpose | All site repos |
 |---|---|---|
 | `CLAUDE.md` | Claude Code guidance (trimmed to relevant sections) | Yes |
 | `.claude/settings.json` | Claude allowed/denied commands | Yes |
@@ -261,7 +306,7 @@ Environment files: `.env.ci`, `.env.prod` (trimmed to relevant vars only: `GATEW
 
 #### Naming conventions, styles, and CI jobs
 
-| Asset | Purpose | Both repos |
+| Asset | Purpose | All site repos |
 |---|---|---|
 | `.prettierrc` | Code formatting (double quotes, trailing commas, 140 width) | Yes |
 | `.editorconfig` | Editor settings (UTF-8, LF, 140 max line for Java) | Yes |
@@ -280,117 +325,83 @@ GitHub Actions workflow conventions carried over:
 
 #### CDK infrastructure
 
-| Asset | Gateway repo | Spreadsheets repo |
-|---|---|---|
-| Stack class | `GatewayStack.java` | `SpreadsheetsStack.java` |
-| Environment class | `GatewayEnvironment.java` | `SpreadsheetsEnvironment.java` |
-| CDK config | `cdk-gateway/cdk.json` | `cdk-spreadsheets/cdk.json` |
-| Shared CDK lib | `SubmitSharedNames.java`, `KindCdk.java` | `SubmitSharedNames.java`, `KindCdk.java` |
+| Asset | Root repo | Gateway repo | Spreadsheets repo |
+|---|---|---|---|
+| Stack class | `RootDnsStack.java`, holding stack | `GatewayStack.java` | `SpreadsheetsStack.java` |
+| Environment class | `RootEnvironment.java` (new) | `GatewayEnvironment.java` | `SpreadsheetsEnvironment.java` |
+| CDK config | `cdk-root/cdk.json` (new) | `cdk-gateway/cdk.json` | `cdk-spreadsheets/cdk.json` |
+| Shared CDK lib | `SubmitSharedNames.java`, `KindCdk.java` | `SubmitSharedNames.java`, `KindCdk.java` | `SubmitSharedNames.java`, `KindCdk.java` |
 
 #### Build scripts
 
-| Script | Gateway repo | Spreadsheets repo |
-|---|---|---|
-| `scripts/build-gateway-redirects.cjs` | Yes | No |
-| `scripts/build-sitemaps.cjs` | Yes (gateway portion) | Yes (spreadsheets portion) |
-| `scripts/build-packages.cjs` | No | Yes |
-| `scripts/generate-knowledge-base-toml.cjs` | No | Yes |
+| Script | Root repo | Gateway repo | Spreadsheets repo |
+|---|---|---|---|
+| `scripts/build-gateway-redirects.cjs` | No | Yes | No |
+| `scripts/build-sitemaps.cjs` | No | Yes (gateway portion) | Yes (spreadsheets portion) |
+| `scripts/build-packages.cjs` | No | No | Yes |
+| `scripts/generate-knowledge-base-toml.cjs` | No | No | Yes |
 
 #### Web content and styles
 
-| Asset | Gateway repo | Spreadsheets repo |
-|---|---|---|
-| Doc root | `web/www.diyaccounting.co.uk/public/` | `web/spreadsheets.diyaccounting.co.uk/public/` |
-| CSS | `gateway.css` | `spreadsheets.css` |
-| Analytics | `lib/analytics.js` (G-C76HK806F1) | `lib/analytics.js` (G-X4ZPD99X2K) |
+| Asset | Root repo | Gateway repo | Spreadsheets repo |
+|---|---|---|---|
+| Doc root | `web/holding/` | `web/www.diyaccounting.co.uk/public/` | `web/spreadsheets.diyaccounting.co.uk/public/` |
+| CSS | N/A | `gateway.css` | `spreadsheets.css` |
+| Analytics | Holding page GA4 | `lib/analytics.js` (G-C76HK806F1) | `lib/analytics.js` (G-X4ZPD99X2K) |
 
 #### GitHub Actions workflows
 
-Each repo gets its own deploy workflow (adapted from the current `deploy-gateway.yml` / `deploy-spreadsheets.yml`) and synthetic test workflow (adapted from `synthetic-test.yml`):
-
-| Workflow | Gateway repo | Spreadsheets repo |
-|---|---|---|
-| `deploy.yml` | Build redirects + sitemaps, CDK deploy, smoke test | Build sitemaps + packages, CDK deploy, S3 sync zips, smoke test |
-| `synthetic-test.yml` | Run `gatewayBehaviour` against deployed env | Run `spreadsheetsBehaviour` against deployed env |
-| `test.yml` | Unit tests (if any) | Unit tests (web/unit-tests) |
-| `compliance.yml` | Pa11y accessibility, retire.js, eslint security | Pa11y accessibility, retire.js, eslint security |
-| `codeql.yml` | Code scanning | Code scanning |
-
-### Steps
-
-| Step | Description |
-|------|-------------|
-| | **Gateway — `antonycc/www.diyaccounting.co.uk`** |
-| 3.1 | In existing `antonycc/www.diyaccounting.co.uk` repo: `mkdir archive && git mv` all current files into `archive/` |
-| 3.2 | Copy relevant submit repo files into the repo root (see "What each new repo carries over" above) |
-| 3.3 | Remove submit-specific and spreadsheets-specific code (see "What to remove" below) |
-| 3.4 | Trim `package.json` — remove submit-specific deps (aws-sdk, dynamodb, cognito, ngrok, etc.), keep Playwright, Vitest, prettier, eslint, ncu |
-| 3.5 | Trim `pom.xml` — single CDK module, remove Lambda/Docker modules |
-| 3.6 | Trim `CLAUDE.md` — remove submit-specific sections (HMRC obligations, Lambda conventions, system tests, Docker, behaviour test proxy mode), keep CDK rules, git workflow, test commands, deployment workflow |
-| 3.7 | Adapt `playwright.config.js` — keep only `gatewayBehaviour` project |
-| 3.8 | Adapt deploy workflow — rename to `deploy.yml`, remove submit-specific jobs |
-| 3.9 | Fill gaps from `archive/` — pull back useful old assets (README history, any old content worth preserving) |
-| 3.10 | Configure OIDC trust for `antonycc/www.diyaccounting.co.uk` in gateway AWS account |
-| 3.11 | Deploy from gateway repo. Run `test:gatewayBehaviour-ci`. Verify. |
-| | **Spreadsheets — `antonycc/diy-accounting`** |
-| 3.12 | In existing `antonycc/diy-accounting` repo: `mkdir archive && git mv` all current files into `archive/` (preserves GitHub Discussions) |
-| 3.13 | Copy relevant submit repo files into the repo root |
-| 3.14 | Remove submit-specific and gateway-specific code |
-| 3.15 | Trim `package.json` — same approach as 3.4 |
-| 3.16 | Trim `pom.xml` — single CDK module |
-| 3.17 | Trim `CLAUDE.md` — same approach as 3.6, keep spreadsheets-specific sections |
-| 3.18 | Adapt `playwright.config.js` — keep only `spreadsheetsBehaviour` project |
-| 3.19 | Adapt deploy workflow — rename to `deploy.yml`, remove submit-specific jobs |
-| 3.20 | Fill gaps from `archive/` — pull back old packages, README, build scripts, any historical assets |
-| 3.21 | Configure OIDC trust for `antonycc/diy-accounting` in spreadsheets AWS account |
-| 3.22 | Deploy from spreadsheets repo. Run `test:spreadsheetsBehaviour-ci`. Verify. |
-| | **Submit repo cleanup** |
-| 3.23 | Remove migrated files from submit repo (GatewayStack, SpreadsheetsStack, web dirs, cdk-gateway, cdk-spreadsheets, packages, related scripts, gateway/spreadsheets workflows) |
-| 3.24 | Clean up submit repo: remove deploy-gateway.yml, deploy-spreadsheets.yml, gateway/spreadsheets behaviour tests |
+| Workflow | Root repo | Gateway repo | Spreadsheets repo |
+|---|---|---|---|
+| `deploy.yml` | DNS alias records + holding page | Build redirects + sitemaps, CDK deploy, smoke test | Build sitemaps + packages, CDK deploy, S3 sync zips, smoke test |
+| `synthetic-test.yml` | N/A (or holding page smoke test) | Run `gatewayBehaviour` against deployed env | Run `spreadsheetsBehaviour` against deployed env |
+| `test.yml` | N/A | Unit tests (if any) | Unit tests (web/unit-tests) |
+| `compliance.yml` | N/A | Pa11y accessibility, retire.js, eslint security | Pa11y accessibility, retire.js, eslint security |
+| `codeql.yml` | Code scanning | Code scanning | Code scanning |
 
 ### What stays in the submit repo
+
+After Phase 2 cleanup, submit retains only submit-specific code:
 
 - All submit application code (Lambda, API Gateway, Cognito, DynamoDB)
 - Submit web content (`web/public/`)
 - Submit CDK stacks and workflows (with API Gateway custom domains, EdgeStack ORP forwarding CloudFront-Viewer-Address)
-- `deploy-root.yml` and `RootDnsStack` (manages DNS for all services: submit, gateway, spreadsheets)
 - `deploy-environment.yml` (submit environment stacks: IdentityStack, DataStack, ObservabilityStack, SimulatorStack)
-- `deploy-holding.yml` (holding page at `{env}-holding.diyaccounting.co.uk`)
-- `.github/actions/lookup-resources` (domain-convention-based resource discovery)
+- `.github/actions/lookup-resources` (domain-convention-based resource discovery — submit-specific)
 - `.github/actions/get-names` (deployment/environment name computation)
 - `.github/actions/set-origins` (CloudFront alias + API GW custom domain transfer)
-- Submit behaviour tests (submitVat, auth, bundles, tokenEnforcement)
-- Holding page (`web/holding/`)
+- Submit behaviour tests (submitVat, auth, bundles, tokenEnforcement, payment)
 
-### What each new repo looks like
+**No longer in submit**: `deploy-root.yml`, `RootDnsStack`, `deploy-gateway.yml`, `GatewayStack`, `deploy-spreadsheets.yml`, `SpreadsheetsStack`, `deploy-holding.yml`, `web/holding/`, `web/www.diyaccounting.co.uk/`, `web/spreadsheets.diyaccounting.co.uk/`, `packages/`, `cdk-gateway/`, `cdk-spreadsheets/`.
 
-| Aspect | Gateway repo | Spreadsheets repo |
-|---|---|---|
-| CDK stacks | 1 (GatewayStack) | 1 (SpreadsheetsStack) |
-| Lambda | 0 | 0 |
-| Java modules | 1 (infra) | 1 (infra) |
-| Workflows | 3 (deploy, synthetic-test, compliance) | 3 (deploy, synthetic-test, compliance) |
-| Behaviour tests | 1 (gateway.behaviour.test.js) | 1 (spreadsheets.behaviour.test.js) |
-| Test environments | ci, prod | ci, prod |
-| Build scripts | redirects, sitemaps | packages, sitemaps, knowledge-base TOML |
-| AI assistants | CLAUDE.md, .claude/, .junie/, copilot | CLAUDE.md, .claude/, .junie/, copilot |
-| npm deps | ~15 (Playwright, Vitest, ncu, prettier) | ~15 (Playwright, Vitest, ncu, prettier) |
+### What each repo looks like after separation
+
+| Aspect | Root repo | Gateway repo | Spreadsheets repo | Submit repo |
+|---|---|---|---|---|
+| CDK stacks | 2 (RootDnsStack, holding) | 1 (GatewayStack) | 1 (SpreadsheetsStack) | ~8 (Auth, Api, Edge, Hmrc, etc.) |
+| Lambda | 0 | 0 | 0 | ~15 |
+| Java modules | 1 (infra) | 1 (infra) | 1 (infra) | 3 (infra, app, shared) |
+| Workflows | 1-2 (deploy, maybe codeql) | 3 (deploy, synthetic-test, compliance) | 3 (deploy, synthetic-test, compliance) | ~10 (deploy, test, env, etc.) |
+| Behaviour tests | 0 | 1 (gateway) | 1 (spreadsheets) | 4+ (submitVat, auth, bundles, etc.) |
+| Test environments | ci, prod | ci, prod | ci, prod | ci, prod |
+| Build scripts | 0 | redirects, sitemaps | packages, sitemaps, knowledge-base TOML | N/A |
+| npm deps | ~5 | ~15 | ~15 | ~40 |
 
 ### What to remove from the copied submit code
 
-After copying submit repo files in, remove this submit-specific and other-site code. The repo's own old files are already safe in `archive/`.
+After copying submit repo files into site repos, remove this submit-specific and other-site code. The repo's own old files are already safe in `archive/`.
 
 **From gateway repo** (remove these after copying from submit):
 - `app/` — all Lambda functions, services, middleware
 - `web/public/` — submit frontend
 - `web/spreadsheets.diyaccounting.co.uk/` — spreadsheets frontend
-- `web/holding/` — holding page
+- `web/holding/` — holding page (now in root repo)
 - `packages/` — spreadsheet zip files
 - `infra/.../` — all stacks except GatewayStack, GatewayEnvironment, shared CDK utils
 - `cdk-application/`, `cdk-environment/`, `cdk-spreadsheets/` — submit and spreadsheets CDK configs
 - `behaviour-tests/` — all except gateway.behaviour.test.js and needed helpers
 - `scripts/build-packages.cjs`, `scripts/generate-knowledge-base-toml.cjs`
-- `.github/workflows/deploy.yml`, `deploy-spreadsheets.yml`, `deploy-root.yml`, `deploy-environment.yml`
+- `.github/workflows/deploy.yml`, `deploy-spreadsheets.yml`, `deploy-root.yml`, `deploy-environment.yml`, `deploy-holding.yml`
 - `.env.test`, `.env.proxy` — submit-specific env files
 - Docker files, ngrok config, HMRC-related test fixtures
 
@@ -398,34 +409,108 @@ After copying submit repo files in, remove this submit-specific and other-site c
 - `app/` — all Lambda functions, services, middleware
 - `web/public/` — submit frontend
 - `web/www.diyaccounting.co.uk/` — gateway frontend
-- `web/holding/` — holding page
+- `web/holding/` — holding page (now in root repo)
 - `infra/.../` — all stacks except SpreadsheetsStack, SpreadsheetsEnvironment, shared CDK utils
 - `cdk-application/`, `cdk-environment/`, `cdk-gateway/` — submit and gateway CDK configs
 - `behaviour-tests/` — all except spreadsheets.behaviour.test.js and needed helpers
 - `scripts/build-gateway-redirects.cjs`
-- `.github/workflows/deploy.yml`, `deploy-gateway.yml`, `deploy-root.yml`, `deploy-environment.yml`
+- `.github/workflows/deploy.yml`, `deploy-gateway.yml`, `deploy-root.yml`, `deploy-environment.yml`, `deploy-holding.yml`
 - `.env.test`, `.env.proxy` — submit-specific env files
 - Docker files, ngrok config, HMRC-related test fixtures
 
 Add `archive/` to CDK and build tool ignore patterns so it doesn't interfere with deploys, but keep it tracked in git for reference.
 
-### deploy-root.yml ownership
+### OIDC trust management
 
-`deploy-root.yml` stays in the submit repo. It manages root account DNS for gateway, spreadsheets, and submit via `RootDnsStack`. This stack creates A/AAAA alias records for:
-- `{env}-gateway.diyaccounting.co.uk` → gateway CloudFront
-- `{env}-spreadsheets.diyaccounting.co.uk` → spreadsheets CloudFront
-- `{env}-submit.diyaccounting.co.uk` / `submit.diyaccounting.co.uk` / `www.submit.diyaccounting.co.uk` → submit CloudFront
+During Phase 2, all four repos deploy to the same AWS account (submit-prod). The existing `submit-github-actions-role` trust policy must be updated to allow OIDC assumptions from each new repo:
 
-Moving it to its own repo is a future consideration when/if submit itself splits into ci/prod accounts.
+```
+repo:antonycc/www.diyaccounting.co.uk:*
+repo:antonycc/diy-accounting:*
+repo:antonycc/<root-repo-name>:*
+```
+
+The existing `repo:antonycc/submit.diyaccounting.co.uk:*` entry stays. Each repo's deploy workflow uses the same OIDC provider and role chain (`github-actions-role` → `deployment-role`).
+
+In Phase 3, when gateway and spreadsheets get their own AWS accounts, their OIDC entries move to the new accounts and are removed from submit-prod.
 
 ### Repository naming
 
-| Current plan | GitHub URL | Notes |
+| Repo | GitHub URL | Notes |
 |---|---|---|
+| Root | TBD (new) | Manages DNS zone and holding page. Name candidates: `diyaccounting-root`, `diyaccounting-web` |
 | Gateway | `antonycc/www.diyaccounting.co.uk` | Named after the primary domain it serves |
 | Spreadsheets | `antonycc/diy-accounting` | Uses existing repo (has GitHub Discussions). May rename to `diy-accounting-spreadsheets` to avoid ambiguity |
+| Submit | `antonycc/submit.diyaccounting.co.uk` | Unchanged |
 
 If `diy-accounting` is renamed to `diy-accounting-spreadsheets`, the OIDC trust policy and workflow references need updating. GitHub supports repository renames with automatic redirects, but OIDC `sub` claims use the current name.
+
+---
+
+## Phase 3: Separate AWS accounts
+
+**Goal**: Move gateway and spreadsheets into their own AWS accounts under the organization. Reduces blast radius, enables independent billing. Submit CI/prod separation is a future consideration.
+
+**Prerequisite**: Phase 2 complete (each service in its own repo, deploying independently to submit-prod).
+
+**Why this is lower priority**: Gateway and spreadsheets are just S3 + CloudFront (tiny blast radius, ~$5/month each). The repos already deploy independently after Phase 2. Account separation adds operational overhead (new OIDC providers, new ACM certs, cross-account DNS validation) for modest security benefit on static sites. The higher-value account separation would be submit CI vs submit prod (shared Lambda, DynamoDB, Cognito) — but that's a much larger undertaking.
+
+### Account creation
+
+| Account | Email | OU | Resources |
+|---|---|---|---|
+| diy-gateway | aws-gateway@diyaccounting.co.uk | Workloads | S3, CloudFront, ACM cert |
+| diy-spreadsheets | aws-spreadsheets@diyaccounting.co.uk | Workloads | S3, CloudFront, ACM cert |
+
+Neither account needs Route53 — DNS stays in submit-prod (managed by the root repo's RootDnsStack). Neither needs Lambda, DynamoDB, API Gateway, or Cognito.
+
+### Steps
+
+| Step | Description |
+|------|-------------|
+| | **Gateway account** |
+| 3.1 | Create `diy-gateway` AWS account under organization |
+| 3.2 | Bootstrap: CDK bootstrap (us-east-1 + eu-west-2), OIDC provider, github-actions-role, deployment-role |
+| 3.3 | Create ACM cert in gateway account. DNS validation via root zone in submit-prod. |
+| 3.4 | Update gateway repo's `deploy.yml` to target the gateway account (new ACTIONS_ROLE_ARN, DEPLOY_ROLE_ARN) |
+| 3.5 | Update gateway repo's `cdk.json` with new account's cert ARN |
+| 3.6 | Deploy gateway to new account from gateway repo. Verify at ci-gateway domain. |
+| 3.7 | Update root DNS alias records (via root repo) to point to new account's CloudFront distributions |
+| 3.8 | Tear down old gateway stacks in submit-prod account |
+| 3.9 | Remove gateway OIDC trust entry from submit-prod's github-actions-role |
+| | **Spreadsheets account** |
+| 3.10 | Create `diy-spreadsheets` AWS account under organization |
+| 3.11 | Bootstrap: CDK, OIDC, roles (same pattern as 3.2) |
+| 3.12 | Create ACM cert in spreadsheets account |
+| 3.13 | Update spreadsheets repo's `deploy.yml` to target the spreadsheets account |
+| 3.14 | Update spreadsheets repo's `cdk.json` with new account's cert ARN |
+| 3.15 | Deploy spreadsheets to new account from spreadsheets repo. Verify at ci-spreadsheets domain. |
+| 3.16 | Update root DNS alias records to point to new account's CloudFront distributions |
+| 3.17 | Tear down old spreadsheets stacks in submit-prod account |
+| 3.18 | Remove spreadsheets OIDC trust entry from submit-prod's github-actions-role |
+| | **Local tooling** |
+| 3.19 | Create assume-role scripts: `aws-assume-gateway-role.sh`, `aws-assume-spreadshsheets-role.sh` (in respective repos) |
+
+### Cross-account DNS validation
+
+Gateway and spreadsheets ACM certs need DNS validation, but the Route53 zone is in submit-prod. Two approaches:
+
+1. **Manual CNAME**: Copy the ACM validation CNAME values from the new account and create them in submit-prod's Route53 zone (via root repo or manually). One-time operation per cert.
+2. **Cross-account delegation**: Grant the new accounts' CDK limited Route53 access in submit-prod. More automated but more complex IAM.
+
+Recommend option 1 for simplicity — ACM certs are rarely recreated.
+
+### Rollback strategy
+
+Keep the old stacks in submit-prod until the new-account versions are validated. DNS cutover is a single alias record update via the root repo — rollback is running the root repo's deploy workflow again with the old CloudFront domain.
+
+### Future considerations
+
+| Item | Notes |
+|---|---|
+| Submit CI/prod account separation | Higher security value (shared Lambda, DynamoDB, Cognito) but much larger effort. Would require a `submit-ci` account, duplicating environment stacks, secrets, and Cognito pools. |
+| Route53 zone to management account | Logically the DNS zone belongs in the org management account. Would require cross-account alias record permissions for all service accounts. Low priority while only one person operates the infrastructure. |
+| Root repo to management account | If a management account is created, the root repo could deploy there instead of submit-prod. Same trade-off as Route53 migration. |
 
 ---
 
@@ -433,14 +518,16 @@ If `diy-accounting` is renamed to `diy-accounting-spreadsheets`, the OIDC trust 
 
 | Risk | Mitigation |
 |---|---|
-| DNS cutover causes downtime | CloudFront alias changes propagate in seconds. Old distributions kept until verified. Rollback is a single deploy-root.yml run. |
+| DNS cutover causes downtime | CloudFront alias changes propagate in seconds. Old distributions kept until verified. Rollback is a single deploy from root repo. |
 | ACM cert validation delay | Request certs days before planned cutover. DNS validation typically completes in minutes. |
 | New account missing permissions | Bootstrap script follows proven pattern from submit-prod. Test with CI deployment before touching prod. |
-| Repository migration breaks builds | Each repo deployed independently and tested before removing from submit. Fork-and-delete preserves working state. |
+| Repository migration breaks builds | Each repo deployed independently and tested before removing from submit. Archive-and-overlay preserves working state. |
 | Old www URLs break | CloudFront Function already handles redirects. 301s preserve SEO link equity. Sitemaps guide crawlers to new URLs. |
 | `diy-accounting` repo rename breaks OIDC | Update OIDC trust policy in AWS account before renaming. Verify workflow runs after rename. |
 | Behaviour tests break in new repo | Tests are environment-agnostic (configurable base URL). Same Playwright config and helpers preserved. Test against CI from new repo before removing from submit. |
 | Submit domain alignment breaks existing bookmarks | `submit.diyaccounting.co.uk` kept as prod alias. CI uses `ci-submit.diyaccounting.co.uk`. |
+| Root repo becomes single point of failure for DNS | Root repo changes are infrequent (only when CloudFront distributions change). DNS records are durable — a broken root repo deploy doesn't affect existing records. |
+| Four repos increase maintenance burden | All four share the same conventions (prettier, editorconfig, CI patterns). Library updates can be scripted across repos. Static site repos are very low-maintenance. |
 
 ---
 
@@ -448,15 +535,15 @@ If `diy-accounting` is renamed to `diy-accounting-spreadsheets`, the OIDC trust 
 
 All services follow the `{env}-{service}.diyaccounting.co.uk` pattern:
 
-| Service | CI | Prod | Prod alias |
-|---------|-----|------|------------|
-| Submit | `ci-submit.diyaccounting.co.uk` | `prod-submit.diyaccounting.co.uk` | `submit.diyaccounting.co.uk` |
-| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` | `diyaccounting.co.uk`, `www.diyaccounting.co.uk` |
-| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` | `spreadsheets.diyaccounting.co.uk` |
-| Cognito | `ci-auth.diyaccounting.co.uk` | `prod-auth.diyaccounting.co.uk` | — |
-| Holding | `ci-holding.diyaccounting.co.uk` | `prod-holding.diyaccounting.co.uk` | — |
-| Simulator | `ci-simulator.diyaccounting.co.uk` | `prod-simulator.diyaccounting.co.uk` | — |
+| Service | CI | Prod | Prod alias | Repo |
+|---------|-----|------|------------|------|
+| Submit | `ci-submit.diyaccounting.co.uk` | `prod-submit.diyaccounting.co.uk` | `submit.diyaccounting.co.uk` | submit |
+| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` | `diyaccounting.co.uk`, `www.diyaccounting.co.uk` | gateway |
+| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` | `spreadsheets.diyaccounting.co.uk` | spreadsheets |
+| Cognito | `ci-auth.diyaccounting.co.uk` | `prod-auth.diyaccounting.co.uk` | — | submit |
+| Holding | `ci-holding.diyaccounting.co.uk` | `prod-holding.diyaccounting.co.uk` | — | root |
+| Simulator | `ci-simulator.diyaccounting.co.uk` | `prod-simulator.diyaccounting.co.uk` | — | submit |
 
 ---
 
-*Updated: February 2026*
+*Updated: February 2026 (v4.0 — added root repo, reordered repos-before-accounts)*
