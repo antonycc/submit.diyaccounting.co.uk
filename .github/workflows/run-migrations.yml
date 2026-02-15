@@ -27,7 +27,7 @@ on:
         required: true
       phase:
         type: string
-        required: true
+        required: false
         default: 'all'
 
 env:
