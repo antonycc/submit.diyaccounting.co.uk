@@ -49,7 +49,6 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
       const viewSrc = document.getElementById("viewSourceLink");
       const tests = document.getElementById("latestTestsLink");
       const apiDocs = document.getElementById("apiDocsLink");
-      const localStorageContainer = document.getElementById("localstorageContainer");
 
       // Set up hrefs for links
       if (viewSrc && !viewSrc.getAttribute("data-href-initialized")) {
@@ -64,7 +63,6 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
       setDisplay(viewSrc, developerModeEnabled ? "inline" : "none");
       setDisplay(tests, developerModeEnabled ? "inline" : "none");
       setDisplay(apiDocs, developerModeEnabled ? "inline" : "none");
-      setDisplay(localStorageContainer, developerModeEnabled ? "block" : "none");
     } catch (e) {
       console.warn("Failed to setup debug widgets:", e);
     }

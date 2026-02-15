@@ -68,8 +68,6 @@ export async function ingestHandler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.HMRC_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.BILLING_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.ACCOUNT_STACK_NAME);
-    addStackNameIfPresent(stacksToDelete, process.env.DEV_STACK_NAME);
-    addStackNameIfPresent(stacksToDelete, process.env.DEV_UE1_STACK_NAME);
     const selfDestructStackName = process.env.SELF_DESTRUCT_STACK_NAME;
 
     console.log(`Stacks to delete in order: ${stacksToDelete.join(", ")}`);

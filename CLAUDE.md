@@ -232,6 +232,44 @@ When implementing features that require infrastructure validation:
 - Always capture and analyze full logs when debugging infrastructure issues
 - Infrastructure errors are often in CloudFormation events or Lambda initialization logs
 
+### Lean App Deployment (No CDK)
+
+For rapid iteration on `./app` code or `./web/public` assets without full CDK deploy (~15-25 min), use the lean deploy script which directly updates Lambda images and S3 assets (~3-5 min):
+
+```bash
+# Assume role first
+. ./scripts/aws-assume-submit-deployment-role.sh
+
+# Full lean deploy to last-known-good CI deployment
+npm run deploy:app-ci
+
+# Deploy to a specific deployment
+npm run deploy:app-ci -- --deployment ci-leanbuild
+
+# Only update web assets (skip Docker build + Lambda updates)
+npm run deploy:app-ci -- --skip-docker --skip-lambdas
+
+# Only update Lambda code (skip web assets + CloudFront invalidation)
+npm run deploy:app-ci -- --skip-web
+
+# Production
+npm run deploy:app-prod
+```
+
+**What it does** (5 steps):
+1. Resolves deployment name (from `--deployment`, `DEPLOYMENT_NAME` env var, or SSM)
+2. Builds ARM64 Docker image and pushes to ECR (eu-west-2 + us-east-1)
+3. Updates all Lambda functions (update code, publish version, update `pc` alias)
+4. Syncs web assets to S3 (with RUM injection, submit.env generation)
+5. Invalidates CloudFront (same 43 paths as PublishStack)
+
+**Verify after lean deploy:**
+```bash
+npm run test:submitVatBehaviour-ci
+```
+
+**Important**: Lean deploy creates CloudFormation drift (intentional). The next full `deploy.yml` run reconciles all state via CDK.
+
 ## Simulator Website (CRITICAL)
 
 **Never edit files in `web/public-simulator/` directly.** This directory is an automated export/build of the main site in `web/public/`. All changes must be made in `web/public/` and the simulator version will be regenerated from it. Editing the simulator files directly will result in changes being overwritten on the next build.

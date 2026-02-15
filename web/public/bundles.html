@@ -117,7 +117,7 @@
         <div class="footer-center">
           <p>&copy; 2025-2026 DIY Accounting Limited</p>
         </div>
-        <div class="footer-right" id="localstorageContainer"></div>
+        <div class="footer-right"></div>
       </div>
     </footer>
 
@@ -138,7 +138,6 @@
     <script src="widgets/status-messages.js"></script>
     <script src="widgets/loading-spinner.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
-    <script src="widgets/localstorage-viewer.js"></script>
 
     <script>
       // --- helpers
@@ -502,10 +501,11 @@
 
         try {
           const bundleId = btn.getAttribute("data-bundle-id");
+          const isSandbox = sessionStorage.getItem("hmrcAccount") === "sandbox";
           const response = await window.fetchWithIdToken("/api/v1/billing/checkout-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bundleId }),
+            body: JSON.stringify({ bundleId, ...(isSandbox && { sandbox: true }) }),
           });
           const body = await response.json().catch(() => ({}));
 

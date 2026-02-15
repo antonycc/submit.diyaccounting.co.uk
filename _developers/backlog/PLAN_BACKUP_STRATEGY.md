@@ -15,6 +15,13 @@ This document describes a comprehensive backup strategy with:
 3. **Disaster Recovery**: Scripts and procedures for account loss scenarios
 4. **Monitoring**: Operations dashboard integration and backup health alarms
 
+
+```
+Set up monthly calendar reminder for salt backup
+launch
+
+```
+
 ---
 
 ## Current State Assessment

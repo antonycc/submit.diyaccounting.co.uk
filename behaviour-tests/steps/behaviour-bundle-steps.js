@@ -4,7 +4,7 @@
 // behaviour-tests/behaviour-bundle-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, timestamp, isSandboxMode } from "../helpers/behaviour-helpers.js";
+import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-bundle-steps";
 
@@ -450,9 +450,8 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png` });
 
     // Step 3: Call checkout session API
-    // Pass sandbox flag when using test passes — same pattern as HMRC hmrcAccount sandbox switching
-    const isSandbox = data?.qualifiers?.sandbox === true || testPass;
-    const checkoutResult = await page.evaluate(async ({ bid, sandbox }) => {
+    // Server auto-detects sandbox mode from bundle qualifiers (no explicit sandbox flag needed)
+    const checkoutResult = await page.evaluate(async ({ bid }) => {
       const idToken = localStorage.getItem("cognitoIdToken");
       if (!idToken) return { ok: false, error: "No auth token" };
       try {
@@ -462,7 +461,7 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
             "Content-Type": "application/json",
             "Authorization": `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ bundleId: bid, sandbox }),
+          body: JSON.stringify({ bundleId: bid }),
         });
         const body = await response.json();
         // Handle both response formats: mock returns { data: { checkoutUrl } }, real API returns { checkoutUrl }
@@ -471,7 +470,7 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
       } catch (err) {
         return { ok: false, error: err.message };
       }
-    }, { bid: bundleId, sandbox: isSandbox });
+    }, { bid: bundleId });
 
     console.log(`Checkout session result: ${JSON.stringify(checkoutResult)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-03-session-created.png` });

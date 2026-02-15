@@ -35,6 +35,12 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
+// Mock DynamoDB bundle repository (getUserBundles for sandbox auto-detection)
+const mockGetUserBundles = vi.fn();
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: (...args) => mockGetUserBundles(...args),
+}));
+
 // Mock EventBridge (activityAlert.js uses it)
 vi.mock("@aws-sdk/client-eventbridge", () => ({
   EventBridgeClient: class {
@@ -57,6 +63,8 @@ describe("billingCheckoutPost", () => {
   const validToken = makeIdToken("test-user-sub", { email: "user@example.com" });
 
   beforeEach(() => {
+    mockGetUserBundles.mockReset();
+    mockGetUserBundles.mockResolvedValue([]); // No bundles by default
     mockCheckoutSessionsCreate.mockReset();
     mockCheckoutSessionsCreate.mockResolvedValue({
       id: "cs_test_123",
@@ -147,5 +155,14 @@ describe("billingCheckoutPost", () => {
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
     expect(params.line_items[0].price).toBe("price_test_123");
+  });
+
+  test("uses STRIPE_TEST_PRICE_ID when user has sandbox bundle qualifier (no explicit flag needed)", async () => {
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", qualifiers: { sandbox: true } }]);
+    const event = buildEventWithToken(validToken, { bundleId: "resident-pro" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_test_sandbox_456");
   });
 });

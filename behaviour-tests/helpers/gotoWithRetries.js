@@ -84,6 +84,13 @@ export async function gotoWithRetries(page, url, options = {}, screenshotPath = 
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-waited.png` });
       }
 
+      // Inject test_ prefix so all API calls from behaviour tests are identifiable
+      if (typeof page.evaluate === "function") {
+        await page.evaluate(() => {
+          try { window.sessionStorage.setItem("requestIdPrefix", "test_"); } catch (e) { /* ignore */ }
+        });
+      }
+
       return; // success
     } catch (err) {
       lastErr = err;

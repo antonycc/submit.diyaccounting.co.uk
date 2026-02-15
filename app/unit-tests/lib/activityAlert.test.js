@@ -4,7 +4,23 @@
 // app/unit-tests/lib/activityAlert.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+
+const mockSend = vi.fn().mockResolvedValue({});
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 import { classifyActor, classifyFlow, maskEmail, maskVrn, publishActivityEvent } from "@app/lib/activityAlert.js";
+import { context } from "@app/lib/logger.js";
 
 describe("lib/activityAlert", () => {
   describe("classifyActor", () => {
@@ -98,6 +114,10 @@ describe("lib/activityAlert", () => {
   describe("publishActivityEvent", () => {
     const originalEnv = process.env.ACTIVITY_BUS_NAME;
 
+    beforeEach(() => {
+      mockSend.mockClear();
+    });
+
     afterEach(() => {
       if (originalEnv === undefined) {
         delete process.env.ACTIVITY_BUS_NAME;
@@ -114,8 +134,64 @@ describe("lib/activityAlert", () => {
 
     test("does not throw on EventBridge failure", async () => {
       process.env.ACTIVITY_BUS_NAME = "test-bus";
-      // EventBridge client will fail (no real AWS), but should not throw
+      mockSend.mockRejectedValueOnce(new Error("AWS error"));
       await publishActivityEvent({ event: "test-event", summary: "Test" });
+    });
+
+    test("includes requestId from context in event detail", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await context.run(new Map(), async () => {
+        context.set("requestId", "req-abc-123");
+        await publishActivityEvent({ event: "login", summary: "Login" });
+      });
+
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      const cmd = mockSend.mock.calls[0][0];
+      const detail = JSON.parse(cmd.input.Entries[0].Detail);
+      expect(detail.requestId).toBe("req-abc-123");
+    });
+
+    test("defaults actor to test-user when requestId has test_ prefix and no explicit actor", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await context.run(new Map(), async () => {
+        context.set("requestId", "test_abc-123");
+        await publishActivityEvent({ event: "checkout", summary: "Checkout" });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.actor).toBe("test-user");
+      expect(detail.requestId).toBe("test_abc-123");
+    });
+
+    test("does not override explicit actor even with test_ requestId prefix", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await context.run(new Map(), async () => {
+        context.set("requestId", "test_abc-123");
+        await publishActivityEvent({ event: "checkout", summary: "Checkout", actor: "customer" });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.actor).toBe("customer");
+    });
+
+    test("defaults actor to unknown when no requestId prefix and no explicit actor", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await context.run(new Map(), async () => {
+        context.set("requestId", "normal-request-id");
+        await publishActivityEvent({ event: "login", summary: "Login" });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.actor).toBe("unknown");
+    });
+
+    test("omits requestId from detail when not in context", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await publishActivityEvent({ event: "login", summary: "Login" });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.requestId).toBeUndefined();
+      expect(detail.actor).toBe("unknown");
     });
   });
 });

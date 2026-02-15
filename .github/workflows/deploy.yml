@@ -652,64 +652,11 @@ jobs:
     outputs:
       secrets-valid: ${{ steps.validate.outputs.secrets-valid }}
 
-  deploy-dev:
-    name: 'deploy DevStack via deploy-cdk-stack.yml'
-    needs:
-      - params
-      - names
-      - skip-deploy-check
-      - wait-for-previous-cleanup
-    uses: ./.github/workflows/deploy-cdk-stack.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-      pages: write
-      pull-requests: read
-    with:
-      stackName: ${{ needs.names.outputs.deployment-name }}-app-DevStack
-      force-stack-deployment: ${{ needs.params.outputs.forceAllStackDeployment }}
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      cdk-application: 'application'
-      lookup-cognito: 'true'
-      # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-      # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
-      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
-
-  deploy-dev-us-east-1:
-    name: 'deploy DevUE1Stack via deploy-cdk-stack.yml'
-    needs:
-      - params
-      - names
-      - skip-deploy-check
-      - wait-for-previous-cleanup
-    uses: ./.github/workflows/deploy-cdk-stack.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-      pages: write
-      pull-requests: read
-    with:
-      stackName: ${{ needs.names.outputs.deployment-name }}-app-DevUE1Stack
-      force-stack-deployment: ${{ needs.params.outputs.forceAllStackDeployment }}
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      cdk-application: 'application'
-      lookup-cognito: 'true'
-      # self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
-      # base-image-tag: Downstream of the image push use  ${{ needs.push-images.outputs.base-image-tag }}
-      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
-      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
-
   push-images:
     name: 'push images'
     needs:
       - names
       - skip-deploy-check
-      - deploy-dev
       - docker-build
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -747,7 +694,7 @@ jobs:
             ;
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr
 
       - name: Check if image already exists in ECR
         id: image-exists
@@ -763,7 +710,7 @@ jobs:
           fi
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -801,7 +748,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr
     outputs:
       base-image-tag: ${{ github.sha }}
 
@@ -810,7 +757,6 @@ jobs:
     needs:
       - names
       - skip-deploy-check
-      - deploy-dev-us-east-1
       - docker-build
     runs-on: ubuntu-24.04
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
@@ -848,7 +794,7 @@ jobs:
             ;
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr-us-east-1
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr-us-east-1
 
       - name: Check if image already exists in ECR
         id: image-exists
@@ -864,7 +810,7 @@ jobs:
           fi
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr-us-east-1
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr-us-east-1
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -902,7 +848,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL?}/${ECR_REPOSITORY_NAME?}:latest"
         env:
           ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.deployment-name }}-app-ecr-us-east-1
+          ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr-us-east-1
     outputs:
       base-image-tag: ${{ github.sha }}
 
@@ -939,7 +885,6 @@ jobs:
     needs:
       - names
       - skip-deploy-check
-      - deploy-dev
       - push-images
       - validate-secrets
     uses: ./.github/workflows/deploy-cdk-stack.yml
@@ -966,7 +911,6 @@ jobs:
     needs:
       - names
       - skip-deploy-check
-      - deploy-dev
       - push-images
       - validate-secrets
     uses: ./.github/workflows/deploy-cdk-stack.yml
@@ -993,7 +937,6 @@ jobs:
     needs:
       - names
       - skip-deploy-check
-      - deploy-dev
       - push-images
       - validate-secrets
     uses: ./.github/workflows/deploy-cdk-stack.yml
@@ -1020,7 +963,6 @@ jobs:
     needs:
       - names
       - skip-deploy-check
-      - deploy-dev
       - push-images
       - validate-secrets
     uses: ./.github/workflows/deploy-cdk-stack.yml
@@ -1095,22 +1037,34 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Cache Maven build output
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
+
       - name: Deploy API stack (CDK)
         run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-application \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-app-ApiStack \
-                --exclusively \
-                --require-approval never \
-                --ci true \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-application.out/cdk-outputs-api.json \
-            && cd .. \
-            ;
+          if [ ! -f target/submit-application.jar ]; then
+            echo "Maven output not cached, building with profile cdk-application..."
+            ./mvnw --errors clean verify -DskipTests \
+              -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -P cdk-application
+          else
+            echo "Maven output cached (target/submit-application.jar exists), skipping build"
+          fi
+          cd cdk-application
+          cat ../.env.${{ needs.names.outputs.environment-name }}
+          npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+            npx cdk deploy \
+              ${{ needs.names.outputs.deployment-name }}-app-ApiStack \
+              --exclusively \
+              --require-approval never \
+              --ci true \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../cdk-submit-application.out/cdk-outputs-api.json
+          cd ..
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
@@ -1399,23 +1353,36 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Cache Maven build output
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
+
       - name: Build CDK and synthesize and deploy the PublishStack in the Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-application \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.names.outputs.deployment-name }}-app-PublishStack \
-                --exclusively \
-                --require-approval never \
-                --ci true \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json \
-              && cd .. \
-            ;
+          if [ ! -f target/submit-application.jar ]; then
+            echo "Maven output not cached, building with profile cdk-application..."
+            ./mvnw --errors clean verify -DskipTests \
+              -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -P cdk-application
+          else
+            echo "Maven output cached (target/submit-application.jar exists), skipping build"
+          fi
+          cd cdk-application
+          cat ../.env.${{ needs.names.outputs.environment-name }}
+          npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+            npx cdk deploy \
+              ${{ needs.names.outputs.deployment-name }}-app-PublishStack \
+              --exclusively \
+              --require-approval never \
+              --ci true \
+              --concurrency 4 \
+              --asset-parallelism \
+              --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json
+          cd ..
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
@@ -1684,8 +1651,9 @@ jobs:
       - params
       - names
       - set-origins
+      - deploy-publish
       - enable-native-auth
-      - web-test-auth
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1707,8 +1675,9 @@ jobs:
       - params
       - names
       - set-origins
+      - deploy-publish
       - enable-native-auth
-      - web-test-token-enforcement
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1731,7 +1700,7 @@ jobs:
       - set-origins
       - deploy-publish
       - enable-native-auth
-      - web-test-payment
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1754,6 +1723,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1777,6 +1749,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1800,6 +1775,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1823,6 +1801,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1846,6 +1827,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1869,6 +1853,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1892,6 +1879,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1915,6 +1905,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1938,6 +1931,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1961,6 +1957,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -1984,6 +1983,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -2007,6 +2009,9 @@ jobs:
       - names
       - set-origins
       - deploy-publish
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -2030,6 +2035,9 @@ jobs:
       - names
       - set-origins
       - deploy-publish
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
@@ -2053,6 +2061,9 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
+      - web-test-auth
+      - web-test-token-enforcement
+      - web-test-payment
       - web-test
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
