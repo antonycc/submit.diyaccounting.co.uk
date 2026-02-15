@@ -160,8 +160,8 @@ public class SubmitApplication {
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var httpApiUrl = envOr("HTTP_API_URL", appProps.httpApiUrl, "(from httpApiUrl in cdk.json)");
-        var stripeSecretKeyArn = envOr(
-                "STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
+        var stripeSecretKeyArn =
+                envOr("STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
         var stripePriceId = envOr("STRIPE_PRICE_ID", appProps.stripePriceId, "(from stripePriceId in cdk.json)");
         var stripeTestPriceId =
                 envOr("STRIPE_TEST_PRICE_ID", appProps.stripeTestPriceId, "(from stripeTestPriceId in cdk.json)");
@@ -169,14 +169,14 @@ public class SubmitApplication {
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
                 "(from stripeWebhookSecretArn in cdk.json)");
-        var telegramBotTokenArn = envOr(
-                "TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
-        var telegramTestChatId = envOr(
-                "TELEGRAM_TEST_CHAT_ID", appProps.telegramTestChatId, "(from telegramTestChatId in cdk.json)");
-        var telegramLiveChatId = envOr(
-                "TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
-        var telegramOpsChatId = envOr(
-                "TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
+        var telegramBotTokenArn =
+                envOr("TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
+        var telegramTestChatId =
+                envOr("TELEGRAM_TEST_CHAT_ID", appProps.telegramTestChatId, "(from telegramTestChatId in cdk.json)");
+        var telegramLiveChatId =
+                envOr("TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
+        var telegramOpsChatId =
+                envOr("TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
@@ -203,7 +203,6 @@ public class SubmitApplication {
                         .cognitoUserPoolClientId(cognitoUserPoolClientId)
                         .build());
 
-
         // Create the HmrcStack
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -229,7 +228,6 @@ public class SubmitApplication {
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
 
-
         // Create the AccountStack
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -251,7 +249,6 @@ public class SubmitApplication {
                         .cognitoUserPoolArn(cognitoUserPoolArn)
                         .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
                         .build());
-
 
         // Create the BillingStack
         infof(
@@ -275,7 +272,6 @@ public class SubmitApplication {
                         .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .build());
-
 
         // Create the ApiStack with API Gateway v2 for all Lambda endpoints
         infof(

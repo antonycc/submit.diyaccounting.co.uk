@@ -46,7 +46,7 @@ describe("System: Billing Infrastructure", () => {
     const { ingestHandler } = await import("../functions/billing/billingWebhookPost.js");
     const result = await ingestHandler({
       body: "{}",
-      headers: { host: "test", "content-type": "application/json" },
+      headers: { "host": "test", "content-type": "application/json" },
       requestContext: { http: { method: "POST", path: "/api/v1/billing/webhook" } },
     });
     expect(result.statusCode).toBe(400);

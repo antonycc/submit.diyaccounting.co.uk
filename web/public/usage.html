@@ -104,12 +104,22 @@
         <div id="subscriptionManagement" style="margin-top: 2em; text-align: left; display: none">
           <h3>Subscription</h3>
           <p style="color: #666; margin-bottom: 0.5em">Manage your subscription billing, payment method, and cancellation.</p>
-          <button type="button" id="manageSubscriptionBtn" class="btn" style="background-color: #17a2b8; border-color: #17a2b8; min-width: 200px">Manage Subscription</button>
+          <button
+            type="button"
+            id="manageSubscriptionBtn"
+            class="btn"
+            style="background-color: #17a2b8; border-color: #17a2b8; min-width: 200px"
+          >
+            Manage Subscription
+          </button>
         </div>
 
         <div style="margin-top: 2em; text-align: left">
           <h3>Browser Storage</h3>
-          <p style="color: #666; margin-bottom: 0.5em">Data stored on this device by this site. Only recognised application keys are shown; library-internal and sensitive values are redacted.</p>
+          <p style="color: #666; margin-bottom: 0.5em">
+            Data stored on this device by this site. Only recognised application keys are shown; library-internal and sensitive values are
+            redacted.
+          </p>
           <table id="browserStorageTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5em">
             <thead>
               <tr style="border-bottom: 2px solid #dee2e6; text-align: left">
@@ -124,7 +134,21 @@
             </tbody>
           </table>
           <div style="margin-top: 1em">
-            <button type="button" id="clearStorageBtn" style="background: #fff; border: 1px solid #dc3545; color: #dc3545; font-size: 0.9em; padding: 6px 16px; border-radius: 4px; cursor: pointer;">Clear storage</button>
+            <button
+              type="button"
+              id="clearStorageBtn"
+              style="
+                background: #fff;
+                border: 1px solid #dc3545;
+                color: #dc3545;
+                font-size: 0.9em;
+                padding: 6px 16px;
+                border-radius: 4px;
+                cursor: pointer;
+              "
+            >
+              Clear storage
+            </button>
           </div>
         </div>
       </div>
@@ -150,7 +174,11 @@
     <script src="lib/env-loader.js"></script>
     <script>
       (async function () {
-        try { await window.loadEnv(); } catch (e) { console.warn("Failed to load environment:", e); }
+        try {
+          await window.loadEnv();
+        } catch (e) {
+          console.warn("Failed to load environment:", e);
+        }
       })();
     </script>
     <script type="module" src="submit.js"></script>
@@ -216,8 +244,7 @@
         });
 
         if (tokenBundles.length === 0) {
-          body.innerHTML =
-            '<tr><td colspan="4" style="padding: 1em; color: #666; text-align: center">No token bundles found.</td></tr>';
+          body.innerHTML = '<tr><td colspan="4" style="padding: 1em; color: #666; text-align: center">No token bundles found.</td></tr>';
           return;
         }
 
@@ -354,9 +381,14 @@
       // Allowlist: only these keys have their values displayed.
       // Everything else is redacted by default to avoid leaking internal state.
       var STORAGE_ALLOWLIST = new Set([
-        "cognitoIdToken", "cognitoAccessToken", "cognitoRefreshToken",
-        "userInfo", "loginProvider", "auth:lastUpdate",
-        "consent.rum", "consent.analytics",
+        "cognitoIdToken",
+        "cognitoAccessToken",
+        "cognitoRefreshToken",
+        "userInfo",
+        "loginProvider",
+        "auth:lastUpdate",
+        "consent.rum",
+        "consent.analytics",
         "waitlistRegistered",
       ]);
 
@@ -377,7 +409,9 @@
             if (info.name) parts.push(info.name);
             if (info.email) parts.push(info.email);
             return parts.length > 0 ? parts.join(", ") : value;
-          } catch (e) { return value; }
+          } catch (e) {
+            return value;
+          }
         }
         if (!STORAGE_ALLOWLIST.has(key)) {
           return "[redacted]";
@@ -398,14 +432,26 @@
           body.innerHTML = '<tr><td colspan="2" style="padding: 1em; color: #666; text-align: center">No data stored.</td></tr>';
           return;
         }
-        body.innerHTML = keys.map(function (k) {
-          var v;
-          try { v = localStorage.getItem(k); } catch (e) { v = "[unreadable]"; }
-          return '<tr style="border-bottom: 1px solid #dee2e6">' +
-            '<td style="padding: 0.5em; font-family: monospace; font-size: 0.85em; white-space: nowrap">' + escapeHtml(k) + '</td>' +
-            '<td style="padding: 0.5em; word-break: break-word; font-size: 0.85em">' + escapeHtml(redactValue(k, v)) + '</td>' +
-            '</tr>';
-        }).join("");
+        body.innerHTML = keys
+          .map(function (k) {
+            var v;
+            try {
+              v = localStorage.getItem(k);
+            } catch (e) {
+              v = "[unreadable]";
+            }
+            return (
+              '<tr style="border-bottom: 1px solid #dee2e6">' +
+              '<td style="padding: 0.5em; font-family: monospace; font-size: 0.85em; white-space: nowrap">' +
+              escapeHtml(k) +
+              "</td>" +
+              '<td style="padding: 0.5em; word-break: break-word; font-size: 0.85em">' +
+              escapeHtml(redactValue(k, v)) +
+              "</td>" +
+              "</tr>"
+            );
+          })
+          .join("");
       }
 
       document.getElementById("clearStorageBtn").addEventListener("click", function () {

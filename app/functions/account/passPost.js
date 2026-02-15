@@ -88,17 +88,21 @@ export async function ingestHandler(event) {
     const catBundle = (catalog.bundles || []).find((b) => b.id === result.bundleId);
 
     if (catBundle?.allocation === "on-pass-on-subscription") {
+      const testPass = result.pass?.testPass || false;
       return http200OkResponse({
         request,
         headers: responseHeaders,
-        data: { redeemed: false, valid: true, bundleId: result.bundleId, requiresSubscription: true },
+        data: { redeemed: false, valid: true, bundleId: result.bundleId, requiresSubscription: true, testPass },
       });
     }
 
     // Pass is valid — grant the bundle to the user
     const { grantBundle } = await import("./bundlePost.js");
     const grantQualifiers = result.pass?.testPass ? { sandbox: true } : undefined;
-    const grantResult = await grantBundle(userId, { bundleId: result.bundleId, qualifiers: {} }, decodedToken, null, { skipCapCheck: true, grantQualifiers });
+    const grantResult = await grantBundle(userId, { bundleId: result.bundleId, qualifiers: {} }, decodedToken, null, {
+      skipCapCheck: true,
+      grantQualifiers,
+    });
 
     logger.info({ message: "Pass redeemed and bundle granted", code, bundleId: result.bundleId, userId });
     publishActivityEvent({
@@ -107,6 +111,7 @@ export async function ingestHandler(event) {
       detail: { bundleId: result?.bundleId },
     }).catch(() => {});
 
+    const testPass = result.pass?.testPass || false;
     return http200OkResponse({
       request,
       headers: responseHeaders,
@@ -115,6 +120,7 @@ export async function ingestHandler(event) {
         bundleId: result.bundleId,
         expiry: grantResult.expiry || null,
         grantStatus: grantResult.status,
+        testPass,
       },
     });
   } catch (error) {

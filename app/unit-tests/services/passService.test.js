@@ -121,18 +121,6 @@ describe("passService", () => {
       expect(pass.emailHashSecretVersion).toBe("test-v1");
     });
 
-    it("should set custom maxUses", () => {
-      const pass = buildPassRecord({
-        passTypeId: "group-invite",
-        bundleId: "invited-guest",
-        validityPeriod: "P1M",
-        maxUses: 10,
-        createdBy: "admin",
-      });
-
-      expect(pass.maxUses).toBe(10);
-    });
-
     it("should set testPass when true", () => {
       const pass = buildPassRecord({
         passTypeId: "day-guest-test-pass",

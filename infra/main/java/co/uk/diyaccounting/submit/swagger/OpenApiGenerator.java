@@ -170,9 +170,10 @@ public class OpenApiGenerator {
                             case "state" -> schema.put("example", "csrf-1234");
                             case "scope" -> schema.put("example", "write:vat read:vat");
                             case "name" -> schema.put("example", "2025-03-31-123456789012.json");
-                            case "key" -> schema.put(
-                                    "example",
-                                    "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json");
+                            case "key" ->
+                                schema.put(
+                                        "example",
+                                        "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json");
                             case "bundleId" -> schema.put("example", "test");
                             case "removeAll" -> schema.put("example", "false");
                         }
@@ -447,9 +448,8 @@ public class OpenApiGenerator {
             case "/hmrc/authUrl" -> "HMRC authentication URL returned successfully";
             case "/hmrc/token" -> "HMRC token exchanged successfully";
             case "/hmrc/vat/return" -> "VAT return submitted successfully";
-            case "/hmrc/receipt" -> method.equals("post")
-                    ? "Receipt logged successfully"
-                    : "Receipts retrieved successfully";
+            case "/hmrc/receipt" ->
+                method.equals("post") ? "Receipt logged successfully" : "Receipts retrieved successfully";
             default -> "Request completed successfully";
         };
     }

@@ -760,7 +760,9 @@ public class AccountStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
-        infof("Created Session Beacon POST Lambda %s", this.sessionBeaconPostLambda.getNode().getId());
+        infof(
+                "Created Session Beacon POST Lambda %s",
+                this.sessionBeaconPostLambda.getNode().getId());
 
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());

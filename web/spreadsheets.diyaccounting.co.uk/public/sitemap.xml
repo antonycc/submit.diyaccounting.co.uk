@@ -14,6 +14,8 @@
   <url><loc>https://spreadsheets.diyaccounting.co.uk/download.html?product=Company</loc><priority>0.9</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/download.html?product=TaxiDriver</loc><priority>0.9</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/download.html?product=Payslip05</loc><priority>0.9</priority></url>
+  <url><loc>https://spreadsheets.diyaccounting.co.uk/download.html?product=Payslip10</loc><priority>0.9</priority></url>
+  <url><loc>https://spreadsheets.diyaccounting.co.uk/policybee.html</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/changing-spreadsheets.html</loc><priority>0.7</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/accounting-period-over12-months.html</loc><priority>0.7</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/accounting-and-basis-periods-self-employed-business.html</loc><priority>0.7</priority></url>
@@ -91,7 +93,6 @@
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/subsistence-travel-expenses-tax-allowances-car-mileage-rates.html</loc><priority>0.7</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/written-down-book-value-and-tax-value.html</loc><priority>0.7</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/basic-sole-trader-income-tax-calculation.html</loc><priority>0.7</priority></url>
-
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/outsourcing-benefits-against-payroll-software.html</loc><priority>0.7</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/small-business-payroll-software-package.html</loc><priority>0.7</priority></url>
   <url><loc>https://spreadsheets.diyaccounting.co.uk/articles/d-i-y-accounting-limited-company-accounting-software.html</loc><priority>0.7</priority></url>

@@ -103,6 +103,7 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
   const known = new Set(Object.keys(q));
   if (q.requiresTransactionId) known.add("transactionId");
   if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) known.add("subscriptionTier");
+  known.add("sandbox"); // System qualifier: test mode for sandbox passes
   for (const k of Object.keys(requestQualifiers || {})) {
     if (!known.has(k)) {
       logger.warn({ message: "Unknown qualifier in bundle request:", qualifier: k });
@@ -414,8 +415,9 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
   const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
-  if (grantQualifiers && Object.keys(grantQualifiers).length > 0) {
-    newBundle.qualifiers = grantQualifiers;
+  const effectiveQualifiers = grantQualifiers || (Object.keys(qualifiers).length > 0 ? qualifiers : undefined);
+  if (effectiveQualifiers && Object.keys(effectiveQualifiers).length > 0) {
+    newBundle.qualifiers = effectiveQualifiers;
   }
 
   // Token tracking: set token fields from catalogue

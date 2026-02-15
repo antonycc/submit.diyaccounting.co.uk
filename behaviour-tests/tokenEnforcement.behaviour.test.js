@@ -404,35 +404,47 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     // Verify Token Sources table: day-guest should show 0 remaining
     // (only verify if DynamoDB was available for the exhaustion steps)
     if (bundleTableName) {
-      await verifyTokenSources(page, [
-        {
-          bundleId: "day-guest",
-          tokensGranted: 3,
-          tokensRemainingAtLeast: 0,
-          tokensRemainingAtMost: 0,
-        },
-      ], screenshotPath);
+      await verifyTokenSources(
+        page,
+        [
+          {
+            bundleId: "day-guest",
+            tokensGranted: 3,
+            tokensRemainingAtLeast: 0,
+            tokensRemainingAtMost: 0,
+          },
+        ],
+        screenshotPath,
+      );
     } else {
       // Without DynamoDB, tokens were only consumed via the UI submission (Step 4)
-      await verifyTokenSources(page, [
-        {
-          bundleId: "day-guest",
-          tokensGranted: 3,
-          tokensRemainingAtLeast: 0,
-          tokensRemainingAtMost: 2,
-        },
-      ], screenshotPath);
+      await verifyTokenSources(
+        page,
+        [
+          {
+            bundleId: "day-guest",
+            tokensGranted: 3,
+            tokensRemainingAtLeast: 0,
+            tokensRemainingAtMost: 2,
+          },
+        ],
+        screenshotPath,
+      );
     }
 
     // Verify Token Consumption table: at least 1 submit-vat entry from the VAT submission in Step 4
     // (3 total entries if DynamoDB was available for the direct consumption in Step 6)
-    await verifyTokenConsumption(page, [
-      {
-        activity: "submit-vat",
-        minCount: 1,
-        tokensUsed: 1,
-      },
-    ], screenshotPath);
+    await verifyTokenConsumption(
+      page,
+      [
+        {
+          activity: "submit-vat",
+          minCount: 1,
+          tokensUsed: 1,
+        },
+      ],
+      screenshotPath,
+    );
 
     await page.screenshot({ path: `${screenshotPath}/09-usage-page-day-guest.png`, fullPage: true });
     console.log("[token-enforcement-test]: Usage page verification complete for day-guest.");
@@ -605,23 +617,31 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
     await goToUsagePage(page, screenshotPath);
 
     // Verify Token Sources table: resident-pro should show 100 granted, 99 remaining
-    await verifyTokenSources(page, [
-      {
-        bundleId: "resident-pro",
-        tokensGranted: 100,
-        tokensRemainingAtLeast: 98,
-        tokensRemainingAtMost: 100,
-      },
-    ], screenshotPath);
+    await verifyTokenSources(
+      page,
+      [
+        {
+          bundleId: "resident-pro",
+          tokensGranted: 100,
+          tokensRemainingAtLeast: 98,
+          tokensRemainingAtMost: 100,
+        },
+      ],
+      screenshotPath,
+    );
 
     // Verify Token Consumption table: at least 1 submit-vat entry from the VAT submission in Step 4
-    await verifyTokenConsumption(page, [
-      {
-        activity: "submit-vat",
-        minCount: 1,
-        tokensUsed: 1,
-      },
-    ], screenshotPath);
+    await verifyTokenConsumption(
+      page,
+      [
+        {
+          activity: "submit-vat",
+          minCount: 1,
+          tokensUsed: 1,
+        },
+      ],
+      screenshotPath,
+    );
 
     await page.screenshot({ path: `${screenshotPath}/pro-06-usage-page-resident-pro.png`, fullPage: true });
     console.log("[token-enforcement-test]: Usage page verification complete for resident-pro.");

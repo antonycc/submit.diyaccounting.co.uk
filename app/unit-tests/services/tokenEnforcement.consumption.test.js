@@ -24,9 +24,7 @@ describe("services/tokenEnforcement - consumption recording", () => {
   });
 
   test("records token event after successful consumption", async () => {
-    mockGetUserBundles.mockResolvedValue([
-      { bundleId: "day-guest", tokensGranted: 10, tokensConsumed: 2 },
-    ]);
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "day-guest", tokensGranted: 10, tokensConsumed: 2 }]);
     mockConsumeToken.mockResolvedValue({ consumed: true, tokensRemaining: 7, bundle: {} });
     mockRecordTokenEvent.mockResolvedValue();
 
@@ -46,9 +44,7 @@ describe("services/tokenEnforcement - consumption recording", () => {
   });
 
   test("does not record token event when consumption fails", async () => {
-    mockGetUserBundles.mockResolvedValue([
-      { bundleId: "day-guest", tokensGranted: 10, tokensConsumed: 10 },
-    ]);
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "day-guest", tokensGranted: 10, tokensConsumed: 10 }]);
 
     const catalog = {
       activities: [{ id: "submit-vat", tokenCost: 1, bundles: ["day-guest"] }],

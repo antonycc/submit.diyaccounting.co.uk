@@ -3,7 +3,7 @@
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
 **Target URL**: https://submit.diyaccounting.co.uk
-**Generated**: 2026-02-10T20:27:04.754Z
+**Generated**: 2026-02-15T14:29:03.225Z
 **Overall Status**: ❌ FAIL
 
 **Source Files**:
@@ -26,13 +26,13 @@
 | Check | Status | Summary |
 |-------|--------|---------|
 | npm audit | ✅ | 0 critical, 0 high, 0 moderate |
-| ESLint Security | ✅ | 0 errors, 7 warnings |
+| ESLint Security | ✅ | 0 errors, 0 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 0 medium, 7 low |
-| Pa11y (WCAG AA) | ❌ | 29/34 pages passed |
-| axe-core | ❌ | 2 violations, 1055 passes |
-| axe-core (WCAG 2.2) | ❌ | 2 violations, 614 passes |
-| Lighthouse | ✅ | A11y: 95%, Perf: 91%, BP: 100% |
+| OWASP ZAP | ✅ | 0 high, 0 medium, 2 low |
+| Pa11y (WCAG AA) | ❌ | 34/35 pages passed |
+| axe-core | ✅ | 0 violations, 1056 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 614 passes |
+| Lighthouse | ✅ | A11y: 100%, Perf: 91%, BP: 96% |
 | Text Spacing (1.4.12) | ✅ | 25/25 pages passed |
 
 ---
@@ -46,8 +46,8 @@
 | Critical | 0 |
 | High | 0 |
 | Moderate | 0 |
-| Low | 0 |
-| **Total** | **0** |
+| Low | 1 |
+| **Total** | **1** |
 
 **Status**: ✅ No critical/high vulnerabilities
 
@@ -56,7 +56,7 @@
 | Metric | Count |
 |--------|-------|
 | Errors | 0 |
-| Warnings | 7 |
+| Warnings | 0 |
 
 **Status**: ✅ No security errors
 
@@ -76,8 +76,8 @@
 |------------|-------|
 | High | 0 |
 | Medium | 0 |
-| Low | 7 |
-| Informational | 35 |
+| Low | 2 |
+| Informational | 27 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -85,14 +85,11 @@
 
 | Alert | Risk | Count |
 |-------|------|-------|
-| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 5 |
 | Timestamp Disclosure - Unix | Low (Low) | 2 |
 | Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
 | Modern Web Application | Informational (Medium) | 5 |
-| Non-Storable Content | Informational (Medium) | 3 |
 | Re-examine Cache-control Directives | Informational (Low) | 5 |
 | Retrieved from Cache | Informational (Medium) | 5 |
-| Storable and Cacheable Content | Informational (Medium) | 5 |
 
 #### Accepted Risks (Suppressed)
 
@@ -109,9 +106,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 34 |
-| Pages Passed | 29 |
-| Pages Failed | 5 |
+| Pages Tested | 35 |
+| Pages Passed | 34 |
+| Pages Failed | 1 |
 
 **Status**: ❌ Some pages have accessibility issues
 
@@ -119,14 +116,15 @@
 
 | Page | Errors |
 |------|--------|
-| / | 2 |
-| /index.html | 2 |
+| / | 0 |
+| /index.html | 0 |
 | /privacy.html | 0 |
 | /terms.html | 0 |
 | /about.html | 0 |
 | /accessibility.html | 0 |
 | /auth/login.html | 0 |
 | /bundles.html | 0 |
+| /usage.html | 0 |
 | /hmrc/vat/submitVat.html | 0 |
 | /hmrc/vat/vatObligations.html | 0 |
 | /hmrc/vat/viewVatReturn.html | 0 |
@@ -136,7 +134,7 @@
 | /mcp.html | 0 |
 | /diy-accounting-spreadsheets.html | 0 |
 | /diy-accounting-limited.html | 0 |
-| /spreadsheets.html | 4 |
+| /spreadsheets.html | 0 |
 | /errors/404-error-distribution.html | 0 |
 | /errors/404-error-origin.html | 0 |
 | /errors/403.html | 0 |
@@ -148,9 +146,9 @@
 | https://prod-gateway.diyaccounting.co.uk/ | 0 |
 | https://prod-gateway.diyaccounting.co.uk/index.html | 0 |
 | https://prod-gateway.diyaccounting.co.uk/about.html | 0 |
-| https://prod-spreadsheets.diyaccounting.co.uk/ | 1 |
-| https://prod-spreadsheets.diyaccounting.co.uk/index.html | 1 |
-| https://prod-spreadsheets.diyaccounting.co.uk/download.html | 0 |
+| https://prod-spreadsheets.diyaccounting.co.uk/ | 0 |
+| https://prod-spreadsheets.diyaccounting.co.uk/index.html | 0 |
+| https://prod-spreadsheets.diyaccounting.co.uk/download.html | 1 |
 | https://prod-spreadsheets.diyaccounting.co.uk/donate.html | 0 |
 | https://prod-spreadsheets.diyaccounting.co.uk/knowledge-base.html | 0 |
 
@@ -158,43 +156,31 @@
 
 | Metric | Count |
 |--------|-------|
-| Violations | 2 |
-| Passes | 1055 |
+| Violations | 0 |
+| Passes | 1056 |
 | Incomplete | 33 |
 
-**Status**: ❌ Accessibility violations require attention
+**Status**: ✅ No accessibility violations
 
-#### Violations
-
-| Rule | Impact | Description | Nodes |
-|------|--------|-------------|-------|
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 1 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 3 |
 
 ### 2.3 axe-core (WCAG 2.2 Level AA)
 
 | Metric | Count |
 |--------|-------|
-| Violations | 2 |
+| Violations | 0 |
 | Passes | 614 |
 | Incomplete | 33 |
 
-**Status**: ❌ WCAG 2.2 violations detected
+**Status**: ✅ No WCAG 2.2 violations
 
-#### Violations
-
-| Rule | Impact | Description | Nodes |
-|------|--------|-------------|-------|
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 1 |
-| color-contrast | serious | Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds | 3 |
 
 ### 2.4 Lighthouse
 
 | Category | Score |
 |----------|-------|
-| Accessibility | 95% |
+| Accessibility | 100% |
 | Performance | 91% |
-| Best Practices | 100% |
+| Best Practices | 96% |
 | SEO | 100% |
 
 **Status**: ✅ Accessibility score meets threshold (90%+)

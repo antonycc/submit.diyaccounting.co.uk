@@ -202,7 +202,9 @@ public class BillingStack extends Stack {
                     "Granted Secrets Manager access to %s for Stripe secret %s",
                     this.billingCheckoutPostLambda.getFunctionName(), props.stripeSecretKeyArn());
         }
-        infof("Created Billing Checkout POST Lambda %s", this.billingCheckoutPostLambda.getNode().getId());
+        infof(
+                "Created Billing Checkout POST Lambda %s",
+                this.billingCheckoutPostLambda.getNode().getId());
 
         // ============================================================================
         // Billing Portal GET Lambda (JWT auth)
@@ -263,7 +265,9 @@ public class BillingStack extends Stack {
                     "Granted Secrets Manager access to %s for Stripe secret %s",
                     this.billingPortalGetLambda.getFunctionName(), props.stripeSecretKeyArn());
         }
-        infof("Created Billing Portal GET Lambda %s", this.billingPortalGetLambda.getNode().getId());
+        infof(
+                "Created Billing Portal GET Lambda %s",
+                this.billingPortalGetLambda.getNode().getId());
 
         // ============================================================================
         // Billing Recover POST Lambda (JWT auth)
@@ -305,7 +309,9 @@ public class BillingStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
-        infof("Created Billing Recover POST Lambda %s", this.billingRecoverPostLambda.getNode().getId());
+        infof(
+                "Created Billing Recover POST Lambda %s",
+                this.billingRecoverPostLambda.getNode().getId());
 
         // ============================================================================
         // Billing Webhook POST Lambda (NO auth - Stripe signature verification)
@@ -318,7 +324,8 @@ public class BillingStack extends Stack {
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingWebhookPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
-        if (props.stripeWebhookSecretArn() != null && !props.stripeWebhookSecretArn().isBlank()) {
+        if (props.stripeWebhookSecretArn() != null
+                && !props.stripeWebhookSecretArn().isBlank()) {
             billingWebhookPostLambdaEnv.with("STRIPE_WEBHOOK_SECRET_ARN", props.stripeWebhookSecretArn());
         }
         var billingWebhookPostApiLambda = new ApiLambda(
@@ -363,7 +370,8 @@ public class BillingStack extends Stack {
                     .resources(List.of(stripeSecretArnWithWildcard))
                     .build());
         }
-        if (props.stripeWebhookSecretArn() != null && !props.stripeWebhookSecretArn().isBlank()) {
+        if (props.stripeWebhookSecretArn() != null
+                && !props.stripeWebhookSecretArn().isBlank()) {
             var webhookSecretArnWithWildcard = props.stripeWebhookSecretArn().endsWith("*")
                     ? props.stripeWebhookSecretArn()
                     : props.stripeWebhookSecretArn() + "-*";
@@ -373,7 +381,9 @@ public class BillingStack extends Stack {
                     .resources(List.of(webhookSecretArnWithWildcard))
                     .build());
         }
-        infof("Created Billing Webhook POST Lambda %s", this.billingWebhookPostLambda.getNode().getId());
+        infof(
+                "Created Billing Webhook POST Lambda %s",
+                this.billingWebhookPostLambda.getNode().getId());
 
         cfnOutput(this, "BillingCheckoutPostLambdaArn", this.billingCheckoutPostLambda.getFunctionArn());
         cfnOutput(this, "BillingPortalGetLambdaArn", this.billingPortalGetLambda.getFunctionArn());

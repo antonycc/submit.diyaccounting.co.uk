@@ -90,7 +90,27 @@ describe("passPost", () => {
     expect(body.valid).toBe(true);
     expect(body.requiresSubscription).toBe(true);
     expect(body.bundleId).toBe("resident-pro");
+    expect(body.testPass).toBe(false);
     // Should NOT have called grantBundle
+    expect(mockGrantBundle).not.toHaveBeenCalled();
+  });
+
+  test("returns testPass true in requiresSubscription response for test passes", async () => {
+    mockRedeemPass.mockResolvedValue({
+      valid: true,
+      bundleId: "resident-pro",
+      pass: { testPass: true },
+    });
+
+    const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.redeemed).toBe(false);
+    expect(body.valid).toBe(true);
+    expect(body.requiresSubscription).toBe(true);
+    expect(body.testPass).toBe(true);
     expect(mockGrantBundle).not.toHaveBeenCalled();
   });
 
@@ -108,7 +128,24 @@ describe("passPost", () => {
     const body = JSON.parse(result.body);
     expect(body.redeemed).toBe(true);
     expect(body.bundleId).toBe("day-guest");
+    expect(body.testPass).toBe(false);
     expect(mockGrantBundle).toHaveBeenCalledTimes(1);
+  });
+
+  test("returns testPass true in redeemed response for test passes", async () => {
+    mockRedeemPass.mockResolvedValue({
+      valid: true,
+      bundleId: "day-guest",
+      pass: { testPass: true },
+    });
+
+    const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.redeemed).toBe(true);
+    expect(body.testPass).toBe(true);
   });
 
   test("returns error reason for invalid pass", async () => {

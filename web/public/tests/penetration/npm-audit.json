@@ -1,22 +1,52 @@
 {
   "auditReportVersion": 2,
-  "vulnerabilities": {},
+  "vulnerabilities": {
+    "qs": {
+      "name": "qs",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1113161,
+          "name": "qs",
+          "dependency": "qs",
+          "title": "qs's arrayLimit bypass in comma parsing allows denial of service",
+          "url": "https://github.com/advisories/GHSA-w7fw-mjwx-w883",
+          "severity": "low",
+          "cwe": [
+            "CWE-20"
+          ],
+          "cvss": {
+            "score": 3.7,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": ">=6.7.0 <=6.14.1"
+        }
+      ],
+      "effects": [],
+      "range": "6.7.0 - 6.14.1",
+      "nodes": [
+        "node_modules/qs"
+      ],
+      "fixAvailable": true
+    }
+  },
   "metadata": {
     "vulnerabilities": {
       "info": 0,
-      "low": 0,
+      "low": 1,
       "moderate": 0,
       "high": 0,
       "critical": 0,
-      "total": 0
+      "total": 1
     },
     "dependencies": {
-      "prod": 169,
-      "dev": 823,
-      "optional": 102,
-      "peer": 28,
+      "prod": 192,
+      "dev": 773,
+      "optional": 74,
+      "peer": 0,
       "peerOptional": 0,
-      "total": 991
+      "total": 964
     }
   }
 }

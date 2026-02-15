@@ -21,7 +21,6 @@
 //   invited-guest          - Month-long access for invited users (1 month, 1 use, email required)
 //   resident-guest         - Ongoing free access (unlimited, 1 use, email required)
 //   resident-pro-comp      - Complimentary pro subscription (1 year, 1 use, email required)
-//   group-invite           - Shareable invite (1 month, 10 uses)
 
 import fs from "fs";
 import path from "path";

@@ -94,12 +94,8 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     try {
       const stripe = await getStripeClient({ test });
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      currentPeriodEnd = subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000).toISOString()
-        : null;
-      currentPeriodStart = subscription.current_period_start
-        ? new Date(subscription.current_period_start * 1000).toISOString()
-        : null;
+      currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
+      currentPeriodStart = subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : null;
     } catch (error) {
       logger.warn({ message: "Failed to retrieve subscription details", subscriptionId, error: error.message });
     }
@@ -174,9 +170,7 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   try {
     const stripe = await getStripeClient({ test });
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    currentPeriodEnd = subscription.current_period_end
-      ? new Date(subscription.current_period_end * 1000).toISOString()
-      : null;
+    currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
   } catch (error) {
     logger.warn({ message: "Failed to retrieve subscription for token refresh", subscriptionId, error: error.message });
   }

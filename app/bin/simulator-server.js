@@ -107,7 +107,16 @@ export function createSimulatorServer() {
   // qualifiers.sandbox drives developer tools (wrench icon) and HMRC sandbox routing
   bundles.set("demo-user-12345", [
     { bundleId: "default", expiry: null, allocated: true, qualifiers: { sandbox: true } },
-    { bundleId: "day-guest", expiry: "2099-12-31", allocated: true, qualifiers: { sandbox: true }, tokensGranted: 3, tokensRemaining: 3, tokensConsumed: 0, tokenEvents: [] },
+    {
+      bundleId: "day-guest",
+      expiry: "2099-12-31",
+      allocated: true,
+      qualifiers: { sandbox: true },
+      tokensGranted: 3,
+      tokensRemaining: 3,
+      tokensConsumed: 0,
+      tokenEvents: [],
+    },
     { bundleId: "hmrc-vat-sandbox", expiry: "2099-12-31", allocated: true, qualifiers: { sandbox: true } },
   ]);
 

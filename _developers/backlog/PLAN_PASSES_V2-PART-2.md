@@ -74,7 +74,7 @@ PK: pk = "pass#correct-horse-battery-staple"
 Fields:
   code              String   The passphrase (for convenience)
   bundleId          String   Bundle granted on redemption
-  passTypeId        String   Template type (invited-guest, group-invite, campaign, etc.)
+  passTypeId        String   Template type (invited-guest, campaign, etc.)
   validFrom         String   ISO8601 - when pass becomes redeemable
   validUntil        String   ISO8601 - when pass expires (null = never)
   ttl               Number   Unix timestamp for DynamoDB auto-deletion
@@ -98,7 +98,6 @@ Fields:
 | `invited-guest` | invited-guest | 3/mo | Yes | 1 | P1M | Admin |
 | `resident-guest` | resident-guest | 3/mo | Yes | 1 | unlimited | Admin |
 | `resident-pro-comp` | resident-pro | 100/mo | Yes | 1 | P1Y | Admin |
-| `group-invite` | invited-guest | 3/mo | No | 10 | P1M | Admin |
 | `campaign` | invited-guest | 3/mo | No | 1 | P3D | Users (costs 3 tokens) |
 
 ## Pass Formats

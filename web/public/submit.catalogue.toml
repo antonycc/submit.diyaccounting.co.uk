@@ -2,10 +2,10 @@ version = "1.1.0"
 
 # BUNDLE → PASS MAPPING SUMMARY
 # ==============================
-# Bundle ID          → Unlocked by pass types                                     → Payment required?
+# Bundle ID          → Unlocked by pass types                                      → Payment required?
 # default            → (automatic, no pass needed)                                 → No
 # day-guest          → day-guest-test-pass, day-guest-pass, digital-pass, physical-pass → No (admin passes) / 10 tokens (user-issued passes, Phase 6)
-# invited-guest      → invited-guest, group-invite, campaign                       → No (admin passes) / 10 tokens (campaign, Phase 6)
+# invited-guest      → invited-guest, campaign                                     → No (admin passes) / 10 tokens (campaign, Phase 6)
 # resident-guest     → resident-guest                                              → No (admin-issued, email-restricted)
 # resident-pro-comp  → resident-pro-comp                                           → No (admin-issued, email-restricted)
 # resident-pro       → resident-pro-test-pass, resident-pro-pass (planned: on-subscription via Stripe) → Checkout + initial grant done (Phases 1-4); renewal/cancellation pending (Phases 5, 7)
@@ -78,7 +78,7 @@ tokensGranted = 3
 #}
 
 # invited-guest: Month-long access for specific invited users
-# Unlocked by: invited-guest pass (email-restricted), group-invite pass (shareable), campaign pass (user-issued, 10 tokens)
+# Unlocked by: invited-guest pass (email-restricted), campaign pass (user-issued, 10 tokens)
 # Payment: None for admin-issued passes; 10 tokens to issue campaign passes (Phase 6)
 # Tokens: 3 granted, refreshing monthly (tokenRefreshInterval = P1M)
 # Access to free authenticated activities including VAT submission for specific users with a pass for a longer time

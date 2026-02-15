@@ -32,6 +32,28 @@
     <meta name="rum:region" content="${AWS_REGION}" />
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "DIY Accounting Submit",
+        "url": "https://submit.diyaccounting.co.uk",
+        "description": "Submit UK VAT returns to HMRC under Making Tax Digital (MTD). Secure VAT submission tool for DIY Accounting spreadsheet users.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "GBP",
+          "description": "Free Day Guest access with 3 VAT submissions"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "DIY Accounting Limited",
+          "url": "https://diyaccounting.co.uk"
+        }
+      }
+    </script>
     <script src="./lib/analytics.js"></script>
     <script src="./lib/session-beacon.js"></script>
     <!-- HEAD-prefetch scripts to prime API Gateway/Lambda and authorizers to reduce cold-start impact -->
@@ -184,7 +206,11 @@
     <script src="lib/env-loader.js"></script>
     <script>
       (async function () {
-        try { await window.loadEnv(); } catch (e) { console.warn("Failed to load environment:", e); }
+        try {
+          await window.loadEnv();
+        } catch (e) {
+          console.warn("Failed to load environment:", e);
+        }
       })();
     </script>
     <script type="module" src="./submit.js"></script>

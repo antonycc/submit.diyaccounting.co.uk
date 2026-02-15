@@ -215,9 +215,7 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
 }
 
 async function retryDeleteWithRetainResources(client, stackName) {
-  const { DescribeStacksCommand, DeleteStackCommand, ListStackResourcesCommand } = await import(
-    "@aws-sdk/client-cloudformation"
-  );
+  const { DescribeStacksCommand, DeleteStackCommand, ListStackResourcesCommand } = await import("@aws-sdk/client-cloudformation");
 
   try {
     // Find resources that failed to delete

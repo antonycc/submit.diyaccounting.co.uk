@@ -87,7 +87,11 @@ export async function gotoWithRetries(page, url, options = {}, screenshotPath = 
       // Inject test_ prefix so all API calls from behaviour tests are identifiable
       if (typeof page.evaluate === "function") {
         await page.evaluate(() => {
-          try { window.sessionStorage.setItem("requestIdPrefix", "test_"); } catch (e) { /* ignore */ }
+          try {
+            window.sessionStorage.setItem("requestIdPrefix", "test_");
+          } catch (e) {
+            /* ignore */
+          }
         });
       }
 

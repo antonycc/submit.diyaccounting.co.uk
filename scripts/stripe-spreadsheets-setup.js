@@ -72,9 +72,7 @@ async function findOrCreateCustomPrice(productId) {
     type: "one_time",
   });
 
-  const existing = prices.data.find(
-    (p) => p.custom_unit_amount && p.custom_unit_amount.enabled && p.currency === "gbp",
-  );
+  const existing = prices.data.find((p) => p.custom_unit_amount && p.custom_unit_amount.enabled && p.currency === "gbp");
   if (existing) {
     console.log("Custom-amount price already exists:", existing.id);
     return existing;
@@ -97,9 +95,7 @@ async function findOrCreateCustomPrice(productId) {
 async function findOrCreatePaymentLink(priceId, label) {
   // List existing payment links and check metadata
   const links = await stripe.paymentLinks.list({ active: true, limit: 100 });
-  const existing = links.data.find(
-    (l) => l.metadata && l.metadata[METADATA_KEY] === "true" && l.metadata.label === label,
-  );
+  const existing = links.data.find((l) => l.metadata && l.metadata[METADATA_KEY] === "true" && l.metadata.label === label);
   if (existing) {
     console.log(`Payment Link (${label}) already exists:`, existing.url);
     return existing;

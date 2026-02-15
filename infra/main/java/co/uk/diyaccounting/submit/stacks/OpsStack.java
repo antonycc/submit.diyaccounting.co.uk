@@ -26,6 +26,11 @@ import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cloudwatch.actions.SnsAction;
+import software.amazon.awscdk.services.events.EventBus;
+import software.amazon.awscdk.services.events.EventPattern;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
+import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.PolicyStatement;
@@ -34,11 +39,6 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.events.EventBus;
-import software.amazon.awscdk.services.events.EventPattern;
-import software.amazon.awscdk.services.events.Rule;
-import software.amazon.awscdk.services.events.targets.LambdaFunction;
-import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
 import software.amazon.awscdk.services.synthetics.ArtifactsBucketLocation;
@@ -176,8 +176,7 @@ public class OpsStack extends Stack {
         // ============================================================================
         // EventBridge Custom Activity Bus (imported from env-level ActivityStack)
         // ============================================================================
-        this.activityBus = EventBus.fromEventBusName(
-                this, "ActivityBus", props.sharedNames().activityBusName);
+        this.activityBus = EventBus.fromEventBusName(this, "ActivityBus", props.sharedNames().activityBusName);
 
         // Email proof rule: all ActivityEvent detail-types → SNS alertTopic
         Rule.Builder.create(this, "ActivityEmailProofRule")
@@ -192,8 +191,7 @@ public class OpsStack extends Stack {
         // ============================================================================
         // Telegram Forwarder Lambda + EventBridge Rule
         // ============================================================================
-        var telegramForwarderEnv = new PopulatedMap<String, String>()
-                .with("ENVIRONMENT_NAME", props.envName());
+        var telegramForwarderEnv = new PopulatedMap<String, String>().with("ENVIRONMENT_NAME", props.envName());
         if (props.telegramBotTokenArn() != null && !props.telegramBotTokenArn().isBlank()) {
             telegramForwarderEnv.with("TELEGRAM_BOT_TOKEN_ARN", props.telegramBotTokenArn());
         }
@@ -251,10 +249,7 @@ public class OpsStack extends Stack {
                     telegramForwarderLambda.ingestLambda.getFunctionName(), props.telegramBotTokenArn());
         }
 
-        cfnOutput(
-                this,
-                "TelegramForwarderLambdaArn",
-                telegramForwarderLambda.ingestLambda.getFunctionArn());
+        cfnOutput(this, "TelegramForwarderLambdaArn", telegramForwarderLambda.ingestLambda.getFunctionArn());
         infof(
                 "Created Telegram Forwarder Lambda %s",
                 telegramForwarderLambda.ingestLambda.getNode().getId());

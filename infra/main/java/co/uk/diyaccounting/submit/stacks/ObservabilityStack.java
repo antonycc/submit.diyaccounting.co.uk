@@ -295,6 +295,7 @@ public class ObservabilityStack extends Stack {
                 .domainList(List.of(
                         props.sharedNames().deploymentDomainName,
                         props.sharedNames().envDomainName,
+                        props.sharedNames().publicDomainName,
                         props.sharedNames().hostedZoneName))
                 .appMonitorConfiguration(CfnAppMonitor.AppMonitorConfigurationProperty.builder()
                         .sessionSampleRate(1.0)
