@@ -271,12 +271,7 @@ describe("billingWebhookPost", () => {
 
     expect(result.statusCode).toBe(200);
     expect(mockResetTokensByHashedSub).toHaveBeenCalledTimes(1);
-    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith(
-      "hashed_sub_value",
-      "resident-pro",
-      100,
-      expect.any(String),
-    );
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", 100, expect.any(String));
     expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledTimes(1);
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
   });
@@ -320,15 +315,11 @@ describe("billingWebhookPost", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);
-    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith(
-      "hashed_sub_value",
-      "resident-pro",
-      { subscriptionStatus: "past_due", cancelAtPeriodEnd: false },
-    );
-    expect(mockUpdateSubscription).toHaveBeenCalledWith(
-      "stripe#sub_test_456",
-      { status: "past_due", cancelAtPeriodEnd: false },
-    );
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+      subscriptionStatus: "past_due",
+      cancelAtPeriodEnd: false,
+    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due", cancelAtPeriodEnd: false });
   });
 
   test("customer.subscription.deleted marks bundle as canceled", async () => {
@@ -351,15 +342,11 @@ describe("billingWebhookPost", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);
-    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith(
-      "hashed_sub_value",
-      "resident-pro",
-      { subscriptionStatus: "canceled", cancelAtPeriodEnd: false },
-    );
-    expect(mockUpdateSubscription).toHaveBeenCalledWith(
-      "stripe#sub_test_456",
-      expect.objectContaining({ status: "canceled" }),
-    );
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+      subscriptionStatus: "canceled",
+      cancelAtPeriodEnd: false,
+    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", expect.objectContaining({ status: "canceled" }));
   });
 
   test("returns 200 for unhandled event types", async () => {

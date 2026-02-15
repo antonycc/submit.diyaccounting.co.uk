@@ -60,7 +60,18 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { passTypeId, bundleId, testPass: explicitTestPass, validFrom, validUntil, validityPeriod, maxUses, restrictedToEmail, createdBy, notes } = requestBody;
+  const {
+    passTypeId,
+    bundleId,
+    testPass: explicitTestPass,
+    validFrom,
+    validUntil,
+    validityPeriod,
+    maxUses,
+    restrictedToEmail,
+    createdBy,
+    notes,
+  } = requestBody;
 
   // Derive testPass from pass type definition if not explicitly provided
   let testPass = explicitTestPass;

@@ -474,24 +474,32 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
 
     // Verify Token Sources table: resident-pro bundle should be present with 100 granted, 99 remaining
     // (day-guest may or may not appear depending on whether exhausted bundles are shown)
-    await verifyTokenSources(page, [
-      {
-        bundleId: "resident-pro",
-        tokensGranted: 100,
-        tokensRemainingAtLeast: 98,
-        tokensRemainingAtMost: 100,
-      },
-    ], screenshotPath);
+    await verifyTokenSources(
+      page,
+      [
+        {
+          bundleId: "resident-pro",
+          tokensGranted: 100,
+          tokensRemainingAtLeast: 98,
+          tokensRemainingAtMost: 100,
+        },
+      ],
+      screenshotPath,
+    );
 
     // Verify Token Consumption table: at least 1 submit-vat entry from the VAT submission in Step 7
     // The resident-pro bundle should have at least 1 consumption event
-    await verifyTokenConsumption(page, [
-      {
-        activity: "submit-vat",
-        minCount: 1,
-        tokensUsed: 1,
-      },
-    ], screenshotPath);
+    await verifyTokenConsumption(
+      page,
+      [
+        {
+          activity: "submit-vat",
+          minCount: 1,
+          tokensUsed: 1,
+        },
+      ],
+      screenshotPath,
+    );
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-usage-page-full.png`, fullPage: true });
     console.log("[payment-test]: Usage page verification complete.");
@@ -518,7 +526,8 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     testId: "paymentBehaviour",
     name: testInfo.title,
     title: "Payment Funnel (App UI)",
-    description: "Exercises the full conversion funnel (The Human Test Journey): day-guest pass → token exhaustion → upgrade to resident-pro via checkout → VAT submission → token usage verification.",
+    description:
+      "Exercises the full conversion funnel (The Human Test Journey): day-guest pass → token exhaustion → upgrade to resident-pro via checkout → VAT submission → token usage verification.",
     hmrcApi: isSandboxMode() ? "sandbox" : "live",
     env: {
       envName,

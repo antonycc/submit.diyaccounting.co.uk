@@ -223,9 +223,7 @@ export async function handler(event) {
 
   const botToken = await resolveBotToken();
 
-  const results = await Promise.allSettled(
-    targets.map((chatId) => sendTelegramMessage(botToken, chatId, message)),
-  );
+  const results = await Promise.allSettled(targets.map((chatId) => sendTelegramMessage(botToken, chatId, message)));
 
   for (const result of results) {
     if (result.status === "rejected") {

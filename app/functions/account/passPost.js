@@ -98,7 +98,10 @@ export async function ingestHandler(event) {
     // Pass is valid — grant the bundle to the user
     const { grantBundle } = await import("./bundlePost.js");
     const grantQualifiers = result.pass?.testPass ? { sandbox: true } : undefined;
-    const grantResult = await grantBundle(userId, { bundleId: result.bundleId, qualifiers: {} }, decodedToken, null, { skipCapCheck: true, grantQualifiers });
+    const grantResult = await grantBundle(userId, { bundleId: result.bundleId, qualifiers: {} }, decodedToken, null, {
+      skipCapCheck: true,
+      grantQualifiers,
+    });
 
     logger.info({ message: "Pass redeemed and bundle granted", code, bundleId: result.bundleId, userId });
     publishActivityEvent({

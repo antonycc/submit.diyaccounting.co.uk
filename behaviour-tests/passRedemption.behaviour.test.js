@@ -291,7 +291,10 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   console.log(`[pass-test]: Developer mode active (body class): ${devModeActive}`);
   expect(devModeActive).toBe(true);
   // Verify dev float elements are created (datetime, deployment, etc.)
-  const devDatetimeVisible = await page.locator("#dev-datetime").isVisible({ timeout: 5000 }).catch(() => false);
+  const devDatetimeVisible = await page
+    .locator("#dev-datetime")
+    .isVisible({ timeout: 5000 })
+    .catch(() => false);
   console.log(`[pass-test]: Dev datetime float visible: ${devDatetimeVisible}`);
   expect(devDatetimeVisible).toBe(true);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06c-developer-mode-enabled.png` });

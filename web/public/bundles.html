@@ -5,6 +5,11 @@
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit - Bundles</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="View and manage your DIY Accounting Submit bundles. Access VAT submission features and token-based services."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/bundles.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -124,7 +129,11 @@
     <script src="lib/env-loader.js"></script>
     <script>
       (async function () {
-        try { await window.loadEnv(); } catch (e) { console.warn("Failed to load environment:", e); }
+        try {
+          await window.loadEnv();
+        } catch (e) {
+          console.warn("Failed to load environment:", e);
+        }
       })();
     </script>
     <script type="module" src="submit.js"></script>
@@ -1069,8 +1078,12 @@
             if (uid) window.bundleCache.clearBundles(uid);
           } catch {}
           fetchUserBundles().then(() => {
-            try { renderCurrentBundles(); } catch {}
-            try { renderCatalogueBundles(); } catch {}
+            try {
+              renderCurrentBundles();
+            } catch {}
+            try {
+              renderCatalogueBundles();
+            } catch {}
             window.dispatchEvent(new CustomEvent("bundle-changed"));
           });
         } else if (checkoutResult === "canceled") {

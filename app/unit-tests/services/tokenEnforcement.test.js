@@ -21,9 +21,7 @@ const { getUserBundles, consumeToken } = await import("@app/data/dynamoDbBundleR
 const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
 
 const baseCatalog = {
-  bundles: [
-    { id: "day-guest", tokensGranted: 3 },
-  ],
+  bundles: [{ id: "day-guest", tokensGranted: 3 }],
   activities: [
     {
       id: "submit-vat",

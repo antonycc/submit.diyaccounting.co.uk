@@ -148,26 +148,20 @@ function resolveDeployment(flags) {
 
   // Fall back to SSM parameter
   if (!deploymentName && environmentName) {
-    console.log(
-      `No deployment name specified, reading from SSM /submit/${environmentName}/last-known-good-deployment...`,
-    );
+    console.log(`No deployment name specified, reading from SSM /submit/${environmentName}/last-known-good-deployment...`);
     try {
       deploymentName = runCapture(
         `aws ssm get-parameter --name "/submit/${environmentName}/last-known-good-deployment" --query "Parameter.Value" --output text`,
       );
       console.log(`  Found: ${deploymentName}`);
     } catch {
-      console.error(
-        "ERROR: Could not read deployment name from SSM. Specify --deployment or set DEPLOYMENT_NAME.",
-      );
+      console.error("ERROR: Could not read deployment name from SSM. Specify --deployment or set DEPLOYMENT_NAME.");
       process.exit(1);
     }
   }
 
   if (!deploymentName) {
-    console.error(
-      "ERROR: No deployment name. Use --deployment <name>, set DEPLOYMENT_NAME, or set ENVIRONMENT_NAME for SSM lookup.",
-    );
+    console.error("ERROR: No deployment name. Use --deployment <name>, set DEPLOYMENT_NAME, or set ENVIRONMENT_NAME for SSM lookup.");
     process.exit(1);
   }
 
@@ -176,9 +170,7 @@ function resolveDeployment(flags) {
     if (deploymentName.startsWith("ci")) environmentName = "ci";
     else if (deploymentName.startsWith("prod")) environmentName = "prod";
     else {
-      console.error(
-        `ERROR: Cannot derive environment from deployment name '${deploymentName}'. Set ENVIRONMENT_NAME.`,
-      );
+      console.error(`ERROR: Cannot derive environment from deployment name '${deploymentName}'. Set ENVIRONMENT_NAME.`);
       process.exit(1);
     }
   }
@@ -197,9 +189,7 @@ function resolveDeployment(flags) {
   // S3 bucket: dots converted to dashes
   const originBucket = `${appPrefix}-origin-us-east-1`.replace(/\./g, "-");
 
-  const version = JSON.parse(
-    fs.readFileSync("package.json", "utf-8"),
-  ).version;
+  const version = JSON.parse(fs.readFileSync("package.json", "utf-8")).version;
 
   console.log("\n=== Deployment Configuration ===");
   console.log(`  Deployment:   ${deploymentName}`);
@@ -236,9 +226,7 @@ function dockerBuildAndPush(config) {
 
   // Build ARM64 image
   console.log("Building ARM64 Docker image...");
-  run(
-    `docker buildx build --platform linux/arm64 --provenance=false --load -t ${localTag} -f Dockerfile .`,
-  );
+  run(`docker buildx build --platform linux/arm64 --provenance=false --load -t ${localTag} -f Dockerfile .`);
 
   // Push to eu-west-2
   console.log(`\nPushing to ECR eu-west-2 (${config.ecrRepoEuw2})...`);
@@ -277,54 +265,39 @@ async function updateLambdas(config) {
   const functions = JSON.parse(functionsJson);
 
   if (functions.length === 0) {
-    console.log(
-      `No Lambda functions found with prefix '${config.appPrefix}-'`,
-    );
+    console.log(`No Lambda functions found with prefix '${config.appPrefix}-'`);
     return;
   }
 
-  console.log(
-    `Found ${functions.length} Lambda functions to update:\n  ${functions.join("\n  ")}\n`,
-  );
+  console.log(`Found ${functions.length} Lambda functions to update:\n  ${functions.join("\n  ")}\n`);
 
   // Update in batches of 5 for parallelism
   const BATCH_SIZE = 5;
   for (let i = 0; i < functions.length; i += BATCH_SIZE) {
     const batch = functions.slice(i, i + BATCH_SIZE);
-    console.log(
-      `Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(functions.length / BATCH_SIZE)}: ${batch.join(", ")}`,
-    );
+    console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(functions.length / BATCH_SIZE)}: ${batch.join(", ")}`);
 
     // Start all updates in this batch
     for (const fn of batch) {
       console.log(`  Updating ${fn}...`);
-      run(
-        `aws lambda update-function-code --function-name ${fn} --image-uri ${imageUri} --region ${AWS_REGION}`,
-        { silent: true },
-      );
+      run(`aws lambda update-function-code --function-name ${fn} --image-uri ${imageUri} --region ${AWS_REGION}`, { silent: true });
     }
 
     // Wait for all updates to complete, then publish versions and update aliases
     for (const fn of batch) {
       console.log(`  Waiting for ${fn} to be ready...`);
-      run(
-        `aws lambda wait function-updated --function-name ${fn} --region ${AWS_REGION}`,
-        { silent: true },
-      );
+      run(`aws lambda wait function-updated --function-name ${fn} --region ${AWS_REGION}`, { silent: true });
 
       console.log(`  Publishing new version for ${fn}...`);
-      const versionJson = runCapture(
-        `aws lambda publish-version --function-name ${fn} --region ${AWS_REGION} --output json`,
-      );
+      const versionJson = runCapture(`aws lambda publish-version --function-name ${fn} --region ${AWS_REGION} --output json`);
       const version = JSON.parse(versionJson).Version;
       console.log(`  Published version ${version}`);
 
       // Update the provisioned concurrency alias
       try {
-        run(
-          `aws lambda update-alias --function-name ${fn} --name pc --function-version ${version} --region ${AWS_REGION}`,
-          { silent: true },
-        );
+        run(`aws lambda update-alias --function-name ${fn} --name pc --function-version ${version} --region ${AWS_REGION}`, {
+          silent: true,
+        });
         console.log(`  Updated alias 'pc' -> version ${version}`);
       } catch {
         // Not all functions have a pc alias (e.g., worker lambdas)
@@ -357,9 +330,7 @@ function syncWebAssets(config) {
     const stackName = `${config.environmentName}-env-ObservabilityStack`;
     let rumConfig = {};
     try {
-      const stackJson = runCapture(
-        `aws cloudformation describe-stacks --stack-name ${stackName} --region ${AWS_REGION} --output json`,
-      );
+      const stackJson = runCapture(`aws cloudformation describe-stacks --stack-name ${stackName} --region ${AWS_REGION} --output json`);
       const outputs = JSON.parse(stackJson).Stacks[0].Outputs || [];
       for (const output of outputs) {
         switch (output.OutputKey) {
@@ -378,9 +349,7 @@ function syncWebAssets(config) {
         }
       }
     } catch {
-      console.log(
-        "  WARNING: Could not resolve RUM config. HTML placeholders will not be injected.",
-      );
+      console.log("  WARNING: Could not resolve RUM config. HTML placeholders will not be injected.");
     }
 
     // Inject RUM placeholders into HTML files
@@ -397,18 +366,9 @@ function syncWebAssets(config) {
       for (const htmlFile of htmlFiles) {
         let content = fs.readFileSync(htmlFile, "utf-8");
         content = content
-          .replace(
-            /\$\{RUM_APP_MONITOR_ID\}/gi,
-            rumConfig.appMonitorId,
-          )
-          .replace(
-            /\$\{RUM_IDENTITY_POOL_ID\}/gi,
-            rumConfig.identityPoolId,
-          )
-          .replace(
-            /\$\{RUM_GUEST_ROLE_ARN\}/gi,
-            rumConfig.guestRoleArn,
-          )
+          .replace(/\$\{RUM_APP_MONITOR_ID\}/gi, rumConfig.appMonitorId)
+          .replace(/\$\{RUM_IDENTITY_POOL_ID\}/gi, rumConfig.identityPoolId)
+          .replace(/\$\{RUM_GUEST_ROLE_ARN\}/gi, rumConfig.guestRoleArn)
           .replace(/\$\{AWS_REGION\}/gi, rumRegion);
         fs.writeFileSync(htmlFile, content);
       }
@@ -418,9 +378,7 @@ function syncWebAssets(config) {
     // Generate submit.env
     console.log("Generating submit.env...");
     const cognitoClientId = process.env.COGNITO_CLIENT_ID || "";
-    const cognitoBaseUri =
-      process.env.COGNITO_BASE_URI ||
-      `https://${config.environmentName}-auth.diyaccounting.co.uk`;
+    const cognitoBaseUri = process.env.COGNITO_BASE_URI || `https://${config.environmentName}-auth.diyaccounting.co.uk`;
     const submitEnv = [
       `COGNITO_CLIENT_ID=${cognitoClientId}`,
       `COGNITO_BASE_URI=${cognitoBaseUri}`,
@@ -438,28 +396,14 @@ function syncWebAssets(config) {
 
     // Generate metadata files
     console.log("Generating metadata files...");
-    fs.writeFileSync(
-      path.join(tmpWebDir, "submit.version.txt"),
-      config.version,
-    );
-    fs.writeFileSync(
-      path.join(tmpWebDir, "submit.commit-hash.txt"),
-      config.gitSha,
-    );
-    fs.writeFileSync(
-      path.join(tmpWebDir, "submit.deployment-name.txt"),
-      config.deploymentName,
-    );
-    fs.writeFileSync(
-      path.join(tmpWebDir, "submit.environment-name.txt"),
-      config.environmentName,
-    );
+    fs.writeFileSync(path.join(tmpWebDir, "submit.version.txt"), config.version);
+    fs.writeFileSync(path.join(tmpWebDir, "submit.commit-hash.txt"), config.gitSha);
+    fs.writeFileSync(path.join(tmpWebDir, "submit.deployment-name.txt"), config.deploymentName);
+    fs.writeFileSync(path.join(tmpWebDir, "submit.environment-name.txt"), config.environmentName);
 
     // Sync to S3 (no --delete to match prune(false) in PublishStack)
     console.log(`Syncing to s3://${config.originBucket}/...`);
-    run(
-      `aws s3 sync ${tmpWebDir} s3://${config.originBucket}/ --region ${AWS_REGION_UE1}`,
-    );
+    run(`aws s3 sync ${tmpWebDir} s3://${config.originBucket}/ --region ${AWS_REGION_UE1}`);
 
     console.log("\nWeb asset sync complete.\n");
   } finally {
@@ -475,9 +419,7 @@ function invalidateCloudFront(config) {
 
   // Look up CloudFront distribution via OriginFor tag
   const originDomain = `${config.deploymentName}.submit.diyaccounting.co.uk`;
-  console.log(
-    `Looking up CloudFront distribution with OriginFor tag: ${originDomain}...`,
-  );
+  console.log(`Looking up CloudFront distribution with OriginFor tag: ${originDomain}...`);
 
   let distributionId;
   try {
@@ -490,19 +432,13 @@ function invalidateCloudFront(config) {
     distributionId = arn.split("/").pop();
     console.log(`  Found distribution: ${distributionId}`);
   } catch {
-    console.error(
-      `ERROR: Could not find CloudFront distribution for ${originDomain}`,
-    );
-    console.error(
-      "  The deployment may not have been created yet. Run a full deploy first.",
-    );
+    console.error(`ERROR: Could not find CloudFront distribution for ${originDomain}`);
+    console.error("  The deployment may not have been created yet. Run a full deploy first.");
     process.exit(1);
   }
 
   // Create invalidation
-  console.log(
-    `Creating invalidation for ${CLOUDFRONT_INVALIDATION_PATHS.length} paths...`,
-  );
+  console.log(`Creating invalidation for ${CLOUDFRONT_INVALIDATION_PATHS.length} paths...`);
   const invalidationJson = runCapture(
     `aws cloudfront create-invalidation --distribution-id ${distributionId} --paths ${CLOUDFRONT_INVALIDATION_PATHS.join(" ")} --region ${AWS_REGION_UE1} --output json`,
   );
@@ -511,10 +447,9 @@ function invalidateCloudFront(config) {
 
   // Wait for invalidation to complete
   console.log("  Waiting for invalidation to complete...");
-  run(
-    `aws cloudfront wait invalidation-completed --distribution-id ${distributionId} --id ${invalidationId} --region ${AWS_REGION_UE1}`,
-    { silent: true },
-  );
+  run(`aws cloudfront wait invalidation-completed --distribution-id ${distributionId} --id ${invalidationId} --region ${AWS_REGION_UE1}`, {
+    silent: true,
+  });
   console.log("  Invalidation complete.\n");
 }
 

@@ -44,17 +44,19 @@ app.disable("x-powered-by");
 
 // parse bodies
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({
-  verify: (req, _res, buf) => {
-    // Preserve raw body for Stripe webhook signature verification.
-    // express.json() parses the body into req.body (a JS object), but Stripe's
-    // constructEvent() needs the exact raw body string to verify the HMAC signature.
-    // JSON.stringify(req.body) may differ from the original (whitespace, key order).
-    if (req.url.startsWith("/api/v1/billing/webhook")) {
-      req.rawBody = buf.toString();
-    }
-  },
-}));
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      // Preserve raw body for Stripe webhook signature verification.
+      // express.json() parses the body into req.body (a JS object), but Stripe's
+      // constructEvent() needs the exact raw body string to verify the HMAC signature.
+      // JSON.stringify(req.body) may differ from the original (whitespace, key order).
+      if (req.url.startsWith("/api/v1/billing/webhook")) {
+        req.rawBody = buf.toString();
+      }
+    },
+  }),
+);
 
 // HTTP access logging middleware
 app.use((req, res, next) => {

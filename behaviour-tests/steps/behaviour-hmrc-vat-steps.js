@@ -168,10 +168,7 @@ export async function fillInVat(
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
       // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
       if (isSandboxMode()) {
-        await page.waitForFunction(
-          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
-          { timeout: 10000 },
-        );
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -331,10 +328,7 @@ export async function fillInVat9Box(
     if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
       // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
       if (isSandboxMode()) {
-        await page.waitForFunction(
-          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
-          { timeout: 10000 },
-        );
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -659,10 +653,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
     if (testScenario || runFraudPreventionHeaderValidation) {
       // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
       if (isSandboxMode()) {
-        await page.waitForFunction(
-          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
-          { timeout: 10000 },
-        );
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -1067,10 +1058,7 @@ export async function fillInViewVatReturn(
     if (testScenario || runFraudPreventionHeaderValidation) {
       // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
       if (isSandboxMode()) {
-        await page.waitForFunction(
-          () => sessionStorage.getItem("hmrcAccount") === "sandbox",
-          { timeout: 10000 },
-        );
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {

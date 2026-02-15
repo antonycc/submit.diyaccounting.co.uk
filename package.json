@@ -229,7 +229,15 @@
     "compliance:prod-report": "npm run accessibility:prod-report ; npm run penetration:prod-report",
     "compliance:proxy-report-md": "npm run compliance:proxy-report && node scripts/generate-compliance-report.js --target https://wanted-finally-anteater.ngrok-free.app",
     "compliance:ci-report-md": "npm run compliance:ci-report && node scripts/generate-compliance-report.js --target https://ci.submit.diyaccounting.co.uk",
-    "compliance:prod-report-md": "npm run compliance:prod-report && node scripts/generate-compliance-report.js --target https://submit.diyaccounting.co.uk"
+    "compliance:prod-report-md": "npm run compliance:prod-report && node scripts/generate-compliance-report.js --target https://submit.diyaccounting.co.uk",
+    "seo:structured-data-gateway-prod": "npx sdtt --url https://diyaccounting.co.uk/ --presets Google SocialMedia",
+    "seo:structured-data-submit-prod": "npx sdtt --url https://submit.diyaccounting.co.uk/ --presets Google SocialMedia",
+    "seo:structured-data-spreadsheets-prod": "npx sdtt --url https://spreadsheets.diyaccounting.co.uk/ --presets Google SocialMedia",
+    "seo:structured-data-prod": "npm run seo:structured-data-gateway-prod && npm run seo:structured-data-submit-prod && npm run seo:structured-data-spreadsheets-prod",
+    "seo:structured-data-gateway-ci": "npx sdtt --url https://ci-gateway.diyaccounting.co.uk/ --presets Google SocialMedia",
+    "seo:structured-data-submit-ci": "npx sdtt --url https://ci-submit.diyaccounting.co.uk/ --presets Google SocialMedia",
+    "seo:structured-data-spreadsheets-ci": "npx sdtt --url https://ci-spreadsheets.diyaccounting.co.uk/ --presets Google SocialMedia",
+    "seo:structured-data-ci": "npm run seo:structured-data-gateway-ci && npm run seo:structured-data-submit-ci && npm run seo:structured-data-spreadsheets-ci"
   },
   "keywords": [],
   "author": "",
@@ -285,8 +293,11 @@
     "pa11y-ci": "^4.0.1",
     "prettier": "^3.8.1",
     "retire": "^5.4.2",
+    "robots-parser": "^3.0.1",
+    "structured-data-testing-tool": "^4.5.0",
     "supertest": "^7.2.2",
     "toml": "^3.0.0",
+    "ts-api-utils": "^2.4.0",
     "vitest": "^3.2.4"
   },
   "engines": {

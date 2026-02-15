@@ -80,7 +80,13 @@ export async function ingestHandler(event) {
 
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body || {};
     const isSandbox = hasSandboxBundle || body.sandbox === true || event.headers?.["hmrcaccount"] === "sandbox";
-    const sandboxSource = hasSandboxBundle ? "bundle-qualifier" : body.sandbox === true ? "request-body" : event.headers?.["hmrcaccount"] === "sandbox" ? "hmrcaccount-header" : "none";
+    const sandboxSource = hasSandboxBundle
+      ? "bundle-qualifier"
+      : body.sandbox === true
+        ? "request-body"
+        : event.headers?.["hmrcaccount"] === "sandbox"
+          ? "hmrcaccount-header"
+          : "none";
     logger.info({ message: "Sandbox mode resolved", isSandbox, sandboxSource });
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";

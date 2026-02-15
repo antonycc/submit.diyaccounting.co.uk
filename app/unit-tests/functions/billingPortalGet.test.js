@@ -86,9 +86,7 @@ describe("billingPortalGet", () => {
   });
 
   test("returns 404 when user has no subscription bundles", async () => {
-    mockGetUserBundles.mockResolvedValue([
-      { bundleId: "day-guest", allocated: true },
-    ]);
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "day-guest", allocated: true }]);
 
     const event = buildEventWithToken(validToken);
     const result = await ingestHandler(event);
@@ -112,9 +110,7 @@ describe("billingPortalGet", () => {
   });
 
   test("creates portal session with correct parameters", async () => {
-    mockGetUserBundles.mockResolvedValue([
-      { bundleId: "resident-pro", stripeCustomerId: "cus_test_789" },
-    ]);
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", stripeCustomerId: "cus_test_789" }]);
 
     const event = buildEventWithToken(validToken);
     await ingestHandler(event);
@@ -126,9 +122,7 @@ describe("billingPortalGet", () => {
   });
 
   test("returns 500 when Stripe API fails", async () => {
-    mockGetUserBundles.mockResolvedValue([
-      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123" },
-    ]);
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", stripeCustomerId: "cus_test_123" }]);
     mockBillingPortalSessionsCreate.mockRejectedValue(new Error("Stripe API error"));
 
     const event = buildEventWithToken(validToken);

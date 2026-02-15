@@ -314,9 +314,7 @@ public class SubmitEnvironment {
                         .build());
 
         // Create EcrStack for us-east-1 region (for edge Lambda images)
-        infof(
-                "Synthesizing stack %s for environment %s in region us-east-1",
-                sharedNames.ue1EcrStackId, envName);
+        infof("Synthesizing stack %s for environment %s in region us-east-1", sharedNames.ue1EcrStackId, envName);
         this.ue1EcrStack = new EcrStack(
                 app,
                 sharedNames.ue1EcrStackId,

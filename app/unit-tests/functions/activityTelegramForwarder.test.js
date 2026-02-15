@@ -35,9 +35,7 @@ describe("activityTelegramForwarder", () => {
     });
 
     test("leaves plain text unchanged", () => {
-      expect(escapeTelegramMarkdown("Login: u***@example.com")).toBe(
-        "Login: u\\*\\*\\*@example.com",
-      );
+      expect(escapeTelegramMarkdown("Login: u***@example.com")).toBe("Login: u\\*\\*\\*@example.com");
     });
   });
 
@@ -296,9 +294,9 @@ describe("activityTelegramForwarder", () => {
 
     test("handles CloudFormation Stack Status Change events", async () => {
       await handler({
-        source: "aws.cloudformation",
+        "source": "aws.cloudformation",
         "detail-type": "CloudFormation Stack Status Change",
-        detail: {
+        "detail": {
           "stack-id": "arn:aws:cloudformation:eu-west-2:887764105431:stack/ci-app-ApiStack/uuid-123",
           "status-details": { status: "UPDATE_COMPLETE" },
         },
@@ -313,9 +311,9 @@ describe("activityTelegramForwarder", () => {
 
     test("handles CloudWatch Alarm State Change events", async () => {
       await handler({
-        source: "aws.cloudwatch",
+        "source": "aws.cloudwatch",
         "detail-type": "CloudWatch Alarm State Change",
-        detail: {
+        "detail": {
           alarmName: "prod-app-health-failed",
           state: { value: "ALARM", reason: "Threshold crossed" },
           previousState: { value: "OK" },

@@ -120,7 +120,12 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
   });
 }
 
-export async function ensureBundlePresent(page, bundleName = "Test", screenshotPath = defaultScreenshotPath, { isHidden = false, testPass = false } = {}) {
+export async function ensureBundlePresent(
+  page,
+  bundleName = "Test",
+  screenshotPath = defaultScreenshotPath,
+  { isHidden = false, testPass = false } = {},
+) {
   await test.step(`Ensure ${bundleName} bundle is present (idempotent)`, async () => {
     const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
     console.log(`Ensuring ${bundleName} bundle is present (hidden=${isHidden}, testPass=${testPass})...`);
@@ -271,27 +276,30 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-creating.png` });
 
     // Step 1: Create a pass via admin API (no auth required)
-    const createResult = await page.evaluate(async ({ bid, isTestPass }) => {
-      try {
-        const passBody = {
-          passTypeId: bid,
-          bundleId: bid,
-          validityPeriod: "P1D",
-          maxUses: 1,
-          createdBy: "behaviour-test",
-        };
-        if (isTestPass) passBody.testPass = true;
-        const response = await fetch("/api/v1/pass/admin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(passBody),
-        });
-        const body = await response.json();
-        return { ok: response.ok, code: body?.data?.code || body?.code, body };
-      } catch (err) {
-        return { ok: false, error: err.message };
-      }
-    }, { bid: bundleId, isTestPass: testPass });
+    const createResult = await page.evaluate(
+      async ({ bid, isTestPass }) => {
+        try {
+          const passBody = {
+            passTypeId: bid,
+            bundleId: bid,
+            validityPeriod: "P1D",
+            maxUses: 1,
+            createdBy: "behaviour-test",
+          };
+          if (isTestPass) passBody.testPass = true;
+          const response = await fetch("/api/v1/pass/admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(passBody),
+          });
+          const body = await response.json();
+          return { ok: response.ok, code: body?.data?.code || body?.code, body };
+        } catch (err) {
+          return { ok: false, error: err.message };
+        }
+      },
+      { bid: bundleId, isTestPass: testPass },
+    );
 
     console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
     if (!createResult.ok || !createResult.code) {
@@ -399,27 +407,30 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-01-starting.png` });
 
     // Step 1: Create a pass via admin API
-    const createResult = await page.evaluate(async ({ bid, isTestPass }) => {
-      try {
-        const passBody = {
-          passTypeId: bid,
-          bundleId: bid,
-          validityPeriod: "P1D",
-          maxUses: 1,
-          createdBy: "behaviour-test",
-        };
-        if (isTestPass) passBody.testPass = true;
-        const response = await fetch("/api/v1/pass/admin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(passBody),
-        });
-        const body = await response.json();
-        return { ok: response.ok, code: body?.data?.code || body?.code, body };
-      } catch (err) {
-        return { ok: false, error: err.message };
-      }
-    }, { bid: bundleId, isTestPass: testPass });
+    const createResult = await page.evaluate(
+      async ({ bid, isTestPass }) => {
+        try {
+          const passBody = {
+            passTypeId: bid,
+            bundleId: bid,
+            validityPeriod: "P1D",
+            maxUses: 1,
+            createdBy: "behaviour-test",
+          };
+          if (isTestPass) passBody.testPass = true;
+          const response = await fetch("/api/v1/pass/admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(passBody),
+          });
+          const body = await response.json();
+          return { ok: response.ok, code: body?.data?.code || body?.code, body };
+        } catch (err) {
+          return { ok: false, error: err.message };
+        }
+      },
+      { bid: bundleId, isTestPass: testPass },
+    );
 
     console.log(`Pass creation result: ${JSON.stringify(createResult)}`);
     if (!createResult.ok || !createResult.code) {
@@ -451,26 +462,29 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
 
     // Step 3: Call checkout session API
     // Server auto-detects sandbox mode from bundle qualifiers (no explicit sandbox flag needed)
-    const checkoutResult = await page.evaluate(async ({ bid }) => {
-      const idToken = localStorage.getItem("cognitoIdToken");
-      if (!idToken) return { ok: false, error: "No auth token" };
-      try {
-        const response = await fetch("/api/v1/billing/checkout-session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({ bundleId: bid }),
-        });
-        const body = await response.json();
-        // Handle both response formats: mock returns { data: { checkoutUrl } }, real API returns { checkoutUrl }
-        const checkoutUrl = body?.data?.checkoutUrl || body?.checkoutUrl;
-        return { ok: response.ok, checkoutUrl, body };
-      } catch (err) {
-        return { ok: false, error: err.message };
-      }
-    }, { bid: bundleId });
+    const checkoutResult = await page.evaluate(
+      async ({ bid }) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { ok: false, error: "No auth token" };
+        try {
+          const response = await fetch("/api/v1/billing/checkout-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ bundleId: bid }),
+          });
+          const body = await response.json();
+          // Handle both response formats: mock returns { data: { checkoutUrl } }, real API returns { checkoutUrl }
+          const checkoutUrl = body?.data?.checkoutUrl || body?.checkoutUrl;
+          return { ok: response.ok, checkoutUrl, body };
+        } catch (err) {
+          return { ok: false, error: err.message };
+        }
+      },
+      { bid: bundleId },
+    );
 
     console.log(`Checkout session result: ${JSON.stringify(checkoutResult)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-03-session-created.png` });
@@ -492,7 +506,7 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
       // Wait for the success message rather than the URL, because bundles.html clears the
       // ?checkout=success param via history.replaceState before Playwright can observe it.
       console.log("Simulator checkout: auto-completing...");
-      await page.waitForSelector('text=Subscription activated', { timeout: 15_000 });
+      await page.waitForSelector("text=Subscription activated", { timeout: 15_000 });
       console.log("Simulator checkout completed successfully");
     } else if (isStripeCheckout) {
       // Real Stripe test checkout: fill in test card details.
@@ -518,13 +532,13 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
 
       // Click the "Card" payment method to expand the accordion and reveal card inputs.
       // Use force:true because Stripe overlays (Link, express checkout) can obscure the radio.
-      const cardRadio = page.locator('#payment-method-accordion-item-title-card');
+      const cardRadio = page.locator("#payment-method-accordion-item-title-card");
       if (await cardRadio.isVisible({ timeout: 5000 }).catch(() => false)) {
         await cardRadio.click({ force: true });
         console.log("Clicked Card payment method accordion");
       } else {
         // Try clicking by label text as fallback
-        const cardLabel = page.locator('text=Card').first();
+        const cardLabel = page.locator("text=Card").first();
         if (await cardLabel.isVisible({ timeout: 3000 }).catch(() => false)) {
           await cardLabel.click({ force: true });
           console.log("Clicked Card label text");
@@ -547,7 +561,12 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
 
       // Fill expiry
       const expiryInput = page.locator('#cardExpiry, input[name="cardExpiry"], input[autocomplete="cc-exp"]');
-      if (await expiryInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (
+        await expiryInput
+          .first()
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)
+      ) {
         await expiryInput.first().click({ force: true });
         await expiryInput.first().fill("12 / 30");
         filledFields.push("expiry");
@@ -556,7 +575,12 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
 
       // Fill CVC
       const cvcInput = page.locator('#cardCvc, input[name="cardCvc"], input[autocomplete="cc-csc"]');
-      if (await cvcInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (
+        await cvcInput
+          .first()
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)
+      ) {
         await cvcInput.first().click({ force: true });
         await cvcInput.first().fill("123");
         filledFields.push("cvc");
@@ -565,7 +589,12 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
 
       // Fill cardholder name
       const nameInput = page.locator('#billingName, input[name="billingName"], input[autocomplete="cc-name"]');
-      if (await nameInput.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (
+        await nameInput
+          .first()
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)
+      ) {
         await nameInput.first().click({ force: true });
         await nameInput.first().fill("Test User");
         filledFields.push("name");
@@ -723,7 +752,9 @@ export async function verifyTokenSources(page, expectedBundles, screenshotPath =
       const bundleRow = sourcesBody.locator(`tr:has(td:text-is("${expected.bundleId}"))`);
       const bundleRowCount = await bundleRow.count();
       console.log(`  Found ${bundleRowCount} row(s) matching bundleId "${expected.bundleId}".`);
-      expect(bundleRowCount, `Expected at least one row for bundle "${expected.bundleId}" in Token Sources table`).toBeGreaterThanOrEqual(1);
+      expect(bundleRowCount, `Expected at least one row for bundle "${expected.bundleId}" in Token Sources table`).toBeGreaterThanOrEqual(
+        1,
+      );
 
       // Get the cells from the first matching row
       const cells = bundleRow.first().locator("td");
@@ -744,11 +775,17 @@ export async function verifyTokenSources(page, expectedBundles, screenshotPath =
       }
 
       if (expected.tokensRemainingAtLeast !== undefined) {
-        expect(tokensRemaining, `Expected tokensRemaining >= ${expected.tokensRemainingAtLeast} for "${expected.bundleId}"`).toBeGreaterThanOrEqual(expected.tokensRemainingAtLeast);
+        expect(
+          tokensRemaining,
+          `Expected tokensRemaining >= ${expected.tokensRemainingAtLeast} for "${expected.bundleId}"`,
+        ).toBeGreaterThanOrEqual(expected.tokensRemainingAtLeast);
       }
 
       if (expected.tokensRemainingAtMost !== undefined) {
-        expect(tokensRemaining, `Expected tokensRemaining <= ${expected.tokensRemainingAtMost} for "${expected.bundleId}"`).toBeLessThanOrEqual(expected.tokensRemainingAtMost);
+        expect(
+          tokensRemaining,
+          `Expected tokensRemaining <= ${expected.tokensRemainingAtMost} for "${expected.bundleId}"`,
+        ).toBeLessThanOrEqual(expected.tokensRemainingAtMost);
       }
     }
 
@@ -799,7 +836,9 @@ export async function verifyTokenConsumption(page, expectedActivities, screensho
       const activityRows = consumptionBody.locator(`tr:has(td:nth-child(1):text-is("${expected.activity}"))`);
       const matchCount = await activityRows.count();
       console.log(`  Found ${matchCount} row(s) matching activity "${expected.activity}".`);
-      expect(matchCount, `Expected at least ${minCount} "${expected.activity}" entries in Token Consumption table`).toBeGreaterThanOrEqual(minCount);
+      expect(matchCount, `Expected at least ${minCount} "${expected.activity}" entries in Token Consumption table`).toBeGreaterThanOrEqual(
+        minCount,
+      );
 
       // If tokensUsed is specified, verify it in the matching rows
       if (expected.tokensUsed !== undefined) {

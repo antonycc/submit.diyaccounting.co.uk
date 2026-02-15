@@ -46,9 +46,7 @@ async function findOrCreatePrice(productId) {
     type: "recurring",
   });
 
-  const existing = prices.data.find(
-    (p) => p.unit_amount === 999 && p.currency === "gbp" && p.recurring?.interval === "month",
-  );
+  const existing = prices.data.find((p) => p.unit_amount === 999 && p.currency === "gbp" && p.recurring?.interval === "month");
   if (existing) {
     console.log("Price already exists:", existing.id);
     return existing;
@@ -103,10 +101,7 @@ async function main() {
   );
 
   // CI webhook
-  const ciWebhook = await findOrCreateWebhook(
-    "https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook",
-    "CI environment webhook",
-  );
+  const ciWebhook = await findOrCreateWebhook("https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook", "CI environment webhook");
 
   // Prod webhook
   const prodWebhook = await findOrCreateWebhook(
