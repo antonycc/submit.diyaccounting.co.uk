@@ -66,6 +66,7 @@ public class SubmitApplication {
         public String regionalCertificateArn;
         public String githubTokenSecretArn;
         public String stripeSecretKeyArn;
+        public String stripeTestSecretKeyArn;
         public String stripePriceId;
         public String stripeTestPriceId;
         public String stripeWebhookSecretArn;
@@ -162,6 +163,10 @@ public class SubmitApplication {
         var httpApiUrl = envOr("HTTP_API_URL", appProps.httpApiUrl, "(from httpApiUrl in cdk.json)");
         var stripeSecretKeyArn =
                 envOr("STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
+        var stripeTestSecretKeyArn = envOr(
+                "STRIPE_TEST_SECRET_KEY_ARN",
+                appProps.stripeTestSecretKeyArn,
+                "(from stripeTestSecretKeyArn in cdk.json)");
         var stripePriceId = envOr("STRIPE_PRICE_ID", appProps.stripePriceId, "(from stripePriceId in cdk.json)");
         var stripeTestPriceId =
                 envOr("STRIPE_TEST_PRICE_ID", appProps.stripeTestPriceId, "(from stripeTestPriceId in cdk.json)");
@@ -267,6 +272,7 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
                         .stripePriceId(stripePriceId != null ? stripePriceId : "")
                         .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
                         .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")

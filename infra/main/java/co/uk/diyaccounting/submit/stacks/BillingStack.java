@@ -87,6 +87,11 @@ public class BillingStack extends Stack {
         }
 
         @Value.Default
+        default String stripeTestSecretKeyArn() {
+            return "";
+        }
+
+        @Value.Default
         default String stripeTestPriceId() {
             return "";
         }
@@ -148,6 +153,9 @@ public class BillingStack extends Stack {
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
+        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
+        }
         if (props.stripePriceId() != null && !props.stripePriceId().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID", props.stripePriceId());
         }
@@ -202,6 +210,19 @@ public class BillingStack extends Stack {
                     "Granted Secrets Manager access to %s for Stripe secret %s",
                     this.billingCheckoutPostLambda.getFunctionName(), props.stripeSecretKeyArn());
         }
+        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+            var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
+                    ? props.stripeTestSecretKeyArn()
+                    : props.stripeTestSecretKeyArn() + "-*";
+            this.billingCheckoutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeTestSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for Stripe test secret %s",
+                    this.billingCheckoutPostLambda.getFunctionName(), props.stripeTestSecretKeyArn());
+        }
         infof(
                 "Created Billing Checkout POST Lambda %s",
                 this.billingCheckoutPostLambda.getNode().getId());
@@ -216,6 +237,9 @@ public class BillingStack extends Stack {
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingPortalGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+            billingPortalGetLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingPortalGetLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
@@ -264,6 +288,19 @@ public class BillingStack extends Stack {
             infof(
                     "Granted Secrets Manager access to %s for Stripe secret %s",
                     this.billingPortalGetLambda.getFunctionName(), props.stripeSecretKeyArn());
+        }
+        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+            var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
+                    ? props.stripeTestSecretKeyArn()
+                    : props.stripeTestSecretKeyArn() + "-*";
+            this.billingPortalGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeTestSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for Stripe test secret %s",
+                    this.billingPortalGetLambda.getFunctionName(), props.stripeTestSecretKeyArn());
         }
         infof(
                 "Created Billing Portal GET Lambda %s",
@@ -324,6 +361,9 @@ public class BillingStack extends Stack {
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingWebhookPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
+        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+            billingWebhookPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
+        }
         if (props.stripeWebhookSecretArn() != null
                 && !props.stripeWebhookSecretArn().isBlank()) {
             billingWebhookPostLambdaEnv.with("STRIPE_WEBHOOK_SECRET_ARN", props.stripeWebhookSecretArn());
@@ -368,6 +408,16 @@ public class BillingStack extends Stack {
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
                     .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+        }
+        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
+            var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
+                    ? props.stripeTestSecretKeyArn()
+                    : props.stripeTestSecretKeyArn() + "-*";
+            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeTestSecretArnWithWildcard))
                     .build());
         }
         if (props.stripeWebhookSecretArn() != null
