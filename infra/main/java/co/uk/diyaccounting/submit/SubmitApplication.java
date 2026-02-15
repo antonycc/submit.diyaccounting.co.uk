@@ -273,7 +273,7 @@ public class SubmitApplication {
                         .stripePriceId(stripePriceId != null ? stripePriceId : "")
                         .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
                         .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")
-                        .baseUrl(sharedNames.baseUrl)
+                        .baseUrl(sharedNames.publicBaseUrl)
                         .build());
 
 
