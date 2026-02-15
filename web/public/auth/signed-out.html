@@ -11,25 +11,21 @@
   </head>
   <body>
     <main id="mainContent" style="text-align: center; padding: 2rem;">
-      <h1>Signing out...</h1>
-      <p id="status-message">Please wait while we complete sign-out.</p>
+      <h1>Signed Out</h1>
+      <p>You have been signed out of DIY Accounting Submit.</p>
+      <p><a href="../index.html">Return to home page</a></p>
     </main>
     <script>
       (function () {
-        // Clear all auth-related localStorage
+        // Clear any remaining auth-related localStorage
+        // (auth-status.js already clears these before the Cognito redirect,
+        // but belt-and-braces in case the user navigates here directly)
         localStorage.removeItem("loginProvider");
         localStorage.removeItem("cognitoAccessToken");
         localStorage.removeItem("cognitoIdToken");
         localStorage.removeItem("cognitoRefreshToken");
         localStorage.removeItem("userInfo");
         localStorage.removeItem("authState");
-
-        // ALWAYS redirect to Google logout to terminate any active Google session.
-        // This prevents silent re-authentication when clicking "Login using your Google account".
-        // For users without a Google session, Google just shows its signed-out page.
-        document.getElementById("status-message").textContent =
-          "Redirecting to Google to complete sign-out...";
-        window.location.href = "https://accounts.google.com/Logout";
       })();
     </script>
   </body>

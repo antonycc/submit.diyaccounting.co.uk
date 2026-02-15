@@ -75,6 +75,12 @@ export function formatMessage(detail) {
 export function resolveTargetChatIds(detail, chatConfig) {
   const actor = detail.actor || "";
   const flow = detail.flow || "";
+  const requestId = detail.requestId || "";
+
+  // Test-prefixed requestId always routes to test channel
+  if (requestId.startsWith("test_")) {
+    return chatConfig.test ? [chatConfig.test] : [];
+  }
 
   // Infrastructure and operational events → ops channel
   if (flow === "infrastructure" || flow === "operational") {
@@ -200,8 +206,11 @@ export async function handler(event) {
     // Log with channel-specific prefix when no Telegram destination is configured
     const flow = detail.flow || "";
     const actor = detail.actor || "";
+    const requestId = detail.requestId || "";
     let channel;
-    if (flow === "infrastructure" || flow === "operational") {
+    if (requestId.startsWith("test_")) {
+      channel = "TELEGRAM_TEST_CHAT";
+    } else if (flow === "infrastructure" || flow === "operational") {
       channel = "TELEGRAM_OPS_CHAT";
     } else if (actor === "customer" || actor === "visitor") {
       channel = "TELEGRAM_LIVE_CHAT";

@@ -4,7 +4,7 @@
 // app/lib/activityAlert.js
 
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
-import { createLogger } from "./logger.js";
+import { createLogger, context } from "./logger.js";
 
 const logger = createLogger({ source: "app/lib/activityAlert.js" });
 
@@ -29,6 +29,9 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
     return;
   }
 
+  const requestId = context.get("requestId") || null;
+  const effectiveActor = actor || (requestId?.startsWith("test_") ? "test-user" : "unknown");
+
   try {
     await ebClient.send(
       new PutEventsCommand({
@@ -41,16 +44,17 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
               event,
               site,
               summary,
-              actor: actor || "unknown",
+              actor: effectiveActor,
               flow: flow || "unknown",
               timestamp: new Date().toISOString(),
+              ...(requestId ? { requestId } : {}),
               ...detail,
             }),
           },
         ],
       }),
     );
-    logger.info({ message: "Activity event published", event, summary });
+    logger.info({ message: "Activity event published", event, summary, requestId });
   } catch (err) {
     logger.warn({ message: "Failed to publish activity event", event, error: err.message });
   }

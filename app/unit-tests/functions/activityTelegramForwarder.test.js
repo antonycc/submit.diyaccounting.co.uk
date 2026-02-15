@@ -136,6 +136,27 @@ describe("activityTelegramForwarder", () => {
       const prodDetail = { env: "prod", actor: "customer", flow: "user-journey" };
       expect(resolveTargetChatIds(ciDetail, CHAT_CONFIG)).toEqual(resolveTargetChatIds(prodDetail, CHAT_CONFIG));
     });
+
+    // requestId prefix routing
+    test("test_ requestId routes to test channel even with actor: customer", () => {
+      const detail = { actor: "customer", flow: "user-journey", requestId: "test_abc-123" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
+    });
+
+    test("test_ requestId routes to test channel even with flow: operational", () => {
+      const detail = { actor: "system", flow: "operational", requestId: "test_abc-123" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
+    });
+
+    test("normal requestId does not override routing", () => {
+      const detail = { actor: "customer", flow: "user-journey", requestId: "normal-abc-123" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
+    });
+
+    test("missing requestId does not affect routing", () => {
+      const detail = { actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
+    });
   });
 
   describe("handler", () => {

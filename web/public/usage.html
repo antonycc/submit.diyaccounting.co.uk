@@ -106,6 +106,27 @@
           <p style="color: #666; margin-bottom: 0.5em">Manage your subscription billing, payment method, and cancellation.</p>
           <button type="button" id="manageSubscriptionBtn" class="btn" style="background-color: #17a2b8; border-color: #17a2b8; min-width: 200px">Manage Subscription</button>
         </div>
+
+        <div style="margin-top: 2em; text-align: left">
+          <h3>Browser Storage</h3>
+          <p style="color: #666; margin-bottom: 0.5em">Data stored on this device by this site. Authentication tokens are redacted for security.</p>
+          <table id="browserStorageTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5em">
+            <thead>
+              <tr style="border-bottom: 2px solid #dee2e6; text-align: left">
+                <th style="padding: 0.5em">Key</th>
+                <th style="padding: 0.5em">Value</th>
+              </tr>
+            </thead>
+            <tbody id="browserStorageBody">
+              <tr>
+                <td colspan="2" style="padding: 1em; color: #666; text-align: center">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top: 1em">
+            <button type="button" id="clearStorageBtn" style="background: #fff; border: 1px solid #dc3545; color: #dc3545; font-size: 0.9em; padding: 6px 16px; border-radius: 4px; cursor: pointer;">Clear storage</button>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -122,7 +143,7 @@
         <div class="footer-center">
           <p>&copy; 2025-2026 DIY Accounting Limited</p>
         </div>
-        <div class="footer-right" id="localstorageContainer"></div>
+        <div class="footer-right"></div>
       </div>
     </footer>
 
@@ -143,8 +164,6 @@
     <script src="widgets/status-messages.js"></script>
     <script src="widgets/loading-spinner.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
-    <script src="widgets/localstorage-viewer.js"></script>
-
     <script>
       const getIdToken = () => {
         try {
@@ -322,6 +341,7 @@
           __rc.invalidate("/api/v1/bundle");
         }
         loadUsage();
+        renderBrowserStorage();
       });
 
       function checkAuthStatus() {
@@ -331,9 +351,67 @@
         }
       }
 
+      function redactValue(key, value) {
+        if (/^cognito.*Token$/.test(key)) {
+          var claims = window.parseJwtClaims ? window.parseJwtClaims(value) : null;
+          if (claims && claims.exp) {
+            var remaining = Math.round((claims.exp * 1000 - Date.now()) / 60000);
+            if (remaining > 0) return "Present (expires in " + remaining + " min)";
+            return "Present (expired)";
+          }
+          return value ? "Present" : "(empty)";
+        }
+        if (key === "userInfo") {
+          try {
+            var info = JSON.parse(value);
+            var parts = [];
+            if (info.name) parts.push(info.name);
+            if (info.email) parts.push(info.email);
+            return parts.length > 0 ? parts.join(", ") : value;
+          } catch (e) { return value; }
+        }
+        return value || "(empty)";
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function renderBrowserStorage() {
+        var body = document.getElementById("browserStorageBody");
+        var keys = Object.keys(localStorage).sort();
+        if (keys.length === 0) {
+          body.innerHTML = '<tr><td colspan="2" style="padding: 1em; color: #666; text-align: center">No data stored.</td></tr>';
+          return;
+        }
+        body.innerHTML = keys.map(function (k) {
+          var v;
+          try { v = localStorage.getItem(k); } catch (e) { v = "[unreadable]"; }
+          return '<tr style="border-bottom: 1px solid #dee2e6">' +
+            '<td style="padding: 0.5em; font-family: monospace; font-size: 0.85em; white-space: nowrap">' + escapeHtml(k) + '</td>' +
+            '<td style="padding: 0.5em; word-break: break-word; font-size: 0.85em">' + escapeHtml(redactValue(k, v)) + '</td>' +
+            '</tr>';
+        }).join("");
+      }
+
+      document.getElementById("clearStorageBtn").addEventListener("click", function () {
+        if (!confirm("Clear all local storage for this site? This will log you out.")) return;
+        var rumConsent = localStorage.getItem("consent.rum");
+        var analyticsConsent = localStorage.getItem("consent.analytics");
+        var rumConfig = localStorage.getItem("rum.config");
+        localStorage.clear();
+        if (rumConsent !== null) localStorage.setItem("consent.rum", rumConsent);
+        if (analyticsConsent !== null) localStorage.setItem("consent.analytics", analyticsConsent);
+        if (rumConfig !== null) localStorage.setItem("rum.config", rumConfig);
+        renderBrowserStorage();
+      });
+
       function initPage() {
         checkAuthStatus();
         loadUsage();
+        renderBrowserStorage();
       }
 
       if (window.__submitReady__) {

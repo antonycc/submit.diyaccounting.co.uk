@@ -179,7 +179,12 @@
   }
 
   // Logout function
-  function logout() {
+  function logout(e) {
+    // Prevent the <a> default action — without this, updateLoginStatus() changes
+    // the href from "#" to "../auth/login.html" and the browser's default <a> click
+    // navigation races with (and overrides) the Cognito redirect below.
+    if (e && e.preventDefault) e.preventDefault();
+
     console.log("Logging out user");
 
     // Clear Cognito tokens and user info from localStorage
@@ -203,9 +208,6 @@
     sessionStorage.removeItem("pendingPass");
     sessionStorage.removeItem("postLoginRedirect");
     sessionStorage.removeItem("passValidation");
-
-    // Update login status
-    updateLoginStatus();
 
     // In simulator mode, navigate to activities page instead of reloading
     // (demo credentials are re-injected on each page load)

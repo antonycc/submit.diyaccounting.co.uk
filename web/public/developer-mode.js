@@ -174,11 +174,9 @@
     const viewSourceLink = document.getElementById("viewSourceLink");
     const testsLink = document.getElementById("latestTestsLink");
     const apiDocsLink = document.getElementById("apiDocsLink");
-    const localStorageContainer = document.getElementById("localstorageContainer");
     if (viewSourceLink) viewSourceLink.style.display = enabled ? "block" : "none";
     if (testsLink) testsLink.style.display = enabled ? "block" : "none";
     if (apiDocsLink) apiDocsLink.style.display = enabled ? "block" : "none";
-    if (localStorageContainer) localStorageContainer.style.display = enabled ? "block" : "none";
 
     // Dispatch event for page-specific handlers (e.g., show/hide form developer sections)
     window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled } }));
@@ -347,90 +345,6 @@
         background: rgba(0, 30, 0, 0.6);
         border-color: #00ff00;
         box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
-      }
-
-      /* Storage button */
-      body.developer-mode #localstorageContainer {
-        position: fixed;
-        left: 0;
-        background: rgba(0, 15, 0, 0.5);
-        border: 1px solid rgba(0, 255, 0, 0.4);
-        border-left: none;
-        border-radius: 0 4px 4px 0;
-        padding: 0;
-        z-index: 1000;
-      }
-
-      body.developer-mode #localstorageContainer #lsv-button {
-        position: static !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: #00ff00 !important;
-        font-family: "Courier New", Consolas, Monaco, monospace !important;
-        font-size: 0.7em !important;
-        padding: 4px 12px !important;
-        text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
-      }
-
-      body.developer-mode #localstorageContainer #lsv-button:hover {
-        background: rgba(0, 30, 0, 0.6) !important;
-      }
-
-      body.developer-mode #localstorageContainer #lsv-button svg {
-        stroke: #00ff00 !important;
-      }
-
-      body.developer-mode #localstorageContainer #lsv-button span {
-        color: #00ff00 !important;
-      }
-
-      /* ================================================================
-         TERMINAL STYLING FOR LOCALSTORAGE MODAL
-         Homebrew terminal aesthetic for the storage viewer dialog
-         ================================================================ */
-      body.developer-mode #lsv-overlay > div {
-        background: rgba(0, 15, 0, 0.95) !important;
-        border: 1px solid rgba(0, 255, 0, 0.4) !important;
-        box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), 0 10px 40px rgba(0, 0, 0, 0.5) !important;
-      }
-
-      body.developer-mode #lsv-overlay > div > div:first-child {
-        border-bottom-color: rgba(0, 255, 0, 0.3) !important;
-        background: linear-gradient(180deg, rgba(0, 40, 0, 0.9) 0%, rgba(0, 20, 0, 0.9) 100%) !important;
-      }
-
-      body.developer-mode #lsv-overlay > div > div:first-child > div:first-child {
-        color: #00ff00 !important;
-        font-family: "Courier New", Consolas, Monaco, monospace !important;
-        text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        font-size: 11px !important;
-      }
-
-      body.developer-mode #lsv-overlay button[aria-label="Empty localStorage"] {
-        background: transparent !important;
-        border-color: #ff4444 !important;
-        color: #ff4444 !important;
-        font-family: "Courier New", Consolas, Monaco, monospace !important;
-      }
-
-      body.developer-mode #lsv-overlay button[aria-label="Empty localStorage"]:hover {
-        background: rgba(255, 68, 68, 0.2) !important;
-      }
-
-      body.developer-mode #lsv-overlay button[aria-label="Close"] {
-        color: #00ff00 !important;
-        text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
-      }
-
-      body.developer-mode #lsv-overlay #lsv-pre {
-        background: rgba(0, 10, 0, 0.8) !important;
-        border-color: rgba(0, 255, 0, 0.3) !important;
-        color: #00ff00 !important;
-        font-family: "Courier New", Consolas, Monaco, monospace !important;
-        text-shadow: 0 0 2px rgba(0, 255, 0, 0.3);
       }
 
       /* ================================================================

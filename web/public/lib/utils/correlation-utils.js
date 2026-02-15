@@ -184,7 +184,10 @@ export function installCorrelationInterceptor() {
         const existingRid = headerObject["x-request-id"] || headerObject["X-Request-Id"];
         if (!existingRid) {
           let requestId = nextRedirectRequestId();
-          if (!requestId) requestId = generateRequestId();
+          if (!requestId) {
+            const prefix = window.sessionStorage?.getItem?.("requestIdPrefix") || "";
+            requestId = prefix + generateRequestId();
+          }
           headerObject["x-request-id"] = requestId;
         }
       }
