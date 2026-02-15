@@ -109,7 +109,7 @@
 
         <div style="margin-top: 2em; text-align: left">
           <h3>Browser Storage</h3>
-          <p style="color: #666; margin-bottom: 0.5em">Data stored on this device by this site. Authentication tokens are redacted for security.</p>
+          <p style="color: #666; margin-bottom: 0.5em">Data stored on this device by this site. Only recognised application keys are shown; library-internal and sensitive values are redacted.</p>
           <table id="browserStorageTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5em">
             <thead>
               <tr style="border-bottom: 2px solid #dee2e6; text-align: left">
@@ -355,7 +355,7 @@
       // Everything else is redacted by default to avoid leaking internal state.
       var STORAGE_ALLOWLIST = new Set([
         "cognitoIdToken", "cognitoAccessToken", "cognitoRefreshToken",
-        "userInfo", "loginProvider", "authState", "auth:lastUpdate",
+        "userInfo", "loginProvider", "auth:lastUpdate",
         "consent.rum", "consent.analytics",
         "waitlistRegistered",
       ]);
