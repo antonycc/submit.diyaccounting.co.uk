@@ -319,6 +319,10 @@
       "bfj": {
         "jsonpath": "npm:jsonpath-plus@^10.3.0"
       }
+    },
+    "structured-data-testing-tool": {
+      "nth-check": "^2.0.1",
+      "validator": "^13.15.21"
     }
   }
 }
