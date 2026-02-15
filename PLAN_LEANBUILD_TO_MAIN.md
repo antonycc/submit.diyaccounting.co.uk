@@ -101,13 +101,12 @@ All 28 jobs passed including CDK synth (both CI and prod), unit tests, system te
 ### 2. `deploy environment` workflow — Run ID: `22028051387` — **SUCCESS**
 All 30 jobs passed. EcrStack created successfully in both eu-west-2 and us-east-1. This was the first deployment of the new environment-level ECR stacks.
 
-### 3. `deploy` workflow — Run ID: `22028051402` — **IN PROGRESS (1 failure)**
-- 56/58 jobs completed
-- **FAILED: `deploy SelfDestructStack`** — Stack was in `DELETE_IN_PROGRESS` state from previous deployment's self-destruct timer. CloudFormation cannot update a stack mid-deletion.
-  - The deletion has now completed (stack no longer exists in CloudFormation)
-  - **Fix: Re-run failed jobs** — will create the stack fresh
-- Still running: EdgeStack (CloudFront distribution update), tokenEnforcementBehaviour (delegated simulator test)
-- All other stacks deployed successfully including push-images to new `ci-env-ecr` repo
+### 3. `deploy` workflow — Run ID: `22028051402` — **SUCCESS** (after re-run)
+- All 161 jobs passed (141 success, 19 skipped, 1 re-run)
+- **SelfDestructStack** initially failed (stack in `DELETE_IN_PROGRESS` from previous deployment's self-destruct timer) — re-run succeeded after deletion completed
+- All CDK stacks deployed: Auth, Account, HMRC, Billing, API, Ops, Edge, Publish, SelfDestruct
+- Push-images succeeded with new `ci-env-ecr` repo name (ECR migration confirmed)
+- All CI synthetic tests passed: auth, payment, submitVat, tokenEnforcement, getVatObligations, postVatReturn, vatSchemes, bundles, compliance, passRedemption, gateway, spreadsheets, simulator, help, generatePassActivity, vatValidation, postVatReturnFraudPreventionHeaders
 
 ### Previous Run (baseline): `22026545416` — **SUCCESS** (29 min, completed ~00:37 UTC)
 All jobs succeeded. This was the last successful deploy from leanbuild.
@@ -130,32 +129,34 @@ All jobs succeeded. This was the last successful deploy from leanbuild.
 
 ## Monitoring Checklist
 
-### Phase 1: Test + Environment Deploy (NOW)
-- [ ] `test` workflow completes — all unit/system/CDK synth pass
-- [ ] `deploy environment` completes — EcrStack created successfully in both regions
-- [ ] ECR repos exist: `ci-env-ecr` (eu-west-2) and `ci-env-ecr-us-east-1` (us-east-1)
-- [ ] Simulator behaviour tests pass (sandbox auto-detect changes)
+### Phase 1: Test + Environment Deploy — DONE
+- [x] `test` workflow completes — all unit/system/CDK synth pass
+- [x] `deploy environment` completes — EcrStack created successfully in both regions
+- [x] ECR repos exist: `ci-env-ecr` (eu-west-2) and `ci-env-ecr-us-east-1` (us-east-1)
+- [x] Simulator behaviour tests pass (sandbox auto-detect changes)
 
-### Phase 2: Main Deploy
-- [ ] `deploy` workflow starts (unblocked by test + environment)
-- [ ] `push-images` succeeds — Docker image pushed to new ECR repo name
-- [ ] CDK deploy succeeds — no DevStack reference errors
-- [ ] Lambda functions deploy with correct image URIs
-- [ ] Web assets deployed (localstorage-viewer removed, developer-mode.js updated)
-- [ ] CloudFront invalidation completes
+### Phase 2: Main Deploy — DONE
+- [x] `deploy` workflow starts (unblocked by test + environment)
+- [x] `push-images` succeeds — Docker image pushed to new ECR repo name
+- [x] CDK deploy succeeds — no DevStack reference errors
+- [x] Lambda functions deploy with correct image URIs
+- [x] Web assets deployed (localstorage-viewer removed, developer-mode.js updated)
+- [x] CloudFront invalidation completes
+- [x] SelfDestructStack re-run after DELETE_IN_PROGRESS timing race — succeeded
 
-### Phase 3: Synthetic Tests (post-deploy)
-- [ ] `submitVatBehaviour-ci` passes — sandbox HMRC via auto-detected bundle qualifiers
-- [ ] `paymentBehaviour-ci` passes — Stripe checkout with correct price ID
-- [ ] `tokenEnforcementBehaviour-ci` passes
-- [ ] `authBehaviour-ci` passes
-- [ ] All other synthetic tests pass (gateway, spreadsheets, bundles, etc.)
+### Phase 3: Synthetic Tests (post-deploy) — DONE
+- [x] `submitVatBehaviour-ci` passes — sandbox HMRC via auto-detected bundle qualifiers
+- [x] `paymentBehaviour-ci` passes — Stripe checkout with correct price ID
+- [x] `tokenEnforcementBehaviour-ci` passes
+- [x] `authBehaviour-ci` passes
+- [x] All other synthetic tests pass (17 suites total, all green)
 
 ### Phase 4: Merge Readiness
-- [ ] All 3 workflows green
-- [ ] No regressions from previous successful deploy
-- [ ] ECR migration clean (old DevStack resources handled)
-- [ ] Ready to PR to main
+- [x] All 3 workflows green
+- [x] No regressions from previous successful deploy
+- [x] ECR migration clean (old DevStack resources handled)
+- [ ] Commit storage allowlist improvement (description + remove legacy authState key)
+- [ ] PR to main
 
 ---
 
