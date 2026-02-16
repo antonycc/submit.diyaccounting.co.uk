@@ -119,7 +119,7 @@ public class OpsStack extends Stack {
         // Canary configuration
         @Value.Default
         default int canaryIntervalMinutes() {
-            return 5;
+            return 51;
         }
 
         // Base URL for canaries (e.g., https://submit.diyaccounting.co.uk)

@@ -203,6 +203,7 @@ public class AccountStack extends Stack {
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().bundleGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
+                        .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().bundleGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().bundleGetLambdaUrlPath)

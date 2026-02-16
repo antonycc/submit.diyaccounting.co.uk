@@ -190,6 +190,7 @@ public class HmrcStack extends Stack {
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().hmrcTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
+                        .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().hmrcTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcTokenPostLambdaUrlPath)
@@ -285,6 +286,7 @@ public class HmrcStack extends Stack {
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().hmrcVatReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
+                        .ingestMemorySize(256)
                         .workerFunctionName(props.sharedNames().hmrcVatReturnPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatReturnPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatReturnPostWorkerLambdaArn)
