@@ -612,6 +612,40 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
         console.log("Cardholder name filled (pressSequentially)");
       }
 
+      // Select country — Stripe defaults to "United States" which requires ZIP code.
+      // Change to "United Kingdom" (appropriate for a UK accounting service) which requires
+      // a postal code. The country dropdown is a <select> element.
+      const countrySelect = page.locator('#billingCountry, select[name="billingCountry"], select[autocomplete="billing country"]');
+      if (
+        await countrySelect
+          .first()
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)
+      ) {
+        await countrySelect.first().selectOption("GB");
+        filledFields.push("country");
+        console.log("Country set to GB (United Kingdom)");
+        await page.waitForTimeout(500); // Let Stripe update the postal code field
+      }
+
+      // Fill postal code / ZIP — this field is REQUIRED by Stripe for most countries.
+      // Without it, form validation silently prevents submission (the root cause of CI failures).
+      const postalInput = page.locator('#billingPostalCode, input[name="billingPostalCode"], input[autocomplete="billing postal-code"], input[autocomplete="postal-code"]');
+      if (
+        await postalInput
+          .first()
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)
+      ) {
+        await postalInput.first().click({ force: true });
+        await postalInput.first().fill("");
+        await postalInput.first().pressSequentially("SW1A 1AA", { delay: 30 });
+        filledFields.push("postal");
+        console.log("Postal code filled (pressSequentially)");
+      } else {
+        console.log("Postal code input not found — may not be required for selected country");
+      }
+
       console.log(`Stripe checkout: filled fields: [${filledFields.join(", ")}]`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05-stripe-filled.png` });
 
