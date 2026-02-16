@@ -8,7 +8,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump22 - EventBridge activity bus, token usage page, Stripe infrastructure
+# Bump23
 
 on:
   workflow_dispatch:
