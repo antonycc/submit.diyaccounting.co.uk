@@ -15,6 +15,15 @@ Iterative manual QA test sessions. Each section builds on the previous one, givi
 | CI | https://ci-submit.diyaccounting.co.uk | Deployed from feature branches |
 | Prod | https://submit.diyaccounting.co.uk | Live site |
 
+| Channel        | URL                            | Description |
+|----------------|--------------------------------|-------------|
+| @diy-ci-test   | https://t.me/+AmY3Lrf6yw0yYmY0 | User activity from a test or from someone using a test pass. |
+| @diy-ci-live   | https://t.me/+aFj-IawVGwtkN2E0 | Real customer data not using a test pass. |
+| @diy-ci-ops    | https://t.me/+1IFAay17W05mY2I0 | Infrastructure and deployment events, errors, warnings. |
+| @diy-prod-test | https://t.me/+GObj6Vgv7khlMTQ0 | User activity from a test or from someone using a test pass. |
+| @diy-prod-live | https://t.me/+IMrCsu2V_yZiZWRk | Real customer data not using a test pass. |
+| @diy-prod-ops  | https://t.me/+k7jbzYLeHBo5NTBk | Infrastructure and deployment events, errors, warnings. |
+
 ---
 
 ## Section 1: Information Discovery (no login required)
@@ -66,9 +75,9 @@ Iterative manual QA test sessions. Each section builds on the previous one, givi
 - [ ] Bundles page shows the catalogue
 - [ ] Token Usage page loads (may show empty state)
 - [ ] Logout works cleanly
-- [ ] Telegram live channel shows login event
+- [ ] Telegram test channel shows login event
 - [ ] All pages render well on mobile and desktop
-
+-
 ---
 
 ## Section 3: Guest Pass — First VAT Query
@@ -88,7 +97,7 @@ Iterative manual QA test sessions. Each section builds on the previous one, givi
 7. Click "VAT Obligations (HMRC)" to see upcoming obligations
 8. You'll be redirected to HMRC to authorize access — follow the prompts
 9. After authorization, you should see your VAT obligations listed
-10. Check the Telegram live channel for the obligation query event
+10. Check the Telegram test channel for the obligation query event
 
 ### Checklist
 - [ ] Pass redemption works (pass code accepted, bundle granted)
@@ -146,6 +155,7 @@ Iterative manual QA test sessions. Each section builds on the previous one, givi
 2. After exhausting tokens, go to the Home page
 3. The "Submit VAT (HMRC)" button should show "Insufficient tokens" and be disabled
 4. Look for an upsell link to the Bundles page
+   (Not yet live, you will need a resident-pro-test-pass to access the pro bundle)
 5. Go to the Bundles page — verify your day-guest bundle shows 0 tokens remaining
 6. Note the "Resident Pro" option in the catalogue with the subscription price
 
@@ -180,6 +190,8 @@ Iterative manual QA test sessions. Each section builds on the previous one, givi
    - "Manage Subscription" button is visible
 8. Go to Home page — all activities should be enabled again
 9. Submit a VAT return to verify tokens work
+
+Other test cards are available here: https://stripe.com/docs/testing#cards
 
 ### Checklist
 - [ ] Pass code triggers subscription flow
@@ -261,16 +273,21 @@ Iterative manual QA test sessions. Each section builds on the previous one, givi
 
 ### Live Channel
 
-Every user action should generate an event in the Telegram live channel:
+Every user action should generate an event in the Telegram test channel:
 - Login/logout events
 - Bundle grants and pass redemptions
 - VAT submissions (with token usage)
 - Checkout/subscription events
 - Pass generation events
 
-**For each section**: Verify the Telegram live channel shows the corresponding events.
+**For each section**: Verify the Telegram test channel shows the corresponding events.
 
 ### Ops Channel
+
+| Channel        | URL                            | Description |
+|----------------|--------------------------------|-------------|
+| @diy-ci-ops    | https://t.me/+1IFAay17W05mY2I0 | Infrastructure and deployment events, errors, warnings. |
+| @diy-prod-ops  | https://t.me/+k7jbzYLeHBo5NTBk | Infrastructure and deployment events, errors, warnings. |
 
 Monitor the Telegram ops channel for:
 - Infrastructure warnings or errors
@@ -284,6 +301,8 @@ Monitor the Telegram ops channel for:
 ## Issue Reporting Template
 
 When you find something wrong, record:
+
+https://github.com/antonycc/submit.diyaccounting.co.uk/issues/new?template=support.md
 
 ```
 **Section**: (which section number)

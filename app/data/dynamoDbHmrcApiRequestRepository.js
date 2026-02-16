@@ -4,7 +4,7 @@
 // app/data/dynamoDbHmrcApiRequestRepository.js
 
 import { createLogger, context } from "../lib/logger.js";
-import { hashSub } from "../services/subHasher.js";
+import { hashSub, getSaltVersion } from "../services/subHasher.js";
 import { maskHttpData } from "../lib/dataMasking.js";
 import { v4 as uuidv4 } from "uuid";
 import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
@@ -68,6 +68,7 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
       httpRequest: maskedHttpRequest,
       httpResponse: maskedHttpResponse,
       duration,
+      saltVersion: getSaltVersion(),
       createdAt: now.toISOString(),
     };
 

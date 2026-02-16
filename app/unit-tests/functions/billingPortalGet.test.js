@@ -72,7 +72,7 @@ describe("billingPortalGet", () => {
 
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
-    process.env.USER_SUB_HASH_SALT = "test-salt-for-unit-tests";
+    process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
   });
 
   afterEach(() => {

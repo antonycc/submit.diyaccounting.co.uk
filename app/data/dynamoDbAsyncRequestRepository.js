@@ -4,7 +4,7 @@
 // app/data/dynamoDbAsyncRequestRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { hashSub } from "../services/subHasher.js";
+import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
 import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
 import { calculateOneHourTtl } from "../lib/dateUtils.js";
 
@@ -46,6 +46,7 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
       "#ttl": "ttl",
       "#ttl_datestamp": "ttl_datestamp",
       "#createdAt": "createdAt",
+      "#saltVersion": "saltVersion",
     };
 
     const expressionAttributeValues = {
@@ -54,10 +55,11 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
       ":ttl": ttl,
       ":ttl_datestamp": ttlDatestamp,
       ":createdAt": isoNow,
+      ":saltVersion": getSaltVersion(),
     };
 
     let updateExpression =
-      "SET #status = :status, #updatedAt = :updatedAt, #ttl = :ttl, #ttl_datestamp = :ttl_datestamp, #createdAt = if_not_exists(#createdAt, :createdAt)";
+      "SET #status = :status, #updatedAt = :updatedAt, #ttl = :ttl, #ttl_datestamp = :ttl_datestamp, #createdAt = if_not_exists(#createdAt, :createdAt), #saltVersion = :saltVersion";
 
     if (data) {
       updateExpression += ", #data = :data";
@@ -133,25 +135,49 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
       }),
     );
 
-    if (!result.Item) {
+    if (result.Item) {
       logger.info({
-        message: "AsyncRequest not found in DynamoDB",
+        message: "AsyncRequest retrieved from DynamoDB",
         hashedSub,
         requestId,
+        status: result.Item.status,
         tableName: actualTableName,
       });
-      return null;
+      return result.Item;
+    }
+
+    // Fall back to previous salt versions during migration window
+    for (const version of getPreviousVersions()) {
+      const oldHash = hashSubWithVersion(userId, version);
+      const fallbackResult = await docClient.send(
+        new module.GetCommand({
+          TableName: actualTableName,
+          Key: {
+            hashedSub: oldHash,
+            requestId,
+          },
+          ConsistentRead: true,
+        }),
+      );
+      if (fallbackResult.Item) {
+        logger.warn({
+          message: "Found async request at old salt version",
+          version,
+          hashedSub: oldHash,
+          requestId,
+          tableName: actualTableName,
+        });
+        return fallbackResult.Item;
+      }
     }
 
     logger.info({
-      message: "AsyncRequest retrieved from DynamoDB",
+      message: "AsyncRequest not found in DynamoDB",
       hashedSub,
       requestId,
-      status: result.Item.status,
       tableName: actualTableName,
     });
-
-    return result.Item;
+    return null;
   } catch (error) {
     logger.error({
       message: "Error retrieving AsyncRequest from DynamoDB",

@@ -137,6 +137,7 @@ public class AuthStack extends Stack {
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().cognitoTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
+                        .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().cognitoTokenPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().cognitoTokenPostLambdaUrlPath)
@@ -189,6 +190,7 @@ public class AuthStack extends Stack {
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().customAuthorizerIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(1)
+                        .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(HttpMethod.GET) // Not used for authorizers but required by props
                         .urlPath("/") // Not used for authorizers but required by props

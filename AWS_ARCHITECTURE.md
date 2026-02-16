@@ -242,14 +242,20 @@ graph TB
 graph TB
     subgraph data["Data Services (eu-west-2)"]
         subgraph dynamo["DynamoDB Tables"]
-            tokens["submit-tokens<br/>OAuth Tokens"]
             bundles["submit-bundles<br/>User Subscriptions"]
-            audit["submit-audit<br/>Action Logs"]
+            receipts["submit-receipts<br/>HMRC Receipts"]
+            hmrc_requests["submit-hmrc-api-requests<br/>HMRC Audit"]
+            async["async-requests (5 tables)<br/>1-hour TTL"]
         end
 
         subgraph secrets["Secrets Manager"]
+            salt_registry["user-sub-hash-salt<br/>JSON registry (multi-version)"]
             hmrc_creds["HMRC Credentials"]
             oauth_secrets["OAuth Secrets"]
+        end
+
+        subgraph kms_svc["KMS"]
+            salt_key["Salt Encryption Key<br/>Encrypts salt backup in DynamoDB"]
         end
 
         subgraph backup_svc["AWS Backup"]
@@ -258,13 +264,19 @@ graph TB
         end
     end
 
-    tokens --> vault
+    salt_registry -->|cold start| bundles
     bundles --> vault
+    receipts --> vault
     vault --> pitr
+    salt_key -->|Path 3 recovery| bundles
 
-    style tokens fill:#2196f3,color:#fff
     style bundles fill:#2196f3,color:#fff
+    style receipts fill:#2196f3,color:#fff
+    style salt_registry fill:#ff9800,color:#fff
+    style salt_key fill:#ff9800,color:#fff
 ```
+
+**Salt architecture**: The user sub hash salt is stored as a multi-version JSON registry in Secrets Manager. Each DynamoDB item includes a `saltVersion` field. A KMS key in DataStack encrypts a backup copy of the salt stored as a `system#config` item in the bundles table (recovery Path 3). This KMS key must move to the submit-backup account during account separation.
 
 ---
 

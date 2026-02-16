@@ -130,9 +130,6 @@ jobs:
       - name: Build gateway redirects
         run: node scripts/build-gateway-redirects.cjs
 
-      - name: Build sitemaps
-        run: node scripts/build-sitemaps.cjs
-
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'

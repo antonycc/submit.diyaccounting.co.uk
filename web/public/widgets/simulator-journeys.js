@@ -425,9 +425,9 @@ export async function journeySubmitVat(journey) {
   // Fill VRN (submitVat uses #vatNumber, not #vrn)
   await journey.fill("#vatNumber", "123456789", "Entering VAT Registration Number...");
 
-  // Fill period dates
-  await journey.fill("#periodStart", "2017-01-01", "Entering period start date...");
-  await journey.fill("#periodEnd", "2017-03-31", "Entering period end date...");
+  // Fill period dates (must match an OPEN obligation from the simulator)
+  await journey.fill("#periodStart", "2017-04-01", "Entering period start date...");
+  await journey.fill("#periodEnd", "2017-06-30", "Entering period end date...");
 
   // Fill Box 1 - VAT due on sales
   await journey.fill("#vatDueSales", "1250.00", "Entering VAT due on sales (Box 1)...");

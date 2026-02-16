@@ -1,0 +1,86 @@
+name: run migrations
+run-name: "${{ inputs.phase }} migrations for ${{ inputs.environment-name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        type: choice
+        description: 'Environment'
+        required: true
+        options:
+          - 'ci'
+          - 'prod'
+      phase:
+        description: 'Migration phase to run'
+        type: choice
+        options:
+          - 'all'
+          - 'pre-deploy'
+          - 'post-deploy'
+        required: true
+        default: 'all'
+  workflow_call:
+    inputs:
+      environment-name:
+        type: string
+        required: true
+      phase:
+        type: string
+        required: false
+        default: 'all'
+
+env:
+  NODE_VERSION: '24'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  migrate:
+    name: 'run ${{ inputs.phase }} migrations (${{ inputs.environment-name }})'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run migrations
+        run: node scripts/migrations/runner.js --phase ${{ inputs.phase }}
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+          AWS_REGION: ${{ env.AWS_REGION }}

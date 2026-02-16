@@ -8,7 +8,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump22 - EventBridge activity bus, token usage page, Stripe infrastructure
+# Bump23
 
 on:
   workflow_dispatch:
@@ -1490,6 +1490,24 @@ jobs:
           regional-certificate-arn: 'arn:aws:acm:eu-west-2:887764105431:certificate/1f9c9a57-5834-41d3-822d-4aae7e32d633'
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
+
+  # TODO: Uncomment to enable data migrations in the deploy pipeline.
+  # Pre-deploy migrations (e.g., salt format conversion) run before CDK deploy.
+  # Post-deploy migrations (e.g., backfill saltVersion) run after CDK deploy.
+  # For now, run migrations manually via the run-migrations.yml workflow.
+  #
+  # run-post-deploy-migrations:
+  #   name: 'run post-deploy migrations'
+  #   needs:
+  #     - names
+  #     - deploy-publish
+  #   uses: ./.github/workflows/run-migrations.yml
+  #   permissions:
+  #     contents: read
+  #     id-token: write
+  #   with:
+  #     environment-name: ${{ needs.names.outputs.environment-name }}
+  #     phase: 'post-deploy'
 
   enable-native-auth:
     if: ${{ !cancelled() }}

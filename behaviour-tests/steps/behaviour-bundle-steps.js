@@ -558,13 +558,16 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
       console.log("Card number input visible");
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-04b-card-accordion-expanded.png` });
 
-      // Fill card number
+      // Fill card number — use pressSequentially to simulate real typing (Stripe's JS
+      // listens for input/keydown events; fill() dispatches 'input' but not keystrokes,
+      // which may cause Stripe to ignore the value in headless CI environments).
       await cardNumberInput.first().click({ force: true });
-      await cardNumberInput.first().fill("4242 4242 4242 4242");
+      await cardNumberInput.first().fill("");
+      await cardNumberInput.first().pressSequentially("4242424242424242", { delay: 50 });
       filledFields.push("card");
-      console.log("Card number filled");
+      console.log("Card number filled (pressSequentially)");
 
-      // Fill expiry
+      // Fill expiry — Tab from card number to move naturally between fields
       const expiryInput = page.locator('#cardExpiry, input[name="cardExpiry"], input[autocomplete="cc-exp"]');
       if (
         await expiryInput
@@ -573,9 +576,10 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
           .catch(() => false)
       ) {
         await expiryInput.first().click({ force: true });
-        await expiryInput.first().fill("12 / 30");
+        await expiryInput.first().fill("");
+        await expiryInput.first().pressSequentially("1230", { delay: 50 });
         filledFields.push("expiry");
-        console.log("Expiry filled");
+        console.log("Expiry filled (pressSequentially)");
       }
 
       // Fill CVC
@@ -587,9 +591,10 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
           .catch(() => false)
       ) {
         await cvcInput.first().click({ force: true });
-        await cvcInput.first().fill("123");
+        await cvcInput.first().fill("");
+        await cvcInput.first().pressSequentially("123", { delay: 50 });
         filledFields.push("cvc");
-        console.log("CVC filled");
+        console.log("CVC filled (pressSequentially)");
       }
 
       // Fill cardholder name
@@ -601,9 +606,44 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
           .catch(() => false)
       ) {
         await nameInput.first().click({ force: true });
-        await nameInput.first().fill("Test User");
+        await nameInput.first().fill("");
+        await nameInput.first().pressSequentially("Test User", { delay: 30 });
         filledFields.push("name");
-        console.log("Cardholder name filled");
+        console.log("Cardholder name filled (pressSequentially)");
+      }
+
+      // Select country — Stripe defaults to "United States" which requires ZIP code.
+      // Change to "United Kingdom" (appropriate for a UK accounting service) which requires
+      // a postal code. The country dropdown is a <select> element.
+      const countrySelect = page.locator('#billingCountry, select[name="billingCountry"], select[autocomplete="billing country"]');
+      if (
+        await countrySelect
+          .first()
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)
+      ) {
+        await countrySelect.first().selectOption("GB");
+        filledFields.push("country");
+        console.log("Country set to GB (United Kingdom)");
+        await page.waitForTimeout(500); // Let Stripe update the postal code field
+      }
+
+      // Fill postal code / ZIP — this field is REQUIRED by Stripe for most countries.
+      // Without it, form validation silently prevents submission (the root cause of CI failures).
+      const postalInput = page.locator('#billingPostalCode, input[name="billingPostalCode"], input[autocomplete="billing postal-code"], input[autocomplete="postal-code"]');
+      if (
+        await postalInput
+          .first()
+          .isVisible({ timeout: 3000 })
+          .catch(() => false)
+      ) {
+        await postalInput.first().click({ force: true });
+        await postalInput.first().fill("");
+        await postalInput.first().pressSequentially("SW1A 1AA", { delay: 30 });
+        filledFields.push("postal");
+        console.log("Postal code filled (pressSequentially)");
+      } else {
+        console.log("Postal code input not found — may not be required for selected country");
       }
 
       console.log(`Stripe checkout: filled fields: [${filledFields.join(", ")}]`);
@@ -614,9 +654,27 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
         throw new Error("Stripe card number could not be filled — check diagnostic screenshots.");
       }
 
-      // Click the submit/pay button
-      await submitButton.first().click();
-      console.log("Stripe checkout: payment submitted, waiting for redirect...");
+      // Wait for Stripe SPA to process field inputs before submitting
+      await page.waitForTimeout(3000);
+
+      // Click submit button. Use force:true because Stripe overlays (Link, express checkout,
+      // AmazonPay) can intercept clicks. The root cause of prior CI failures was the missing
+      // country/postal code fields above — with those filled, form validation passes and the
+      // click actually triggers payment processing.
+      console.log("Stripe checkout: clicking submit button...");
+      await submitButton.first().click({ force: true, timeout: 10_000 });
+      console.log("Stripe checkout: submit button clicked, waiting for processing...");
+
+      await page.waitForTimeout(2000);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05b-after-submit.png`, fullPage: true });
+
+      // Check for Stripe error messages before waiting for redirect
+      const stripeError = page.locator('.StripeError, [data-testid="error-message"], .p-FieldError');
+      if (await stripeError.isVisible({ timeout: 5000 }).catch(() => false)) {
+        const errorText = await stripeError.textContent().catch(() => "unknown");
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05c-stripe-error.png`, fullPage: true });
+        throw new Error(`Stripe payment error: ${errorText}`);
+      }
 
       // Wait for redirect back to bundles page
       await page.waitForURL(/bundles\.html/, { timeout: 120_000 });
