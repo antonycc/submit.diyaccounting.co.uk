@@ -617,9 +617,41 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
       // Wait for Stripe SPA to process field inputs before submitting
       await page.waitForTimeout(3000);
 
-      // Click the submit/pay button (force: true to bypass Stripe overlays)
-      await submitButton.first().click({ force: true });
-      console.log("Stripe checkout: payment submitted, waiting for redirect...");
+      // Click the submit/pay button — try standard click first (waits for actionability),
+      // then force click, then JS dispatch as fallbacks for CI Docker environments
+      let submitClicked = false;
+      try {
+        await submitButton.first().click({ timeout: 5000 });
+        submitClicked = true;
+        console.log("Stripe checkout: payment submitted via standard click");
+      } catch {
+        console.log("Stripe checkout: standard click failed (overlay?), trying force click...");
+        try {
+          await submitButton.first().click({ force: true, timeout: 5000 });
+          submitClicked = true;
+          console.log("Stripe checkout: payment submitted via force click");
+        } catch {
+          console.log("Stripe checkout: force click failed, trying JS dispatch...");
+        }
+      }
+
+      if (!submitClicked) {
+        // Last resort: dispatch click event directly in the page's JS context
+        await page.evaluate(() => {
+          const btn = document.querySelector('.SubmitButton-IconContainer, [data-testid="hosted-payment-submit-button"], button.SubmitButton');
+          if (btn) {
+            btn.click();
+          } else {
+            // Find any visible submit-like button
+            const buttons = [...document.querySelectorAll('button')];
+            const submit = buttons.find(b => b.textContent.match(/pay|submit|subscribe/i));
+            if (submit) submit.click();
+          }
+        });
+        console.log("Stripe checkout: payment submitted via JS dispatch");
+      }
+
+      console.log("Stripe checkout: waiting for redirect...");
       await page.waitForTimeout(2000);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05b-after-submit.png`, fullPage: true });
 
