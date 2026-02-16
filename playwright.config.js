@@ -205,6 +205,16 @@ export default defineConfig({
 
     // Enable detailed logging
     trace: "on", // Enable tracing for detailed debugging
+
+    // Anti-detection flags for headless Chrome in CI Docker environments.
+    // Stripe's checkout SPA may detect automated browsers and silently block payment
+    // processing. These flags make the browser appear more like a regular user session.
+    launchOptions: {
+      args: [
+        "--disable-blink-features=AutomationControlled",
+        "--disable-features=IsolateOrigins,site-per-process",
+      ],
+    },
   },
 
   reporter: [
