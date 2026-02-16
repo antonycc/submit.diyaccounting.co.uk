@@ -79,8 +79,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lookup Cognito User Pool
+        id: lookup-resources
+        uses: './.github/actions/lookup-resources'
+        with:
+          environment-name: ${{ inputs.environment-name }}
+
       - name: Run migrations
         run: node scripts/migrations/runner.js --phase ${{ inputs.phase }}
         env:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
           AWS_REGION: ${{ env.AWS_REGION }}
+          COGNITO_USER_POOL_ID: ${{ steps.lookup-resources.outputs.cognito-user-pool-id }}
