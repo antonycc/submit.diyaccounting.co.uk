@@ -278,83 +278,124 @@ application with low-urgency monitoring, sub-hour detection is sufficient.
 
 ---
 
-## Actual AWS Costs
+## Actual AWS Costs (Jan 16 – Feb 16 2026)
 
-### How to Query
+**Configuration during this period:** All Lambda functions at 1024MB,
+Synthetics canaries running every 5 minutes. The 256MB/51-min optimizations
+in the estimates above had not yet been deployed.
 
-The deployment role (`submit-deployment-role`) does not have `ce:GetCostAndUsage`
-permission. To pull actual billing data, use an IAM identity with Cost Explorer
-access (e.g., the root account or an admin role with `ce:*` permissions) and run:
+Data from AWS Cost Explorer, queried Feb 16 2026. The Jan 16 – Feb 1 period
+is finalized; Feb 1 – Feb 16 is estimated and may adjust.
+
+### Service Breakdown (31 days)
+
+| Service | Jan 16–Feb 1 | Feb 1–16 | 31-day Total | Estimate | Variance |
+|---|---:|---:|---:|---:|---|
+| **AWS Lambda** | $63.63 | $61.33 | **$124.96** | $14 | +$111 — 1024MB PC, not 256MB |
+| **Amazon CloudFront** | $32.88 | $34.58 | **$67.46** | $5 | +$62 — invalidation costs |
+| **Amazon Cognito** | $9.56 | $51.42 | **$60.98** | $5 | +$56 — CI test users inflate MAUs |
+| **AmazonCloudWatch** | $42.94 | $39.98 | **$82.93** | $9 | +$74 — canaries at 5min |
+| **AWS CloudTrail** | $18.60 | $21.19 | **$39.79** | $1 | +$39 — CI management events |
+| **AWS WAF** | $10.11 | $22.29 | **$32.40** | $9 | +$23 — CI stacks create ACLs |
+| **Amazon ECR** | $4.45 | $4.52 | **$8.97** | $1 | +$8 — 193 GB-months stored |
+| **AWS KMS** | $2.75 | $2.71 | **$5.46** | $4 | +$1 |
+| **Amazon S3** | $2.48 | $2.80 | **$5.28** | $1 | +$4 |
+| **AWS Secrets Manager** | $2.11 | $2.51 | **$4.62** | $2.50 | +$2 |
+| **Amazon SQS** | $1.52 | $0.93 | **$2.45** | $0 | Over free tier |
+| **Amazon Route 53** | $0.01 | $0.52 | **$0.53** | $1.50 | −$1 |
+| **Amazon DynamoDB** | $0.10 | $0.35 | **$0.45** | $4 | −$4 — less than estimated |
+| **Amazon API Gateway** | $0.05 | $0.09 | **$0.14** | $1 | Close |
+| **AWS Backup** | $0.00 | $0.02 | **$0.02** | $2 | −$2 |
+| **Tax** | — | $49.04 | **$49.04** | — | Not in estimates |
+| Others (GuardDuty, Security Hub, X-Ray, SNS, Glue, Events) | $0 | $0.01 | **$0.01** | $5 | Free tier |
+| | | **Subtotal excl tax** | **$436** | **$65** | |
+| | | **Total incl tax** | **$485** | | |
+
+### Usage Type Breakdown (Top Items)
+
+| Usage Type | 31-day Cost | Quantity | Notes |
+|---|---:|---:|---|
+| Lambda-Provisioned-Concurrency-ARM | **$124.85** | 32.3M GB-s | 5 fns × 1024MB × 24/7 |
+| CloudFront Invalidations | **$67.45** | 14,491 paths | $0.005/path after first 1,000 free |
+| Cognito PLUS MAU | **$60.98** | — | Billed monthly; Feb spike from CI test users |
+| CW:Canary-runs | **$58.74** | 39,263 runs | $0.0015/run, every 5min across all stacks |
+| CloudTrail PaidEventsRecorded | **$39.21** | 1.96M events | CI deploys generate management API calls |
+| WAF WebACL + Rules | **$31.01** | 3.9 ACLs + rules | Prod + CI stacks each create an ACL |
+| CW:AlarmMonitorUsage | **$19.62** | 206 alarm-months | CI stacks create transient alarms |
+| ECR TimedStorage | **$11.41** | 193 GB-months | Docker images accumulate across deploys |
+| S3 Requests-Tier1 | **$3.28** | 7.3M PUTs | Deployment uploads |
+| CW:MetricMonitorUsage | **$1.89** | 20 metrics | Custom metrics |
+| WAF RequestV2 | **$1.39** | 2.3M requests | Canary + CI traffic |
+
+### Why Actuals Are 6× Higher Than Estimates
+
+The estimate of ~$78/month assumed post-optimization configuration. Actual
+spend of ~$436/month (excl tax) is explained by:
+
+| Factor | Actual | Estimated | Difference |
+|---|---:|---:|---:|
+| Lambda PC at 1024MB (not yet 256MB) | $125 | $14 | **+$111** |
+| Canaries at 5min (not yet 51min) | $59 | $2 | **+$57** |
+| CloudFront invalidations (missed) | $67 | $0 | **+$67** |
+| Cognito MAUs (underestimated) | $61 | $5 | **+$56** |
+| CloudTrail CI events (underestimated) | $40 | $1 | **+$39** |
+| WAF CI ACLs (underestimated) | $32 | $9 | **+$23** |
+| Alarms (CI stacks) | $20 | $7 | **+$13** |
+| ECR storage (underestimated) | $9 | $1 | **+$8** |
+| Other | $23 | $26 | −$3 |
+| **Total** | **$436** | **$65** | **+$371** |
+
+### Projected Savings from 256MB + 51min Optimizations
+
+These two changes (coded but not yet deployed) directly reduce:
+
+| Optimization | Before | After | Monthly Saving |
+|---|---:|---:|---:|
+| Lambda PC: 1024MB → 256MB | $125 | $31 | **$94** |
+| Synthetics: 5min → 51min | $59 | $6 | **$53** |
+| **Total** | $184 | $37 | **$147** |
+
+**Projected post-optimization: ~$289/month** (excl tax).
+
+The remaining ~$211 gap vs the $78 estimate comes from costs that were
+completely missed or underestimated: CloudFront invalidations ($67), Cognito
+MAUs ($56), CloudTrail CI events ($39), WAF CI stacks ($23), and ECR
+accumulation ($9). These require separate optimization work.
+
+### Potential Further Reductions
+
+| Item | Current | Action | Est. Saving |
+|---|---:|---|---:|
+| **CloudFront invalidations** | $67 | Reduce invalidation paths per deploy or use wildcard `/*` (costs $0.005 vs 43 × $0.005 = $0.215) | **$55** |
+| **Cognito MAUs** | $61 | Clean up CI test users promptly; reduce test user creation | **$50** |
+| **CloudTrail** | $40 | Investigate why 2M management events in 31 days; consider disabling paid management event logging if only trail | **$35** |
+| **WAF** | $32 | Remove WAF from CI stacks (low value for ephemeral test envs) | **$20** |
+| **ECR** | $9 | Add lifecycle policy to expire old images (keep last N) | **$7** |
+| **Alarms** | $20 | Reduce alarm count in CI stacks | **$10** |
+| | | **Total potential** | **~$177** |
+
+With all optimizations: ~$289 − $177 = **~$112/month** (excl tax).
+
+### How to Re-Query
 
 ```bash
-# Total spend by service for last 30 days
+# Total spend by service (adjust dates as needed)
 aws ce get-cost-and-usage \
   --time-period Start=2026-01-16,End=2026-02-16 \
   --granularity MONTHLY \
   --metrics UnblendedCost \
-  --group-by Type=DIMENSION,Key=SERVICE \
-  --output table
+  --group-by Type=DIMENSION,Key=SERVICE
 
-# Daily breakdown for a specific service
-aws ce get-cost-and-usage \
-  --time-period Start=2026-01-16,End=2026-02-16 \
-  --granularity DAILY \
-  --metrics UnblendedCost \
-  --filter '{"Dimensions":{"Key":"SERVICE","Values":["AWS Lambda"]}}' \
-  --output table
-
-# Cost by usage type (shows PC vs on-demand Lambda separately)
+# Breakdown by usage type (shows PC vs on-demand, invalidations, canary runs, etc.)
 aws ce get-cost-and-usage \
   --time-period Start=2026-01-16,End=2026-02-16 \
   --granularity MONTHLY \
   --metrics UnblendedCost UsageQuantity \
-  --group-by Type=DIMENSION,Key=USAGE_TYPE \
-  --output table
+  --group-by Type=DIMENSION,Key=USAGE_TYPE
 ```
 
-You can also view this in the AWS Console under **Billing > Cost Explorer**.
-
-### What to Expect
-
-The actual bill will differ from the estimates above because:
-
-1. **The estimates above assume the 256MB/51-min optimizations are deployed.**
-   Until deployed, actuals will reflect the previous 1024MB/5-min configuration.
-2. **Free tier credits** reduce costs for the first 12 months of the account
-   (1M Lambda requests, 1M API Gateway requests, 25GB DynamoDB, etc.)
-3. **Savings Plans or Reserved pricing** may apply if purchased.
-4. **Tax** is not included in the estimates.
-5. **Data transfer** between regions (ECR replication eu-west-2 to us-east-1)
-   adds a small amount not itemised above.
-
-### Expected Service Mapping
-
-| AWS Billing Service Name | Estimated $/month | Notes |
-|---|---:|---|
-| AWS Lambda | ~$14 | PC ($13.50) + on-demand ($0.50) |
-| Amazon CloudFront | ~$5 | 5 distributions |
-| Amazon Cognito | ~$5 | PLUS tier, prod + CI MAUs |
-| AWS WAF | ~$9 | WebACL + rules (prod only, CI prorated) |
-| Amazon DynamoDB | ~$4 | 11 tables x 2 envs, on-demand + PITR |
-| CloudWatch | ~$9 | Alarms, dashboard, RUM, Synthetics, logs |
-| AWS Key Management Service | ~$4 | 2 keys x 2 envs |
-| Amazon API Gateway | ~$1 | HTTP API v2 |
-| Amazon S3 | ~$1 | ~9 buckets |
-| AWS Security Hub | ~$3 | CIS benchmark |
-| Amazon GuardDuty | ~$2 | Management events |
-| AWS Backup | ~$2 | DynamoDB backups |
-| Amazon Route 53 | ~$1.50 | Hosted zones + queries |
-| AWS Secrets Manager | ~$2.50 | ~6 secrets |
-| Amazon ECR | ~$1 | 2 repos |
-| Amazon CloudTrail | ~$1 | Data events |
-| Amazon SQS | ~$0 | Free tier |
-| Amazon SNS | ~$0 | Free tier |
-| Amazon EventBridge | ~$0 | Free tier |
-| **Total** | **~$65** | Before tax, after optimizations |
-
-The estimated total of ~$78 includes CI app stack costs (~$7) which are
-usage-based and appear spread across the service categories above, plus the
-CI env baseline (~$10) which overlaps with the same services.
+The deployment role now has `ce:*` permission. Use `. ./scripts/aws-assume-submit-deployment-role.sh`
+to assume it.
 
 ---
 
