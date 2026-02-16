@@ -11,143 +11,108 @@ The test was **always failing** but was hidden by missing `pipefail` in the npm 
 - **Run 22044130350** (last "successful" deploy, 2026-02-15): paymentBehaviour-ci job reported `conclusion: success` but logs show `✘ 1 failed` with `(0ms)` — failed instantly because salt was raw string (pre-migration). The `tee` pipe without `pipefail` masked the exit code.
 - **Run 22047106611** (fresh deploy with salt migrated, 2026-02-16): paymentBehaviour-ci fails at Stripe checkout redirect timeout. Salt works now, test gets further but Stripe never redirects.
 
-## Current Failure: Stripe Checkout Redirect Timeout
+## Fixes Applied (All Committed & Pushed to `nvsubhash`)
 
-### What Works
-1. Login + Cognito auth — OK
-2. Day-guest pass creation and redemption — OK
-3. Token drain (3 tokens consumed) — OK
-4. Activities disabled verification — OK
-5. Upsell link to bundles — OK
-6. Checkout session creation — OK (`cs_test_...` session, `testPass=true`)
-7. Navigate to `checkout.stripe.com` — OK
-8. Stripe form renders (submit button visible) — OK
-9. Card accordion expanded ("Clicked Card label text" — fallback path) — OK
-10. All 4 fields filled: card `4242 4242 4242 4242`, expiry `12 / 30`, CVC `123`, name `Test User` — OK
-11. Submit button clicked — OK (no error thrown)
+### Fix 1: `force: true` on submit button click (commit `46010042`)
+**File:** `behaviour-tests/steps/behaviour-bundle-steps.js`
 
-### Where It Fails
-12. **`page.waitForURL(/bundles\.html/, { timeout: 120_000 })` at line 622** — Stripe never redirects back. 120 seconds of silence, then timeout.
+The submit button click was the only Stripe interaction missing `force: true`. Stripe overlays (Link, express checkout, AmazonPay) can absorb clicks. This fixed the proxy test immediately.
 
-### CI Logs (run 22047106611, job 63698863902)
+### Fix 2: `initializeSalt()` in webhook Lambda (commit `46010042`)
+**File:** `app/functions/billing/billingWebhookPost.js`
+
+`billingWebhookPost.js` was the ONLY Lambda handler using `dynamoDbBundleRepository` without calling `initializeSalt()` first. When the webhook received `checkout.session.completed`, it verified the signature successfully but crashed at `putBundleByHashedSub()` with "Salt not initialized. Call initializeSalt() first."
+
+Lambda CloudWatch logs confirmed:
 ```
-01:53:39 Checkout URL: https://checkout.stripe.com/c/pay/cs_test_... (simulator=false, stripe=true)
-01:53:40 Stripe test checkout: waiting for Stripe form to render...
-01:53:41 Stripe checkout form rendered (submit button visible)
-01:53:45 Clicked Card label text
-01:53:46 Stripe checkout: filled fields: [card, expiry, cvc, name]
-01:53:46 Stripe checkout: payment submitted, waiting for redirect...
-01:55:47 [afterEach] ... (timeout, 2 minutes later)
+Error storing bundle by hashedSub in DynamoDB Salt not initialized. Call initializeSalt() first.
+Error processing webhook event  type: checkout.session.completed  error: Salt not initialized
 ```
 
-Also: `[BROWSER CONSOLE error]: Failed to load resource: the server responded with a status of 403 ()` — appears on initial page load, before Stripe. Likely a static resource (CSS/JS) returning 403 from CloudFront. May be unrelated but worth investigating.
+The IAM permissions were already correct (BillingStack.java:406 grants `secretsmanager:GetSecretValue`). Only the JS code was missing the call.
 
-## Root Cause Analysis
+### Fix 3: 3s delay before submit click (commit `5bd1e961`)
+**File:** `behaviour-tests/steps/behaviour-bundle-steps.js`
 
-### Probable Cause: Submit Button Click Not Registering
+Added `await page.waitForTimeout(3000)` before submit to let Stripe SPA fully process field inputs. In CI Docker, fields fill in <1 second which may be too fast for Stripe's JS to process.
 
-**File:** `behaviour-tests/steps/behaviour-bundle-steps.js:618`
+### Fix 4: Multi-strategy click for submit button (commit `4ca33fbb`)
+**File:** `behaviour-tests/steps/behaviour-bundle-steps.js`
 
-```javascript
-// Click the submit/pay button
-await submitButton.first().click();  // ← NO force: true!
-```
+CI Docker Playwright may handle Stripe overlays differently from local Mac. Changed to a fallback chain:
+1. Standard click (waits for actionability, timeout 5s)
+2. Force click (bypasses overlay checks, timeout 5s)
+3. JS dispatch (evaluates `button.click()` directly in page context)
 
-All other clicks in the Stripe checkout flow use `force: true` because Stripe overlays (Link, express checkout) can obscure elements:
-- Line 542: `await cardRadio.click({ force: true });`
-- Line 548: `await cardLabel.click({ force: true });`
-- Line 562: `await cardNumberInput.first().click({ force: true });`
-- Line 575: `await expiryInput.first().click({ force: true });`
-- Line 589: `await cvcInput.first().click({ force: true });`
-- Line 603: `await nameInput.first().click({ force: true });`
+## CI Deploy Results
 
-But the submit button click at line 618 does NOT use `force: true`. If a Stripe overlay (Link popup, express checkout button) covers the submit button, the click is absorbed by the overlay instead.
+| Run | Commit | Result | Failure Point |
+|-----|--------|--------|---------------|
+| 22047106611 | pre-fix | Stripe redirect timeout | Submit click not registering |
+| 22048476091 | `46010042` (force:true + initializeSalt) | Stripe redirect timeout | Click fires but Stripe doesn't process payment |
+| 22048846843 | same | Stripe redirect timeout | Same |
+| 22049185727 | `5bd1e961` (3s delay) | Stripe redirect timeout | Same — 3s delay didn't help |
+| 22056727901 | `4ca33fbb` (multi-strategy) | **Cancelled** | `maven package` job cancelled (unknown reason) |
+| 22056816885 | `4ca33fbb` (multi-strategy) | **Pending** | Deploy in progress (from-scratch rebuild, stacks were torn down by SelfDestructStack) |
 
-From MEMORY.md:
-> Must use `force: true` on all clicks — Stripe overlays (Link, express checkout) obscure elements
+## Proxy Test Results
 
-### Secondary Issue: No Error Detection After Submit
+All fixes pass proxy consistently:
+- `force: true` only: **1 passed** (2.3m)
+- Multi-strategy click: **1 passed** (5.4m)
+- Multiple proxy runs confirmed: the Stripe checkout flow works end-to-end locally
 
-After clicking submit, the test immediately waits 120s for a URL change. If Stripe shows a validation error (e.g., invalid card format, payment declined), the test wouldn't detect it. It should check for error messages before the long timeout.
+## Current State (2026-02-16)
 
-### Environment Variables
-- `DIY_SUBMIT_BASE_URL=https://ci-submit.diyaccounting.co.uk/` (in `.env.ci`) — correct
-- `success_url` in checkout session: `${baseUrl}bundles.html?checkout=success` — correct for CI
-- Stripe test mode: using `cs_test_*` sessions — correct
+### What's committed and pushed (branch `nvsubhash`)
+- `46010042` — force:true on submit + initializeSalt in webhook
+- `5bd1e961` — 3s delay before Stripe submit
+- `4ca33fbb` — multi-strategy click fallback chain
 
-### Proxy vs CI Behavior
-- **Proxy** (`-proxy`): Uses real Stripe test mode with ngrok webhook. Test outcome unknown — was also likely hidden by `pipefail`.
-- **Simulator** (`-simulator`): Uses simulator checkout that auto-completes. Always passes.
-- **CI** (`-ci`): Uses real Stripe test mode against deployed Lambda. Fails at redirect.
+### What's pending
+- **Deploy run 22056816885** is in progress (fresh deploy from scratch — all ci-nvsubhash stacks were torn down by SelfDestructStack inactivity timeout)
+- Once deployed, paymentBehaviour-ci will run as part of the deploy workflow
+- This will be the first CI test of the multi-strategy click approach
 
-## Proposed Fix
+### Outstanding CI mystery
+In CI Docker Playwright, even with `force: true`, the Stripe checkout submit click doesn't result in payment processing. The click appears to fire (no error thrown), but Stripe never redirects back. No webhook Lambda invocations occur during the test window, meaning Stripe's client-side JS doesn't process the payment.
 
-### Step 1: Add `force: true` to submit button click
+Possible causes still to investigate:
+1. **CI Docker Chrome headless** handles `MouseEvent` dispatching differently from Mac Chrome
+2. **Stripe's SPA** may detect headless/automated browsers and block payment processing
+3. **Network/CSP issue** in CI preventing Stripe's JS from communicating with its backend
+4. The 403 error on initial page load (`Failed to load resource: the server responded with a status of 403`) may indicate a broader issue
+5. **Consider adding `page.keyboard.press('Enter')` after filling name field** as an alternative to clicking submit
 
-**File:** `behaviour-tests/steps/behaviour-bundle-steps.js:618`
+### Next steps when resuming
+1. Check result of deploy run 22056816885
+2. If paymentBehaviour-ci still fails, examine CI screenshots from `target/behaviour-test-results/` artifacts
+3. Try `page.keyboard.press('Enter')` approach as alternative to mouse click
+4. Consider adding network request logging to capture what Stripe's JS is doing after submit
+5. Consider checking if Stripe blocks automated browsers (look for bot detection in CI console logs)
 
-```javascript
-// Before:
-await submitButton.first().click();
+## Files Changed
 
-// After:
-await submitButton.first().click({ force: true });
-```
-
-### Step 2: Add error detection after submit
-
-After clicking submit, check for Stripe error messages before waiting for the long redirect timeout:
-
-```javascript
-await submitButton.first().click({ force: true });
-console.log("Stripe checkout: payment submitted, waiting for redirect...");
-
-// Check for Stripe error messages (payment declined, validation errors)
-await page.waitForTimeout(5000);
-const stripeError = page.locator('.StripeError, [data-testid="error-message"], .p-FieldError');
-if (await stripeError.isVisible({ timeout: 2000 }).catch(() => false)) {
-  const errorText = await stripeError.textContent().catch(() => "unknown");
-  throw new Error(`Stripe payment error: ${errorText}`);
-}
-```
-
-### Step 3: Add screenshot after submit click
-
-```javascript
-await submitButton.first().click({ force: true });
-await page.waitForTimeout(2000);
-await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05b-after-submit.png`, fullPage: true });
-```
-
-### Step 4: Investigate the 403 error
-
-Check what resource returns 403 on initial page load. May be CloudFront serving a cached error for a static asset. Add network logging to identify the URL.
-
-## Verification
-
-1. Run `npm run test:paymentBehaviour-proxy` locally to see if proxy passes with the fix
-2. Push and monitor CI run for paymentBehaviour-ci
-3. Check the diagnostic screenshots from CI artifacts
-
-## Files to Change
-
-| File | Change |
-|------|--------|
-| `behaviour-tests/steps/behaviour-bundle-steps.js` | Add `force: true` to submit click (line 618), add error detection, add post-submit screenshot |
+| File | Changes |
+|------|---------|
+| `behaviour-tests/steps/behaviour-bundle-steps.js` | Multi-strategy submit click (standard → force → JS dispatch), 3s pre-submit delay, post-submit error detection + screenshot |
+| `app/functions/billing/billingWebhookPost.js` | Added `import { initializeSalt }` and `await initializeSalt()` at start of `ingestHandler()` |
 
 ## Related Code
 
-- **Checkout session creation:** `app/functions/billing/billingCheckoutPost.js` — creates Stripe session with `success_url` and `hashedSub` metadata
-- **Webhook handler:** `app/functions/billing/billingWebhookPost.js` — processes `checkout.session.completed` event (async, doesn't affect redirect)
-- **Test steps:** `behaviour-tests/steps/behaviour-bundle-steps.js:460-640` — full checkout flow
-- **Test spec:** `behaviour-tests/payment.behaviour.test.js:170` — payment funnel test
+- **Checkout session creation:** `app/functions/billing/billingCheckoutPost.js`
+- **Webhook handler:** `app/functions/billing/billingWebhookPost.js`
+- **Test steps:** `behaviour-tests/steps/behaviour-bundle-steps.js:460-660`
+- **Test spec:** `behaviour-tests/payment.behaviour.test.js:170`
+- **Salt initialization:** `app/services/subHasher.js` — `initializeSalt()` and `getSaltVersion()`
+- **IAM permissions:** `infra/main/java/.../BillingStack.java:406` — `SubHashSaltHelper.grantSaltAccess()`
 
 ## Status
 - [x] Root cause identified: submit button click missing `force: true`
 - [x] Pre-existing failure confirmed (never passed in CI, hidden by `pipefail`)
-- [x] Fix implemented: `force: true` on submit click + error detection + post-submit screenshot
-- [x] Proxy test verified locally: **PASSED** (1 passed, 2.3m)
-- [x] CI test: Stripe redirect now works (fix confirmed), but **webhook activation times out** — `checkout.session.completed` webhook fires and reaches Lambda, but `putBundleByHashedSub` crashes because salt not initialized.
-- [x] CI webhook root cause: `billingWebhookPost.js` never calls `initializeSalt()` — the only Lambda handler that uses `dynamoDbBundleRepository` without initializing the salt first. The IAM permissions are correct (BillingStack.java:406). Fix: added `import { initializeSalt }` and `await initializeSalt()` at start of `ingestHandler()`.
-- [ ] Proxy test re-verified after webhook fix
-- [ ] CI test verified after deploy
+- [x] Fix implemented: multi-strategy click + error detection + post-submit screenshot
+- [x] Proxy test verified locally: **PASSED** (multiple runs, consistently passes)
+- [x] CI webhook root cause found and fixed: `billingWebhookPost.js` missing `initializeSalt()`
+- [x] Proxy test re-verified after all fixes: **PASSED** (1 passed, 5.4m)
+- [ ] **CI test awaiting deploy run 22056816885** (fresh deploy from scratch)
+- [ ] If CI still fails: investigate CI Docker headless Chrome + Stripe interaction
