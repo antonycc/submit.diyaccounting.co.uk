@@ -1445,4 +1445,137 @@ Phase G: Final verification ✅ DONE (committed, pushed, CI in progress)
     - test: first run failed (actionlint on run-migrations.yml), fixed and re-pushed
     - test: second run in progress as of 15 Feb 2026
     - deploy: pending (waiting on deploy-environment)
+
+Phase H: CI migrations ✅ DONE (16 Feb 2026, run locally)
+  H1. Bug fix merged to main, branch caught up (1ad97acf) ✅
+  H2. Clean redeploy of nvsubhash branch ✅
+    - deploy-environment (run 22044130329): ✅ success
+    - deploy (run 22044130350): ✅ success
+  H3. Run migrations locally against CI ✅
+    - 001-convert-salt-to-registry: converted raw salt (44 chars) to JSON registry (v1)
+    - 002-backfill-salt-version-v1: 20,020 items backfilled across 8 tables + canary written
+    - 003-rotate-salt-to-passphrase: generated v2 passphrase, re-keyed 110 items for 67 Cognito users
+    - Note: ~19,910 items not re-keyed (belong to expired transient test users no longer in Cognito)
+    - CI v2 passphrase: alert-court-super-stoke-tribe-plier-focus-throw (record in password manager)
+  H4. Behaviour tests against CI ⏳ BLOCKED
+    - CI app stacks self-destructed (2-hour TTL) before tests could run
+    - ci-submit.diyaccounting.co.uk DNS not resolving (no app stacks)
+    - Need fresh deploy to test — will retry after merge or redeploy
+  H5. run-migrations.yml workflow cannot be dispatched from GitHub UI ⚠️
+    - gh workflow run requires workflow file on default branch (main)
+    - Workaround: run locally with assumed role until branch is merged
 ```
+
+---
+
+## 15. Post-Merge to Main: Production Steps
+
+After merging the `nvsubhash` branch to `main`, the following steps are required:
+
+### Step 1: Verify CI deployment (automated)
+
+Merging to main triggers `deploy-environment.yml` and `deploy.yml` for CI. Monitor:
+
+```bash
+gh run list --branch main --limit 5
+```
+
+The new `deploy-environment.yml` creates salt secrets in JSON registry format for **new** environments. Existing CI/prod secrets are still in the old raw format until Migration 001 runs.
+
+### Step 2: Run Migration 001 against prod (CRITICAL — before Lambda cold starts)
+
+The merged Lambda code expects JSON registry format from Secrets Manager. Existing prod salt is raw string. **Lambdas will fail on cold start until this runs.**
+
+Option A — GitHub Actions (preferred, now that workflow is on main):
+```bash
+gh workflow run "run-migrations.yml" -f environment-name=prod -f phase=pre-deploy
+```
+
+Option B — Locally:
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+ENVIRONMENT_NAME=prod node scripts/migrations/runner.js --phase pre-deploy
+```
+
+**Timing**: Run immediately after merge, before or during the deploy workflow. Migration 001 is pre-deploy and idempotent — safe to run even if Lambdas haven't deployed yet.
+
+### Step 3: Run Migration 002 against prod (backfill saltVersion)
+
+After the deploy completes and Lambdas are running the new code:
+
+Option A — GitHub Actions:
+```bash
+gh workflow run "run-migrations.yml" -f environment-name=prod -f phase=post-deploy
+```
+
+Option B — Locally:
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+ENVIRONMENT_NAME=prod node scripts/migrations/runner.js --phase post-deploy
+```
+
+This backfills `saltVersion=v1` on all existing prod items and writes the salt health canary.
+
+### Step 4: Run Migration 003 against prod (rotate to passphrase — optional)
+
+This generates an 8-word passphrase (v2), adds it to the registry, and re-keys all items from v1 to v2.
+
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+ENVIRONMENT_NAME=prod COGNITO_USER_POOL_ID=eu-west-2_MJovvw6mL node scripts/migrations/runner.js
+```
+
+**Important**: Record the generated passphrase securely (password manager + physical card).
+
+Since we're pre-launch with disposable data, this is safe to run immediately. Post-launch, this would follow the Scenario A (BAU rotation) runbook.
+
+### Step 5: Run behaviour tests against prod
+
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+npm run test:enableCognitoNative -- prod
+# Use the printed credentials:
+TEST_AUTH_USERNAME='...' TEST_AUTH_PASSWORD='...' npm run test:submitVatBehaviour-prod
+npm run test:disableCognitoNative -- prod
+```
+
+### Step 6: Verify CI (after fresh deploy)
+
+Once the merge triggers a CI app deployment:
+
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+npm run test:enableCognitoNative
+TEST_AUTH_USERNAME='...' TEST_AUTH_PASSWORD='...' npm run test:submitVatBehaviour-ci
+npm run test:disableCognitoNative
+```
+
+### Step 7: Clean up GitHub environment variables (optional)
+
+The prod-scoped Cognito variables in GitHub Settings are unused — all workflows resolve Cognito IDs from AWS infrastructure via the `lookup-resources` action or CDK outputs:
+
+- `COGNITO_CLIENT_ID` (prod) — **safe to delete**
+- `COGNITO_USER_POOL_ARN` (prod) — **safe to delete**
+- `COGNITO_USER_POOL_ID` (prod) — **safe to delete**
+
+### Step 8: Store KMS-encrypted salt in DynamoDB (Path 3 — future)
+
+After Migration 003 runs against prod, store the v2 passphrase encrypted with the KMS key created in DataStack:
+
+```json
+{ "hashedSub": "system#config", "bundleId": "salt-v2", "encryptedSalt": "<KMS ciphertext>", "kmsKeyArn": "arn:..." }
+```
+
+This is not yet automated — needs a script or migration to encrypt and write the item. Low priority since Path 1 (Secrets Manager) and Path 2 (physical card) are already available.
+
+---
+
+## 16. Known Issues and Follow-ups
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| CI behaviour tests not run post-migration | ⏳ Pending | App stacks self-destructed; need fresh deploy |
+| run-migrations.yml not dispatchable until on main | ✅ Resolved on merge | Workflow dispatch requires file on default branch |
+| Migration 003 re-key missed ~19,910 orphaned items in CI | ℹ️ Expected | Transient test users no longer in Cognito; items will expire via TTL |
+| Path 3 (KMS-encrypted salt in DynamoDB) not implemented | ⏳ Future | Script/migration needed; lower priority than Path 1+2 |
+| Prod Cognito GitHub variables are unused | ⏳ Clean up | Safe to delete after merge verification |
