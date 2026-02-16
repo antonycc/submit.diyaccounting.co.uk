@@ -657,93 +657,18 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
       // Wait for Stripe SPA to process field inputs before submitting
       await page.waitForTimeout(3000);
 
-      // Set up network request logging to capture Stripe's backend API calls after submit.
-      // This helps diagnose CI failures where the click fires but Stripe doesn't process payment.
-      const stripeRequests = [];
-      const requestListener = (request) => {
-        const url = request.url();
-        if (url.includes("stripe.com") && (request.method() === "POST" || url.includes("/confirm"))) {
-          stripeRequests.push({ method: request.method(), url: url.substring(0, 200) });
-          console.log(`Stripe checkout: [NETWORK] ${request.method()} ${url.substring(0, 200)}`);
-        }
-      };
-      page.on("request", requestListener);
-      const responseListener = (response) => {
-        const url = response.url();
-        if (url.includes("stripe.com") && (response.request().method() === "POST" || url.includes("/confirm"))) {
-          console.log(`Stripe checkout: [RESPONSE] ${response.status()} ${url.substring(0, 200)}`);
-        }
-      };
-      page.on("response", responseListener);
+      // Click submit button. Use force:true because Stripe overlays (Link, express checkout,
+      // AmazonPay) can intercept clicks. The root cause of prior CI failures was the missing
+      // country/postal code fields above — with those filled, form validation passes and the
+      // click actually triggers payment processing.
+      console.log("Stripe checkout: clicking submit button...");
+      await submitButton.first().click({ force: true, timeout: 10_000 });
+      console.log("Stripe checkout: submit button clicked, waiting for processing...");
 
-      // Submit strategy: try multiple approaches to handle different browser environments.
-      // In CI Docker headless Chrome, Playwright's .click() may fire but Stripe's JS may not
-      // process it. We try: (1) Enter key press, (2) standard click, (3) force click, (4) JS dispatch.
-
-      // Strategy 1: Press Enter — works because Stripe's form has a submit button that
-      // responds to Enter key, and keyboard events are more reliably processed than mouse clicks.
-      console.log("Stripe checkout: attempting Enter key submission...");
-      await nameInput.first().press("Enter");
       await page.waitForTimeout(2000);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05a-after-enter.png`, fullPage: true });
-
-      // Check if Enter triggered navigation (Stripe processing starts)
-      const urlAfterEnter = page.url();
-      const enterWorked = !urlAfterEnter.includes("checkout.stripe.com") || stripeRequests.length > 0;
-      if (enterWorked) {
-        console.log(`Stripe checkout: Enter key appears to have worked (url=${urlAfterEnter.substring(0, 80)}, requests=${stripeRequests.length})`);
-      } else {
-        console.log("Stripe checkout: Enter key did not trigger submission, trying click strategies...");
-
-        // Strategy 2: Standard click
-        let submitClicked = false;
-        try {
-          await submitButton.first().click({ timeout: 5000 });
-          submitClicked = true;
-          console.log("Stripe checkout: payment submitted via standard click");
-        } catch {
-          console.log("Stripe checkout: standard click failed (overlay?), trying force click...");
-          // Strategy 3: Force click
-          try {
-            await submitButton.first().click({ force: true, timeout: 5000 });
-            submitClicked = true;
-            console.log("Stripe checkout: payment submitted via force click");
-          } catch {
-            console.log("Stripe checkout: force click failed, trying JS dispatch...");
-          }
-        }
-
-        if (!submitClicked) {
-          // Strategy 4: JS dispatch click
-          await page.evaluate(() => {
-            const btn = document.querySelector('.SubmitButton-IconContainer, [data-testid="hosted-payment-submit-button"], button.SubmitButton');
-            if (btn) {
-              btn.click();
-            } else {
-              const buttons = [...document.querySelectorAll("button")];
-              const submit = buttons.find((b) => b.textContent.match(/pay|submit|subscribe/i));
-              if (submit) submit.click();
-            }
-          });
-          console.log("Stripe checkout: payment submitted via JS dispatch");
-        }
-      }
-
-      console.log("Stripe checkout: waiting for redirect...");
-      await page.waitForTimeout(3000);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05b-after-submit.png`, fullPage: true });
 
-      // Log all captured Stripe network requests for diagnostics
-      console.log(`Stripe checkout: captured ${stripeRequests.length} Stripe POST/confirm requests`);
-      for (const req of stripeRequests) {
-        console.log(`  -> ${req.method} ${req.url}`);
-      }
-
-      // Clean up listeners
-      page.removeListener("request", requestListener);
-      page.removeListener("response", responseListener);
-
-      // Check for Stripe error messages before waiting for the long redirect
+      // Check for Stripe error messages before waiting for redirect
       const stripeError = page.locator('.StripeError, [data-testid="error-message"], .p-FieldError');
       if (await stripeError.isVisible({ timeout: 5000 }).catch(() => false)) {
         const errorText = await stripeError.textContent().catch(() => "unknown");
@@ -751,15 +676,9 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
         throw new Error(`Stripe payment error: ${errorText}`);
       }
 
-      // Check current URL — if already redirected, don't wait
-      const currentUrl = page.url();
-      if (currentUrl.includes("bundles.html")) {
-        console.log("Stripe checkout completed — already on bundles page");
-      } else {
-        // Wait for redirect back to bundles page
-        await page.waitForURL(/bundles\.html/, { timeout: 120_000 });
-        console.log("Stripe checkout completed — redirected to bundles page");
-      }
+      // Wait for redirect back to bundles page
+      await page.waitForURL(/bundles\.html/, { timeout: 120_000 });
+      console.log("Stripe checkout completed — redirected to bundles page");
     } else {
       // Unknown checkout URL — wait for redirect back to bundles page
       console.log(`Unknown checkout URL type, waiting for bundles redirect...`);
