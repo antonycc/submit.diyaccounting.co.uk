@@ -3,7 +3,7 @@
 
 // app/functions/account/bundleCapacityReconcile.js
 //
-// Scheduled Lambda (EventBridge, every 5 minutes) that scans the bundles table
+// Scheduled Lambda (EventBridge, every hour) that scans the bundles table
 // for each capped bundleId, counts active (non-expired) allocations, and writes
 // the correct count to the capacity counter table.
 

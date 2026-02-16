@@ -712,17 +712,17 @@ public class AccountStack extends Stack {
                 .resources(List.of(activityBusArn))
                 .build());
 
-        // EventBridge Rule: trigger reconciliation every 5 minutes
+        // EventBridge Rule: trigger reconciliation every hour
         this.bundleCapacityReconcileSchedule = Rule.Builder.create(
                         this, props.sharedNames().bundleCapacityReconcileLambdaFunctionName + "-Schedule")
                 .ruleName(props.sharedNames().bundleCapacityReconcileLambdaFunctionName + "-schedule")
-                .description("Reconcile bundle capacity counters every 5 minutes")
-                .schedule(Schedule.rate(Duration.minutes(5)))
+                .description("Reconcile bundle capacity counters every hour")
+                .schedule(Schedule.rate(Duration.hours(1)))
                 .targets(List.of(LambdaFunction.Builder.create(this.bundleCapacityReconcileLambda)
                         .build()))
                 .build();
         infof(
-                "Created Bundle Capacity Reconciliation Lambda %s with 5-minute schedule",
+                "Created Bundle Capacity Reconciliation Lambda %s with hourly schedule",
                 this.bundleCapacityReconcileLambda.getNode().getId());
 
         // ============================================================================
