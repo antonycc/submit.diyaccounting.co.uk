@@ -8,6 +8,7 @@ import { extractRequest } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHashedSub } from "../../data/dynamoDbBundleRepository.js";
+import { initializeSalt } from "../../services/subHasher.js";
 import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { publishActivityEvent, maskEmail } from "../../lib/activityAlert.js";
@@ -314,6 +315,7 @@ async function handlePaymentFailed(invoice) {
 }
 
 export async function ingestHandler(event) {
+  await initializeSalt();
   const { request } = extractRequest(event);
   const rawBody = event.body || "";
   const sig = event.headers?.["stripe-signature"] || event.headers?.["Stripe-Signature"] || "";

@@ -147,5 +147,7 @@ Check what resource returns 403 on initial page load. May be CloudFront serving 
 - [x] Pre-existing failure confirmed (never passed in CI, hidden by `pipefail`)
 - [x] Fix implemented: `force: true` on submit click + error detection + post-submit screenshot
 - [x] Proxy test verified locally: **PASSED** (1 passed, 2.3m)
-- [x] CI test: Stripe redirect now works (fix confirmed), but **webhook activation times out** — `checkout.session.completed` webhook never fires within 45s. This is a separate issue (webhook endpoint configuration in CI, not the Stripe form interaction).
-- [ ] Investigate CI webhook failure (separate issue)
+- [x] CI test: Stripe redirect now works (fix confirmed), but **webhook activation times out** — `checkout.session.completed` webhook fires and reaches Lambda, but `putBundleByHashedSub` crashes because salt not initialized.
+- [x] CI webhook root cause: `billingWebhookPost.js` never calls `initializeSalt()` — the only Lambda handler that uses `dynamoDbBundleRepository` without initializing the salt first. The IAM permissions are correct (BillingStack.java:406). Fix: added `import { initializeSalt }` and `await initializeSalt()` at start of `ingestHandler()`.
+- [ ] Proxy test re-verified after webhook fix
+- [ ] CI test verified after deploy
