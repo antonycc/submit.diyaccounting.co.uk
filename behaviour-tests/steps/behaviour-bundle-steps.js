@@ -614,9 +614,19 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
         throw new Error("Stripe card number could not be filled — check diagnostic screenshots.");
       }
 
-      // Click the submit/pay button
-      await submitButton.first().click();
+      // Click the submit/pay button (force: true to bypass Stripe overlays)
+      await submitButton.first().click({ force: true });
       console.log("Stripe checkout: payment submitted, waiting for redirect...");
+      await page.waitForTimeout(2000);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05b-after-submit.png`, fullPage: true });
+
+      // Check for Stripe error messages before waiting for the long redirect
+      const stripeError = page.locator('.StripeError, [data-testid="error-message"], .p-FieldError');
+      if (await stripeError.isVisible({ timeout: 5000 }).catch(() => false)) {
+        const errorText = await stripeError.textContent().catch(() => "unknown");
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-05c-stripe-error.png`, fullPage: true });
+        throw new Error(`Stripe payment error: ${errorText}`);
+      }
 
       // Wait for redirect back to bundles page
       await page.waitForURL(/bundles\.html/, { timeout: 120_000 });
