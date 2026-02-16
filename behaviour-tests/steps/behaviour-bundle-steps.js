@@ -614,6 +614,9 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
         throw new Error("Stripe card number could not be filled — check diagnostic screenshots.");
       }
 
+      // Wait for Stripe SPA to process field inputs before submitting
+      await page.waitForTimeout(3000);
+
       // Click the submit/pay button (force: true to bypass Stripe overlays)
       await submitButton.first().click({ force: true });
       console.log("Stripe checkout: payment submitted, waiting for redirect...");
