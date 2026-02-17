@@ -273,7 +273,7 @@ export async function consumeToken(userId, bundleId, count = 1) {
         Key: { hashedSub, bundleId },
         UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
         ConditionExpression:
-          "attribute_not_exists(tokensConsumed) OR (tokensGranted - if_not_exists(tokensConsumed, :zero)) >= :inc",
+          "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
         ExpressionAttributeValues: {
           ":zero": 0,
           ":inc": count,

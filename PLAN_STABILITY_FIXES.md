@@ -1,8 +1,46 @@
 # Stability Fixes Plan
 
 **Created**: 17 February 2026
-**Status**: New
-**Issues**: #709, #708, #688
+**Status**: All issues coded and validated locally (not yet pushed)
+**Issues**: #709, #708, #688, plus Issue 4 (OIDC cleanup)
+
+---
+
+## Progress Summary
+
+| Issue | Status | Validated |
+|-------|--------|-----------|
+| Issue 2: npm audit `--omit=dev` (#708) | **DONE** | Unit tests pass, compliance report verified |
+| Issue 3: User data deletion workflows (#688) | **DONE** | Unit tests pass, workflows created |
+| Issue 4: Remove old OIDC "Antonycc" references | **DONE** | Coded, not yet validated via CI |
+| Issue 1: Generate Passes (#709) | **DONE** | All phases A-E complete; both behaviour tests pass (digital + physical) |
+
+### Issue 4: Remove Old OIDC References (added mid-session)
+
+Old `oidc.antonycc.com` / "Antonycc" references removed from 4 files:
+- `web/public/auth/login.html` — 3 log/comment references changed
+- `web/public/auth/loginWithCognitoCallback.html` — title and h1 changed
+- `infra/main/java/.../AuthStack.java` — comment changed
+- `app/bin/provision-user.mjs` — usage example comments changed
+
+Carefully preserved `antonycc` GitHub username references (different context).
+
+### Issue 1 Phase Progress
+
+| Phase | Status | Details |
+|-------|--------|---------|
+| A: Backend + CDK | **DONE** | passGeneratePost.js, passMyPassesGet.js, CDK stacks, unit tests all pass |
+| B: Digital pass page | **DONE** | `web/public/passes/generate-digital.html` created with QR generation |
+| C: Physical pass page | **DONE** | `web/public/passes/generate-physical.html` created with product type selector |
+| D: My Generated Passes | **DONE** | Section added to `bundles.html` with pagination |
+| E: Behaviour tests | **DONE** | Both digital + physical pass tests pass (2 passed, 56.8s) |
+
+### Bugs Found and Fixed During Validation
+
+1. **Double-hashing bug** (passGeneratePost.js): Was passing `hashedSub` to `consumeTokenForActivity()` which hashes internally → no bundles found. Fixed: pass `userSub` instead.
+2. **Token count bug** (consumeToken + tokenEnforcement): `consumeToken()` hardcoded count=1 regardless of activity's `tokenCost`. Digital pass test expected 90 remaining (100-10) but got 99 (100-1). Fixed: added `count` parameter to `consumeToken()`, and `consumeTokenForActivity()` now passes `tokenCost`.
+3. **DynamoDB ConditionExpression** (consumeToken): Attempted arithmetic (`-`) in ConditionExpression which DynamoDB doesn't support. Reverted to original attribute comparison; pre-check in `consumeTokenForActivity` handles multi-token validation.
+4. **Product type mismatch**: Behaviour test expected `data-product-type="tshirt"` but HTML had `"t-shirt"`. Fixed HTML.
 
 ---
 
