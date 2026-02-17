@@ -111,7 +111,7 @@ public class AuthStack extends Stack {
         var activityBusArn = String.format(
                 "arn:aws:events:%s:%s:event-bus/%s", region, account, props.sharedNames().activityBusName);
 
-        // exchangeToken - Google or Antonycc via Cognito
+        // exchangeToken - Google via Cognito
         var exchangeCognitoTokenLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)

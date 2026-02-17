@@ -58,7 +58,7 @@ describe("tokenEnforcement", () => {
       expect(result.consumed).toBe(true);
       expect(result.tokensRemaining).toBe(2);
       expect(result.cost).toBe(1);
-      expect(consumeToken).toHaveBeenCalledWith("user-1", "day-guest");
+      expect(consumeToken).toHaveBeenCalledWith("user-1", "day-guest", 1);
     });
 
     it("should return tokens_exhausted when no qualifying bundle has tokens", async () => {

@@ -66,9 +66,10 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 8);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 11 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
-        // passPost(1), passAdminPost(1), bundleCapacityReconcile(1), sessionBeaconPost(1)
-        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 11);
+        // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
+        // passPost(1), passAdminPost(1), passGeneratePost(1), passMyPassesGet(1),
+        // bundleCapacityReconcile(1), sessionBeaconPost(1)
+        Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 13);
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
         // 4 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1), billingWebhookPost(1)
@@ -109,9 +110,8 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
         // Keep overall counts stable
-        // 36 routes: 26 previous + 10 new (sessionBeaconPost POST+HEAD, billingCheckoutPost POST+HEAD,
-        // billingPortalGet GET+HEAD, billingRecoverPost POST+HEAD, billingWebhookPost POST+HEAD)
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 36);
+        // 40 routes: 36 previous + 4 new (passGeneratePost POST+HEAD, passMyPassesGet GET+HEAD)
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 40);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

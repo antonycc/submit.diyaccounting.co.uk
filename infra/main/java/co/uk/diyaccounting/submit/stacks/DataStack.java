@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureGlobalSecondaryIndex;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTable;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -173,6 +174,16 @@ public class DataStack extends Stack {
         this.passesTable = ensureTable(
                 this, props.resourceNamePrefix() + "-PassesTable", props.sharedNames().passesTableName, "pk", null);
         infof("Ensured passes DynamoDB table with name %s", props.sharedNames().passesTableName);
+
+        // GSI for querying passes by issuer (user-generated pass listing)
+        ensureGlobalSecondaryIndex(
+                this,
+                props.resourceNamePrefix() + "-PassesIssuedByGSI",
+                props.sharedNames().passesTableName,
+                "issuedBy-index",
+                "issuedBy",
+                "createdAt");
+        infof("Ensured issuedBy-index GSI on passes table %s", props.sharedNames().passesTableName);
 
         // Bundle capacity counter table for tracking global cap enforcement
         // PK-only table (no sort key) - counters are looked up by bundleId.

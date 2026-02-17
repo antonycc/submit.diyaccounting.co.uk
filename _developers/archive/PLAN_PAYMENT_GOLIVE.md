@@ -2,8 +2,8 @@
 
 **Created**: 14 February 2026
 **Updated**: 15 February 2026
-**Status**: Phase 1 nearly complete. Phases 2-3 partially done. See gap analysis below.
-**Branch**: `activate` (merged via PR #705/#706), `nvsubhash` (sub-hash versioning, in progress)
+**Status**: Phase 1 complete. Phases 2-3 partially done. See gap analysis below.
+**Branch**: `activate` (merged via PR #705/#706), `nvsubhash` (merged via PR #710), `stability-fixes` (salt cache TTL fix)
 
 **Consolidates remaining work from**:
 - `PLAN_PAYMENT_INTEGRATION.md` (Phases 5, 7, 8, 9, 10)
@@ -85,7 +85,7 @@ curl -X POST /api/v1/admin/pass \
 | 1.5 | Monitor CI deployment | Done |
 | 1.6 | Run `paymentBehaviour-ci` — verify full conversion funnel | Done (4m36s, run #22043787833) |
 | 1.7 | Run `submitVatBehaviour-ci` — verify VAT submission still works | Done (confirmed locally) |
-| 1.8 | Verify Telegram messages arrive in correct channels (test channel for synthetic user) | Pending — manual verification |
+| 1.8 | Verify Telegram messages arrive in correct channels (test channel for synthetic user) | Done — manually verified 17 Feb 2026 |
 | 1.9 | Merge to `main` | PR #705 merged. PR #706 (`activate`) merged. |
 
 ### Additional Phase 1 work completed (15 Feb 2026)
@@ -99,8 +99,8 @@ curl -X POST /api/v1/admin/pass \
 
 - `paymentBehaviour-ci` passes: day-guest pass → exhaust tokens → resident-pro pass → VAT submission → usage page — **DONE**
 - `submitVatBehaviour-ci` passes: day-guest via test pass → sandbox HMRC submission → obligations → view return — **DONE**
-- Telegram test channel receives messages for synthetic user activity — **Pending manual verification**
-- No regressions in other CI synthetic tests — **Pending full suite run**
+- Telegram test channel receives messages for synthetic user activity — **DONE** (manually verified 17 Feb 2026)
+- No regressions in other CI synthetic tests — **DONE** (run 22078976502 — all tests passed)
 
 ---
 
@@ -459,7 +459,7 @@ Cross-referencing the 8-section human QA plan (`PLAN_HUMAN_TEST.md`) against the
 |-------------------|----------------|----------|-------|
 | **Section 1**: Information discovery | **Site content quality review** | Medium | Gateway, submit, and spreadsheets sites must be informative without login. Footer links (Privacy, Terms, Accessibility, Guide) must all work. Not a code feature — content/UX review. |
 | **Section 2**: Early access list | **Early access registration** | Low | "Register for Early Access" banner and functionality. May already exist or may not be needed if go-live happens first. |
-| **Section 7**: Generate digital pass | **Pass generation activity** | **High** | Pro subscribers need a "Generate Digital Pass" activity on the home page. Creates a 4-word passphrase, displays QR code, costs 10 tokens. Pass redeemable by another user. **Not in any go-live phase.** See `_developers/backlog/PLAN_GENERATE_PASS_ACTIVITY.md` for full design. |
+| **Section 7**: Generate digital pass | **Pass generation activity** | **Deferred** | Passes generated via admin workflow for now. UI-based generation (activity on home page, QR code, 10 tokens) deferred to post-go-live. See `_developers/backlog/PLAN_GENERATE_PASS_ACTIVITY.md` for full design. |
 | **Section 7**: QR code scanning | **QR code links to bundles page with pre-filled pass** | **High** | The URL `bundles.html?pass=tiger-happy-mountain-silver` must auto-populate the pass input field. Part of the pass generation feature. |
 | **Section 8**: Subscription cancellation | **Cancellation webhook processing** | Medium | `customer.subscription.updated` handler must write `cancelAtPeriodEnd: true` to the bundle. Phase 2.2 covers this. |
 | **Section 8**: Subscription renewal | **Invoice.paid token refresh** | Medium | Phase 2.1 — reset tokens on renewal. Not needed for initial human test (one billing cycle away). |
@@ -494,7 +494,7 @@ This is a manual review, not code work.
 ```
 Phase 0: Pre-Flight Content Review (manual)
     |
-Phase 1: CI Validation ← NEARLY COMPLETE
+Phase 1: CI Validation ← COMPLETE
     |
     v
 Phase 2: Subscription Lifecycle Handlers (cancellation + renewal)
@@ -503,7 +503,7 @@ Phase 2: Subscription Lifecycle Handlers (cancellation + renewal)
 Phase 3: Frontend Subscribe Button ← MOSTLY DONE
     |
     v
-Phase 3.5: Pass Generation Activity (NEW — required for human test Section 7)
+Phase 3.5: Pass Generation Activity (deferred — passes generated via workflow for now)
     |
     v
 Phase 4: Human Test in Prod (PLAN_HUMAN_TEST.md Sections 1-8)

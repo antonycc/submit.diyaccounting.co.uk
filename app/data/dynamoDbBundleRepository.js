@@ -259,8 +259,8 @@ export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted,
   }
 }
 
-export async function consumeToken(userId, bundleId) {
-  logger.info({ message: `consumeToken [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
+export async function consumeToken(userId, bundleId, count = 1) {
+  logger.info({ message: `consumeToken [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId, count });
 
   try {
     const hashedSub = hashSub(userId);
@@ -272,10 +272,11 @@ export async function consumeToken(userId, bundleId) {
         TableName: tableName,
         Key: { hashedSub, bundleId },
         UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
-        ConditionExpression: "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
+        ConditionExpression:
+          "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
         ExpressionAttributeValues: {
           ":zero": 0,
-          ":inc": 1,
+          ":inc": count,
           ":saltVersion": getSaltVersion(),
         },
         ReturnValues: "ALL_NEW",

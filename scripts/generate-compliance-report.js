@@ -324,7 +324,8 @@ function generateReport(sourceFiles) {
   const version = getPackageVersion();
 
   // Read all report files
-  const npmAuditJson = readJsonFile(join(penetrationDir, "npm-audit.json"));
+  const npmAuditJson = readJsonFile(join(penetrationDir, "npm-audit.json")); // production deps only (--omit=dev)
+  const npmAuditDevJson = readJsonFile(join(penetrationDir, "npm-audit-dev.json")); // all deps (informational)
   const eslintText = readTextFile(join(penetrationDir, "eslint-security.txt"));
   const pa11yText = readTextFile(join(accessibilityDir, "pa11y-report.txt"));
   const axeJson = readJsonFile(join(accessibilityDir, "axe-results.json"));
@@ -335,7 +336,8 @@ function generateReport(sourceFiles) {
   const zapJson = readJsonFile(join(penetrationDir, "zap-report.json"));
 
   // Parse all results
-  const npmAudit = parseNpmAudit(npmAuditJson);
+  const npmAudit = parseNpmAudit(npmAuditJson); // production deps only
+  const npmAuditDev = parseNpmAudit(npmAuditDevJson); // all deps (informational)
   const eslint = parseEslintSecurity(eslintText);
   const pa11y = parsePa11yReport(pa11yText);
   const axe = parseAxeResults(axeJson);
@@ -376,7 +378,7 @@ ${sourceFilesSection}
 
 | Check | Status | Summary |
 |-------|--------|---------|
-| npm audit | ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} | ${npmAudit.found ? `${npmAudit.critical} critical, ${npmAudit.high} high, ${npmAudit.moderate} moderate` : "Report not found"} |
+| npm audit (prod) | ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} | ${npmAudit.found ? `${npmAudit.critical} critical, ${npmAudit.high} high, ${npmAudit.moderate} moderate` : "Report not found"} |
 | ESLint Security | ${statusIcon(eslint.errors === 0)} | ${eslint.found ? `${eslint.errors} errors, ${eslint.warnings} warnings` : "Report not found"} |
 | retire.js | ${statusIcon(retire.high === 0)} | ${retire.found ? `${retire.high} high, ${retire.medium} medium, ${retire.low} low` : "Report not found"} |
 | OWASP ZAP | ${statusIcon(zap.high === 0)} | ${zap.found ? `${zap.high} high, ${zap.medium} medium, ${zap.low} low` : "Report not found"} |
@@ -390,7 +392,9 @@ ${sourceFilesSection}
 
 ## 1. Security Checks
 
-### 1.1 npm audit (Dependency Vulnerabilities)
+### 1.1 npm audit (Production Dependency Vulnerabilities)
+
+Scanned with \`--omit=dev\` — only production dependencies affect compliance status.
 
 ${
   npmAudit.found
@@ -402,8 +406,22 @@ ${
 | Low | ${npmAudit.low} |
 | **Total** | **${npmAudit.total}** |
 
-**Status**: ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} ${npmAudit.critical === 0 && npmAudit.high === 0 ? "No critical/high vulnerabilities" : "Critical/high vulnerabilities require attention"}`
+**Status**: ${statusIcon(npmAudit.critical === 0 && npmAudit.high === 0)} ${npmAudit.critical === 0 && npmAudit.high === 0 ? "No critical/high vulnerabilities in production dependencies" : "Critical/high vulnerabilities in production dependencies require attention"}`
     : "⚠️ Report not found: `web/public/tests/penetration/npm-audit.json`"
+}
+${
+  npmAuditDev.found
+    ? `
+#### Development Dependencies (Informational — does not affect compliance)
+
+| Severity | Count |
+|----------|-------|
+| Critical | ${npmAuditDev.critical} |
+| High | ${npmAuditDev.high} |
+| Moderate | ${npmAuditDev.moderate} |
+| Low | ${npmAuditDev.low} |
+| **Total** | **${npmAuditDev.total}** |`
+    : ""
 }
 
 ### 1.2 ESLint Security Analysis

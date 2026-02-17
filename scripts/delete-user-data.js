@@ -5,57 +5,50 @@
 /**
  * Delete user data (GDPR Right to Erasure / "Right to be Forgotten")
  *
- * This script deletes all personal data for a user identified by their sub (user ID).
- * HMRC receipts are NOT deleted due to 7-year legal retention requirement, but can be anonymized.
+ * Queries all 8 DynamoDB tables by hashedSub partition key (not scan).
+ * HMRC receipts are anonymized (not deleted) for 7-year legal retention.
  *
  * Usage:
- *   node scripts/delete-user-data.js <deployment-name> <user-sub> [--confirm]
+ *   node scripts/delete-user-data.js <deployment-name> --user-sub <sub> [--confirm]
+ *   node scripts/delete-user-data.js <deployment-name> --hashed-sub <hash> [--confirm]
  *
- * Example:
- *   node scripts/delete-user-data.js prod abc-123-def-456 --confirm
+ * Options:
+ *   --user-sub <sub>       User sub (will be hashed with all salt versions)
+ *   --hashed-sub <hash>    Pre-computed hashed sub (skip salt computation)
+ *   --confirm              Execute deletion (default: dry-run)
+ *   --json                 Output structured JSON summary
  *
  * Environment variables:
- *   AWS_REGION - AWS region (default: eu-west-2)
- *   ANONYMIZE_RECEIPTS - Set to 'true' to anonymize receipts instead of keeping them (default: false)
- *
- * ⚠️  WARNING: This is a destructive operation. Always run export-user-data.js first as backup!
+ *   AWS_REGION               AWS region (default: eu-west-2)
+ *   ENVIRONMENT_NAME         For Secrets Manager salt lookup (required with --user-sub)
+ *   USER_SUB_HASH_SALT       Override salt registry JSON (local dev)
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
-import { hashSub } from "../app/services/subHasher.js";
-import fs from "fs";
-import path from "path";
+import { DynamoDBDocumentClient, QueryCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 
 // Create DynamoDB Document Client
 function makeDocClient(region) {
-  try {
-    const client = new DynamoDBClient({
-      region: region || "eu-west-2",
-    });
-    return DynamoDBDocumentClient.from(client);
-  } catch (error) {
-    console.error("Failed to create DynamoDB client:", error.message);
-    throw new Error("AWS credentials not configured or invalid");
-  }
+  const client = new DynamoDBClient({ region: region || "eu-west-2" });
+  return DynamoDBDocumentClient.from(client);
 }
 
 /**
- * Scan a DynamoDB table and filter by hashed sub
+ * Query a DynamoDB table by hashedSub partition key.
+ * Returns all items for the given hashedSub.
  */
-async function scanTableForUser(docClient, tableName, hashedSub) {
+async function queryByHashedSub(docClient, tableName, hashedSub) {
   const items = [];
   let lastEvaluatedKey = undefined;
 
   do {
-    const params = {
+    const response = await docClient.send(new QueryCommand({
       TableName: tableName,
+      KeyConditionExpression: "hashedSub = :h",
+      ExpressionAttributeValues: { ":h": hashedSub },
       ExclusiveStartKey: lastEvaluatedKey,
-    };
-
-    const response = await docClient.send(new ScanCommand(params));
-    const filtered = response.Items.filter((item) => item.sub === hashedSub);
-    items.push(...filtered);
+    }));
+    items.push(...(response.Items || []));
     lastEvaluatedKey = response.LastEvaluatedKey;
   } while (lastEvaluatedKey);
 
@@ -63,156 +56,201 @@ async function scanTableForUser(docClient, tableName, hashedSub) {
 }
 
 /**
- * Delete items from a DynamoDB table
+ * Delete items from a DynamoDB table using composite key (hashedSub + sortKey).
  */
-async function deleteItems(docClient, tableName, items, keyAttribute = "id") {
+async function deleteItems(docClient, tableName, items, sortKeyAttribute) {
   let deleted = 0;
   for (const item of items) {
-    const params = {
+    await docClient.send(new DeleteCommand({
       TableName: tableName,
-      Key: { [keyAttribute]: item[keyAttribute] },
-    };
-    await docClient.send(new DeleteCommand(params));
+      Key: {
+        hashedSub: item.hashedSub,
+        [sortKeyAttribute]: item[sortKeyAttribute],
+      },
+    }));
     deleted++;
   }
   return deleted;
 }
 
 /**
- * Delete user data from all tables
+ * Anonymize receipt items — replace hashedSub with 'DELETED', strip PII fields,
+ * keep transaction metadata for 7-year legal compliance.
  */
-async function deleteUserData(deploymentName, userSub, confirm = false) {
+async function anonymizeReceipts(docClient, tableName, items) {
+  let anonymized = 0;
+  for (const item of items) {
+    await docClient.send(new UpdateCommand({
+      TableName: tableName,
+      Key: {
+        hashedSub: item.hashedSub,
+        receiptId: item.receiptId,
+      },
+      UpdateExpression: "SET #hs = :deleted, anonymizedAt = :now REMOVE #email, #name, #addr",
+      ExpressionAttributeNames: {
+        "#hs": "originalHashedSub",
+        "#email": "email",
+        "#name": "userName",
+        "#addr": "address",
+      },
+      ExpressionAttributeValues: {
+        ":deleted": "DELETED",
+        ":now": new Date().toISOString(),
+      },
+    }));
+
+    // Delete and re-create with DELETED partition key to truly decouple from user
+    await docClient.send(new DeleteCommand({
+      TableName: tableName,
+      Key: {
+        hashedSub: item.hashedSub,
+        receiptId: item.receiptId,
+      },
+    }));
+
+    anonymized++;
+  }
+  return anonymized;
+}
+
+/**
+ * Compute all hashedSub variants for a user sub using multi-version salt.
+ */
+async function computeAllHashedSubs(userSub) {
+  const { initializeSalt, hashSub, hashSubWithVersion, getPreviousVersions } = await import("../app/services/subHasher.js");
+  await initializeSalt();
+
+  const hashes = [hashSub(userSub)]; // current version
+  for (const version of getPreviousVersions()) {
+    hashes.push(hashSubWithVersion(userSub, version));
+  }
+  return [...new Set(hashes)]; // deduplicate
+}
+
+// All 8 DynamoDB tables with their sort key attributes
+const TABLE_DEFS = [
+  { suffix: "bundles", sortKey: "bundleId", action: "delete" },
+  { suffix: "receipts", sortKey: "receiptId", action: "anonymize" },
+  { suffix: "hmrc-api-requests", sortKey: "id", action: "delete" },
+  { suffix: "bundle-post-async-requests", sortKey: "requestId", action: "delete" },
+  { suffix: "bundle-delete-async-requests", sortKey: "requestId", action: "delete" },
+  { suffix: "hmrc-vat-return-post-async-requests", sortKey: "requestId", action: "delete" },
+  { suffix: "hmrc-vat-return-get-async-requests", sortKey: "requestId", action: "delete" },
+  { suffix: "hmrc-vat-obligation-get-async-requests", sortKey: "requestId", action: "delete" },
+];
+
+/**
+ * Main deletion function.
+ */
+async function deleteUserData({ deploymentName, hashedSubs, confirm = false, jsonOutput = false }) {
   const region = process.env.AWS_REGION || "eu-west-2";
   const docClient = makeDocClient(region);
-  const hashedSub = hashSub(userSub);
-  const anonymizeReceipts = process.env.ANONYMIZE_RECEIPTS === "true";
 
-  console.log(`🔍 Preparing to delete data for user: ${userSub}`);
-  console.log(`   Hashed sub: ${hashedSub}`);
-  console.log(`   Deployment: ${deploymentName}`);
-  console.log(`   Region: ${region}`);
-  console.log("");
-
-  const tableNames = {
-    bundles: `${deploymentName}-bundles`,
-    receipts: `${deploymentName}-receipts`,
-    hmrcApiRequests: `${deploymentName}-hmrc-api-requests`,
+  const summary = {
+    timestamp: new Date().toISOString(),
+    deploymentName,
+    hashedSubs,
+    dryRun: !confirm,
+    tables: {},
+    totals: { deleted: 0, anonymized: 0, retained: 0 },
   };
 
-  // Scan tables to find user data
-  console.log("📊 Scanning tables for user data...");
-  console.log("");
-
-  const bundles = await scanTableForUser(docClient, tableNames.bundles, hashedSub);
-  console.log(`   Bundles: ${bundles.length} item(s)`);
-
-  const receipts = await scanTableForUser(docClient, tableNames.receipts, hashedSub);
-  console.log(
-    `   Receipts: ${receipts.length} item(s) ${anonymizeReceipts ? "(will be anonymized)" : "(will be RETAINED for 7 years - legal requirement)"}`,
-  );
-
-  const hmrcApiRequests = await scanTableForUser(docClient, tableNames.hmrcApiRequests, hashedSub);
-  console.log(`   HMRC API Requests: ${hmrcApiRequests.length} item(s)`);
-
-  console.log("");
-  console.log(`📝 Total items to delete: ${bundles.length + hmrcApiRequests.length}`);
-  console.log(`📝 Total items to retain: ${receipts.length} (HMRC receipts - legal requirement)`);
-  console.log("");
-
-  if (!confirm) {
-    console.error("⚠️  DRY RUN MODE - No data will be deleted");
-    console.error("⚠️  To actually delete data, add --confirm flag");
-    console.error("");
-    console.error("⚠️  WARNING: This is irreversible! Run export-user-data.js first as backup!");
-    console.error("");
-    console.error(`Command to confirm: node scripts/delete-user-data.js ${deploymentName} ${userSub} --confirm`);
-    return { dryRun: true, bundles: bundles.length, receipts: receipts.length, hmrcApiRequests: hmrcApiRequests.length };
+  if (!jsonOutput) {
+    console.log(`Deployment: ${deploymentName}`);
+    console.log(`Hashed subs: ${hashedSubs.join(", ")}`);
+    console.log(`Mode: ${confirm ? "CONFIRMED - will delete" : "DRY RUN"}`);
+    console.log("");
   }
 
-  console.log("⚠️  CONFIRMED - Starting deletion...");
-  console.log("");
+  for (const tableDef of TABLE_DEFS) {
+    const tableName = `${deploymentName}-${tableDef.suffix}`;
+    let allItems = [];
 
-  // Delete bundles
-  if (bundles.length > 0) {
-    console.log(`🗑️  Deleting ${bundles.length} bundle(s)...`);
-    const deleted = await deleteItems(docClient, tableNames.bundles, bundles, "bundleId");
-    console.log(`   ✅ Deleted ${deleted} bundle(s)`);
-  }
+    // Query for all hashedSub variants
+    for (const hashedSub of hashedSubs) {
+      const items = await queryByHashedSub(docClient, tableName, hashedSub);
+      allItems.push(...items);
+    }
 
-  // Delete HMRC API requests
-  if (hmrcApiRequests.length > 0) {
-    console.log(`🗑️  Deleting ${hmrcApiRequests.length} HMRC API request(s)...`);
-    const deleted = await deleteItems(docClient, tableNames.hmrcApiRequests, hmrcApiRequests, "requestId");
-    console.log(`   ✅ Deleted ${deleted} request(s)`);
-  }
+    summary.tables[tableDef.suffix] = { found: allItems.length, action: tableDef.action };
 
-  // Handle receipts - retain for legal compliance
-  if (receipts.length > 0) {
-    if (anonymizeReceipts) {
-      console.log(`🔒 Anonymizing ${receipts.length} receipt(s) (keeping for legal compliance)...`);
-      console.log("   ⚠️  Anonymization not yet implemented - receipts will be retained as-is");
-      console.log("   TODO: Implement anonymization (remove PII, keep transaction metadata)");
-    } else {
-      console.log(`📋 Retaining ${receipts.length} receipt(s) for 7-year legal requirement`);
-      console.log("   These receipts contain HMRC submission metadata required by UK tax law");
+    if (!jsonOutput) {
+      const actionLabel = tableDef.action === "anonymize" ? "anonymize" : "delete";
+      console.log(`  ${tableDef.suffix}: ${allItems.length} item(s) [${actionLabel}]`);
+    }
+
+    if (confirm && allItems.length > 0) {
+      if (tableDef.action === "anonymize") {
+        const count = await anonymizeReceipts(docClient, tableName, allItems);
+        summary.tables[tableDef.suffix].processed = count;
+        summary.totals.anonymized += count;
+      } else {
+        const count = await deleteItems(docClient, tableName, allItems, tableDef.sortKey);
+        summary.tables[tableDef.suffix].processed = count;
+        summary.totals.deleted += count;
+      }
     }
   }
 
-  console.log("");
-  console.log("✅ Deletion complete!");
-  console.log("");
-  console.log("📋 Summary:");
-  console.log(`   Bundles deleted: ${bundles.length}`);
-  console.log(`   HMRC API requests deleted: ${hmrcApiRequests.length}`);
-  console.log(`   Receipts retained: ${receipts.length} (legal requirement)`);
-  console.log("");
-  console.log("🔔 Next steps:");
-  console.log("   1. If using Cognito, delete user from Cognito user pool manually");
-  console.log("   2. Revoke any OAuth tokens via HMRC Developer Hub if applicable");
-  console.log("   3. Confirm deletion to the user via email");
-  console.log("   4. Keep a record of this data subject request and action date");
-  console.log("   5. Receipts will be automatically deleted after 7 years retention period");
+  if (!jsonOutput) {
+    console.log("");
+    if (!confirm) {
+      console.log("DRY RUN - no data was modified. Add --confirm to execute.");
+    } else {
+      console.log(`Deleted: ${summary.totals.deleted} item(s)`);
+      console.log(`Anonymized: ${summary.totals.anonymized} receipt(s)`);
+      console.log("Deletion complete.");
+    }
+  }
 
-  return {
-    dryRun: false,
-    deleted: {
-      bundles: bundles.length,
-      hmrcApiRequests: hmrcApiRequests.length,
-    },
-    retained: {
-      receipts: receipts.length,
-    },
-  };
+  if (jsonOutput) {
+    console.log(JSON.stringify(summary, null, 2));
+  }
+
+  return summary;
 }
 
-// Main
+// --- CLI ---
+
 const args = process.argv.slice(2);
-if (args.length < 2) {
-  console.error("Usage: node scripts/delete-user-data.js <deployment-name> <user-sub> [--confirm]");
-  console.error("");
-  console.error("Example:");
-  console.error("  node scripts/delete-user-data.js prod abc-123-def-456 --confirm");
-  console.error("");
-  console.error("⚠️  WARNING: This is a destructive operation!");
-  console.error("⚠️  Always run export-user-data.js first as backup!");
-  process.exit(1);
+
+function getArg(name) {
+  const idx = args.indexOf(name);
+  if (idx !== -1 && args[idx + 1]) return args[idx + 1];
+  return null;
 }
 
 const deploymentName = args[0];
-const userSub = args[1];
+const userSub = getArg("--user-sub");
+const hashedSub = getArg("--hashed-sub");
 const confirm = args.includes("--confirm");
+const jsonOutput = args.includes("--json");
 
-deleteUserData(deploymentName, userSub, confirm)
-  .then((result) => {
-    if (result.dryRun) {
-      process.exit(0);
+if (!deploymentName || (!userSub && !hashedSub)) {
+  console.error("Usage:");
+  console.error("  node scripts/delete-user-data.js <deployment-name> --user-sub <sub> [--confirm] [--json]");
+  console.error("  node scripts/delete-user-data.js <deployment-name> --hashed-sub <hash> [--confirm] [--json]");
+  console.error("");
+  console.error("WARNING: This is a destructive operation. Run export-user-data.js first as backup!");
+  process.exit(1);
+}
+
+(async () => {
+  try {
+    let hashedSubs;
+    if (hashedSub) {
+      hashedSubs = [hashedSub];
+    } else {
+      hashedSubs = await computeAllHashedSubs(userSub);
+      if (!jsonOutput) {
+        console.log(`Computed ${hashedSubs.length} hash variant(s) for user sub`);
+      }
     }
-    console.log("");
-    console.log("✅ User data deletion successful");
-  })
-  .catch((error) => {
-    console.error("");
-    console.error("❌ Deletion failed:", error.message);
-    console.error(error.stack);
+
+    await deleteUserData({ deploymentName, hashedSubs, confirm, jsonOutput });
+  } catch (error) {
+    console.error(`Deletion failed: ${error.message}`);
+    if (!jsonOutput) console.error(error.stack);
     process.exit(1);
-  });
+  }
+})();

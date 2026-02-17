@@ -12,7 +12,8 @@ import { timestamp } from "../helpers/behaviour-helpers.js";
  */
 export async function goToGenerateDigitalPassPage(page, testUrl, screenshotPath) {
   await test.step("Navigate to Generate Digital Pass page", async () => {
-    const url = new URL("passes/generate-digital.html", testUrl);
+    const base = page.url() || testUrl;
+    const url = new URL("/passes/generate-digital.html", base);
     console.log(`[generate-pass]: Navigating to ${url}`);
     await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-generate-digital-01-page-loaded.png` });
@@ -24,7 +25,8 @@ export async function goToGenerateDigitalPassPage(page, testUrl, screenshotPath)
  */
 export async function goToGeneratePhysicalPassPage(page, testUrl, screenshotPath) {
   await test.step("Navigate to Generate Physical Pass page", async () => {
-    const url = new URL("passes/generate-physical.html", testUrl);
+    const base = page.url() || testUrl;
+    const url = new URL("/passes/generate-physical.html", base);
     console.log(`[generate-pass]: Navigating to ${url}`);
     await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-generate-physical-01-page-loaded.png` });

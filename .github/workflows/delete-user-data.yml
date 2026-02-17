@@ -1,0 +1,132 @@
+name: Delete User Data (GDPR)
+run-name: "delete user data for ${{ inputs.environment-name }} (hashed-sub: ${{ inputs.hashed-sub }})"
+# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment-name:
+        description: 'Deployment name (e.g. prod-cbf0475)'
+        required: true
+        type: string
+      hashed-sub:
+        description: 'User hashed sub (64-char hex)'
+        required: true
+        type: string
+      environment-name:
+        description: 'Environment name'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+      confirm:
+        description: 'Confirm deletion (false = dry run)'
+        required: true
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      deployment-name:
+        type: string
+        required: true
+      hashed-sub:
+        type: string
+        required: true
+      environment-name:
+        type: string
+        required: true
+      confirm:
+        type: string
+        required: false
+        default: 'false'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  delete-data:
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Delete user data (dry run)
+        if: ${{ inputs.confirm != 'true' && inputs.confirm != true }}
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          node scripts/delete-user-data.js "${{ inputs.deployment-name }}" \
+            --hashed-sub "${{ inputs.hashed-sub }}" \
+            --json | tee deletion-summary.json
+
+      - name: Delete user data (confirmed)
+        if: ${{ inputs.confirm == 'true' || inputs.confirm == true }}
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          node scripts/delete-user-data.js "${{ inputs.deployment-name }}" \
+            --hashed-sub "${{ inputs.hashed-sub }}" \
+            --confirm --json | tee deletion-summary.json
+
+      - name: Upload deletion summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: deletion-summary-${{ inputs.hashed-sub }}
+          path: deletion-summary.json
+          retention-days: 2555  # ~7 years for GDPR audit trail
+
+      - name: Generate step summary
+        run: |
+          echo "# User Data Deletion Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment**: ${{ inputs.deployment-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Hashed Sub**: \`${{ inputs.hashed-sub }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ inputs.environment-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Confirmed**: ${{ inputs.confirm }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f deletion-summary.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat deletion-summary.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

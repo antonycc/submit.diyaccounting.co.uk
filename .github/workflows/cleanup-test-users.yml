@@ -1,0 +1,128 @@
+name: Cleanup Test Users
+run-name: "cleanup test users for ${{ inputs.environment-name || 'ci' }}"
+# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # Daily at 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        description: 'Environment name'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+        default: ci
+      confirm:
+        description: 'Confirm deletion (false = dry run)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
+  DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-deployment-role'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name || 'ci' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Resolve deployment name from SSM
+        id: names
+        run: |
+          ENV_NAME="${{ inputs.environment-name || 'ci' }}"
+          echo "environment-name=${ENV_NAME}" >> "$GITHUB_OUTPUT"
+          DEPLOYMENT=$(aws ssm get-parameter \
+            --name "/submit/${ENV_NAME}/last-known-good-deployment" \
+            --query "Parameter.Value" --output text)
+          echo "deployment-name=${DEPLOYMENT}" >> "$GITHUB_OUTPUT"
+          echo "Environment: ${ENV_NAME}, Deployment: ${DEPLOYMENT}"
+
+      - name: Cleanup test users (scheduled - always confirm)
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          ENVIRONMENT_NAME: ${{ steps.names.outputs.environment-name }}
+        run: |
+          node scripts/cleanup-test-users.js \
+            "${{ steps.names.outputs.environment-name }}" \
+            "${{ steps.names.outputs.deployment-name }}" \
+            --confirm --json | tee cleanup-summary.json
+
+      - name: Cleanup test users (manual dispatch)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          ENVIRONMENT_NAME: ${{ steps.names.outputs.environment-name }}
+        run: |
+          CONFIRM_FLAG=""
+          if [ "${{ inputs.confirm }}" = "true" ]; then
+            CONFIRM_FLAG="--confirm"
+          fi
+          node scripts/cleanup-test-users.js \
+            "${{ steps.names.outputs.environment-name }}" \
+            "${{ steps.names.outputs.deployment-name }}" \
+            ${CONFIRM_FLAG} --json | tee cleanup-summary.json
+
+      - name: Upload cleanup summary
+        uses: actions/upload-artifact@v6
+        with:
+          name: cleanup-summary-${{ github.run_id }}
+          path: cleanup-summary.json
+          retention-days: 90
+
+      - name: Generate step summary
+        run: |
+          echo "# Test User Cleanup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ steps.names.outputs.environment-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment**: ${{ steps.names.outputs.deployment-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f cleanup-summary.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat cleanup-summary.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

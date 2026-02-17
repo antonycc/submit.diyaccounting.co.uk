@@ -111,9 +111,9 @@
         }
       })();
 
-      // Login with Google or Antonycc OIDC via Cognito
+      // Login with Google via Cognito
       async function loginWithCognito() {
-        console.log("Initiating login with Google or Antonycc OIDC via Cognito");
+        console.log("Initiating login with Google via Cognito");
 
         console.log("Clear stored tokens and user info");
         localStorage.removeItem("cognitoAccessToken");
@@ -144,7 +144,7 @@
           console.log("Using server-side Cognito Auth URL:", authResponseUrl);
         }
 
-        console.log("Redirecting to Antonycc via Cognito OAuth URL");
+        console.log("Redirecting to Cognito OAuth URL");
         try {
           window.__correlation?.prepareRedirect?.();
         } catch {}

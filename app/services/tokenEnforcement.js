@@ -42,7 +42,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
     if (!activityBundleIds.has(b.bundleId)) return false;
     if (b.tokensGranted === undefined) return false;
     const remaining = b.tokensGranted - (b.tokensConsumed || 0);
-    return remaining > 0;
+    return remaining >= tokenCost;
   });
 
   if (!qualifyingBundle) {
@@ -51,7 +51,7 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
   }
 
   // Atomically consume a token from the qualifying bundle
-  const result = await consumeToken(userId, qualifyingBundle.bundleId);
+  const result = await consumeToken(userId, qualifyingBundle.bundleId, tokenCost);
   logger.info({
     message: "Token consumption result",
     userId,

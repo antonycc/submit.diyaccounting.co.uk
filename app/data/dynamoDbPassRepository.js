@@ -102,6 +102,67 @@ export async function redeemPass(code, now) {
   }
 }
 
+/**
+ * Query passes issued by a specific user.
+ * Uses issuedBy-index GSI in production; falls back to scan+filter for local dev.
+ */
+export async function getPassesByIssuer(issuedBy, { limit = 20 } = {}) {
+  logger.info({ message: `getPassesByIssuer [table: ${getTableName()}]`, issuedBy, limit });
+
+  try {
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+    const items = [];
+
+    // Try GSI query first; fall back to scan if GSI doesn't exist (local dev / dynalite)
+    try {
+      let lastEvaluatedKey;
+      do {
+        const result = await docClient.send(
+          new module.QueryCommand({
+            TableName: tableName,
+            IndexName: "issuedBy-index",
+            KeyConditionExpression: "issuedBy = :ib",
+            ExpressionAttributeValues: { ":ib": issuedBy },
+            ScanIndexForward: false, // newest first
+            Limit: limit,
+            ExclusiveStartKey: lastEvaluatedKey,
+          }),
+        );
+        items.push(...(result.Items || []));
+        lastEvaluatedKey = result.LastEvaluatedKey;
+      } while (lastEvaluatedKey && items.length < limit);
+    } catch (error) {
+      if (error.name === "ValidationException" || error.message?.includes("index")) {
+        logger.info({ message: "GSI not available, falling back to scan", error: error.message });
+        let lastEvaluatedKey;
+        do {
+          const result = await docClient.send(
+            new module.ScanCommand({
+              TableName: tableName,
+              FilterExpression: "issuedBy = :ib",
+              ExpressionAttributeValues: { ":ib": issuedBy },
+              ExclusiveStartKey: lastEvaluatedKey,
+            }),
+          );
+          items.push(...(result.Items || []));
+          lastEvaluatedKey = result.LastEvaluatedKey;
+        } while (lastEvaluatedKey);
+        // Sort by createdAt descending (scan doesn't guarantee order)
+        items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+      } else {
+        throw error;
+      }
+    }
+
+    logger.info({ message: "Retrieved passes by issuer", count: items.length });
+    return { items: items.slice(0, limit) };
+  } catch (error) {
+    logger.error({ message: "Error querying passes by issuer", error: error.message });
+    throw error;
+  }
+}
+
 export async function revokePass(code, now) {
   logger.info({ message: `revokePass [table: ${getTableName()}]` });
 

@@ -106,6 +106,18 @@
           <h3>Your Current Bundles</h3>
           <div id="currentBundles" style="margin: 1em 0"></div>
         </div>
+
+        <div id="myGeneratedPasses" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
+          <h3>My Generated Passes</h3>
+          <p style="color: #666; font-size: 0.9em">Passes you have generated for others to use.</p>
+          <div id="generatedPassesList" style="margin: 1em 0"></div>
+          <div id="generatedPassesEmpty" style="display: none; color: #666; font-size: 0.9em; font-style: italic">
+            You haven't generated any passes yet. Generate one from the home page activities.
+          </div>
+          <div id="generatedPassesLoadMore" style="display: none; margin-top: 1em">
+            <button type="button" id="loadMorePassesBtn" class="btn" style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #6c757d">Load more</button>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -1060,6 +1072,93 @@
         }
       }
 
+      // --- My Generated Passes ---
+      let __myPassesNextPageKey = null;
+
+      async function fetchMyGeneratedPasses(append) {
+        const idToken = getIdToken();
+        if (!idToken) return;
+
+        try {
+          let url = "/api/v1/pass/my-passes?limit=10";
+          if (append && __myPassesNextPageKey) {
+            url += "&nextPageKey=" + encodeURIComponent(__myPassesNextPageKey);
+          }
+          const res = await window.fetchWithIdToken(url);
+          const data = await res.json();
+
+          if (!res.ok || !data.passes) return;
+
+          const section = document.getElementById("myGeneratedPasses");
+          const list = document.getElementById("generatedPassesList");
+          const emptyMsg = document.getElementById("generatedPassesEmpty");
+          const loadMore = document.getElementById("generatedPassesLoadMore");
+
+          section.style.display = "block";
+
+          if (!append) list.innerHTML = "";
+
+          if (data.passes.length === 0 && !append) {
+            emptyMsg.style.display = "block";
+            loadMore.style.display = "none";
+            return;
+          }
+
+          emptyMsg.style.display = "none";
+
+          data.passes.forEach(pass => {
+            const typeLabel = pass.passTypeId === "digital-pass" ? "Digital" : "Physical";
+            const expiryLabel = pass.validUntil ? new Date(pass.validUntil).toLocaleDateString() : "No expiry";
+            const usageLabel = `${pass.useCount || 0} of ${pass.maxUses} uses`;
+            const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
+
+            const card = document.createElement("div");
+            card.setAttribute("data-pass-code", pass.code);
+            card.style.cssText = "text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;";
+            card.innerHTML = `
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5em">
+                <span style="font-weight:600; color:#2c5aa0; word-break:break-word">${escapeHtml(pass.code)}</span>
+                <span style="font-size:0.8em; color:#6c757d; background:#e9ecef; padding:0.2em 0.6em; border-radius:3px">${typeLabel}</span>
+              </div>
+              <div style="font-size:0.85em; color:#666; margin-top:0.4em">
+                ${expiryLabel} · ${usageLabel}
+              </div>
+              <div style="margin-top:0.5em; display:flex; gap:0.5em; flex-wrap:wrap">
+                <button type="button" class="btn pass-copy-link" data-pass-url="${escapeHtml(passUrl)}" style="font-size:0.75em; padding:0.2em 0.6em; min-width:unset; background-color:#6c757d">Copy Link</button>
+              </div>`;
+            list.appendChild(card);
+          });
+
+          __myPassesNextPageKey = data.nextPageKey || null;
+          loadMore.style.display = __myPassesNextPageKey ? "block" : "none";
+        } catch (err) {
+          console.warn("Failed to fetch my generated passes:", err);
+        }
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // Copy link click handler for generated passes
+      document.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".pass-copy-link");
+        if (!btn) return;
+        const url = btn.getAttribute("data-pass-url");
+        try {
+          await navigator.clipboard.writeText(url);
+          btn.textContent = "Copied!";
+          setTimeout(() => { btn.textContent = "Copy Link"; }, 2000);
+        } catch {}
+      });
+
+      // Load more button
+      document.getElementById("loadMorePassesBtn")?.addEventListener("click", () => {
+        fetchMyGeneratedPasses(true);
+      });
+
       // --- page init
       try {
         sessionStorage.removeItem("currentActivity");
@@ -1069,6 +1168,7 @@
       function initPage() {
         checkAuthStatus();
         initWaitlistSection();
+        fetchMyGeneratedPasses(false);
 
         // Handle checkout result from Stripe redirect
         const urlParams = new URLSearchParams(window.location.search);

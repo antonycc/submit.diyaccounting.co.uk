@@ -1,0 +1,363 @@
+<!-- generate-digital.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Submit - Generate Digital Pass</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Generate a shareable digital pass that gives anyone free VAT submission access for 7 days."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/passes/generate-digital.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+    <script src="../lib/session-beacon.js"></script>
+    <script src="../lib/qrcode.min.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../index.html" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>DIY Accounting Submit</h1>
+      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../index.html">Activities</a>
+        <a href="../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../bundles.html">Bundles</a>
+        <a href="../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <div class="form-container" style="text-align: center">
+        <h2>Generate a Digital Pass</h2>
+        <p style="color: #666; font-size: 0.95em; max-width: 600px; margin: 0 auto 1.5em">
+          Create a shareable link that gives anyone free VAT submission access for 7 days.
+          This pass allows up to 20 uses &mdash; share it on social media, via email, or in messaging apps.
+        </p>
+
+        <div id="tokenInfo" style="margin-bottom: 1.5em; display: none">
+          <p style="font-size: 0.9em; color: #555">
+            This will use <strong id="tokenCostDisplay">3</strong> of your
+            <strong id="tokensRemainingDisplay">0</strong> remaining tokens
+          </p>
+        </div>
+
+        <div style="margin: 1em auto; max-width: 440px">
+          <label for="passNotes" style="display: block; margin-bottom: 0.4em; font-weight: 600; text-align: left">Notes (optional)</label>
+          <input
+            type="text"
+            id="passNotes"
+            placeholder="e.g. February campaign"
+            autocomplete="off"
+            style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box"
+          />
+        </div>
+
+        <div style="margin-top: 1.5em">
+          <button type="button" id="generatePassBtn" class="btn" style="min-width: 200px" disabled>Generate Pass</button>
+        </div>
+
+        <!-- Result section (hidden until pass is generated) -->
+        <div id="passResult" style="display: none; margin-top: 2em; padding-top: 2em; border-top: 1px solid #ddd">
+          <h3>Your Digital Pass</h3>
+
+          <div style="margin: 1.5em 0">
+            <div id="generatedPassCode" style="font-size: 1.8em; font-weight: bold; letter-spacing: 0.02em; color: #2c5aa0; word-break: break-word"></div>
+          </div>
+
+          <div style="margin: 1em 0">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; flex-wrap: wrap">
+              <span id="generatedPassUrl" style="font-size: 0.85em; color: #555; word-break: break-all"></span>
+              <button type="button" id="copyUrlBtn" class="btn" style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset">Copy Link</button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; margin: 0.5em 0">
+            <span id="passCodeSmall" style="font-size: 0.85em; color: #555"></span>
+            <button type="button" id="copyCodeBtn" class="btn" style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset">Copy Code</button>
+          </div>
+
+          <div id="generatedPassQrCode" style="margin: 1.5em auto; max-width: 250px"></div>
+
+          <div style="margin: 1em 0; display: flex; justify-content: center; gap: 1em; flex-wrap: wrap">
+            <button type="button" id="downloadSvgBtn" class="btn" style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #495057">Download QR (SVG)</button>
+            <button type="button" id="downloadPngBtn" class="btn" style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #495057">Download QR (PNG)</button>
+          </div>
+
+          <div style="margin-top: 1.5em">
+            <p style="font-size: 0.85em; color: #856404; background: #fff3cd; padding: 0.75em; border-radius: 4px; display: inline-block">
+              This pass expires in 7 days and can be used up to 20 times.
+            </p>
+          </div>
+
+          <div id="tokensAfter" style="margin-top: 1em; font-size: 0.9em; color: #555"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-left">
+          <a href="#" id="viewSourceLink" style="display: none">view source</a>
+          <a id="latestTestsLink" style="display: inline" target="_blank" href="../tests/index.html">tests</a>
+          <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/api/index.html"> api </a>
+          <a href="../privacy.html">privacy</a>
+          <a href="../terms.html">terms</a>
+          <a href="../accessibility.html">accessibility</a>
+        </div>
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+        <div class="footer-right"></div>
+      </div>
+    </footer>
+
+    <script src="../lib/env-loader.js"></script>
+    <script>
+      (async function () {
+        try {
+          await window.loadEnv();
+        } catch (e) {
+          console.warn("Failed to load environment:", e);
+        }
+      })();
+    </script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+
+    <script>
+      const getIdToken = () => {
+        try { return localStorage.getItem("cognitoIdToken"); } catch { return null; }
+      };
+
+      let __generatedPassUrl = "";
+      let __generatedPassCode = "";
+      let __generatedQrSvg = "";
+
+      // --- Initialise page
+      async function initPage() {
+        checkAuthStatus();
+
+        const idToken = getIdToken();
+        if (!idToken) {
+          showStatus("Please log in to generate passes.", "warning");
+          document.getElementById("generatePassBtn").disabled = true;
+          return;
+        }
+
+        // Fetch token info
+        try {
+          const res = await window.fetchWithIdToken("/api/v1/bundle");
+          const data = await res.json();
+          const bundles = data.bundles || [];
+          const totalRemaining = bundles
+            .filter(b => b.allocated)
+            .reduce((sum, b) => sum + (b.tokensRemaining || 0), 0);
+
+          // Read token cost from catalogue
+          let tokenCost = 3;
+          try {
+            const catRes = await fetch("/submit.catalogue.toml");
+            if (catRes.ok) {
+              const catText = await catRes.text();
+              const cat = window.TOML ? window.TOML.parse(catText) : null;
+              if (cat && cat.activities) {
+                const activity = cat.activities.find(a => a.id === "generate-pass-digital");
+                if (activity && activity.tokenCost !== undefined) tokenCost = activity.tokenCost;
+              }
+            }
+          } catch {}
+
+          document.getElementById("tokenCostDisplay").textContent = tokenCost;
+          document.getElementById("tokensRemainingDisplay").textContent = totalRemaining;
+          document.getElementById("tokenInfo").style.display = "block";
+
+          const btn = document.getElementById("generatePassBtn");
+          if (totalRemaining >= tokenCost) {
+            btn.disabled = false;
+          } else {
+            btn.disabled = true;
+            showStatus("You don't have enough tokens to generate a pass.", "warning");
+          }
+        } catch (err) {
+          console.warn("Failed to fetch token info:", err);
+          document.getElementById("generatePassBtn").disabled = false;
+        }
+      }
+
+      // --- Generate pass
+      document.getElementById("generatePassBtn").addEventListener("click", async () => {
+        const btn = document.getElementById("generatePassBtn");
+        const idToken = getIdToken();
+        if (!idToken) {
+          showStatus("Please log in first.", "warning");
+          return;
+        }
+
+        btn.textContent = "Generating...";
+        btn.disabled = true;
+
+        try {
+          const notes = document.getElementById("passNotes").value.trim() || undefined;
+          const res = await window.fetchWithIdToken("/api/v1/pass/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ passTypeId: "digital-pass", notes }),
+          });
+
+          const body = await res.json();
+
+          if (!res.ok) {
+            showStatus(body.message || body.error || "Failed to generate pass", "error");
+            btn.textContent = "Generate Pass";
+            btn.disabled = false;
+            return;
+          }
+
+          // Display result
+          __generatedPassCode = body.code;
+          __generatedPassUrl = body.url;
+
+          document.getElementById("generatedPassCode").textContent = body.code;
+          document.getElementById("generatedPassUrl").textContent = body.url;
+          document.getElementById("passCodeSmall").textContent = body.code;
+
+          // Generate QR code SVG client-side
+          try {
+            const qrSvg = await QRCode.toString(body.url, {
+              type: "svg",
+              width: 250,
+              margin: 2,
+              errorCorrectionLevel: "M",
+            });
+            __generatedQrSvg = qrSvg;
+            document.getElementById("generatedPassQrCode").innerHTML = qrSvg;
+          } catch (qrErr) {
+            console.warn("Failed to generate QR code:", qrErr);
+          }
+
+          // Update token display
+          if (body.tokensRemaining !== undefined) {
+            document.getElementById("tokensRemainingDisplay").textContent = body.tokensRemaining;
+            document.getElementById("tokensAfter").textContent =
+              `${body.tokensConsumed} tokens consumed. ${body.tokensRemaining} tokens remaining.`;
+          }
+
+          document.getElementById("passResult").style.display = "block";
+          btn.textContent = "Generate Another";
+          btn.disabled = false;
+          showStatus("Pass generated successfully!", "success");
+        } catch (err) {
+          showStatus(`Failed to generate pass: ${err?.message || err}`, "error");
+          btn.textContent = "Generate Pass";
+          btn.disabled = false;
+        }
+      });
+
+      // --- Copy URL
+      document.getElementById("copyUrlBtn").addEventListener("click", async () => {
+        if (!__generatedPassUrl) return;
+        try {
+          await navigator.clipboard.writeText(__generatedPassUrl);
+          document.getElementById("copyUrlBtn").textContent = "Copied!";
+          setTimeout(() => { document.getElementById("copyUrlBtn").textContent = "Copy Link"; }, 2000);
+        } catch {
+          showStatus("Failed to copy to clipboard", "error");
+        }
+      });
+
+      // --- Copy code
+      document.getElementById("copyCodeBtn").addEventListener("click", async () => {
+        if (!__generatedPassCode) return;
+        try {
+          await navigator.clipboard.writeText(__generatedPassCode);
+          document.getElementById("copyCodeBtn").textContent = "Copied!";
+          setTimeout(() => { document.getElementById("copyCodeBtn").textContent = "Copy Code"; }, 2000);
+        } catch {
+          showStatus("Failed to copy to clipboard", "error");
+        }
+      });
+
+      // --- Download SVG
+      document.getElementById("downloadSvgBtn").addEventListener("click", () => {
+        if (!__generatedQrSvg) return;
+        const blob = new Blob([__generatedQrSvg], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `pass-${__generatedPassCode}.svg`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // --- Download PNG
+      document.getElementById("downloadPngBtn").addEventListener("click", async () => {
+        if (!__generatedPassUrl) return;
+        try {
+          const dataUrl = await QRCode.toDataURL(__generatedPassUrl, {
+            width: 600,
+            margin: 2,
+            errorCorrectionLevel: "M",
+          });
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = `pass-${__generatedPassCode}.png`;
+          a.click();
+        } catch {
+          showStatus("Failed to generate PNG", "error");
+        }
+      });
+
+      // --- Page init
+      try { sessionStorage.removeItem("currentActivity"); } catch {}
+
+      if (window.__submitReady__) {
+        initPage();
+      } else {
+        document.addEventListener("submit-ready", initPage, { once: true });
+      }
+    </script>
+  </body>
+</html>

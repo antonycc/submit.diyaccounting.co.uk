@@ -211,4 +211,59 @@ public class KindCdk {
 
         return Table.fromTableName(stack, id + "-Table", tableName);
     }
+
+    /**
+     * Adds a Global Secondary Index to an existing DynamoDB table idempotently using AwsCustomResource.
+     * Uses UpdateTable API with ignoreErrorCodesMatching("ValidationException")
+     * so deployments succeed whether the GSI already exists or not.
+     *
+     * @param stack The stack to create the GSI in
+     * @param id The construct ID prefix
+     * @param tableName The name of the table to add the GSI to
+     * @param indexName The name of the GSI
+     * @param partitionKeyName The GSI partition key attribute name
+     * @param sortKeyName The GSI sort key attribute name (can be null)
+     */
+    public static void ensureGlobalSecondaryIndex(
+            Stack stack, String id, String tableName, String indexName, String partitionKeyName, String sortKeyName) {
+        List<Map<String, String>> attributeDefinitions = new java.util.ArrayList<>();
+        attributeDefinitions.add(Map.of("AttributeName", partitionKeyName, "AttributeType", "S"));
+
+        List<Map<String, String>> gsiKeySchema = new java.util.ArrayList<>();
+        gsiKeySchema.add(Map.of("AttributeName", partitionKeyName, "KeyType", "HASH"));
+
+        if (sortKeyName != null) {
+            attributeDefinitions.add(Map.of("AttributeName", sortKeyName, "AttributeType", "S"));
+            gsiKeySchema.add(Map.of("AttributeName", sortKeyName, "KeyType", "RANGE"));
+        }
+
+        Map<String, Object> createGsi = Map.of(
+                "IndexName", indexName,
+                "KeySchema", gsiKeySchema,
+                "Projection", Map.of("ProjectionType", "ALL"));
+
+        Map<String, Object> updateTableParams = Map.of(
+                "TableName", tableName,
+                "AttributeDefinitions", attributeDefinitions,
+                "GlobalSecondaryIndexUpdates", List.of(Map.of("Create", createGsi)));
+
+        AwsSdkCall updateTableCall = AwsSdkCall.builder()
+                .service("DynamoDB")
+                .action("updateTable")
+                .parameters(updateTableParams)
+                .physicalResourceId(PhysicalResourceId.of(tableName + "-" + indexName))
+                // ValidationException means GSI already exists - that's fine
+                .ignoreErrorCodesMatching("ValidationException")
+                .build();
+
+        AwsCustomResource.Builder.create(stack, id + "-EnsureGSI")
+                .onCreate(updateTableCall)
+                .onUpdate(updateTableCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateTable", "dynamodb:DescribeTable"))
+                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
+                                + ":table/" + tableName))
+                        .build())))
+                .build();
+    }
 }
