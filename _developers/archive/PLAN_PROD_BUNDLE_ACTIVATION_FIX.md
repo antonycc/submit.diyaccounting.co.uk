@@ -1,9 +1,9 @@
 # Plan: Per-Environment Dual Webhook Secrets for Stripe
 
 **Created**: 15 February 2026
-**Status**: Code complete. PR #706 merged. CI pipeline payment test passes (4m36s). Awaiting GitHub secrets + prod deployment.
-**Branch**: `activate` (merged to `main` via PR #705/#706)
+**Status**: Implementation needed
 **Related**: PLAN_PAYMENT_GOLIVE.md Phase 4 (Human Test in Prod with Test Passes)
+**Branch**: TBD (new branch from `main`)
 
 ---
 
@@ -151,20 +151,16 @@ STRIPE_WEBHOOK_SECRET_ARN       → {env}/submit/stripe/webhook_secret         (
 STRIPE_TEST_WEBHOOK_SECRET_ARN  → {env}/submit/stripe/test_webhook_secret    (test-mode)
 ```
 
-### GitHub Environment Secrets (target)
+### GitHub Actions Secrets (target)
 
-Secrets are stored in GitHub Environments (`ci` and `prod`), not as repo-level secrets with suffixes.
+| GitHub Secret | Description |
+|---------------|-------------|
+| `STRIPE_WEBHOOK_SECRET_CI` | CI test-mode endpoint signing secret |
+| `STRIPE_WEBHOOK_SECRET_PROD` | Prod live-mode endpoint signing secret (populate in Phase 7) |
+| `STRIPE_TEST_WEBHOOK_SECRET_CI` | Same as `STRIPE_WEBHOOK_SECRET_CI` (CI only uses test) |
+| `STRIPE_TEST_WEBHOOK_SECRET_PROD` | Prod test-mode endpoint signing secret |
 
-| GitHub Environment | Secret Name | Description |
-|--------------------|-------------|-------------|
-| `ci` | `STRIPE_WEBHOOK_SECRET` | CI live-mode endpoint signing secret (or same as test for CI) |
-| `ci` | `STRIPE_TEST_WEBHOOK_SECRET` | CI test-mode endpoint signing secret |
-| `prod` | `STRIPE_WEBHOOK_SECRET` | Prod live-mode endpoint signing secret (populate in Phase 7) |
-| `prod` | `STRIPE_TEST_WEBHOOK_SECRET` | Prod test-mode endpoint signing secret |
-
-Proxy secrets stay in local `.env` (gitignored): `STRIPE_WEBHOOK_SECRET` and `STRIPE_TEST_WEBHOOK_SECRET`.
-
-Old repo-level `STRIPE_WEBHOOK_SECRET` can be removed after migration.
+Old `STRIPE_WEBHOOK_SECRET` can be removed after migration.
 
 ---
 
@@ -188,28 +184,58 @@ STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
 STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js
 ```
 
-### Step 2: Create GitHub Environment Secrets
+### Step 2: Create GitHub Actions Secrets
 
-Set secrets in GitHub Environment settings (Settings → Environments):
-
-**`ci` environment:**
-- `STRIPE_WEBHOOK_SECRET` → CI live-mode endpoint signing secret (or same as test for CI)
-- `STRIPE_TEST_WEBHOOK_SECRET` → CI test-mode endpoint signing secret
-
-**`prod` environment:**
-- `STRIPE_WEBHOOK_SECRET` → Prod live-mode endpoint signing secret (or placeholder until Phase 7)
-- `STRIPE_TEST_WEBHOOK_SECRET` → Prod test-mode endpoint signing secret
+Set 4 new secrets in GitHub repo settings:
+- `STRIPE_WEBHOOK_SECRET_CI` → CI test-mode signing secret
+- `STRIPE_WEBHOOK_SECRET_PROD` → Prod live-mode signing secret (or placeholder until Phase 7)
+- `STRIPE_TEST_WEBHOOK_SECRET_CI` → CI test-mode signing secret (same as above for CI)
+- `STRIPE_TEST_WEBHOOK_SECRET_PROD` → Prod test-mode signing secret
 
 ### Step 3: Update `deploy-environment.yml`
 
-**Current** (lines 212–221): One step creating `{env}/submit/stripe/webhook_secret` from shared repo-level `secrets.STRIPE_WEBHOOK_SECRET`.
+**Current** (lines 212–221): One step creating `{env}/submit/stripe/webhook_secret` from `secrets.STRIPE_WEBHOOK_SECRET`.
 
-**Change to**: Two steps using GitHub Environment secrets (the `create-secrets` job already has `environment:` set to `ci` or `prod`):
+**Change to**: Two steps, per-environment:
 
-- `secrets.STRIPE_WEBHOOK_SECRET` → `{env}/submit/stripe/webhook_secret` (live mode)
-- `secrets.STRIPE_TEST_WEBHOOK_SECRET` → `{env}/submit/stripe/test_webhook_secret` (test mode)
+```yaml
+- name: Create Stripe webhook secret (live mode)
+  run: |
+    SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/webhook_secret"
+    # Select per-environment secret
+    if [ "${{ needs.names.outputs.environment-name }}" = "prod" ]; then
+      SECRET_VALUE="${{ secrets.STRIPE_WEBHOOK_SECRET_PROD }}"
+    else
+      SECRET_VALUE="${{ secrets.STRIPE_WEBHOOK_SECRET_CI }}"
+    fi
+    if [ -z "$SECRET_VALUE" ]; then
+      echo "No webhook secret configured for this environment, skipping"
+      exit 0
+    fi
+    if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+      aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
+    else
+      aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
+    fi
 
-No `if/else` on environment name needed — the correct secret resolves automatically from the GitHub Environment.
+- name: Create Stripe test webhook secret
+  run: |
+    SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/test_webhook_secret"
+    if [ "${{ needs.names.outputs.environment-name }}" = "prod" ]; then
+      SECRET_VALUE="${{ secrets.STRIPE_TEST_WEBHOOK_SECRET_PROD }}"
+    else
+      SECRET_VALUE="${{ secrets.STRIPE_TEST_WEBHOOK_SECRET_CI }}"
+    fi
+    if [ -z "$SECRET_VALUE" ]; then
+      echo "No test webhook secret configured for this environment, skipping"
+      exit 0
+    fi
+    if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+      aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
+    else
+      aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
+    fi
+```
 
 ### Step 4: Update `.env.ci` and `.env.prod`
 
@@ -517,34 +543,13 @@ Once this is implemented:
 
 - [ ] **Manual**: Retrieve test-mode signing secrets from Stripe Dashboard for CI and prod endpoints
 - [ ] **Manual**: Retrieve (or create) live-mode signing secrets from Stripe Dashboard for prod endpoint
-- [ ] **Manual**: Set GitHub Environment secrets (`STRIPE_WEBHOOK_SECRET` + `STRIPE_TEST_WEBHOOK_SECRET` in both `ci` and `prod` environments)
-- [x] **Code**: Update `billingWebhookPost.js` with dual-secret resolution (PR #706)
-- [x] **Code**: Update `BillingStack.java` and `SubmitApplication.java` with `stripeTestWebhookSecretArn` (PR #706)
-- [x] **Code**: Update `.env.ci` and `.env.prod` with `STRIPE_TEST_WEBHOOK_SECRET_ARN` (PR #706)
-- [x] **Code**: Update `deploy-environment.yml` with per-environment secret creation (PR #706)
-- [x] **Code**: Update `stripe-setup.js` output labelling (PR #706)
-- [x] **Code**: Update unit tests for dual-secret logic (PR #706)
-- [x] **Verify**: `npm test` + `./mvnw clean verify` — passes
-- [x] **Verify**: Deploy to CI, run `paymentBehaviour-ci` — passes (4m36s, synthetic-test workflow run #22043787833)
+- [ ] **Manual**: Set GitHub Actions secrets (`STRIPE_WEBHOOK_SECRET_CI`, `STRIPE_TEST_WEBHOOK_SECRET_CI`, `STRIPE_WEBHOOK_SECRET_PROD`, `STRIPE_TEST_WEBHOOK_SECRET_PROD`)
+- [ ] **Code**: Update `billingWebhookPost.js` with dual-secret resolution
+- [ ] **Code**: Update `BillingStack.java` and `SubmitApplication.java` with `stripeTestWebhookSecretArn`
+- [ ] **Code**: Update `.env.ci` and `.env.prod` with `STRIPE_TEST_WEBHOOK_SECRET_ARN`
+- [ ] **Code**: Update `deploy-environment.yml` with per-environment secret creation
+- [ ] **Code**: Update `stripe-setup.js` output labelling
+- [ ] **Code**: Update unit tests for dual-secret logic
+- [ ] **Verify**: `npm test` + `./mvnw clean verify`
+- [ ] **Verify**: Deploy to CI, run `paymentBehaviour-ci`
 - [ ] **Verify**: Deploy to prod, re-attempt human test (Phase 4.2)
-
-## Additional Work Done (15 Feb 2026)
-
-### Payment Behaviour Test Uplift
-
-The `paymentBehaviour` test was extended to exercise the full Stripe lifecycle, catching issues like the webhook failure that caused this plan:
-
-| New Helper | Purpose |
-|------------|---------|
-| `waitForBundleWebhookActivation` | Polls `GET /api/v1/bundle` until `stripeSubscriptionId` appears — proves webhook fired |
-| `navigateToStripePortal` | Clicks "Manage Subscription", waits for navigation to `billing.stripe.com` |
-| `cancelSubscriptionViaPortal` | Cancels subscription in portal, navigates back to bundles page |
-| `waitForCancellationWebhook` | Polls for `cancelAtPeriodEnd: true` (soft timeout — warns, doesn't fail) |
-
-Test now covers: login → day-guest → token drain → activities disabled → upsell → checkout → **webhook activation wait** → VAT submission → token verification → usage page → **portal navigation → cancellation** → logout.
-
-**Files changed**: `behaviour-tests/steps/behaviour-bundle-steps.js`, `behaviour-tests/payment.behaviour.test.js`
-
-### Cognito Test User Password Fix
-
-Changed `scripts/create-cognito-test-user.js` to use `#` instead of `!` as the symbol character in generated passwords. The `!` character caused shell escaping issues when passing credentials via environment variables.

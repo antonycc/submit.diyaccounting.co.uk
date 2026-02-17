@@ -649,14 +649,31 @@ For long-lived tables (bundles, receipts), a second migration pass after the dep
 
 **When**: The salt registry `current` is updated (e.g., from v1 to v2), but warm Lambda containers still have v1 cached from their cold start. New writes from these containers use the old salt version.
 
-**Why this is a non-issue with the registry architecture**:
+**⚠️ THIS SCENARIO OCCURRED IN PROD (17 Feb 2026)**
 
-1. **Old version is still in the registry** — The old salt isn't deleted, it's just no longer `current`. Items written at the old version are valid and findable via read-path fallback.
-2. **Normal deployment recycles containers** — A deployment (which typically follows a salt registry update) triggers new container creation. New containers read the updated registry and use the new `current`.
-3. **No forced cold starts needed** — Between the registry update and the deployment, warm containers may write a few items at the old version. The read-path fallback and the migration runner handle these gracefully.
-4. **Worst case** — A user's new bundle is written at v_old by a stale container, then the migration re-keys their data to v_new. The stale item at v_old is found by fallback reads and eventually re-keyed by a follow-up migration pass.
+The original assessment below was **wrong** — this was NOT a non-issue. After migration 003 set `current=v2` in prod, warm Lambda containers still had `current=v1` cached. The read-path fallback failed because:
 
-**This is the key benefit of the registry + fallback architecture**: container staleness is a temporary, self-healing condition rather than a correctness problem.
+- A v1-cached `bundle-get` Lambda queried hash `e7618802...` (v1) and found 0 items
+- A v2-cached `pass-post` Lambda wrote bundles at hash `63f906e6...` (v2)
+- The v1-cached Lambda's registry only had `{current: "v1", versions: {v1: "..."}}` — it had NO knowledge of v2, so `getPreviousVersions()` returned `[]` (no fallback available)
+- Result: bundles written by v2 Lambdas were invisible to v1 Lambdas
+
+**Root cause**: The salt cache had no TTL — once fetched on cold start, it was cached forever. A warm container could never discover that a new version existed.
+
+**Fix applied (commit `af2ec076`)**:
+
+Added a 5-minute TTL to the salt cache in `subHasher.js`. After TTL expires, `initializeSalt()` re-fetches from Secrets Manager. This means warm containers pick up registry changes within 5 minutes instead of never.
+
+**Immediate prod restoration**: Forced cold starts on all 26 Docker Lambda functions via `aws lambda update-function-configuration --description "Force cold start"`. All containers re-fetched the registry with `current=v2`.
+
+**Updated assessment with TTL fix**:
+
+1. **Old version is still in the registry** — Items written at the old version are findable via read-path fallback, but ONLY if the reading Lambda's cached registry includes the old version.
+2. **TTL ensures convergence** — Within 5 minutes of a registry update, all warm containers re-fetch and converge on the same `current` version.
+3. **Normal deployment also recycles containers** — A deployment triggers new container creation, providing immediate convergence.
+4. **Worst case (with TTL)** — A 5-minute window where some containers use the old version. The read-path fallback handles this IF the reading Lambda's registry includes both versions (which it will after TTL refresh).
+
+**Operational procedure for future rotations**: After updating the registry, either (a) wait 5 minutes for TTL-based convergence, or (b) deploy/lean-deploy to force immediate convergence.
 
 ### Scenario L: GDPR Right to Erasure and Data Subject Access Requests
 
@@ -1464,6 +1481,24 @@ Phase H: CI migrations ✅ DONE (16 Feb 2026, run locally)
   H5. run-migrations.yml workflow cannot be dispatched from GitHub UI ⚠️
     - gh workflow run requires workflow file on default branch (main)
     - Workaround: run locally with assumed role until branch is merged
+
+Phase I: Prod migrations ✅ DONE (16-17 Feb 2026)
+  I1. Merged nvsubhash to main (PR #710) ✅
+  I2. Migration 001 against prod ✅ (pre-deploy, via GitHub Actions)
+    - Converted raw 44-char salt to JSON registry (v1)
+  I3. Migration 002 against prod ✅ (post-deploy, via GitHub Actions run 22079622301)
+    - Backfilled saltVersion=v1 on 21,975 items across 8 tables + canary
+  I4. Migration 003 against prod ✅ (post-deploy, first via GitHub Actions then re-key locally)
+    - GitHub Actions: generated v2 passphrase, set current=v2, but skipped re-key (COGNITO_USER_POOL_ID not set)
+    - Local re-run: re-keyed 71 items for 10 Cognito users
+    - Prod v2 passphrase: tribe-smear-knife-along-nurse-broth-essay-shark
+    - Fix: PR #711 added lookup-resources action to run-migrations.yml
+  I5. Prod deploy verified ✅ (run 22078976502 — all tests passed including paymentBehaviour-prod)
+  I6. Scenario K incident ✅ RESOLVED (17 Feb 2026)
+    - Stale Lambda cache caused hash mismatch: pass-post (v2) vs bundle-get (v1)
+    - Immediate fix: forced cold starts on all 26 Docker Lambdas via config update
+    - Permanent fix: salt cache TTL in subHasher.js (commit af2ec076, branch stability-fixes)
+    - Service restored within minutes of diagnosis
 ```
 
 ---
@@ -1579,3 +1614,7 @@ This is not yet automated — needs a script or migration to encrypt and write t
 | Migration 003 re-key missed ~19,910 orphaned items in CI | ℹ️ Expected | Transient test users no longer in Cognito; items will expire via TTL |
 | Path 3 (KMS-encrypted salt in DynamoDB) not implemented | ⏳ Future | Script/migration needed; lower priority than Path 1+2 |
 | Prod Cognito GitHub variables are unused | ⏳ Clean up | Safe to delete after merge verification |
+| Scenario K: stale Lambda salt cache | ✅ Fixed | Salt cache TTL (5 min) added in commit `af2ec076` on `stability-fixes` branch |
+| run-migrations.yml missing COGNITO_USER_POOL_ID | ✅ Fixed | PR #711 added lookup-resources action |
+| `.env.prod` has `DEPLOYMENT_NAME=prod` (wrong) | ⏳ Fix needed | Breaks lean deploy — should be removed so SSM lookup resolves `prod-cbf0475` |
+| Delete GitHub Actions run 22079622301 | ⏳ Manual | Contains prod v2 passphrase in logs — delete from Actions history |
