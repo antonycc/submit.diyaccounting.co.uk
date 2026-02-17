@@ -10,6 +10,8 @@ const logger = createLogger({ source: "app/services/subHasher.js" });
 
 let __saltRegistry = null; // { current: "v1", versions: { "v1": "salt..." } }
 let __initPromise = null;
+let __saltFetchedAt = 0;
+const SALT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes — warm containers re-fetch after rotation
 
 /**
  * Parse and validate a salt registry JSON string.
@@ -54,9 +56,16 @@ function parseSaltRegistry(raw) {
  * @returns {Promise<void>}
  */
 export async function initializeSalt() {
-  if (__saltRegistry) {
+  if (__saltRegistry && (Date.now() - __saltFetchedAt) < SALT_CACHE_TTL_MS) {
     logger.debug({ message: "Salt already initialized (warm start)" });
     return;
+  }
+
+  // TTL expired — clear cache so we re-fetch
+  if (__saltRegistry) {
+    logger.info({ message: "Salt cache TTL expired, re-fetching from Secrets Manager" });
+    __saltRegistry = null;
+    __initPromise = null;
   }
 
   // Prevent concurrent initialization during cold start
@@ -71,6 +80,7 @@ export async function initializeSalt() {
       if (process.env.USER_SUB_HASH_SALT) {
         logger.info({ message: "Using USER_SUB_HASH_SALT from environment (local dev/test)" });
         __saltRegistry = parseSaltRegistry(process.env.USER_SUB_HASH_SALT);
+        __saltFetchedAt = Date.now();
         return;
       }
 
@@ -98,6 +108,7 @@ export async function initializeSalt() {
       }
 
       __saltRegistry = parseSaltRegistry(response.SecretString);
+      __saltFetchedAt = Date.now();
       logger.info({ message: "Salt successfully fetched and cached" });
     } catch (error) {
       logger.error({ message: "Failed to fetch salt", error: error.message });
@@ -209,6 +220,7 @@ export function _setTestSalt(salt, version = "v1") {
   }
   __saltRegistry = { current: version, versions: { [version]: salt } };
   __initPromise = null;
+  __saltFetchedAt = Date.now();
 }
 
 /**
@@ -220,4 +232,5 @@ export function _clearSalt() {
   }
   __saltRegistry = null;
   __initPromise = null;
+  __saltFetchedAt = 0;
 }
