@@ -9,8 +9,8 @@ import { v4 } from "uuid";
 // Usage
 //  % TEST_USERNAME=$(uuidgen | tr '[:upper:]' '[:lower:]')
 //  % TEST_PASSWORD=$(uuidgen | tr '[:upper:]' '[:lower:]')
-//  % node app/bin/provision-user.mjs oidc-antonycc-com-prod-users ${TEST_USERNAME} ${TEST_PASSWORD}
-// Provisioning user 72db57b6-68dc-4274-a14a-a91be209a1b1 in table oidc-antonycc-com-prod-users
+//  % node app/bin/provision-user.mjs my-dynamodb-table ${TEST_USERNAME} ${TEST_PASSWORD}
+// Provisioning user 72db57b6-68dc-4274-a14a-a91be209a1b1 in table my-dynamodb-table
 // created 72db57b6-68dc-4274-a14a-a91be209a1b1
 // % export TEST_AUTH_USERNAME=${TEST_USERNAME}
 // % export TEST_AUTH_PASSWORD=${TEST_PASSWORD}

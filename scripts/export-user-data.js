@@ -5,55 +5,46 @@
 /**
  * Export all data for a specific user (GDPR Right of Access / Data Portability)
  *
- * This script exports all personal data for a user identified by their sub (user ID).
+ * Queries all 8 DynamoDB tables by hashedSub partition key.
  * Output is in JSON format suitable for providing to the user.
  *
  * Usage:
- *   node scripts/export-user-data.js <deployment-name> <user-sub>
- *
- * Example:
- *   node scripts/export-user-data.js prod abc-123-def-456
+ *   node scripts/export-user-data.js <deployment-name> --user-sub <sub>
+ *   node scripts/export-user-data.js <deployment-name> --hashed-sub <hash>
  *
  * Environment variables:
- *   AWS_REGION - AWS region (default: eu-west-2)
- *   OUTPUT_DIR - Output directory for export file (default: current directory)
+ *   AWS_REGION             AWS region (default: eu-west-2)
+ *   ENVIRONMENT_NAME       For Secrets Manager salt lookup (required with --user-sub)
+ *   USER_SUB_HASH_SALT     Override salt registry JSON (local dev)
+ *   OUTPUT_DIR             Output directory for export file (default: current directory)
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { hashSub } from "../app/services/subHasher.js";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import fs from "fs";
 import path from "path";
 
 // Create DynamoDB Document Client
 function makeDocClient(region) {
-  try {
-    const client = new DynamoDBClient({
-      region: region || "eu-west-2",
-    });
-    return DynamoDBDocumentClient.from(client);
-  } catch (error) {
-    console.error("Failed to create DynamoDB client:", error.message);
-    throw new Error("AWS credentials not configured or invalid");
-  }
+  const client = new DynamoDBClient({ region: region || "eu-west-2" });
+  return DynamoDBDocumentClient.from(client);
 }
 
 /**
- * Scan a DynamoDB table and filter by hashed sub
+ * Query a DynamoDB table by hashedSub partition key.
  */
-async function scanTableForUser(docClient, tableName, hashedSub) {
+async function queryByHashedSub(docClient, tableName, hashedSub) {
   const items = [];
   let lastEvaluatedKey = undefined;
 
   do {
-    const params = {
+    const response = await docClient.send(new QueryCommand({
       TableName: tableName,
+      KeyConditionExpression: "hashedSub = :h",
+      ExpressionAttributeValues: { ":h": hashedSub },
       ExclusiveStartKey: lastEvaluatedKey,
-    };
-
-    const response = await docClient.send(new ScanCommand(params));
-    const filtered = response.Items.filter((item) => item.sub === hashedSub);
-    items.push(...filtered);
+    }));
+    items.push(...(response.Items || []));
     lastEvaluatedKey = response.LastEvaluatedKey;
   } while (lastEvaluatedKey);
 
@@ -61,54 +52,70 @@ async function scanTableForUser(docClient, tableName, hashedSub) {
 }
 
 /**
- * Export user data from all tables
+ * Compute all hashedSub variants for a user sub using multi-version salt.
  */
-async function exportUserData(deploymentName, userSub) {
+async function computeAllHashedSubs(userSub) {
+  const { initializeSalt, hashSub, hashSubWithVersion, getPreviousVersions } = await import("../app/services/subHasher.js");
+  await initializeSalt();
+
+  const hashes = [hashSub(userSub)]; // current version
+  for (const version of getPreviousVersions()) {
+    hashes.push(hashSubWithVersion(userSub, version));
+  }
+  return [...new Set(hashes)];
+}
+
+// All 8 DynamoDB tables with their suffixes
+const TABLE_SUFFIXES = [
+  "bundles",
+  "receipts",
+  "hmrc-api-requests",
+  "bundle-post-async-requests",
+  "bundle-delete-async-requests",
+  "hmrc-vat-return-post-async-requests",
+  "hmrc-vat-return-get-async-requests",
+  "hmrc-vat-obligation-get-async-requests",
+];
+
+/**
+ * Export user data from all tables.
+ */
+async function exportUserData(deploymentName, hashedSubs) {
   const region = process.env.AWS_REGION || "eu-west-2";
   const docClient = makeDocClient(region);
-  const hashedSub = hashSub(userSub);
 
-  console.log(`Exporting data for user: ${userSub}`);
-  console.log(`Hashed sub: ${hashedSub}`);
   console.log(`Deployment: ${deploymentName}`);
+  console.log(`Hashed subs: ${hashedSubs.join(", ")}`);
   console.log(`Region: ${region}`);
   console.log("");
 
-  const tableNames = {
-    bundles: `${deploymentName}-bundles`,
-    receipts: `${deploymentName}-receipts`,
-    hmrcApiRequests: `${deploymentName}-hmrc-api-requests`,
-  };
-
   const userData = {
     exportDate: new Date().toISOString(),
-    userId: userSub,
-    hashedUserId: hashedSub,
+    hashedSubs,
     deployment: deploymentName,
     data: {},
   };
 
-  // Export bundles
-  console.log(`Scanning ${tableNames.bundles}...`);
-  const bundles = await scanTableForUser(docClient, tableNames.bundles, hashedSub);
-  userData.data.bundles = bundles;
-  console.log(`Found ${bundles.length} bundle(s)`);
+  let totalItems = 0;
 
-  // Export receipts
-  console.log(`Scanning ${tableNames.receipts}...`);
-  const receipts = await scanTableForUser(docClient, tableNames.receipts, hashedSub);
-  userData.data.receipts = receipts;
-  console.log(`Found ${receipts.length} receipt(s)`);
+  for (const suffix of TABLE_SUFFIXES) {
+    const tableName = `${deploymentName}-${suffix}`;
+    let allItems = [];
 
-  // Export HMRC API requests
-  console.log(`Scanning ${tableNames.hmrcApiRequests}...`);
-  const hmrcApiRequests = await scanTableForUser(docClient, tableNames.hmrcApiRequests, hashedSub);
-  userData.data.hmrcApiRequests = hmrcApiRequests;
-  console.log(`Found ${hmrcApiRequests.length} HMRC API request(s)`);
+    for (const hashedSub of hashedSubs) {
+      const items = await queryByHashedSub(docClient, tableName, hashedSub);
+      allItems.push(...items);
+    }
+
+    const camelKey = suffix.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    userData.data[camelKey] = allItems;
+    totalItems += allItems.length;
+    console.log(`  ${suffix}: ${allItems.length} item(s)`);
+  }
 
   // Write to file
   const outputDir = process.env.OUTPUT_DIR || ".";
-  const outputFile = path.join(outputDir, `user-data-export-${userSub}-${Date.now()}.json`);
+  const outputFile = path.join(outputDir, `user-data-export-${Date.now()}.json`);
 
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
@@ -117,37 +124,49 @@ async function exportUserData(deploymentName, userSub) {
   fs.writeFileSync(outputFile, JSON.stringify(userData, null, 2));
   console.log("");
   console.log(`Export complete: ${outputFile}`);
-  console.log(`Total items: ${bundles.length + receipts.length + hmrcApiRequests.length}`);
+  console.log(`Total items: ${totalItems}`);
 
   return outputFile;
 }
 
-// Main
+// --- CLI ---
+
 const args = process.argv.slice(2);
-if (args.length < 2) {
-  console.error("Usage: node scripts/export-user-data.js <deployment-name> <user-sub>");
-  console.error("");
-  console.error("Example:");
-  console.error("  node scripts/export-user-data.js prod abc-123-def-456");
+
+function getArg(name) {
+  const idx = args.indexOf(name);
+  if (idx !== -1 && args[idx + 1]) return args[idx + 1];
+  return null;
+}
+
+const deploymentName = args[0];
+const userSub = getArg("--user-sub");
+const hashedSub = getArg("--hashed-sub");
+
+if (!deploymentName || (!userSub && !hashedSub)) {
+  console.error("Usage:");
+  console.error("  node scripts/export-user-data.js <deployment-name> --user-sub <sub>");
+  console.error("  node scripts/export-user-data.js <deployment-name> --hashed-sub <hash>");
   process.exit(1);
 }
 
-const [deploymentName, userSub] = args;
+(async () => {
+  try {
+    let hashedSubs;
+    if (hashedSub) {
+      hashedSubs = [hashedSub];
+    } else {
+      hashedSubs = await computeAllHashedSubs(userSub);
+      console.log(`Computed ${hashedSubs.length} hash variant(s) for user sub`);
+    }
 
-exportUserData(deploymentName, userSub)
-  .then((file) => {
+    const file = await exportUserData(deploymentName, hashedSubs);
     console.log("");
-    console.log("✅ Export successful");
-    console.log(`📄 File: ${file}`);
-    console.log("");
-    console.log("Next steps:");
-    console.log("1. Review the exported data to ensure completeness");
-    console.log("2. Send the file securely to the user (encrypted email or secure download link)");
-    console.log("3. Keep a record of this data subject request and response date");
-  })
-  .catch((error) => {
-    console.error("");
-    console.error("❌ Export failed:", error.message);
+    console.log("Export successful");
+    console.log(`File: ${file}`);
+  } catch (error) {
+    console.error(`Export failed: ${error.message}`);
     console.error(error.stack);
     process.exit(1);
-  });
+  }
+})();

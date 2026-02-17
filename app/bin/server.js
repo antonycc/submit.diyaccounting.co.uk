@@ -22,6 +22,8 @@ import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrc
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
+import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account/passGeneratePost.js";
+import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
 import { apiEndpoint as sessionBeaconPostApiEndpoint } from "../functions/account/sessionBeaconPost.js";
 import { apiEndpoint as billingCheckoutPostApiEndpoint } from "../functions/billing/billingCheckoutPost.js";
@@ -203,6 +205,8 @@ hmrcReceiptGetApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);
+passGeneratePostApiEndpoint(app);
+passMyPassesGetApiEndpoint(app);
 interestPostApiEndpoint(app);
 sessionBeaconPostApiEndpoint(app);
 billingCheckoutPostApiEndpoint(app);
