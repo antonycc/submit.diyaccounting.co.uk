@@ -211,3 +211,29 @@ Once you have the 6 accounts and SSO working, give me the account IDs and I can:
 
 The whole Phase 1.0 above is roughly 30-60 minutes of clicking. The slowest part is account creation (if AWS makes you wait between creates — there's
 sometimes a 1-per-minute rate limit on new orgs).
+
+---
+
+⏺ Phase 1.0 is complete. Next is Phase 1.1: Gateway to its own account — the simplest migration (static site, no Lambda/DynamoDB).
+
+The steps split between you and me:
+
+You run (one-time, ~10 minutes):
+
+aws sso login --sso-session diyaccounting
+./scripts/aws-accounts/bootstrap-account.sh \
+--account-id 283165661847 \
+--account-name gateway \
+--profile gateway
+
+
+This does CDK bootstrap + OIDC provider + deployment roles in the gateway account. The script prints the GitHub secrets to add.
+
+I do (code changes):
+- Update deploy-gateway.yml to target the gateway account
+- Update cdk-gateway/cdk.json with the new account ID
+- Create ACM cert request (or add it to the CDK stack)
+- Add the cross-account DNS validation CNAME to RootDnsStack
+
+Want to start Phase 1.1, or would you rather I first prepare the workflow refactoring for all accounts so the code changes are ready when you bootstrap each
+one?

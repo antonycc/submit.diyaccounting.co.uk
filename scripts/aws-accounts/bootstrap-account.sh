@@ -283,6 +283,11 @@ EOF
     --policy-document "${ASSUME_DEPLOY_POLICY}"
 
   echo -e "  ${GREEN}Attached AssumeDeploymentRole policy${NC}"
+
+  # IAM is eventually consistent — the new role may not be visible as a principal yet.
+  # Wait for propagation before Step 4 tries to reference it in a trust policy.
+  echo "  Waiting 10s for IAM propagation..."
+  sleep 10
 fi
 echo ""
 
@@ -358,10 +363,12 @@ echo "  OIDC provider:   ${OIDC_PROVIDER_URL}"
 echo "  Actions role:    ${FINAL_ACTIONS_ARN}"
 echo "  Deployment role: ${FINAL_DEPLOY_ARN}"
 echo ""
+ACCOUNT_NAME_UPPER=$(echo "${ACCOUNT_NAME}" | tr '[:lower:]-' '[:upper:]_')
+
 echo "GitHub Secrets to add to the repository:"
-echo "  ${ACCOUNT_NAME^^}_ACCOUNT_ID=${ACCOUNT_ID}"
-echo "  ${ACCOUNT_NAME^^}_ACTIONS_ROLE_ARN=${FINAL_ACTIONS_ARN}"
-echo "  ${ACCOUNT_NAME^^}_DEPLOY_ROLE_ARN=${FINAL_DEPLOY_ARN}"
+echo "  ${ACCOUNT_NAME_UPPER}_ACCOUNT_ID=${ACCOUNT_ID}"
+echo "  ${ACCOUNT_NAME_UPPER}_ACTIONS_ROLE_ARN=${FINAL_ACTIONS_ARN}"
+echo "  ${ACCOUNT_NAME_UPPER}_DEPLOY_ROLE_ARN=${FINAL_DEPLOY_ARN}"
 echo ""
 echo "Verification commands:"
 echo "  # Verify OIDC provider"
