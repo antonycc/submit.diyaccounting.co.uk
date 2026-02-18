@@ -14,6 +14,26 @@ Verify:
 
 aws organizations describe-organization
 
+```
+~ $ aws organizations describe-organization
+{
+    "Organization": {
+        "Id": "o-614gdfrqvk",
+        "Arn": "arn:aws:organizations::887764105431:organization/o-614gdfrqvk",
+        "FeatureSet": "ALL",
+        "MasterAccountArn": "arn:aws:organizations::887764105431:account/o-614gdfrqvk/887764105431",
+        "MasterAccountId": "887764105431",
+        "MasterAccountEmail": "admin@diyaccounting.co.uk",
+        "AvailablePolicyTypes": [
+            {
+                "Type": "SERVICE_CONTROL_POLICY",
+                "Status": "ENABLED"
+            }
+        ]
+    }
+}
+~ $
+```
 
 Step 2: Create Organizational Units
 
@@ -28,6 +48,25 @@ Root
 ├── Workloads (empty)
 └── Backup (empty)
 
+```
+
+Backup
+ou-hkwr-023or27q
+This resource is empty
+
+Workloads
+ou-hkwr-duyzaini
+This resource is empty
+
+DIY Accounting Limited
+management account
+887764105431
+  |
+admin@diyaccounting.co.uk
+Organization ID
+o-614gdfrqvk
+```
+
 
 887764105431 itself sits at Root level (not in any OU) — this is correct for the management account.
 
@@ -38,15 +77,15 @@ From Organizations → Add an AWS account → Create an AWS account:
 ┌───────┬──────────────────┬──────────────────────────────────────┬────────────┐
 │ Order │   Account name   │                Email                 │ Move to OU │
 ├───────┼──────────────────┼──────────────────────────────────────┼────────────┤
-│ 1     │ diy-gateway      │ aws-gateway@diyaccounting.co.uk      │ Workloads  │
+│ 1     │ gateway          │ admin+aws-gateway@diyaccounting.co.uk      │ Workloads  │
 ├───────┼──────────────────┼──────────────────────────────────────┼────────────┤
-│ 2     │ diy-spreadsheets │ aws-spreadsheets@diyaccounting.co.uk │ Workloads  │
+│ 2     │ spreadsheets     │ admin+aws-spreadsheets@diyaccounting.co.uk │ Workloads  │
 ├───────┼──────────────────┼──────────────────────────────────────┼────────────┤
-│ 3     │ submit-ci        │ aws-ci@diyaccounting.co.uk           │ Workloads  │
+│ 3     │ submit-ci        │ admin+aws-submit-ci@diyaccounting.co.uk           │ Workloads  │
 ├───────┼──────────────────┼──────────────────────────────────────┼────────────┤
-│ 4     │ submit-prod      │ aws-prod@diyaccounting.co.uk         │ Workloads  │
+│ 4     │ submit-prod      │ admin+aws-submit-prod@diyaccounting.co.uk         │ Workloads  │
 ├───────┼──────────────────┼──────────────────────────────────────┼────────────┤
-│ 5     │ submit-backup    │ aws-backup@diyaccounting.co.uk       │ Backup     │
+│ 5     │ submit-backup    │ admin+aws-submit-backup@diyaccounting.co.uk       │ Backup     │
 └───────┴──────────────────┴──────────────────────────────────────┴────────────┘
 
 Each creation takes ~60 seconds. After each one appears, select it → Actions → Move → choose the OU.
@@ -58,6 +97,20 @@ After all created, verify:
 
 aws organizations list-accounts --query 'Accounts[*].[Name,Id,Status]' --output table
 
+```
+~ $ aws organizations list-accounts --query 'Accounts[*].[Name,Id,Status]' --output table
+------------------------------------------------------
+|                    ListAccounts                    |
++-------------------------+----------------+---------+
+|  submit-backup          |  914216784828  |  ACTIVE |
+|  spreadsheets           |  064390746177  |  ACTIVE |
+|  submit-ci              |  367191799875  |  ACTIVE |
+|  DIY Accounting Limited |  887764105431  |  ACTIVE |
+|  gateway                |  283165661847  |  ACTIVE |
+|  submit-prod            |  972912397388  |  ACTIVE |
++-------------------------+----------------+---------+
+~ $
+```
 
 Record the account IDs — you'll need them for everything that follows.
 
@@ -103,6 +156,8 @@ Wait ~1 minute for propagation.
 
 Step 8: Bookmark and test your portal
 
+https://d-9c67480c02.awsapps.com/start/
+
 1. IAM Identity Center → Settings → copy the AWS access portal URL (format: https://d-XXXXXXXXXX.awsapps.com/start)
 2. Open it in a new browser tab
 3. Log in with your new SSO credentials
@@ -114,7 +169,6 @@ Step 9: Set up CLI SSO profiles
 
 aws configure sso
 
-
 When prompted:
 - SSO session name: diyaccounting
 - SSO start URL: (paste your portal URL)
@@ -122,6 +176,30 @@ When prompted:
 
 It opens a browser — authenticate, then pick an account/role. Repeat for each account. Or just edit ~/.aws/config directly — I'll give you the block once
 you have the account IDs.
+
+```
+~ % aws configure sso
+SSO session name (Recommended): diyaccounting
+SSO start URL [None]: https://d-9c67480c02.awsapps.com/start/
+SSO region [None]: eu-west-2
+SSO registration scopes [sso:account:access]:
+Attempting to open your default browser.
+If the browser does not open, open the following URL:
+
+https://oidc.eu-west-2.amazonaws.com/authorize?response_type=code&client_id=7J29JPLdPNG8NIQeCp7O1mV1LXdlc3QtMg&redirect_uri=http%3A%2F%2F127.0.0.1%3A51479%2Foauth%2Fcallback&state=e799a359-54ea-4b6f-bf38-07d550102bb6&code_challenge_method=S256&scopes=sso%3Aaccount%3Aaccess&code_challenge=65YNECyBDbpvAmujUOkW7PuhflFSyWLOP3qpqADN4rk
+There are 6 AWS accounts available to you.
+Using the account ID 887764105431
+There are 2 roles available to you.
+Using the role name "AdministratorAccess"
+Default client Region [eu-west-2]:
+CLI default output format (json if not specified) [None]:
+Profile name [AdministratorAccess-887764105431]:
+To use this profile, specify the profile name using --profile, as shown:
+
+aws sts get-caller-identity --profile AdministratorAccess-887764105431
+~ %
+```
+
 
   ---
 What happens next

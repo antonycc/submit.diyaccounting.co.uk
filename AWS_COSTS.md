@@ -21,8 +21,8 @@ AWS Organizations provides a **single bill** for all member accounts. The manage
 | Account | Expected Cost Profile |
 |---------|----------------------|
 | 887764105431 (management) | Minimal — Route53 zone ($0.50/month), holding page CloudFront, IAM Identity Center (free) |
-| diy-gateway | Low — CloudFront + S3 static site, no compute |
-| diy-spreadsheets | Low — CloudFront + S3 static site, package hosting |
+| gateway | Low — CloudFront + S3 static site, no compute |
+| spreadsheets | Low — CloudFront + S3 static site, package hosting |
 | submit-ci | Variable — mirrors prod architecture, only active during CI runs and testing |
 | submit-prod | Primary cost — Lambda, DynamoDB, API Gateway, CloudFront, Secrets Manager, Cognito |
 | submit-backup | Low — AWS Backup vault storage only |

@@ -79,7 +79,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Example:"
       echo "  $0 --account-id 123456789012 --account-name submit --profile submit-prod"
-      echo "  $0 --account-id 234567890123 --account-name gateway --profile diy-gateway"
+      echo "  $0 --account-id 234567890123 --account-name gateway --profile gateway"
       exit 0
       ;;
     *)

@@ -36,8 +36,8 @@ Everything runs in 887764105431. All four logical services (root DNS, gateway, s
 
 ```
 AWS Organization Root (887764105431) ── Management
-├── diy-gateway ─────────── Workloads OU (Phase 1.1)
-├── diy-spreadsheets ────── Workloads OU (Phase 1.2)
+├── gateway ─────────── Workloads OU (Phase 1.1)
+├── spreadsheets ────── Workloads OU (Phase 1.2)
 ├── submit-ci ──────────── Workloads OU (Phase 1.3)
 ├── submit-prod ─────────── Workloads OU (Phase 1.4)
 ├── submit-backup ─────── Backup OU (Phase 3)
@@ -60,7 +60,7 @@ AWS Organization Root (887764105431) ── Management
 | Step | Description | Details |
 |------|-------------|---------|
 | 1.0.1 | Create AWS Organization | From 887764105431. This account becomes the permanent management account. |
-| 1.0.2 | Create Organizational Units | `Workloads` OU (for diy-gateway, diy-spreadsheets, submit-ci, submit-prod), `Backup` OU (for submit-backup). |
+| 1.0.2 | Create Organizational Units | `Workloads` OU (for gateway, spreadsheets, submit-ci, submit-prod), `Backup` OU (for submit-backup). |
 | 1.0.3 | Enable IAM Identity Center | In 887764105431 (management account). This gives you a single SSO portal for all accounts. |
 | 1.0.4 | Create SSO user | Create your identity in IAM Identity Center (or connect an external IdP later). |
 | 1.0.5 | Create permission sets | `AdministratorAccess` (full access), `ReadOnlyAccess` (investigation), `DeploymentAccess` (CDK deploys — custom policy). |
@@ -68,24 +68,24 @@ AWS Organization Root (887764105431) ── Management
 
 ### 1.1: Gateway account separation
 
-Create the gateway account and move gateway stacks (CI first, then prod) from 887764105431 to diy-gateway. All from this repository.
+Create the gateway account and move gateway stacks (CI first, then prod) from 887764105431 to gateway. All from this repository.
 
 | Step | Description | Details |
 |------|-------------|---------|
-| 1.1.1 | Create `diy-gateway` account | Via AWS Organizations. Email: `aws-gateway@diyaccounting.co.uk`. Place in Workloads OU. |
+| 1.1.1 | Create `gateway` account | Via AWS Organizations. Email: `aws-gateway@diyaccounting.co.uk`. Place in Workloads OU. |
 | 1.1.2 | Assign SSO access | Add your SSO user + `AdministratorAccess` to the gateway account. Verify console access via the portal. |
 | 1.1.3 | CDK bootstrap | Bootstrap CDK in `us-east-1` and `eu-west-2` in the gateway account. |
-| 1.1.4 | Create OIDC provider | Create GitHub Actions OIDC provider (`token.actions.githubusercontent.com`) in diy-gateway. Trust policy: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
-| 1.1.5 | Create deployment roles | `gateway-github-actions-role` (OIDC assumption) and `gateway-deployment-role` (CDK deploys) in diy-gateway. |
-| 1.1.6 | Create ACM cert for gateway | In diy-gateway `us-east-1`. SANs: `ci-gateway.diyaccounting.co.uk`, `prod-gateway.diyaccounting.co.uk`, `diyaccounting.co.uk`, `www.diyaccounting.co.uk`. DNS validation CNAMEs go in 887764105431's Route53 zone (manual one-time copy). |
-| 1.1.7 | Add GitHub secrets | `GATEWAY_ACTIONS_ROLE_ARN`, `GATEWAY_DEPLOY_ROLE_ARN`, `GATEWAY_ACCOUNT_ID`, `GATEWAY_CERT_ARN` as repo secrets or in a `diy-gateway` GitHub environment. |
+| 1.1.4 | Create OIDC provider | Create GitHub Actions OIDC provider (`token.actions.githubusercontent.com`) in gateway. Trust policy: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
+| 1.1.5 | Create deployment roles | `gateway-github-actions-role` (OIDC assumption) and `gateway-deployment-role` (CDK deploys) in gateway. |
+| 1.1.6 | Create ACM cert for gateway | In gateway `us-east-1`. SANs: `ci-gateway.diyaccounting.co.uk`, `prod-gateway.diyaccounting.co.uk`, `diyaccounting.co.uk`, `www.diyaccounting.co.uk`. DNS validation CNAMEs go in 887764105431's Route53 zone (manual one-time copy). |
+| 1.1.7 | Add GitHub secrets | `GATEWAY_ACTIONS_ROLE_ARN`, `GATEWAY_DEPLOY_ROLE_ARN`, `GATEWAY_ACCOUNT_ID`, `GATEWAY_CERT_ARN` as repo secrets or in a `gateway` GitHub environment. |
 | 1.1.8 | Update `deploy-gateway.yml` | Use the new role ARNs and account ID. The workflow still lives in this repo. |
 | 1.1.9 | Update `cdk-gateway/cdk.json` | Point to the new account ID and cert ARN. |
-| 1.1.10 | Deploy gateway CI to new account | Run `deploy-gateway.yml` with env=ci targeting diy-gateway. Creates `ci-gateway-GatewayStack` in the new account. |
+| 1.1.10 | Deploy gateway CI to new account | Run `deploy-gateway.yml` with env=ci targeting gateway. Creates `ci-gateway-GatewayStack` in the new account. |
 | 1.1.11 | Validate gateway CI | Run `npm run test:gatewayBehaviour-ci`. DNS still points to 887764105431's CloudFront at this point. |
 | 1.1.12 | Update root DNS for gateway CI | Update `ci-gateway.diyaccounting.co.uk` alias record (via `deploy-root.yml`) to point to the new account's CloudFront. |
 | 1.1.13 | Re-validate gateway CI | Confirm DNS resolves to the new CloudFront. Run behaviour tests again. |
-| 1.1.14 | Deploy gateway prod to new account | Run `deploy-gateway.yml` with env=prod targeting diy-gateway. |
+| 1.1.14 | Deploy gateway prod to new account | Run `deploy-gateway.yml` with env=prod targeting gateway. |
 | 1.1.15 | Update root DNS for gateway prod | Update `prod-gateway.diyaccounting.co.uk`, `diyaccounting.co.uk`, and `www.diyaccounting.co.uk` alias records to new account's prod CloudFront. |
 | 1.1.16 | Validate gateway prod | Verify all prod domains serve correct content. Test redirects. |
 | 1.1.17 | Tear down old gateway stacks | Delete `ci-gateway-GatewayStack` and `prod-gateway-GatewayStack` from 887764105431. |
@@ -96,16 +96,16 @@ Same pattern as gateway. CI first, then prod.
 
 | Step | Description | Details |
 |------|-------------|---------|
-| 1.2.1 | Create `diy-spreadsheets` account | Via AWS Organizations. Email: `aws-spreadsheets@diyaccounting.co.uk`. Place in Workloads OU. |
+| 1.2.1 | Create `spreadsheets` account | Via AWS Organizations. Email: `aws-spreadsheets@diyaccounting.co.uk`. Place in Workloads OU. |
 | 1.2.2 | Assign SSO access | Add your SSO user + `AdministratorAccess`. |
 | 1.2.3 | CDK bootstrap | Bootstrap CDK in `us-east-1` and `eu-west-2`. |
 | 1.2.4 | Create OIDC provider | Trust: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
 | 1.2.5 | Create deployment roles | `spreadsheets-github-actions-role` and `spreadsheets-deployment-role`. |
-| 1.2.6 | Create ACM cert | In diy-spreadsheets `us-east-1`. SANs: `ci-spreadsheets.diyaccounting.co.uk`, `prod-spreadsheets.diyaccounting.co.uk`, `spreadsheets.diyaccounting.co.uk`. DNS validation via 887764105431 Route53. |
+| 1.2.6 | Create ACM cert | In spreadsheets `us-east-1`. SANs: `ci-spreadsheets.diyaccounting.co.uk`, `prod-spreadsheets.diyaccounting.co.uk`, `spreadsheets.diyaccounting.co.uk`. DNS validation via 887764105431 Route53. |
 | 1.2.7 | Add GitHub secrets | `SPREADSHEETS_ACTIONS_ROLE_ARN`, `SPREADSHEETS_DEPLOY_ROLE_ARN`, `SPREADSHEETS_ACCOUNT_ID`, `SPREADSHEETS_CERT_ARN`. |
 | 1.2.8 | Update `deploy-spreadsheets.yml` | Use new role ARNs and account ID. |
 | 1.2.9 | Update `cdk-spreadsheets/cdk.json` | Point to new account and cert ARN. |
-| 1.2.10 | Deploy spreadsheets CI | Run `deploy-spreadsheets.yml` with env=ci targeting diy-spreadsheets. |
+| 1.2.10 | Deploy spreadsheets CI | Run `deploy-spreadsheets.yml` with env=ci targeting spreadsheets. |
 | 1.2.11 | Validate spreadsheets CI | Run `npm run test:spreadsheetsBehaviour-ci`. |
 | 1.2.12 | Update root DNS for spreadsheets CI | Point `ci-spreadsheets.diyaccounting.co.uk` to new CloudFront. |
 | 1.2.13 | Re-validate spreadsheets CI | Confirm DNS and run behaviour tests. |
@@ -272,7 +272,7 @@ Archive-and-overlay into the existing repo. Preserves repo settings, stars, and 
 | 2.2.5 | Adapt `playwright.config.js` — keep only `gatewayBehaviour` project |
 | 2.2.6 | Adapt deploy workflow — rename to `deploy.yml` |
 | 2.2.7 | Fill gaps from `archive/` — pull back useful old assets |
-| 2.2.8 | Update OIDC trust in diy-gateway: change to `repo:antonycc/www.diyaccounting.co.uk:*` |
+| 2.2.8 | Update OIDC trust in gateway: change to `repo:antonycc/www.diyaccounting.co.uk:*` |
 | 2.2.9 | Deploy from gateway repo. Run `test:gatewayBehaviour-ci`. Verify. |
 | 2.2.10 | Remove `deploy-gateway.yml`, `GatewayStack`, `cdk-gateway/`, `web/www.diyaccounting.co.uk/` from submit repo |
 
@@ -289,7 +289,7 @@ Same archive-and-overlay pattern. Preserves GitHub Discussions.
 | 2.3.5 | Adapt `playwright.config.js` — keep only `spreadsheetsBehaviour` project |
 | 2.3.6 | Adapt deploy workflow |
 | 2.3.7 | Fill gaps from `archive/` — old packages, README, build scripts |
-| 2.3.8 | Update OIDC trust in diy-spreadsheets: change to `repo:antonycc/diy-accounting:*` |
+| 2.3.8 | Update OIDC trust in spreadsheets: change to `repo:antonycc/diy-accounting:*` |
 | 2.3.9 | Deploy from spreadsheets repo. Run `test:spreadsheetsBehaviour-ci`. Verify. |
 | 2.3.10 | Remove `deploy-spreadsheets.yml`, `SpreadsheetsStack`, `cdk-spreadsheets/`, `web/spreadsheets.diyaccounting.co.uk/`, `packages/` from submit repo |
 
@@ -396,7 +396,7 @@ After Phase 1 completion, this account is management-only:
 | Backup | AWS Backup local vault (35-day daily, 90-day weekly), copies to submit-backup |
 | Deployment | GitHub OIDC provider, submit-github-actions-role, submit-deployment-role, CDK bootstrap |
 
-### diy-gateway
+### gateway
 
 | Category | Resources |
 |----------|-----------|
@@ -405,7 +405,7 @@ After Phase 1 completion, this account is management-only:
 | Deployment | GitHub OIDC provider, gateway-github-actions-role, gateway-deployment-role, CDK bootstrap |
 | NOT here | No Lambda, DynamoDB, Cognito, API Gateway, Route53 |
 
-### diy-spreadsheets
+### spreadsheets
 
 | Category | Resources |
 |----------|-----------|
@@ -463,10 +463,10 @@ GitHub Actions (submit.diyaccounting.co.uk repo)
 ```
 GitHub Actions (submit.diyaccounting.co.uk repo)
         │
-        ├── deploy-gateway.yml ──OIDC──► diy-gateway
+        ├── deploy-gateway.yml ──OIDC──► gateway
         │                                (S3 + CloudFront)
         │
-        ├── deploy-spreadsheets.yml ──OIDC──► diy-spreadsheets
+        ├── deploy-spreadsheets.yml ──OIDC──► spreadsheets
         │                                     (S3 + CloudFront)
         │
         ├── deploy.yml (CI branches) ──OIDC──► submit-ci
@@ -484,8 +484,8 @@ GitHub Actions (submit.diyaccounting.co.uk repo)
 ```
 root repo ─────────OIDC──► 887764105431 (DNS + holding only)
 submit repo ───────OIDC──► submit-prod (prod) + submit-ci (CI)
-gateway repo ──────OIDC──► diy-gateway (S3 + CloudFront)
-spreadsheets repo ─OIDC──► diy-spreadsheets (S3 + CloudFront)
+gateway repo ──────OIDC──► gateway (S3 + CloudFront)
+spreadsheets repo ─OIDC──► spreadsheets (S3 + CloudFront)
 ```
 
 ---
@@ -529,7 +529,7 @@ spreadsheets repo ─OIDC──► diy-spreadsheets (S3 + CloudFront)
 
 Single portal for all accounts. No separate IAM users, no multiple sets of credentials.
 
-1. Log into the SSO portal once: `https://d-xxxxxxxxxx.awsapps.com/start`
+1. Log into the SSO portal once: `https://d-9c67480c02.awsapps.com/start/`
 2. Portal shows all accounts with their permission sets
 3. Click any account → choose permission set → opens AWS console
 4. For CLI: click "Command line or programmatic access" → copy temporary credentials
@@ -538,7 +538,7 @@ Single portal for all accounts. No separate IAM users, no multiple sets of crede
 
 ```ini
 [sso-session diyaccounting]
-sso_start_url = https://d-xxxxxxxxxx.awsapps.com/start
+sso_start_url = https://d-9c67480c02.awsapps.com/start/
 sso_region = eu-west-2
 sso_registration_scopes = sso:account:access
 
@@ -548,33 +548,33 @@ sso_account_id = 887764105431
 sso_role_name = AdministratorAccess
 region = eu-west-2
 
-[profile submit-prod]
+[profile gateway]
 sso_session = diyaccounting
-sso_account_id = PROD_ACCOUNT_ID
+sso_account_id = 283165661847
+sso_role_name = AdministratorAccess
+region = eu-west-2
+
+[profile spreadsheets]
+sso_session = diyaccounting
+sso_account_id = 064390746177
 sso_role_name = AdministratorAccess
 region = eu-west-2
 
 [profile submit-ci]
 sso_session = diyaccounting
-sso_account_id = CI_ACCOUNT_ID
+sso_account_id = 367191799875
 sso_role_name = AdministratorAccess
 region = eu-west-2
 
-[profile diy-gateway]
+[profile submit-prod]
 sso_session = diyaccounting
-sso_account_id = GATEWAY_ACCOUNT_ID
-sso_role_name = AdministratorAccess
-region = eu-west-2
-
-[profile diy-spreadsheets]
-sso_session = diyaccounting
-sso_account_id = SPREADSHEETS_ACCOUNT_ID
+sso_account_id = 972912397388
 sso_role_name = AdministratorAccess
 region = eu-west-2
 
 [profile submit-backup]
 sso_session = diyaccounting
-sso_account_id = BACKUP_ACCOUNT_ID
+sso_account_id = 914216784828
 sso_role_name = AdministratorAccess
 region = eu-west-2
 ```
@@ -603,8 +603,8 @@ AWS Organizations provides consolidated billing automatically.
 | 887764105431 (management) | ~$5-10/month | Route53 zone, IAM Identity Center (free), holding page CloudFront |
 | submit-prod | Current prod costs | Lambda, DynamoDB, CloudFront, API GW, Cognito |
 | submit-ci | ~30-50% of prod | Same services, less traffic |
-| diy-gateway | ~$1-5/month | S3 + CloudFront (static site) |
-| diy-spreadsheets | ~$1-10/month | S3 + CloudFront (static site + package zips) |
+| gateway | ~$1-5/month | S3 + CloudFront (static site) |
+| spreadsheets | ~$1-10/month | S3 + CloudFront (static site + package zips) |
 | submit-backup | ~$5-20/month | Vault storage for backup copies |
 
 ---
@@ -614,8 +614,8 @@ AWS Organizations provides consolidated billing automatically.
 | Service | CI | Prod | Prod alias | Account | Repo (final) |
 |---------|-----|------|------------|---------|-------------|
 | Submit | `ci-submit.diyaccounting.co.uk` | `prod-submit.diyaccounting.co.uk` | `submit.diyaccounting.co.uk` | submit-ci / submit-prod | submit |
-| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` | `diyaccounting.co.uk`, `www.diyaccounting.co.uk` | diy-gateway | www.diyaccounting.co.uk |
-| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` | `spreadsheets.diyaccounting.co.uk` | diy-spreadsheets | diy-accounting |
+| Gateway | `ci-gateway.diyaccounting.co.uk` | `prod-gateway.diyaccounting.co.uk` | `diyaccounting.co.uk`, `www.diyaccounting.co.uk` | gateway | www.diyaccounting.co.uk |
+| Spreadsheets | `ci-spreadsheets.diyaccounting.co.uk` | `prod-spreadsheets.diyaccounting.co.uk` | `spreadsheets.diyaccounting.co.uk` | spreadsheets | diy-accounting |
 | Cognito | `ci-auth.diyaccounting.co.uk` | `prod-auth.diyaccounting.co.uk` | — | submit-ci / submit-prod | submit |
 | Holding | `ci-holding.diyaccounting.co.uk` | `prod-holding.diyaccounting.co.uk` | — | 887764105431 | root |
 | Simulator | `ci-simulator.diyaccounting.co.uk` | `prod-simulator.diyaccounting.co.uk` | — | submit-ci / submit-prod | submit |
@@ -627,24 +627,24 @@ AWS Organizations provides consolidated billing automatically.
 
 | Account | ID | Email | OU | Purpose | Phase |
 |---------|-----|-------|-----|---------|-------|
-| 887764105431 | 887764105431 | (existing) | Management (org root) | Org admin, Route53, IAM Identity Center, billing, holding page | Phase 1.0 |
-| diy-gateway | TBD | aws-gateway@diyaccounting.co.uk | Workloads | Gateway (S3 + CloudFront) | Phase 1.1 |
-| diy-spreadsheets | TBD | aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets (S3 + CloudFront) | Phase 1.2 |
-| submit-ci | TBD | aws-ci@diyaccounting.co.uk | Workloads | Submit CI (Lambda, DDB, Cognito, API GW) | Phase 1.3 |
-| submit-prod | TBD | aws-prod@diyaccounting.co.uk | Workloads | Submit prod (Lambda, DDB, Cognito, API GW) | Phase 1.4 |
-| submit-backup | TBD | aws-backup@diyaccounting.co.uk | Backup | Cross-account backup vault | Phase 3.1 |
+| 887764105431 | 887764105431 | admin@diyaccounting.co.uk | Management (org root) | Org admin, Route53, IAM Identity Center, billing, holding page | Phase 1.0 ✅ |
+| gateway | 283165661847 | admin+aws-gateway@diyaccounting.co.uk | Workloads | Gateway (S3 + CloudFront) | Phase 1.1 |
+| spreadsheets | 064390746177 | admin+aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets (S3 + CloudFront) | Phase 1.2 |
+| submit-ci | 367191799875 | admin+aws-submit-ci@diyaccounting.co.uk | Workloads | Submit CI (Lambda, DDB, Cognito, API GW) | Phase 1.3 |
+| submit-prod | 972912397388 | admin+aws-submit-prod@diyaccounting.co.uk | Workloads | Submit prod (Lambda, DDB, Cognito, API GW) | Phase 1.4 |
+| submit-backup | 914216784828 | admin+aws-submit-backup@diyaccounting.co.uk | Backup | Cross-account backup vault | Phase 3.1 |
 
 ### Repository → Account mapping progression
 
 | Phase | This repo deploys to | Root repo | Gateway repo | Spreadsheets repo |
 |-------|---------------------|-----------|-------------|-------------------|
 | Current | 887764105431 (everything) | N/A | N/A | N/A |
-| Phase 1.1 | 887764105431 + diy-gateway | N/A | N/A | N/A |
-| Phase 1.2 | 887764105431 + diy-gateway + diy-spreadsheets | N/A | N/A | N/A |
-| Phase 1.3 | 887764105431 + submit-ci + diy-gateway + diy-spreadsheets | N/A | N/A | N/A |
-| Phase 1.4 | submit-prod + submit-ci + diy-gateway + diy-spreadsheets + 887764105431 (root DNS) | N/A | N/A | N/A |
-| Phase 1.5 | submit-prod + submit-ci + diy-gateway + diy-spreadsheets + 887764105431 (root DNS only) | N/A | N/A | N/A |
-| Phase 2 | submit-prod + submit-ci | 887764105431 | diy-gateway | diy-spreadsheets |
+| Phase 1.1 | 887764105431 + gateway | N/A | N/A | N/A |
+| Phase 1.2 | 887764105431 + gateway + spreadsheets | N/A | N/A | N/A |
+| Phase 1.3 | 887764105431 + submit-ci + gateway + spreadsheets | N/A | N/A | N/A |
+| Phase 1.4 | submit-prod + submit-ci + gateway + spreadsheets + 887764105431 (root DNS) | N/A | N/A | N/A |
+| Phase 1.5 | submit-prod + submit-ci + gateway + spreadsheets + 887764105431 (root DNS only) | N/A | N/A | N/A |
+| Phase 2 | submit-prod + submit-ci | 887764105431 | gateway | spreadsheets |
 
 ---
 

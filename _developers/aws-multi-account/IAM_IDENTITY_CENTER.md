@@ -146,7 +146,7 @@ Wait for propagation (usually < 1 minute).
 
 1. Go to **Settings** > **Identity source**
 2. Copy the **AWS access portal URL**
-   - Format: `https://d-XXXXXXXXXX.awsapps.com/start`
+   - URL: `https://d-9c67480c02.awsapps.com/start/`
 
 Bookmark this URL - it's your single entry point to all accounts.
 
@@ -174,8 +174,8 @@ aws configure sso
 ```
 
 Enter when prompted:
-- SSO session name: `diy-accounting`
-- SSO start URL: `https://d-XXXXXXXXXX.awsapps.com/start`
+- SSO session name: `diyaccounting`
+- SSO start URL: `https://d-9c67480c02.awsapps.com/start/`
 - SSO Region: `eu-west-2`
 - SSO registration scopes: (leave default)
 
@@ -188,36 +188,53 @@ After authentication, select:
 - Role: choose role
 - CLI default region: `eu-west-2`
 - CLI default output format: `json`
-- Profile name: e.g., `submit-prod-admin`
+- Profile name: e.g., `submit-prod`
 
 ### 6.3 Create Profiles for Each Account
 
-Repeat for each account/role combination:
+Add to `~/.aws/config`:
 
-```bash
-# ~/.aws/config additions
-[profile submit-prod-admin]
-sso_session = diy-accounting
+```ini
+[sso-session diyaccounting]
+sso_start_url = https://d-9c67480c02.awsapps.com/start/
+sso_region = eu-west-2
+sso_registration_scopes = sso:account:access
+
+[profile management]
+sso_session = diyaccounting
 sso_account_id = 887764105431
 sso_role_name = AdministratorAccess
 region = eu-west-2
 
-[profile submit-ci-admin]
-sso_session = diy-accounting
-sso_account_id = CI_ACCOUNT_ID
+[profile gateway]
+sso_session = diyaccounting
+sso_account_id = 283165661847
 sso_role_name = AdministratorAccess
 region = eu-west-2
 
-[profile submit-backup-admin]
-sso_session = diy-accounting
-sso_account_id = BACKUP_ACCOUNT_ID
+[profile spreadsheets]
+sso_session = diyaccounting
+sso_account_id = 064390746177
 sso_role_name = AdministratorAccess
 region = eu-west-2
 
-[sso-session diy-accounting]
-sso_start_url = https://d-XXXXXXXXXX.awsapps.com/start
-sso_region = eu-west-2
-sso_registration_scopes = sso:account:access
+[profile submit-ci]
+sso_session = diyaccounting
+sso_account_id = 367191799875
+sso_role_name = AdministratorAccess
+region = eu-west-2
+
+[profile submit-prod]
+sso_session = diyaccounting
+sso_account_id = 972912397388
+sso_role_name = AdministratorAccess
+region = eu-west-2
+
+[profile submit-backup]
+sso_session = diyaccounting
+sso_account_id = 914216784828
+sso_role_name = AdministratorAccess
+region = eu-west-2
 ```
 
 ### 6.4 Using SSO Profiles

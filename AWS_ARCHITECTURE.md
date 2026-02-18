@@ -24,8 +24,8 @@ DIY Accounting Submit is a serverless web application enabling UK businesses to 
 
 ```
 AWS Organization Root (887764105431) ── Management
-├── diy-gateway ─────────── Workloads OU
-├── diy-spreadsheets ────── Workloads OU
+├── gateway ─────────── Workloads OU
+├── spreadsheets ────── Workloads OU
 ├── submit-ci ──────────── Workloads OU
 ├── submit-prod ─────────── Workloads OU
 ├── submit-backup ─────── Backup OU
@@ -38,8 +38,8 @@ AWS Organization Root (887764105431) ── Management
 | Account | Purpose | Contains |
 |---------|---------|----------|
 | **887764105431** (management) | Organization administration | IAM Identity Center, Organizations, Route53, consolidated billing, root DNS, holding page |
-| **diy-gateway** | Gateway static site | CloudFront, S3, CloudFront Functions (redirects) |
-| **diy-spreadsheets** | Spreadsheets static site | CloudFront, S3, package hosting |
+| **gateway** | Gateway static site | CloudFront, S3, CloudFront Functions (redirects) |
+| **spreadsheets** | Spreadsheets static site | CloudFront, S3, package hosting |
 | **submit-ci** | Submit CI/CD testing | Full submit stack with test data, HMRC sandbox |
 | **submit-prod** | Submit production | Full submit stack with live data, HMRC production |
 | **submit-backup** | Backup isolation | Cross-account backup vault only |
@@ -81,7 +81,7 @@ Account boundaries provide the strongest isolation AWS offers:
 
 IAM Identity Center provides single sign-on across all accounts:
 
-- One SSO portal URL (`https://d-XXXXXXXXXX.awsapps.com/start`)
+- One SSO portal URL (`https://d-9c67480c02.awsapps.com/start/`)
 - One set of credentials with MFA
 - Click to access any account with assigned permission set
 - AWS CLI SSO profiles for programmatic access
@@ -355,8 +355,8 @@ graph LR
 | Site | Workflow | Target Account |
 |------|----------|----------------|
 | submit.diyaccounting.co.uk | `deploy.yml` | submit-ci / submit-prod |
-| diyaccounting.co.uk (gateway) | `deploy-gateway.yml` | diy-gateway |
-| spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | diy-spreadsheets |
+| diyaccounting.co.uk (gateway) | `deploy-gateway.yml` | gateway |
+| spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | spreadsheets |
 | Root DNS + holding page | `deploy-root.yml` | 887764105431 (management) |
 
 ---
@@ -427,8 +427,8 @@ All API calls logged to CloudWatch with timestamp, user identity (masked), actio
 | Organizations | Global | 887764105431 (management) | Account management |
 | IAM Identity Center | eu-west-2 | 887764105431 (management) | SSO |
 | Route 53 | Global | 887764105431 (management) | DNS for all sites |
-| CloudFront | Global | diy-gateway | Gateway CDN |
-| CloudFront | Global | diy-spreadsheets | Spreadsheets CDN |
+| CloudFront | Global | gateway | Gateway CDN |
+| CloudFront | Global | spreadsheets | Spreadsheets CDN |
 | CloudFront | Global | submit-prod / submit-ci | Submit CDN + holding page |
 | ACM | us-east-1 | Each workload account | SSL certificates |
 | WAF | us-east-1 | submit-prod / submit-ci | Web firewall |
@@ -459,7 +459,7 @@ All API calls logged to CloudWatch with timestamp, user identity (masked), actio
            │                    │                        │
            ▼                    ▼                        ▼
   ┌──────────────┐    ┌──────────────────┐    ┌──────────────────────┐
-  │ diy-gateway  │    │ diy-spreadsheets │    │ submit-prod          │
+  │ gateway  │    │ spreadsheets │    │ submit-prod          │
   │ CloudFront   │    │ CloudFront       │    │ CloudFront + WAF     │
   │   ↓          │    │   ↓              │    │   ↓            ↓     │
   │ S3 (static)  │    │ S3 (static +     │    │ S3 (static) API GW  │

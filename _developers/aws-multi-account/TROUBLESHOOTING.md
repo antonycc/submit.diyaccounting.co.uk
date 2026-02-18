@@ -86,7 +86,7 @@ aws sso-admin list-account-assignments-for-principal \
    ```bash
    # In management account
    aws identitystore delete-user-attribute \
-     --identity-store-id d-XXXXXXXXXX \
+     --identity-store-id d-9c67480c02 \
      --user-id USER_ID \
      --attribute-path mfaConfiguration
    ```
@@ -99,7 +99,7 @@ aws sso-admin list-account-assignments-for-principal \
 ```bash
 # Search for existing user
 aws identitystore list-users \
-  --identity-store-id d-XXXXXXXXXX \
+  --identity-store-id d-9c67480c02 \
   --filters AttributePath=UserName,AttributeValue=username
 ```
 
