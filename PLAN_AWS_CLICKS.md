@@ -273,13 +273,14 @@ Step 1.1.11: Validate gateway CI ✅
 
 Step 1.1.12-1.1.13: DNS cutover and re-validation ✅ (done as part of 1.1.11)
 
-Step 1.1.14-1.1.17: Prod gateway migration — TODO
+Step 1.1.14-1.1.17: Prod gateway migration ✅
 
-Same pattern as CI:
-1. Deploy gateway prod to 283165661847 (stack will get new CloudFront domain)
-2. Run `deploy-root.yml` with manual override for `prod-gateway-cloudfront-domain`, `apex-cloudfront-domain`, `www-cloudfront-domain` (all pointing to new prod CloudFront)
-3. Validate prod: `npm run test:gatewayBehaviour-prod` + manual check of diyaccounting.co.uk and www.diyaccounting.co.uk
-4. Delete old `prod-gateway-GatewayStack` from 887764105431
+1. First attempt hit CNAME collision (`diyaccounting.co.uk`, `www.diyaccounting.co.uk`, `prod-gateway.diyaccounting.co.uk` still attached to old CloudFront in 887764105431). Deleted old `prod-gateway-GatewayStack` from 887764105431 first.
+2. Deleted failed ROLLBACK_COMPLETE stack from 283165661847, re-deployed. New CloudFront: `dnloza7zl3wfi.cloudfront.net`
+3. `deploy-root.yml` with manual overrides: `prod-gateway-cloudfront-domain=dnloza7zl3wfi.cloudfront.net`, `apex-cloudfront-domain=dnloza7zl3wfi.cloudfront.net`, `www-cloudfront-domain=dnloza7zl3wfi.cloudfront.net`, `ci-gateway-cloudfront-domain=de9dto3k3vhcf.cloudfront.net`
+4. Validated: `npm run test:gatewayBehaviour-prod` — 7/7 passed against `https://diyaccounting.co.uk`
+
+**Phase 1.1 complete.** Gateway (CI + prod) fully migrated to 283165661847. ✅
 
 ---
 
