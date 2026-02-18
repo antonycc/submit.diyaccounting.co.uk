@@ -67,6 +67,8 @@ public class PublishStack extends Stack {
 
         String distributionId();
 
+        String originBucketName();
+
         String commitHash();
 
         String websiteHash();
@@ -127,7 +129,7 @@ public class PublishStack extends Stack {
                 this, props.resourceNamePrefix() + "-ImportedWebDist", distributionAttributes);
 
         IBucket originBucket = Bucket.fromBucketName(
-                this, props.resourceNamePrefix() + "-WebBucket", props.sharedNames().originBucketName);
+                this, props.resourceNamePrefix() + "-WebBucket", props.originBucketName());
 
         // Generate submit.version.txt file with commit hash if provided
         if (props.commitHash() != null && !props.commitHash().isBlank()) {

@@ -181,18 +181,16 @@ public class ApexStack extends Stack {
         var cert =
                 Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
 
-        // Create the origin bucket
+        // Create the origin bucket — no explicit bucketName so each account gets a unique name
+        // (S3 bucket names are globally unique; hardcoding causes collisions during account migration)
         this.holdingBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
-                .bucketName(props.sharedNames().holdingBucketName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
                 .build();
-        infof(
-                "Created origin bucket %s with name %s",
-                this.holdingBucket.getNode().getId(), props.sharedNames().holdingBucketName);
+        infof("Created origin bucket %s", this.holdingBucket.getNode().getId());
 
         this.holdingBucket.addToResourcePolicy(PolicyStatement.Builder.create()
                 .sid("AllowCloudFrontReadViaOAC")

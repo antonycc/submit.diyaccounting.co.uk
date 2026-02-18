@@ -134,17 +134,16 @@ public class GatewayStack extends Stack {
         // TLS certificate from existing ACM (must be in us-east-1 for CloudFront)
         var cert = Certificate.fromCertificateArn(this, resourcePrefix + "-WebCert", props.certificateArn());
 
-        // S3 origin bucket
-        String bucketName = resourcePrefix + "-origin";
+        // S3 origin bucket — no explicit bucketName so each account gets a unique name
+        // (S3 bucket names are globally unique; hardcoding causes collisions during account migration)
         this.originBucket = Bucket.Builder.create(this, resourcePrefix + "-OriginBucket")
-                .bucketName(bucketName)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .encryption(BucketEncryption.S3_MANAGED)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
                 .build();
-        infof("Created origin bucket %s", bucketName);
+        infof("Created origin bucket %s", this.originBucket.getBucketName());
 
         this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
                 .sid("AllowCloudFrontReadViaOAC")

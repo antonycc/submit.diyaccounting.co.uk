@@ -373,6 +373,7 @@ public class SubmitApplication {
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.publishStackId, deploymentName, envName);
         String distributionId = this.edgeStack.distribution.getDistributionId();
+        String originBucketName = this.edgeStack.originBucket.getBucketName();
         this.publishStack = new PublishStack(
                 app,
                 sharedNames.publishStackId,
@@ -385,6 +386,7 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .distributionId(distributionId)
+                        .originBucketName(originBucketName)
                         .commitHash(commitHash)
                         .websiteHash(websiteHash)
                         .buildNumber(buildNumber)
@@ -410,6 +412,7 @@ public class SubmitApplication {
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .isApplicationStack(true)
+                            .originBucketName(originBucketName)
                             .build());
         } else {
             this.selfDestructStack = null;

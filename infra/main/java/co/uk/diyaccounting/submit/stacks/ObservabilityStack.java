@@ -166,12 +166,8 @@ public class ObservabilityStack extends Stack {
             this.cloudTrailLogGroup = LogGroup.fromLogGroupName(
                     this, props.resourceNamePrefix() + "-CloudTrailGroup", cloudTrailLogGroupName);
 
-            // Explicitly create S3 bucket for CloudTrail logs with a deterministic name.
-            // Without this, CDK auto-generates a bucket with a random suffix that causes
-            // drift failures if deleted externally.
-            String trailBucketName = props.resourceNamePrefix() + "-cloudtrail-logs";
+            // S3 bucket for CloudTrail logs — no explicit bucketName (globally unique; collisions during account migration)
             Bucket trailBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-TrailBucket")
-                    .bucketName(trailBucketName)
                     .encryption(BucketEncryption.S3_MANAGED)
                     .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                     .removalPolicy(RemovalPolicy.DESTROY)
