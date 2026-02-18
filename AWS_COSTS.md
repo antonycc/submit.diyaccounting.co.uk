@@ -1,8 +1,72 @@
-# AWS Monthly Cost Estimate
+# AWS Costs & Billing
 
 **Last updated:** February 2026
 **Region:** eu-west-2 (London) + us-east-1 (edge)
-**Account:** submit-prod (887764105431)
+
+---
+
+## Multi-Account Billing
+
+### Consolidated Billing
+
+AWS Organizations provides a **single bill** for all member accounts. The management account (887764105431) is the **payer account** — one invoice covers everything.
+
+- Management account receives one monthly bill covering all member accounts
+- Per-account cost breakdown visible in Cost Explorer and billing dashboard
+- Each account's usage is itemised separately
+- Volume discounts (e.g., S3 storage tiers) aggregate across the organisation
+
+### Account Cost Profiles
+
+| Account | Expected Cost Profile |
+|---------|----------------------|
+| 887764105431 (management) | Minimal — Route53 zone ($0.50/month), holding page CloudFront, IAM Identity Center (free) |
+| diy-gateway | Low — CloudFront + S3 static site, no compute |
+| diy-spreadsheets | Low — CloudFront + S3 static site, package hosting |
+| submit-ci | Variable — mirrors prod architecture, only active during CI runs and testing |
+| submit-prod | Primary cost — Lambda, DynamoDB, API Gateway, CloudFront, Secrets Manager, Cognito |
+| submit-backup | Low — AWS Backup vault storage only |
+
+### Free Tier (shared across organisation)
+
+Free tier is **shared across the entire organisation**, not per-account. Creating 6 accounts does NOT give 6x free tier.
+
+| Service | Monthly Free Tier | Impact |
+|---------|-------------------|--------|
+| Lambda | 1M requests + 400K GB-s | Shared — likely within limits at current traffic |
+| DynamoDB | 25 GB storage + 25 RCU/WCU | On-demand mode bypasses RCU/WCU; 25 GB shared across all tables |
+| S3 | 5 GB + 20K GET + 2K PUT | Shared across gateway, spreadsheets, and submit buckets |
+| CloudFront | 1 TB transfer + 10M requests | Shared across all distributions |
+| API Gateway | 1M REST API calls | Shared across submit-ci and submit-prod |
+| Cognito | 50K MAU | Shared — well within limits |
+| Secrets Manager | No free tier | $0.40/secret/month — multiplies across accounts |
+
+### Multi-Account Cost Overhead
+
+| Item | Why | Estimated Additional Cost |
+|------|-----|--------------------------|
+| Secrets Manager | Each account needs its own copies of secrets | ~$5-10/month |
+| ACM certificates | Free (no per-cert charge) | $0 |
+| Route53 | Single zone in management (not duplicated) | $0 |
+| CloudFront | More distributions, but transfer is the cost | Negligible |
+
+### Budget Alerts (planned)
+
+| Budget | Threshold | Action |
+|--------|-----------|--------|
+| Organisation total | $50/month | Email alert |
+| Per-account | $20/month | Email alert |
+| Anomaly detection | 50% above baseline | Email alert |
+
+### AWS Best Practices Alignment
+
+| AWS Recommendation | Implementation | Status |
+|---|---|---|
+| Consolidated billing via Organizations | Management account is payer | Aligned |
+| No workloads in management account | 887764105431 has only Route53 + holding page | Aligned |
+| Per-account cost visibility | Each account itemised in billing | Aligned |
+| Budget alerts | Organisation-level budgets | Planned |
+| Cost allocation tags | CDK tags on all resources | Planned |
 
 ---
 

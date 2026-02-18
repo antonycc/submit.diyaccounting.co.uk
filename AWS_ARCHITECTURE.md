@@ -1,7 +1,7 @@
 # DIY Accounting Submit - AWS Architecture
 
-**Version**: 2.0
-**Date**: January 2026
+**Version**: 3.0
+**Date**: February 2026
 **Status**: Production
 
 ---
@@ -12,8 +12,8 @@ DIY Accounting Submit is a serverless web application enabling UK businesses to 
 
 **Key Characteristics:**
 - Fully serverless (no EC2 instances)
-- Multi-account AWS Organization for security isolation
-- Infrastructure as Code (AWS CDK)
+- Multi-account AWS Organization (6 accounts) for security isolation
+- Infrastructure as Code (AWS CDK in Java)
 - CI/CD via GitHub Actions with OIDC authentication
 
 ---
@@ -22,64 +22,71 @@ DIY Accounting Submit is a serverless web application enabling UK businesses to 
 
 ### 1.1 Account Overview
 
-```mermaid
-graph TB
-    subgraph org["AWS Organization"]
-        mgmt["submit-management<br/>Organization Admin"]
-
-        subgraph workloads["Workloads OU"]
-            prod["submit-prod<br/>887764105431<br/>Production"]
-            ci["submit-ci<br/>CI/CD Testing"]
-        end
-
-        subgraph backup_ou["Backup OU"]
-            backup["submit-backup<br/>Disaster Recovery"]
-        end
-    end
-
-    mgmt --> workloads
-    mgmt --> backup_ou
-
-    style mgmt fill:#e1f5fe
-    style prod fill:#c8e6c9
-    style ci fill:#fff3e0
-    style backup fill:#fce4ec
 ```
+AWS Organization Root (887764105431) ── Management
+├── diy-gateway ─────────── Workloads OU
+├── diy-spreadsheets ────── Workloads OU
+├── submit-ci ──────────── Workloads OU
+├── submit-prod ─────────── Workloads OU
+├── submit-backup ─────── Backup OU
+```
+
+887764105431 is the **management account** and contains only: AWS Organizations, IAM Identity Center, Route53 zone (`diyaccounting.co.uk`), consolidated billing, root DNS stack, and holding page. No application workloads.
 
 ### 1.2 Account Responsibilities
 
-| Account | ID | Purpose | Contains |
-|---------|-----|---------|----------|
-| **submit-management** | (new) | Organization administration | IAM Identity Center, Organizations, Consolidated Billing |
-| **submit-prod** | 887764105431 | Production workloads | All application resources, live user data |
-| **submit-ci** | (new) | CI/CD testing | Identical stack with test data, HMRC sandbox |
-| **submit-backup** | (new) | Backup isolation | Cross-account backup vault only |
+| Account | Purpose | Contains |
+|---------|---------|----------|
+| **887764105431** (management) | Organization administration | IAM Identity Center, Organizations, Route53, consolidated billing, root DNS, holding page |
+| **diy-gateway** | Gateway static site | CloudFront, S3, CloudFront Functions (redirects) |
+| **diy-spreadsheets** | Spreadsheets static site | CloudFront, S3, package hosting |
+| **submit-ci** | Submit CI/CD testing | Full submit stack with test data, HMRC sandbox |
+| **submit-prod** | Submit production | Full submit stack with live data, HMRC production |
+| **submit-backup** | Backup isolation | Cross-account backup vault only |
 
-### 1.3 Security Rationale
+### 1.3 Why This Topology
 
-```mermaid
-graph LR
-    subgraph threat["Threat Scenario"]
-        attacker["Attacker"]
-    end
+**Why 6 accounts (not 1, 3, or 5)?**
 
-    subgraph single["Single Account ❌"]
-        app1["Application"]
-        backup1["Backups"]
-        attacker -.->|"Compromises"| app1
-        attacker -.->|"Deletes"| backup1
-    end
+| Question | Answer |
+|----------|--------|
+| Why not single account? | CI can interfere with prod, backups not isolated (ransomware risk), IAM clutter, unclear cost attribution |
+| Why not 3 (management + ci + prod)? | No backup isolation, gateway/spreadsheets mixed with submit |
+| Why separate gateway and spreadsheets? | Each service deploys independently; separate repos post-separation |
+| Why dedicated backup account? | Critical for ransomware protection — compromised prod cannot delete backups |
+| Why dedicated management? | AWS best practice; no workloads in management. Proves IaC repeatability. |
+| Why not Control Tower? | Too complex for single developer; easy to add later |
 
-    subgraph multi["Multi-Account ✓"]
-        app2["submit-prod<br/>Application"]
-        backup2["submit-backup<br/>Isolated Backups"]
-        attacker -.->|"Compromises"| app2
-        attacker -.-x|"Cannot Access"| backup2
-    end
+**AWS Well-Architected Alignment:**
 
-    style backup1 fill:#ffcdd2
-    style backup2 fill:#c8e6c9
-```
+| Pillar | Score | Key Implementation |
+|--------|-------|--------------------|
+| Security | 7/7 | Account isolation, centralized SSO, backup separation |
+| Operational Excellence | 4/4 | IaC (CDK), automated CI/CD, clear ownership |
+| Reliability | 5/5 | Account-level fault isolation, cross-account backup |
+| Cost Optimization | 4/4 | Consolidated billing, per-account visibility |
+| Performance | 2/2 | Consistent architecture, per-account metrics |
+| Sustainability | 2/2 | eu-west-2 (low-carbon), on-demand CI |
+
+### 1.4 Security Rationale
+
+Account boundaries provide the strongest isolation AWS offers:
+
+- **CI cannot affect prod** — separate accounts, separate IAM, separate service limits
+- **Compromised prod cannot delete backups** — backup vault in different account with separate credentials
+- **Gateway/spreadsheets isolation** — static sites cannot access submit data
+- **Management account is clean** — minimal attack surface, no application code
+
+### 1.5 Console Access
+
+IAM Identity Center provides single sign-on across all accounts:
+
+- One SSO portal URL (`https://d-XXXXXXXXXX.awsapps.com/start`)
+- One set of credentials with MFA
+- Click to access any account with assigned permission set
+- AWS CLI SSO profiles for programmatic access
+
+See `_developers/aws-multi-account/IAM_IDENTITY_CENTER.md` for setup details.
 
 ---
 
@@ -172,111 +179,50 @@ sequenceDiagram
 
 ### 3.1 Edge Layer
 
-```mermaid
-graph LR
-    subgraph edge["Edge Services (us-east-1 + Global)"]
-        r53["Route 53<br/>DNS"]
-        acm["ACM<br/>SSL Certificates"]
-        cf["CloudFront<br/>CDN"]
-        waf["WAF<br/>Firewall"]
-        lambda_edge["Lambda@Edge<br/>Security Headers"]
-    end
-
-    r53 --> cf
-    acm --> cf
-    waf --> cf
-    lambda_edge --> cf
-
-    style cf fill:#ff9800
-```
-
 | Service | Purpose | Configuration |
 |---------|---------|---------------|
-| Route 53 | DNS management | submit.diyaccounting.co.uk |
+| Route 53 | DNS management | `diyaccounting.co.uk` zone in management account (887764105431) |
 | CloudFront | Content delivery | Origin: S3 + API Gateway |
 | WAF | Web firewall | Rate limiting, SQL injection protection |
 | Lambda@Edge | Security headers | CSP, HSTS, X-Frame-Options |
-| ACM | SSL/TLS | Wildcard certificate |
+| ACM | SSL/TLS | Per-account certificates, DNS validation via management Route53 |
 
 ### 3.2 API Layer
 
-```mermaid
-graph TB
-    subgraph api["API Gateway (eu-west-2)"]
-        rest["REST API"]
-
-        subgraph endpoints["Endpoints"]
-            e1["/api/vat/obligations"]
-            e2["/api/vat/return"]
-            e3["/api/auth/token"]
-            e4["/api/account/bundles"]
-        end
-
-        subgraph auth["Authorization"]
-            custom["Custom Authorizer"]
-            cognito["Cognito Integration"]
-        end
-    end
-
-    rest --> endpoints
-    endpoints --> auth
-
-    style rest fill:#7b1fa2,color:#fff
-```
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/vat/obligations` | GET | Fetch VAT obligations from HMRC |
+| `/api/vat/return` | POST | Submit VAT return to HMRC |
+| `/api/vat/return` | GET | View submitted returns |
+| `/api/auth/token` | POST | Exchange Cognito token |
+| `/api/account/bundles` | GET | User subscription info |
+| `/api/billing/*` | Various | Stripe payment integration |
 
 ### 3.3 Compute Layer (Lambda Functions)
 
 | Function | Purpose | Trigger | Memory |
 |----------|---------|---------|--------|
-| `customAuthorizer` | JWT validation | API Gateway | 256 MB |
-| `hmrcVatObligationsGet` | Fetch VAT obligations | API Gateway | 512 MB |
-| `hmrcVatReturnPost` | Submit VAT return | API Gateway | 512 MB |
-| `hmrcVatReturnGet` | View submitted returns | API Gateway | 512 MB |
-| `hmrcTokenRefresh` | OAuth token refresh | EventBridge (scheduled) | 256 MB |
-| `accountBundlesGet` | User subscription info | API Gateway | 256 MB |
+| `customAuthorizer` | JWT validation | API Gateway | 256 MB (PC) |
+| `hmrcVatObligationsGet` | Fetch VAT obligations | API Gateway (async) | 1024 MB |
+| `hmrcVatReturnPost` | Submit VAT return | API Gateway (async) | 256 MB (PC) |
+| `hmrcVatReturnGet` | View submitted returns | API Gateway (async) | 1024 MB |
+| `hmrcTokenRefresh` | OAuth token refresh | EventBridge (scheduled) | 1024 MB |
+| `accountBundlesGet` | User subscription info | API Gateway | 256 MB (PC) |
+| `cognitoTokenPost` | Cognito token exchange | API Gateway | 256 MB (PC) |
 | `securityHeaders` | Add security headers | CloudFront (Lambda@Edge) | 128 MB |
+
+PC = Provisioned Concurrency (always warm). See `AWS_COSTS.md` for memory sizing rationale.
 
 ### 3.4 Data Layer
 
-```mermaid
-graph TB
-    subgraph data["Data Services (eu-west-2)"]
-        subgraph dynamo["DynamoDB Tables"]
-            bundles["submit-bundles<br/>User Subscriptions"]
-            receipts["submit-receipts<br/>HMRC Receipts"]
-            hmrc_requests["submit-hmrc-api-requests<br/>HMRC Audit"]
-            async["async-requests (5 tables)<br/>1-hour TTL"]
-        end
+| Table | Purpose | Backup |
+|-------|---------|--------|
+| `submit-bundles` | User subscriptions + salt backup | PITR + cross-account |
+| `submit-receipts` | HMRC submission receipts (7-year TTL) | PITR + cross-account |
+| `submit-hmrc-api-requests` | HMRC API audit log | PITR |
+| `async-requests` (5 tables) | Async request correlation (1-hour TTL) | None (ephemeral) |
 
-        subgraph secrets["Secrets Manager"]
-            salt_registry["user-sub-hash-salt<br/>JSON registry (multi-version)"]
-            hmrc_creds["HMRC Credentials"]
-            oauth_secrets["OAuth Secrets"]
-        end
-
-        subgraph kms_svc["KMS"]
-            salt_key["Salt Encryption Key<br/>Encrypts salt backup in DynamoDB"]
-        end
-
-        subgraph backup_svc["AWS Backup"]
-            vault["Local Vault"]
-            pitr["Point-in-Time Recovery"]
-        end
-    end
-
-    salt_registry -->|cold start| bundles
-    bundles --> vault
-    receipts --> vault
-    vault --> pitr
-    salt_key -->|Path 3 recovery| bundles
-
-    style bundles fill:#2196f3,color:#fff
-    style receipts fill:#2196f3,color:#fff
-    style salt_registry fill:#ff9800,color:#fff
-    style salt_key fill:#ff9800,color:#fff
-```
-
-**Salt architecture**: The user sub hash salt is stored as a multi-version JSON registry in Secrets Manager. Each DynamoDB item includes a `saltVersion` field. A KMS key in DataStack encrypts a backup copy of the salt stored as a `system#config` item in the bundles table (recovery Path 3). This KMS key must move to the submit-backup account during account separation.
+**Salt architecture**: The user sub hash salt is stored as a multi-version JSON registry in Secrets Manager. Each DynamoDB item includes a `saltVersion` field. A KMS key encrypts a backup copy of the salt stored as a `system#config` item in the bundles table (recovery Path 3). During account separation, this KMS key must be accessible for cross-account salt restoration.
 
 ---
 
@@ -304,28 +250,17 @@ sequenceDiagram
 
 ### 4.2 IAM Role Chain (GitHub Actions)
 
-```mermaid
-graph LR
-    subgraph github["GitHub Actions"]
-        action["Workflow"]
-    end
+Each workload account has its own OIDC provider and role chain:
 
-    subgraph aws["AWS Account"]
-        oidc["OIDC Provider"]
-        actions_role["github-actions-role"]
-        deploy_role["github-deploy-role"]
-        cfn["CloudFormation"]
-    end
-
-    action -->|"1. OIDC Token"| oidc
-    oidc -->|"2. Assume Role"| actions_role
-    actions_role -->|"3. Assume Role"| deploy_role
-    deploy_role -->|"4. Deploy"| cfn
-
-    style oidc fill:#4caf50,color:#fff
-    style actions_role fill:#ff9800
-    style deploy_role fill:#f44336,color:#fff
 ```
+GitHub Actions OIDC Token
+  → token.actions.githubusercontent.com (OIDC Provider in target account)
+    → github-actions-role (AssumeRoleWithWebIdentity)
+      → deployment-role (AssumeRole, used by CDK)
+        → CloudFormation (deploys stacks)
+```
+
+Trust scoped to `repo:antonycc/submit.diyaccounting.co.uk:*` (updated per repo after Phase 2 repo separation).
 
 ### 4.3 Network Security
 
@@ -344,29 +279,14 @@ graph LR
 
 ### 5.1 Backup Architecture
 
-```mermaid
-graph TB
-    subgraph prod["submit-prod"]
-        prod_db["DynamoDB Tables"]
-        prod_vault["Local Backup Vault<br/>35-day retention"]
-    end
+```
+submit-prod                    submit-backup
+  DynamoDB tables ──────────→  Cross-account vault
+  (PITR + daily backup)        (90-day retention)
 
-    subgraph ci_acc["submit-ci"]
-        ci_db["DynamoDB Tables"]
-        ci_vault["Local Backup Vault<br/>14-day retention"]
-    end
-
-    subgraph backup_acc["submit-backup"]
-        cross_vault["Cross-Account Vault<br/>90-day retention"]
-    end
-
-    prod_db -->|"Daily Backup"| prod_vault
-    prod_vault -->|"Cross-Account Copy"| cross_vault
-    ci_db -->|"Daily Backup"| ci_vault
-    ci_vault -.->|"Optional Copy"| cross_vault
-
-    style cross_vault fill:#c8e6c9
-    style prod_vault fill:#fff3e0
+submit-ci                      submit-backup
+  DynamoDB tables ──────────→  Cross-account vault (optional)
+  (PITR + daily backup)
 ```
 
 ### 5.2 Recovery Objectives
@@ -376,6 +296,10 @@ graph TB
 | **RPO** (Recovery Point Objective) | < 24 hours | Daily backups + PITR |
 | **RTO** (Recovery Time Objective) | < 4 hours | Automated restore scripts |
 | **Backup Retention** | 90 days | Cross-account vault |
+
+### 5.3 Disaster Recovery Strategy
+
+IaC repeatability is proven by the account separation itself (Phase 1.4): submit-prod is deployed fresh to a new account from code + backups + salt. This validates that total account loss is recoverable.
 
 ---
 
@@ -402,7 +326,7 @@ graph LR
     end
 
     subgraph deploy_prod["Deploy to Prod"]
-        approval["Manual Approval"]
+        approval["Merge to main"]
         prod_stack["submit-prod Account"]
     end
 
@@ -417,7 +341,6 @@ graph LR
 
     style ci_stack fill:#fff3e0
     style prod_stack fill:#c8e6c9
-    style approval fill:#ffcdd2
 ```
 
 ### 6.2 Environment Mapping
@@ -427,42 +350,20 @@ graph LR
 | `feature/*`, `claude/*` | submit-ci | Development/Testing |
 | `main` | submit-prod | Production |
 
+### 6.3 Multi-Site Deployments
+
+| Site | Workflow | Target Account |
+|------|----------|----------------|
+| submit.diyaccounting.co.uk | `deploy.yml` | submit-ci / submit-prod |
+| diyaccounting.co.uk (gateway) | `deploy-gateway.yml` | diy-gateway |
+| spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | diy-spreadsheets |
+| Root DNS + holding page | `deploy-root.yml` | 887764105431 (management) |
+
 ---
 
 ## 7. Monitoring & Observability
 
-### 7.1 Monitoring Stack
-
-```mermaid
-graph TB
-    subgraph sources["Log Sources"]
-        lambda_logs["Lambda Logs"]
-        api_logs["API Gateway Logs"]
-        cf_logs["CloudFront Logs"]
-        waf_logs["WAF Logs"]
-    end
-
-    subgraph monitoring["Monitoring"]
-        cw["CloudWatch"]
-        alarms["CloudWatch Alarms"]
-        dashboard["CloudWatch Dashboard"]
-    end
-
-    subgraph alerting["Alerting"]
-        sns["SNS Topics"]
-        email["Email Notifications"]
-    end
-
-    sources --> cw
-    cw --> alarms
-    cw --> dashboard
-    alarms --> sns
-    sns --> email
-
-    style cw fill:#ff9800
-```
-
-### 7.2 Key Metrics
+### 7.1 Key Metrics
 
 | Metric | Threshold | Action |
 |--------|-----------|--------|
@@ -472,98 +373,50 @@ graph TB
 | 4xx Error Rate | > 10% | Alert |
 | 5xx Error Rate | > 1% | Alert + Page |
 
+### 7.2 Synthetics
+
+2 canary checks run every 51 minutes (health check + API check). See `AWS_COSTS.md` for interval rationale.
+
 ---
 
-## 8. Cost Optimization
+## 8. Cost
 
-### 8.1 Cost Distribution
-
-```mermaid
-pie title Monthly Cost Distribution (Estimated)
-    "CloudFront" : 25
-    "Lambda" : 20
-    "DynamoDB" : 20
-    "API Gateway" : 15
-    "S3" : 5
-    "Other" : 15
-```
-
-### 8.2 Optimization Strategies
-
-| Strategy | Implementation | Savings |
-|----------|----------------|---------|
-| **Serverless-first** | No EC2 instances | ~60% vs traditional |
-| **DynamoDB On-Demand** | Pay per request | Variable workloads |
-| **CloudFront Caching** | Static asset caching | Reduced origin requests |
-| **Lambda Right-sizing** | Memory optimization | ~20% Lambda costs |
-| **Reserved Capacity** | Not used (low volume) | N/A |
+See **`AWS_COSTS.md`** for detailed cost analysis including:
+- Multi-account consolidated billing and free tier implications
+- Per-service cost breakdown with actuals
+- Per-user marginal cost scaling
+- Optimization strategies and projections
 
 ---
 
 ## 9. Compliance
 
-### 9.1 Compliance Framework
-
 | Requirement | Implementation |
 |-------------|----------------|
-| **GDPR** | Data in eu-west-2, encryption, audit logs |
+| **GDPR** | Data in eu-west-2, encryption, audit logs, PII only in submit-prod |
 | **HMRC MTD** | Fraud prevention headers, secure token storage |
 | **WCAG 2.2 AA** | Accessible UI, tested with axe-core |
 | **OWASP Top 10** | WAF rules, security headers, input validation |
 
-### 9.2 Audit Trail
-
-All API calls logged to CloudWatch with:
-- Timestamp
-- User identity (masked)
-- Action performed
-- Resource affected
-- Source IP (anonymized)
+All API calls logged to CloudWatch with timestamp, user identity (masked), action, resource, and source IP (anonymized).
 
 ---
 
 ## 10. Infrastructure as Code
 
-### 10.1 CDK Stack Structure
+### 10.1 CDK Applications
 
-```mermaid
-graph TB
-    subgraph cdk["CDK Application"]
-        app["App"]
+| CDK App | Directory | Purpose |
+|---------|-----------|---------|
+| Application | `cdk-application/` | Per-deployment submit stacks (Auth, HMRC, Account, Billing, Api, Edge, etc.) |
+| Environment | `cdk-environment/` | Per-environment shared stacks (Identity, Data, Observability) |
+| Gateway | `cdk-gateway/` | Gateway static site stack |
+| Spreadsheets | `cdk-spreadsheets/` | Spreadsheets static site stack |
 
-        subgraph stacks["Stacks"]
-            dev["DevStack<br/>Development Resources"]
-            auth["AuthStack<br/>Cognito, OAuth"]
-            hmrc["HmrcStack<br/>HMRC Lambda Functions"]
-            account["AccountStack<br/>User Management"]
-            api["ApiStack<br/>API Gateway"]
-            edge["EdgeStack<br/>CloudFront, WAF"]
-            backup["BackupStack<br/>AWS Backup"]
-        end
-    end
+### 10.2 Stack Naming
 
-    app --> dev
-    app --> auth
-    app --> hmrc
-    app --> account
-    app --> api
-    app --> edge
-    app --> backup
-
-    auth --> api
-    hmrc --> api
-    account --> api
-    api --> edge
-```
-
-### 10.2 Key Files
-
-| File | Purpose |
-|------|---------|
-| `cdk/src/main/java/.../App.java` | CDK entry point |
-| `cdk/src/main/java/.../stacks/*.java` | Stack definitions |
-| `cdk.json` | CDK configuration |
-| `.github/workflows/deploy.yml` | CI/CD pipeline |
+- Environment stacks: `{env}-env-{StackName}` (e.g., `ci-env-IdentityStack`, `prod-env-DataStack`)
+- Application stacks: `{deployment}-app-{StackName}` (e.g., `ci-cleanlogin-app-AuthStack`)
 
 ---
 
@@ -571,20 +424,23 @@ graph TB
 
 | Service | Region | Account | Purpose |
 |---------|--------|---------|---------|
-| Route 53 | Global | submit-prod | DNS |
-| CloudFront | Global | submit-prod | CDN |
-| ACM | us-east-1 | submit-prod | SSL certificates |
-| WAF | us-east-1 | submit-prod | Web firewall |
-| API Gateway | eu-west-2 | submit-prod/ci | REST API |
-| Lambda | eu-west-2, us-east-1 | submit-prod/ci | Compute |
-| DynamoDB | eu-west-2 | submit-prod/ci | Database |
-| Cognito | eu-west-2 | submit-prod/ci | Authentication |
-| Secrets Manager | eu-west-2 | submit-prod/ci | Credentials |
-| S3 | eu-west-2 | submit-prod/ci | Static assets |
-| CloudWatch | eu-west-2 | submit-prod/ci | Monitoring |
-| AWS Backup | eu-west-2 | All | Backup management |
-| IAM Identity Center | eu-west-2 | submit-management | SSO |
-| Organizations | Global | submit-management | Account management |
+| Organizations | Global | 887764105431 (management) | Account management |
+| IAM Identity Center | eu-west-2 | 887764105431 (management) | SSO |
+| Route 53 | Global | 887764105431 (management) | DNS for all sites |
+| CloudFront | Global | diy-gateway | Gateway CDN |
+| CloudFront | Global | diy-spreadsheets | Spreadsheets CDN |
+| CloudFront | Global | submit-prod / submit-ci | Submit CDN + holding page |
+| ACM | us-east-1 | Each workload account | SSL certificates |
+| WAF | us-east-1 | submit-prod / submit-ci | Web firewall |
+| API Gateway | eu-west-2 | submit-prod / submit-ci | REST API |
+| Lambda | eu-west-2, us-east-1 | submit-prod / submit-ci | Compute |
+| DynamoDB | eu-west-2 | submit-prod / submit-ci | Database |
+| Cognito | eu-west-2 | submit-prod / submit-ci | Authentication |
+| Secrets Manager | eu-west-2 | submit-prod / submit-ci | Credentials |
+| S3 | eu-west-2 | Each workload account | Static assets |
+| CloudWatch | eu-west-2 | Each workload account | Monitoring |
+| AWS Backup | eu-west-2 | submit-prod, submit-backup | Backup management |
+| ECR | eu-west-2, us-east-1 | submit-prod / submit-ci | Docker images |
 
 ---
 
@@ -592,60 +448,31 @@ graph TB
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              INTERNET                                        │
+│                              INTERNET                                       │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         Route 53 (DNS)                                       │
-│                    submit.diyaccounting.co.uk                                │
+│                   Route 53 (887764105431 management)                        │
+│                    *.diyaccounting.co.uk                                    │
 └─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CloudFront (CDN + WAF)                                    │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                      │
-│  │ WAF Rules   │    │ SSL/TLS     │    │ Lambda@Edge │                      │
-│  │ Rate Limit  │    │ TLS 1.2+    │    │ Sec Headers │                      │
-│  └─────────────┘    └─────────────┘    └─────────────┘                      │
-└─────────────────────────────────────────────────────────────────────────────┘
-                          │                    │
-              ┌───────────┘                    └───────────┐
-              ▼                                            ▼
-┌──────────────────────────┐              ┌──────────────────────────┐
-│     S3 (Static Assets)   │              │     API Gateway          │
-│  ┌────────────────────┐  │              │  ┌────────────────────┐  │
-│  │ index.html         │  │              │  │ /api/vat/*         │  │
-│  │ CSS/JS bundles     │  │              │  │ /api/auth/*        │  │
-│  │ Images             │  │              │  │ /api/account/*     │  │
-│  └────────────────────┘  │              │  └────────────────────┘  │
-└──────────────────────────┘              └──────────────────────────┘
-                                                       │
-                                                       ▼
-                                          ┌──────────────────────────┐
-                                          │   Custom Authorizer      │
-                                          │   (JWT Validation)       │
-                                          └──────────────────────────┘
-                                                       │
-                                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           Lambda Functions                                   │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │ VAT Get     │  │ VAT Post    │  │ VAT View    │  │ Token Mgr   │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
-└─────────────────────────────────────────────────────────────────────────────┘
-              │                    │                    │
-              ▼                    ▼                    ▼
-┌──────────────────────────┐  ┌─────────────┐  ┌──────────────────────────┐
-│       DynamoDB           │  │  Secrets    │  │      HMRC MTD API        │
-│  ┌────────────────────┐  │  │  Manager    │  │  ┌────────────────────┐  │
-│  │ submit-tokens      │  │  └─────────────┘  │  │ api.service.hmrc   │  │
-│  │ submit-bundles     │  │                   │  │ .gov.uk            │  │
-│  └────────────────────┘  │                   │  └────────────────────┘  │
-└──────────────────────────┘                   └──────────────────────────┘
+           │                    │                        │
+           ▼                    ▼                        ▼
+  ┌──────────────┐    ┌──────────────────┐    ┌──────────────────────┐
+  │ diy-gateway  │    │ diy-spreadsheets │    │ submit-prod          │
+  │ CloudFront   │    │ CloudFront       │    │ CloudFront + WAF     │
+  │   ↓          │    │   ↓              │    │   ↓            ↓     │
+  │ S3 (static)  │    │ S3 (static +     │    │ S3 (static) API GW  │
+  │              │    │    packages)      │    │              ↓      │
+  └──────────────┘    └──────────────────┘    │         Authorizer   │
+                                              │              ↓      │
+                                              │         Lambda fns   │
+                                              │          ↓      ↓   │
+                                              │      DynamoDB  HMRC │
+                                              └──────────────────────┘
 ```
 
 ---
 
-*Document generated: January 2026*
-*Architecture version: 2.0 (Multi-Account)*
+*Document generated: February 2026*
+*Architecture version: 3.0 (Multi-Account, 6 accounts)*
