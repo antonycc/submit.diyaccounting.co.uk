@@ -246,16 +246,12 @@ See `PLAN_AWS_CLICKS.md` → "S3 bucket rename impact" for the per-stack breakdo
 
 | Repository | GitHub URL | Content | Source |
 |---|---|---|---|
-| Root | TBD — new repo | Route53 zone, RootDnsStack, holding page | Created fresh from submit |
+| Root | `antonycc/root.diyaccounting.co.uk` | Route53 zone, RootDnsStack, holding page | Created fresh from submit |
 | Gateway | `antonycc/www.diyaccounting.co.uk` | Gateway static site, CloudFront Function redirects | Archive-and-overlay existing repo |
 | Spreadsheets | `antonycc/diy-accounting` | Spreadsheets site, package hosting, knowledge base, community discussions | Archive-and-overlay existing repo |
 | Submit | `antonycc/submit.diyaccounting.co.uk` | Submit application (Lambda, Cognito, DynamoDB, API GW) | This repo — remove migrated code |
 
-**Repository naming — root repo (open decision)**:
-1. `antonycc/diyaccounting-root` — descriptive, matches its purpose
-2. `antonycc/diyaccounting-web` — "web" grouping name
-3. `antonycc/diy-accounting-infrastructure` — explicit infrastructure focus
-4. Decide at implementation time
+**Repository naming — root repo (decided)**: `antonycc/root.diyaccounting.co.uk` — checked out at `../root.diyaccounting.co.uk`
 
 **Note**: `antonycc/www.diyaccounting.co.uk` is being kept because it has the right name for gateway. `antonycc/diy-accounting` is being kept because it has existing users with posts in discussions that should be preserved.
 
@@ -265,11 +261,11 @@ Root is the thinnest slice — just Route53 alias records and the holding page. 
 
 | Step | Description |
 |------|-------------|
-| 2.1.1 | Create new GitHub repository for root |
+| 2.1.1 | Create new GitHub repository for root — ✅ `antonycc/root.diyaccounting.co.uk` |
 | 2.1.2 | Set up minimal project: `pom.xml` (CDK infra module only), `package.json` (Playwright, Vitest, prettier, eslint, ncu) |
 | 2.1.3 | Copy root-relevant files from submit repo (see "What goes in the root repo" below) |
 | 2.1.4 | Adapt `deploy-root.yml` → `deploy.yml` (main workflow), keep `deploy-holding.yml` |
-| 2.1.5 | Update OIDC trust in 887764105431: change to `repo:antonycc/<root-repo-name>:*` |
+| 2.1.5 | Update OIDC trust in 887764105431: change to `repo:antonycc/root.diyaccounting.co.uk:*` |
 | 2.1.6 | Deploy from root repo. Verify DNS records resolve correctly. |
 | 2.1.7 | Verify holding page deploys from root repo |
 | 2.1.8 | Remove `deploy-root.yml`, `deploy-holding.yml`, `RootDnsStack`, `web/holding/` from submit repo |
@@ -497,7 +493,7 @@ GitHub Actions (submit.diyaccounting.co.uk repo)
 ### After Phase 2 (multiple repos, multiple accounts)
 
 ```
-root repo ─────────OIDC──► 887764105431 (DNS + holding only)
+root.diyaccounting.co.uk ──OIDC──► 887764105431 (DNS + holding only)
 submit repo ───────OIDC──► submit-prod (prod) + submit-ci (CI)
 gateway repo ──────OIDC──► gateway (S3 + CloudFront)
 spreadsheets repo ─OIDC──► spreadsheets (S3 + CloudFront)

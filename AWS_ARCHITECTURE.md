@@ -260,7 +260,7 @@ GitHub Actions OIDC Token
         → CloudFormation (deploys stacks)
 ```
 
-Trust scoped to `repo:antonycc/submit.diyaccounting.co.uk:*` (updated per repo after Phase 2 repo separation).
+Trust scoped to `repo:antonycc/submit.diyaccounting.co.uk:*` (updated per repo after Phase 2 repo separation; root repo is `antonycc/root.diyaccounting.co.uk`).
 
 ### 4.3 Network Security
 

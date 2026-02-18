@@ -284,6 +284,60 @@ Step 1.1.14-1.1.17: Prod gateway migration ✅
 
 ---
 
+Phase 1.2: Spreadsheets to its own account (064390746177)
+
+Step 1.2.1: Bootstrap ✅
+
+```bash
+./scripts/aws-accounts/bootstrap-account.sh --account-id 064390746177 --account-name spreadsheets --profile spreadsheets
+```
+
+Results:
+- CDK bootstrap: us-east-1 ✅, eu-west-2 ✅
+- OIDC provider: ✅
+- spreadsheets-github-actions-role: ✅
+- spreadsheets-deployment-role: ✅
+
+Step 1.2.2: ACM certificate ✅
+
+```
+arn:aws:acm:us-east-1:064390746177:certificate/bc67c01c-ea52-4b11-8958-68e24bf23727
+```
+
+SANs: ci-spreadsheets.diyaccounting.co.uk, prod-spreadsheets.diyaccounting.co.uk, spreadsheets.diyaccounting.co.uk
+DNS validation CNAMEs added to 887764105431 Route53 zone. All validated (ISSUED).
+
+Step 1.2.3: GitHub variables ✅
+
+- `SPREADSHEETS_ACCOUNT_ID=064390746177`
+- `SPREADSHEETS_ACTIONS_ROLE_ARN=arn:aws:iam::064390746177:role/spreadsheets-github-actions-role`
+- `SPREADSHEETS_DEPLOY_ROLE_ARN=arn:aws:iam::064390746177:role/spreadsheets-deployment-role`
+- `SPREADSHEETS_CERTIFICATE_ARN=arn:aws:acm:us-east-1:064390746177:certificate/bc67c01c-ea52-4b11-8958-68e24bf23727`
+
+Step 1.2.4: Code changes ✅
+
+- `deploy-spreadsheets.yml`: Role ARNs from `vars.SPREADSHEETS_*`, cert ARN from `vars.SPREADSHEETS_CERTIFICATE_ARN`
+- `cdk-spreadsheets/cdk.json`: Cleared hardcoded cert ARN (now comes from env var)
+- `.github/actionlint.yaml`: Added all gateway and spreadsheets variables
+
+Step 1.2.5: Deploy spreadsheets CI to new account ✅
+
+Old `ci-spreadsheets-SpreadsheetsStack` deleted from 887764105431, then fresh deploy to 064390746177.
+New CI CloudFront: `dk6ghpplfgq9t.cloudfront.net`
+`deploy-root.yml` with manual override: `ci-spreadsheets-cloudfront-domain=dk6ghpplfgq9t.cloudfront.net`
+Validated: `npm run test:spreadsheetsBehaviour-ci` — 11/11 passed against `https://ci-spreadsheets.diyaccounting.co.uk`
+
+Step 1.2.6: Deploy spreadsheets prod to new account ✅
+
+Old `prod-spreadsheets-SpreadsheetsStack` deleted from 887764105431, then fresh deploy to 064390746177.
+New prod CloudFront: `d10s0isuhkjtrs.cloudfront.net`
+`deploy-root.yml` with manual overrides for all 7 domains (gateway + spreadsheets + apex + www).
+Validated: `npm run test:spreadsheetsBehaviour-prod` — 11/11 passed against `https://spreadsheets.diyaccounting.co.uk`
+
+**Phase 1.2 complete.** Spreadsheets (CI + prod) fully migrated to 064390746177. ✅
+
+---
+
 S3 bucket rename impact
 
 Hardcoded S3 bucket names were removed from all 7 stacks to prevent collisions during account migration. CDK now auto-generates unique names. This affects deployments as follows:
