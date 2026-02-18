@@ -675,6 +675,7 @@ jobs:
               npx cdk destroy \
               --all \
               --force \
+              --no-notices \
           && cd .. \
           || echo "CDK destroy cleanup pass completed (some stacks may already be deleted)"
         env:

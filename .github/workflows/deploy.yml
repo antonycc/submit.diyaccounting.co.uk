@@ -1061,6 +1061,7 @@ jobs:
               --exclusively \
               --require-approval never \
               --ci true \
+              --no-notices \
               --concurrency 4 \
               --asset-parallelism \
               --outputs-file ../cdk-submit-application.out/cdk-outputs-api.json
@@ -1379,6 +1380,7 @@ jobs:
               --exclusively \
               --require-approval never \
               --ci true \
+              --no-notices \
               --concurrency 4 \
               --asset-parallelism \
               --outputs-file ../cdk-submit-application.out/cdk-outputs-publish.json

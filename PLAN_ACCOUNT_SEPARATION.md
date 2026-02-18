@@ -200,6 +200,21 @@ One-time operation per cert. ACM certs are rarely recreated.
 
 Each new account gets its own GitHub Actions OIDC provider pointing to `token.actions.githubusercontent.com`. The trust policy is scoped to `repo:antonycc/submit.diyaccounting.co.uk:*` — because during Phase 1, this is the only repo deploying anywhere. In Phase 2 (repo separation), OIDC trust policies are updated to trust each service's own repo.
 
+### S3 bucket name migration
+
+S3 bucket names are globally unique across all AWS accounts. All stacks had hardcoded bucket names (e.g., `ci-gateway-origin`), which collide when deploying the same stack to a new account while the old account still has the bucket.
+
+**Fix applied (commit `1715f2bf`):** Removed `.bucketName()` from all 7 stacks. CDK auto-generates unique names per account. For EdgeStack, the cross-stack reference (PublishStack and SelfDestructStack looked up the bucket by name via `sharedNames`) was replaced with an explicit prop passed from SubmitApplication.
+
+**Migration pattern for each phase:**
+1. Old stacks in 887764105431 remain untouched (still have hardcoded names — deployed from `main`)
+2. New stacks deploy fresh to the new account with CDK-generated names — no collision
+3. Old stacks are torn down after validation and DNS cutover
+
+**Safety rule:** Do not deploy the `accounts` branch to 887764105431. The bucket name removal would cause CloudFormation to replace existing buckets. Keep 887764105431 deployments on `main` until the relevant stacks are being torn down.
+
+See `PLAN_AWS_CLICKS.md` → "S3 bucket rename impact" for the per-stack breakdown.
+
 ### Rollback strategy
 
 - Keep old stacks in 887764105431 until new-account versions are validated
@@ -628,7 +643,7 @@ AWS Organizations provides consolidated billing automatically.
 | Account | ID | Email | OU | Purpose | Phase |
 |---------|-----|-------|-----|---------|-------|
 | 887764105431 | 887764105431 | admin@diyaccounting.co.uk | Management (org root) | Org admin, Route53, IAM Identity Center, billing, holding page | Phase 1.0 ✅ |
-| gateway | 283165661847 | admin+aws-gateway@diyaccounting.co.uk | Workloads | Gateway (S3 + CloudFront) | Phase 1.1 |
+| gateway | 283165661847 | admin+aws-gateway@diyaccounting.co.uk | Workloads | Gateway (S3 + CloudFront) | Phase 1.1 (in progress — bootstrapped, cert issued, CI deploying) |
 | spreadsheets | 064390746177 | admin+aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets (S3 + CloudFront) | Phase 1.2 |
 | submit-ci | 367191799875 | admin+aws-submit-ci@diyaccounting.co.uk | Workloads | Submit CI (Lambda, DDB, Cognito, API GW) | Phase 1.3 |
 | submit-prod | 972912397388 | admin+aws-submit-prod@diyaccounting.co.uk | Workloads | Submit prod (Lambda, DDB, Cognito, API GW) | Phase 1.4 |

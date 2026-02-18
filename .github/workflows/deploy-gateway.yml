@@ -146,6 +146,7 @@ jobs:
               "$STACK_NAME" \
               --require-approval never \
               --ci true \
+              --no-notices \
               --concurrency 4 \
               --asset-parallelism \
               --outputs-file ../cdk-submit-gateway.out/cdk-outputs-gateway.json \

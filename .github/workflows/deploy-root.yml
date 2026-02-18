@@ -303,6 +303,7 @@ jobs:
               root-RootDnsStack \
               --require-approval never \
               --ci true \
+              --no-notices \
               --outputs-file ../cdk-submit-root.out/cdk-outputs-root-dns.json \
           ;
         env:

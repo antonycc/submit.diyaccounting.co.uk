@@ -214,26 +214,80 @@ sometimes a 1-per-minute rate limit on new orgs).
 
 ---
 
-⏺ Phase 1.0 is complete. Next is Phase 1.1: Gateway to its own account — the simplest migration (static site, no Lambda/DynamoDB).
+Phase 1.0 is complete. ✅
 
-The steps split between you and me:
+---
 
-You run (one-time, ~10 minutes):
+Phase 1.1: Gateway to its own account (283165661847)
 
+Step 1.1.1-1.1.5: Bootstrap ✅
+
+```bash
 aws sso login --sso-session diyaccounting
 ./scripts/aws-accounts/bootstrap-account.sh \
---account-id 283165661847 \
---account-name gateway \
---profile gateway
+  --account-id 283165661847 \
+  --account-name gateway \
+  --profile gateway
+```
 
+Results:
+- CDK bootstrap: us-east-1 ✅, eu-west-2 ✅
+- OIDC provider: ✅
+- gateway-github-actions-role: ✅ (hit IAM propagation race — fixed with 10s sleep)
+- gateway-deployment-role: ✅
+- Bootstrap script bugs fixed: `${VAR^^}` (Bash 4+ only, macOS has 3.2) → `tr` replacement
 
-This does CDK bootstrap + OIDC provider + deployment roles in the gateway account. The script prints the GitHub secrets to add.
+Step 1.1.6: ACM certificate ✅
 
-I do (code changes):
-- Update deploy-gateway.yml to target the gateway account
-- Update cdk-gateway/cdk.json with the new account ID
-- Create ACM cert request (or add it to the CDK stack)
-- Add the cross-account DNS validation CNAME to RootDnsStack
+```
+arn:aws:acm:us-east-1:283165661847:certificate/18008e08-0475-4ba0-8516-834fd5f447d9
+```
 
-Want to start Phase 1.1, or would you rather I first prepare the workflow refactoring for all accounts so the code changes are ready when you bootstrap each
-one?
+SANs: ci-gateway.diyaccounting.co.uk, prod-gateway.diyaccounting.co.uk, diyaccounting.co.uk, www.diyaccounting.co.uk
+DNS validation CNAMEs added to 887764105431 Route53 zone. All validated (ISSUED).
+
+Step 1.1.7: GitHub variables ✅
+
+Added as **variables** (not secrets — these are identifiers, not credentials):
+- `GATEWAY_ACCOUNT_ID=283165661847`
+- `GATEWAY_ACTIONS_ROLE_ARN=arn:aws:iam::283165661847:role/gateway-github-actions-role`
+- `GATEWAY_DEPLOY_ROLE_ARN=arn:aws:iam::283165661847:role/gateway-deployment-role`
+- `GATEWAY_CERTIFICATE_ARN=arn:aws:acm:us-east-1:283165661847:certificate/18008e08-0475-4ba0-8516-834fd5f447d9`
+
+Step 1.1.8-1.1.9: Code changes ✅
+
+- `deploy-gateway.yml`: Role ARNs from `vars.GATEWAY_*`, cert ARN from `vars.GATEWAY_CERTIFICATE_ARN`
+- `cdk-gateway/cdk.json`: Cleared hardcoded cert ARN (now comes from env var)
+
+Step 1.1.10: Deploy gateway CI to new account — IN PROGRESS
+
+First attempt failed: S3 bucket `ci-gateway-origin` already exists (globally unique names collide across accounts).
+Fix: Removed hardcoded `.bucketName()` from all stacks (see S3 bucket rename impact below).
+Old CI stack in 887764105431 being deleted first, then re-deploying to new account.
+
+Step 1.1.11-1.1.17: Remaining — TODO
+
+---
+
+S3 bucket rename impact
+
+Hardcoded S3 bucket names were removed from all 7 stacks to prevent collisions during account migration. CDK now auto-generates unique names. This affects deployments as follows:
+
+**Deploying to NEW accounts (fresh deploy — no issues):**
+Stacks create new buckets with CDK-generated names. No collision because no pre-existing resources.
+
+**Redeploying to 887764105431 (existing stacks — DESTRUCTIVE):**
+CloudFormation sees the bucket name property changed from explicit to auto-generated. This triggers bucket REPLACEMENT (delete old + create new). Data in the old bucket is lost.
+
+| Stack | Old bucket name | Impact on redeploy to 887764105431 | When we hit it |
+|-------|----------------|-------------------------------------|----------------|
+| GatewayStack | `{env}-gateway-origin` | Bucket replaced. Static content re-synced by BucketDeployment. **No data loss** (content is in git). | Phase 1.1 — old CI stack deleted manually before deploying to new account. Prod stack stays untouched until DNS cutover. |
+| SpreadsheetsStack | `{env}-spreadsheets-origin` | Bucket replaced. Static content + package zips re-synced. **No data loss** (content is in git/build). | Phase 1.2 — same pattern: delete old CI stack, deploy fresh to new account. |
+| ApexStack | `{env}-...-holding-us-east-1` | Bucket replaced. Holding page content re-synced. **No data loss**. | Phase 1.3/1.4 — deploys fresh to submit-ci/submit-prod. Old stacks in 887764105431 untouched until teardown. |
+| EdgeStack | `{deployment}-...-origin-us-east-1` | Bucket replaced. Web content re-synced by PublishStack. **No data loss**. Cross-stack ref fixed: PublishStack and SelfDestructStack now receive bucket name as a prop from SubmitApplication instead of via sharedNames. | Phase 1.3/1.4 — deploys fresh to submit-ci/submit-prod. |
+| BackupStack | `{deployment}-...-backup-exports` | Bucket replaced. **DynamoDB export data in the bucket is lost.** Acceptable: exports are derived from DynamoDB tables (which have PITR). | Phase 1.3/1.4 — deploys fresh. |
+| OpsStack | `{prefix}-canary-artifacts` | Bucket replaced. **14-day canary screenshots lost.** Acceptable: operational data only. | Phase 1.3/1.4 — deploys fresh. |
+| ObservabilityStack | `{prefix}-cloudtrail-logs` | Bucket replaced. **CloudTrail logs lost.** Acceptable: logs are operational, not compliance-critical during migration. | Phase 1.3/1.4 — deploys fresh. |
+
+**Key safety rule: Do NOT redeploy submit stacks to 887764105431 from the `accounts` branch.**
+The bucket rename changes are safe for new accounts but destructive for existing stacks. Keep 887764105431 deployments on `main` (which still has the old hardcoded names) until Phase 1.3/1.4 migration is complete and old stacks are being torn down.

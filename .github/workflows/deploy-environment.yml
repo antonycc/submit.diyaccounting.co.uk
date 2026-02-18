@@ -561,6 +561,7 @@ jobs:
                 --exclusively \
                 --require-approval never \
                 --ci true \
+                --no-notices \
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-identity.json \
@@ -688,6 +689,7 @@ jobs:
                 --exclusively \
                 --require-approval never \
                 --ci true \
+                --no-notices \
                 --concurrency 4 \
                 --asset-parallelism \
                 --outputs-file ../cdk-submit-environment.out/cdk-outputs-simulator.json \

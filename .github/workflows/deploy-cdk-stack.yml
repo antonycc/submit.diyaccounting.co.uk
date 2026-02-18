@@ -364,6 +364,7 @@ jobs:
               ${{ needs.params.outputs.stackName }} \
               --require-approval never \
               --ci true \
+              --no-notices \
               --concurrency 4 \
               --asset-parallelism \
               --outputs-file ../cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json
