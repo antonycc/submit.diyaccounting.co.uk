@@ -259,13 +259,27 @@ Step 1.1.8-1.1.9: Code changes ✅
 - `deploy-gateway.yml`: Role ARNs from `vars.GATEWAY_*`, cert ARN from `vars.GATEWAY_CERTIFICATE_ARN`
 - `cdk-gateway/cdk.json`: Cleared hardcoded cert ARN (now comes from env var)
 
-Step 1.1.10: Deploy gateway CI to new account — IN PROGRESS
+Step 1.1.10: Deploy gateway CI to new account ✅
 
 First attempt failed: S3 bucket `ci-gateway-origin` already exists (globally unique names collide across accounts).
 Fix: Removed hardcoded `.bucketName()` from all stacks (see S3 bucket rename impact below).
-Old CI stack in 887764105431 being deleted first, then re-deploying to new account.
+Old CI stack in 887764105431 deleted, then fresh deploy to 283165661847 succeeded (~29 min for new CloudFront distribution).
 
-Step 1.1.11-1.1.17: Remaining — TODO
+Step 1.1.11: Validate gateway CI ✅
+
+`deploy-root.yml` auto-lookup could not find `ci-gateway-GatewayStack` (it's in 283165661847, not 887764105431) and **deleted** the ci-gateway DNS records. Re-ran with manual override: `ci-gateway-cloudfront-domain=de9dto3k3vhcf.cloudfront.net`. Tests pass.
+
+**Lesson learned**: `deploy-root.yml` must always use manual overrides for services that have moved to other accounts. The auto-lookup only works within 887764105431.
+
+Step 1.1.12-1.1.13: DNS cutover and re-validation ✅ (done as part of 1.1.11)
+
+Step 1.1.14-1.1.17: Prod gateway migration — TODO
+
+Same pattern as CI:
+1. Deploy gateway prod to 283165661847 (stack will get new CloudFront domain)
+2. Run `deploy-root.yml` with manual override for `prod-gateway-cloudfront-domain`, `apex-cloudfront-domain`, `www-cloudfront-domain` (all pointing to new prod CloudFront)
+3. Validate prod: `npm run test:gatewayBehaviour-prod` + manual check of diyaccounting.co.uk and www.diyaccounting.co.uk
+4. Delete old `prod-gateway-GatewayStack` from 887764105431
 
 ---
 
