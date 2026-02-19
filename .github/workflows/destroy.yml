@@ -577,8 +577,18 @@ jobs:
       - name: Empty origin bucket
         shell: bash
         run: |
-          aws s3 rm s3://${{ needs.names.outputs.deployment-name }}-app-origin-us-east-1 --recursive \
-            || echo "Origin bucket already empty or does not exist"
+          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "${EDGE_STACK}" --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+            echo "EdgeStack not found or no OriginBucketName output, skipping"
+          else
+            echo "Emptying origin bucket: ${BUCKET_NAME}"
+            aws s3 rm "s3://${BUCKET_NAME}" --recursive \
+              || echo "Origin bucket already empty or does not exist"
+          fi
 
       - name: Clean up external API Gateway custom domain mappings
         shell: bash

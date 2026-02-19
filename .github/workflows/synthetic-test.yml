@@ -551,10 +551,28 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Publish test results to local directory and upload to S3
+      - name: Lookup origin bucket name from EdgeStack
         if: ${{ !cancelled() }}
+        id: lookup-bucket
+        shell: bash
+        run: |
+          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "${EDGE_STACK}" --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+            echo "WARNING: Could not find OriginBucketName from stack ${EDGE_STACK}, skipping upload"
+            echo "BUCKET_NAME=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found origin bucket: ${BUCKET_NAME}"
+            echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish test results to local directory and upload to S3
+        if: ${{ !cancelled() && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
         env:
-          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-app-origin-us-east-1
+          BUCKET_NAME: ${{ steps.lookup-bucket.outputs.BUCKET_NAME }}
         shell: bash
         run: |
           chmod +x ./scripts/publish-web-test-local.sh

@@ -577,12 +577,26 @@ jobs:
           echo -n "${{ needs.names.outputs.deployment-name }}" > web/public/submit.deployment-name.txt
           echo -n "${{ needs.names.outputs.environment-name }}" > web/public/submit.environment-name.txt
 
+      - name: Lookup origin bucket name from EdgeStack
+        id: lookup-bucket
+        shell: bash
+        run: |
+          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "${EDGE_STACK}" --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
+            --output text)
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+            echo "ERROR: Could not find OriginBucketName from stack ${EDGE_STACK}" >&2
+            exit 1
+          fi
+          echo "Found origin bucket: ${BUCKET_NAME}"
+          echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Sync to S3
         shell: bash
         run: |
-          BUCKET_NAME="${{ needs.names.outputs.deployment-name }}-app-origin-us-east-1"
-          # Replace dots with dashes (matching SubmitSharedNames.java convertDotSeparatedToDashSeparated)
-          BUCKET_NAME="${BUCKET_NAME//./-}"
+          BUCKET_NAME="${{ steps.lookup-bucket.outputs.BUCKET_NAME }}"
           echo "Syncing web/public/ to s3://${BUCKET_NAME}/"
           aws s3 sync web/public/ "s3://${BUCKET_NAME}/" --region us-east-1
 
