@@ -24,7 +24,7 @@ Production is live:
 - https://spreadsheets.diyaccounting.co.uk/ — **migrated to 064390746177** ✅
 - https://submit.diyaccounting.co.uk/ — still in 887764105431 (CI migration in progress)
 
-Gateway and spreadsheets (CI + prod) fully migrated. Submit CI migration: account bootstrapped, certs issued, all workflow files updated to use `vars.SUBMIT_*` / `vars.ROOT_*` — ready to deploy.
+Gateway and spreadsheets (CI + prod) fully migrated. Submit CI migration: account bootstrapped, certs issued, all workflow files and CDK context updated, all code pushed — ready to deploy.
 
 ### Account structure (current)
 
@@ -91,10 +91,10 @@ Move submit CI deployments into their own account (367191799875).
 | 1.3.4 | Create OIDC provider | ✅ | Trust: `repo:antonycc/submit.diyaccounting.co.uk:*` |
 | 1.3.5 | Create deployment roles | ✅ | `submit-ci-github-actions-role` and `submit-ci-deployment-role` |
 | 1.3.6 | Create ACM certs | ✅ | us-east-1: `bd4b7bf4...` (*.submit, ci-submit, ci-holding), eu-west-2: `de2a24a1...` (*.submit, ci-submit) |
-| 1.3.7 | Replicate Secrets Manager entries | TODO | Copy HMRC sandbox credentials, Stripe test keys, Telegram bot token, etc. into submit-ci's Secrets Manager |
+| 1.3.7 | Replicate Secrets Manager entries | ✅ | Not needed — `deploy-environment.yml` `create-secrets` job creates all secrets automatically from GitHub Actions secrets |
 | 1.3.8 | Add GitHub environment variables | ✅ | Environment-scoped `SUBMIT_*` vars (ci + prod envs), repo-level `ROOT_*` vars |
 | 1.3.9 | Update ALL workflow files | ✅ | Removed every hardcoded 887764105431 reference from ~20 workflow files. Uses `vars.SUBMIT_*` (environment-scoped) and `vars.ROOT_*` (repo-level). `ROOT_HOSTED_ZONE_ID` for Route53 zone. |
-| 1.3.10 | Update CDK context | TODO | Add account ID mapping in `cdk-application/cdk.json` and `cdk-environment/cdk.json` |
+| 1.3.10 | Update CDK context + .env.ci | ✅ | `.env.ci`: all Secrets Manager ARNs → 367191799875, added cert ARN env vars. Java CDK: added `envOr()` for cert ARNs in `SubmitEnvironment.java` and `SubmitApplication.java`. CI test fixtures updated. CLAUDE.md: added accounts table, switched to SSO profiles. |
 | 1.3.11 | Deploy CI environment stacks | TODO | Deploy `ci-env-IdentityStack`, `ci-env-DataStack`, `ci-env-ObservabilityStack`, etc. to submit-ci |
 | 1.3.12 | Deploy CI application stacks | TODO | Deploy a CI feature branch to submit-ci |
 | 1.3.13 | Update root DNS for CI submit | TODO | Point `ci-submit.diyaccounting.co.uk`, `ci-auth.diyaccounting.co.uk`, `ci-simulator.diyaccounting.co.uk`, `ci-holding.diyaccounting.co.uk` to submit-ci's CloudFront distributions |
