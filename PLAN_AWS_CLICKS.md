@@ -349,8 +349,11 @@ Step 1.3.1: Bootstrap ✅
 
 Step 1.3.2: ACM certificates ✅
 
-us-east-1: `arn:aws:acm:us-east-1:367191799875:certificate/bd4b7bf4-5c93-4003-b217-5d1dc80d5e38`
+us-east-1 (main): `arn:aws:acm:us-east-1:367191799875:certificate/bd4b7bf4-5c93-4003-b217-5d1dc80d5e38`
 SANs: *.submit.diyaccounting.co.uk, ci-submit.diyaccounting.co.uk, ci-holding.diyaccounting.co.uk
+
+us-east-1 (simulator): `arn:aws:acm:us-east-1:367191799875:certificate/a4b666ca-1fe1-435f-8c13-2780ba208e24`
+SANs: *.submit.diyaccounting.co.uk, ci-submit.diyaccounting.co.uk, ci-holding.diyaccounting.co.uk, ci-simulator.diyaccounting.co.uk
 
 eu-west-2: `arn:aws:acm:eu-west-2:367191799875:certificate/de2a24a1-6034-440c-b98f-a8b2942dc083`
 SANs: *.submit.diyaccounting.co.uk, ci-submit.diyaccounting.co.uk
