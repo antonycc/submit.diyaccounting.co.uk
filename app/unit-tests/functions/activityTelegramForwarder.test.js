@@ -297,7 +297,7 @@ describe("activityTelegramForwarder", () => {
         "source": "aws.cloudformation",
         "detail-type": "CloudFormation Stack Status Change",
         "detail": {
-          "stack-id": "arn:aws:cloudformation:eu-west-2:887764105431:stack/ci-app-ApiStack/uuid-123",
+          "stack-id": "arn:aws:cloudformation:eu-west-2:367191799875:stack/ci-app-ApiStack/uuid-123",
           "status-details": { status: "UPDATE_COMPLETE" },
         },
       });
@@ -334,7 +334,7 @@ describe("activityTelegramForwarder", () => {
       const event = {
         source: "aws.cloudformation",
         detail: {
-          "stack-id": "arn:aws:cloudformation:eu-west-2:887764105431:stack/ci-app-ApiStack/uuid",
+          "stack-id": "arn:aws:cloudformation:eu-west-2:367191799875:stack/ci-app-ApiStack/uuid",
           "status-details": { status: "UPDATE_COMPLETE" },
         },
       };
@@ -408,7 +408,7 @@ describe("activityTelegramForwarder", () => {
       const event = {
         source: "aws.cloudformation",
         detail: {
-          "stack-id": "arn:aws:cloudformation:eu-west-2:887764105431:stack/ci-app-ApiStack/uuid",
+          "stack-id": "arn:aws:cloudformation:eu-west-2:367191799875:stack/ci-app-ApiStack/uuid",
           "status-details": { status: "UPDATE_COMPLETE" },
         },
       };
