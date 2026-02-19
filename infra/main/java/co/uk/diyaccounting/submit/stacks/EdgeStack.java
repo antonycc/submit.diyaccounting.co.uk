@@ -15,6 +15,7 @@ import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.ArnComponents;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.PhysicalName;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -326,9 +327,10 @@ public class EdgeStack extends Stack {
 
         infof("Created WAF security alarms: rate-limit, attack-signatures, known-bad-inputs");
 
-        // Create the origin bucket — no explicit bucketName so each account gets a unique name
-        // (S3 bucket names are globally unique; hardcoding causes collisions during account migration)
+        // Create the origin bucket — GENERATE_IF_NEEDED produces a unique-per-stack physical name
+        // that CDK can resolve cross-environment (SelfDestructStack is in eu-west-2, EdgeStack is us-east-1)
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
+                .bucketName(PhysicalName.GENERATE_IF_NEEDED)
                 .versioned(false)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .encryption(BucketEncryption.S3_MANAGED)
