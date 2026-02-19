@@ -123,6 +123,14 @@ public class SubmitEnvironment {
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
         var securityServicesEnabled =
                 Boolean.parseBoolean(envOr("SECURITY_SERVICES_ENABLED", appProps.securityServicesEnabled, "true"));
+        var certificateArn =
+                envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
+        var authCertificateArn =
+                envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn, "(from authCertificateArn in cdk.json)");
+        var simulatorCertificateArn = envOr(
+                "SIMULATOR_CERTIFICATE_ARN",
+                appProps.simulatorCertificateArn,
+                "(from simulatorCertificateArn in cdk.json)");
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -235,9 +243,9 @@ public class SubmitEnvironment {
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(
-                                appProps.authCertificateArn != null && !appProps.authCertificateArn.isBlank()
-                                        ? appProps.authCertificateArn
-                                        : appProps.certificateArn)
+                                authCertificateArn != null && !authCertificateArn.isBlank()
+                                        ? authCertificateArn
+                                        : certificateArn)
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
                         .build());
@@ -255,7 +263,7 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
-                        .certificateArn(appProps.certificateArn)
+                        .certificateArn(certificateArn)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
                         .holdingDocRootPath(holdingDocRootPath)
                         .build());
@@ -284,10 +292,10 @@ public class SubmitEnvironment {
                             .hostedZoneName(appProps.hostedZoneName)
                             .hostedZoneId(appProps.hostedZoneId)
                             .certificateArn(
-                                    appProps.simulatorCertificateArn != null
-                                                    && !appProps.simulatorCertificateArn.isBlank()
-                                            ? appProps.simulatorCertificateArn
-                                            : appProps.certificateArn)
+                                    simulatorCertificateArn != null
+                                                    && !simulatorCertificateArn.isBlank()
+                                            ? simulatorCertificateArn
+                                            : certificateArn)
                             .build());
         } else {
             warnf(

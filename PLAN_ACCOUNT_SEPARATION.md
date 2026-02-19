@@ -20,16 +20,21 @@
 ## Current State
 
 Production is live:
-- https://diyaccounting.co.uk/ (gateway)
-- https://spreadsheets.diyaccounting.co.uk/
-- https://submit.diyaccounting.co.uk/
+- https://diyaccounting.co.uk/ (gateway) — **migrated to 283165661847** ✅
+- https://spreadsheets.diyaccounting.co.uk/ — **migrated to 064390746177** ✅
+- https://submit.diyaccounting.co.uk/ — still in 887764105431 (CI migration in progress)
 
-Everything runs in 887764105431. All four logical services (root DNS, gateway, spreadsheets, submit) are deployed as CDK stacks from this single repository.
+Gateway and spreadsheets (CI + prod) fully migrated. Submit CI migration: account bootstrapped, certs issued, all workflow files updated to use `vars.SUBMIT_*` / `vars.ROOT_*` — ready to deploy.
 
 ### Account structure (current)
 
 ```
-887764105431 ── everything (submit, gateway, spreadsheets, root DNS)
+887764105431 ── submit (CI + prod), root DNS, holding page
+283165661847 ── gateway (CI + prod) ✅
+064390746177 ── spreadsheets (CI + prod) ✅
+367191799875 ── submit-ci (bootstrapped, awaiting first deploy)
+972912397388 ── submit-prod (created, not yet used)
+914216784828 ── submit-backup (created, Phase 3)
 ```
 
 ### Account structure (target)
@@ -66,76 +71,39 @@ AWS Organization Root (887764105431) ── Management
 | 1.0.5 | Create permission sets | `AdministratorAccess` (full access), `ReadOnlyAccess` (investigation), `DeploymentAccess` (CDK deploys — custom policy). |
 | 1.0.6 | Assign permissions | Assign your SSO user + `AdministratorAccess` to 887764105431 and each account as they are created. |
 
-### 1.1: Gateway account separation
+### 1.1: Gateway account separation ✅ COMPLETE
 
-Create the gateway account and move gateway stacks (CI first, then prod) from 887764105431 to gateway. All from this repository.
+Gateway (CI + prod) fully migrated to 283165661847. See `PLAN_AWS_CLICKS.md` Phase 1.1 for detailed clickthrough log.
 
-| Step | Description | Details |
-|------|-------------|---------|
-| 1.1.1 | Create `gateway` account | Via AWS Organizations. Email: `aws-gateway@diyaccounting.co.uk`. Place in Workloads OU. |
-| 1.1.2 | Assign SSO access | Add your SSO user + `AdministratorAccess` to the gateway account. Verify console access via the portal. |
-| 1.1.3 | CDK bootstrap | Bootstrap CDK in `us-east-1` and `eu-west-2` in the gateway account. |
-| 1.1.4 | Create OIDC provider | Create GitHub Actions OIDC provider (`token.actions.githubusercontent.com`) in gateway. Trust policy: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
-| 1.1.5 | Create deployment roles | `gateway-github-actions-role` (OIDC assumption) and `gateway-deployment-role` (CDK deploys) in gateway. |
-| 1.1.6 | Create ACM cert for gateway | In gateway `us-east-1`. SANs: `ci-gateway.diyaccounting.co.uk`, `prod-gateway.diyaccounting.co.uk`, `diyaccounting.co.uk`, `www.diyaccounting.co.uk`. DNS validation CNAMEs go in 887764105431's Route53 zone (manual one-time copy). |
-| 1.1.7 | Add GitHub secrets | `GATEWAY_ACTIONS_ROLE_ARN`, `GATEWAY_DEPLOY_ROLE_ARN`, `GATEWAY_ACCOUNT_ID`, `GATEWAY_CERT_ARN` as repo secrets or in a `gateway` GitHub environment. |
-| 1.1.8 | Update `deploy-gateway.yml` | Use the new role ARNs and account ID. The workflow still lives in this repo. |
-| 1.1.9 | Update `cdk-gateway/cdk.json` | Point to the new account ID and cert ARN. |
-| 1.1.10 | Deploy gateway CI to new account | Run `deploy-gateway.yml` with env=ci targeting gateway. Creates `ci-gateway-GatewayStack` in the new account. |
-| 1.1.11 | Validate gateway CI | Run `npm run test:gatewayBehaviour-ci`. DNS still points to 887764105431's CloudFront at this point. |
-| 1.1.12 | Update root DNS for gateway CI | Update `ci-gateway.diyaccounting.co.uk` alias record (via `deploy-root.yml`) to point to the new account's CloudFront. |
-| 1.1.13 | Re-validate gateway CI | Confirm DNS resolves to the new CloudFront. Run behaviour tests again. |
-| 1.1.14 | Deploy gateway prod to new account | Run `deploy-gateway.yml` with env=prod targeting gateway. |
-| 1.1.15 | Update root DNS for gateway prod | Update `prod-gateway.diyaccounting.co.uk`, `diyaccounting.co.uk`, and `www.diyaccounting.co.uk` alias records to new account's prod CloudFront. |
-| 1.1.16 | Validate gateway prod | Verify all prod domains serve correct content. Test redirects. |
-| 1.1.17 | Tear down old gateway stacks | Delete `ci-gateway-GatewayStack` and `prod-gateway-GatewayStack` from 887764105431. |
+### 1.2: Spreadsheets account separation ✅ COMPLETE
 
-### 1.2: Spreadsheets account separation
+Spreadsheets (CI + prod) fully migrated to 064390746177. See `PLAN_AWS_CLICKS.md` Phase 1.2 for detailed clickthrough log.
 
-Same pattern as gateway. CI first, then prod.
+### 1.3: Submit CI account separation (IN PROGRESS)
 
-| Step | Description | Details |
-|------|-------------|---------|
-| 1.2.1 | Create `spreadsheets` account | Via AWS Organizations. Email: `aws-spreadsheets@diyaccounting.co.uk`. Place in Workloads OU. |
-| 1.2.2 | Assign SSO access | Add your SSO user + `AdministratorAccess`. |
-| 1.2.3 | CDK bootstrap | Bootstrap CDK in `us-east-1` and `eu-west-2`. |
-| 1.2.4 | Create OIDC provider | Trust: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
-| 1.2.5 | Create deployment roles | `spreadsheets-github-actions-role` and `spreadsheets-deployment-role`. |
-| 1.2.6 | Create ACM cert | In spreadsheets `us-east-1`. SANs: `ci-spreadsheets.diyaccounting.co.uk`, `prod-spreadsheets.diyaccounting.co.uk`, `spreadsheets.diyaccounting.co.uk`. DNS validation via 887764105431 Route53. |
-| 1.2.7 | Add GitHub secrets | `SPREADSHEETS_ACTIONS_ROLE_ARN`, `SPREADSHEETS_DEPLOY_ROLE_ARN`, `SPREADSHEETS_ACCOUNT_ID`, `SPREADSHEETS_CERT_ARN`. |
-| 1.2.8 | Update `deploy-spreadsheets.yml` | Use new role ARNs and account ID. |
-| 1.2.9 | Update `cdk-spreadsheets/cdk.json` | Point to new account and cert ARN. |
-| 1.2.10 | Deploy spreadsheets CI | Run `deploy-spreadsheets.yml` with env=ci targeting spreadsheets. |
-| 1.2.11 | Validate spreadsheets CI | Run `npm run test:spreadsheetsBehaviour-ci`. |
-| 1.2.12 | Update root DNS for spreadsheets CI | Point `ci-spreadsheets.diyaccounting.co.uk` to new CloudFront. |
-| 1.2.13 | Re-validate spreadsheets CI | Confirm DNS and run behaviour tests. |
-| 1.2.14 | Deploy spreadsheets prod | Run `deploy-spreadsheets.yml` with env=prod. |
-| 1.2.15 | Update root DNS for spreadsheets prod | Point `prod-spreadsheets.diyaccounting.co.uk` and `spreadsheets.diyaccounting.co.uk` to new CloudFront. |
-| 1.2.16 | Validate spreadsheets prod | Verify content, package downloads, catalogue. |
-| 1.2.17 | Tear down old spreadsheets stacks | Delete old stacks from 887764105431. |
+Move submit CI deployments into their own account (367191799875).
 
-### 1.3: Submit CI account separation
+| Step | Description | Status | Details |
+|------|-------------|--------|---------|
+| 1.3.1 | Create `submit-ci` account | ✅ | Account 367191799875, Workloads OU |
+| 1.3.2 | Assign SSO access | ✅ | AdministratorAccess assigned |
+| 1.3.3 | CDK bootstrap | ✅ | us-east-1 and eu-west-2 bootstrapped |
+| 1.3.4 | Create OIDC provider | ✅ | Trust: `repo:antonycc/submit.diyaccounting.co.uk:*` |
+| 1.3.5 | Create deployment roles | ✅ | `submit-ci-github-actions-role` and `submit-ci-deployment-role` |
+| 1.3.6 | Create ACM certs | ✅ | us-east-1: `bd4b7bf4...` (*.submit, ci-submit, ci-holding), eu-west-2: `de2a24a1...` (*.submit, ci-submit) |
+| 1.3.7 | Replicate Secrets Manager entries | TODO | Copy HMRC sandbox credentials, Stripe test keys, Telegram bot token, etc. into submit-ci's Secrets Manager |
+| 1.3.8 | Add GitHub environment variables | ✅ | Environment-scoped `SUBMIT_*` vars (ci + prod envs), repo-level `ROOT_*` vars |
+| 1.3.9 | Update ALL workflow files | ✅ | Removed every hardcoded 887764105431 reference from ~20 workflow files. Uses `vars.SUBMIT_*` (environment-scoped) and `vars.ROOT_*` (repo-level). `ROOT_HOSTED_ZONE_ID` for Route53 zone. |
+| 1.3.10 | Update CDK context | TODO | Add account ID mapping in `cdk-application/cdk.json` and `cdk-environment/cdk.json` |
+| 1.3.11 | Deploy CI environment stacks | TODO | Deploy `ci-env-IdentityStack`, `ci-env-DataStack`, `ci-env-ObservabilityStack`, etc. to submit-ci |
+| 1.3.12 | Deploy CI application stacks | TODO | Deploy a CI feature branch to submit-ci |
+| 1.3.13 | Update root DNS for CI submit | TODO | Point `ci-submit.diyaccounting.co.uk`, `ci-auth.diyaccounting.co.uk`, `ci-simulator.diyaccounting.co.uk`, `ci-holding.diyaccounting.co.uk` to submit-ci's CloudFront distributions |
+| 1.3.14 | Validate CI | TODO | Run `npm run test:submitVatBehaviour-ci`. Test auth flow, HMRC simulator, payment flow |
+| 1.3.15 | Tear down old CI stacks | ✅ | All CI stacks already deleted from 887764105431 |
 
-Move submit CI deployments into their own account.
+**Key design decision**: `SUBMIT_*` variables are GitHub Actions **environment-scoped** (different values for `ci` vs `prod` environments), while `ROOT_*`, `GATEWAY_*`, `SPREADSHEETS_*` are **repo-level** (same account for CI and prod). This means workflow code uses `vars.SUBMIT_ACCOUNT_ID` everywhere — no conditionals needed.
 
-| Step | Description | Details |
-|------|-------------|---------|
-| 1.3.1 | Create `submit-ci` account | Via AWS Organizations. Email: `aws-ci@diyaccounting.co.uk`. Place in Workloads OU. |
-| 1.3.2 | Assign SSO access | Add your SSO user + `AdministratorAccess`. |
-| 1.3.3 | CDK bootstrap | Bootstrap in `us-east-1` and `eu-west-2`. |
-| 1.3.4 | Create OIDC provider | Trust: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
-| 1.3.5 | Create deployment roles | `submit-ci-github-actions-role` and `submit-ci-deployment-role`. |
-| 1.3.6 | Create ACM certs for CI | Replicate the main cert, auth cert, simulator cert, and regional cert — all scoped to `ci-*` SANs only. DNS validation via 887764105431 Route53. |
-| 1.3.7 | Replicate Secrets Manager entries | Copy HMRC sandbox credentials, Stripe test keys, Telegram bot token, etc. into submit-ci's Secrets Manager. Script this. |
-| 1.3.8 | Add GitHub secrets | `CI_ACTIONS_ROLE_ARN`, `CI_DEPLOY_ROLE_ARN`, `CI_ACCOUNT_ID`, plus CI cert ARNs. |
-| 1.3.9 | Update `deploy.yml` | Feature branches deploy to submit-ci account. Main branch still deploys to 887764105431 (until Phase 1.4). |
-| 1.3.10 | Update `deploy-environment.yml` | CI environment stacks deploy to submit-ci. Prod environment stacks still deploy to 887764105431. |
-| 1.3.11 | Update CDK context | Add account ID mapping in `cdk-application/cdk.json` and `cdk-environment/cdk.json`. |
-| 1.3.12 | Deploy CI environment stacks | Deploy `ci-env-IdentityStack`, `ci-env-DataStack`, `ci-env-ObservabilityStack`, etc. to submit-ci. |
-| 1.3.13 | Deploy CI application stacks | Deploy a CI feature branch to submit-ci. |
-| 1.3.14 | Update root DNS for CI submit | Point `ci-submit.diyaccounting.co.uk`, `ci-auth.diyaccounting.co.uk`, `ci-simulator.diyaccounting.co.uk`, `ci-holding.diyaccounting.co.uk` to submit-ci's CloudFront distributions. |
-| 1.3.15 | Validate CI | Run `npm run test:submitVatBehaviour-ci`. Test auth flow, HMRC simulator, payment flow. |
-| 1.3.16 | Tear down old CI stacks | Delete all `ci-*` stacks from 887764105431 (environment stacks, app stacks, simulator, holding). |
+**ROOT workflow migration**: Done as part of step 1.3.9. `deploy-root.yml` and `deploy-holding.yml` now use `vars.ROOT_ACTIONS_ROLE_ARN` / `vars.ROOT_DEPLOY_ROLE_ARN`, ensuring they are unaffected when `SUBMIT_*` vars change for Phase 1.4.
 
 ### 1.4: Submit prod to new account (IaC repeatability proof)
 
@@ -639,9 +607,9 @@ AWS Organizations provides consolidated billing automatically.
 | Account | ID | Email | OU | Purpose | Phase |
 |---------|-----|-------|-----|---------|-------|
 | 887764105431 | 887764105431 | admin@diyaccounting.co.uk | Management (org root) | Org admin, Route53, IAM Identity Center, billing, holding page | Phase 1.0 ✅ |
-| gateway | 283165661847 | admin+aws-gateway@diyaccounting.co.uk | Workloads | Gateway (S3 + CloudFront) | Phase 1.1 (in progress — bootstrapped, cert issued, CI deploying) |
-| spreadsheets | 064390746177 | admin+aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets (S3 + CloudFront) | Phase 1.2 |
-| submit-ci | 367191799875 | admin+aws-submit-ci@diyaccounting.co.uk | Workloads | Submit CI (Lambda, DDB, Cognito, API GW) | Phase 1.3 |
+| gateway | 283165661847 | admin+aws-gateway@diyaccounting.co.uk | Workloads | Gateway (S3 + CloudFront) | Phase 1.1 ✅ |
+| spreadsheets | 064390746177 | admin+aws-spreadsheets@diyaccounting.co.uk | Workloads | Spreadsheets (S3 + CloudFront) | Phase 1.2 ✅ |
+| submit-ci | 367191799875 | admin+aws-submit-ci@diyaccounting.co.uk | Workloads | Submit CI (Lambda, DDB, Cognito, API GW) | Phase 1.3 (code changes done, deploy pending) |
 | submit-prod | 972912397388 | admin+aws-submit-prod@diyaccounting.co.uk | Workloads | Submit prod (Lambda, DDB, Cognito, API GW) | Phase 1.4 |
 | submit-backup | 914216784828 | admin+aws-submit-backup@diyaccounting.co.uk | Backup | Cross-account backup vault | Phase 3.1 |
 

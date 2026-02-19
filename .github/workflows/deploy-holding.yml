@@ -29,12 +29,7 @@ permissions:
   contents: read
 
 env:
-  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
-  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
-  AWS_ACCOUNT_ID: '887764105431'
-  AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
-  REGIONAL_CERTIFICATE_ARN: 'arn:aws:acm:eu-west-2:887764105431:certificate/1f9c9a57-5834-41d3-822d-4aae7e32d633'
 
 jobs:
 
@@ -93,7 +88,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -104,7 +99,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -194,7 +189,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -205,7 +200,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -219,11 +214,11 @@ jobs:
           origin-domain: ${{ needs.resolve-target.outputs.origin-domain }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
           prod-apex-alias: ${{ needs.names.outputs.prod-apex-alias }}
-          aws-account-id: ${{ env.AWS_ACCOUNT_ID }}
-          hosted-zone-id: ${{ env.AWS_HOSTED_ZONE_ID }}
+          aws-account-id: ${{ vars.ROOT_ACCOUNT_ID }}
+          hosted-zone-id: ${{ vars.ROOT_HOSTED_ZONE_ID }}
           cloudfront-distribution-id: ${{ needs.resolve-target.outputs.cloudfront-distribution-id }}
           api-gateway-id: ${{ needs.resolve-target.outputs.api-gateway-id }}
-          regional-certificate-arn: ${{ needs.resolve-target.outputs.api-gateway-id != '' && env.REGIONAL_CERTIFICATE_ARN || '' }}
+          regional-certificate-arn: ${{ needs.resolve-target.outputs.api-gateway-id != '' && vars.SUBMIT_REGIONAL_CERTIFICATE_ARN || '' }}
 
       - name: Summary
         run: |

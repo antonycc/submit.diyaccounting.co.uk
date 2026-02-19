@@ -187,6 +187,12 @@ public class SubmitApplication {
                 envOr("TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
         var telegramOpsChatId =
                 envOr("TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
+        var certificateArn =
+                envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
+        var regionalCertificateArn = envOr(
+                "REGIONAL_CERTIFICATE_ARN",
+                appProps.regionalCertificateArn,
+                "(from regionalCertificateArn in cdk.json)");
         var commitHash = envOr("COMMIT_HASH", "local");
         var websiteHash = envOr("WEBSITE_HASH", "local");
         var buildNumber = envOr("BUILD_NUMBER", "local");
@@ -314,7 +320,7 @@ public class SubmitApplication {
                         .userPoolClientId(cognitoUserPoolClientId)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)
-                        .regionalCertificateArn(appProps.regionalCertificateArn)
+                        .regionalCertificateArn(regionalCertificateArn)
                         .build());
         this.apiStack.addDependency(accountStack);
         this.apiStack.addDependency(hmrcStack);
@@ -364,7 +370,7 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .hostedZoneName(appProps.hostedZoneName)
                         .hostedZoneId(appProps.hostedZoneId)
-                        .certificateArn(appProps.certificateArn)
+                        .certificateArn(certificateArn)
                         .apiGatewayUrl(httpApiUrl)
                         .build());
 

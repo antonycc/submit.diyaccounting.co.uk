@@ -113,8 +113,6 @@ on:
 
 env:
   AWS_REGION: eu-west-2
-  ACTIONS_ROLE_ARN: arn:aws:iam::887764105431:role/submit-github-actions-role
-  DEPLOY_ROLE_ARN: arn:aws:iam::887764105431:role/submit-deployment-role
 
 permissions:
   id-token: write
@@ -219,7 +217,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -230,7 +228,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com

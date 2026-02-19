@@ -63,10 +63,7 @@ on:
 env:
   JAVA_VERSION: '25'
   NODE_VERSION: '24'
-  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
-  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
-  AWS_ACCOUNT_ID: '887764105431'
   GITHUB_ACTOR: ${{ github.actor }}
 
 jobs:
@@ -132,7 +129,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -143,7 +140,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -161,7 +158,7 @@ jobs:
             aws secretsmanager update-secret --secret-id $GOOGLE_CLIENT_SECRET_ARN --secret-string "${{ secrets.GOOGLE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
           fi
         env:
-          GOOGLE_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/google/client_secret
+          GOOGLE_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/google/client_secret
 
       - name: Create secret in AWS from secrets.HMRC_CLIENT_SECRET
         run: |
@@ -173,7 +170,7 @@ jobs:
             aws secretsmanager update-secret --secret-id $HMRC_CLIENT_SECRET_ARN --secret-string "${{ secrets.HMRC_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
           fi
         env:
-          HMRC_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret
+          HMRC_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret
 
       - name: Create secret in AWS from secrets.HMRC_SANDBOX_CLIENT_SECRET
         run: |
@@ -185,7 +182,7 @@ jobs:
             aws secretsmanager update-secret --secret-id $HMRC_SANDBOX_CLIENT_SECRET_ARN --secret-string "${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
           fi
         env:
-          HMRC_SANDBOX_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ env.AWS_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret
+          HMRC_SANDBOX_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret
 
       - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY
         run: |
@@ -439,7 +436,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: us-east-1
           role-chaining: false
           audience: sts.amazonaws.com
@@ -450,7 +447,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
           role-chaining: true
           audience: sts.amazonaws.com
@@ -460,7 +457,7 @@ jobs:
 
       - name: Verify certificate covers Cognito domain
         run: |
-          CERT_ARN="arn:aws:acm:us-east-1:887764105431:certificate/d340de40-96ca-4f5b-ae4c-f66a776e5a75"
+          CERT_ARN="${{ vars.SUBMIT_CERTIFICATE_ARN }}"
           COGNITO_DOMAIN="${{ needs.names.outputs.environment-name }}-auth.submit.diyaccounting.co.uk"
 
           echo "Verifying certificate $CERT_ARN covers $COGNITO_DOMAIN"
@@ -513,7 +510,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -524,7 +521,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -638,7 +635,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -649,7 +646,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com

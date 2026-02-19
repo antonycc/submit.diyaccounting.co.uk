@@ -7,7 +7,7 @@ self-hosted-runner:
 # Configuration variables used in workflows (from GitHub repository settings)
 config-variables:
   - AWS_CERTIFICATE_ARN
-  - AWS_HOSTED_ZONE_ID
+  - ROOT_HOSTED_ZONE_ID
   - AWS_HOSTED_ZONE_NAME
   - COGNITO_USER_POOL_ARN
   - COGNITO_CLIENT_ID
@@ -19,6 +19,14 @@ config-variables:
   - SPREADSHEETS_ACTIONS_ROLE_ARN
   - SPREADSHEETS_DEPLOY_ROLE_ARN
   - SPREADSHEETS_CERTIFICATE_ARN
+  - SUBMIT_ACCOUNT_ID
+  - SUBMIT_ACTIONS_ROLE_ARN
+  - SUBMIT_DEPLOY_ROLE_ARN
+  - SUBMIT_CERTIFICATE_ARN
+  - SUBMIT_REGIONAL_CERTIFICATE_ARN
+  - ROOT_ACCOUNT_ID
+  - ROOT_ACTIONS_ROLE_ARN
+  - ROOT_DEPLOY_ROLE_ARN
 
 # Ignore patterns (regex)
 # - Shellcheck informational warnings that don't affect workflow execution

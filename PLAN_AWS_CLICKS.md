@@ -338,6 +338,68 @@ Validated: `npm run test:spreadsheetsBehaviour-prod` — 11/11 passed against `h
 
 ---
 
+Phase 1.3: Submit CI to its own account (367191799875)
+
+Step 1.3.1: Bootstrap ✅
+
+- CDK bootstrap: us-east-1 ✅, eu-west-2 ✅
+- OIDC provider: ✅
+- submit-ci-github-actions-role: ✅
+- submit-ci-deployment-role: ✅
+
+Step 1.3.2: ACM certificates ✅
+
+us-east-1: `arn:aws:acm:us-east-1:367191799875:certificate/bd4b7bf4-5c93-4003-b217-5d1dc80d5e38`
+SANs: *.submit.diyaccounting.co.uk, ci-submit.diyaccounting.co.uk, ci-holding.diyaccounting.co.uk
+
+eu-west-2: `arn:aws:acm:eu-west-2:367191799875:certificate/de2a24a1-6034-440c-b98f-a8b2942dc083`
+SANs: *.submit.diyaccounting.co.uk, ci-submit.diyaccounting.co.uk
+
+Step 1.3.3: GitHub environment variables ✅
+
+Environment-scoped (not repo-level) — `ci` and `prod` environments each have their own values:
+- `SUBMIT_ACCOUNT_ID` (ci=367191799875, prod=887764105431 for now)
+- `SUBMIT_ACTIONS_ROLE_ARN`
+- `SUBMIT_DEPLOY_ROLE_ARN`
+- `SUBMIT_CERTIFICATE_ARN`
+- `SUBMIT_REGIONAL_CERTIFICATE_ARN`
+
+Repo-level variables for root (management account, permanent):
+- `ROOT_ACCOUNT_ID=887764105431`
+- `ROOT_ACTIONS_ROLE_ARN=arn:aws:iam::887764105431:role/submit-github-actions-role`
+- `ROOT_DEPLOY_ROLE_ARN=arn:aws:iam::887764105431:role/submit-deployment-role`
+
+Step 1.3.4: Code changes ✅
+
+- `deploy-environment.yml`, `deploy.yml`, `destroy.yml`, `deploy-cdk-stack.yml`: Role ARNs and account IDs from `vars.SUBMIT_*` (environment-scoped)
+- `deploy-cdk-stack.yml`: Secrets Manager ARNs use `vars.SUBMIT_ACCOUNT_ID` instead of hardcoded account
+- Certificate ARNs from `vars.SUBMIT_CERTIFICATE_ARN` and `vars.SUBMIT_REGIONAL_CERTIFICATE_ARN`
+- `actionlint.yaml`: Added submit variables
+
+Step 1.3.5: Migrate root-account workflows to ROOT_* variables ✅
+
+All workflows that target the management account (887764105431) now use `vars.ROOT_*`:
+- `deploy-root.yml` → `vars.ROOT_ACTIONS_ROLE_ARN`, `vars.ROOT_DEPLOY_ROLE_ARN`
+- `deploy-holding.yml` → `vars.ROOT_ACTIONS_ROLE_ARN`, `vars.ROOT_DEPLOY_ROLE_ARN`, `vars.ROOT_ACCOUNT_ID`
+- All workflows: `AWS_HOSTED_ZONE_ID` renamed to `ROOT_HOSTED_ZONE_ID` (repo-level variable `Z0315522208PWZSSBI9AL`)
+- Zero hardcoded 887764105431 references remain in any workflow file
+
+Step 1.3.6: Commit and push workflow changes — TODO
+
+~20 workflow files modified. Need to commit, push, and validate actionlint passes.
+
+Step 1.3.7: Replicate Secrets Manager entries — TODO
+
+Copy HMRC sandbox credentials, Stripe test keys, Telegram bot token, etc. into submit-ci's Secrets Manager.
+
+Step 1.3.8: Deploy submit CI to new account — TODO
+
+Step 1.3.9: Update root DNS for CI submit — TODO
+
+Step 1.3.10: Validate submit CI — TODO
+
+---
+
 S3 bucket rename impact
 
 Hardcoded S3 bucket names were removed from all 7 stacks to prevent collisions during account migration. CDK now auto-generates unique names. This affects deployments as follows:
