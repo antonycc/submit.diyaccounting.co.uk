@@ -1486,6 +1486,10 @@ jobs:
           cloudfront-distribution-id: ${{ steps.lookup-resources.outputs.cloudfront-distribution-id }}
           api-gateway-id: ${{ steps.lookup-resources.outputs.http-api-id }}
           regional-certificate-arn: ${{ vars.SUBMIT_REGIONAL_CERTIFICATE_ARN }}
+          route53-actions-role-arn: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
+          route53-deploy-role-arn: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
+          restore-actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          restore-deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
     outputs:
       existing-deployment-name: ${{ steps.set-origins.outputs.existing-deployment-name }}
 
