@@ -67,12 +67,18 @@ public final class Route53AliasUpsert {
             return params;
         };
 
-        // When cross-account, CDK automatically adds sts:AssumeRole permission for the assumed role
-        var policy = AwsCustomResourcePolicy.fromStatements(
-                List.of(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+        var statements = new java.util.ArrayList<>(List.of(
+                software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
                         .actions(List.of("route53:ChangeResourceRecordSets"))
                         .resources(List.of("arn:aws:route53:::hostedzone/" + zone.getHostedZoneId()))
                         .build()));
+        if (crossAccount) {
+            statements.add(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+                    .actions(List.of("sts:AssumeRole"))
+                    .resources(List.of(route53AssumedRoleArn))
+                    .build());
+        }
+        var policy = AwsCustomResourcePolicy.fromStatements(statements);
 
         var upsertABuilder = AwsSdkCall.builder()
                 .service("Route53")
