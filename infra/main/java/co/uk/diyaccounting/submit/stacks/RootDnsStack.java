@@ -9,11 +9,17 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.utils.Route53AliasUpsert;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
+import software.amazon.awscdk.services.iam.AccountPrincipal;
+import software.amazon.awscdk.services.iam.CompositePrincipal;
+import software.amazon.awscdk.services.iam.IPrincipal;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -83,6 +89,12 @@ public class RootDnsStack extends Stack {
         @Value.Default
         default String spreadsheetsCloudFrontDomain() {
             return "";
+        }
+
+        /** Account IDs to trust for cross-account Route53 record management. Empty list to skip role creation. */
+        @Value.Default
+        default List<String> route53DelegateAccountIds() {
+            return List.of();
         }
 
         static ImmutableRootDnsStackProps.Builder builder() {
@@ -158,6 +170,27 @@ public class RootDnsStack extends Stack {
             Route53AliasUpsert.upsertAliasToCloudFront(
                     this, "Spreadsheets", zone, "spreadsheets", props.spreadsheetsCloudFrontDomain());
             cfnOutput(this, "SpreadsheetsDomain", "spreadsheets." + props.hostedZoneName());
+        }
+
+        // Cross-account IAM role for Route53 record management
+        // Allows submit stacks in other accounts to create DNS records in this hosted zone
+        if (!props.route53DelegateAccountIds().isEmpty()) {
+            var principals = props.route53DelegateAccountIds().stream()
+                    .map(AccountPrincipal::new)
+                    .toArray(IPrincipal[]::new);
+            var delegateRole = Role.Builder.create(this, "Route53DelegateRole")
+                    .roleName("root-route53-record-delegate")
+                    .assumedBy(new CompositePrincipal(principals))
+                    .description("Allows submit accounts to create Route53 records in the root hosted zone")
+                    .build();
+            delegateRole.addToPolicy(PolicyStatement.Builder.create()
+                    .actions(List.of("route53:ChangeResourceRecordSets", "route53:GetHostedZone"))
+                    .resources(List.of("arn:aws:route53:::hostedzone/" + props.hostedZoneId()))
+                    .build());
+            cfnOutput(this, "Route53DelegateRoleArn", delegateRole.getRoleArn());
+            infof(
+                    "Created Route53 delegate role for accounts: %s",
+                    String.join(", ", props.route53DelegateAccountIds()));
         }
 
         infof("RootDnsStack %s created", this.getNode().getId());

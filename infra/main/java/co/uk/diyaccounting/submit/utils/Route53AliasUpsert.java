@@ -37,6 +37,11 @@ public final class Route53AliasUpsert {
             Construct scope, String idPrefix, IHostedZone zone, String relativeRecordName, String cloudFrontDnsName) {
         String fqdn = buildFqdn(zone, relativeRecordName);
 
+        // Cross-account Route53: if ROOT_ROUTE53_ROLE_ARN is set, the Lambda assumes this role
+        // before calling Route53. Used when the hosted zone is in a different account.
+        String route53AssumedRoleArn = System.getenv("ROOT_ROUTE53_ROLE_ARN");
+        boolean crossAccount = route53AssumedRoleArn != null && !route53AssumedRoleArn.isBlank();
+
         // Build the common ChangeResourceRecordSets payload for A or AAAA
         java.util.function.Function<String, Map<String, Object>> changeForType = (recordType) -> {
             Map<String, Object> aliasTarget = new java.util.HashMap<>();
@@ -62,25 +67,32 @@ public final class Route53AliasUpsert {
             return params;
         };
 
+        // When cross-account, CDK automatically adds sts:AssumeRole permission for the assumed role
         var policy = AwsCustomResourcePolicy.fromStatements(
                 List.of(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
                         .actions(List.of("route53:ChangeResourceRecordSets"))
                         .resources(List.of("arn:aws:route53:::hostedzone/" + zone.getHostedZoneId()))
                         .build()));
 
-        AwsSdkCall upsertA = AwsSdkCall.builder()
+        var upsertABuilder = AwsSdkCall.builder()
                 .service("Route53")
                 .action("changeResourceRecordSets")
                 .parameters(changeForType.apply("A"))
-                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-A-" + fqdn))
-                .build();
+                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-A-" + fqdn));
+        if (crossAccount) {
+            upsertABuilder.assumedRoleArn(route53AssumedRoleArn);
+        }
+        AwsSdkCall upsertA = upsertABuilder.build();
 
-        AwsSdkCall upsertAAAA = AwsSdkCall.builder()
+        var upsertAAAABuilder = AwsSdkCall.builder()
                 .service("Route53")
                 .action("changeResourceRecordSets")
                 .parameters(changeForType.apply("AAAA"))
-                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-AAAA-" + fqdn))
-                .build();
+                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-AAAA-" + fqdn));
+        if (crossAccount) {
+            upsertAAAABuilder.assumedRoleArn(route53AssumedRoleArn);
+        }
+        AwsSdkCall upsertAAAA = upsertAAAABuilder.build();
 
         AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
                 .policy(policy)

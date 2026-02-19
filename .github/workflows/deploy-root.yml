@@ -353,6 +353,7 @@ jobs:
           echo "Apex domain: $APEX_CLOUDFRONT_DOMAIN"
           echo "Www domain: $WWW_CLOUDFRONT_DOMAIN"
           echo "Spreadsheets domain: $SPREADSHEETS_CLOUDFRONT_DOMAIN"
+          echo "Route53 delegate accounts: $ROUTE53_DELEGATE_ACCOUNTS"
           cd cdk-root \
             && npx cdk deploy \
               root-RootDnsStack \
@@ -369,6 +370,7 @@ jobs:
           APEX_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.apex-cloudfront-domain }}
           WWW_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.www-cloudfront-domain }}
           SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.spreadsheets-cloudfront-domain }}
+          ROUTE53_DELEGATE_ACCOUNTS: "367191799875,972912397388"
 
       - name: Show stack outputs
         run: |

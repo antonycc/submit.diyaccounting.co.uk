@@ -185,6 +185,16 @@ public class DataStack extends Stack {
                 "createdAt");
         infof("Ensured issuedBy-index GSI on passes table %s", props.sharedNames().passesTableName);
 
+        // Ensure the GSI custom resource waits for the table custom resource to complete.
+        // Without this, on fresh stack creation the GSI UpdateTable call races the CreateTable call.
+        var passesEnsureTable =
+                this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesTable-EnsureTable");
+        var passesEnsureGSI =
+                this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesIssuedByGSI-EnsureGSI");
+        if (passesEnsureTable != null && passesEnsureGSI != null) {
+            passesEnsureGSI.getNode().addDependency(passesEnsureTable);
+        }
+
         // Bundle capacity counter table for tracking global cap enforcement
         // PK-only table (no sort key) - counters are looked up by bundleId.
         // Reconciliation Lambda overwrites with correct count every 5 minutes.
