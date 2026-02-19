@@ -154,27 +154,7 @@ jobs:
     environment: prod
     steps:
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
+      # === Build tools (no AWS credentials needed) ===
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -197,11 +177,35 @@ jobs:
       - name: Build CDK JARs
         run: ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
 
-      - name: Lookup CloudFront domains
-        id: lookup
+      # === Lookup gateway CloudFront domains (gateway account) ===
+
+      - name: Configure gateway account (OIDC)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.GATEWAY_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume gateway deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.GATEWAY_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Lookup gateway CloudFront domains
+        id: lookup-gateway
         shell: bash
         run: |
-          # Auto-lookup CI gateway CloudFront domain from stack output
+          # Auto-lookup CI gateway CloudFront domain
           CI_GW="${{ needs.params.outputs.ci-gateway-cloudfront-domain }}"
           if [[ -z "$CI_GW" && "${{ needs.params.outputs.ci-gw-auto }}" == "true" ]]; then
             echo "Looking up ci-gateway-GatewayStack DistributionDomainName..."
@@ -212,7 +216,7 @@ jobs:
             echo "CI gateway: ${CI_GW:-not found}"
           fi
 
-          # Auto-lookup prod gateway CloudFront domain from stack output
+          # Auto-lookup prod gateway CloudFront domain
           PROD_GW="${{ needs.params.outputs.prod-gateway-cloudfront-domain }}"
           if [[ -z "$PROD_GW" && "${{ needs.params.outputs.prod-gw-auto }}" == "true" ]]; then
             echo "Looking up prod-gateway-GatewayStack DistributionDomainName..."
@@ -221,28 +225,6 @@ jobs:
               --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
               --output text 2>/dev/null || echo "")
             echo "Prod gateway: ${PROD_GW:-not found}"
-          fi
-
-          # Auto-lookup CI spreadsheets CloudFront domain from stack output
-          CI_SS="${{ needs.params.outputs.ci-spreadsheets-cloudfront-domain }}"
-          if [[ -z "$CI_SS" && "${{ needs.params.outputs.ci-ss-auto }}" == "true" ]]; then
-            echo "Looking up ci-spreadsheets-SpreadsheetsStack DistributionDomainName..."
-            CI_SS=$(aws cloudformation describe-stacks \
-              --stack-name ci-spreadsheets-SpreadsheetsStack \
-              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
-              --output text 2>/dev/null || echo "")
-            echo "CI spreadsheets: ${CI_SS:-not found}"
-          fi
-
-          # Auto-lookup prod spreadsheets CloudFront domain from stack output
-          PROD_SS="${{ needs.params.outputs.prod-spreadsheets-cloudfront-domain }}"
-          if [[ -z "$PROD_SS" && "${{ needs.params.outputs.prod-ss-auto }}" == "true" ]]; then
-            echo "Looking up prod-spreadsheets-SpreadsheetsStack DistributionDomainName..."
-            PROD_SS=$(aws cloudformation describe-stacks \
-              --stack-name prod-spreadsheets-SpreadsheetsStack \
-              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
-              --output text 2>/dev/null || echo "")
-            echo "Prod spreadsheets: ${PROD_SS:-not found}"
           fi
 
           # Auto-lookup apex CloudFront domain (same as prod gateway)
@@ -267,7 +249,62 @@ jobs:
             echo "Www: ${WWW:-not found}"
           fi
 
-          # Auto-lookup spreadsheets CloudFront domain (same as prod spreadsheets)
+          echo "ci-gateway-cloudfront-domain=${CI_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "prod-gateway-cloudfront-domain=${PROD_GW}" | tee -a "$GITHUB_OUTPUT"
+          echo "apex-cloudfront-domain=${APEX}" | tee -a "$GITHUB_OUTPUT"
+          echo "www-cloudfront-domain=${WWW}" | tee -a "$GITHUB_OUTPUT"
+
+      # === Lookup spreadsheets CloudFront domains (spreadsheets account) ===
+
+      - name: Configure spreadsheets account (OIDC)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.SPREADSHEETS_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume spreadsheets deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.SPREADSHEETS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Lookup spreadsheets CloudFront domains
+        id: lookup-spreadsheets
+        shell: bash
+        run: |
+          # Auto-lookup CI spreadsheets CloudFront domain
+          CI_SS="${{ needs.params.outputs.ci-spreadsheets-cloudfront-domain }}"
+          if [[ -z "$CI_SS" && "${{ needs.params.outputs.ci-ss-auto }}" == "true" ]]; then
+            echo "Looking up ci-spreadsheets-SpreadsheetsStack DistributionDomainName..."
+            CI_SS=$(aws cloudformation describe-stacks \
+              --stack-name ci-spreadsheets-SpreadsheetsStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "CI spreadsheets: ${CI_SS:-not found}"
+          fi
+
+          # Auto-lookup prod spreadsheets CloudFront domain
+          PROD_SS="${{ needs.params.outputs.prod-spreadsheets-cloudfront-domain }}"
+          if [[ -z "$PROD_SS" && "${{ needs.params.outputs.prod-ss-auto }}" == "true" ]]; then
+            echo "Looking up prod-spreadsheets-SpreadsheetsStack DistributionDomainName..."
+            PROD_SS=$(aws cloudformation describe-stacks \
+              --stack-name prod-spreadsheets-SpreadsheetsStack \
+              --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomainName`].OutputValue' \
+              --output text 2>/dev/null || echo "")
+            echo "Prod spreadsheets: ${PROD_SS:-not found}"
+          fi
+
+          # Auto-lookup spreadsheets.diyaccounting.co.uk domain (same as prod spreadsheets)
           SS="${{ needs.params.outputs.spreadsheets-cloudfront-domain }}"
           if [[ -z "$SS" && "${{ needs.params.outputs.ss-auto }}" == "true" ]]; then
             echo "Looking up prod-spreadsheets-SpreadsheetsStack for spreadsheets domain..."
@@ -278,13 +315,33 @@ jobs:
             echo "Spreadsheets: ${SS:-not found}"
           fi
 
-          echo "ci-gateway-cloudfront-domain=${CI_GW}" | tee -a "$GITHUB_OUTPUT"
-          echo "prod-gateway-cloudfront-domain=${PROD_GW}" | tee -a "$GITHUB_OUTPUT"
           echo "ci-spreadsheets-cloudfront-domain=${CI_SS}" | tee -a "$GITHUB_OUTPUT"
           echo "prod-spreadsheets-cloudfront-domain=${PROD_SS}" | tee -a "$GITHUB_OUTPUT"
-          echo "apex-cloudfront-domain=${APEX}" | tee -a "$GITHUB_OUTPUT"
-          echo "www-cloudfront-domain=${WWW}" | tee -a "$GITHUB_OUTPUT"
           echo "spreadsheets-cloudfront-domain=${SS}" | tee -a "$GITHUB_OUTPUT"
+
+      # === Deploy RootDnsStack (root account) ===
+
+      - name: Configure root account (OIDC)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume root deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Deploy RootDnsStack (CDK)
         run: |
@@ -305,13 +362,13 @@ jobs:
               --outputs-file ../cdk-submit-root.out/cdk-outputs-root-dns.json \
           ;
         env:
-          CI_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.ci-gateway-cloudfront-domain }}
-          PROD_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.prod-gateway-cloudfront-domain }}
-          CI_SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.ci-spreadsheets-cloudfront-domain }}
-          PROD_SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.prod-spreadsheets-cloudfront-domain }}
-          APEX_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.apex-cloudfront-domain }}
-          WWW_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.www-cloudfront-domain }}
-          SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup.outputs.spreadsheets-cloudfront-domain }}
+          CI_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.ci-gateway-cloudfront-domain }}
+          PROD_GATEWAY_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.prod-gateway-cloudfront-domain }}
+          CI_SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.ci-spreadsheets-cloudfront-domain }}
+          PROD_SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.prod-spreadsheets-cloudfront-domain }}
+          APEX_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.apex-cloudfront-domain }}
+          WWW_CLOUDFRONT_DOMAIN: ${{ steps.lookup-gateway.outputs.www-cloudfront-domain }}
+          SPREADSHEETS_CLOUDFRONT_DOMAIN: ${{ steps.lookup-spreadsheets.outputs.spreadsheets-cloudfront-domain }}
 
       - name: Show stack outputs
         run: |
