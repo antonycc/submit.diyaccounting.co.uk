@@ -1203,6 +1203,94 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
   }
 }
 
+/* Obligation Action Button Steps */
+
+/**
+ * Click the first "Submit Return" button in the obligations results table.
+ * Navigates to submitVat.html with pre-populated URL params from the obligation.
+ * @returns {{ navigated: boolean, vrn?: string, periodStart?: string, periodEnd?: string }}
+ */
+export async function clickObligationSubmitReturn(page, screenshotPath = defaultScreenshotPath) {
+  return await test.step("The user clicks 'Submit Return' on an open obligation", async () => {
+    const submitReturnBtn = page.locator('#obligationsTable button:has-text("Submit Return")').first();
+    const isVisible = await submitReturnBtn.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (!isVisible) {
+      console.log("[clickObligationSubmitReturn] No 'Submit Return' button found in obligations table");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-no-submit-return-btn.png` });
+      return { navigated: false };
+    }
+
+    console.log("[clickObligationSubmitReturn] Found 'Submit Return' button, clicking...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-return-btn-found.png` });
+
+    await Promise.all([
+      page.waitForURL(/submitVat\.html/, { timeout: 15000 }),
+      submitReturnBtn.click(),
+    ]);
+
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-return-navigated.png` });
+
+    // Extract URL params
+    const url = new URL(page.url());
+    const vrn = url.searchParams.get("vrn");
+    const periodStart = url.searchParams.get("periodStart");
+    const periodEnd = url.searchParams.get("periodEnd");
+
+    console.log(`[clickObligationSubmitReturn] Navigated to submitVat.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
+
+    // Verify the form is visible
+    await expect(page.locator("#vatSubmissionForm")).toBeVisible({ timeout: 10000 });
+
+    return { navigated: true, vrn, periodStart, periodEnd };
+  });
+}
+
+/**
+ * Click the first "View Return" button in the obligations results table.
+ * Navigates to viewVatReturn.html with pre-populated URL params from the obligation.
+ * @returns {{ navigated: boolean, vrn?: string, periodStart?: string, periodEnd?: string }}
+ */
+export async function clickObligationViewReturn(page, screenshotPath = defaultScreenshotPath) {
+  return await test.step("The user clicks 'View Return' on a fulfilled obligation", async () => {
+    const viewReturnBtn = page.locator('#obligationsTable button:has-text("View Return")').first();
+    const isVisible = await viewReturnBtn.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (!isVisible) {
+      console.log("[clickObligationViewReturn] No 'View Return' button found in obligations table");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-no-view-return-btn.png` });
+      return { navigated: false };
+    }
+
+    console.log("[clickObligationViewReturn] Found 'View Return' button, clicking...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-return-btn-found.png` });
+
+    await Promise.all([
+      page.waitForURL(/viewVatReturn\.html/, { timeout: 15000 }),
+      viewReturnBtn.click(),
+    ]);
+
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-return-navigated.png` });
+
+    // Extract URL params
+    const url = new URL(page.url());
+    const vrn = url.searchParams.get("vrn");
+    const periodStart = url.searchParams.get("periodStart");
+    const periodEnd = url.searchParams.get("periodEnd");
+
+    console.log(`[clickObligationViewReturn] Navigated to viewVatReturn.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
+
+    // Verify the form is visible
+    await expect(page.locator("#vatReturnForm")).toBeVisible({ timeout: 10000 });
+
+    return { navigated: true, vrn, periodStart, periodEnd };
+  });
+}
+
 /**
  * Fetch and log HMRC fraud prevention header validation feedback for sandbox tests.
  * This calls the HMRC test API to get feedback on all requests made to the vat-mtd API.

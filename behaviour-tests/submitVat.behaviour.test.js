@@ -27,7 +27,7 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { ensureBundlePresent, getTokensRemaining, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
+import { ensureBundlePresent, getTokensRemaining, goToBundlesPage, goToUsagePage, verifyTokenSources, verifyTokenConsumption } from "./steps/behaviour-bundle-steps.js";
 import { goToReceiptsPageUsingMainNav, verifyAtLeastOneClickableReceipt } from "./steps/behaviour-hmrc-receipts-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
@@ -40,6 +40,8 @@ import {
   intentionallyNotSuppliedHeaders,
 } from "./helpers/dynamodb-assertions.js";
 import {
+  clickObligationSubmitReturn,
+  clickObligationViewReturn,
   completeVat,
   fillInVat,
   fillInVatObligations,
@@ -209,9 +211,9 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
         }
       }
 
-      // Capture periodKey from VAT return submission response
+      // Capture periodKey from VAT return submission response (201) or retrieval (200)
       // The backend returns the resolved periodKey at data.periodKey level
-      if (!resolvedPeriodKey && url.includes("/api/v1/hmrc/vat/return") && response.status() === 200) {
+      if (!resolvedPeriodKey && url.includes("/api/v1/hmrc/vat/return") && (response.status() === 200 || response.status() === 201)) {
         try {
           const body = await response.json();
           // The periodKey is returned at data.periodKey (resolved from obligations by the backend)
@@ -343,15 +345,57 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     expect(tokensBefore).toBeGreaterThan(0);
   }
 
+  /* ******************************** */
+  /*  OBLIGATIONS (1st — read:vat)    */
+  /* ******************************** */
+
+  // Query obligations first — triggers HMRC auth for read:vat scope
+  await initVatObligations(page, screenshotPath);
+  await fillInVatObligations(page, { hmrcVatNumber: testVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
+  await submitVatObligationsForm(page, screenshotPath);
+
+  /* ******************************************** */
+  /*  HMRC AUTH (1st — read:vat for obligations)  */
+  /* ******************************************** */
+
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
+
+  /* ************************** */
+  /*  VIEW OBLIGATIONS RESULTS  */
+  /* ************************** */
+
+  // After HMRC auth callback, obligations page auto-retrieves via continueObligationsRetrieval()
+  await verifyVatObligationsResults(page, screenshotPath);
+
+  /* ********************************** */
+  /*  CLICK OPEN OBLIGATION → SUBMIT    */
+  /* ********************************** */
+
+  const obligationResult = await clickObligationSubmitReturn(page, screenshotPath);
+  let submitPeriodDates;
+  if (obligationResult.navigated) {
+    submitPeriodDates = { periodStart: obligationResult.periodStart, periodEnd: obligationResult.periodEnd };
+    console.log(`[Obligation→Submit] Using obligation period: ${submitPeriodDates.periodStart} to ${submitPeriodDates.periodEnd}`);
+  } else {
+    // Fallback: navigate via home page activity button
+    console.log("[Obligation→Submit] No open obligation found, falling back to home page navigation");
+    await goToHomePageUsingMainNav(page, screenshotPath);
+    await initSubmitVat(page, screenshotPath);
+    submitPeriodDates = undefined; // use defaults
+  }
+
   /* *********** */
-  /* `SUBMIT VAT */
+  /*  SUBMIT VAT */
   /* *********** */
 
-  await initSubmitVat(page, screenshotPath);
   await fillInVat(
     page,
     testVatNumber,
-    undefined,
+    submitPeriodDates,
     hmrcVatDueAmount,
     null,
     runFraudPreventionHeaderValidation,
@@ -360,11 +404,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   );
   await submitFormVat(page, screenshotPath);
 
-  /* ************ */
-  /* `HMRC AUTH   */
-  /* ************ */
+  /* ******************************************************** */
+  /*  HMRC AUTH (2nd — scope upgrade to write:vat read:vat)   */
+  /* ******************************************************** */
 
-  //await acceptCookiesHmrc(page, screenshotPath);
+  // The submit page detects read:vat-only token is insufficient for write:vat read:vat,
+  // clears the token and redirects to HMRC OAuth for the broader scope
   await goToHmrcAuth(page, screenshotPath);
   await initHmrcAuth(page, screenshotPath);
   await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
@@ -372,7 +417,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await grantPermissionHmrcAuth(page, screenshotPath);
 
   /* ******************* */
-  /* `SUBMIT VAT RESULTS */
+  /*  SUBMIT VAT RESULTS */
   /* ******************* */
 
   await completeVat(page, baseUrl, null, screenshotPath);
@@ -396,14 +441,57 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await verifyAtLeastOneClickableReceipt(page, screenshotPath);
   await goToHomePageUsingMainNav(page, screenshotPath);
 
-  /* ******************* */
-  /*  VIEW VAT RETURN    */
-  /* ******************* */
+  /* ************************************************ */
+  /*  OBLIGATIONS (2nd — token reuse, no HMRC auth)   */
+  /* ************************************************ */
 
-  // View a VAT return using default dates
-  // BE FLEXIBLE: Don't rely on specific periodKeys - server resolves periodKey from dates
-  await initViewVatReturn(page, screenshotPath);
-  await fillInViewVatReturn(page, testVatNumber, undefined, null, runFraudPreventionHeaderValidation, screenshotPath);
+  // Token now has write:vat read:vat scope — covers read:vat requirement
+  await initVatObligations(page, screenshotPath);
+  await fillInVatObligations(page, { hmrcVatNumber: testVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
+  await submitVatObligationsForm(page, screenshotPath);
+
+  // No HMRC auth needed — existing token scope is sufficient
+  await verifyVatObligationsResults(page, screenshotPath);
+
+  /* *********************************** */
+  /*  CLICK FULFILLED OBLIGATION → VIEW  */
+  /* *********************************** */
+
+  const viewResult = await clickObligationViewReturn(page, screenshotPath);
+  if (viewResult.navigated) {
+    // Check if the fulfilled obligation period matches the period we submitted to
+    const periodMatches =
+      submitPeriodDates &&
+      viewResult.periodStart === submitPeriodDates.periodStart &&
+      viewResult.periodEnd === submitPeriodDates.periodEnd;
+    if (periodMatches) {
+      console.log(`[Obligation→View] Fulfilled obligation matches submitted period: ${viewResult.periodStart} to ${viewResult.periodEnd}`);
+    } else if (submitPeriodDates) {
+      // Overwrite form with the submitted period to ensure we view a return that exists
+      console.log(`[Obligation→View] Period mismatch: obligation=${viewResult.periodStart}..${viewResult.periodEnd}, submitted=${submitPeriodDates.periodStart}..${submitPeriodDates.periodEnd} — overwriting form`);
+      await fillInViewVatReturn(page, testVatNumber, submitPeriodDates, null, runFraudPreventionHeaderValidation, screenshotPath);
+    } else {
+      console.log(`[Obligation→View] Using obligation period: ${viewResult.periodStart} to ${viewResult.periodEnd}`);
+    }
+  } else {
+    // Fallback: navigate via home page activity button
+    console.log("[Obligation→View] No fulfilled obligation found, falling back to home page navigation");
+    await goToHomePageUsingMainNav(page, screenshotPath);
+    await initViewVatReturn(page, screenshotPath);
+    await fillInViewVatReturn(page, testVatNumber, submitPeriodDates, null, runFraudPreventionHeaderValidation, screenshotPath);
+  }
+
+  // Inject resolvedPeriodKey into the page URL so the viewVatReturn form includes it
+  // This ensures the GET uses the same period key that was POSTed to the sandbox
+  if (resolvedPeriodKey) {
+    console.log(`[Obligation→View] Injecting resolvedPeriodKey=${resolvedPeriodKey} into URL`);
+    const currentUrl = new URL(page.url());
+    currentUrl.searchParams.set("periodKey", resolvedPeriodKey);
+    await page.evaluate((newUrl) => {
+      window.history.replaceState({}, "", newUrl);
+    }, currentUrl.toString());
+  }
+
   await submitViewVatReturnForm(page, screenshotPath);
 
   /* ******************* */
@@ -414,30 +502,14 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ******************* */
-  /*  VIEW OBLIGATIONS   */
+  /*  TOKEN USAGE        */
   /* ******************* */
 
-  await initVatObligations(page, screenshotPath);
-  await fillInVatObligations(page, { hmrcVatNumber: testVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate }, screenshotPath);
-  await submitVatObligationsForm(page, screenshotPath);
-
-  /* ************ */
-  /* `HMRC AUTH   */
-  /* ************ */
-
-  // await acceptCookiesHmrc(page, screenshotPath);
-  // await goToHmrcAuth(page, screenshotPath);
-  // await initHmrcAuth(page, screenshotPath);
-  // await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
-  // await submitHmrcAuth(page, screenshotPath);
-  // await grantPermissionHmrcAuth(page, screenshotPath);
-
-  /* ************************** */
-  /*  VIEW OBLIGATIONS RESULTS  */
-  /* ************************** */
-
-  await verifyVatObligationsResults(page, screenshotPath);
-  await goToHomePageUsingMainNav(page, screenshotPath);
+  if (isSandboxMode()) {
+    await goToUsagePage(page, screenshotPath);
+    await verifyTokenSources(page, [{ bundleId: "day-guest" }], screenshotPath);
+    await verifyTokenConsumption(page, [{ activity: "submit-vat", minCount: 1, tokensUsed: 1 }], screenshotPath);
+  }
 
   /* ****************** */
   /*  Extract user sub  */
@@ -460,7 +532,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     testId: "submitVatBehaviour",
     name: testInfo.title,
     title: "Submit VAT Return (HMRC: VAT Return POST)",
-    description: "Clicks through the app to submit a VAT return to HMRC MTD VAT API, then verifies receipt visibility and navigation.",
+    description: "Obligations-first flow: queries obligations (triggers read:vat auth), clicks open obligation to submit VAT (triggers scope upgrade to write:vat read:vat), verifies receipts, queries obligations again (token reuse, no re-auth), clicks fulfilled obligation to view return, checks token usage.",
     hmrcApis: [
       { url: "/api/v1/hmrc/vat/return", method: "POST" },
       { url: "/api/v1/hmrc/vat/return/:periodKey", method: "GET" },

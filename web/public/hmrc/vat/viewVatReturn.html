@@ -172,6 +172,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
@@ -283,6 +284,7 @@
         // Clear all in-progress session data
         sessionStorage.removeItem("pendingReturnRequest");
         sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcTokenScope");
         sessionStorage.removeItem("oauth_state");
         sessionStorage.removeItem("hmrcAccount");
         sessionStorage.removeItem("currentActivity");
@@ -374,6 +376,7 @@
             // Handle 401 specifically to trigger re-authentication
             if (response.status === 401) {
               sessionStorage.removeItem("hmrcAccessToken");
+              sessionStorage.removeItem("hmrcTokenScope");
               showStatus("Access token expired. Please re-authenticate.", "error");
               return;
             }
@@ -403,6 +406,7 @@
           // Clear pending request data to prevent auto-retry loop on next page load
           sessionStorage.removeItem("pendingReturnRequest");
           sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcTokenScope");
           sessionStorage.removeItem("oauth_state");
           sessionStorage.removeItem("hmrcAccount");
           sessionStorage.removeItem("currentActivity");
@@ -434,14 +438,21 @@
           return;
         }
 
-        // Check if we have an access token
+        // Check if we have an access token with sufficient scope
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck
+          ? await window.hmrcScopeCheck.isTokenSufficient()
+          : !!accessToken;
 
         // Check hmrcAccount for sandbox mode (set by bundle qualifiers via sessionStorage)
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         const allowSandboxObligations = hmrcAccount === "sandbox";
 
-        if (!accessToken) {
+        if (!scopeSufficient) {
+          if (accessToken) {
+            console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
+            if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          }
           try {
             showLoading();
             showStatus("Initiating HMRC authentication...", "info");
@@ -464,14 +475,19 @@
             sessionStorage.setItem("currentActivity", currentActivity);
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
-            // Get OAuth URL with read-only scope
+            // Get OAuth scope from catalogue
+            const oauthScope = window.hmrcScopeCheck
+              ? await window.hmrcScopeCheck.getOAuthScopeString()
+              : "read:vat";
+
+            // Get OAuth URL with catalogue-driven scope
             let authResponseUrl;
             if (window.__env && window.authUrlBuilder) {
-              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, "read:vat", hmrcAccount || "live");
+              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
               console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
             } else {
               // Get OAuth URL from API (fallback)
-              const authResponse = await getAuthUrl(state, "hmrc", "read:vat");
+              const authResponse = await getAuthUrl(state, "hmrc", oauthScope);
               authResponseUrl = authResponse.authUrl;
               console.log("Using server-side HMRC Auth URL:", authResponseUrl);
             }
@@ -492,8 +508,10 @@
             showLoading();
             showStatus("Retrieving VAT return...", "info");
 
-            // Build query parameters with date range
+            // Build query parameters — use periodKey directly if available (e.g., from prior submission)
+            const urlPeriodKey = new URLSearchParams(window.location.search).get("periodKey");
             const params = new URLSearchParams({ vrn, periodStart, periodEnd });
+            if (urlPeriodKey) params.append("periodKey", urlPeriodKey);
             if (testScenario) params.append("Gov-Test-Scenario", testScenario);
             if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
             if (allowSandboxObligations) params.append("allowSandboxObligations", "true");
@@ -529,6 +547,7 @@
               // Handle 401 specifically to trigger re-authentication
               if (response.status === 401) {
                 sessionStorage.removeItem("hmrcAccessToken");
+                sessionStorage.removeItem("hmrcTokenScope");
                 showStatus("Access token expired. Please try again.", "error");
                 return;
               }

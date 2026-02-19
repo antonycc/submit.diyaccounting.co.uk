@@ -182,6 +182,7 @@ bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", 
 tokenCost = 1
 metered = true
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
+hmrcScopesRequired = ["write:vat", "read:vat"]
 
 [[activities]]
 id = "vat-obligations"
@@ -191,6 +192,7 @@ bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", 
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
+hmrcScopesRequired = ["read:vat"]
 
 [[activities]]
 id = "view-vat-return"
@@ -200,6 +202,7 @@ bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", 
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
+hmrcScopesRequired = ["read:vat"]
 
 [[activities]]
 id = "my-receipts"

@@ -98,23 +98,70 @@ The human test plan (`_developers/PLAN_HUMAN_TEST.md`) goes **Obligations first,
 1. Section 3: "Click 'VAT Obligations (HMRC)'" → HMRC OAuth with `read:vat`
 2. Section 4: "From the Home page, click 'Submit VAT (HMRC)'" → reuses `read:vat` token → **INVALID_SCOPE**
 
-## Fix
+## Fix: Option D — Catalogue-driven scope enforcement (chosen)
 
-### Option A: Always request `write:vat read:vat` on all pages
+Combines Options A, B, and C. Scopes are defined per-activity in the catalogue, checked client-side before token reuse, and validated server-side as a safety net.
 
-Change `vatObligations.html:476` and `viewVatReturn.html:470` to request `write:vat read:vat` instead of `read:vat`. This is the simplest fix but asks the user for more HMRC permissions than the page strictly needs.
+### Design
 
-### Option B: Check scope before reusing token (preferred)
+**New catalogue attribute**: `hmrcScopesRequired` on each activity that uses HMRC APIs:
+```toml
+[[activities]]
+id = "submit-vat"
+hmrcScopesRequired = ["write:vat", "read:vat"]
 
-On the submit page, before reusing an existing HMRC token, check whether it was granted with `write:vat` scope. If not, force a new OAuth redirect with `write:vat read:vat`.
+[[activities]]
+id = "vat-obligations"
+hmrcScopesRequired = ["read:vat"]
 
-This requires:
-1. Storing the granted scope alongside the access token in session storage (during the HMRC OAuth callback)
-2. Checking the stored scope on the submit page before deciding to reuse the token
+[[activities]]
+id = "view-vat-return"
+hmrcScopesRequired = ["read:vat"]
+```
 
-### Option C: Server-side scope check
+**Flow of scope data**:
+1. HMRC token exchange response already includes `scope` (e.g. `"read:vat"`) — currently discarded by `buildTokenExchangeResponse`
+2. Server returns `scope` to client alongside `accessToken`
+3. Client stores `hmrcTokenScope` in sessionStorage alongside `hmrcAccessToken`
+4. Before reusing a token, client checks if stored scope satisfies the activity's `hmrcScopesRequired`
+5. If insufficient, client clears the token and initiates a new OAuth redirect with the correct scope
+6. Each page derives its OAuth scope from the catalogue rather than hardcoding
 
-Have the `hmrcVatReturnPost` Lambda check the token scope before calling HMRC. If insufficient, return a specific error code that the client can use to trigger re-authorization.
+**Server-side safety net**:
+- `hmrcVatReturnPost.js`: When HMRC returns 403 with code `INVALID_SCOPE`, return a structured error with `reason: "hmrc_scope_insufficient"` so the client can trigger re-authorization
+- This catches edge cases where the client-side check is bypassed or the stored scope is stale
+
+**Custom authorizer is NOT the right place**: `customAuthorizer.js` validates Cognito JWT tokens, not HMRC access tokens. HMRC tokens are opaque strings passed in the request body, not in authorization headers.
+
+### Implementation steps
+
+1. **`submit.catalogue.toml`**: Add `hmrcScopesRequired` to three HMRC activities
+2. **`httpResponseHelper.js`**: Include `scope` in `buildTokenExchangeResponse` data (line ~446-455)
+3. **`submitVatCallback.html`**: Store `hmrcTokenScope` alongside `hmrcAccessToken` (line ~106)
+4. **`web/public/lib/hmrc-scope-check.js`** (new): Shared utility that:
+   - Loads catalogue via `requestCache` (already used by entitlement-status widget)
+   - Finds current activity by matching page path against activity paths
+   - Returns required HMRC scopes for the activity
+   - Checks if stored scope is sufficient (all required scopes present in granted scope)
+   - Computes the correct OAuth scope string from the catalogue
+5. **`submitVat.html`**: Use scope check before token reuse; derive OAuth scope from catalogue
+6. **`vatObligations.html`**: Same pattern
+7. **`viewVatReturn.html`**: Same pattern
+8. **`hmrcVatReturnPost.js`**: Detect HMRC 403/INVALID_SCOPE and return `reason: "hmrc_scope_insufficient"`
+
+### Why not just Option A?
+
+Option A (always request all scopes) would fix the immediate bug but:
+- Asks users for `write:vat` permission on read-only pages (obligations, view return)
+- Violates HMRC's principle of least privilege for OAuth scopes
+- Doesn't scale when new HMRC APIs with different scopes are added
+
+### Why not just Option B?
+
+Option B (client-side scope check) fixes the immediate bug but:
+- Hardcodes scope strings in each page — same maintenance problem
+- No server-side safety net if client-side check is bypassed
+- Doesn't establish a pattern for future HMRC activities
 
 ## Verification
 
@@ -122,14 +169,18 @@ Have the `hmrcVatReturnPost` Lambda check the token scope before calling HMRC. I
 - [ ] `submitVatBehaviour` test still passes (submit-first flow)
 - [ ] New behaviour test or test variant for obligations-first flow
 - [ ] Synthetic test on prod continues passing
+- [ ] Unit tests pass (`npm test`)
 
 ## Files involved
 
-| File | Line | Role |
-|---|---|---|
-| `web/public/hmrc/vat/submitVat.html` | 740-743, 760 | Token reuse check and scope request |
-| `web/public/hmrc/vat/vatObligations.html` | 476 | Scope request (`read:vat` only) |
-| `web/public/hmrc/vat/viewVatReturn.html` | 470 | Scope request (`read:vat` only) |
-| `web/public/lib/auth-url-builder.js` | 31 | Builds HMRC OAuth URL with scope parameter |
-| `behaviour-tests/submitVat.behaviour.test.js` | 350-440 | Test flow order (submit first) |
-| `_developers/PLAN_HUMAN_TEST.md` | Section 3-4 | Human test flow order (obligations first) |
+| File | Change |
+|---|---|
+| `web/public/submit.catalogue.toml` | Add `hmrcScopesRequired` to 3 activities |
+| `app/lib/httpResponseHelper.js` | Return `scope` in token exchange response |
+| `web/public/activities/submitVatCallback.html` | Store `hmrcTokenScope` in sessionStorage |
+| `web/public/lib/hmrc-scope-check.js` | New: scope check utility |
+| `web/public/hmrc/vat/submitVat.html` | Check scope before reuse, derive scope from catalogue |
+| `web/public/hmrc/vat/vatObligations.html` | Check scope before reuse, derive scope from catalogue |
+| `web/public/hmrc/vat/viewVatReturn.html` | Check scope before reuse, derive scope from catalogue |
+| `app/functions/hmrc/hmrcVatReturnPost.js` | Handle HMRC 403/INVALID_SCOPE specifically |
+| `web/public/lib/auth-url-builder.js` | No change (already parameterised) |

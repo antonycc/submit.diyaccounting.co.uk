@@ -186,6 +186,12 @@
           throw new Error(message);
         }
 
+        // Store the granted scope so pages can check before reusing the token
+        if (responseJson.scope) {
+          sessionStorage.setItem("hmrcTokenScope", responseJson.scope);
+          console.log("Stored HMRC token scope:", responseJson.scope);
+        }
+
         console.log(`Exchanged token. Remote call completed successfully: POST ${url}`, responseJson, accessToken);
         return accessToken;
       }

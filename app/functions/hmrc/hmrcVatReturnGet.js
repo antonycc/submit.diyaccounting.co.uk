@@ -79,15 +79,17 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { vrn, periodStart, periodEnd, runFraudPreventionHeaderValidation, allowSandboxObligations } = queryParams;
+  const { vrn, periodStart, periodEnd, periodKey, runFraudPreventionHeaderValidation, allowSandboxObligations } = queryParams;
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
   // Collect validation errors for required fields and formats
   if (!vrn) errorMessages.push("Missing vrn parameter");
 
-  // periodStart and periodEnd are required - periodKey is resolved from obligations
-  if (!periodStart) errorMessages.push("Missing periodStart parameter");
-  if (!periodEnd) errorMessages.push("Missing periodEnd parameter");
+  // Either periodKey (direct) or periodStart+periodEnd (resolved from obligations) is required
+  if (!periodKey) {
+    if (!periodStart) errorMessages.push("Missing periodStart parameter");
+    if (!periodEnd) errorMessages.push("Missing periodEnd parameter");
+  }
 
   if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid VAT registration number format - must be 9 digits");
 
@@ -119,6 +121,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     vrn,
     periodStart,
     periodEnd,
+    periodKey: periodKey || null,
     testScenario,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
@@ -169,7 +172,7 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { vrn, periodStart, periodEnd, testScenario, hmrcAccount, runFraudPreventionHeaderValidation, allowSandboxObligations } =
+  const { vrn, periodStart, periodEnd, periodKey: directPeriodKey, testScenario, hmrcAccount, runFraudPreventionHeaderValidation, allowSandboxObligations } =
     extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
@@ -212,68 +215,80 @@ export async function ingestHandler(event) {
     });
   }
 
-  // Resolve periodKey from obligations using the period date range
-  // Note: Do NOT pass the test scenario to obligations - it should only apply to the VAT return call
+  // Resolve periodKey: either use the directly provided periodKey or resolve from obligations
   let normalizedPeriodKey = null;
-  logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vrn });
-  try {
-    const { obligations, hmrcResponse } = await getVatObligations(
-      vrn,
-      hmrcAccessToken,
-      govClientHeaders,
-      null, // Don't pass test scenario to obligations - apply only to the VAT return GET
-      hmrcAccount,
-      { from: periodStart, to: periodEnd, status: "F" }, // Use "F" for fulfilled (submitted) returns
-      userSub,
-      runFraudPreventionHeaderValidation,
-      requestId,
-      traceparent,
-      correlationId,
-    );
+  if (directPeriodKey) {
+    normalizedPeriodKey = directPeriodKey.toUpperCase();
+    logger.info({ message: "Using directly provided periodKey", periodKey: normalizedPeriodKey });
+  }
 
-    if (!hmrcResponse.ok) {
-      logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
-      return buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders);
-    }
+  // Resolve periodKey from obligations using the period date range (only if not provided directly)
+  // Note: Do NOT pass the test scenario to obligations - it should only apply to the VAT return call
+  if (!normalizedPeriodKey) {
+    logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vrn });
+    try {
+      // In sandbox mode with allowSandboxObligations, query ALL obligations (no status filter)
+      // so we can find the period key even if the obligation hasn't been marked as fulfilled yet.
+      // In production, only query fulfilled obligations.
+      const obligationStatus = allowSandboxObligations ? undefined : "F";
+      const { obligations, hmrcResponse } = await getVatObligations(
+        vrn,
+        hmrcAccessToken,
+        govClientHeaders,
+        null, // Don't pass test scenario to obligations - apply only to the VAT return GET
+        hmrcAccount,
+        { from: periodStart, to: periodEnd, ...(obligationStatus && { status: obligationStatus }) },
+        userSub,
+        runFraudPreventionHeaderValidation,
+        requestId,
+        traceparent,
+        correlationId,
+      );
 
-    // obligations is the full HMRC response body containing { obligations: [...] }
-    const obligationsArray = obligations?.obligations || [];
-    let resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
-
-    // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
-    // use the first available fulfilled obligation instead of erroring
-    if (!resolvedPeriodKey && allowSandboxObligations) {
-      const fulfilledObligations = obligationsArray.filter((o) => o.status === "F");
-      if (fulfilledObligations.length > 0) {
-        resolvedPeriodKey = fulfilledObligations[0].periodKey;
-        logger.info({
-          message: "allowSandboxObligations: Using first available fulfilled obligation",
-          requestedPeriod: { periodStart, periodEnd },
-          usedObligation: fulfilledObligations[0],
-        });
+      if (!hmrcResponse.ok) {
+        logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
+        return buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders);
       }
-    }
 
-    if (!resolvedPeriodKey) {
-      logger.error({
-        message: "No matching obligation found for date range",
-        periodStart,
-        periodEnd,
-        obligations: obligationsArray,
-        allowSandboxObligations,
+      // obligations is the full HMRC response body containing { obligations: [...] }
+      const obligationsArray = obligations?.obligations || [];
+      let resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
+
+      // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
+      // use the first available fulfilled obligation instead of erroring
+      if (!resolvedPeriodKey && allowSandboxObligations) {
+        const fulfilledObligations = obligationsArray.filter((o) => o.status === "F");
+        if (fulfilledObligations.length > 0) {
+          resolvedPeriodKey = fulfilledObligations[0].periodKey;
+          logger.info({
+            message: "allowSandboxObligations: Using first available fulfilled obligation",
+            requestedPeriod: { periodStart, periodEnd },
+            usedObligation: fulfilledObligations[0],
+          });
+        }
+      }
+
+      if (!resolvedPeriodKey) {
+        logger.error({
+          message: "No matching obligation found for date range",
+          periodStart,
+          periodEnd,
+          obligations: obligationsArray,
+          allowSandboxObligations,
+        });
+        return buildValidationError(request, [`No fulfilled VAT return found for period ${periodStart} to ${periodEnd}`], responseHeaders);
+      }
+
+      normalizedPeriodKey = resolvedPeriodKey.toUpperCase();
+      logger.info({ message: "Resolved periodKey from date range", periodStart, periodEnd, resolvedPeriodKey: normalizedPeriodKey });
+    } catch (error) {
+      logger.error({ message: "Error resolving periodKey from obligations", error: error.message });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: `Failed to resolve period key: ${error.message}`,
       });
-      return buildValidationError(request, [`No fulfilled VAT return found for period ${periodStart} to ${periodEnd}`], responseHeaders);
     }
-
-    normalizedPeriodKey = resolvedPeriodKey.toUpperCase();
-    logger.info({ message: "Resolved periodKey from date range", periodStart, periodEnd, resolvedPeriodKey: normalizedPeriodKey });
-  } catch (error) {
-    logger.error({ message: "Error resolving periodKey from obligations", error: error.message });
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: `Failed to resolve period key: ${error.message}`,
-    });
   }
 
   const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
