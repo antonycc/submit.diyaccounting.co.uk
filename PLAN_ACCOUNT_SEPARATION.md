@@ -24,7 +24,7 @@ Production is live:
 - https://spreadsheets.diyaccounting.co.uk/ — **migrated to 064390746177** ✅
 - https://submit.diyaccounting.co.uk/ — still in 887764105431 (CI migration in progress)
 
-Gateway and spreadsheets (CI + prod) fully migrated. Submit CI migration: account bootstrapped, certs issued, all workflow files and CDK context updated, code pushed, first deployment in progress (run #715).
+Gateway and spreadsheets (CI + prod) fully migrated. **Submit CI migration complete** — all stacks deployed to 367191799875, all 18 CI synthetic tests passing, DNS live. Next: Phase 1.4 (submit prod to new account 972912397388).
 
 ### Account structure (current)
 
@@ -32,7 +32,7 @@ Gateway and spreadsheets (CI + prod) fully migrated. Submit CI migration: accoun
 887764105431 ── submit (prod only), root DNS, holding page
 283165661847 ── gateway (CI + prod) ✅
 064390746177 ── spreadsheets (CI + prod) ✅
-367191799875 ── submit-ci (first deployment in progress)
+367191799875 ── submit-ci ✅
 972912397388 ── submit-prod (created, not yet used)
 914216784828 ── submit-backup (created, Phase 3)
 ```
@@ -79,7 +79,7 @@ Gateway (CI + prod) fully migrated to 283165661847. See `PLAN_AWS_CLICKS.md` Pha
 
 Spreadsheets (CI + prod) fully migrated to 064390746177. See `PLAN_AWS_CLICKS.md` Phase 1.2 for detailed clickthrough log.
 
-### 1.3: Submit CI account separation (IN PROGRESS)
+### 1.3: Submit CI account separation ✅ COMPLETE
 
 Move submit CI deployments into their own account (367191799875).
 
@@ -95,20 +95,24 @@ Move submit CI deployments into their own account (367191799875).
 | 1.3.8 | Add GitHub environment variables | ✅ | Environment-scoped `SUBMIT_*` vars (ci + prod envs), repo-level `ROOT_*` vars |
 | 1.3.9 | Update ALL workflow files | ✅ | Removed every hardcoded 887764105431 reference from ~20 workflow files. Uses `vars.SUBMIT_*` (environment-scoped) and `vars.ROOT_*` (repo-level). `ROOT_HOSTED_ZONE_ID` for Route53 zone. |
 | 1.3.10 | Update CDK context + .env.ci | ✅ | `.env.ci`: all Secrets Manager ARNs → 367191799875, added cert ARN env vars. Java CDK: added `envOr()` for cert ARNs in `SubmitEnvironment.java` and `SubmitApplication.java`. CI test fixtures updated. CLAUDE.md: added accounts table, switched to SSO profiles. |
-| 1.3.11 | Deploy CI environment stacks | IN PROGRESS | Deploying to submit-ci (367191799875). Run #715. |
-| 1.3.12 | Deploy CI application stacks | IN PROGRESS | Part of run #715 (`accounts` branch). |
-| 1.3.13 | Update root DNS for CI submit | IN PROGRESS | `set-origins` job in run #715. Fixed cross-account Route53: action now switches from submit credentials to root credentials for Route53, then restores submit credentials for API Gateway. |
-| 1.3.14 | Validate CI | PENDING | Synthetic behaviour tests run as part of deploy workflow. Manual validation: `npm run test:submitVatBehaviour-ci`. |
+| 1.3.11 | Deploy CI environment stacks | ✅ | Deployed to submit-ci (367191799875). All env stacks live. |
+| 1.3.12 | Deploy CI application stacks | ✅ | All app stacks deployed (`ci-accounts-app-*`). |
+| 1.3.13 | Update root DNS for CI submit | ✅ | `set-origins` job passed. Fixed cross-account Route53: action now switches from submit credentials to root credentials for Route53, then restores submit credentials for API Gateway. |
+| 1.3.14 | Validate CI | ✅ | All 18 CI synthetic behaviour tests passing. All 17 simulator tests passing. Run #22208132155 clean (only `npm test cdk prod` fails — expected, Phase 1.4). |
 | 1.3.15 | Tear down old CI stacks | ✅ | All CI stacks already deleted from 887764105431 |
 | 1.3.16 | Merge `accounts` to `main` | BLOCKED by 1.4 prod validation | **Cannot merge yet.** Prod GitHub env vars (`SUBMIT_*`) still point to 887764105431. Merging to `main` triggers a prod deploy which would apply the `accounts` branch's bucket name changes to the existing prod stacks — CloudFormation would replace live S3 buckets, destroying the prod site. **Strategy**: run Phase 1.4 workflows from the `accounts` branch targeting prod (new account 972912397388), validate prod, then merge to `main`. |
 
-**Issues found during first deploy (run #714 → #715):**
+**Issues found and fixed during CI validation:**
 
-| Issue | Root cause | Fix |
-|-------|-----------|-----|
-| CDK build: cross-environment bucket reference | `OriginBucket` in EdgeStack (us-east-1) had no explicit physical name. SelfDestructStack (eu-west-2) couldn't resolve it cross-region. | Added `PhysicalName.GENERATE_IF_NEEDED` to the bucket — CDK generates a deterministic name that works cross-environment while remaining unique per stack. |
-| Route53 AccessDenied in `set-origins` | `deploy.yml` used submit-ci credentials for everything, but Route53 is in the management account (887764105431). | Added cross-account credential switching to the `set-origins` composite action: switches to root credentials for Route53, restores submit credentials for API Gateway. deploy-holding.yml unaffected (defaults = no switching). |
-| CDK prod test: Cognito lookup fails | `npm test cdk prod` looks up `prod-auth.diyaccounting.co.uk` Cognito domain, which doesn't exist yet in submit-prod (972912397388). | Will resolve itself when prod is deployed (Phase 1.4). Not blocking CI. |
+| Issue | Root cause | Fix | Commit |
+|-------|-----------|-----|--------|
+| CDK build: cross-environment bucket reference | `OriginBucket` in EdgeStack (us-east-1) had no explicit physical name. SelfDestructStack (eu-west-2) couldn't resolve it cross-region. | Added `PhysicalName.GENERATE_IF_NEEDED` to the bucket. | `1715f2bf` |
+| Route53 AccessDenied in `set-origins` | `deploy.yml` used submit-ci credentials for everything, but Route53 is in the management account (887764105431). | Added cross-account credential switching to the `set-origins` composite action. | `3f40cacd` |
+| API Gateway domain conflict | `ci-submit.diyaccounting.co.uk` custom domain already existed in 887764105431 (globally unique per region). | Manually deleted from old account via `aws apigatewayv2 delete-domain-name`. | Manual |
+| S3 bucket name mismatch in workflows | Workflows constructed bucket names as `${deployment}-app-origin-us-east-1` but CDK now generates unique names with `PhysicalName.GENERATE_IF_NEEDED`. | Replaced hardcoded names with CloudFormation output lookup from EdgeStack in 4 files. | `11b6ab70` |
+| Simulator tests: missing `hmrcTokenScope` | HMRC scope enforcement (PLAN_HMRC_SCOPES_REQUIRED.md) added scope checking but simulator injection didn't set `hmrcTokenScope` in sessionStorage. | Added `hmrcTokenScope` to simulator demo user injection. | `4e0b3c5b` |
+| CI synthetic tests: HMRC auth redirect missed | Scope enforcement fetches catalogue asynchronously before OAuth redirect (~7s). Inline test code waited only 1s, missing the redirect entirely. | Replaced fixed timeout with locator wait for HMRC auth page or receipt. | `7b141936` |
+| CDK prod test: Cognito lookup fails | `npm test cdk prod` looks up `prod-auth.diyaccounting.co.uk` Cognito domain, which doesn't exist yet in submit-prod (972912397388). | Will resolve itself when prod is deployed (Phase 1.4). Not blocking CI. | — |
 
 **Key design decision**: `SUBMIT_*` variables are GitHub Actions **environment-scoped** (different values for `ci` vs `prod` environments), while `ROOT_*`, `GATEWAY_*`, `SPREADSHEETS_*` are **repo-level** (same account for CI and prod). This means workflow code uses `vars.SUBMIT_ACCOUNT_ID` everywhere — no conditionals needed.
 
