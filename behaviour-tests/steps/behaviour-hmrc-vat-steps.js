@@ -385,15 +385,17 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
     // Focus change before submit
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submission-submit.png` });
     await loggedFocus(page, "#submitBtn", "the Submit button", { screenshotPath });
-
-    // Expect the HMRC permission page to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
-    await loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submission-submit.png` });
+    // Clicking submit triggers HMRC OAuth redirect (scope upgrade to write:vat read:vat).
+    // Wait for the navigation to complete before screenshotting.
+    await Promise.all([
+      page.waitForURL(/.*/,  { timeout: 15000 }),
+      loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath }),
+    ]);
     const applicationName = "DIY Accounting Submit";
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-submission-submit.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submission-submit.png` });
     await expect(page.locator("#appNameParagraph")).toContainText(applicationName, { timeout: 10000 });
     await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
   });
@@ -698,14 +700,15 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
     // Take a focus change screenshot between last cell entry and submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png` });
-    await loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath });
+    // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
+    // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
+    await Promise.all([
+      page.waitForURL(/.*/,  { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
-    await page.waitForTimeout(1000);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-submit.png` });
-    // Scroll, capture a pagedown
-    await page.keyboard.press("PageDown");
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-submit-pagedown.png` });
   });
 }
 

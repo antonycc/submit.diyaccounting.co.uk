@@ -98,6 +98,9 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
     // should never call real HMRC. The simulator page embeds a self-contained demo site.
     if (runTestServer === "run" || runHttpSimulator === "run") {
       const simPort = httpSimulatorPort || 9000;
+      // Simulator journeys don't handle multi-step OAuth flow; auto-grant HMRC OAuth
+      // so journeys complete without user interaction on the HMRC grant pages.
+      process.env.HMRC_AUTO_GRANT = "true";
       httpSimulatorProcess = await runLocalHttpSimulator("run", simPort);
       // Override HMRC endpoints to point to the local simulator
       process.env.HMRC_BASE_URI = `http://localhost:${simPort}`;
