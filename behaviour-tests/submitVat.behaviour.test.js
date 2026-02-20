@@ -458,7 +458,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* *********************************** */
 
   const viewResult = await clickObligationViewReturn(page, screenshotPath);
-  if (viewResult.navigated) {
+  if (viewResult.autoSubmitted) {
+    // Page auto-submitted because an HMRC token with sufficient scope already existed.
+    // Results are already displayed — skip form filling and submission.
+    console.log(`[Obligation→View] Auto-submitted with period: ${viewResult.periodStart} to ${viewResult.periodEnd}`);
+  } else if (viewResult.navigated) {
     // Check if the fulfilled obligation period matches the period we submitted to
     const periodMatches =
       submitPeriodDates &&
@@ -473,26 +477,38 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     } else {
       console.log(`[Obligation→View] Using obligation period: ${viewResult.periodStart} to ${viewResult.periodEnd}`);
     }
+
+    // Inject resolvedPeriodKey into the page URL so the viewVatReturn form includes it
+    // This ensures the GET uses the same period key that was POSTed to the sandbox
+    if (resolvedPeriodKey) {
+      console.log(`[Obligation→View] Injecting resolvedPeriodKey=${resolvedPeriodKey} into URL`);
+      const currentUrl = new URL(page.url());
+      currentUrl.searchParams.set("periodKey", resolvedPeriodKey);
+      await page.evaluate((newUrl) => {
+        window.history.replaceState({}, "", newUrl);
+      }, currentUrl.toString());
+    }
+
+    await submitViewVatReturnForm(page, screenshotPath);
   } else {
     // Fallback: navigate via home page activity button
     console.log("[Obligation→View] No fulfilled obligation found, falling back to home page navigation");
     await goToHomePageUsingMainNav(page, screenshotPath);
     await initViewVatReturn(page, screenshotPath);
     await fillInViewVatReturn(page, testVatNumber, submitPeriodDates, null, runFraudPreventionHeaderValidation, screenshotPath);
-  }
 
-  // Inject resolvedPeriodKey into the page URL so the viewVatReturn form includes it
-  // This ensures the GET uses the same period key that was POSTed to the sandbox
-  if (resolvedPeriodKey) {
-    console.log(`[Obligation→View] Injecting resolvedPeriodKey=${resolvedPeriodKey} into URL`);
-    const currentUrl = new URL(page.url());
-    currentUrl.searchParams.set("periodKey", resolvedPeriodKey);
-    await page.evaluate((newUrl) => {
-      window.history.replaceState({}, "", newUrl);
-    }, currentUrl.toString());
-  }
+    // Inject resolvedPeriodKey into the page URL so the viewVatReturn form includes it
+    if (resolvedPeriodKey) {
+      console.log(`[Obligation→View] Injecting resolvedPeriodKey=${resolvedPeriodKey} into URL`);
+      const currentUrl = new URL(page.url());
+      currentUrl.searchParams.set("periodKey", resolvedPeriodKey);
+      await page.evaluate((newUrl) => {
+        window.history.replaceState({}, "", newUrl);
+      }, currentUrl.toString());
+    }
 
-  await submitViewVatReturnForm(page, screenshotPath);
+    await submitViewVatReturnForm(page, screenshotPath);
+  }
 
   /* ******************* */
   /*  VIEW VAT RESULTS   */

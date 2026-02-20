@@ -176,8 +176,9 @@ function transformHtmlFile(filePath) {
         localStorage.setItem('cognitoIdToken', '${SIMULATOR_ID_TOKEN}');
         localStorage.setItem('cognitoAccessToken', '${SIMULATOR_ACCESS_TOKEN}');
 
-        // Set HMRC token in sessionStorage
+        // Set HMRC token in sessionStorage (with full scope so pages skip OAuth redirect)
         sessionStorage.setItem('hmrcAccessToken', 'simulator-hmrc-token');
+        sessionStorage.setItem('hmrcTokenScope', 'write:vat read:vat');
         sessionStorage.setItem('hmrcAccount', 'sandbox');
       }
     })();

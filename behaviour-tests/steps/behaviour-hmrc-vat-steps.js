@@ -1287,10 +1287,18 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
 
     console.log(`[clickObligationViewReturn] Navigated to viewVatReturn.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
 
-    // Verify the form is visible
-    await expect(page.locator("#vatReturnForm")).toBeVisible({ timeout: 10000 });
+    // The page auto-submits when URL params are present and an HMRC token exists.
+    // Check if results are already visible (auto-submitted) or form is visible (needs manual submit).
+    const formVisible = await page.locator("#vatReturnForm").isVisible({ timeout: 2000 }).catch(() => false);
+    const resultsVisible = await page.locator("#returnResults").isVisible({ timeout: 2000 }).catch(() => false);
 
-    return { navigated: true, vrn, periodStart, periodEnd };
+    if (resultsVisible && !formVisible) {
+      console.log("[clickObligationViewReturn] Page auto-submitted (token with sufficient scope existed). Results already visible.");
+      return { navigated: true, autoSubmitted: true, vrn, periodStart, periodEnd };
+    }
+
+    await expect(page.locator("#vatReturnForm")).toBeVisible({ timeout: 10000 });
+    return { navigated: true, autoSubmitted: false, vrn, periodStart, periodEnd };
   });
 }
 
