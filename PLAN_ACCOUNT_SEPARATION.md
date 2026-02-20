@@ -100,6 +100,7 @@ Move submit CI deployments into their own account (367191799875).
 | 1.3.13 | Update root DNS for CI submit | IN PROGRESS | `set-origins` job in run #715. Fixed cross-account Route53: action now switches from submit credentials to root credentials for Route53, then restores submit credentials for API Gateway. |
 | 1.3.14 | Validate CI | PENDING | Synthetic behaviour tests run as part of deploy workflow. Manual validation: `npm run test:submitVatBehaviour-ci`. |
 | 1.3.15 | Tear down old CI stacks | ✅ | All CI stacks already deleted from 887764105431 |
+| 1.3.16 | Merge `accounts` to `main` | BLOCKED by 1.4 prod validation | **Cannot merge yet.** Prod GitHub env vars (`SUBMIT_*`) still point to 887764105431. Merging to `main` triggers a prod deploy which would apply the `accounts` branch's bucket name changes to the existing prod stacks — CloudFormation would replace live S3 buckets, destroying the prod site. **Strategy**: run Phase 1.4 workflows from the `accounts` branch targeting prod (new account 972912397388), validate prod, then merge to `main`. |
 
 **Issues found during first deploy (run #714 → #715):**
 

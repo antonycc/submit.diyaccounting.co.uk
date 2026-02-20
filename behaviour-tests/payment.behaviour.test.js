@@ -425,10 +425,11 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       screenshotPath,
     );
 
-    // Submit the form
+    // Submit the form — scope enforcement fetches the catalogue asynchronously
+    // before redirecting to HMRC OAuth, so wait for the HMRC auth page or receipt
     await page.locator("#submitBtn").click();
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1000);
+    const hmrcAuthOrResult = page.locator("#appNameParagraph, #receiptDisplay, #statusMessagesContainer:has-text('failed')");
+    await hmrcAuthOrResult.first().waitFor({ state: "visible", timeout: 30_000 });
 
     // Handle HMRC OAuth if redirected
     const isHmrcAuthPage = await page

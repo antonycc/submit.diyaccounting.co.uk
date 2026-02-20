@@ -157,9 +157,11 @@ async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScena
   // Click submit. The HMRC access token may or may not be cached:
   // - Cached (first resubmission after success): client calls API directly
   // - Cleared (after a failed submission): client redirects to HMRC OAuth
+  // Scope enforcement fetches the catalogue asynchronously before redirecting,
+  // so wait for the HMRC auth page or receipt/error instead of a fixed timeout.
   await page.locator("#submitBtn").click();
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(1000);
+  const hmrcAuthOrResult = page.locator("#appNameParagraph, #receiptDisplay, #statusMessagesContainer:has-text('failed')");
+  await hmrcAuthOrResult.first().waitFor({ state: "visible", timeout: 30_000 });
   // Check whether we landed on the HMRC OAuth consent page
   const isHmrcAuthPage = await page
     .locator("#appNameParagraph")

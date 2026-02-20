@@ -237,10 +237,11 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
       allowSandboxObligations,
     );
 
-    // Submit the form
+    // Submit the form — scope enforcement fetches the catalogue asynchronously
+    // before redirecting to HMRC OAuth, so wait for the HMRC auth page or receipt
     await page.locator("#submitBtn").click();
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1000);
+    const hmrcAuthOrResult = page.locator("#appNameParagraph, #receiptDisplay, #statusMessagesContainer:has-text('failed')");
+    await hmrcAuthOrResult.first().waitFor({ state: "visible", timeout: 30_000 });
 
     // Handle HMRC OAuth if redirected
     const isHmrcAuthPage = await page
@@ -558,9 +559,11 @@ test("Token consumption for resident-pro (100 tokens)", async ({ page }, testInf
       allowSandboxObligations,
     );
 
+    // Submit the form — scope enforcement fetches the catalogue asynchronously
+    // before redirecting to HMRC OAuth, so wait for the HMRC auth page or receipt
     await page.locator("#submitBtn").click();
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1000);
+    const hmrcAuthOrResult2 = page.locator("#appNameParagraph, #receiptDisplay, #statusMessagesContainer:has-text('failed')");
+    await hmrcAuthOrResult2.first().waitFor({ state: "visible", timeout: 30_000 });
 
     const isHmrcAuthPage = await page
       .locator("#appNameParagraph")
