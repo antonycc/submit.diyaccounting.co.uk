@@ -127,6 +127,7 @@ Move submit CI deployments into their own account (367191799875).
 | Cross-account Route53 access denied | ApexStack and SimulatorStack create Route53 A/AAAA alias records via CDK `AwsCustomResource`. The Lambda runs in 972912397388 but Route53 is in 887764105431. The code already supports cross-account via `ROOT_ROUTE53_ROLE_ARN` env var, but `.env.prod` was missing this variable. `.env.ci` had it (added during Phase 1.3). | Added `ROOT_ROUTE53_ROLE_ARN=arn:aws:iam::887764105431:role/root-route53-record-delegate` to `.env.prod`. The role already trusts both 367191799875 and 972912397388. | Could have removed DNS record creation from env stacks and handled via `set-origins` job, but the existing cross-account role pattern is cleaner and keeps DNS creation atomic with the stack. | Pending commit |
 | BackupStack: DynamoDB GSI still creating | BackupStack depends on DataStack and re-deploys it. The `prod-env-passes` table's `issuedBy-index` GSI was still being created when BackupStack tried to update DataStack. Transient timing issue — GSI creation takes a few minutes. | Resolved on third run — by then the GSI had finished creating. No code change needed. | Could add a wait/retry in the CDK custom resource, but the issue is transient and self-healing on re-run. |  — |
 | Cognito custom domain conflict | Cognito custom domains are globally unique (like CloudFront CNAMEs). Old prod user pool in 887764105431 (`eu-west-2_MJovvw6mL`) owned `prod-auth.diyaccounting.co.uk`. New IdentityStack in 972912397388 couldn't create a user pool with the same custom domain. | Removed custom domain from old Cognito user pool in 887764105431 via `aws cognito-idp delete-user-pool-domain`. Old user pool still exists but is no longer reachable by custom domain. | Could wait for Phase 1.5 teardown, but IdentityStack is blocking the rest of the deployment. | Manual (AWS CLI) |
+| Cognito domain: stale Route53 records | After removing the custom domain from the old user pool, Route53 A/AAAA records for `prod-auth.diyaccounting.co.uk` still pointed to the old (now defunct) Cognito CloudFront distribution `d1yuj3kt2v4b8h.cloudfront.net`. Cognito returned "Invalid request provided: AWS::Cognito::UserPoolDomain" when creating the new custom domain. | Deleted the stale A/AAAA alias records from Route53 in 887764105431. CDK `Route53AliasUpsert` re-creates them pointing to the new Cognito CloudFront endpoint. | Could wait for DNS TTL expiry, but Cognito validates DNS state on domain creation. | Manual (AWS CLI) |
 
 ### 1.4: Submit prod to new account (IaC repeatability proof)
 
@@ -155,7 +156,7 @@ Create a NEW submit-prod account and deploy the full production stack from IaC. 
 | 1.4.12 | Update `deploy.yml` | ✅ | No code changes needed — already uses `vars.SUBMIT_*` (environment-scoped). Step 1.4.11 variable update is sufficient. |
 | 1.4.13 | Update `deploy-environment.yml` | ✅ | No code changes needed — already uses `vars.SUBMIT_*` (environment-scoped). Step 1.4.11 variable update is sufficient. |
 | 1.4.14 | Update CDK context + .env.prod | ✅ | Updated `cdk-application/cdk.json` (3 cert ARNs), `cdk-environment/cdk.json` (3 cert ARNs), `.env.prod` (8 Secrets Manager ARNs) from 887764105431 → 972912397388. All use single us-east-1 cert (all SANs combined). `npm test` (949 passed) and `./mvnw clean verify` (BUILD SUCCESS) both pass. |
-| 1.4.15 | Deploy prod environment stacks | IN PROGRESS | Deploy `prod-env-IdentityStack`, `prod-env-DataStack`, `prod-env-ObservabilityStack`, etc. to new submit-prod. Fresh Cognito user pool, fresh DynamoDB tables. Deployed: ObservabilityStack, ObservabilityUE1Stack, DataStack, EcrStack, EcrUE1Stack, ActivityStack, BackupStack. Remaining: SimulatorStack, ApexStack, IdentityStack. |
+| 1.4.15 | Deploy prod environment stacks | ✅ | All 10 environment stacks deployed to 972912397388: ObservabilityStack, ObservabilityUE1Stack, DataStack, EcrStack, EcrUE1Stack, ActivityStack, BackupStack, SimulatorStack, ApexStack, IdentityStack. Run #22248369483 (30/30 jobs passed). See "Issues found and fixed during prod validation" above for 5 issues resolved. |
 | 1.4.16 | Deploy prod application stacks | | Deploy submit prod from main to new submit-prod. Fresh Lambda, API Gateway, CloudFront, S3. |
 | | **Data restoration** | | |
 | 1.4.17 | Restore DynamoDB tables | | Restore prod tables from backup into new submit-prod. Script: `scripts/aws-accounts/restore-tables-from-backup.sh`. Critical tables: `prod-env-receipts`, `prod-env-bundles`, `prod-env-hmrc-api-requests`, `prod-env-passes`, `prod-env-subscriptions`. Ephemeral async-request tables and `prod-env-bundle-capacity` (rebuilt by Lambda) do not need restoring. |
@@ -167,9 +168,10 @@ Create a NEW submit-prod account and deploy the full production stack from IaC. 
 
 ### 1.5: Clean up 887764105431 (make it management-only)
 
-| Step | Description | Details |
-|------|-------------|---------|
-| 1.5.1 | Tear down old prod stacks | Delete all `prod-*` application and environment stacks from 887764105431 (Lambda, API GW, Cognito, DynamoDB, CloudFront for submit). |
+| Step | Description | Status | Details |
+|------|-------------|--------|---------|
+| 1.5.0 | Export root zone and organization structure | ✅ | Exported 236 Route53 records to `root-zone/` (zone.json, zone.bind, manual-records.json, organization.json). Identified 5 manually-managed records (email MX/SPF/DKIM, webmail CNAME, Google site verification) not in any CDK stack. Export script: `scripts/aws-accounts/export-root-zone.sh`. |
+| 1.5.1 | Tear down old prod stacks | | Delete all `prod-*` application and environment stacks from 887764105431 (Lambda, API GW, Cognito, DynamoDB, CloudFront for submit). |
 | 1.5.2 | Delete old ACM certs | Remove submit/auth/simulator/regional certs from 887764105431 (new certs are in the new submit-prod). |
 | 1.5.3 | Delete old Secrets Manager entries | Remove HMRC, Stripe, Telegram, OAuth secrets (they've been copied to new submit-prod). |
 | 1.5.4 | Remove old OIDC provider and roles | Delete `submit-github-actions-role` and `submit-deployment-role` from 887764105431 (GitHub Actions now deploys to other accounts). |
