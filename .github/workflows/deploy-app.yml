@@ -59,10 +59,7 @@ permissions:
 
 env:
   NODE_VERSION: '24'
-  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
-  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
-  AWS_ACCOUNT_ID: '887764105431'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
 
 jobs:
@@ -91,6 +88,12 @@ jobs:
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from explicit input or branch
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-docker }}' ; echo "skip-docker=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-lambdas }}' ; echo "skip-lambdas=${X:-false}" | tee -a "$GITHUB_OUTPUT"
@@ -105,11 +108,12 @@ jobs:
       skip-web: ${{ steps.normalise.outputs.skip-web }}
       skip-tests: ${{ steps.normalise.outputs.skip-tests }}
       skip-cleanup: ${{ steps.normalise.outputs.skip-cleanup }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   names:
     needs: params
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -117,7 +121,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -128,7 +132,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -224,12 +228,12 @@ jobs:
       - names
       - docker-build
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -240,7 +244,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -254,7 +258,7 @@ jobs:
           aws ecr get-login-password --region ${{ env.AWS_REGION }} \
             | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL}"
         env:
-          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
 
       - name: Check if image already exists
         id: image-exists
@@ -288,7 +292,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}:${{ github.sha }}"
           docker push "${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}:latest"
         env:
-          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr
 
   push-images-us-east-1:
@@ -299,12 +303,12 @@ jobs:
       - names
       - docker-build
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: us-east-1
           role-chaining: false
           audience: sts.amazonaws.com
@@ -315,7 +319,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
           role-chaining: true
           audience: sts.amazonaws.com
@@ -329,7 +333,7 @@ jobs:
           aws ecr get-login-password --region us-east-1 \
             | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL}"
         env:
-          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
 
       - name: Check if image already exists
         id: image-exists
@@ -363,7 +367,7 @@ jobs:
           docker push "${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}:${{ github.sha }}"
           docker push "${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}:latest"
         env:
-          ECR_REPOSITORY_BASE_URL: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+          ECR_REPOSITORY_BASE_URL: ${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           ECR_REPOSITORY_NAME: ${{ needs.names.outputs.environment-name }}-env-ecr-us-east-1
 
   update-lambdas:
@@ -375,12 +379,12 @@ jobs:
       - push-images
       - push-images-us-east-1
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -391,7 +395,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -404,7 +408,7 @@ jobs:
         run: |
           set -euo pipefail
           APP_PREFIX="${{ needs.names.outputs.deployment-name }}-app"
-          IMAGE_URI="${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ needs.names.outputs.environment-name }}-env-ecr:${{ github.sha }}"
+          IMAGE_URI="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ needs.names.outputs.environment-name }}-env-ecr:${{ github.sha }}"
 
           echo "Listing Lambda functions with prefix: ${APP_PREFIX}-"
           FUNCTIONS=$(aws lambda list-functions \
@@ -464,7 +468,7 @@ jobs:
       - params
       - names
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -483,7 +487,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -494,7 +498,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -580,12 +584,26 @@ jobs:
           echo -n "${{ needs.names.outputs.deployment-name }}" > web/public/submit.deployment-name.txt
           echo -n "${{ needs.names.outputs.environment-name }}" > web/public/submit.environment-name.txt
 
+      - name: Lookup origin bucket name from EdgeStack
+        id: lookup-bucket
+        shell: bash
+        run: |
+          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "${EDGE_STACK}" --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
+            --output text)
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+            echo "ERROR: Could not find OriginBucketName from stack ${EDGE_STACK}" >&2
+            exit 1
+          fi
+          echo "Found origin bucket: ${BUCKET_NAME}"
+          echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: Sync to S3
         shell: bash
         run: |
-          BUCKET_NAME="${{ needs.names.outputs.deployment-name }}-app-origin-us-east-1"
-          # Replace dots with dashes (matching SubmitSharedNames.java convertDotSeparatedToDashSeparated)
-          BUCKET_NAME="${BUCKET_NAME//./-}"
+          BUCKET_NAME="${{ steps.lookup-bucket.outputs.BUCKET_NAME }}"
           echo "Syncing web/public/ to s3://${BUCKET_NAME}/"
           aws s3 sync web/public/ "s3://${BUCKET_NAME}/" --region us-east-1
 
@@ -647,7 +665,7 @@ jobs:
       - sync-web-assets
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v1.58.1-jammy
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -666,7 +684,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -677,7 +695,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -731,7 +749,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -743,7 +761,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com

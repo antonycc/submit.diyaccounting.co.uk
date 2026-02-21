@@ -231,6 +231,255 @@ Log in to HMRC...
 
 Add the following repository variables to your GitHub repository settings under "Settings":
 
+NEEDS UPDATING
+
+```
+Skip to content
+antonycc
+submit.diyaccounting.co.uk
+Repository navigation
+Code
+Issues
+19
+ (19)
+Pull requests
+Agents
+Discussions
+Actions
+Projects
+Wiki
+Security
+46
+ (46)
+Insights
+Settings
+Settings: antonycc/submit.diyaccounting.co.uk
+Access
+Code and automation
+Security
+Integrations
+Actions secrets and variables
+Secrets and variables allow you to manage reusable configuration data. Secrets are encrypted and are used for sensitive data. Learn more about encrypted secrets. Variables are shown as plain text and are used for non-sensitive data. Learn more about variables.
+
+Anyone with collaborator access to this repository can use these secrets and variables for actions. They are not passed to workflows that are triggered by a pull request from a fork.
+
+Secrets
+Variables
+Variables
+Environment variables
+Name
+Valuesort ascending
+Environmentsort ascending
+
+Last updated
+sort ascending
+SUBMIT_ACCOUNT_ID
+887764105431
+prod
+21 minutes ago
+SUBMIT_ACCOUNT_ID
+367191799875
+ci
+21 minutes ago
+SUBMIT_ACTIONS_ROLE_ARN
+arn:aws:iam::887764105431:role/submit-github-actions-role
+prod
+20 minutes ago
+SUBMIT_ACTIONS_ROLE_ARN
+arn:aws:iam::367191799875:role/submit-ci-github-actions-role
+ci
+21 minutes ago
+SUBMIT_CERTIFICATE_ARN
+arn:aws:acm:us-east-1:887764105431:certificate/d340de40-96ca-4f5b-ae4c-f66a776e5a75
+prod
+15 minutes ago
+SUBMIT_CERTIFICATE_ARN
+arn:aws:acm:us-east-1:367191799875:certificate/bd4b7bf4-5c93-4003-b217-5d1dc80d5e38
+ci
+16 minutes ago
+SUBMIT_DEPLOY_ROLE_ARN
+arn:aws:iam::887764105431:role/submit-deployment-role
+prod
+20 minutes ago
+SUBMIT_DEPLOY_ROLE_ARN
+arn:aws:iam::367191799875:role/submit-ci-deployment-role
+ci
+21 minutes ago
+SUBMIT_REGIONAL_CERTIFICATE_ARN
+arn:aws:acm:eu-west-2:887764105431:certificate/1f9c9a57-5834-41d3-822d-4aae7e32d633
+prod
+15 minutes ago
+SUBMIT_REGIONAL_CERTIFICATE_ARN
+arn:aws:acm:eu-west-2:367191799875:certificate/de2a24a1-6034-440c-b98f-a8b2942dc083
+ci
+16 minutes ago
+Repository variables
+Name
+Valuesort ascending
+
+Last updated
+sort ascending
+Actions
+COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS
+6 months ago
+COPILOT_AGENT_FIREWALL_ENABLED
+false
+6 months ago
+GATEWAY_ACCOUNT_ID
+283165661847
+5 hours ago
+GATEWAY_ACTIONS_ROLE_ARN
+arn:aws:iam::283165661847:role/gateway-github-actions-role
+5 hours ago
+GATEWAY_CERTIFICATE_ARN
+arn:aws:acm:us-east-1:283165661847:certificate/18008e08-0475-4ba0-8516-834fd5f447d9
+5 hours ago
+GATEWAY_DEPLOY_ROLE_ARN
+arn:aws:iam::283165661847:role/gateway-deployment-role
+5 hours ago
+ROOT_ACCOUNT_ID
+887764105431
+12 minutes ago
+ROOT_ACTIONS_ROLE_ARN
+arn:aws:iam::887764105431:role/submit-github-actions-role
+11 minutes ago
+ROOT_DEPLOY_ROLE_ARN
+arn:aws:iam::887764105431:role/submit-deployment-role
+10 minutes ago
+ROOT_HOSTED_ZONE_ID
+Z0315522208PWZSSBI9AL
+4 minutes ago
+SPREADSHEETS_ACCOUNT_ID
+064390746177
+2 hours ago
+SPREADSHEETS_ACTIONS_ROLE_ARN
+arn:aws:iam::064390746177:role/spreadsheets-github-actions-role
+2 hours ago
+SPREADSHEETS_CERTIFICATE_ARN
+arn:aws:acm:us-east-1:064390746177:certificate/bc67c01c-ea52-4b11-8958-68e24bf23727
+1 hour ago
+SPREADSHEETS_DEPLOY_ROLE_ARN
+arn:aws:iam::064390746177:role/spreadsheets-deployment-role
+2 hours ago
+STRIPE_PRICE_ID
+price_1SzkPBCD0Ld2ukzIqbEweRSk
+last week
+STRIPE_TEST_PRICE_ID
+price_1Szjt0FdFHdRoTOjHDXcuuq8
+last week
+TELEGRAM_CHAT_IDS
+{"ci-test":"-5250521947","ci-live":"-5278650420","prod-test":"-5144319944","prod-live":"-5177256260"}
+last week
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information
+
+```
+
+```
+Skip to content
+antonycc
+submit.diyaccounting.co.uk
+Repository navigation
+Code
+Issues
+19
+ (19)
+Pull requests
+Agents
+Discussions
+Actions
+Projects
+Wiki
+Security
+46
+ (46)
+Insights
+Settings
+Settings: antonycc/submit.diyaccounting.co.uk
+Access
+Code and automation
+Security
+Integrations
+Actions secrets and variables
+Secrets and variables allow you to manage reusable configuration data. Secrets are encrypted and are used for sensitive data. Learn more about encrypted secrets. Variables are shown as plain text and are used for non-sensitive data. Learn more about variables.
+
+Anyone with collaborator access to this repository can use these secrets and variables for actions. They are not passed to workflows that are triggered by a pull request from a fork.
+
+Secrets
+Variables
+Secrets
+Environment secrets
+Name
+Environmentsort ascending
+
+Last updated
+sort ascending
+STRIPE_TEST_WEBHOOK_SECRET
+prod
+3 days ago
+STRIPE_TEST_WEBHOOK_SECRET
+ci
+3 days ago
+STRIPE_WEBHOOK_SECRET
+prod
+3 days ago
+STRIPE_WEBHOOK_SECRET
+ci
+3 days ago
+Repository secrets
+Name
+
+Last updated
+sort ascending
+Actions
+GOOGLE_CLIENT_SECRET
+last month
+HMRC_CLIENT_SECRET
+7 months ago
+HMRC_SANDBOX_CLIENT_SECRET
+3 weeks ago
+NGROK_AUTH_TOKEN
+7 months ago
+PERSONAL_ACCESS_TOKEN
+last week
+RELEASE_PAT
+last month
+STRIPE_SECRET_KEY
+last week
+STRIPE_TEST_SECRET_KEY
+last week
+STRIPE_TEST_WEBHOOK_SECRET
+last week
+SUPPORT_ISSUE_PAT
+last month
+TELEGRAM_BOT_TOKEN
+last week
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information
+
+```
+
+
 | Variable                  | Description                              | Level        | Type     | Example                         |
 |---------------------------|------------------------------------------|--------------|----------|---------------------------------|
 | `AWS_HOSTED_ZONE_ID`      | The AWS hosted zone ID for the domain.   | Repository   | String   | `Z0315522208PWZSSBI9AL`         |

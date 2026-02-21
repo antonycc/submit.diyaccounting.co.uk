@@ -434,6 +434,7 @@ export async function buildTokenExchangeResponse(request, url, body, auditForUse
   const refreshToken = responseBody.refresh_token;
   const expiresIn = responseBody.expires_in;
   const tokenType = responseBody.token_type;
+  const scope = responseBody.scope;
 
   logger.info({
     message: "Token exchange succeeded",
@@ -442,6 +443,7 @@ export async function buildTokenExchangeResponse(request, url, body, auditForUse
     hasRefreshToken: !!refreshToken,
     expiresIn,
     tokenType,
+    scope,
   });
   return http200OkResponse({
     request,
@@ -452,6 +454,7 @@ export async function buildTokenExchangeResponse(request, url, body, auditForUse
       refreshToken,
       expiresIn,
       tokenType,
+      scope,
     },
   });
 }

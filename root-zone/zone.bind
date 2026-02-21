@@ -1,0 +1,685 @@
+; Zone file for diyaccounting.co.uk
+; Exported from Route53 hosted zone
+; Records: 238
+;
+$ORIGIN diyaccounting.co.uk.
+
+_0949fdd628e5bd35787b77366c0abcf3.ci-gateway                 300    IN CNAME  _db598ee871c9334e6d20aeb37f2aa0cd.jkddzztszm.acm-validations.aws.
+
+_0a261bfce44ca03f5712cac0beaa6bcb.ci-gateway                 300    IN CNAME  _cf67af46a86c9bd205df1cc9e718c986.jkddzztszm.acm-validations.aws.
+
+_101237158826cc8d765083b394f9f7ef.prod-auth                  300    IN CNAME  _17be354df3c14a72ec21df978b9cd776.jkddzztszm.acm-validations.aws.
+
+_1b8b242dda8897bf22f4feec938a902b.prod-gateway               300    IN CNAME  _5e122c630dba03049f09d25dff0469c4.jkddzztszm.acm-validations.aws.
+
+_1bccb4c42a910b784816d6261f41f12d.prod-simulator             300    IN CNAME  _77f2c7aa5a331ba7d5397b4fe0718831.jkddzztszm.acm-validations.aws.
+
+_35190c205a8af5a856ad68d1e6f264e5.ci-holding                 300    IN CNAME  _3dc8f41ecff88de66c06ac638c8c3f78.jkddzztszm.acm-validations.aws.
+
+_362020107898ad78fb64367634394fdc.prod-spreadsheets          300    IN CNAME  _b8110db7b3a956754dcffd0b1604b5db.jkddzztszm.acm-validations.aws.
+
+_3a66921f94b54960b7ca6d5540bc16cd.ci-simulator               300    IN CNAME  _423f85854beaa0ba80158827d856c143.jkddzztszm.acm-validations.aws.
+
+_3b16987868d92703f70c5032464a8c47.auth.submit                300    IN CNAME  _8d8f908347e538c3eef868cc9398b7d5.xlfgrmvvlj.acm-validations.aws.
+
+_3bd3981ee8841aff50cc0666b17acb7a.prod-simulator             300    IN CNAME  _0ff3e3f8c36d2eefa7daad750db3d7b7.jkddzztszm.acm-validations.aws.
+
+_4195c166ead32290f6f4a3476d15490a                            300    IN CNAME  _ab68ab4982da9c209e4f3671fa479b81.fyfbssdptv.acm-validations.aws.
+
+_57cbb14b4bfe57fe82d76adb0393152b.submit                     300    IN CNAME  _7715bb07ad29be8a09a18388b1b64e9b.jkddzztszm.acm-validations.aws.
+
+_664750495e7316533d711ad9e8c9dd9d.submit                     300    IN CNAME  _dc95f927a6739cc45fe700b103dcc7a4.jkddzztszm.acm-validations.aws.
+
+_8567ff80729ec3804fcc7d2a50473b60.prod-gateway               300    IN CNAME  _e95f5e44cea761bd8dc2e116b8b00ab0.jkddzztszm.acm-validations.aws.
+
+_87ff9ef82979c0be707b8e8206d60b38.submit                     300    IN CNAME  _10e778331686f7097ff97e1e0fdcbdda.xlfgrmvvlj.acm-validations.aws.
+
+_8dab2f8ebfc73409934685d6bca59440.spreadsheets               300    IN CNAME  _d48c8d33cedd2901073f91736ca17edb.jkddzztszm.acm-validations.aws.
+
+_8fdae72f3826294cdfae702111ce3fff.prod-auth                  300    IN CNAME  _782f796853d0f665b3746b1fe5d975c1.jkddzztszm.acm-validations.aws.
+
+_966e10a3a993c78744aaafbc0b2358a9.ci-auth                    300    IN CNAME  _73bc2f50435ae45d04bda78fa455026b.jkddzztszm.acm-validations.aws.
+
+_9eded2bea514b0cbc387489ade4d8f15.ci-holding                 300    IN CNAME  _ae6d85702a7538dfbb1d1a2b8a6ec8ea.jkddzztszm.acm-validations.aws.
+
+_a4f59a6fe4f0c66ecd8861b600cc7e1b.stage                      300    IN CNAME  _8b54fbefde39b6e7f9eb93d024c01f8a.kqlycvwlbp.acm-validations.aws.
+
+_ab92864d363fee7bdb3c718c1e57a7d8.www.stage                  300    IN CNAME  _2190c222b239a724e6cf9b23440f4823.kqlycvwlbp.acm-validations.aws.
+
+_b6532f2c9754076d2fbab6d5b30d0e11                            300    IN CNAME  _98c99d2ad296876510f940b38f692f9d.jkddzztszm.acm-validations.aws.
+
+_baa63bdbc8b633a7d484735236785653.prod-submit                300    IN CNAME  _dc6d1e443abec63f2d990c06158605e7.jkddzztszm.acm-validations.aws.
+
+_bb440be8e9706df1300f6deea9db7d95.dev.account                300    IN CNAME  _9c12ad2f06e5d30045df1ae452965c8b.nbnhgqgzdr.acm-validations.aws.
+
+_bf9098fc7aeedb6364b107d2f455de04.ci-submit                  300    IN CNAME  _0135182b3e4c1fc5ea13d1e1bc2ed153.jkddzztszm.acm-validations.aws.
+
+_c87484b6134308e42002ae4c28d61dd4.prod-submit                300    IN CNAME  _57a874f7d4276f3962b9f5603f132c22.jkddzztszm.acm-validations.aws.
+
+_c9009bdf3b6c4a56f72a9a4a896ce39e.www                        300    IN CNAME  _250f43ddaf4132f4e535296b7670a1ad.jkddzztszm.acm-validations.aws.
+
+_cc1759d2d51a9c9d7e7311cc6868e918.prod-holding               300    IN CNAME  _fd109f2939cb351750c3e9011794d471.jkddzztszm.acm-validations.aws.
+
+_d9314db1450898e066142e87c7697271.ci-spreadsheets            300    IN CNAME  _9e1e47b8c56b7a94811753d8aa486a28.jkddzztszm.acm-validations.aws.
+
+_dd710209875539972cdf82e44ea59925.ci-auth                    300    IN CNAME  _92bd0540b5e31a5eecd1f9a8cf74a7b4.jkddzztszm.acm-validations.aws.
+
+_e267d6960722eb3bb33873c9ec41f06c.www                        300    IN CNAME  _fe036cc1e58bce69328a6f1b9ecf127f.fyfbssdptv.acm-validations.aws.
+
+_e3b39cd9d7d72d15ceeb66554b476ce4.spreadsheets               300    IN CNAME  _ae4f656bae3d41c094cfb21f7a16a5b9.jkddzztszm.acm-validations.aws.
+
+_e9070cc9140aeac9b9819fecdd973d39.ci-spreadsheets            300    IN CNAME  _2c0feaeac46cda7d9ed74db6c95f1c08.jkddzztszm.acm-validations.aws.
+
+_eec9c1ca514bf4193dd592806a8d49f3.prod-holding               300    IN CNAME  _2d86f5ca85167f4e7c9aabf26683a6b8.jkddzztszm.acm-validations.aws.
+
+_f1962a8661ba9ff0fe2e590e8bb43d9a.ci-submit                  300    IN CNAME  _fb8f56990f33f4885b670c4163df8400.jkddzztszm.acm-validations.aws.
+
+_f8653e9d435702314522cccaf8f194a8.prod-spreadsheets          300    IN CNAME  _0b7c5e29cf64d0d7d59d27a4e1485085.jkddzztszm.acm-validations.aws.
+
+_fd3ad027770a676ce6242fffe0618517.ci-simulator               300    IN CNAME  _bed6edc1c93e1eeb118a6cd848f35dbd.jkddzztszm.acm-validations.aws.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-accounts.submit                                           A      ALIAS d317431ucblglo.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-accounts.submit                                           AAAA   ALIAS d317431ucblglo.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-activate.submit                                           A      ALIAS du45gk7aww5oa.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-activate.submit                                           AAAA   ALIAS du45gk7aww5oa.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-auth                                                      A      ALIAS d3vyujxcrvdqyf.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-auth                                                      AAAA   ALIAS d3vyujxcrvdqyf.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-auth.submit                                               A      ALIAS d2d1eszdvffqf1.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-auth.submit                                               AAAA   ALIAS d2d1eszdvffqf1.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-authintes.submit                                          A      ALIAS d29ilf5n5ha06v.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-authintes.submit                                          AAAA   ALIAS d29ilf5n5ha06v.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-claudepre.submit                                          A      ALIAS dwd9yqdttg7ul.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-claudepre.submit                                          AAAA   ALIAS dwd9yqdttg7ul.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-claudeuxf.submit                                          A      ALIAS d32c4kvalsonys.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-claudeuxf.submit                                          AAAA   ALIAS d32c4kvalsonys.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-cleanlogi.submit                                          A      ALIAS d8dlc7rc0ck7e.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-cleanlogi.submit                                          AAAA   ALIAS d8dlc7rc0ck7e.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-cleanup.submit                                            A      ALIAS d12nwkq7pitrs0.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-cleanup.submit                                            AAAA   ALIAS d12nwkq7pitrs0.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-cognitnow.submit                                          A      ALIAS d23ajmhqe7wljq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-cognitnow.submit                                          AAAA   ALIAS d23ajmhqe7wljq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-compy.submit                                              A      ALIAS d1pkkfptj3ad67.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-compy.submit                                              AAAA   ALIAS d1pkkfptj3ad67.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-dnsforlog.submit                                          A      ALIAS d2q2a5wb69d2it.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-dnsforlog.submit                                          AAAA   ALIAS d2q2a5wb69d2it.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-eventandp.submit                                          A      ALIAS d2hkqrwmqdusvd.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-eventandp.submit                                          AAAA   ALIAS d2hkqrwmqdusvd.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-firstpass.submit                                          A      ALIAS d39g6tnmvxqh0c.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-firstpass.submit                                          AAAA   ALIAS d39g6tnmvxqh0c.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-fixbridge.submit                                          A      ALIAS d1m6rgd7hmtcmw.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-fixbridge.submit                                          AAAA   ALIAS d1m6rgd7hmtcmw.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-gateway                                                   A      ALIAS de9dto3k3vhcf.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-gateway                                                   AAAA   ALIAS de9dto3k3vhcf.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-gateway.submit                                            A      ALIAS d3cdppp3lowzl6.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-gateway.submit                                            AAAA   ALIAS d3cdppp3lowzl6.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-headers3.submit                                           A      ALIAS d1qnsz8nbszh94.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-headers3.submit                                           AAAA   ALIAS d1qnsz8nbszh94.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-helpdocs.submit                                           A      ALIAS d328hs93p0hwit.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-helpdocs.submit                                           AAAA   ALIAS d328hs93p0hwit.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-hiding.submit                                             A      ALIAS d3r9rzbctci6sm.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-hiding.submit                                             AAAA   ALIAS d3r9rzbctci6sm.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-holding                                                   A      ALIAS d2n0mxynwaaox4.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-holding                                                   AAAA   ALIAS d2n0mxynwaaox4.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-holding.submit                                            A      ALIAS d3k0ytchi71fct.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-holding.submit                                            AAAA   ALIAS d3k0ytchi71fct.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-leanbuild.submit                                          A      ALIAS d2d1n16iyroh7z.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-leanbuild.submit                                          AAAA   ALIAS d2d1n16iyroh7z.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-login.submit                                              A      ALIAS ddlbgwe13luov.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-login.submit                                              AAAA   ALIAS ddlbgwe13luov.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-nogocnolo.submit                                          A      ALIAS d1exe795zrs8sg.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-nogocnolo.submit                                          AAAA   ALIAS d1exe795zrs8sg.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-nvsubhash.submit                                          A      ALIAS d3keh16krj5rug.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-nvsubhash.submit                                          AAAA   ALIAS d3keh16krj5rug.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-qaprep.submit                                             A      ALIAS d3vn81ebr8lhdn.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-qaprep.submit                                             AAAA   ALIAS d3vn81ebr8lhdn.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-refresf.submit                                            A      ALIAS d220x8t4z162b7.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-refresf.submit                                            AAAA   ALIAS d220x8t4z162b7.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-refresh.submit                                            A      ALIAS d2feta30oidoqo.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-refresh.submit                                            AAAA   ALIAS d2feta30oidoqo.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-relaxedte.submit                                          A      ALIAS dcitf4jsomjjy.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-relaxedte.submit                                          AAAA   ALIAS dcitf4jsomjjy.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-revertlog.submit                                          A      ALIAS d2ruhivkz4635r.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-revertlog.submit                                          AAAA   ALIAS d2ruhivkz4635r.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-rootdns.submit                                            A      ALIAS da7kj093o3vsk.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-rootdns.submit                                            AAAA   ALIAS da7kj093o3vsk.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-secondpas.submit                                          A      ALIAS d1jshe2y112usu.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-secondpas.submit                                          AAAA   ALIAS d1jshe2y112usu.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-simtest.submit                                            A      ALIAS d33y6seyob9ztz.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-simtest.submit                                            AAAA   ALIAS d33y6seyob9ztz.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-simulator                                                 A      ALIAS d25v3yzt3lv0t9.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-simulator                                                 AAAA   ALIAS d25v3yzt3lv0t9.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-simulator.submit                                          A      ALIAS d3rke0gq08lszl.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-simulator.submit                                          AAAA   ALIAS d3rke0gq08lszl.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-spreadsheets                                              A      ALIAS dk6ghpplfgq9t.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-spreadsheets                                              AAAA   ALIAS dk6ghpplfgq9t.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-stability.submit                                          A      ALIAS d1vhm92ussyo14.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-stability.submit                                          AAAA   ALIAS d1vhm92ussyo14.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-submit                                                    A      ALIAS ci-accounts.submit.diyaccounting.co.uk.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-submit                                                    AAAA   ALIAS ci-accounts.submit.diyaccounting.co.uk.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-uiuiiu.submit                                             A      ALIAS d3esvl1l2rnfnq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci-uiuiiu.submit                                             AAAA   ALIAS d3esvl1l2rnfnq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci.submit                                                    A      ALIAS ci-rootdns.submit.diyaccounting.co.uk.
+
+; ALIAS (Route53-specific, not standard BIND)
+ci.submit                                                    AAAA   ALIAS ci-rootdns.submit.diyaccounting.co.uk.
+
+; ALIAS (Route53-specific, not standard BIND)
+@                                                            A      ALIAS dnloza7zl3wfi.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+@                                                            AAAA   ALIAS dnloza7zl3wfi.cloudfront.net.
+
+@                                                            60     IN MX     1 aspmx.l.google.com.
+@                                                            60     IN MX     2 alt2.aspmx.l.google.com.
+@                                                            60     IN MX     3 alt1.aspmx.l.google.com.
+@                                                            60     IN MX     4 aspmx2.googlemail.com.
+@                                                            60     IN MX     5 aspmx3.googlemail.com.
+
+@                                                            3600   IN NS     ns-1088.awsdns-08.org.
+@                                                            3600   IN NS     ns-1605.awsdns-08.co.uk.
+@                                                            3600   IN NS     ns-134.awsdns-16.com.
+@                                                            3600   IN NS     ns-938.awsdns-53.net.
+
+@                                                            300    IN SOA    ns-1088.awsdns-08.org. awsdns-hostmaster.amazon.com. 2 7200 900 1209600 86400
+
+@                                                            60     IN TXT    "v=spf1 include:_spf.google.com include:amazonses.com ~all"
+@                                                            60     IN TXT    "spf2.0/pra include:_spf.google.com include:amazonses.com ~all"
+@                                                            60     IN TXT    "google-site-verification=nGzIso0TVhSyaVsX5XdYtGHBdk7vLkaVKLMIdDN4ao8"
+
+google._domainkey                                            60     IN TXT    "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCNt4rjVcpGAeiGc6Cp/cM/HC7Z9ybIUp6LzjkQDlD/jvnWyGOskCMHZiY0vXfaxGh1BHlfGdFdcRuO8RvLIsiqTh+sarC1cCgKNw+dSoDzdXTqXDqpuC05mFX46g8U1ZnDAV06r4Um62oOgy27hjF5ZL2qhJ+QmUNdfS6+pP+4jwIDAQAB"
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-0cd8b75.submit                                          A      ALIAS d2azrvl0tdadb4.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-0cd8b75.submit                                          AAAA   ALIAS d2azrvl0tdadb4.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-18442cd.submit                                          A      ALIAS d2e44der76wdrk.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-18442cd.submit                                          AAAA   ALIAS d2e44der76wdrk.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-1f15e15.submit                                          A      ALIAS d2gu63sr5gnsxy.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-1f15e15.submit                                          AAAA   ALIAS d2gu63sr5gnsxy.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2223ff0.submit                                          A      ALIAS d351xaowyu6e18.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2223ff0.submit                                          AAAA   ALIAS d351xaowyu6e18.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2e74ca0.submit                                          A      ALIAS d2crus61m1sf9p.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2e74ca0.submit                                          AAAA   ALIAS d2crus61m1sf9p.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2f90bf0.submit                                          A      ALIAS d20mu74q1hwvy8.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2f90bf0.submit                                          AAAA   ALIAS d20mu74q1hwvy8.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-39874dc.submit                                          A      ALIAS d3n0gpzn0llgos.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-39874dc.submit                                          AAAA   ALIAS d3n0gpzn0llgos.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-39cb5d3.submit                                          A      ALIAS d2lkx8l7j5h227.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-39cb5d3.submit                                          AAAA   ALIAS d2lkx8l7j5h227.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-3ce3e14.submit                                          A      ALIAS dwjwpckh4ydl5.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-3ce3e14.submit                                          AAAA   ALIAS dwjwpckh4ydl5.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-429c35c.submit                                          A      ALIAS djbtgpv727yx2.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-429c35c.submit                                          AAAA   ALIAS djbtgpv727yx2.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-42c8ee0.submit                                          A      ALIAS d1lxlzzl3uh02r.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-42c8ee0.submit                                          AAAA   ALIAS d1lxlzzl3uh02r.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-4c05746.submit                                          A      ALIAS d220my44a8gydx.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-4c05746.submit                                          AAAA   ALIAS d220my44a8gydx.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-4d79b4a.submit                                          A      ALIAS d1dy66pqbxeq2y.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-4d79b4a.submit                                          AAAA   ALIAS d1dy66pqbxeq2y.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-6b3d4c7.submit                                          A      ALIAS d3gjif1sxlsxtq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-6b3d4c7.submit                                          AAAA   ALIAS d3gjif1sxlsxtq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-6bbd6ec.submit                                          A      ALIAS d39l1y0xv0askg.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-6bbd6ec.submit                                          AAAA   ALIAS d39l1y0xv0askg.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-711172e.submit                                          A      ALIAS d3vpqfmlhsuoyk.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-711172e.submit                                          AAAA   ALIAS d3vpqfmlhsuoyk.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-71edf71.submit                                          A      ALIAS dj56cfq3hdu1h.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-71edf71.submit                                          AAAA   ALIAS dj56cfq3hdu1h.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-74f674d.submit                                          A      ALIAS d2gz06b58m8vx4.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-74f674d.submit                                          AAAA   ALIAS d2gz06b58m8vx4.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-78d7f60.submit                                          A      ALIAS d1b4cxu4tqdlz6.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-78d7f60.submit                                          AAAA   ALIAS d1b4cxu4tqdlz6.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-8882684.submit                                          A      ALIAS d3f55qmnecvi40.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-8882684.submit                                          AAAA   ALIAS d3f55qmnecvi40.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-8caf293.submit                                          A      ALIAS d3pvt4ojdyjxnj.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-8caf293.submit                                          AAAA   ALIAS d3pvt4ojdyjxnj.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-9531d17.submit                                          A      ALIAS d6c7u7cmeqb2r.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-9531d17.submit                                          AAAA   ALIAS d6c7u7cmeqb2r.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-995da96.submit                                          A      ALIAS dahbyltli3xkp.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-995da96.submit                                          AAAA   ALIAS dahbyltli3xkp.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-9a0504e.submit                                          A      ALIAS d2315mhtr4coir.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-9a0504e.submit                                          AAAA   ALIAS d2315mhtr4coir.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-9c2d6dd.submit                                          A      ALIAS d2zy2dmpp92ft6.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-9c2d6dd.submit                                          AAAA   ALIAS d2zy2dmpp92ft6.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-a3e9338.submit                                          A      ALIAS d30a52cjkfxamm.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-a3e9338.submit                                          AAAA   ALIAS d30a52cjkfxamm.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-a4df9dc.submit                                          A      ALIAS d3tq8206rdvkx5.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-a4df9dc.submit                                          AAAA   ALIAS d3tq8206rdvkx5.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-a8681fc.submit                                          A      ALIAS d2clqust6wsczt.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-a8681fc.submit                                          AAAA   ALIAS d2clqust6wsczt.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-aa9aec0.submit                                          A      ALIAS dqxsk6a55w8i7.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-aa9aec0.submit                                          AAAA   ALIAS dqxsk6a55w8i7.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-afccba7.submit                                          A      ALIAS d201qub7xp6aov.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-afccba7.submit                                          AAAA   ALIAS d201qub7xp6aov.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-auth                                                    A      ALIAS d2xdqdnlzgpdxb.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-auth                                                    AAAA   ALIAS d2xdqdnlzgpdxb.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-auth.submit                                             A      ALIAS d2esl3swpbay67.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-auth.submit                                             AAAA   ALIAS d2esl3swpbay67.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-ba6b58c.submit                                          A      ALIAS d3svsdg8s77fe7.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-ba6b58c.submit                                          AAAA   ALIAS d3svsdg8s77fe7.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-bab0022.submit                                          A      ALIAS d7gwgxgxwbq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-bab0022.submit                                          AAAA   ALIAS d7gwgxgxwbq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-c7253ea.submit                                          A      ALIAS d1j6x3e2u3xzcf.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-c7253ea.submit                                          AAAA   ALIAS d1j6x3e2u3xzcf.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-cbf0475.submit                                          A      ALIAS d3mpqhuq0as1es.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-cbf0475.submit                                          AAAA   ALIAS d3mpqhuq0as1es.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-d37d2ab.submit                                          A      ALIAS d3p5tevbukttxd.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-d37d2ab.submit                                          AAAA   ALIAS d3p5tevbukttxd.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-d51c346.submit                                          A      ALIAS d2n7uzxms7yflm.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-d51c346.submit                                          AAAA   ALIAS d2n7uzxms7yflm.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-d646088.submit                                          A      ALIAS dqmg12f5cm2r3.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-d646088.submit                                          AAAA   ALIAS dqmg12f5cm2r3.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-dba6c13.submit                                          A      ALIAS dudckos45iksy.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-dba6c13.submit                                          AAAA   ALIAS dudckos45iksy.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e0870bc.submit                                          A      ALIAS d33kywjjsltxgq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e0870bc.submit                                          AAAA   ALIAS d33kywjjsltxgq.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e33ebca.submit                                          A      ALIAS dgt50m4f1tqio.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e33ebca.submit                                          AAAA   ALIAS dgt50m4f1tqio.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e429a31.submit                                          A      ALIAS d1huorwe48pdev.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e429a31.submit                                          AAAA   ALIAS d1huorwe48pdev.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e4fa948.submit                                          A      ALIAS d5xhfcambho31.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-e4fa948.submit                                          AAAA   ALIAS d5xhfcambho31.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-ed82fd8.submit                                          A      ALIAS d3cy9gfbzq2b94.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-ed82fd8.submit                                          AAAA   ALIAS d3cy9gfbzq2b94.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-gateway                                                 A      ALIAS dnloza7zl3wfi.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-gateway                                                 AAAA   ALIAS dnloza7zl3wfi.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-holding                                                 A      ALIAS d2to3rbmqtw44v.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-holding                                                 AAAA   ALIAS d2to3rbmqtw44v.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-holding.submit                                          A      ALIAS d29jr9sxrhayz.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-holding.submit                                          AAAA   ALIAS d29jr9sxrhayz.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-simulator                                               A      ALIAS d4s3x4pnsw5ik.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-simulator                                               AAAA   ALIAS d4s3x4pnsw5ik.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-simulator.submit                                        A      ALIAS d2mmizguouesw0.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-simulator.submit                                        AAAA   ALIAS d2mmizguouesw0.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-spreadsheets                                            A      ALIAS d10s0isuhkjtrs.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-spreadsheets                                            AAAA   ALIAS d10s0isuhkjtrs.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-submit                                                  A      ALIAS prod-4c05746.submit.diyaccounting.co.uk.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-submit                                                  AAAA   ALIAS prod-4c05746.submit.diyaccounting.co.uk.
+
+; ALIAS (Route53-specific, not standard BIND)
+spreadsheets                                                 A      ALIAS d10s0isuhkjtrs.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+spreadsheets                                                 AAAA   ALIAS d10s0isuhkjtrs.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+submit                                                       A      ALIAS prod-4c05746.submit.diyaccounting.co.uk.
+
+; ALIAS (Route53-specific, not standard BIND)
+submit                                                       AAAA   ALIAS prod-4c05746.submit.diyaccounting.co.uk.
+
+submit                                                       60     IN TXT    "google-site-verification=n1xm8_e4tO8YkSTtFLwONkJ4lfG9H4cgau12vUFxEuk"
+
+webmail                                                      1800   IN CNAME  ghs.google.com.
+
+; ALIAS (Route53-specific, not standard BIND)
+www                                                          A      ALIAS dnloza7zl3wfi.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+www                                                          AAAA   ALIAS dnloza7zl3wfi.cloudfront.net.
+

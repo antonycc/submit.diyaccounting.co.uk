@@ -376,3 +376,14 @@ web/public/simulator-local.js
 
 # Generated gateway redirect function (built from redirects.toml by scripts/build-gateway-redirects.cjs)
 web/www.diyaccounting.co.uk/redirect-function.js
+/salt-canary-item-20260221-001556.json
+/salt-metadata-20260221-001556.json
+/cdk-app-account.drawio
+/cdk-app-auth-billing.drawio
+/cdk-app-dataflow.drawio.bak
+/cdk-app-delivery.drawio
+/cdk-app-delivery.drawio.bak
+/cdk-app-hmrc.drawio
+/cdk-app-invocation.drawio.bak
+/cdk-app-ops.drawio
+/cdk-app-ops.drawio.bak

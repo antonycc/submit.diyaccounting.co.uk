@@ -186,8 +186,11 @@ function resolveDeployment(flags) {
   const ecrUriEuw2 = `${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ecrRepoEuw2}`;
   const ecrUriUe1 = `${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_UE1}.amazonaws.com/${ecrRepoUe1}`;
 
-  // S3 bucket: dots converted to dashes
-  const originBucket = `${appPrefix}-origin-us-east-1`.replace(/\./g, "-");
+  // S3 bucket: lookup from EdgeStack CloudFormation output
+  const edgeStackName = `${appPrefix}-EdgeStack`;
+  const originBucket = runCapture(
+    `aws cloudformation describe-stacks --stack-name ${edgeStackName} --region ${AWS_REGION_UE1} --query 'Stacks[0].Outputs[?OutputKey==\`OriginBucketName\`].OutputValue' --output text`
+  );
 
   const version = JSON.parse(fs.readFileSync("package.json", "utf-8")).version;
 

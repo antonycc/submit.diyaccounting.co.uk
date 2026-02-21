@@ -192,12 +192,12 @@ cat > /tmp/backup-account-policy.json << 'EOF'
             "Effect": "Allow",
             "Principal": {
                 "AWS": [
-                    "arn:aws:iam::PROD_ACCOUNT_ID:root",
-                    "arn:aws:iam::CI_ACCOUNT_ID:root"
+                    "arn:aws:iam::972912397388:root",
+                    "arn:aws:iam::367191799875:root"
                 ]
             },
             "Action": "backup:CopyIntoBackupVault",
-            "Resource": "arn:aws:backup:*:BACKUP_ACCOUNT_ID:backup-vault:*"
+            "Resource": "arn:aws:backup:*:914216784828:backup-vault:*"
         }
     ]
 }
@@ -215,7 +215,6 @@ echo "  - Primary S3:     $BUCKET_NAME"
 echo "  - Replica S3:     $REPLICA_BUCKET_NAME (auto-replicated)"
 echo ""
 echo "Next steps:"
-echo "1. Replace PROD_ACCOUNT_ID and CI_ACCOUNT_ID in /tmp/backup-account-policy.json"
-echo "2. Apply the backup vault access policy"
+echo "1. Apply the backup vault access policy (account IDs already populated)"
 echo "3. Configure source accounts to ship backups here"
 echo "4. Test cross-account backup copy"

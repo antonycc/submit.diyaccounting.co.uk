@@ -239,8 +239,9 @@ export function apiEndpoint(app) {
       });
     }
 
-    // Auto-grant mode for system tests - skip multi-step flow
-    if (autoGrant === "true") {
+    // Auto-grant mode - skip multi-step flow.
+    // Triggered by ?autoGrant=true query param (system tests) or HMRC_AUTO_GRANT env var (simulator journeys).
+    if (autoGrant === "true" || process.env.HMRC_AUTO_GRANT === "true") {
       return autoGrantRedirect(res, client_id, redirect_uri, scope, state);
     }
 

@@ -215,6 +215,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
@@ -260,6 +261,7 @@
         sessionStorage.removeItem("pendingObligationsRequest");
         sessionStorage.removeItem("pendingReturnRequest");
         sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcTokenScope");
         sessionStorage.removeItem("oauth_state");
         sessionStorage.removeItem("hmrcAccount");
         sessionStorage.removeItem("currentActivity");
@@ -383,6 +385,7 @@
             // Handle 401 specifically to trigger re-authentication
             if (response.status === 401) {
               sessionStorage.removeItem("hmrcAccessToken");
+              sessionStorage.removeItem("hmrcTokenScope");
               showStatus("Access token expired. Please re-authenticate.", "error");
               showSearchCriteria(); // Show form on error
               // Could trigger re-auth here if desired
@@ -410,6 +413,7 @@
           // Clear pending request data to prevent auto-retry loop on next page load
           sessionStorage.removeItem("pendingObligationsRequest");
           sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcTokenScope");
           sessionStorage.removeItem("oauth_state");
           sessionStorage.removeItem("hmrcAccount");
           sessionStorage.removeItem("currentActivity");
@@ -442,10 +446,17 @@
           return;
         }
 
-        // Check if we have an access token
+        // Check if we have an access token with sufficient scope
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck
+          ? await window.hmrcScopeCheck.isTokenSufficient()
+          : !!accessToken;
 
-        if (!accessToken) {
+        if (!scopeSufficient) {
+          if (accessToken) {
+            console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
+            if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          }
           try {
             showLoading();
             showStatus("Initiating HMRC authentication...", "info");
@@ -470,14 +481,19 @@
             sessionStorage.setItem("currentActivity", currentActivity);
             console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
 
-            // Get OAuth URL with read-only scope
+            // Get OAuth scope from catalogue
+            const oauthScope = window.hmrcScopeCheck
+              ? await window.hmrcScopeCheck.getOAuthScopeString()
+              : "read:vat";
+
+            // Get OAuth URL with catalogue-driven scope
             let authResponseUrl;
             if (window.__env && window.authUrlBuilder) {
-              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, "read:vat", hmrcAccount || "live");
+              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
               console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
             } else {
               // Get OAuth URL from API (fallback)
-              const authResponse = await getAuthUrl(state, "hmrc", "read:vat");
+              const authResponse = await getAuthUrl(state, "hmrc", oauthScope);
               authResponseUrl = authResponse.authUrl;
               console.log("Using server-side HMRC Auth URL:", authResponseUrl);
             }
@@ -541,6 +557,7 @@
               // Handle 401 specifically to trigger re-authentication
               if (response.status === 401) {
                 sessionStorage.removeItem("hmrcAccessToken");
+                sessionStorage.removeItem("hmrcTokenScope");
                 showStatus("Access token expired. Please try again.", "error");
                 return;
               }

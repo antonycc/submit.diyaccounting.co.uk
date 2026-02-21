@@ -8,7 +8,7 @@ import { hashSub, getSaltVersion } from "../services/subHasher.js";
 import { maskHttpData } from "../lib/dataMasking.js";
 import { v4 as uuidv4 } from "uuid";
 import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
-import { calculateOneMonthTtl } from "../lib/dateUtils.js";
+import { calculateTwentyEightDayTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbHmrcApiRequestRepository.js" });
 
@@ -72,8 +72,8 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
       createdAt: now.toISOString(),
     };
 
-    // Calculate TTL as 1 month
-    const { ttl, ttl_datestamp } = calculateOneMonthTtl(now);
+    // Calculate TTL as 28 days
+    const { ttl, ttl_datestamp } = calculateTwentyEightDayTtl(now);
     item.ttl = ttl;
     item.ttl_datestamp = ttl_datestamp;
 

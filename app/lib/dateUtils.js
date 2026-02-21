@@ -36,6 +36,8 @@ export function calculateTtl(baseDate, offset = {}) {
 export const TTL_PRESETS = {
   // HMRC requires tax records to be kept for 7 years (approx 2555 days)
   HMRC_TAX_RECORDS: { days: 2555 },
+  // HMRC API request audit trail — 28-day retention
+  TWENTY_EIGHT_DAYS: { days: 28 },
   // Standard retention of 1 month
   ONE_MONTH: { months: 1 },
   // Short-lived async request state
@@ -49,6 +51,15 @@ export const TTL_PRESETS = {
  */
 export function calculateHmrcTaxRecordTtl(baseDate) {
   return calculateTtl(baseDate, TTL_PRESETS.HMRC_TAX_RECORDS);
+}
+
+/**
+ * Calculate TTL for 28-day retention (HMRC API request audit trail)
+ * @param {Date} baseDate - The date to calculate from
+ * @returns {{ttl: number, ttl_datestamp: string}} TTL values
+ */
+export function calculateTwentyEightDayTtl(baseDate) {
+  return calculateTtl(baseDate, TTL_PRESETS.TWENTY_EIGHT_DAYS);
 }
 
 /**

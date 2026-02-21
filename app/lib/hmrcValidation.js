@@ -336,6 +336,11 @@ export function getHmrcErrorMessage(code) {
       userMessage: "The authentication credentials are not valid",
       actionAdvice: "Please sign in again to refresh your credentials",
     },
+    INVALID_SCOPE: {
+      userMessage: "Your HMRC authorization does not include the required permissions for this action",
+      actionAdvice: "Please re-authorize with HMRC to grant the necessary permissions",
+      reason: "hmrc_scope_insufficient",
+    },
     CLIENT_OR_AGENT_NOT_AUTHORISED: {
       userMessage: "You are not authorized to access this VAT registration",
       actionAdvice: "Please ensure you have the correct permissions and try again",

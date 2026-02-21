@@ -117,11 +117,7 @@ permissions:
 env:
   JAVA_VERSION: '25'
   NODE_VERSION: '24'
-  ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/submit-github-actions-role'
-  DEPLOY_ROLE_ARN:  'arn:aws:iam::887764105431:role/submit-deployment-role'
   AWS_REGION: 'eu-west-2'
-  AWS_ACCOUNT_ID: '887764105431'
-  AWS_HOSTED_ZONE_ID: 'Z0315522208PWZSSBI9AL'
 
 jobs:
 
@@ -155,6 +151,12 @@ jobs:
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from explicit input or branch
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-cleanup }}' ; echo "skip-cleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-native-auth-disable }}' ; echo "skip-native-auth-disable=${X:-false}" | tee -a "$GITHUB_OUTPUT"
@@ -169,12 +171,13 @@ jobs:
       skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
       test-auth-username: ${{ steps.normalise.outputs.test-auth-username }}
       test-auth-password: ${{ steps.normalise.outputs.test-auth-password }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   names:
     needs:
       params
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -182,7 +185,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -193,7 +196,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -248,7 +251,7 @@ jobs:
     container: mcr.microsoft.com/playwright:v1.58.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Running behaviour test - ${{ needs.params.outputs.behaviour-test-suite }}
         run: ":"
@@ -274,7 +277,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC (for test user creation)
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -285,7 +288,7 @@ jobs:
       - name: Assume AWS deployment role (for test user creation)
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -350,7 +353,7 @@ jobs:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -361,7 +364,7 @@ jobs:
       - name: Assume AWS deployment role
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -444,13 +447,13 @@ jobs:
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -462,7 +465,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -487,7 +490,7 @@ jobs:
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -535,7 +538,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.ACTIONS_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: false
           audience: sts.amazonaws.com
@@ -547,7 +550,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
           role-chaining: true
           audience: sts.amazonaws.com
@@ -555,10 +558,28 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Publish test results to local directory and upload to S3
+      - name: Lookup origin bucket name from EdgeStack
         if: ${{ !cancelled() }}
+        id: lookup-bucket
+        shell: bash
+        run: |
+          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "${EDGE_STACK}" --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+            echo "WARNING: Could not find OriginBucketName from stack ${EDGE_STACK}, skipping upload"
+            echo "BUCKET_NAME=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found origin bucket: ${BUCKET_NAME}"
+            echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish test results to local directory and upload to S3
+        if: ${{ !cancelled() && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
         env:
-          BUCKET_NAME: ${{ needs.names.outputs.deployment-name }}-app-origin-us-east-1
+          BUCKET_NAME: ${{ steps.lookup-bucket.outputs.BUCKET_NAME }}
         shell: bash
         run: |
           chmod +x ./scripts/publish-web-test-local.sh

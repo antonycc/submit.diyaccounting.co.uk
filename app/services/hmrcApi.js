@@ -678,6 +678,9 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
   if (errorDetails) {
     errorResponse.userMessage = errorDetails.userMessage;
     errorResponse.actionAdvice = errorDetails.actionAdvice;
+    if (errorDetails.reason) {
+      errorResponse.reason = errorDetails.reason;
+    }
   }
 
   return http400BadRequestResponse({
@@ -691,7 +694,7 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
 export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.warn({
     message: "Not found for request",
-    request,
+    request: request?.toString(),
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,
   });

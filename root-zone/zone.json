@@ -1,0 +1,2217 @@
+{
+    "ResourceRecordSets": [
+        {
+            "Name": "diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dnloza7zl3wfi.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dnloza7zl3wfi.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "diyaccounting.co.uk.",
+            "Type": "MX",
+            "TTL": 60,
+            "ResourceRecords": [
+                {
+                    "Value": "1 aspmx.l.google.com."
+                },
+                {
+                    "Value": "2 alt2.aspmx.l.google.com."
+                },
+                {
+                    "Value": "3 alt1.aspmx.l.google.com."
+                },
+                {
+                    "Value": "4 aspmx2.googlemail.com."
+                },
+                {
+                    "Value": "5 aspmx3.googlemail.com."
+                }
+            ]
+        },
+        {
+            "Name": "diyaccounting.co.uk.",
+            "Type": "NS",
+            "TTL": 3600,
+            "ResourceRecords": [
+                {
+                    "Value": "ns-1088.awsdns-08.org."
+                },
+                {
+                    "Value": "ns-1605.awsdns-08.co.uk."
+                },
+                {
+                    "Value": "ns-134.awsdns-16.com."
+                },
+                {
+                    "Value": "ns-938.awsdns-53.net."
+                }
+            ]
+        },
+        {
+            "Name": "diyaccounting.co.uk.",
+            "Type": "SOA",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "ns-1088.awsdns-08.org. awsdns-hostmaster.amazon.com. 2 7200 900 1209600 86400"
+                }
+            ]
+        },
+        {
+            "Name": "diyaccounting.co.uk.",
+            "Type": "TXT",
+            "TTL": 60,
+            "ResourceRecords": [
+                {
+                    "Value": "\"v=spf1 include:_spf.google.com include:amazonses.com ~all\""
+                },
+                {
+                    "Value": "\"spf2.0/pra include:_spf.google.com include:amazonses.com ~all\""
+                },
+                {
+                    "Value": "\"google-site-verification=nGzIso0TVhSyaVsX5XdYtGHBdk7vLkaVKLMIdDN4ao8\""
+                }
+            ]
+        },
+        {
+            "Name": "_4195c166ead32290f6f4a3476d15490a.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_ab68ab4982da9c209e4f3671fa479b81.fyfbssdptv.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_b6532f2c9754076d2fbab6d5b30d0e11.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_98c99d2ad296876510f940b38f692f9d.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "google._domainkey.diyaccounting.co.uk.",
+            "Type": "TXT",
+            "TTL": 60,
+            "ResourceRecords": [
+                {
+                    "Value": "\"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCNt4rjVcpGAeiGc6Cp/cM/HC7Z9ybIUp6LzjkQDlD/jvnWyGOskCMHZiY0vXfaxGh1BHlfGdFdcRuO8RvLIsiqTh+sarC1cCgKNw+dSoDzdXTqXDqpuC05mFX46g8U1ZnDAV06r4Um62oOgy27hjF5ZL2qhJ+QmUNdfS6+pP+4jwIDAQAB\""
+                }
+            ]
+        },
+        {
+            "Name": "_bb440be8e9706df1300f6deea9db7d95.dev.account.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_9c12ad2f06e5d30045df1ae452965c8b.nbnhgqgzdr.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "ci-auth.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3vyujxcrvdqyf.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-auth.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3vyujxcrvdqyf.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_966e10a3a993c78744aaafbc0b2358a9.ci-auth.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_73bc2f50435ae45d04bda78fa455026b.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_dd710209875539972cdf82e44ea59925.ci-auth.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_92bd0540b5e31a5eecd1f9a8cf74a7b4.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "ci-gateway.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "de9dto3k3vhcf.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-gateway.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "de9dto3k3vhcf.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_0949fdd628e5bd35787b77366c0abcf3.ci-gateway.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_db598ee871c9334e6d20aeb37f2aa0cd.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_0a261bfce44ca03f5712cac0beaa6bcb.ci-gateway.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_cf67af46a86c9bd205df1cc9e718c986.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "ci-holding.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2n0mxynwaaox4.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-holding.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2n0mxynwaaox4.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_35190c205a8af5a856ad68d1e6f264e5.ci-holding.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_3dc8f41ecff88de66c06ac638c8c3f78.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_9eded2bea514b0cbc387489ade4d8f15.ci-holding.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_ae6d85702a7538dfbb1d1a2b8a6ec8ea.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "ci-simulator.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d25v3yzt3lv0t9.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-simulator.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d25v3yzt3lv0t9.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_3a66921f94b54960b7ca6d5540bc16cd.ci-simulator.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_423f85854beaa0ba80158827d856c143.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_fd3ad027770a676ce6242fffe0618517.ci-simulator.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_bed6edc1c93e1eeb118a6cd848f35dbd.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "ci-spreadsheets.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dk6ghpplfgq9t.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-spreadsheets.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dk6ghpplfgq9t.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_d9314db1450898e066142e87c7697271.ci-spreadsheets.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_9e1e47b8c56b7a94811753d8aa486a28.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_e9070cc9140aeac9b9819fecdd973d39.ci-spreadsheets.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_2c0feaeac46cda7d9ed74db6c95f1c08.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "ci-submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "ci-accounts.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "ci-accounts.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_bf9098fc7aeedb6364b107d2f455de04.ci-submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_0135182b3e4c1fc5ea13d1e1bc2ed153.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_f1962a8661ba9ff0fe2e590e8bb43d9a.ci-submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_fb8f56990f33f4885b670c4163df8400.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "prod-auth.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2xdqdnlzgpdxb.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-auth.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2xdqdnlzgpdxb.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_101237158826cc8d765083b394f9f7ef.prod-auth.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_17be354df3c14a72ec21df978b9cd776.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_8fdae72f3826294cdfae702111ce3fff.prod-auth.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_782f796853d0f665b3746b1fe5d975c1.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "prod-gateway.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dnloza7zl3wfi.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-gateway.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dnloza7zl3wfi.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_1b8b242dda8897bf22f4feec938a902b.prod-gateway.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_5e122c630dba03049f09d25dff0469c4.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_8567ff80729ec3804fcc7d2a50473b60.prod-gateway.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_e95f5e44cea761bd8dc2e116b8b00ab0.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "prod-holding.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2to3rbmqtw44v.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-holding.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2to3rbmqtw44v.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_cc1759d2d51a9c9d7e7311cc6868e918.prod-holding.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_fd109f2939cb351750c3e9011794d471.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_eec9c1ca514bf4193dd592806a8d49f3.prod-holding.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_2d86f5ca85167f4e7c9aabf26683a6b8.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "prod-simulator.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d4s3x4pnsw5ik.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-simulator.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d4s3x4pnsw5ik.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_1bccb4c42a910b784816d6261f41f12d.prod-simulator.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_77f2c7aa5a331ba7d5397b4fe0718831.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_3bd3981ee8841aff50cc0666b17acb7a.prod-simulator.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_0ff3e3f8c36d2eefa7daad750db3d7b7.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "prod-spreadsheets.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d10s0isuhkjtrs.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-spreadsheets.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d10s0isuhkjtrs.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_362020107898ad78fb64367634394fdc.prod-spreadsheets.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_b8110db7b3a956754dcffd0b1604b5db.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_f8653e9d435702314522cccaf8f194a8.prod-spreadsheets.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_0b7c5e29cf64d0d7d59d27a4e1485085.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "prod-submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "prod-4c05746.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "prod-4c05746.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_baa63bdbc8b633a7d484735236785653.prod-submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_dc6d1e443abec63f2d990c06158605e7.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_c87484b6134308e42002ae4c28d61dd4.prod-submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_57a874f7d4276f3962b9f5603f132c22.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "spreadsheets.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d10s0isuhkjtrs.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "spreadsheets.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d10s0isuhkjtrs.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_8dab2f8ebfc73409934685d6bca59440.spreadsheets.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_d48c8d33cedd2901073f91736ca17edb.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_e3b39cd9d7d72d15ceeb66554b476ce4.spreadsheets.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_ae4f656bae3d41c094cfb21f7a16a5b9.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_a4f59a6fe4f0c66ecd8861b600cc7e1b.stage.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_8b54fbefde39b6e7f9eb93d024c01f8a.kqlycvwlbp.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_ab92864d363fee7bdb3c718c1e57a7d8.www.stage.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_2190c222b239a724e6cf9b23440f4823.kqlycvwlbp.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "prod-4c05746.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "prod-4c05746.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "submit.diyaccounting.co.uk.",
+            "Type": "TXT",
+            "TTL": 60,
+            "ResourceRecords": [
+                {
+                    "Value": "\"google-site-verification=n1xm8_e4tO8YkSTtFLwONkJ4lfG9H4cgau12vUFxEuk\""
+                }
+            ]
+        },
+        {
+            "Name": "_57cbb14b4bfe57fe82d76adb0393152b.submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_7715bb07ad29be8a09a18388b1b64e9b.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_664750495e7316533d711ad9e8c9dd9d.submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_dc95f927a6739cc45fe700b103dcc7a4.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_87ff9ef82979c0be707b8e8206d60b38.submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_10e778331686f7097ff97e1e0fdcbdda.xlfgrmvvlj.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_3b16987868d92703f70c5032464a8c47.auth.submit.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_8d8f908347e538c3eef868cc9398b7d5.xlfgrmvvlj.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "ci-accounts.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d317431ucblglo.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-accounts.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d317431ucblglo.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-activate.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "du45gk7aww5oa.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-activate.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "du45gk7aww5oa.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-auth.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2d1eszdvffqf1.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-auth.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2d1eszdvffqf1.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-authintes.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d29ilf5n5ha06v.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-authintes.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d29ilf5n5ha06v.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-claudepre.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dwd9yqdttg7ul.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-claudepre.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dwd9yqdttg7ul.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-claudeuxf.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d32c4kvalsonys.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-claudeuxf.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d32c4kvalsonys.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-cleanlogi.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d8dlc7rc0ck7e.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-cleanlogi.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d8dlc7rc0ck7e.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-cleanup.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d12nwkq7pitrs0.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-cleanup.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d12nwkq7pitrs0.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-cognitnow.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d23ajmhqe7wljq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-cognitnow.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d23ajmhqe7wljq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-compy.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1pkkfptj3ad67.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-compy.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1pkkfptj3ad67.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-dnsforlog.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2q2a5wb69d2it.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-dnsforlog.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2q2a5wb69d2it.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-eventandp.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2hkqrwmqdusvd.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-eventandp.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2hkqrwmqdusvd.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-firstpass.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d39g6tnmvxqh0c.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-firstpass.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d39g6tnmvxqh0c.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-fixbridge.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1m6rgd7hmtcmw.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-fixbridge.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1m6rgd7hmtcmw.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-gateway.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3cdppp3lowzl6.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-gateway.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3cdppp3lowzl6.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-headers3.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1qnsz8nbszh94.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-headers3.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1qnsz8nbszh94.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-helpdocs.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d328hs93p0hwit.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-helpdocs.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d328hs93p0hwit.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-hiding.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3r9rzbctci6sm.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-hiding.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3r9rzbctci6sm.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-holding.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3k0ytchi71fct.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-holding.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3k0ytchi71fct.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-leanbuild.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2d1n16iyroh7z.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-leanbuild.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2d1n16iyroh7z.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-login.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "ddlbgwe13luov.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-login.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "ddlbgwe13luov.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-nogocnolo.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1exe795zrs8sg.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-nogocnolo.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1exe795zrs8sg.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-nvsubhash.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3keh16krj5rug.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-nvsubhash.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3keh16krj5rug.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-qaprep.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3vn81ebr8lhdn.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-qaprep.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3vn81ebr8lhdn.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-refresf.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d220x8t4z162b7.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-refresf.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d220x8t4z162b7.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-refresh.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2feta30oidoqo.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-refresh.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2feta30oidoqo.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-relaxedte.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dcitf4jsomjjy.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-relaxedte.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dcitf4jsomjjy.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-revertlog.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2ruhivkz4635r.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-revertlog.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2ruhivkz4635r.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-rootdns.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "da7kj093o3vsk.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-rootdns.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "da7kj093o3vsk.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-secondpas.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1jshe2y112usu.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-secondpas.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1jshe2y112usu.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-simtest.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d33y6seyob9ztz.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-simtest.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d33y6seyob9ztz.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-simulator.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3rke0gq08lszl.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-simulator.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3rke0gq08lszl.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-stability.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1vhm92ussyo14.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-stability.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1vhm92ussyo14.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-uiuiiu.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3esvl1l2rnfnq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci-uiuiiu.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3esvl1l2rnfnq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "ci-rootdns.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "ci.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z0315522208PWZSSBI9AL",
+                "DNSName": "ci-rootdns.submit.diyaccounting.co.uk.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-0cd8b75.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2azrvl0tdadb4.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-0cd8b75.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2azrvl0tdadb4.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-18442cd.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2e44der76wdrk.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-18442cd.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2e44der76wdrk.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-1f15e15.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2gu63sr5gnsxy.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-1f15e15.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2gu63sr5gnsxy.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-2223ff0.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d351xaowyu6e18.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-2223ff0.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d351xaowyu6e18.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-2e74ca0.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2crus61m1sf9p.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-2e74ca0.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2crus61m1sf9p.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-2f90bf0.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d20mu74q1hwvy8.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-2f90bf0.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d20mu74q1hwvy8.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-39874dc.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3n0gpzn0llgos.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-39874dc.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3n0gpzn0llgos.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-39cb5d3.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2lkx8l7j5h227.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-39cb5d3.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2lkx8l7j5h227.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-3ce3e14.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dwjwpckh4ydl5.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-3ce3e14.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dwjwpckh4ydl5.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-429c35c.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "djbtgpv727yx2.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-429c35c.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "djbtgpv727yx2.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-42c8ee0.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1lxlzzl3uh02r.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-42c8ee0.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1lxlzzl3uh02r.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-4c05746.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d220my44a8gydx.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-4c05746.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d220my44a8gydx.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-4d79b4a.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1dy66pqbxeq2y.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-4d79b4a.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1dy66pqbxeq2y.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-6b3d4c7.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3gjif1sxlsxtq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-6b3d4c7.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3gjif1sxlsxtq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-6bbd6ec.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d39l1y0xv0askg.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-6bbd6ec.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d39l1y0xv0askg.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-711172e.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3vpqfmlhsuoyk.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-711172e.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3vpqfmlhsuoyk.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-71edf71.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dj56cfq3hdu1h.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-71edf71.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dj56cfq3hdu1h.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-74f674d.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2gz06b58m8vx4.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-74f674d.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2gz06b58m8vx4.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-78d7f60.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1b4cxu4tqdlz6.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-78d7f60.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1b4cxu4tqdlz6.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-8882684.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3f55qmnecvi40.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-8882684.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3f55qmnecvi40.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-8caf293.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3pvt4ojdyjxnj.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-8caf293.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3pvt4ojdyjxnj.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-9531d17.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d6c7u7cmeqb2r.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-9531d17.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d6c7u7cmeqb2r.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-995da96.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dahbyltli3xkp.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-995da96.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dahbyltli3xkp.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-9a0504e.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2315mhtr4coir.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-9a0504e.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2315mhtr4coir.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-9c2d6dd.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2zy2dmpp92ft6.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-9c2d6dd.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2zy2dmpp92ft6.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-a3e9338.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d30a52cjkfxamm.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-a3e9338.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d30a52cjkfxamm.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-a4df9dc.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3tq8206rdvkx5.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-a4df9dc.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3tq8206rdvkx5.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-a8681fc.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2clqust6wsczt.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-a8681fc.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2clqust6wsczt.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-aa9aec0.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dqxsk6a55w8i7.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-aa9aec0.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dqxsk6a55w8i7.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-afccba7.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d201qub7xp6aov.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-afccba7.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d201qub7xp6aov.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-auth.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2esl3swpbay67.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-auth.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2esl3swpbay67.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-ba6b58c.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3svsdg8s77fe7.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-ba6b58c.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3svsdg8s77fe7.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-bab0022.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d7gwgxgxwbq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-bab0022.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d7gwgxgxwbq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-c7253ea.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1j6x3e2u3xzcf.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-c7253ea.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1j6x3e2u3xzcf.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-cbf0475.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3mpqhuq0as1es.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-cbf0475.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3mpqhuq0as1es.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-d37d2ab.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3p5tevbukttxd.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-d37d2ab.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3p5tevbukttxd.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-d51c346.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2n7uzxms7yflm.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-d51c346.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2n7uzxms7yflm.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-d646088.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dqmg12f5cm2r3.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-d646088.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dqmg12f5cm2r3.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-dba6c13.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dudckos45iksy.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-dba6c13.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dudckos45iksy.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e0870bc.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d33kywjjsltxgq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e0870bc.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d33kywjjsltxgq.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e33ebca.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dgt50m4f1tqio.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e33ebca.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dgt50m4f1tqio.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e429a31.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1huorwe48pdev.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e429a31.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d1huorwe48pdev.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e4fa948.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d5xhfcambho31.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-e4fa948.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d5xhfcambho31.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-ed82fd8.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3cy9gfbzq2b94.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-ed82fd8.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d3cy9gfbzq2b94.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-holding.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d29jr9sxrhayz.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-holding.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d29jr9sxrhayz.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-simulator.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2mmizguouesw0.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-simulator.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d2mmizguouesw0.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "webmail.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 1800,
+            "ResourceRecords": [
+                {
+                    "Value": "ghs.google.com."
+                }
+            ]
+        },
+        {
+            "Name": "www.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dnloza7zl3wfi.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "www.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "dnloza7zl3wfi.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "_c9009bdf3b6c4a56f72a9a4a896ce39e.www.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_250f43ddaf4132f4e535296b7670a1ad.jkddzztszm.acm-validations.aws."
+                }
+            ]
+        },
+        {
+            "Name": "_e267d6960722eb3bb33873c9ec41f06c.www.diyaccounting.co.uk.",
+            "Type": "CNAME",
+            "TTL": 300,
+            "ResourceRecords": [
+                {
+                    "Value": "_fe036cc1e58bce69328a6f1b9ecf127f.fyfbssdptv.acm-validations.aws."
+                }
+            ]
+        }
+    ]
+}

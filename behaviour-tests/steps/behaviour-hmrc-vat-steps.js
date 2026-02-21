@@ -385,15 +385,17 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
     // Focus change before submit
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submission-submit.png` });
     await loggedFocus(page, "#submitBtn", "the Submit button", { screenshotPath });
-
-    // Expect the HMRC permission page to be visible
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
-    await loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submission-submit.png` });
+    // Clicking submit triggers HMRC OAuth redirect (scope upgrade to write:vat read:vat).
+    // Wait for the navigation to complete before screenshotting.
+    await Promise.all([
+      page.waitForURL(/.*/,  { timeout: 15000 }),
+      loggedClick(page, "#submitBtn", "Submitting VAT form", { screenshotPath }),
+    ]);
     const applicationName = "DIY Accounting Submit";
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-submission-submit.png` });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-submission-submit.png` });
     await expect(page.locator("#appNameParagraph")).toContainText(applicationName, { timeout: 10000 });
     await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
   });
@@ -698,14 +700,15 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
     // Take a focus change screenshot between last cell entry and submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png` });
-    await loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath });
+    // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
+    // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
+    await Promise.all([
+      page.waitForURL(/.*/,  { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Submitting VAT obligations form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
-    await page.waitForTimeout(1000);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-obligations-submit.png` });
-    // Scroll, capture a pagedown
-    await page.keyboard.press("PageDown");
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-submit-pagedown.png` });
   });
 }
 
@@ -1201,6 +1204,102 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       console.log("View VAT return completed successfully with validated fields");
     });
   }
+}
+
+/* Obligation Action Button Steps */
+
+/**
+ * Click the first "Submit Return" button in the obligations results table.
+ * Navigates to submitVat.html with pre-populated URL params from the obligation.
+ * @returns {{ navigated: boolean, vrn?: string, periodStart?: string, periodEnd?: string }}
+ */
+export async function clickObligationSubmitReturn(page, screenshotPath = defaultScreenshotPath) {
+  return await test.step("The user clicks 'Submit Return' on an open obligation", async () => {
+    const submitReturnBtn = page.locator('#obligationsTable button:has-text("Submit Return")').first();
+    const isVisible = await submitReturnBtn.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (!isVisible) {
+      console.log("[clickObligationSubmitReturn] No 'Submit Return' button found in obligations table");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-no-submit-return-btn.png` });
+      return { navigated: false };
+    }
+
+    console.log("[clickObligationSubmitReturn] Found 'Submit Return' button, clicking...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-return-btn-found.png` });
+
+    await Promise.all([
+      page.waitForURL(/submitVat\.html/, { timeout: 15000 }),
+      submitReturnBtn.click(),
+    ]);
+
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-return-navigated.png` });
+
+    // Extract URL params
+    const url = new URL(page.url());
+    const vrn = url.searchParams.get("vrn");
+    const periodStart = url.searchParams.get("periodStart");
+    const periodEnd = url.searchParams.get("periodEnd");
+
+    console.log(`[clickObligationSubmitReturn] Navigated to submitVat.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
+
+    // Verify the form is visible
+    await expect(page.locator("#vatSubmissionForm")).toBeVisible({ timeout: 10000 });
+
+    return { navigated: true, vrn, periodStart, periodEnd };
+  });
+}
+
+/**
+ * Click the first "View Return" button in the obligations results table.
+ * Navigates to viewVatReturn.html with pre-populated URL params from the obligation.
+ * @returns {{ navigated: boolean, vrn?: string, periodStart?: string, periodEnd?: string }}
+ */
+export async function clickObligationViewReturn(page, screenshotPath = defaultScreenshotPath) {
+  return await test.step("The user clicks 'View Return' on a fulfilled obligation", async () => {
+    const viewReturnBtn = page.locator('#obligationsTable button:has-text("View Return")').first();
+    const isVisible = await viewReturnBtn.isVisible({ timeout: 3000 }).catch(() => false);
+
+    if (!isVisible) {
+      console.log("[clickObligationViewReturn] No 'View Return' button found in obligations table");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-no-view-return-btn.png` });
+      return { navigated: false };
+    }
+
+    console.log("[clickObligationViewReturn] Found 'View Return' button, clicking...");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-return-btn-found.png` });
+
+    await Promise.all([
+      page.waitForURL(/viewVatReturn\.html/, { timeout: 15000 }),
+      viewReturnBtn.click(),
+    ]);
+
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-return-navigated.png` });
+
+    // Extract URL params
+    const url = new URL(page.url());
+    const vrn = url.searchParams.get("vrn");
+    const periodStart = url.searchParams.get("periodStart");
+    const periodEnd = url.searchParams.get("periodEnd");
+
+    console.log(`[clickObligationViewReturn] Navigated to viewVatReturn.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
+
+    // The page auto-submits when URL params are present and an HMRC token exists.
+    // Check if results are already visible (auto-submitted) or form is visible (needs manual submit).
+    const formVisible = await page.locator("#vatReturnForm").isVisible({ timeout: 2000 }).catch(() => false);
+    const resultsVisible = await page.locator("#returnResults").isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (resultsVisible && !formVisible) {
+      console.log("[clickObligationViewReturn] Page auto-submitted (token with sufficient scope existed). Results already visible.");
+      return { navigated: true, autoSubmitted: true, vrn, periodStart, periodEnd };
+    }
+
+    await expect(page.locator("#vatReturnForm")).toBeVisible({ timeout: 10000 });
+    return { navigated: true, autoSubmitted: false, vrn, periodStart, periodEnd };
+  });
 }
 
 /**

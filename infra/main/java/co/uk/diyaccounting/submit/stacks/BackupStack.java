@@ -144,8 +144,8 @@ public class BackupStack extends Stack {
         // S3 Bucket for DynamoDB Exports
         // ============================================================================
 
+        // No explicit bucketName — S3 names are globally unique; hardcoding causes collisions during account migration
         this.backupExportsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-BackupExports")
-                .bucketName(props.sharedNames().dashedDeploymentDomainName + "-backup-exports")
                 .encryption(BucketEncryption.KMS)
                 .encryptionKey(backupKmsKey)
                 .versioned(true)

@@ -324,7 +324,7 @@ npm run test:submitVatBehaviour-ci
 
 - Lambda files: `{feature}{Method}.js` (e.g., `hmrcVatReturnPost.js`)
 - CDK stacks: `{Purpose}Stack` (e.g., `AuthStack`)
-- DynamoDB tables: `{env}-submit-{purpose}`
+- DynamoDB tables: `{env}-env-{purpose}`
 - npm scripts: colon separator for variants (e.g., `test:unit`)
 
 ## Infrastructure Teardown Philosophy
@@ -397,47 +397,64 @@ When the user says "confirm each command" or similar:
 
 This applies to ALL external side effects: AWS, Stripe, Telegram, GitHub, or any other service that changes state outside the local filesystem.
 
+## AWS Accounts and Repositories
+
+| Account | ID | Repository | Relative Path |
+|---------|-----|-----------|---------------|
+| Management (root) | 887764105431 | `antonycc/root.diyaccounting.co.uk` | `../root.diyaccounting.co.uk` |
+| gateway | 283165661847 | `antonycc/www.diyaccounting.co.uk` (future) | `../www.diyaccounting.co.uk` |
+| spreadsheets | 064390746177 | `antonycc/diy-accounting` (future) | `../diy-accounting` |
+| submit-ci | 367191799875 | `antonycc/submit.diyaccounting.co.uk` | `.` (this repo) |
+| submit-prod | 972912397388 | `antonycc/submit.diyaccounting.co.uk` | `.` (this repo) |
+| submit-backup | 914216784828 | — | — |
+
+**Current state**: Gateway and spreadsheets are fully migrated to their own accounts. Submit CI is migrating to 367191799875. Submit prod is still in 887764105431 (migrating to 972912397388 in Phase 1.4). Root DNS and holding page remain in 887764105431 permanently.
+
+**GitHub Actions variables**: `SUBMIT_*` are environment-scoped (ci/prod have different values). `ROOT_*`, `GATEWAY_*`, `SPREADSHEETS_*` are repo-level.
+
+See `PLAN_ACCOUNT_SEPARATION.md` for the full migration plan.
+
 ## AWS CLI Access (Local Development)
 
 **Read-only AWS operations are always permitted.** You may always query AWS resources (describe, get, list, logs, etc.) without asking for permission. This includes CloudFormation stack status, Lambda configuration, CloudWatch logs, DynamoDB scans, CloudFront distributions, and any other read-only API calls needed for investigation and debugging.
 
-To query AWS resources or debug infrastructure issues locally, use the assume role scripts.
-
-**CRITICAL for Claude Code:** Each Bash tool call runs in a fresh shell - environment variables do NOT persist between calls. You MUST combine the assume-role source and the aws command in a **single** Bash tool call:
+Use SSO profiles to access any account. Login once, then use `--profile` on each command:
 
 ```bash
-# CORRECT - assume and query in one command
-. ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && aws cloudformation describe-stacks --stack-name ci-env-IdentityStack
-
-# WRONG - credentials lost between separate Bash tool calls
-. ./scripts/aws-assume-submit-deployment-role.sh   # Call 1: sets env vars
-aws cloudformation describe-stacks ...              # Call 2: fresh shell, no credentials!
+aws sso login --sso-session diyaccounting
+aws --profile submit-ci cloudformation describe-stacks --stack-name ci-env-IdentityStack
+aws --profile submit-prod dynamodb scan --table-name prod-env-bundles
+aws --profile management route53 list-hosted-zones
 ```
 
-**Suppress assume script output** with `2>/dev/null` to keep command output clean. Do NOT use `2>&1` on the assume script - it mixes verbose identity output with command results.
+**SSO profiles** (configured in `~/.aws/config`):
 
-**Multiple AWS commands** - chain them in a single Bash call:
+| Profile | Account | Purpose |
+|---------|---------|---------|
+| `management` | 887764105431 | Route53, Organizations, IAM Identity Center |
+| `gateway` | 283165661847 | Gateway static site |
+| `spreadsheets` | 064390746177 | Spreadsheets static site |
+| `submit-ci` | 367191799875 | Submit CI deployments |
+| `submit-prod` | 972912397388 | Submit prod deployments |
+| `submit-backup` | 914216784828 | Cross-account backup vault |
+
+SSO credentials last ~8-12 hours across all profiles. Re-login with `aws sso login --sso-session diyaccounting`.
+
+**For scripts that need AWS env vars** (e.g., Cognito test scripts), export the profile:
 ```bash
-. ./scripts/aws-assume-submit-deployment-role.sh 2>/dev/null && \
-  aws cloudformation describe-stacks --stack-name ci-env-IdentityStack --query 'Stacks[0].StackStatus' && \
-  aws dynamodb scan --table-name ci-env-bundles
+export AWS_PROFILE=submit-ci
+npm run test:enableCognitoNative
 ```
 
-**Available assume role scripts:**
-- `scripts/aws-assume-submit-deployment-role.sh` - Deployment role for submit-prod account (887764105431)
-- `scripts/aws-assume-user-provisioning-role.sh` - User provisioning role (different account)
-- `scripts/aws-unset-iam-session.sh` - Clear assumed role credentials
-
-**Important:**
-- Source the script with `. ./script.sh` (not `bash script.sh`) to set env vars in current shell
-- Credentials expire after ~1 hour - re-run to refresh
-- These scripts assume your local AWS profile can assume the target role
+**Legacy assume-role scripts** (still work for submit-prod in 887764105431):
+- `scripts/aws-assume-submit-deployment-role.sh` — sources env vars into the current shell
+- When using these, combine with the aws command in a single Bash call (env vars don't persist between calls)
 
 **Stack naming patterns:**
 - Environment stacks: `{env}-env-{StackName}` (e.g., `ci-env-IdentityStack`, `prod-env-DataStack`)
 - Application stacks: `{deployment}-app-{StackName}` (e.g., `ci-cleanlogin-app-AuthStack`)
 
-See `PLAN_AWS_ACCOUNTS.md` for multi-account architecture and role structure.
+See `PLAN_ACCOUNT_SEPARATION.md` for multi-account architecture and role structure.
 
 ## Running Behaviour Tests Against Deployed Environments (Fast Turnaround)
 
@@ -445,18 +462,15 @@ For faster iteration than pushing commits and waiting for GitHub Actions (`synth
 
 ### Prerequisites
 
-The assume role script requires:
-- AWS CLI installed and configured
-- `jq` installed (for parsing JSON from `aws sts assume-role`)
-- Local AWS profile that can assume `arn:aws:iam::887764105431:role/submit-deployment-role`
+- AWS CLI installed and configured with SSO profiles (see AWS CLI Access above)
+- Logged in: `aws sso login --sso-session diyaccounting`
 
 ### Workflow
 
-**1. Assume the deployment role:**
+**1. Set the AWS profile for the target environment:**
 ```bash
-. ./scripts/aws-assume-submit-deployment-role.sh
+export AWS_PROFILE=submit-ci    # or submit-prod
 ```
-This sets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, and `AWS_REGION` in your shell. Credentials expire after ~1 hour.
 
 **2. Enable Cognito native auth and create test user:**
 ```bash
