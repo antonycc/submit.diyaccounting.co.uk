@@ -106,7 +106,11 @@ jobs:
           echo "apex-auto=$( [[ '${{ inputs.apex-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
           echo "www-auto=$( [[ '${{ inputs.www-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
           echo "ss-auto=$( [[ '${{ inputs.spreadsheets-cloudfront-domain }}' == '(auto)' ]] && echo true || echo false )" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from branch (no environment-name input for root DNS)
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
     outputs:
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
       ci-gateway-cloudfront-domain: ${{ steps.normalise.outputs.ci-gateway-cloudfront-domain }}
       prod-gateway-cloudfront-domain: ${{ steps.normalise.outputs.prod-gateway-cloudfront-domain }}
       ci-spreadsheets-cloudfront-domain: ${{ steps.normalise.outputs.ci-spreadsheets-cloudfront-domain }}
@@ -126,7 +130,7 @@ jobs:
     needs:
       - params
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     permissions:
       contents: read
     steps:

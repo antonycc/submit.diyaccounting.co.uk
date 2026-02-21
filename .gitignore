@@ -376,3 +376,5 @@ web/public/simulator-local.js
 
 # Generated gateway redirect function (built from redirects.toml by scripts/build-gateway-redirects.cjs)
 web/www.diyaccounting.co.uk/redirect-function.js
+/salt-canary-item-20260221-001556.json
+/salt-metadata-20260221-001556.json

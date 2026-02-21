@@ -123,7 +123,7 @@ env:
   BASE_IMAGE_TAG: ${{ github.sha }}
   BUILD_NUMBER: ${{ github.run_number }}
   GITHUB_REF: ${{ github.ref }}
-  GITHUB_REF_TO_ENV: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+  # GITHUB_REF_TO_ENV: resolved per-job via needs.params.outputs.github-environment
 
 jobs:
 

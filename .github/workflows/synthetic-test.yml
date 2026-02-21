@@ -151,6 +151,12 @@ jobs:
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from explicit input or branch
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-cleanup }}' ; echo "skip-cleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-native-auth-disable }}' ; echo "skip-native-auth-disable=${X:-false}" | tee -a "$GITHUB_OUTPUT"
@@ -165,12 +171,13 @@ jobs:
       skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
       test-auth-username: ${{ steps.normalise.outputs.test-auth-username }}
       test-auth-password: ${{ steps.normalise.outputs.test-auth-password }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   names:
     needs:
       params
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -244,7 +251,7 @@ jobs:
     container: mcr.microsoft.com/playwright:v1.58.1-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Running behaviour test - ${{ needs.params.outputs.behaviour-test-suite }}
         run: ":"
@@ -440,7 +447,7 @@ jobs:
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
@@ -483,7 +490,7 @@ jobs:
       - names
       - behaviour-test
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

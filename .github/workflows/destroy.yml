@@ -83,6 +83,12 @@ jobs:
           # Convert '(auto)' to empty string for downstream processing
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from explicit input or branch
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSweeping: true if sweep-for-stacks=true OR schedule trigger
@@ -100,6 +106,7 @@ jobs:
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       sweep-for-stacks: ${{ steps.normalise.outputs.sweep-for-stacks }}
       isSweeping: ${{ steps.normalise.outputs.isSweeping }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   sweep-for-stacks:
     needs:
@@ -107,7 +114,7 @@ jobs:
     if: ${{ needs.params.outputs.isSweeping == 'true' }}
     name: 'sweep for stacks'
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -480,7 +487,7 @@ jobs:
       - params
       - sweep-for-stacks
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -506,7 +513,7 @@ jobs:
       - names
       - sweep-for-stacks
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout default branch
         uses: actions/checkout@v6
