@@ -224,7 +224,6 @@ Created per deployment by `deploy.yml`:
 | PublishStack | S3 static file deployment |
 | OpsStack | CloudWatch dashboard |
 | GatewayStack | Gateway site (gateway.diyaccounting.co.uk) S3 + CloudFront |
-| RootDnsStack | Root domain DNS (diyaccounting.co.uk) |
 | SpreadsheetsStack | Spreadsheets site (spreadsheets.diyaccounting.co.uk) S3 + CloudFront |
 
 **Read the CDK stack files in `infra/main/java/co/uk/diyaccounting/submit/stacks/` for details.**
@@ -250,8 +249,6 @@ Created per deployment by `deploy.yml`:
 | `security-review.yml` | Security scanning | Push, manual |
 | `codeql.yml` | CodeQL security analysis | Push, schedule |
 | `deploy-gateway.yml` | Deploy gateway site (gateway.diyaccounting.co.uk) | Push, manual |
-| `deploy-holding.yml` | Deploy holding/maintenance page | Push, manual |
-| `deploy-root.yml` | Deploy root domain (diyaccounting.co.uk) | Push, manual |
 | `deploy-spreadsheets.yml` | Deploy spreadsheets site (spreadsheets.diyaccounting.co.uk) | Push, manual |
 | `copilot-agent.yml` | GitHub Copilot agent workflow | workflow_dispatch |
 | `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |

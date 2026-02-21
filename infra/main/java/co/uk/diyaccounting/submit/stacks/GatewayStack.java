@@ -75,7 +75,7 @@ import software.constructs.Construct;
  * GatewayStack: S3 + CloudFront for the diyaccounting.co.uk gateway static site.
  * <p>
  * Key differences from ApexStack:
- * - No Route53 records (those live in root account, managed by RootDnsStack)
+ * - No Route53 records (those live in root account, managed by root.diyaccounting.co.uk repo)
  * - No Lambda function URL integration
  * - Simpler CSP (no RUM endpoint, no API connections, no Cognito domain)
  * - Cert referenced by ARN, not created by CDK (cross-account zone problem)

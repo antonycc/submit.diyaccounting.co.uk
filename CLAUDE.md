@@ -522,8 +522,8 @@ This repository also deploys related sibling sites via dedicated workflows:
 |------|----------|--------|
 | gateway.diyaccounting.co.uk | `deploy-gateway.yml` | `web/www.diyaccounting.co.uk/` |
 | spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | `web/spreadsheets.diyaccounting.co.uk/` |
-| diyaccounting.co.uk (root) | `deploy-root.yml` | Root domain DNS |
-| Holding page | `deploy-holding.yml` | `web/holding/` |
+
+Root DNS and holding page are managed by the `antonycc/root.diyaccounting.co.uk` repository (Phase 2.1).
 
 Behaviour tests exist for gateway (`test:gatewayBehaviour-*`) and spreadsheets (`test:spreadsheetsBehaviour-*`).
 

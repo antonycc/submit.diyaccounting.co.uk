@@ -68,7 +68,7 @@ import software.constructs.Construct;
  * SpreadsheetsStack: S3 + CloudFront for the spreadsheets.diyaccounting.co.uk static site.
  * <p>
  * Modelled on GatewayStack with the same pattern:
- * - No Route53 records (those live in root account, managed by RootDnsStack)
+ * - No Route53 records (those live in root account, managed by root.diyaccounting.co.uk repo)
  * - No Lambda function URL integration
  * - Simple CSP for static site with PayPal Donate SDK
  * - Cert referenced by ARN, not created by CDK (cross-account zone problem)

@@ -178,7 +178,7 @@ jobs:
           echo "=== Spreadsheets Stack Outputs ==="
           cat cdk-submit-spreadsheets.out/cdk-outputs-spreadsheets.json | jq '.'
           echo ""
-          echo ">>> Copy the CloudFrontDomainName value above and use it as input to deploy-root.yml <<<"
+          echo ">>> Copy the CloudFrontDomainName value above and use it as input to root.diyaccounting.co.uk deploy.yml <<<"
 
   test-spreadsheets:
     name: 'spreadsheets smoke test'
