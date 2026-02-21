@@ -124,36 +124,36 @@ Create a NEW submit-prod account and deploy the full production stack from IaC. 
 
 **Pre-requisites**: Back up everything from 887764105431 before starting. The existing prod in 887764105431 stays live until the new account is validated and DNS is switched.
 
-| Step | Description | Details |
-|------|-------------|---------|
-| | **Preparation** | |
-| 1.4.1 | Back up prod data | Take on-demand DynamoDB backups of all prod tables in 887764105431. Export the salt (encrypted). Script: `scripts/aws-accounts/backup-prod-for-migration.sh`. |
-| 1.4.2 | Document secrets | Script to list all Secrets Manager secret names and their descriptions (NOT values) in 887764105431. Values will be re-entered or copied via CLI. Script: `scripts/aws-accounts/list-prod-secrets.sh`. |
-| 1.4.3 | Document ACM certs | Record all cert ARNs and their SANs. New certs will be created in the new account. |
-| | **Account creation** | |
-| 1.4.4 | Create `submit-prod` account | Via AWS Organizations. Email: `aws-prod@diyaccounting.co.uk`. Place in Workloads OU. |
-| 1.4.5 | Assign SSO access | Add your SSO user + `AdministratorAccess`. |
-| 1.4.6 | CDK bootstrap | Bootstrap in `us-east-1` and `eu-west-2`. |
-| 1.4.7 | Create OIDC provider | Trust: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
-| 1.4.8 | Create deployment roles | `submit-prod-github-actions-role` and `submit-prod-deployment-role`. |
-| | **Certificates** | |
-| 1.4.9 | Create ACM certs | In new submit-prod account. Replicate all four cert sets (main, auth, simulator, regional) with prod SANs. DNS validation via 887764105431 Route53. |
-| | **Secrets** | |
-| 1.4.10 | Copy Secrets Manager entries | Script to copy HMRC prod credentials, Stripe live keys, Telegram bot token, OAuth secrets, etc. into new submit-prod. Script: `scripts/aws-accounts/copy-secrets-to-account.sh`. |
-| | **Deploy from IaC** | |
-| 1.4.11 | Update GitHub environment variables | Update the `prod` environment's `SUBMIT_ACCOUNT_ID` (972912397388), `SUBMIT_ACTIONS_ROLE_ARN` (`submit-prod-github-actions-role`), `SUBMIT_DEPLOY_ROLE_ARN` (`submit-prod-deployment-role`), plus `SUBMIT_CERTIFICATE_ARN` and `SUBMIT_REGIONAL_CERTIFICATE_ARN` for the new account's certs. |
-| 1.4.12 | Update `deploy.yml` | Main branch deploys to the new submit-prod account (not 887764105431). |
-| 1.4.13 | Update `deploy-environment.yml` | Prod environment stacks deploy to new submit-prod. |
-| 1.4.14 | Update CDK context | Point prod account ID to the new account in `cdk-application/cdk.json` and `cdk-environment/cdk.json`. |
-| 1.4.15 | Deploy prod environment stacks | Deploy `prod-env-IdentityStack`, `prod-env-DataStack`, `prod-env-ObservabilityStack`, etc. to new submit-prod. Fresh Cognito user pool, fresh DynamoDB tables. |
-| 1.4.16 | Deploy prod application stacks | Deploy submit prod from main to new submit-prod. Fresh Lambda, API Gateway, CloudFront, S3. |
-| | **Data restoration** | |
-| 1.4.17 | Restore DynamoDB tables | Restore prod tables from backup into new submit-prod. Script: `scripts/aws-accounts/restore-tables-from-backup.sh`. Critical tables: `prod-env-receipts`, `prod-env-bundles`, `prod-env-hmrc-api-requests`, `prod-env-passes`, `prod-env-subscriptions`. Ephemeral async-request tables and `prod-env-bundle-capacity` (rebuilt by Lambda) do not need restoring. |
-| 1.4.18 | Restore salt | Copy the encrypted salt into the new DataStack's DynamoDB table. Grant the new account's KMS key access or re-encrypt with the new key. Script: `scripts/aws-accounts/restore-salt.sh`. |
-| | **DNS cutover** | |
-| 1.4.19 | Update root DNS for prod submit | Point `prod-submit.diyaccounting.co.uk` and `submit.diyaccounting.co.uk` to new account's CloudFront. Point `prod-auth.diyaccounting.co.uk` to new Cognito. Point `prod-simulator.diyaccounting.co.uk`, `prod-holding.diyaccounting.co.uk` to new CloudFront distributions. |
-| 1.4.20 | Validate prod | Run `npm run test:submitVatBehaviour-prod`. Test auth flow (new Cognito — users re-register), HMRC submission, payment flow. Verify salt decrypts and user sub hashing works with restored data. |
-| 1.4.21 | Notify users | Inform the 2 sign-ups + family testers that they need to re-register (new Cognito pool). |
+| Step | Description | Status | Details |
+|------|-------------|--------|---------|
+| | **Preparation** | | |
+| 1.4.1 | Back up prod data | ✅ | 11/11 tables backed up (prefix `pre-migration-20260221`), all AVAILABLE. Salt metadata exported. No Path 3 DynamoDB salt item in prod (not configured yet — Path 1 Secrets Manager is primary). Script: `scripts/aws-accounts/backup-prod-for-migration.sh`. |
+| 1.4.2 | Document secrets | ✅ | 9 prod secrets found in 887764105431 matching expected list. 2 customer-managed KMS keys (`prod-env-backup`, `prod-env-salt-encryption`). Script: `scripts/aws-accounts/list-prod-secrets.sh`. |
+| 1.4.3 | Document ACM certs | ✅ | Old account has 4 certs in us-east-1 (main `d340de40`, auth `8750ac93`, simulator `5b8afa59`, wildcard `b23cd904`) and 4 in eu-west-2 (main `1f9c9a57`, auth `2b09cb4f`, simulator `7ae3bc98`, wildcard `77810f99`). Old certs bundle CI+prod SANs together; new account gets prod-only certs. |
+| | **Account creation** | | |
+| 1.4.4 | Create `submit-prod` account | ✅ | Account 972912397388, Workloads OU. |
+| 1.4.5 | Assign SSO access | ✅ | AdministratorAccess assigned, `submit-prod` SSO profile working. |
+| 1.4.6 | CDK bootstrap | ✅ | us-east-1 and eu-west-2 bootstrapped. |
+| 1.4.7 | Create OIDC provider | ✅ | Trust: `repo:antonycc/submit.diyaccounting.co.uk:*`. |
+| 1.4.8 | Create deployment roles | ✅ | `arn:aws:iam::972912397388:role/submit-prod-github-actions-role`, `arn:aws:iam::972912397388:role/submit-prod-deployment-role`. |
+| | **Certificates** | | |
+| 1.4.9 | Create ACM certs | ✅ | us-east-1: `arn:aws:acm:us-east-1:972912397388:certificate/e465ad23-baf8-4b5c-94a4-33f73a266ec6` (*.submit, prod-submit, submit, prod-auth, prod-holding, prod-simulator). eu-west-2: `arn:aws:acm:eu-west-2:972912397388:certificate/eea7a266-4b80-42d9-9d10-39af2455ce5b` (*.submit, prod-submit, submit). Both ISSUED. |
+| | **Secrets** | | |
+| 1.4.10 | Copy Secrets Manager entries | ✅ | 9/9 secrets copied from 887764105431 to 972912397388. Note: Stripe webhook secrets may need updating after deployment (new CloudFront URLs). Script: `scripts/aws-accounts/copy-secrets-to-account.sh`. |
+| | **Deploy from IaC** | | |
+| 1.4.11 | Update GitHub environment variables | ✅ | All 5 `prod` environment variables updated: `SUBMIT_ACCOUNT_ID` (972912397388), `SUBMIT_ACTIONS_ROLE_ARN` (`submit-prod-github-actions-role`), `SUBMIT_DEPLOY_ROLE_ARN` (`submit-prod-deployment-role`), `SUBMIT_CERTIFICATE_ARN` (`e465ad23...`), `SUBMIT_REGIONAL_CERTIFICATE_ARN` (`eea7a266...`). Previous values (887764105431) replaced. |
+| 1.4.12 | Update `deploy.yml` | ✅ | No code changes needed — already uses `vars.SUBMIT_*` (environment-scoped). Step 1.4.11 variable update is sufficient. |
+| 1.4.13 | Update `deploy-environment.yml` | ✅ | No code changes needed — already uses `vars.SUBMIT_*` (environment-scoped). Step 1.4.11 variable update is sufficient. |
+| 1.4.14 | Update CDK context + .env.prod | ✅ | Updated `cdk-application/cdk.json` (3 cert ARNs), `cdk-environment/cdk.json` (3 cert ARNs), `.env.prod` (8 Secrets Manager ARNs) from 887764105431 → 972912397388. All use single us-east-1 cert (all SANs combined). `npm test` (949 passed) and `./mvnw clean verify` (BUILD SUCCESS) both pass. |
+| 1.4.15 | Deploy prod environment stacks | | Deploy `prod-env-IdentityStack`, `prod-env-DataStack`, `prod-env-ObservabilityStack`, etc. to new submit-prod. Fresh Cognito user pool, fresh DynamoDB tables. |
+| 1.4.16 | Deploy prod application stacks | | Deploy submit prod from main to new submit-prod. Fresh Lambda, API Gateway, CloudFront, S3. |
+| | **Data restoration** | | |
+| 1.4.17 | Restore DynamoDB tables | | Restore prod tables from backup into new submit-prod. Script: `scripts/aws-accounts/restore-tables-from-backup.sh`. Critical tables: `prod-env-receipts`, `prod-env-bundles`, `prod-env-hmrc-api-requests`, `prod-env-passes`, `prod-env-subscriptions`. Ephemeral async-request tables and `prod-env-bundle-capacity` (rebuilt by Lambda) do not need restoring. |
+| 1.4.18 | Restore salt | | Copy the encrypted salt into the new DataStack's DynamoDB table. Grant the new account's KMS key access or re-encrypt with the new key. Script: `scripts/aws-accounts/restore-salt.sh`. |
+| | **DNS cutover** | | |
+| 1.4.19 | Update root DNS for prod submit | | Point `prod-submit.diyaccounting.co.uk` and `submit.diyaccounting.co.uk` to new account's CloudFront. Point `prod-auth.diyaccounting.co.uk` to new Cognito. Point `prod-simulator.diyaccounting.co.uk`, `prod-holding.diyaccounting.co.uk` to new CloudFront distributions. |
+| 1.4.20 | Validate prod | | Run `npm run test:submitVatBehaviour-prod`. Test auth flow (new Cognito — users re-register), HMRC submission, payment flow. Verify salt decrypts and user sub hashing works with restored data. |
+| 1.4.21 | Notify users | | Inform the 2 sign-ups + family testers that they need to re-register (new Cognito pool). |
 
 ### 1.5: Clean up 887764105431 (make it management-only)
 
