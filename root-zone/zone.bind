@@ -1,6 +1,6 @@
 ; Zone file for diyaccounting.co.uk
 ; Exported from Route53 hosted zone
-; Records: 236
+; Records: 238
 ;
 $ORIGIN diyaccounting.co.uk.
 
@@ -378,6 +378,12 @@ prod-2e74ca0.submit                                          A      ALIAS d2crus
 
 ; ALIAS (Route53-specific, not standard BIND)
 prod-2e74ca0.submit                                          AAAA   ALIAS d2crus61m1sf9p.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2f90bf0.submit                                          A      ALIAS d20mu74q1hwvy8.cloudfront.net.
+
+; ALIAS (Route53-specific, not standard BIND)
+prod-2f90bf0.submit                                          AAAA   ALIAS d20mu74q1hwvy8.cloudfront.net.
 
 ; ALIAS (Route53-specific, not standard BIND)
 prod-39874dc.submit                                          A      ALIAS d3n0gpzn0llgos.cloudfront.net.

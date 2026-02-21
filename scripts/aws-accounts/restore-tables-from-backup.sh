@@ -4,18 +4,23 @@
 #
 # scripts/aws-accounts/restore-tables-from-backup.sh
 #
-# Restores DynamoDB tables from on-demand backups into a target account.
+# Copies DynamoDB table data from one account to another (cross-account migration).
+# Uses scan + batch-write-item since on-demand DynamoDB backups cannot be restored
+# cross-account (AWS Backup cross-account copy requires Phase 3 vault setup).
+#
+# The target tables must already exist (created by DataStack deployment).
+#
 # Part of Phase 1.4 (PLAN_ACCOUNT_SEPARATION.md step 1.4.17).
 #
 # Usage:
-#   ./scripts/aws-accounts/restore-tables-from-backup.sh --profile <profile> --backup-arns <arn1> [<arn2> ...]
-#   ./scripts/aws-accounts/restore-tables-from-backup.sh --profile <profile> --backup-date <YYYYMMDD> --source-profile <profile>
+#   ./scripts/aws-accounts/restore-tables-from-backup.sh \
+#     --source-profile management --target-profile submit-prod [--env prod] [--dry-run]
 #
 # Prerequisites:
-#   - AWS CLI configured with named profiles
-#   - For --backup-arns: ARNs from backup-prod-for-migration.sh output
-#   - For --backup-date: access to source account to list backups by date
+#   - AWS CLI v2 configured with SSO profiles (aws sso login --sso-session diyaccounting)
 #   - jq installed
+#   - Both accounts accessible via their profiles
+#   - Target tables already exist (from DataStack deployment)
 
 set -euo pipefail
 
@@ -24,80 +29,81 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # --- Defaults ---
-TARGET_PROFILE=""
 SOURCE_PROFILE=""
-BACKUP_ARNS=()
-BACKUP_DATE=""
+TARGET_PROFILE=""
+ENV="prod"
 REGION="${AWS_REGION:-eu-west-2}"
-POLL_INTERVAL=30
-MAX_WAIT=1800 # 30 minutes
+DRY_RUN=false
+BATCH_SIZE=25
+
+# Critical tables to copy (plan step 1.4.17)
+# Ephemeral async-request tables and bundle-capacity (rebuilt by Lambda) are excluded.
+CRITICAL_TABLES=(
+  "${ENV}-env-receipts"
+  "${ENV}-env-bundles"
+  "${ENV}-env-hmrc-api-requests"
+  "${ENV}-env-passes"
+  "${ENV}-env-subscriptions"
+)
 
 # --- Parse arguments ---
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --profile|--target-profile)
-      TARGET_PROFILE="$2"
-      shift 2
-      ;;
     --source-profile)
       SOURCE_PROFILE="$2"
       shift 2
       ;;
-    --backup-arns)
+    --target-profile)
+      TARGET_PROFILE="$2"
+      shift 2
+      ;;
+    --env)
+      ENV="$2"
+      # Re-derive table names with new env
+      CRITICAL_TABLES=(
+        "${ENV}-env-receipts"
+        "${ENV}-env-bundles"
+        "${ENV}-env-hmrc-api-requests"
+        "${ENV}-env-passes"
+        "${ENV}-env-subscriptions"
+      )
+      shift 2
+      ;;
+    --dry-run)
+      DRY_RUN=true
       shift
-      while [[ $# -gt 0 && ! "$1" == --* ]]; do
-        BACKUP_ARNS+=("$1")
-        shift
-      done
-      ;;
-    --backup-date)
-      BACKUP_DATE="$2"
-      shift 2
-      ;;
-    --region)
-      REGION="$2"
-      shift 2
-      ;;
-    --poll-interval)
-      POLL_INTERVAL="$2"
-      shift 2
       ;;
     --help|-h)
-      echo "Usage: $0 --profile <profile> [--backup-arns <arn1> ...] [--backup-date <YYYYMMDD> --source-profile <profile>]"
+      echo "Usage: $0 --source-profile <profile> --target-profile <profile> [--env <env>] [--dry-run]"
       echo ""
-      echo "Restores DynamoDB tables from on-demand backups."
+      echo "Copies DynamoDB table data from source account to target account."
+      echo "Target tables must already exist (created by DataStack deployment)."
       echo ""
       echo "Required:"
-      echo "  --profile <profile>         AWS CLI profile for the target account"
-      echo ""
-      echo "Provide ONE of:"
-      echo "  --backup-arns <arn1> ...    Specific backup ARNs to restore"
-      echo "  --backup-date <YYYYMMDD>    Find backups by date pattern (requires --source-profile)"
+      echo "  --source-profile <profile>  AWS CLI profile for source account (e.g., management)"
+      echo "  --target-profile <profile>  AWS CLI profile for target account (e.g., submit-prod)"
       echo ""
       echo "Options:"
-      echo "  --source-profile <profile>  AWS CLI profile for source account (needed with --backup-date)"
-      echo "  --region <region>           AWS region (default: eu-west-2)"
-      echo "  --poll-interval <seconds>   Polling interval for restore status (default: 30)"
+      echo "  --env <name>    Environment name (default: prod)"
+      echo "  --dry-run       Show what would be copied without writing"
       echo ""
-      echo "Tables restored (from DataStack):"
-      echo "  {env}-env-receipts                              HMRC submission receipts (7-year PITR)"
-      echo "  {env}-env-bundles                               User subscriptions + salt backup"
-      echo "  {env}-env-hmrc-api-requests                     HMRC API audit log"
-      echo "  {env}-env-passes                                Invitation pass codes"
-      echo "  {env}-env-subscriptions                         Stripe subscription data"
-      echo "  {env}-env-bundle-capacity                       Global cap counters (rebuilt by Lambda)"
-      echo "  {env}-env-bundle-post-async-requests            Async request correlation (ephemeral)"
-      echo "  {env}-env-bundle-delete-async-requests          Async request correlation (ephemeral)"
-      echo "  {env}-env-hmrc-vat-return-post-async-requests   Async request correlation (ephemeral)"
-      echo "  {env}-env-hmrc-vat-return-get-async-requests    Async request correlation (ephemeral)"
-      echo "  {env}-env-hmrc-vat-obligation-get-async-requests Async request correlation (ephemeral)"
+      echo "Tables copied (critical data):"
+      echo "  {env}-env-receipts            HMRC submission receipts (7-year retention)"
+      echo "  {env}-env-bundles             User data + salt backup"
+      echo "  {env}-env-hmrc-api-requests   HMRC API audit log (~48 MB, TTL-managed)"
+      echo "  {env}-env-passes              Invitation pass codes"
+      echo "  {env}-env-subscriptions       Stripe subscription data"
+      echo ""
+      echo "Tables NOT copied (ephemeral/rebuilt):"
+      echo "  {env}-env-bundle-capacity               Rebuilt by Lambda"
+      echo "  {env}-env-*-async-requests (5 tables)    Ephemeral correlation data"
       echo ""
       echo "Example:"
-      echo "  $0 --profile submit-prod --backup-arns arn:aws:dynamodb:eu-west-2:887764105431:table/prod-env-bundles/backup/01234567890"
-      echo "  $0 --profile submit-prod --backup-date 20260218 --source-profile management"
+      echo "  $0 --source-profile management --target-profile submit-prod"
+      echo "  $0 --source-profile management --target-profile submit-prod --dry-run"
       exit 0
       ;;
     *)
@@ -108,205 +114,239 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# --- Validate arguments ---
+# --- Validate ---
+if [[ -z "${SOURCE_PROFILE}" ]]; then
+  echo -e "${RED}ERROR: --source-profile is required${NC}"
+  exit 1
+fi
 if [[ -z "${TARGET_PROFILE}" ]]; then
-  echo -e "${RED}ERROR: --profile is required${NC}"
-  echo "Run $0 --help for usage."
+  echo -e "${RED}ERROR: --target-profile is required${NC}"
   exit 1
 fi
 
-if [[ ${#BACKUP_ARNS[@]} -eq 0 && -z "${BACKUP_DATE}" ]]; then
-  echo -e "${RED}ERROR: Provide either --backup-arns or --backup-date${NC}"
-  echo "Run $0 --help for usage."
-  exit 1
-fi
-
-if [[ -n "${BACKUP_DATE}" && -z "${SOURCE_PROFILE}" ]]; then
-  echo -e "${RED}ERROR: --source-profile is required when using --backup-date${NC}"
-  exit 1
-fi
-
-# --- Header ---
-echo -e "${GREEN}=== DynamoDB Table Restore ===${NC}"
-echo "  Target profile: ${TARGET_PROFILE}"
-echo "  Region:         ${REGION}"
+# --- Verify credentials ---
+echo -e "${GREEN}=== DynamoDB Cross-Account Data Copy ===${NC}"
 echo ""
 
-# --- Verify target credentials ---
-echo "Verifying target credentials..."
-TARGET_ACCOUNT=$(aws sts get-caller-identity --profile "${TARGET_PROFILE}" --region "${REGION}" --query 'Account' --output text 2>/dev/null) || {
+echo "Verifying source account (${SOURCE_PROFILE})..."
+SOURCE_ACCOUNT=$(aws sts get-caller-identity --profile "${SOURCE_PROFILE}" --query 'Account' --output text 2>/dev/null) || {
+  echo -e "${RED}ERROR: Cannot authenticate with source profile '${SOURCE_PROFILE}'${NC}"
+  echo "  Run: aws sso login --sso-session diyaccounting"
+  exit 1
+}
+echo -e "  Source account: ${GREEN}${SOURCE_ACCOUNT}${NC}"
+
+echo "Verifying target account (${TARGET_PROFILE})..."
+TARGET_ACCOUNT=$(aws sts get-caller-identity --profile "${TARGET_PROFILE}" --query 'Account' --output text 2>/dev/null) || {
   echo -e "${RED}ERROR: Cannot authenticate with target profile '${TARGET_PROFILE}'${NC}"
+  echo "  Run: aws sso login --sso-session diyaccounting"
   exit 1
 }
 echo -e "  Target account: ${GREEN}${TARGET_ACCOUNT}${NC}"
-echo ""
 
-# --- Resolve backup ARNs from date pattern if needed ---
-if [[ -n "${BACKUP_DATE}" ]]; then
-  echo "Finding backups matching date '${BACKUP_DATE}' in source account..."
-
-  echo "Verifying source credentials..."
-  SOURCE_ACCOUNT=$(aws sts get-caller-identity --profile "${SOURCE_PROFILE}" --region "${REGION}" --query 'Account' --output text 2>/dev/null) || {
-    echo -e "${RED}ERROR: Cannot authenticate with source profile '${SOURCE_PROFILE}'${NC}"
-    exit 1
-  }
-  echo -e "  Source account: ${GREEN}${SOURCE_ACCOUNT}${NC}"
-
-  ALL_BACKUPS=$(aws dynamodb list-backups \
-    --profile "${SOURCE_PROFILE}" \
-    --region "${REGION}" \
-    --backup-type USER \
-    --output json \
-    --query 'BackupSummaries[*].{BackupArn:BackupArn,BackupName:BackupName,TableName:TableName,BackupStatus:BackupStatus}')
-
-  MATCHING_BACKUPS=$(echo "${ALL_BACKUPS}" | jq --arg date "pre-migration-${BACKUP_DATE}" '[.[] | select(.BackupName | startswith($date))]')
-  MATCH_COUNT=$(echo "${MATCHING_BACKUPS}" | jq 'length')
-
-  if [[ "${MATCH_COUNT}" -eq 0 ]]; then
-    echo -e "${RED}No backups found matching 'pre-migration-${BACKUP_DATE}'${NC}"
-    echo ""
-    echo "Available backups:"
-    echo "${ALL_BACKUPS}" | jq -r '.[] | "  \(.BackupName) (\(.TableName)) - \(.BackupStatus)"'
-    exit 1
-  fi
-
-  echo -e "  Found ${GREEN}${MATCH_COUNT}${NC} backup(s):"
-  echo "${MATCHING_BACKUPS}" | jq -r '.[] | "  \(.BackupName) -> \(.TableName)"'
-  echo ""
-
-  # Extract ARNs
-  while IFS= read -r arn; do
-    BACKUP_ARNS+=("${arn}")
-  done < <(echo "${MATCHING_BACKUPS}" | jq -r '.[].BackupArn')
+if [[ "${SOURCE_ACCOUNT}" == "${TARGET_ACCOUNT}" ]]; then
+  echo -e "${RED}ERROR: Source and target are the same account (${SOURCE_ACCOUNT})${NC}"
+  exit 1
 fi
 
-# --- Restore each backup ---
-echo "Restoring ${#BACKUP_ARNS[@]} table(s)..."
 echo ""
+if [[ "${DRY_RUN}" == "true" ]]; then
+  echo -e "${YELLOW}DRY RUN MODE — no data will be written${NC}"
+  echo ""
+fi
 
-RESTORE_JOBS=()  # Associative: table_name -> restore status
+# --- Copy function ---
+copy_table() {
+  local TABLE_NAME="$1"
+  local ITEMS_WRITTEN=0
 
-for BACKUP_ARN in "${BACKUP_ARNS[@]}"; do
-  # Extract table name from backup ARN
-  # ARN format: arn:aws:dynamodb:region:account:table/TABLE_NAME/backup/BACKUP_ID
-  TABLE_NAME=$(echo "${BACKUP_ARN}" | sed 's|.*/table/||' | sed 's|/backup/.*||')
-
-  echo -n "  Restoring ${TABLE_NAME} from backup..."
-
-  # Check if the table already exists in target
-  TABLE_EXISTS=$(aws dynamodb describe-table \
-    --profile "${TARGET_PROFILE}" \
-    --region "${REGION}" \
+  # Check source table exists and get item count
+  local SOURCE_INFO
+  SOURCE_INFO=$(aws dynamodb describe-table \
+    --profile "${SOURCE_PROFILE}" \
     --table-name "${TABLE_NAME}" \
-    --query 'Table.TableStatus' \
-    --output text 2>/dev/null) || TABLE_EXISTS=""
+    --region "${REGION}" \
+    --query 'Table.{ItemCount: ItemCount, SizeBytes: TableSizeBytes}' \
+    --output json 2>/dev/null) || {
+    echo -e "  ${RED}Source table ${TABLE_NAME} not found in ${SOURCE_ACCOUNT}${NC}"
+    return 1
+  }
 
-  if [[ -n "${TABLE_EXISTS}" ]]; then
-    echo -e " ${YELLOW}SKIP (table already exists, status: ${TABLE_EXISTS})${NC}"
-    continue
+  local ITEM_COUNT SIZE_BYTES SIZE_HUMAN
+  ITEM_COUNT=$(echo "${SOURCE_INFO}" | jq -r '.ItemCount')
+  SIZE_BYTES=$(echo "${SOURCE_INFO}" | jq -r '.SizeBytes')
+
+  if [[ ${SIZE_BYTES} -gt 1048576 ]]; then
+    SIZE_HUMAN="$(echo "scale=1; ${SIZE_BYTES} / 1048576" | bc) MB"
+  else
+    SIZE_HUMAN="$(echo "scale=1; ${SIZE_BYTES} / 1024" | bc) KB"
   fi
 
-  # Restore from backup
-  # Note: Cross-account restore requires the backup to be in the same account,
-  # or use AWS Backup for cross-account copies. For same-account restores:
-  aws dynamodb restore-table-from-backup \
+  echo -e "  Source: ${CYAN}${ITEM_COUNT} items${NC} (${SIZE_HUMAN})"
+
+  # Check target table exists
+  local TARGET_STATUS
+  TARGET_STATUS=$(aws dynamodb describe-table \
     --profile "${TARGET_PROFILE}" \
+    --table-name "${TABLE_NAME}" \
     --region "${REGION}" \
-    --target-table-name "${TABLE_NAME}" \
-    --backup-arn "${BACKUP_ARN}" \
-    --output json >/dev/null 2>&1 && {
-    echo -e " ${GREEN}INITIATED${NC}"
-    RESTORE_JOBS+=("${TABLE_NAME}")
-  } || {
-    echo -e " ${RED}FAILED${NC}"
-    echo -e "    ${YELLOW}Note: Cross-account restore requires AWS Backup copy first.${NC}"
-    echo -e "    ${YELLOW}The backup ARN must be in the target account.${NC}"
-    echo ""
-    echo -e "    To copy backup to target account, use AWS Backup:"
-    echo "      1. Create a backup vault in the target account"
-    echo "      2. Copy the recovery point from source to target vault"
-    echo "      3. Restore from the target vault's recovery point"
-    echo ""
+    --query 'Table.TableStatus' \
+    --output text 2>/dev/null) || {
+    echo -e "  ${RED}Target table ${TABLE_NAME} not found in ${TARGET_ACCOUNT}${NC}"
+    return 1
   }
-done
 
-# --- Wait for restores to complete ---
-if [[ ${#RESTORE_JOBS[@]} -gt 0 ]]; then
-  echo ""
-  echo "Waiting for ${#RESTORE_JOBS[@]} restore(s) to complete..."
-  echo "  (polling every ${POLL_INTERVAL}s, max wait ${MAX_WAIT}s)"
-  echo ""
+  if [[ "${TARGET_STATUS}" != "ACTIVE" ]]; then
+    echo -e "  ${RED}Target table status: ${TARGET_STATUS} (must be ACTIVE)${NC}"
+    return 1
+  fi
 
-  ELAPSED=0
-  while [[ ${#RESTORE_JOBS[@]} -gt 0 && ${ELAPSED} -lt ${MAX_WAIT} ]]; do
-    STILL_RESTORING=()
+  # Check if target table already has data
+  local TARGET_SAMPLE
+  TARGET_SAMPLE=$(aws dynamodb scan \
+    --profile "${TARGET_PROFILE}" \
+    --table-name "${TABLE_NAME}" \
+    --region "${REGION}" \
+    --select COUNT \
+    --limit 1 \
+    --query 'Count' \
+    --output text 2>/dev/null) || TARGET_SAMPLE="0"
 
-    for TABLE_NAME in "${RESTORE_JOBS[@]}"; do
-      STATUS=$(aws dynamodb describe-table \
-        --profile "${TARGET_PROFILE}" \
-        --region "${REGION}" \
-        --table-name "${TABLE_NAME}" \
-        --query 'Table.TableStatus' \
-        --output text 2>/dev/null) || STATUS="UNKNOWN"
+  if [[ "${TARGET_SAMPLE}" -gt 0 ]]; then
+    echo -e "  ${YELLOW}WARNING: Target table already has data (sampled ${TARGET_SAMPLE}+ items)${NC}"
+    echo -e "  ${YELLOW}Skipping to avoid duplicates. Empty the table first to re-copy.${NC}"
+    return 0
+  fi
 
-      if [[ "${STATUS}" == "ACTIVE" ]]; then
-        echo -e "  ${GREEN}ACTIVE${NC}   ${TABLE_NAME}"
-      elif [[ "${STATUS}" == "CREATING" || "${STATUS}" == "RESTORING" ]]; then
-        STILL_RESTORING+=("${TABLE_NAME}")
-      else
-        echo -e "  ${YELLOW}${STATUS}${NC}  ${TABLE_NAME}"
-        STILL_RESTORING+=("${TABLE_NAME}")
-      fi
-    done
+  if [[ "${DRY_RUN}" == "true" ]]; then
+    echo -e "  ${YELLOW}Would copy ~${ITEM_COUNT} items${NC}"
+    return 0
+  fi
 
-    if [[ ${#STILL_RESTORING[@]} -eq 0 ]]; then
+  # Scan all items from source (AWS CLI v2 auto-paginates)
+  # For large tables, stream through jq line-by-line
+  local TMPDIR
+  TMPDIR=$(mktemp -d)
+  local ITEMS_FILE="${TMPDIR}/items.jsonl"
+
+  echo -ne "  Scanning source table..."
+  aws dynamodb scan \
+    --profile "${SOURCE_PROFILE}" \
+    --table-name "${TABLE_NAME}" \
+    --region "${REGION}" \
+    --output json 2>/dev/null \
+    | jq -c '.Items[]' > "${ITEMS_FILE}"
+
+  local TOTAL_ITEMS
+  TOTAL_ITEMS=$(wc -l < "${ITEMS_FILE}" | tr -d ' ')
+  echo -e " ${GREEN}${TOTAL_ITEMS} items${NC}"
+
+  if [[ "${TOTAL_ITEMS}" -eq 0 ]]; then
+    echo -e "  ${YELLOW}No items to copy${NC}"
+    rm -rf "${TMPDIR}"
+    return 0
+  fi
+
+  # Process in batches of 25
+  echo -ne "  Writing to target..."
+  local BATCH_FILE="${TMPDIR}/batch.json"
+
+  while true; do
+    # Read up to BATCH_SIZE lines
+    local BATCH_LINES
+    BATCH_LINES=$(tail -n "+$((ITEMS_WRITTEN + 1))" "${ITEMS_FILE}" | head -n "${BATCH_SIZE}")
+
+    if [[ -z "${BATCH_LINES}" ]]; then
       break
     fi
 
-    RESTORE_JOBS=("${STILL_RESTORING[@]}")
-    echo -e "  ${CYAN}${#RESTORE_JOBS[@]} table(s) still restoring... (${ELAPSED}s elapsed)${NC}"
-    sleep "${POLL_INTERVAL}"
-    ELAPSED=$((ELAPSED + POLL_INTERVAL))
+    local BATCH_COUNT
+    BATCH_COUNT=$(echo "${BATCH_LINES}" | wc -l | tr -d ' ')
+
+    # Build batch-write request
+    echo "${BATCH_LINES}" | jq -s --arg table "${TABLE_NAME}" \
+      '{($table): [.[] | {PutRequest: {Item: .}}]}' > "${BATCH_FILE}"
+
+    # Retry loop for unprocessed items
+    local RETRIES=0
+    local MAX_RETRIES=5
+    local CURRENT_REQUEST="${BATCH_FILE}"
+
+    while [[ ${RETRIES} -lt ${MAX_RETRIES} ]]; do
+      local RESPONSE
+      RESPONSE=$(aws dynamodb batch-write-item \
+        --profile "${TARGET_PROFILE}" \
+        --region "${REGION}" \
+        --request-items "file://${CURRENT_REQUEST}" \
+        --output json 2>/dev/null) || {
+        echo -e "\n  ${RED}Batch write failed at item ${ITEMS_WRITTEN}${NC}"
+        rm -rf "${TMPDIR}"
+        return 1
+      }
+
+      # Check for unprocessed items
+      local UNPROCESSED
+      UNPROCESSED=$(echo "${RESPONSE}" | jq ".UnprocessedItems.\"${TABLE_NAME}\" // empty | length")
+
+      if [[ -z "${UNPROCESSED}" || "${UNPROCESSED}" -eq 0 ]]; then
+        break
+      fi
+
+      # Retry unprocessed items after backoff
+      echo "${RESPONSE}" | jq ".UnprocessedItems" > "${TMPDIR}/unprocessed.json"
+      CURRENT_REQUEST="${TMPDIR}/unprocessed.json"
+      RETRIES=$((RETRIES + 1))
+      sleep $((RETRIES * 2))
+    done
+
+    ITEMS_WRITTEN=$((ITEMS_WRITTEN + BATCH_COUNT))
+
+    # Progress indicator
+    if [[ $((ITEMS_WRITTEN % 500)) -lt ${BATCH_SIZE} ]] || [[ ${ITEMS_WRITTEN} -ge ${TOTAL_ITEMS} ]]; then
+      echo -ne "\r  Writing to target... ${ITEMS_WRITTEN}/${TOTAL_ITEMS}"
+    fi
   done
 
-  if [[ ${#RESTORE_JOBS[@]} -gt 0 ]]; then
-    echo -e "${YELLOW}WARNING: ${#RESTORE_JOBS[@]} table(s) still restoring after ${MAX_WAIT}s${NC}"
-    echo "  Monitor manually:"
-    for TABLE_NAME in "${RESTORE_JOBS[@]}"; do
-      echo "    aws dynamodb describe-table --profile ${TARGET_PROFILE} --table-name ${TABLE_NAME} --query 'Table.TableStatus'"
-    done
+  echo -e "\r  ${GREEN}Copied ${ITEMS_WRITTEN}/${TOTAL_ITEMS} items${NC}                    "
+
+  rm -rf "${TMPDIR}"
+}
+
+# --- Main ---
+TOTAL_SUCCESS=0
+TOTAL_FAILED=0
+TOTAL_SKIPPED=0
+
+for TABLE in "${CRITICAL_TABLES[@]}"; do
+  echo ""
+  echo -e "${CYAN}--- ${TABLE} ---${NC}"
+
+  if copy_table "${TABLE}"; then
+    TOTAL_SUCCESS=$((TOTAL_SUCCESS + 1))
+  else
+    TOTAL_FAILED=$((TOTAL_FAILED + 1))
   fi
+done
+
+# --- Summary ---
+echo ""
+echo -e "${GREEN}=== Summary ===${NC}"
+echo "  Source: ${SOURCE_ACCOUNT} (${SOURCE_PROFILE})"
+echo "  Target: ${TARGET_ACCOUNT} (${TARGET_PROFILE})"
+echo "  Tables: ${TOTAL_SUCCESS} succeeded, ${TOTAL_FAILED} failed"
+
+if [[ "${DRY_RUN}" == "true" ]]; then
+  echo ""
+  echo -e "${YELLOW}This was a dry run. Run without --dry-run to copy data.${NC}"
 fi
 
-# --- Final status ---
 echo ""
-echo -e "${GREEN}=== Restore Status ===${NC}"
-echo ""
-
-for BACKUP_ARN in "${BACKUP_ARNS[@]}"; do
-  TABLE_NAME=$(echo "${BACKUP_ARN}" | sed 's|.*/table/||' | sed 's|/backup/.*||')
-
-  STATUS=$(aws dynamodb describe-table \
-    --profile "${TARGET_PROFILE}" \
-    --region "${REGION}" \
-    --table-name "${TABLE_NAME}" \
-    --query 'Table.{Status:TableStatus,ItemCount:ItemCount,SizeBytes:TableSizeBytes}' \
-    --output json 2>/dev/null) || STATUS='{"Status":"NOT FOUND"}'
-
-  TABLE_STATUS=$(echo "${STATUS}" | jq -r '.Status')
-  ITEM_COUNT=$(echo "${STATUS}" | jq -r '.ItemCount // "N/A"')
-  SIZE_BYTES=$(echo "${STATUS}" | jq -r '.SizeBytes // "N/A"')
-
-  if [[ "${TABLE_STATUS}" == "ACTIVE" ]]; then
-    echo -e "  ${GREEN}ACTIVE${NC}   ${TABLE_NAME} (items: ${ITEM_COUNT}, size: ${SIZE_BYTES} bytes)"
-  else
-    echo -e "  ${YELLOW}${TABLE_STATUS}${NC}  ${TABLE_NAME}"
-  fi
+echo "Verify with:"
+for TABLE in "${CRITICAL_TABLES[@]}"; do
+  echo "  aws --profile ${TARGET_PROFILE} dynamodb scan --table-name ${TABLE} --select COUNT --query 'Count'"
 done
 
 echo ""
 echo "Next steps:"
-echo "  1. Verify data in restored tables"
-echo "  2. Enable PITR on critical tables (receipts, bundles, hmrc-api-requests)"
-echo "  3. Run ./scripts/aws-accounts/restore-salt.sh to restore the salt"
-echo "  4. Deploy application stacks and verify"
+echo "  1. Run ./scripts/aws-accounts/restore-salt.sh to copy the salt (step 1.4.18)"
+echo "  2. Validate prod with behaviour tests (step 1.4.20)"

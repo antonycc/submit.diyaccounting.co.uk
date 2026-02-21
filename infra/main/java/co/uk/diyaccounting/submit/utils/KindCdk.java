@@ -266,4 +266,40 @@ public class KindCdk {
                         .build())))
                 .build();
     }
+
+    /**
+     * Enables TTL on an existing DynamoDB table idempotently using AwsCustomResource.
+     * Uses UpdateTimeToLive API with ignoreErrorCodesMatching("ValidationException")
+     * so deployments succeed whether TTL is already enabled or not.
+     *
+     * @param stack The stack to enable TTL in
+     * @param id The construct ID prefix
+     * @param tableName The name of the table to enable TTL on
+     * @param ttlAttributeName The name of the TTL attribute (e.g. "ttl")
+     */
+    public static void ensureTimeToLive(Stack stack, String id, String tableName, String ttlAttributeName) {
+        Map<String, Object> timeToLiveSpec =
+                Map.of("AttributeName", ttlAttributeName, "Enabled", true);
+
+        Map<String, Object> updateTtlParams = Map.of("TableName", tableName, "TimeToLiveSpecification", timeToLiveSpec);
+
+        AwsSdkCall updateTtlCall = AwsSdkCall.builder()
+                .service("DynamoDB")
+                .action("updateTimeToLive")
+                .parameters(updateTtlParams)
+                .physicalResourceId(PhysicalResourceId.of(tableName + "-ttl"))
+                // ValidationException means TTL is already enabled - that's fine
+                .ignoreErrorCodesMatching("ValidationException")
+                .build();
+
+        AwsCustomResource.Builder.create(stack, id + "-EnsureTTL")
+                .onCreate(updateTtlCall)
+                .onUpdate(updateTtlCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateTimeToLive", "dynamodb:DescribeTimeToLive"))
+                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
+                                + ":table/" + tableName))
+                        .build())))
+                .build();
+    }
 }

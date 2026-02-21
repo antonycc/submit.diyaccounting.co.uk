@@ -9,6 +9,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureGlobalSecondaryIndex;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTable;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTimeToLive;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import org.immutables.value.Value;
@@ -90,18 +91,21 @@ public class DataStack extends Stack {
         infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().receiptsTableName);
 
         // Bundles table for bundle storage
-        // HIGH priority - contains user subscription data - enable PITR manually if table pre-exists
+        // HIGH priority - contains user subscription data
         this.bundlesTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundlesTable",
                 props.sharedNames().bundlesTableName,
                 "hashedSub",
                 "bundleId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-BundlesTTL",
+                props.sharedNames().bundlesTableName,
+                "ttl");
         infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().bundlesTableName);
 
-        // Async request tables use ensureTable() for idempotent creation - deployments succeed whether table exists or
-        // not.
-        // Note: TTL must be enabled manually on pre-existing tables if not already configured.
+        // Async request tables — 1-hour TTL on "ttl" attribute
 
         // Bundle POST async request storage
         this.bundlePostAsyncRequestsTable = ensureTable(
@@ -110,6 +114,11 @@ public class DataStack extends Stack {
                 props.sharedNames().bundlePostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-BundlePostAsyncTTL",
+                props.sharedNames().bundlePostAsyncRequestsTableName,
+                "ttl");
         infof(
                 "Ensured bundle POST async requests DynamoDB table with name %s",
                 props.sharedNames().bundlePostAsyncRequestsTableName);
@@ -121,6 +130,11 @@ public class DataStack extends Stack {
                 props.sharedNames().bundleDeleteAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-BundleDeleteAsyncTTL",
+                props.sharedNames().bundleDeleteAsyncRequestsTableName,
+                "ttl");
         infof(
                 "Ensured bundle DELETE async requests DynamoDB table with name %s",
                 props.sharedNames().bundleDeleteAsyncRequestsTableName);
@@ -132,6 +146,11 @@ public class DataStack extends Stack {
                 props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatReturnPostAsyncTTL",
+                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
+                "ttl");
         infof(
                 "Ensured HMRC VAT Return POST async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName);
@@ -143,6 +162,11 @@ public class DataStack extends Stack {
                 props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatReturnGetAsyncTTL",
+                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
+                "ttl");
         infof(
                 "Ensured HMRC VAT Return GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName);
@@ -154,18 +178,28 @@ public class DataStack extends Stack {
                 props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatObligationGetAsyncTTL",
+                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName,
+                "ttl");
         infof(
                 "Ensured HMRC VAT Obligation GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
 
         // HMRC API requests storage - audit trail for HMRC interactions
-        // MEDIUM priority - 90-day retention. PITR/TTL must be enabled manually if table pre-exists.
+        // 28-day retention via TTL on "ttl" attribute
         this.hmrcApiRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcApiRequestsTable",
                 props.sharedNames().hmrcApiRequestsTableName,
                 "hashedSub",
                 "id");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcApiRequestsTTL",
+                props.sharedNames().hmrcApiRequestsTableName,
+                "ttl");
         infof("Ensured HMRC API Requests DynamoDB table with name %s", props.sharedNames().hmrcApiRequestsTableName);
 
         // Passes table for storing invitation pass codes

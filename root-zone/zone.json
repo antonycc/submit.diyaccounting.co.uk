@@ -1428,6 +1428,24 @@
             }
         },
         {
+            "Name": "prod-2f90bf0.submit.diyaccounting.co.uk.",
+            "Type": "A",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d20mu74q1hwvy8.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
+            "Name": "prod-2f90bf0.submit.diyaccounting.co.uk.",
+            "Type": "AAAA",
+            "AliasTarget": {
+                "HostedZoneId": "Z2FDTNDATAQYW2",
+                "DNSName": "d20mu74q1hwvy8.cloudfront.net.",
+                "EvaluateTargetHealth": false
+            }
+        },
+        {
             "Name": "prod-39874dc.submit.diyaccounting.co.uk.",
             "Type": "A",
             "AliasTarget": {

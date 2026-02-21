@@ -69,12 +69,14 @@ class SubmitEnvironmentCdkResourceTest {
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
 
-        // 6) Data stack creates 11 DynamoDB tables + 1 GSI via AwsCustomResource for idempotent deployments
+        // 6) Data stack creates 11 DynamoDB tables + 1 GSI + 7 TTL via AwsCustomResource for idempotent deployments
         // Tables: receipts, bundles, bundlePostAsyncRequests, bundleDeleteAsyncRequests,
         // hmrcVatReturnPostAsyncRequests, hmrcVatReturnGetAsyncRequests, hmrcVatObligationGetAsyncRequests,
         // hmrcApiRequests, passes, bundleCapacity, subscriptions
         // GSIs: passes issuedBy-index
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 12);
+        // TTL: bundles, bundlePostAsync, bundleDeleteAsync, hmrcVatReturnPostAsync,
+        //      hmrcVatReturnGetAsync, hmrcVatObligationGetAsync, hmrcApiRequests
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 19);
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);

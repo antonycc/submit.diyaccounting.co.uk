@@ -344,13 +344,16 @@ runs:
           local RETRY_DELAY=15
           local CREATED=false
           for ATTEMPT in 1 2 3 4 5; do
-            if aws apigatewayv2 create-domain-name \
+            local CREATE_OUTPUT
+            CREATE_OUTPUT=$(aws apigatewayv2 create-domain-name \
               --domain-name "${DOMAIN}" \
-              --domain-name-configurations "CertificateArn=${CERT_ARN},EndpointType=REGIONAL"; then
+              --domain-name-configurations "CertificateArn=${CERT_ARN},EndpointType=REGIONAL" 2>&1) && { CREATED=true; break; }
+            if echo "$CREATE_OUTPUT" | grep -q "already exists"; then
+              echo "  Domain [${DOMAIN}] already exists, proceeding to mapping..."
               CREATED=true
               break
             fi
-            echo "  Attempt ${ATTEMPT}/5 failed (likely rate limited), retrying in ${RETRY_DELAY}s..."
+            echo "  Attempt ${ATTEMPT}/5 failed (${CREATE_OUTPUT}), retrying in ${RETRY_DELAY}s..."
             sleep "${RETRY_DELAY}"
             RETRY_DELAY=$((RETRY_DELAY * 2))
           done
