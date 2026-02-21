@@ -22,18 +22,18 @@
 Production is live:
 - https://diyaccounting.co.uk/ (gateway) — **migrated to 283165661847** ✅
 - https://spreadsheets.diyaccounting.co.uk/ — **migrated to 064390746177** ✅
-- https://submit.diyaccounting.co.uk/ — still in 887764105431 (CI migration in progress)
+- https://submit.diyaccounting.co.uk/ — **migrated to 972912397388** ✅
 
-Gateway and spreadsheets (CI + prod) fully migrated. **Submit CI migration complete** — all stacks deployed to 367191799875, all 18 CI synthetic tests passing, DNS live. Next: Phase 1.4 (submit prod to new account 972912397388).
+All workloads migrated. Gateway, spreadsheets, submit-ci, and submit-prod all in their own accounts. Deploy #22257323730 from accounts branch: 142 passed, 0 failed. Next: Phase 1.4 remaining steps (1.4.18 restore salt, 1.4.21 notify users), then 1.5 (clean up 887764105431).
 
 ### Account structure (current)
 
 ```
-887764105431 ── submit (prod only), root DNS, holding page
+887764105431 ── root DNS, holding page, old stacks pending cleanup (Phase 1.5)
 283165661847 ── gateway (CI + prod) ✅
 064390746177 ── spreadsheets (CI + prod) ✅
 367191799875 ── submit-ci ✅
-972912397388 ── submit-prod (created, not yet used)
+972912397388 ── submit-prod ✅
 914216784828 ── submit-backup (created, Phase 3)
 ```
 
@@ -132,7 +132,9 @@ Move submit CI deployments into their own account (367191799875).
 | `destroy.yml` scanning both accounts | Single destroy workflow scanned both ci- and prod-prefixed stacks in one account. With accounts separated, each destroy needs its own account's credentials. | Split into `destroy-ci.yml` (hardcoded `environment: ci`, schedule `:34 2,4,6,8,10,12`) and `destroy-prod.yml` (hardcoded `environment: prod`, schedule `:04 3,5,7,9,11,13`). Updated `deploy.yml` to call `destroy-prod.yml`. | Could have kept a single workflow with matrix strategy, but separate files are simpler and each can be triggered independently. | `17d783b0` |
 | CloudFront CNAME conflict (submit apex) | `set-origins` failed with `CNAMEAlreadyExists` — distribution `E3MECWCY0HNL8J` (old prod `prod-4c05746`) in 887764105431 still owned `submit.diyaccounting.co.uk`, `prod-submit.diyaccounting.co.uk`, `prod-4c05746.submit.diyaccounting.co.uk`. | Removed all 3 CNAME aliases from old distribution and switched to CloudFront default cert (same pattern as simulator/holding fix). | Same pattern as issue #2 above. Old distributions kept alive for rollback but no longer reachable by custom domain. | Manual (AWS CLI) |
 | API Gateway domain "already exists" on re-run | `set-origins` API GW domain transfer: `create-domain-name` fails with "already exists" if domain was created by a previous run. The `get-domain-names` check can fail silently due to rate limiting (`2>/dev/null`), so it doesn't find the existing domain and skips the delete-first path. | Made `create-domain-name` handle "already exists" as success — if the domain already exists, proceed to mapping instead of failing. | Could also make the `get-domain-names` check retry on failure, but handling "already exists" in create is simpler and idempotent. | Pending commit |
-| TTL disabled on all DynamoDB tables | All 11 tables in both accounts had TTL disabled. HMRC API requests (19,691 items, 48 MB) growing unbounded. Async request tables (1-hour TTL written but not enforced) accumulating stale data. | Added `ensureTimeToLive()` CDK utility. Enabled TTL on 8 tables in DataStack (hmrc-api-requests, bundles, 5 async-request tables, receipts). Changed HMRC API request TTL from 1 month → 28 days. Existing records will get 1-day TTL via batch update. | PITR also disabled everywhere — separate concern for Phase 3 (backup strategy). | Pending commit |
+| TTL disabled on all DynamoDB tables | All 11 tables in both accounts had TTL disabled. HMRC API requests (19,691 items, 48 MB) growing unbounded. Async request tables (1-hour TTL written but not enforced) accumulating stale data. | Added `ensureTimeToLive()` CDK utility. Enabled TTL on 8 tables in DataStack (hmrc-api-requests, bundles, 5 async-request tables, receipts). Changed HMRC API request TTL from 1 month → 28 days. Batch update complete: all 19,691 records set to 1-day expiry. | PITR also disabled everywhere — separate concern for Phase 3 (backup strategy). | `a38f21b0` |
+| Lambda reserved concurrency exhaustion | New account (972912397388) has 400 Lambda concurrent executions limit. Each function reserves 5. Old deployment `prod-a38f21b` (32 functions × 5 = 160) + new deployment trying to allocate another 160 exceeded the limit minus 40 minimum unreserved. | Old deployments destroyed to free reserved concurrency. Account now has 8 env functions, 400 unreserved. | Could request quota increase (400 → 1000), but destroying stale deployments is the right fix. Future deploys won't have this issue — only one app deployment at a time. | Manual |
+| API Gateway custom domain conflict (prod apex) | `prod-submit.diyaccounting.co.uk` and `submit.diyaccounting.co.uk` still existed as API GW custom domains in 887764105431. API GW custom domains are globally unique per region — `create-domain-name` in 972912397388 failed with "already exists". Same pattern as CI domain conflict (1.3). | Deleted both domains from old account via `aws --profile management apigatewayv2 delete-domain-name`. | Part of Phase 1.5 cleanup, but was blocking 1.4.20 validation. | Manual (AWS CLI) |
 
 ### 1.4: Submit prod to new account (IaC repeatability proof)
 
@@ -165,11 +167,11 @@ Create a NEW submit-prod account and deploy the full production stack from IaC. 
 | 1.4.16 | Deploy prod application stacks | ✅ | Run #22249290173: 124 passed, 14 failed, 21 skipped. All app stacks deployed to 972912397388: AuthStack, AccountStack, BillingStack, HmrcStack, ApiStack, EdgeStack, PublishStack. CloudFront aliases set. Failures: `npm test cdk-ci` (wrong env, fixed `17d783b0`), `set-origins` (API GW "already exists", fix pending), 12 synthetic tests (cascading from set-origins — API endpoints unreachable via custom domain). Re-run needed after push. Environment fix applied to all remaining workflows. `destroy.yml` split into `destroy-ci.yml` + `destroy-prod.yml`. |
 | | **Data restoration** | | |
 | 1.4.17 | Restore DynamoDB tables | ✅ | Cross-account scan+batch-write from 887764105431 to 972912397388. Script: `scripts/aws-accounts/restore-tables-from-backup.sh` (rewritten for cross-account). All 5 tables copied: receipts (1,156), bundles (1,035), hmrc-api-requests (19,691 / 48 MB), passes (1,181), subscriptions (30). |
-| 1.4.17a | Enable TTL on DynamoDB tables | ⏳ | **Finding**: TTL was DISABLED on ALL 11 tables in both accounts. PITR also disabled everywhere. **Fix**: CDK `ensureTimeToLive()` utility added to KindCdk.java. TTL enabled in DataStack for 7 tables (hmrc-api-requests, bundles, 5 async-request tables). Code changed: HMRC API requests TTL from 1 month → 28 days (`calculateTwentyEightDayTtl`). TTL enabled on `prod-env-hmrc-api-requests` table. Batch-setting TTL on all 19,691 existing records to 1-day expiry (in progress ~5h, ~3,100 items/hr sequential update-item). Script: `scripts/aws-accounts/set-ttl-on-existing-records.sh`. |
-| 1.4.18 | Restore salt | | Copy the encrypted salt into the new DataStack's DynamoDB table. Grant the new account's KMS key access or re-encrypt with the new key. Script: `scripts/aws-accounts/restore-salt.sh`. |
+| 1.4.17a | Enable TTL on DynamoDB tables | ✅ | **Finding**: TTL was DISABLED on ALL 11 tables in both accounts. PITR also disabled everywhere. **Fix**: CDK `ensureTimeToLive()` utility added to KindCdk.java. TTL enabled in DataStack for 7 tables (hmrc-api-requests, bundles, 5 async-request tables). Code changed: HMRC API requests TTL from 1 month → 28 days (`calculateTwentyEightDayTtl`). TTL enabled on `prod-env-hmrc-api-requests` table. Batch update complete: all 19,691 existing records set to 1-day expiry (~6.5h, ~3,100 items/hr sequential update-item). DynamoDB will delete expired records within ~48 hours. Script: `scripts/aws-accounts/set-ttl-on-existing-records.sh`. |
+| 1.4.18 | Restore salt | ✅ | Path 1 (Secrets Manager): `prod/submit/user-sub-hash-salt` copied from 887764105431 → 972912397388, verified MATCH. Valid registry with 2 versions (current: v2). Path 3 (DynamoDB + KMS): not configured in source — will be created when migration 003 runs in the new account. Script bug fixed (unbound `TARGET_TABLE_STATUS` when Step 2 skips). Script: `scripts/aws-accounts/restore-salt.sh`. |
 | | **DNS cutover** | | |
 | 1.4.19 | Update root DNS for prod submit | ✅ | Root DNS deploy run #22249618225 succeeded. Zone re-exported (238 records). Route53 records upserted for `submit.diyaccounting.co.uk` and `prod-submit.diyaccounting.co.uk` pointing to new CloudFront. CloudFront CNAME aliases removed from old distribution `E3MECWCY0HNL8J` in 887764105431. |
-| 1.4.20 | Validate prod | ⏳ | Synthetic tests run as part of deploy.yml. set-origins completing (API Gateway domain transfer). Full validation: `npm run test:submitVatBehaviour-prod`. Deploy #22250204833 failed (set-origins race with nightly main deploy). Deploy #22251503776 re-triggered. |
+| 1.4.20 | Validate prod | ✅ | Deploy #22257323730: **142 passed, 0 failed, 20 skipped.** All CDK stacks deployed, set-origins succeeded, all 13 prod synthetic behaviour tests passed. API Gateway custom domains created in 972912397388 after deleting from 887764105431. Previous failures: #22250204833 (set-origins race with nightly main deploy), #22251503776 (Lambda concurrency), #22256295510 (API GW domain conflict). |
 | 1.4.21 | Notify users | | Inform the 2 sign-ups + family testers that they need to re-register (new Cognito pool). |
 
 #### DynamoDB data profile and cost analysis (Phase 1.4 migration)
@@ -207,15 +209,49 @@ Create a NEW submit-prod account and deploy the full production stack from IaC. 
 
 ### 1.5: Clean up 887764105431 (make it management-only)
 
+#### Inventory of resources remaining in 887764105431 (as of 2026-02-21)
+
+**CloudFormation stacks (3):**
+- `CDKToolkit` — keep (needed for root DNS/holding deploys)
+- `prod-env-BackupStack` — tear down
+- `prod-env-DataStack` — tear down (has 38 DynamoDB tables — 11 prod-env-*, 11 ci-env-*, 16 legacy-named)
+
+**CloudFront distributions (9):**
+- `E3VBOLA04TMMN0` — `old-www.submit.diyaccounting.co.uk` (legacy S3 origin)
+- `EW310RS705OLC` — `www.stage.diyaccounting.co.uk`, `stage.diyaccounting.co.uk` (staging)
+- `E1JZ7PA80QQ7NE` — `prod-bab0022.submit.diyaccounting.co.uk` (old deployment)
+- `E26KUZNPFIMNI1` — `prod-9531d17.submit.diyaccounting.co.uk` (old deployment)
+- `E3VC3J8EWJ541F` — `prod-39cb5d3.submit.diyaccounting.co.uk` (old deployment)
+- `E1L9BGS0YJH61A` — `prod-d51c346.submit.diyaccounting.co.uk` (old deployment)
+- `E2C6KXBWV4RNC6` — `prod-8caf293.submit.diyaccounting.co.uk` (old deployment)
+- `E2MVQZJ1DET1F` — `ci-refresh.submit.diyaccounting.co.uk` (old CI deployment)
+- `ETMWP0TSWEONI` — `prod-0d69dfd.submit.diyaccounting.co.uk` (old deployment)
+
+**DynamoDB tables (38):** 11 `prod-env-*`, 11 `ci-env-*`, 16 legacy-named (`submit-diyaccounting-co-uk-*`, `ci-submit-diyaccounting-co-uk-*`). All data has been copied to 972912397388. Tables protected by pre-migration backups (prefix `pre-migration-20260221`).
+
+**Secrets Manager (20):** 10 `prod/submit/*`, 10 `ci/submit/*`. All copied to respective new accounts.
+
+**ACM certificates:** us-east-1: 10 certs (submit, stage, gateway, spreadsheets domains). eu-west-2: 4 certs (submit, auth, simulator domains). Gateway and spreadsheets certs are used by their account stacks via DNS validation — do NOT delete until those accounts have their own certs.
+
+**Lambda functions (3):** `prod-4c05746-app-ApiStack-*` (old app stack custom resource), `prod-env-BackupStack-*`, `prod-env-DataStack-*` (env stack custom resources).
+
+**IAM roles (4):** `submit-deployment-role`, `submit-github-actions-role` (old OIDC deploy), `root-route53-record-delegate` (keep — cross-account DNS), `root-RootDnsStack-*` (keep — root DNS custom resource).
+
+**Route53:** 1 hosted zone `diyaccounting.co.uk` — **keep permanently** (management account owns DNS).
+
+**Cognito:** No user pools remaining (old pool's custom domain already deleted).
+
+**API Gateway:** No custom domains remaining (deleted during 1.4.20).
+
 | Step | Description | Status | Details |
 |------|-------------|--------|---------|
 | 1.5.0 | Export root zone and organization structure | ✅ | Exported 236 Route53 records to `root-zone/` (zone.json, zone.bind, manual-records.json, organization.json). Identified 5 manually-managed records (email MX/SPF/DKIM, webmail CNAME, Google site verification) not in any CDK stack. Export script: `scripts/aws-accounts/export-root-zone.sh`. |
-| 1.5.1 | Tear down old prod stacks | | Delete all `prod-*` application and environment stacks from 887764105431 (Lambda, API GW, Cognito, DynamoDB, CloudFront for submit). |
-| 1.5.2 | Delete old ACM certs | Remove submit/auth/simulator/regional certs from 887764105431 (new certs are in the new submit-prod). |
-| 1.5.3 | Delete old Secrets Manager entries | Remove HMRC, Stripe, Telegram, OAuth secrets (they've been copied to new submit-prod). |
-| 1.5.4 | Remove old OIDC provider and roles | Delete `submit-github-actions-role` and `submit-deployment-role` from 887764105431 (GitHub Actions now deploys to other accounts). |
-| 1.5.5 | Verify management-only state | 887764105431 should now contain ONLY: AWS Organizations, IAM Identity Center, Route53 zone, RootDnsStack, holding page stacks. No application workloads. |
-| 1.5.6 | Update OIDC trust for root DNS | Create OIDC provider in 887764105431 for the root DNS/holding page deployments (trust: `repo:antonycc/submit.diyaccounting.co.uk:*`, later updated to root repo in Phase 2). |
+| 1.5.1 | Tear down old prod stacks | | Delete `prod-env-DataStack` and `prod-env-BackupStack` from 887764105431. Delete all 9 orphaned CloudFront distributions (old deployments — aliases already removed). Delete stale DynamoDB tables (38 tables, data already migrated, pre-migration backups exist). |
+| 1.5.2 | Delete old ACM certs | | Remove submit/auth/simulator certs from 887764105431. **Caution**: some us-east-1 certs may still be referenced by the old CloudFront distributions — delete distributions first. Gateway/spreadsheets certs must NOT be deleted until Phase 2 repo separation. |
+| 1.5.3 | Delete old Secrets Manager entries | | Remove all 20 secrets (10 `prod/submit/*`, 10 `ci/submit/*`). Already copied to new accounts. |
+| 1.5.4 | Remove old OIDC provider and roles | | Delete `submit-github-actions-role` and `submit-deployment-role`. **Keep** `root-route53-record-delegate` (used by all accounts for cross-account DNS). |
+| 1.5.5 | Verify management-only state | | 887764105431 should contain ONLY: AWS Organizations, IAM Identity Center, Route53 zone, RootDnsStack, holding page stacks, `root-route53-record-delegate` role, CDKToolkit. No application workloads. |
+| 1.5.6 | Update OIDC trust for root DNS | | Create OIDC provider in 887764105431 for the root DNS/holding page deployments (trust: `repo:antonycc/submit.diyaccounting.co.uk:*`, later updated to root repo in Phase 2). |
 
 ### Cross-account DNS validation
 

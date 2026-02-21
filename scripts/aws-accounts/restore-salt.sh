@@ -286,7 +286,7 @@ if [[ -z "${CANARY_ITEM}" ]] || ! echo "${CANARY_ITEM}" | jq -e '.Item' >/dev/nu
 else
   CANARY_JSON=$(echo "${CANARY_ITEM}" | jq '.Item')
 
-  if [[ -n "${TARGET_TABLE_STATUS}" && "${TARGET_TABLE_STATUS}" == "ACTIVE" ]]; then
+  if [[ -n "${TARGET_TABLE_STATUS:-}" && "${TARGET_TABLE_STATUS:-}" == "ACTIVE" ]]; then
     echo -n "  Writing system#canary/salt-health-check to target..."
     aws dynamodb put-item \
       --profile "${TARGET_PROFILE}" \
