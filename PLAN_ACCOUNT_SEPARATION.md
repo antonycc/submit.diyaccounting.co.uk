@@ -42,7 +42,7 @@ All workloads migrated. Gateway, spreadsheets, submit-ci, and submit-prod all in
 ```
 antonycc/root.diyaccounting.co.uk     ── Route53, holding page → 887764105431 ✅ (Phase 2.1)
 antonycc/submit.diyaccounting.co.uk   ── submit + gateway + spreadsheets (this repo)
-antonycc/www.diyaccounting.co.uk      ── gateway (Phase 2.2 — pending)
+antonycc/www.diyaccounting.co.uk      ── gateway (Phase 2.2 — repo built, pending OIDC + first deploy)
 antonycc/diy-accounting               ── spreadsheets (Phase 2.3 — pending)
 ```
 
@@ -410,21 +410,22 @@ Archive-and-overlay into the existing repo. Preserves repo settings, stars, and 
 
 #### Steps
 
-| Step | Description |
-|------|-------------|
-| 2.2.1 | In existing repo: `mkdir archive && git mv` all current files into `archive/` |
-| 2.2.2 | Copy files from submit repo (see table above) |
-| 2.2.3 | Rename Java package from `co.uk.diyaccounting.submit` to `co.uk.diyaccounting.gateway` — move files, update all package declarations and imports |
-| 2.2.4 | Create `pom.xml` — CDK-only (no Lambda/DynamoDB/OpenAPI deps), single `cdk-gateway` profile, Spotless + Palantir, Maven wrapper, same structure as root repo |
-| 2.2.5 | Create `package.json` — prettier, aws-cdk, npm-check-updates, cfn-diagram, @playwright/test; scripts for build, formatting, diagrams, behaviour tests, dependency updates |
-| 2.2.6 | Create `CLAUDE.md` — based on root repo CLAUDE.md, adapted for gateway account (283165661847), gateway-specific workflows and stacks |
-| 2.2.7 | Adapt `deploy-gateway.yml` → `deploy.yml` — standalone workflow (no reusable workflow calls to submit repo), OIDC auth with `GATEWAY_*` vars |
-| 2.2.8 | Add `test.yml` workflow — build, formatting check, CDK synth, behaviour tests |
-| 2.2.9 | Fill gaps from `archive/` — pull back useful old assets, images, README content |
-| 2.2.10 | Update OIDC trust in gateway account (283165661847): add `repo:antonycc/www.diyaccounting.co.uk:*` to trust policy |
-| 2.2.11 | Deploy from gateway repo. Run `test:gatewayBehaviour-ci`. Verify site, redirects, CSP headers. |
-| 2.2.12 | Mark repo as **template repository** in GitHub Settings (see below) |
-| 2.2.13 | Remove `deploy-gateway.yml`, `GatewayStack.java`, `GatewayEnvironment.java`, `cdk-gateway/`, `web/www.diyaccounting.co.uk/`, `build-gateway-redirects.cjs` from submit repo |
+| Step | Description | Status |
+|------|-------------|--------|
+| 2.2.1 | In existing repo: `mkdir archive && git mv` all current files into `archive/` | Skipped — repo was nearly empty (just `.gitignore` and `.idea`) |
+| 2.2.2 | Copy files from submit repo (see table above) | ✅ Web content, redirects.toml, scripts, Maven wrapper, Prettier config |
+| 2.2.3 | Rename Java package from `co.uk.diyaccounting.submit` to `co.uk.diyaccounting.gateway` — move files, update all package declarations and imports | ✅ 4 Java files: GatewayEnvironment, GatewayStack, Kind, KindCdk. Package `co.uk.diyaccounting.gateway`. Unnecessary shared files removed (SubmitSharedNames, LambdaNames, etc. not imported by GatewayStack). |
+| 2.2.4 | Create `pom.xml` — CDK-only, Spotless + Palantir, Maven wrapper, same structure as root repo | ✅ groupId `co.uk.diyaccounting.gateway`, artifactId `gateway`, JAR name `gateway.jar` |
+| 2.2.5 | Create `package.json` — prettier, aws-cdk, npm-check-updates, cfn-diagram; scripts for build, formatting, diagrams, dependency updates | ✅ Name `@antonycc/www-diyaccounting-co-uk`, engines node >=24.0.0 |
+| 2.2.6 | Create `CLAUDE.md` — based on root repo, adapted for gateway account (283165661847) | ✅ Includes template repo instructions |
+| 2.2.7 | Adapt `deploy-gateway.yml` → `deploy.yml` — standalone workflow, OIDC auth with `GATEWAY_*` vars | ✅ Simplified params job (no get-names action needed) |
+| 2.2.8 | Add `test.yml` workflow — build, formatting check, CDK synth | ✅ |
+| 2.2.9 | Create `AWS_RESOURCES.md` and `README.md` | ✅ AWS resources catalogued from live account, README with architecture and quick start |
+| 2.2.10 | Verify build: `npm install`, `./mvnw clean verify`, `npm run cdk:synth` | ✅ All pass. Certificate ARN placeholder in cdk.json for local synth (deploy workflow provides real ARN). |
+| 2.2.11 | Update OIDC trust in gateway account (283165661847): add `repo:antonycc/www.diyaccounting.co.uk:*` to trust policy | Pending |
+| 2.2.12 | Deploy from gateway repo. Run `test:gatewayBehaviour-ci`. Verify site, redirects, CSP headers. | Pending — depends on 2.2.11 |
+| 2.2.13 | Mark repo as **template repository** in GitHub Settings | Pending |
+| 2.2.14 | Remove `deploy-gateway.yml`, `GatewayStack.java`, `GatewayEnvironment.java`, `cdk-gateway/`, `web/www.diyaccounting.co.uk/`, `build-gateway-redirects.cjs` from submit repo | Pending |
 
 #### Template repository setup
 
