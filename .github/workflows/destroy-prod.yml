@@ -1,49 +1,35 @@
-name: destroy
-run-name: "destroy from ${{ github.ref_name }}"
+name: destroy-prod
+run-name: "destroy prod from ${{ github.ref_name }}"
 concurrency:
-  group: destroy-${{ github.ref_name }}
+  group: destroy-prod-${{ github.ref_name }}
   cancel-in-progress: false
 
 on:
   workflow_dispatch:
     inputs:
-      environment-name:
-        type: choice
-        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
-        required: false
-        options:
-          - '(auto)'
-          - 'ci'
-          - 'prod'
-        default: '(auto)'
       deployment-name:
         type: string
-        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        description: 'Deployment name to destroy, e.g. prod-ea373de'
         required: false
         default: ''
       sweep-for-stacks:
         type: boolean
-        description: 'Whether to sweep for leftover stacks (true) or select by branch/environment/deployment name (false)'
+        description: 'Whether to sweep for leftover stacks (true) or select by deployment name (false)'
         required: false
   workflow_call:
     inputs:
-      environment-name:
-        type: string
-        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
-        required: false
-        default: ''
       deployment-name:
         type: string
-        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        description: 'Deployment name to destroy, e.g. prod-ea373de'
         required: false
         default: ''
       sweep-for-stacks:
         type: boolean
-        description: 'Whether to sweep for leftover stacks (true) or select by branch/environment/deployment name (false)'
+        description: 'Whether to sweep for leftover stacks (true) or select by deployment name (false)'
         required: false
         default: false
   schedule:
-    - cron: '34 2,4,6,8,10,12 * * *'
+    - cron: '04 3,5,7,9,11,13 * * *'
 
 permissions:
   id-token: write
@@ -70,8 +56,6 @@ jobs:
         run: ":"
       - name: "github.ref=[${{ github.ref }}]"
         run: ":"
-      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
-        run: ":"
       - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
         run: ":"
       - name: "inputs.sweep-for-stacks=[${{ inputs.sweep-for-stacks }}]"
@@ -80,15 +64,6 @@ jobs:
         id: normalise
         shell: bash
         run: |
-          # Convert '(auto)' to empty string for downstream processing
-          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
-          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
-          # Resolve GitHub Actions environment from explicit input or branch
-          GH_ENV="${ENV_NAME}"
-          if [ -z "$GH_ENV" ]; then
-            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
-          fi
-          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSweeping: true if sweep-for-stacks=true OR schedule trigger
@@ -102,19 +77,17 @@ jobs:
             echo "isSweeping=false" | tee -a "$GITHUB_OUTPUT"
           fi
     outputs:
-      environment-name: ${{ steps.normalise.outputs.environment-name }}
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       sweep-for-stacks: ${{ steps.normalise.outputs.sweep-for-stacks }}
       isSweeping: ${{ steps.normalise.outputs.isSweeping }}
-      github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   sweep-for-stacks:
     needs:
       - params
     if: ${{ needs.params.outputs.isSweeping == 'true' }}
-    name: 'sweep for stacks'
+    name: 'sweep for prod stacks'
     runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.github-environment }}
+    environment: prod
     steps:
 
       - name: Configure AWS role via GitHub OIDC
@@ -144,33 +117,19 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
-      # Get last known good deployment names from SSM Parameter Store that match the ci- or prod- pattern
-      - name: Get last known good deployment names
+      - name: Get last known good prod deployment name
         id: last-known-good-deployment-names
         run: |
-          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI="/submit/ci/last-known-good-deployment"
-          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD="/submit/prod/last-known-good-deployment"
-          echo "Getting SSM Parameter Store parameter $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI and $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD"
-          aws ssm get-parameter \
-            --name "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI" \
+          PARAMETER_NAME="/submit/prod/last-known-good-deployment"
+          echo "Getting SSM Parameter Store parameter $PARAMETER_NAME"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter \
+            --name "$PARAMETER_NAME" \
             --query "Parameter.Value" \
-            --output text \
-            > /tmp/last-known-good-deployment-ci.txt \
-            || echo "Parameter $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI not found"
-          aws ssm get-parameter \
-            --name "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD" \
-            --query "Parameter.Value" \
-            --output text \
-            > /tmp/last-known-good-deployment-prod.txt \
-            || echo "Parameter $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD not found"
-          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE=$(cat /tmp/last-known-good-deployment-ci.txt || echo "")
-          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE=$(cat /tmp/last-known-good-deployment-prod.txt || echo "")
-          echo "Last known good deployment name CI: $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE"
-          echo "Last known good deployment name PROD: $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE"
-          echo "last-known-good-deployment-name-ci=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI_VALUE" >> $GITHUB_OUTPUT
-          echo "last-known-good-deployment-name-prod=$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD_VALUE" >> $GITHUB_OUTPUT
+            --output text 2>/dev/null || echo "")
+          echo "Last known good prod deployment: $LAST_KNOWN_GOOD"
+          echo "last-known-good-deployment-name=$LAST_KNOWN_GOOD" >> $GITHUB_OUTPUT
 
-      # Get the record names of aliases in any cloudfront distributions that match the ci- or prod- pattern in the first part of the domain name
+      # Get the record names of aliases in any cloudfront distributions that match the prod- pattern
       - name: Get the published record names
         id: published-deployment-names
         run: |
@@ -183,30 +142,24 @@ jobs:
             echo "Found aliases for Distribution ID $DISTRIBUTION_ID: $ALIASES"
             for ALIAS in $ALIASES; do
               RECORD_NAME=$(echo "$ALIAS" | cut -d'.' -f1)
-              if [[ "$RECORD_NAME" =~ ^(ci|prod)-.* ]]; then
+              if [[ "$RECORD_NAME" =~ ^prod-.* ]]; then
                 PUBLISHED_DEPLOYMENT_NAMES="$PUBLISHED_DEPLOYMENT_NAMES $RECORD_NAME"
               fi
             done
           done
 
-          # Remove duplicates
           echo "Collected published deployment names before deduplication: $PUBLISHED_DEPLOYMENT_NAMES"
           PUBLISHED_DEPLOYMENT_NAMES=$(echo $PUBLISHED_DEPLOYMENT_NAMES | tr ' ' '\n' | sort -u | tr '\n' ' ')
 
           echo "Published deployment names: $PUBLISHED_DEPLOYMENT_NAMES"
           echo "published-deployment-names=$PUBLISHED_DEPLOYMENT_NAMES" >> $GITHUB_OUTPUT
 
-      # Get deployment-related stack names from CloudFormation in eu-west-2 and us-east-1
-      # and extract deployment IDs like ci-foo / prod-bar from:
-      #   prod-64d48ac-app-OpsStack  -> prod-64d48ac
-      #   ci-mtdreport-app-DevStack  -> ci-mtdreport
+      # Get prod-prefixed deployment stack names from CloudFormation
       - name: Get the deployed deployment names
         id: deployed-deployment-names
         run: |
-          echo 'Getting deployed deployment names from CloudFormation stacks in eu-west-2 and us-east-1'
+          echo 'Getting deployed prod deployment names from CloudFormation stacks in eu-west-2 and us-east-1'
 
-          # Only stacks that look like prod-xxx-app-...
-          # Extract the deployment id: prod-xxx or ci-yyy
           DEPLOYED_DEPLOYMENT_NAMES=$(
             for REGION in eu-west-2 us-east-1; do
               echo "Scanning region: $REGION" >&2
@@ -216,29 +169,26 @@ jobs:
                 --output text
             done \
             | tr '\t' '\n' \
-            | grep -E '^(ci|prod)-[a-zA-Z0-9-]+-(app|del)-' \
-            | sed -E 's/^((ci|prod)-[a-zA-Z0-9-]+)-(app|del)-.*/\1/' \
+            | grep -E '^prod-[a-zA-Z0-9-]+-(app|del)-' \
+            | sed -E 's/^(prod-[a-zA-Z0-9-]+)-(app|del)-.*/\1/' \
             | sort -u
           )
 
           echo "Collected deployed deployment names (newline separated):"
           printf '%s\n' $DEPLOYED_DEPLOYMENT_NAMES
 
-          # Convert to single space-separated bash-iterable string
           DEPLOYED_DEPLOYMENT_NAMES=$(echo "$DEPLOYED_DEPLOYMENT_NAMES" | tr '\n' ' ')
 
           echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
           echo "deployed-deployment-names=$DEPLOYED_DEPLOYMENT_NAMES" >> "$GITHUB_OUTPUT"
 
-      # Get the deployment names that the primary domains alias to in Route 53:
-      #   submit.diyaccounting.co.uk  -> prod-*.submit.diyaccounting.co.uk.
-      #   ci.submit.diyaccounting.co.uk -> ci-*.submit.diyaccounting.co.uk.
+      # Get the deployment name that submit.diyaccounting.co.uk aliases to in Route 53
       - name: Get the public record names
         id: public-deployment-names
         run: |
           echo 'Getting Route 53 hosted zone for diyaccounting.co.uk.'
           ROOT_ZONE='diyaccounting.co.uk.'
-          PRIMARY_NAMES='submit.diyaccounting.co.uk. ci.submit.diyaccounting.co.uk.'
+          PRIMARY_NAME='submit.diyaccounting.co.uk.'
           PUBLIC_DEPLOYMENT_NAMES=''
 
           ZONE_ID=$(aws route53 list-hosted-zones-by-name \
@@ -252,37 +202,28 @@ jobs:
           fi
 
           echo "Using hosted zone $ROOT_ZONE ($ZONE_ID)"
+          echo "Looking up alias target for $PRIMARY_NAME"
 
-          for PRIMARY_NAME in $PRIMARY_NAMES; do
-            echo "Looking up alias target for $PRIMARY_NAME"
+          ALIAS_TARGETS=$(aws route53 list-resource-record-sets \
+            --hosted-zone-id "$ZONE_ID" \
+            --query "ResourceRecordSets[?Name==\`$PRIMARY_NAME\` && Type==\`A\`].AliasTarget.DNSName" \
+            --output text)
 
-            # Get the alias target DNSName for the A record of the primary name
-            ALIAS_TARGETS=$(aws route53 list-resource-record-sets \
-              --hosted-zone-id "$ZONE_ID" \
-              --query "ResourceRecordSets[?Name==\`$PRIMARY_NAME\` && Type==\`A\`].AliasTarget.DNSName" \
-              --output text)
-
-            if [ -z "$ALIAS_TARGETS" ] || [ "$ALIAS_TARGETS" = 'None' ]; then
-              echo "No alias A record found for $PRIMARY_NAME"
-              continue
-            fi
-
+          if [ -z "$ALIAS_TARGETS" ] || [ "$ALIAS_TARGETS" = 'None' ]; then
+            echo "No alias A record found for $PRIMARY_NAME"
+          else
             echo "Alias targets for $PRIMARY_NAME: $ALIAS_TARGETS"
-
             for TARGET in $ALIAS_TARGETS; do
-              # Example TARGET:
-              #   prod-64d48ac.submit.diyaccounting.co.uk.
-              TARGET_STRIPPED=${TARGET%.}          # drop trailing dot
-              HOST_LABEL=${TARGET_STRIPPED%%.*}    # first label (prod-64d48ac)
-
-              if [[ "$HOST_LABEL" =~ ^(ci|prod)-.* ]]; then
+              TARGET_STRIPPED=${TARGET%.}
+              HOST_LABEL=${TARGET_STRIPPED%%.*}
+              if [[ "$HOST_LABEL" =~ ^prod-.* ]]; then
                 echo "Found public deployment from $PRIMARY_NAME -> $HOST_LABEL"
                 PUBLIC_DEPLOYMENT_NAMES="$PUBLIC_DEPLOYMENT_NAMES $HOST_LABEL"
               else
-                echo "Alias target $TARGET_STRIPPED does not look like ci-/prod-*, skipping"
+                echo "Alias target $TARGET_STRIPPED does not look like prod-*, skipping"
               fi
             done
-          done
+          fi
 
           echo "Collected public deployment names before deduplication: $PUBLIC_DEPLOYMENT_NAMES"
           PUBLIC_DEPLOYMENT_NAMES=$(echo "$PUBLIC_DEPLOYMENT_NAMES" \
@@ -293,18 +234,17 @@ jobs:
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
           echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> "$GITHUB_OUTPUT"
 
-      # Select environment and deployment names of stacks to destroy matching .*-[ci|prod]-.* pattern but not the public deployment names or last known good deployment names
-      - name: Select environment and deployment names
+      # Select prod deployment names of stacks to destroy, excluding public/last-known-good
+      - name: Select deployment names for destruction
         id: select-stack
         run: |
-          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name-ci }}"
-          LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name-prod }}"
+          LAST_KNOWN_GOOD_DEPLOYMENT_NAME="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name }}"
           PUBLIC_DEPLOYMENT_NAMES="${{ steps.public-deployment-names.outputs.public-deployment-names }}"
           PUBLISHED_DEPLOYMENT_NAMES="${{ steps.published-deployment-names.outputs.published-deployment-names }}"
           DEPLOYED_DEPLOYMENT_NAMES="${{ steps.deployed-deployment-names.outputs.deployed-deployment-names }}"
           SELF_DESTRUCT_DELAY_HOURS="${{ env.SELF_DESTRUCT_DELAY_HOURS }}"
 
-          echo "Last known good deployment names: CI='$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI', PROD='$LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD'"
+          echo "Last known good deployment name: '$LAST_KNOWN_GOOD_DEPLOYMENT_NAME'"
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
           echo "Published deployment names: $PUBLISHED_DEPLOYMENT_NAMES"
           echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
@@ -317,16 +257,12 @@ jobs:
 
             echo "Checking age of deployment: $deployment_name" >&2
 
-            # Validate deployment name format to prevent injection
-            # Only alphanumeric, hyphens allowed - safe for JMESPath query
-            if ! [[ "$deployment_name" =~ ^(ci|prod)-[a-zA-Z0-9-]+$ ]]; then
+            if ! [[ "$deployment_name" =~ ^prod-[a-zA-Z0-9-]+$ ]]; then
               echo "Invalid deployment name format: $deployment_name" >&2
               echo "-1"
               return
             fi
 
-            # Find all stacks for this deployment in both regions
-            # The deployment_name is safe to interpolate after validation above
             for REGION in eu-west-2 us-east-1; do
               local stack_info=$(aws cloudformation describe-stacks \
                 --region "$REGION" \
@@ -336,24 +272,17 @@ jobs:
               if [ -n "$stack_info" ]; then
                 echo "Found stacks in $REGION for $deployment_name" >&2
 
-                # Process each creation time
                 while IFS= read -r creation_time; do
                   [ -z "$creation_time" ] && continue
-
-                  # Convert creation time to epoch seconds
                   local epoch=$(date -d "$creation_time" +%s 2>/dev/null)
-
-                  # Skip if date parsing failed or returned invalid value
                   if [ -z "$epoch" ]; then
                     echo "Failed to parse creation time: $creation_time" >&2
                     continue
                   fi
-
                   if ! [[ "$epoch" =~ ^[0-9]+$ ]] || [ "$epoch" -le 0 ]; then
                     echo "Invalid epoch value: $epoch for creation time: $creation_time" >&2
                     continue
                   fi
-
                   if [ "$epoch" -gt "$most_recent_timestamp" ]; then
                     most_recent_timestamp="$epoch"
                   fi
@@ -367,7 +296,6 @@ jobs:
               return
             fi
 
-            # Calculate age in hours
             local current_timestamp=$(date +%s)
             local age_seconds=$((current_timestamp - most_recent_timestamp))
             local age_hours=$((age_seconds / 3600))
@@ -378,18 +306,14 @@ jobs:
 
           STACK_DEPLOYMENT_NAMES_TO_KEEP=()
 
-          # 1. Always keep deployments that are currently aliased from the primaries
-          #    plus last-known-good deployments from SSM
-          for DEPLOYMENT_NAME in $(echo "$PUBLIC_DEPLOYMENT_NAMES \
-            $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_CI \
-            $LAST_KNOWN_GOOD_DEPLOYMENT_NAME_PROD" | tr ' ' '\n'); do
+          # Keep deployments that are currently aliased from the primary plus last-known-good
+          for DEPLOYMENT_NAME in $(echo "$PUBLIC_DEPLOYMENT_NAMES $LAST_KNOWN_GOOD_DEPLOYMENT_NAME" | tr ' ' '\n'); do
             if [ -n "$DEPLOYMENT_NAME" ]; then
               STACK_DEPLOYMENT_NAMES_TO_KEEP+=("$DEPLOYMENT_NAME")
             fi
           done
 
-          # 2. Always keep sibling site deployments (gateway, spreadsheets) and holding pages
-          #    These are separate workflows with their own stacks — the sweeper must never touch them
+          # Keep sibling site deployments (gateway, spreadsheets) and holding pages
           for DEPLOYMENT_NAME in $PUBLISHED_DEPLOYMENT_NAMES; do
             if [[ "$DEPLOYMENT_NAME" == *-holding ]] || \
                [[ "$DEPLOYMENT_NAME" == *-gateway ]] || \
@@ -398,23 +322,15 @@ jobs:
             fi
           done
 
-          # Remove duplicates from STACK_DEPLOYMENT_NAMES_TO_KEEP
+          # Remove duplicates
           echo "Removing duplicates from stacks to keep from: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
           STACK_DEPLOYMENT_NAMES_TO_KEEP=($(echo "${STACK_DEPLOYMENT_NAMES_TO_KEEP[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
           echo "Stacks to skip destruction: ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]}"
 
           ALL_CANDIDATE_DEPLOYMENT_NAMES="$PUBLISHED_DEPLOYMENT_NAMES $DEPLOYED_DEPLOYMENT_NAMES"
-
-          # Remove duplicates from ALL_CANDIDATE_DEPLOYMENT_NAMES
-          echo "Removing duplicates from all candidate deployment names from: $ALL_CANDIDATE_DEPLOYMENT_NAMES"
           ALL_CANDIDATE_DEPLOYMENT_NAMES=$(echo "$ALL_CANDIDATE_DEPLOYMENT_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 
-          # List all candidate stacks and filter out those matching STACK_DEPLOYMENT_NAMES_TO_KEEP
-          # e.g.
-          # SELECTED_ENVIRONMENT_NAME="ci"
-          # SELECTED_DEPLOYMENT_NAME="ci-oldstack123"
-          SELECTED_ENVIRONMENT_NAME=""
           SELECTED_DEPLOYMENT_NAME=""
 
           for DEPLOYMENT_NAME in $ALL_CANDIDATE_DEPLOYMENT_NAMES; do
@@ -422,12 +338,17 @@ jobs:
 
             echo "Considering deployment name: $DEPLOYMENT_NAME"
 
+            # Only consider prod-prefixed deployments
+            if [[ "$DEPLOYMENT_NAME" != prod-* ]]; then
+              echo "Skipping $DEPLOYMENT_NAME (not a prod deployment)"
+              continue
+            fi
+
             if [[ " ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]} " =~ " ${DEPLOYMENT_NAME} " ]]; then
               echo "Skipping $DEPLOYMENT_NAME as it is in the keep list"
               continue
             fi
 
-            # Check if deployment is old enough to be destroyed
             DEPLOYMENT_AGE_HOURS=$(get_deployment_age_hours "$DEPLOYMENT_NAME")
 
             if [ "$DEPLOYMENT_AGE_HOURS" -eq -1 ]; then
@@ -443,42 +364,25 @@ jobs:
             echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_DELAY_HOURS hours), eligible for destruction"
 
             SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME"
-
-            if [[ "$SELECTED_DEPLOYMENT_NAME" == ci-* ]]; then
-              SELECTED_ENVIRONMENT_NAME="ci"
-              echo "Matched ci deployment for destruction"
-            elif [[ "$SELECTED_DEPLOYMENT_NAME" == prod-* ]]; then
-              SELECTED_ENVIRONMENT_NAME="prod"
-              echo "Matched prod deployment for destruction"
-            else
-              echo "Deployment $SELECTED_DEPLOYMENT_NAME is not ci-/prod-, skipping"
-              SELECTED_DEPLOYMENT_NAME=""
-              SELECTED_ENVIRONMENT_NAME=""
-              continue
-            fi
-
-            echo "Selected deployment for destruction: Environment='$SELECTED_ENVIRONMENT_NAME', Deployment='$SELECTED_DEPLOYMENT_NAME'"
+            echo "Selected deployment for destruction: Environment='prod', Deployment='$SELECTED_DEPLOYMENT_NAME'"
             break
           done
 
           if [ -z "$SELECTED_DEPLOYMENT_NAME" ]; then
-            echo "No stacks found for destruction"
+            echo "No prod stacks found for destruction"
             SWEEPER_HIT="false"
           else
-            echo "Stacks found for destruction ${SELECTED_ENVIRONMENT_NAME}/${SELECTED_DEPLOYMENT_NAME}"
+            echo "Stacks found for destruction prod/${SELECTED_DEPLOYMENT_NAME}"
             SWEEPER_HIT="true"
           fi
 
           echo "SWEEPER_HIT=$SWEEPER_HIT"
-          echo "SELECTED_ENVIRONMENT_NAME=$SELECTED_ENVIRONMENT_NAME"
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME"
           echo "SWEEPER_HIT=$SWEEPER_HIT" >> $GITHUB_OUTPUT
-          echo "SELECTED_ENVIRONMENT_NAME=$SELECTED_ENVIRONMENT_NAME" >> $GITHUB_OUTPUT
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
 
     outputs:
       sweeper-hit: ${{ steps.select-stack.outputs.SWEEPER_HIT }}
-      environment-name: ${{ steps.select-stack.outputs.SELECTED_ENVIRONMENT_NAME }}
       deployment-name: ${{ steps.select-stack.outputs.SELECTED_DEPLOYMENT_NAME }}
 
   names:
@@ -487,7 +391,7 @@ jobs:
       - params
       - sweep-for-stacks
     runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.github-environment }}
+    environment: prod
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -495,7 +399,7 @@ jobs:
         id: deployment-config
         uses: ./.github/actions/get-names
         with:
-          environment-name: ${{ needs.sweep-for-stacks.outputs.environment-name || needs.params.outputs.environment-name }}
+          environment-name: prod
           deployment-name: ${{ needs.sweep-for-stacks.outputs.deployment-name || needs.params.outputs.deployment-name }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
@@ -514,7 +418,7 @@ jobs:
       - names
       - sweep-for-stacks
     runs-on: ubuntu-latest
-    environment: ${{ needs.params.outputs.github-environment }}
+    environment: prod
     steps:
       - name: Checkout default branch
         uses: actions/checkout@v6
@@ -579,7 +483,7 @@ jobs:
         id: lookup
         uses: './.github/actions/lookup-resources'
         with:
-          environment-name: ${{ needs.names.outputs.environment-name }}
+          environment-name: prod
           lookup-cognito: 'true'
 
       - name: Empty origin bucket
@@ -686,7 +590,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           cd cdk-application && \
-            npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+            npx dotenv -e ../.env.prod -- \
               npx cdk destroy \
               --all \
               --force \
@@ -694,10 +598,9 @@ jobs:
           && cd .. \
           || echo "CDK destroy cleanup pass completed (some stacks may already be deleted)"
         env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          ENVIRONMENT_NAME: prod
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
-          # Looked up from Cognito domain convention
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
           WEBSITE_HASH: 'placeholder'

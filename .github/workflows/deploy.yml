@@ -2247,7 +2247,7 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
-  # Run workflow: .github/workflows/destroy.yml to destroy previous prod deployments but not the holding page (`-holding`)
+  # Run workflow: .github/workflows/destroy-prod.yml to destroy previous prod deployments but not the holding page (`-holding`)
   destroy-previous:
     if: ${{ needs.names.outputs.environment-name == 'prod' && needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
     name: 'destroy previous'
@@ -2257,9 +2257,8 @@ jobs:
       - set-origins
       #- upload-web-test-results
       - set-last-known-good-deployment
-    uses: './.github/workflows/destroy.yml'
+    uses: './.github/workflows/destroy-prod.yml'
     with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
 
  # TODO: If set-origins passed but web-test failed, look up the last deployment from a parameter store and set-origin back to that deployment

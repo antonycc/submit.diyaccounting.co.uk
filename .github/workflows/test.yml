@@ -329,10 +329,9 @@ jobs:
   npm-test-cdk-ci:
     name: 'npm test cdk-ci'
     needs:
-      - params
       - names
     runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.github-environment }}
+    environment: ci
     permissions:
       contents: read
       id-token: write
@@ -414,10 +413,9 @@ jobs:
   npm-test-cdk-prod:
     name: 'npm test cdk prod'
     needs:
-      - params
       - names
     runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.github-environment }}
+    environment: prod
     permissions:
       contents: read
       id-token: write
