@@ -165,12 +165,45 @@ Create a NEW submit-prod account and deploy the full production stack from IaC. 
 | 1.4.16 | Deploy prod application stacks | ✅ | Run #22249290173: 124 passed, 14 failed, 21 skipped. All app stacks deployed to 972912397388: AuthStack, AccountStack, BillingStack, HmrcStack, ApiStack, EdgeStack, PublishStack. CloudFront aliases set. Failures: `npm test cdk-ci` (wrong env, fixed `17d783b0`), `set-origins` (API GW "already exists", fix pending), 12 synthetic tests (cascading from set-origins — API endpoints unreachable via custom domain). Re-run needed after push. Environment fix applied to all remaining workflows. `destroy.yml` split into `destroy-ci.yml` + `destroy-prod.yml`. |
 | | **Data restoration** | | |
 | 1.4.17 | Restore DynamoDB tables | ✅ | Cross-account scan+batch-write from 887764105431 to 972912397388. Script: `scripts/aws-accounts/restore-tables-from-backup.sh` (rewritten for cross-account). All 5 tables copied: receipts (1,156), bundles (1,035), hmrc-api-requests (19,691 / 48 MB), passes (1,181), subscriptions (30). |
-| 1.4.17a | Enable TTL on DynamoDB tables | ⏳ | **Finding**: TTL was DISABLED on ALL 11 tables in both accounts. PITR also disabled everywhere. **Fix**: CDK `ensureTimeToLive()` utility added to KindCdk.java. TTL enabled in DataStack for 7 tables (hmrc-api-requests, bundles, 5 async-request tables). Code changed: HMRC API requests TTL from 1 month → 28 days (`calculateTwentyEightDayTtl`). TTL enabled on `prod-env-hmrc-api-requests` table. Batch-setting TTL on all 19,691 existing records to 1-day expiry (in progress). Script: `scripts/aws-accounts/set-ttl-on-existing-records.sh`. |
+| 1.4.17a | Enable TTL on DynamoDB tables | ⏳ | **Finding**: TTL was DISABLED on ALL 11 tables in both accounts. PITR also disabled everywhere. **Fix**: CDK `ensureTimeToLive()` utility added to KindCdk.java. TTL enabled in DataStack for 7 tables (hmrc-api-requests, bundles, 5 async-request tables). Code changed: HMRC API requests TTL from 1 month → 28 days (`calculateTwentyEightDayTtl`). TTL enabled on `prod-env-hmrc-api-requests` table. Batch-setting TTL on all 19,691 existing records to 1-day expiry (in progress ~5h, ~3,100 items/hr sequential update-item). Script: `scripts/aws-accounts/set-ttl-on-existing-records.sh`. |
 | 1.4.18 | Restore salt | | Copy the encrypted salt into the new DataStack's DynamoDB table. Grant the new account's KMS key access or re-encrypt with the new key. Script: `scripts/aws-accounts/restore-salt.sh`. |
 | | **DNS cutover** | | |
 | 1.4.19 | Update root DNS for prod submit | ✅ | Root DNS deploy run #22249618225 succeeded. Zone re-exported (238 records). Route53 records upserted for `submit.diyaccounting.co.uk` and `prod-submit.diyaccounting.co.uk` pointing to new CloudFront. CloudFront CNAME aliases removed from old distribution `E3MECWCY0HNL8J` in 887764105431. |
-| 1.4.20 | Validate prod | ⏳ | Synthetic tests run as part of deploy.yml. set-origins completing (API Gateway domain transfer). Full validation: `npm run test:submitVatBehaviour-prod`. |
+| 1.4.20 | Validate prod | ⏳ | Synthetic tests run as part of deploy.yml. set-origins completing (API Gateway domain transfer). Full validation: `npm run test:submitVatBehaviour-prod`. Deploy #22250204833 failed (set-origins race with nightly main deploy). Deploy #22251503776 re-triggered. |
 | 1.4.21 | Notify users | | Inform the 2 sign-ups + family testers that they need to re-register (new Cognito pool). |
+
+#### DynamoDB data profile and cost analysis (Phase 1.4 migration)
+
+**Table sizes in submit-prod (972912397388) — February 2026:**
+
+| Table | Items | Size | Unique Users | Billing |
+|-------|------:|-----:|-------------:|---------|
+| prod-env-hmrc-api-requests | 19,691 | 46.0 MB | 905 | PAY_PER_REQUEST |
+| prod-env-receipts | 1,156 | 384 KB | 852 | PAY_PER_REQUEST |
+| prod-env-passes | 1,182 | 367 KB | — | PAY_PER_REQUEST |
+| prod-env-bundles | 1,035 | 285 KB | — | PAY_PER_REQUEST |
+| prod-env-subscriptions | 30 | 10 KB | 24 | PAY_PER_REQUEST |
+| 5 × async-request tables | 0 | 0 | — | PAY_PER_REQUEST |
+| **Total** | **23,094** | **~47.1 MB** | | |
+
+**User analysis**: 905 distinct users (by hashedSub) generated 19,691 HMRC API request records = ~22 API calls per user lifetime. With 24 active subscriptions and 30 subscription records, real paying users are very few. Most of the 905 users are sign-ups who made a few HMRC API calls (obligation checks) then left.
+
+**Cost of the cross-account migration (one-off)**:
+- Scan (source, 887764105431): ~23,094 RCUs → ~$0.007
+- Batch-write (dest, 972912397388): ~23,094 WCUs → ~$0.034
+- TTL batch update (19,691 update-item calls): ~$0.029
+- **Total migration DynamoDB cost: ~$0.07**
+- **Migration time**: Data copy ~20 min (batch-write-item at 25 items/batch). TTL batch update ~6.5 hours (sequential update-item, ~3,100 items/hr).
+
+**Monthly storage cost**: 47.1 MB × $0.2968/GB = ~$0.014/month
+
+**Scaling projections (with 28-day TTL on hmrc-api-requests)**:
+- Current ~22 API calls/user lifetime → with TTL, only last 28 days retained
+- Estimated ~5 API calls per user per monthly VAT session
+- At 1,000 monthly active users: ~5,000 live records, ~12 MB → $0.004/month storage
+- At 10,000 monthly active users: ~50,000 live records, ~120 MB → $0.036/month storage
+- At 100,000 monthly active users: ~500,000 live records, ~1.2 GB → $0.36/month storage
+- DynamoDB on-demand read/write costs scale linearly but remain negligible until ~100K+ users
 
 ### 1.5: Clean up 887764105431 (make it management-only)
 

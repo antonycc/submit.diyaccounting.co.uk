@@ -63,13 +63,22 @@ runs:
         set -euo pipefail
         echo "Looking up Cognito User Pool from domain: ${COGNITO_DOMAIN}"
 
-        USER_POOL_ID=$(aws cognito-idp describe-user-pool-domain \
-          --domain "${COGNITO_DOMAIN}" \
-          --query 'DomainDescription.UserPoolId' \
-          --output text 2>/dev/null || echo "")
+        USER_POOL_ID=""
+        for ATTEMPT in 1 2 3; do
+          LOOKUP_OUTPUT=$(aws cognito-idp describe-user-pool-domain \
+            --domain "${COGNITO_DOMAIN}" \
+            --query 'DomainDescription.UserPoolId' \
+            --output text 2>&1) && {
+            USER_POOL_ID="$LOOKUP_OUTPUT"
+            break
+          }
+          echo "  Attempt ${ATTEMPT}/3 failed: ${LOOKUP_OUTPUT}"
+          sleep 5
+        done
 
         if [ -z "$USER_POOL_ID" ] || [ "$USER_POOL_ID" = "None" ]; then
           echo "ERROR: No Cognito User Pool found for domain ${COGNITO_DOMAIN}" >&2
+          echo "  Last output: ${LOOKUP_OUTPUT:-empty}" >&2
           exit 1
         fi
         echo "Found User Pool ID: ${USER_POOL_ID}"
