@@ -171,6 +171,12 @@ jobs:
           # Manual override for http-api-url (workflow_dispatch only)
           echo "http-api-url=${{ inputs['http-api-url'] }}" | tee -a "$GITHUB_OUTPUT"
           echo "website-hash=${{ inputs['website-hash'] }}" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from explicit input or branch
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       stackName: ${{ steps.normalise.outputs.stackName }}
       force-stack-deployment: ${{ steps.normalise.outputs.force-stack-deployment }}
@@ -183,12 +189,13 @@ jobs:
       lookup-api-gateway: ${{ steps.normalise.outputs['lookup-api-gateway'] }}
       http-api-url: ${{ steps.normalise.outputs['http-api-url'] }}
       website-hash: ${{ steps.normalise.outputs['website-hash'] }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   names:
     needs:
       - params
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -262,7 +269,7 @@ jobs:
       - params
       - names
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     steps:
 
       - name: Configure AWS role via GitHub OIDC

@@ -86,15 +86,22 @@ jobs:
           ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
           echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.force-identity-refresh }}' ; echo "force-identity-refresh=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from explicit input or branch
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       environment-name: ${{ steps.normalise.outputs.environment-name }}
       force-identity-refresh: ${{ steps.normalise.outputs.force-identity-refresh }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   names:
     needs:
       - params
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.params.outputs.github-environment }}
     permissions:
       contents: read
     steps:
@@ -120,7 +127,7 @@ jobs:
     needs:
       - names
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.names.outputs.environment-name }}
     permissions:
       id-token: write
       contents: read
@@ -211,7 +218,7 @@ jobs:
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/webhook_secret"
           SECRET_VALUE="${{ secrets.STRIPE_WEBHOOK_SECRET }}"
           if [ -z "$SECRET_VALUE" ]; then
-            echo "No STRIPE_WEBHOOK_SECRET in ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }} environment, skipping"
+            echo "No STRIPE_WEBHOOK_SECRET in ${{ needs.names.outputs.environment-name }} environment, skipping"
             exit 0
           fi
           if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
@@ -227,7 +234,7 @@ jobs:
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/test_webhook_secret"
           SECRET_VALUE="${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}"
           if [ -z "$SECRET_VALUE" ]; then
-            echo "No STRIPE_TEST_WEBHOOK_SECRET in ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }} environment, skipping"
+            echo "No STRIPE_TEST_WEBHOOK_SECRET in ${{ needs.names.outputs.environment-name }} environment, skipping"
             exit 0
           fi
           if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
@@ -428,7 +435,7 @@ jobs:
       - names
       - create-secrets
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.names.outputs.environment-name }}
     permissions:
       id-token: write
       contents: read
@@ -501,7 +508,7 @@ jobs:
       - deploy-apex
       - verify-certificate
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.names.outputs.environment-name }}
     permissions:
       id-token: write
       contents: read
@@ -626,7 +633,7 @@ jobs:
       - names
       - create-secrets
     runs-on: ubuntu-24.04
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'ci' }}
+    environment: ${{ needs.names.outputs.environment-name }}
     permissions:
       id-token: write
       contents: read
