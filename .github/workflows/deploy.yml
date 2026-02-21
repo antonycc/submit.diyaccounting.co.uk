@@ -366,6 +366,8 @@ jobs:
 
   test-aws-credentials:
     name: 'test aws credentials'
+    needs:
+      - params
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
@@ -417,6 +419,7 @@ jobs:
   docker-build:
     name: 'docker build'
     needs:
+      - params
       - skip-deploy-check
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
@@ -463,6 +466,7 @@ jobs:
   wait-for-previous-cleanup:
     name: 'wait for previous cleanup'
     needs:
+      - params
       - names
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
@@ -521,6 +525,7 @@ jobs:
   validate-secrets:
     name: 'validate required secrets'
     needs:
+      - params
       - names
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
@@ -658,6 +663,7 @@ jobs:
   push-images:
     name: 'push images'
     needs:
+      - params
       - names
       - skip-deploy-check
       - docker-build
@@ -758,6 +764,7 @@ jobs:
   push-images-us-east-1:
     name: 'push images us-east-1'
     needs:
+      - params
       - names
       - skip-deploy-check
       - docker-build
@@ -990,6 +997,7 @@ jobs:
   deploy-api:
     name: 'deploy api'
     needs:
+      - params
       - names
       - skip-deploy-check
       - push-images
@@ -1522,6 +1530,7 @@ jobs:
     if: ${{ !cancelled() }}
     name: 'enable native auth for behaviour tests'
     needs:
+      - params
       - names
       - deploy-publish
     runs-on: ubuntu-24.04

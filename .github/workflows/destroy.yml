@@ -510,6 +510,7 @@ jobs:
   destroy:
     if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}
     needs:
+      - params
       - names
       - sweep-for-stacks
     runs-on: ubuntu-latest
