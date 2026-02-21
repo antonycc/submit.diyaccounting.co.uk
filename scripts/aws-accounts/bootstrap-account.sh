@@ -72,13 +72,13 @@ while [[ $# -gt 0 ]]; do
       echo "  4. Creates {name}-deployment-role (assumed by github-actions-role for CDK deploys)"
       echo ""
       echo "Account names and resulting roles:"
-      echo "  submit       -> submit-github-actions-role, submit-deployment-role"
+      echo "  submit-prod  -> submit-prod-github-actions-role, submit-prod-deployment-role"
       echo "  submit-ci    -> submit-ci-github-actions-role, submit-ci-deployment-role"
       echo "  gateway      -> gateway-github-actions-role, gateway-deployment-role"
       echo "  spreadsheets -> spreadsheets-github-actions-role, spreadsheets-deployment-role"
       echo ""
       echo "Example:"
-      echo "  $0 --account-id 123456789012 --account-name submit --profile submit-prod"
+      echo "  $0 --account-id 972912397388 --account-name submit-prod --profile submit-prod"
       echo "  $0 --account-id 234567890123 --account-name gateway --profile gateway"
       exit 0
       ;;
@@ -132,7 +132,7 @@ echo ""
 echo "Verifying credentials..."
 VERIFIED_ACCOUNT=$(aws sts get-caller-identity --profile "${PROFILE}" --query 'Account' --output text 2>/dev/null) || {
   echo -e "${RED}ERROR: Cannot authenticate with profile '${PROFILE}'${NC}"
-  echo "  Run: aws sso login --profile ${PROFILE}"
+  echo "  Run: aws sso login --sso-session diyaccounting"
   exit 1
 }
 

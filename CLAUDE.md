@@ -324,7 +324,7 @@ npm run test:submitVatBehaviour-ci
 
 - Lambda files: `{feature}{Method}.js` (e.g., `hmrcVatReturnPost.js`)
 - CDK stacks: `{Purpose}Stack` (e.g., `AuthStack`)
-- DynamoDB tables: `{env}-submit-{purpose}`
+- DynamoDB tables: `{env}-env-{purpose}`
 - npm scripts: colon separator for variants (e.g., `test:unit`)
 
 ## Infrastructure Teardown Philosophy

@@ -129,7 +129,7 @@ echo ""
 echo "Verifying source credentials..."
 SOURCE_ACCOUNT=$(aws sts get-caller-identity --profile "${SOURCE_PROFILE}" --region "${REGION}" --query 'Account' --output text 2>/dev/null) || {
   echo -e "${RED}ERROR: Cannot authenticate with source profile '${SOURCE_PROFILE}'${NC}"
-  echo "  Run: aws sso login --profile ${SOURCE_PROFILE}"
+  echo "  Run: aws sso login --sso-session diyaccounting"
   exit 1
 }
 echo -e "  Source account: ${GREEN}${SOURCE_ACCOUNT}${NC}"
@@ -137,7 +137,7 @@ echo -e "  Source account: ${GREEN}${SOURCE_ACCOUNT}${NC}"
 echo "Verifying target credentials..."
 TARGET_ACCOUNT=$(aws sts get-caller-identity --profile "${TARGET_PROFILE}" --region "${REGION}" --query 'Account' --output text 2>/dev/null) || {
   echo -e "${RED}ERROR: Cannot authenticate with target profile '${TARGET_PROFILE}'${NC}"
-  echo "  Run: aws sso login --profile ${TARGET_PROFILE}"
+  echo "  Run: aws sso login --sso-session diyaccounting"
   exit 1
 }
 echo -e "  Target account: ${GREEN}${TARGET_ACCOUNT}${NC}"
