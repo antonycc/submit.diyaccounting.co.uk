@@ -349,7 +349,14 @@ runs:
               --domain-name "${DOMAIN}" \
               --domain-name-configurations "CertificateArn=${CERT_ARN},EndpointType=REGIONAL" 2>&1) && { CREATED=true; break; }
             if echo "$CREATE_OUTPUT" | grep -q "already exists"; then
-              echo "  Domain [${DOMAIN}] already exists, proceeding to mapping..."
+              echo "  Domain [${DOMAIN}] already exists, cleaning up stale mappings..."
+              STALE_MAPPING_IDS=$(aws apigatewayv2 get-api-mappings --domain-name "${DOMAIN}" \
+                --query 'Items[*].ApiMappingId' --output text 2>/dev/null || echo "")
+              for SMID in $STALE_MAPPING_IDS; do
+                [ -z "$SMID" ] || [ "$SMID" = "None" ] && continue
+                echo "  Deleting stale mapping [${SMID}]"
+                aws apigatewayv2 delete-api-mapping --domain-name "${DOMAIN}" --api-mapping-id "$SMID"
+              done
               CREATED=true
               break
             fi
@@ -363,10 +370,21 @@ runs:
           fi
 
           echo "Creating API mapping for domain [${DOMAIN}] -> API [${API_ID}]"
-          aws apigatewayv2 create-api-mapping \
+          if ! aws apigatewayv2 create-api-mapping \
             --domain-name "${DOMAIN}" \
             --api-id "${API_ID}" \
-            --stage '$default'
+            --stage '$default' 2>&1; then
+            echo "  Mapping failed, retrying with full delete+recreate cycle..."
+            aws apigatewayv2 delete-domain-name --domain-name "${DOMAIN}" 2>/dev/null || true
+            sleep 10
+            aws apigatewayv2 create-domain-name \
+              --domain-name "${DOMAIN}" \
+              --domain-name-configurations "CertificateArn=${CERT_ARN},EndpointType=REGIONAL"
+            aws apigatewayv2 create-api-mapping \
+              --domain-name "${DOMAIN}" \
+              --api-id "${API_ID}" \
+              --stage '$default'
+          fi
 
           echo "API GW custom domain [${DOMAIN}] configured successfully"
         }

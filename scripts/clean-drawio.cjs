@@ -12,6 +12,16 @@ if (!inputFile) {
 
 let xml = fs.readFileSync(inputFile, 'utf8');
 
+// Helper: remove mxCell elements matching an attribute pattern.
+// Handles both self-closing <mxCell .../> and cells with children <mxCell ...>...</mxCell>.
+// Uses [^>]*/> for self-closing (backtracking handles / in attribute values)
+// and negative lookbehind (?<!/) to avoid matching self-closing tags as open tags.
+function removeCells(xmlStr, attrPattern, flags = '') {
+  const selfClose = new RegExp(`<mxCell[^>]*${attrPattern}[^>]*/>`, 'g' + flags);
+  const withChildren = new RegExp(`<mxCell[^>]*${attrPattern}[^>]*(?<!/)>.*?</mxCell>`, 'g' + flags);
+  return xmlStr.replace(selfClose, '').replace(withChildren, '');
+}
+
 // --- Phase 1: Remove entire nodes (and edges referencing them) ---
 
 const removeNodePatterns = [
@@ -46,20 +56,17 @@ for (const pattern of removeNodePatterns) {
 
 for (const id of removedIds) {
   const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  xml = xml.replace(new RegExp(`<mxCell[^>]*(?:id|source|target)="${escaped}"[^/]*/>`,'g'), '');
-  xml = xml.replace(new RegExp(`<mxCell[^>]*(?:id|source|target)="${escaped}"[^>]*>.*?</mxCell>`,'g'), '');
+  xml = removeCells(xml, `(?:id|source|target)="${escaped}"`);
 }
 
 // --- Phase 1.5: Remove env var edge labels before value cleaning ---
 // Uppercase env var names: HMRC_CLIENT_SECRET_ARN, STRIPE_SECRET_KEY_ARN, etc.
-xml = xml.replace(/<mxCell[^>]*value="[A-Z_]+_ARN"[^/]*\/>/g, '');
-xml = xml.replace(/<mxCell[^>]*value="[A-Z_]+_ARN"[^>]*>.*?<\/mxCell>/g, '');
+xml = removeCells(xml, 'value="[A-Z_]+_ARN"');
 // Lowercase variants
-xml = xml.replace(/<mxCell[^>]*value="[a-z_]+_arn"[^/]*\/>/g, '');
-xml = xml.replace(/<mxCell[^>]*value="[a-z_]+_arn"[^>]*>.*?<\/mxCell>/g, '');
+xml = removeCells(xml, 'value="[a-z_]+_arn"');
 
 // Remove duplicate/wildcard secret nodes (trailing -*)
-xml = xml.replace(/<mxCell[^>]*value="Secret: [^"]*\s"[^/]*\/>/g, '');
+xml = removeCells(xml, 'value="Secret: [^"]*\\s"');
 
 // Remove external infrastructure reference nodes (noise in most views)
 const removeExternalPatterns = [
@@ -69,8 +76,7 @@ const removeExternalPatterns = [
   /iam\s/,                     // IAM role/policy external refs
 ];
 for (const pattern of removeExternalPatterns) {
-  xml = xml.replace(new RegExp(`<mxCell[^>]*value="${pattern.source}[^"]*"[^/]*/>`,'g'), '');
-  xml = xml.replace(new RegExp(`<mxCell[^>]*value="${pattern.source}[^"]*"[^>]*>.*?</mxCell>`,'g'), '');
+  xml = removeCells(xml, `value="${pattern.source}[^"]*"`);
 }
 
 // --- Phase 2: Clean value= attributes ---
@@ -343,10 +349,8 @@ const removeValuePatterns = [
 ];
 
 for (const pattern of removeValuePatterns) {
-  xml = xml.replace(new RegExp(`<mxCell[^>]*value="[^"]*${pattern.source}[^"]*"[^/]*/>`,'gi'), '');
-  xml = xml.replace(new RegExp(`<mxCell[^>]*value="[^"]*${pattern.source}[^"]*"[^>]*>.*?</mxCell>`,'gi'), '');
-  xml = xml.replace(new RegExp(`<mxCell[^>]*id="[^"]*${pattern.source}[^"]*"[^/]*/>`,'gi'), '');
-  xml = xml.replace(new RegExp(`<mxCell[^>]*id="[^"]*${pattern.source}[^"]*"[^>]*>.*?</mxCell>`,'gi'), '');
+  xml = removeCells(xml, `value="[^"]*${pattern.source}[^"]*"`, 'i');
+  xml = removeCells(xml, `id="[^"]*${pattern.source}[^"]*"`, 'i');
 }
 
 fs.writeFileSync(outputFile, xml);
