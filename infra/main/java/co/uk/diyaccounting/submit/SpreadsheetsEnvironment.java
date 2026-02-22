@@ -20,7 +20,7 @@ import software.amazon.awscdk.Environment;
  * containing S3 + CloudFront for the spreadsheets.diyaccounting.co.uk static site.
  * <p>
  * No Route53 records are created here — those live in the root account
- * and are managed by RootDnsStack via deploy-root.yml.
+ * and are managed by the root.diyaccounting.co.uk repository.
  */
 public class SpreadsheetsEnvironment {
 

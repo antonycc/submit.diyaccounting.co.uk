@@ -357,7 +357,7 @@ graph LR
 | submit.diyaccounting.co.uk | `deploy.yml` | submit-ci / submit-prod |
 | diyaccounting.co.uk (gateway) | `deploy-gateway.yml` | gateway |
 | spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | spreadsheets |
-| Root DNS + holding page | `deploy-root.yml` | 887764105431 (management) |
+| Root DNS + holding page | `antonycc/root.diyaccounting.co.uk` repo | 887764105431 (management) |
 
 ---
 
