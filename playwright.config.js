@@ -160,14 +160,6 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "gatewayBehaviour",
-      testDir: "behaviour-tests",
-      testMatch: ["**/gateway.behaviour.test.js"],
-      workers: 1,
-      outputDir: "./target/behaviour-test-results/",
-      timeout: 300_000,
-    },
-    {
       name: "spreadsheetsBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/spreadsheets.behaviour.test.js"],

@@ -425,7 +425,7 @@ Archive-and-overlay into the existing repo. Preserves repo settings, stars, and 
 | 2.2.11 | Update OIDC trust in gateway account (283165661847): add `repo:antonycc/www.diyaccounting.co.uk:*` to trust policy | Pending |
 | 2.2.12 | Deploy from gateway repo. Run `test:gatewayBehaviour-ci`. Verify site, redirects, CSP headers. | Pending — depends on 2.2.11 |
 | 2.2.13 | Mark repo as **template repository** in GitHub Settings | Pending |
-| 2.2.14 | Remove `deploy-gateway.yml`, `GatewayStack.java`, `GatewayEnvironment.java`, `cdk-gateway/`, `web/www.diyaccounting.co.uk/`, `build-gateway-redirects.cjs` from submit repo | Pending |
+| 2.2.14 | Remove gateway files from submit repo: `deploy-gateway.yml`, `GatewayStack.java`, `GatewayEnvironment.java`, `cdk-gateway/`, `web/www.diyaccounting.co.uk/`, `build-gateway-redirects.cjs`, `gateway.behaviour.test.js`, Maven `cdk-gateway` profile, npm gateway scripts, Playwright gateway project, SEO gateway tests | ✅ All removed, `npm test` + `./mvnw clean verify` pass |
 
 #### Template repository setup
 

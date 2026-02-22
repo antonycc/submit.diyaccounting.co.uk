@@ -402,7 +402,7 @@ This applies to ALL external side effects: AWS, Stripe, Telegram, GitHub, or any
 | Account | ID | Repository | Relative Path |
 |---------|-----|-----------|---------------|
 | Management (root) | 887764105431 | `antonycc/root.diyaccounting.co.uk` | `../root.diyaccounting.co.uk` |
-| gateway | 283165661847 | `antonycc/www.diyaccounting.co.uk` (future) | `../www.diyaccounting.co.uk` |
+| gateway | 283165661847 | `antonycc/www.diyaccounting.co.uk` | `../www.diyaccounting.co.uk` |
 | spreadsheets | 064390746177 | `antonycc/diy-accounting` (future) | `../diy-accounting` |
 | submit-ci | 367191799875 | `antonycc/submit.diyaccounting.co.uk` | `.` (this repo) |
 | submit-prod | 972912397388 | `antonycc/submit.diyaccounting.co.uk` | `.` (this repo) |
@@ -516,16 +516,15 @@ This script:
 
 ## Multi-Site Deployments
 
-This repository also deploys related sibling sites via dedicated workflows:
+This repository also deploys the spreadsheets sibling site via a dedicated workflow:
 
 | Site | Workflow | Source |
 |------|----------|--------|
-| gateway.diyaccounting.co.uk | `deploy-gateway.yml` | `web/www.diyaccounting.co.uk/` |
 | spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | `web/spreadsheets.diyaccounting.co.uk/` |
 
-Root DNS and holding page are managed by the `antonycc/root.diyaccounting.co.uk` repository (Phase 2.1).
+Gateway (diyaccounting.co.uk) is managed by `antonycc/www.diyaccounting.co.uk`. Root DNS and holding page are managed by `antonycc/root.diyaccounting.co.uk`.
 
-Behaviour tests exist for gateway (`test:gatewayBehaviour-*`) and spreadsheets (`test:spreadsheetsBehaviour-*`).
+Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
 
 **Stripe Payment Links** are live on the spreadsheets site for donations (see `_developers/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are planned in `PLAN_PAYMENT_INTEGRATION.md`.
 

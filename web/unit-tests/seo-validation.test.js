@@ -2,15 +2,11 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-// Site configurations for the 3 sites
+// Site configurations for the 2 sites
 const sites = {
   submit: {
     dir: path.join(process.cwd(), "web/public"),
     domain: "https://submit.diyaccounting.co.uk",
-  },
-  gateway: {
-    dir: path.join(process.cwd(), "web/www.diyaccounting.co.uk/public"),
-    domain: "https://diyaccounting.co.uk",
   },
   spreadsheets: {
     dir: path.join(process.cwd(), "web/spreadsheets.diyaccounting.co.uk/public"),
@@ -209,16 +205,6 @@ describe("Meta tag validation", () => {
 });
 
 describe("Structured data validation", () => {
-  it('gateway index.html has JSON-LD with @type "Organization"', () => {
-    const html = readFile(path.join(sites.gateway.dir, "index.html"));
-    const jsonLdBlocks = extractJsonLd(html);
-    expect(jsonLdBlocks.length).toBeGreaterThan(0);
-    const org = jsonLdBlocks.find((b) => b["@type"] === "Organization");
-    expect(org, "Should have an Organization JSON-LD block").toBeTruthy();
-    expect(org["@context"]).toBe("https://schema.org");
-    expect(org.name).toBe("DIY Accounting Limited");
-  });
-
   it('submit index.html has JSON-LD with @type "WebApplication"', () => {
     const html = readFile(path.join(sites.submit.dir, "index.html"));
     const jsonLdBlocks = extractJsonLd(html);

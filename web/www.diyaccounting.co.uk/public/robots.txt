@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://diyaccounting.co.uk/sitemap.xml
-Sitemap: https://spreadsheets.diyaccounting.co.uk/sitemap.xml
