@@ -85,7 +85,6 @@ public class Lambda {
                 .code(this.dockerImage)
                 .environment(environment)
                 .functionName(props.ingestFunctionName())
-                .reservedConcurrentExecutions(props.ingestReservedConcurrency())
                 .timeout(props.ingestLambdaTimeout())
                 .memorySize(props.ingestMemorySize())
                 .architecture(props.ingestArchitecture())

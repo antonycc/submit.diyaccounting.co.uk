@@ -25,11 +25,6 @@ public interface AsyncApiLambdaProps extends AbstractApiLambdaProps {
     String workerDeadLetterQueueName();
 
     @Value.Default
-    default int workerReservedConcurrency() {
-        return 10;
-    }
-
-    @Value.Default
     default int workerProvisionedConcurrency() {
         return 0;
     }
