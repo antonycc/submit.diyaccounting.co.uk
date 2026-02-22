@@ -160,14 +160,6 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "spreadsheetsBehaviour",
-      testDir: "behaviour-tests",
-      testMatch: ["**/spreadsheets.behaviour.test.js"],
-      workers: 1,
-      outputDir: "./target/behaviour-test-results/",
-      timeout: 300_000,
-    },
-    {
       name: "browser-tests",
       testDir: "web/browser-tests",
       workers: 1, // throttle concurrency to 1

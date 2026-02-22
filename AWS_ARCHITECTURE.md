@@ -1,6 +1,6 @@
 # DIY Accounting Submit - AWS Architecture
 
-**Version**: 3.0
+**Version**: 3.1
 **Date**: February 2026
 **Status**: Production
 
@@ -35,14 +35,14 @@ AWS Organization Root (887764105431) ── Management
 
 ### 1.2 Account Responsibilities
 
-| Account | Purpose | Contains |
-|---------|---------|----------|
-| **887764105431** (management) | Organization administration | IAM Identity Center, Organizations, Route53, consolidated billing, root DNS, holding page |
-| **gateway** | Gateway static site | CloudFront, S3, CloudFront Functions (redirects) |
-| **spreadsheets** | Spreadsheets static site | CloudFront, S3, package hosting |
-| **submit-ci** | Submit CI/CD testing | Full submit stack with test data, HMRC sandbox |
-| **submit-prod** | Submit production | Full submit stack with live data, HMRC production |
-| **submit-backup** | Backup isolation | Cross-account backup vault only |
+| Account | ID | Purpose | Repository | Contains |
+|---------|-----|---------|------------|----------|
+| **management** | 887764105431 | Organization administration | `antonycc/root.diyaccounting.co.uk` | IAM Identity Center, Organizations, Route53, consolidated billing, root DNS, holding page |
+| **gateway** | 283165661847 | Gateway static site | `antonycc/www.diyaccounting.co.uk` | CloudFront, S3, CloudFront Functions (redirects) |
+| **spreadsheets** | 064390746177 | Spreadsheets static site | `antonycc/diy-accounting` | CloudFront, S3, package hosting |
+| **submit-ci** | 367191799875 | Submit CI/CD testing | `antonycc/submit.diyaccounting.co.uk` | Full submit stack with test data, HMRC sandbox |
+| **submit-prod** | 972912397388 | Submit production | `antonycc/submit.diyaccounting.co.uk` | Full submit stack with live data, HMRC production |
+| **submit-backup** | 914216784828 | Backup isolation | — | Cross-account backup vault (planned) |
 
 ### 1.3 Why This Topology
 
@@ -260,7 +260,15 @@ GitHub Actions OIDC Token
         → CloudFormation (deploys stacks)
 ```
 
-Trust scoped to `repo:antonycc/submit.diyaccounting.co.uk:*` (updated per repo after Phase 2 repo separation; root repo is `antonycc/root.diyaccounting.co.uk`).
+Each account's OIDC trust is scoped to its own repository:
+
+| Account | OIDC Trust |
+|---------|-----------|
+| management (887764105431) | `repo:antonycc/root.diyaccounting.co.uk:*` |
+| gateway (283165661847) | `repo:antonycc/www.diyaccounting.co.uk:*` |
+| spreadsheets (064390746177) | `repo:antonycc/diy-accounting:*` |
+| submit-ci (367191799875) | `repo:antonycc/submit.diyaccounting.co.uk:*` |
+| submit-prod (972912397388) | `repo:antonycc/submit.diyaccounting.co.uk:*` |
 
 ### 4.3 Network Security
 
@@ -279,13 +287,15 @@ Trust scoped to `repo:antonycc/submit.diyaccounting.co.uk:*` (updated per repo a
 
 ### 5.1 Backup Architecture
 
+**Current state**: Local backup vaults in each submit account with PITR on data tables. Cross-account backup shipping to submit-backup (914216784828) is planned — see `AWS_CROSS_ACCOUNT_BACKUPS.md`.
+
 ```
-submit-prod                    submit-backup
-  DynamoDB tables ──────────→  Cross-account vault
+submit-prod (972912397388)     submit-backup (914216784828)
+  DynamoDB tables ──────────→  Cross-account vault (planned)
   (PITR + daily backup)        (90-day retention)
 
-submit-ci                      submit-backup
-  DynamoDB tables ──────────→  Cross-account vault (optional)
+submit-ci (367191799875)       submit-backup (914216784828)
+  DynamoDB tables ──────────→  Cross-account vault (planned)
   (PITR + daily backup)
 ```
 
@@ -352,12 +362,14 @@ graph LR
 
 ### 6.3 Multi-Site Deployments
 
-| Site | Workflow | Target Account |
-|------|----------|----------------|
-| submit.diyaccounting.co.uk | `deploy.yml` | submit-ci / submit-prod |
-| diyaccounting.co.uk (gateway) | `deploy-gateway.yml` | gateway |
-| spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | spreadsheets |
-| Root DNS + holding page | `antonycc/root.diyaccounting.co.uk` repo | 887764105431 (management) |
+Each site is deployed from its own repository:
+
+| Site | Repository | Workflow | Target Account |
+|------|-----------|----------|----------------|
+| submit.diyaccounting.co.uk | `antonycc/submit.diyaccounting.co.uk` | `deploy.yml` | submit-ci (367191799875) / submit-prod (972912397388) |
+| diyaccounting.co.uk (gateway) | `antonycc/www.diyaccounting.co.uk` | `deploy.yml` | gateway (283165661847) |
+| spreadsheets.diyaccounting.co.uk | `antonycc/diy-accounting` | `deploy.yml` | spreadsheets (064390746177) |
+| Root DNS + holding page | `antonycc/root.diyaccounting.co.uk` | `deploy.yml` | management (887764105431) |
 
 ---
 
@@ -406,12 +418,20 @@ All API calls logged to CloudWatch with timestamp, user identity (masked), actio
 
 ### 10.1 CDK Applications
 
+This repository contains the submit application CDK:
+
 | CDK App | Directory | Purpose |
 |---------|-----------|---------|
 | Application | `cdk-application/` | Per-deployment submit stacks (Auth, HMRC, Account, Billing, Api, Edge, etc.) |
 | Environment | `cdk-environment/` | Per-environment shared stacks (Identity, Data, Observability) |
-| Gateway | `cdk-gateway/` | Gateway static site stack |
-| Spreadsheets | `cdk-spreadsheets/` | Spreadsheets static site stack |
+
+Gateway and spreadsheets CDK stacks are in their own repositories:
+
+| CDK App | Repository | Purpose |
+|---------|-----------|---------|
+| Gateway | `antonycc/www.diyaccounting.co.uk` | S3 + CloudFront + CloudFront Function redirects |
+| Spreadsheets | `antonycc/diy-accounting` | S3 + CloudFront + package hosting |
+| Root DNS | `antonycc/root.diyaccounting.co.uk` | Route53 alias records + holding page |
 
 ### 10.2 Stack Naming
 
@@ -422,25 +442,26 @@ All API calls logged to CloudWatch with timestamp, user identity (masked), actio
 
 ## Appendix A: AWS Service Inventory
 
-| Service | Region | Account | Purpose |
+| Service | Region | Account (ID) | Purpose |
 |---------|--------|---------|---------|
-| Organizations | Global | 887764105431 (management) | Account management |
-| IAM Identity Center | eu-west-2 | 887764105431 (management) | SSO |
-| Route 53 | Global | 887764105431 (management) | DNS for all sites |
-| CloudFront | Global | gateway | Gateway CDN |
-| CloudFront | Global | spreadsheets | Spreadsheets CDN |
-| CloudFront | Global | submit-prod / submit-ci | Submit CDN + holding page |
-| ACM | us-east-1 | Each workload account | SSL certificates |
-| WAF | us-east-1 | submit-prod / submit-ci | Web firewall |
-| API Gateway | eu-west-2 | submit-prod / submit-ci | REST API |
-| Lambda | eu-west-2, us-east-1 | submit-prod / submit-ci | Compute |
-| DynamoDB | eu-west-2 | submit-prod / submit-ci | Database |
-| Cognito | eu-west-2 | submit-prod / submit-ci | Authentication |
-| Secrets Manager | eu-west-2 | submit-prod / submit-ci | Credentials |
-| S3 | eu-west-2 | Each workload account | Static assets |
-| CloudWatch | eu-west-2 | Each workload account | Monitoring |
-| AWS Backup | eu-west-2 | submit-prod, submit-backup | Backup management |
-| ECR | eu-west-2, us-east-1 | submit-prod / submit-ci | Docker images |
+| Organizations | Global | management (887764105431) | Account management |
+| IAM Identity Center | eu-west-2 | management (887764105431) | SSO |
+| Route 53 | Global | management (887764105431) | DNS for all sites |
+| CloudFront | Global | gateway (283165661847) | Gateway CDN |
+| CloudFront | Global | spreadsheets (064390746177) | Spreadsheets CDN |
+| CloudFront | Global | submit-prod (972912397388) / submit-ci (367191799875) | Submit CDN + holding page |
+| ACM | us-east-1 | Each workload account | SSL certificates (DNS validated via management Route53) |
+| WAF | us-east-1 | submit-prod (972912397388) / submit-ci (367191799875) | Web firewall |
+| API Gateway | eu-west-2 | submit-prod (972912397388) / submit-ci (367191799875) | HTTP API v2 |
+| Lambda | eu-west-2, us-east-1 | submit-prod (972912397388) / submit-ci (367191799875) | Compute (ARM64) |
+| DynamoDB | eu-west-2 | submit-prod (972912397388) / submit-ci (367191799875) | Database (on-demand) |
+| Cognito | eu-west-2 | submit-prod (972912397388) / submit-ci (367191799875) | Authentication |
+| Secrets Manager | eu-west-2 | submit-prod (972912397388) / submit-ci (367191799875) | Credentials |
+| S3 | eu-west-2 | Each workload account | Static assets + CDK assets |
+| CloudWatch | eu-west-2 | Each workload account | Monitoring, alarms, RUM, synthetics |
+| AWS Backup | eu-west-2 | submit-prod (972912397388) | Local vault (cross-account planned) |
+| ECR | eu-west-2, us-east-1 | submit-prod (972912397388) / submit-ci (367191799875) | Docker images |
+| CloudTrail | eu-west-2 | submit-prod (972912397388) / submit-ci (367191799875) | API audit logging |
 
 ---
 
@@ -453,13 +474,14 @@ All API calls logged to CloudWatch with timestamp, user identity (masked), actio
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                   Route 53 (887764105431 management)                        │
+│               Route 53 — management (887764105431)                          │
 │                    *.diyaccounting.co.uk                                    │
 └─────────────────────────────────────────────────────────────────────────────┘
            │                    │                        │
            ▼                    ▼                        ▼
   ┌──────────────┐    ┌──────────────────┐    ┌──────────────────────┐
-  │ gateway  │    │ spreadsheets │    │ submit-prod          │
+  │ gateway      │    │ spreadsheets     │    │ submit-prod          │
+  │ 283165661847 │    │ 064390746177     │    │ 972912397388         │
   │ CloudFront   │    │ CloudFront       │    │ CloudFront + WAF     │
   │   ↓          │    │   ↓              │    │   ↓            ↓     │
   │ S3 (static)  │    │ S3 (static +     │    │ S3 (static) API GW  │
@@ -474,5 +496,5 @@ All API calls logged to CloudWatch with timestamp, user identity (masked), actio
 
 ---
 
-*Document generated: February 2026*
-*Architecture version: 3.0 (Multi-Account, 6 accounts)*
+*Document updated: February 2026*
+*Architecture version: 3.1 (Multi-Account, Multi-Repo — 6 accounts, 4 repositories)*

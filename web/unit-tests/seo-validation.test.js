@@ -2,15 +2,11 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-// Site configurations for the 2 sites
+// Site configurations
 const sites = {
   submit: {
     dir: path.join(process.cwd(), "web/public"),
     domain: "https://submit.diyaccounting.co.uk",
-  },
-  spreadsheets: {
-    dir: path.join(process.cwd(), "web/spreadsheets.diyaccounting.co.uk/public"),
-    domain: "https://spreadsheets.diyaccounting.co.uk",
   },
 };
 
@@ -215,13 +211,4 @@ describe("Structured data validation", () => {
     expect(app.name).toBe("DIY Accounting Submit");
   });
 
-  it('spreadsheets index.html has JSON-LD with @type "SoftwareApplication"', () => {
-    const html = readFile(path.join(sites.spreadsheets.dir, "index.html"));
-    const jsonLdBlocks = extractJsonLd(html);
-    expect(jsonLdBlocks.length).toBeGreaterThan(0);
-    const app = jsonLdBlocks.find((b) => b["@type"] === "SoftwareApplication");
-    expect(app, "Should have a SoftwareApplication JSON-LD block").toBeTruthy();
-    expect(app["@context"]).toBe("https://schema.org");
-    expect(app.name).toBe("DIY Accounting Spreadsheets");
-  });
 });
