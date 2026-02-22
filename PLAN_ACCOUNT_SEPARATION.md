@@ -478,20 +478,47 @@ Same archive-and-overlay pattern as gateway. Preserves GitHub Discussions. More 
 
 #### Steps
 
-| Step | Description |
-|------|-------------|
-| 2.3.1 | In existing repo: `mkdir archive && git mv` all current files into `archive/` |
-| 2.3.2 | Copy files from submit repo (see table above) |
-| 2.3.3 | Rename Java package from `co.uk.diyaccounting.submit` to `co.uk.diyaccounting.spreadsheets` — move files, update all package declarations and imports |
-| 2.3.4 | Create `pom.xml` — CDK-only, single `cdk-spreadsheets` profile, same structure as gateway/root |
-| 2.3.5 | Create `package.json` — same baseline as gateway, plus build-packages, generate-knowledge-base-toml, stripe setup |
-| 2.3.6 | Create `CLAUDE.md` — based on gateway CLAUDE.md, adapted for spreadsheets account (064390746177), knowledge base, packages, PayPal/Stripe integrations |
-| 2.3.7 | Adapt `deploy-spreadsheets.yml` → `deploy.yml` — standalone workflow, add package zip sync step |
-| 2.3.8 | Add `test.yml` workflow — build, formatting, CDK synth, behaviour tests |
-| 2.3.9 | Fill gaps from `archive/` — old packages, README, build scripts, community discussions context |
-| 2.3.10 | Update OIDC trust in spreadsheets account (064390746177): add `repo:antonycc/diy-accounting:*` to trust policy |
-| 2.3.11 | Deploy from spreadsheets repo. Run `test:spreadsheetsBehaviour-ci`. Verify site, packages, knowledge base, PayPal donate. |
-| 2.3.12 | Remove `deploy-spreadsheets.yml`, `SpreadsheetsStack.java`, `SpreadsheetsEnvironment.java`, `cdk-spreadsheets/`, `web/spreadsheets.diyaccounting.co.uk/`, `packages/`, `build-packages.cjs`, `generate-knowledge-base-toml.cjs`, `stripe-spreadsheets-setup.js` from submit repo |
+| Step | Description | Status |
+|------|-------------|--------|
+| 2.3.1 | In existing repo: `mkdir archive && git mv` all current files into `archive/` | ✅ Done in previous session — existing repo files archived |
+| 2.3.2 | Copy files from submit repo (see table above) | ✅ Web content (`web/spreadsheets.diyaccounting.co.uk/`), packages (71 dirs), scripts (build-packages, build-sitemaps, generate-knowledge-base-toml, stripe-setup), behaviour test, redirects.toml |
+| 2.3.3 | Rename Java package from `co.uk.diyaccounting.submit` to `co.uk.diyaccounting.spreadsheets` — move files, update all package declarations and imports | ✅ Already done by template — package is `co.uk.diyaccounting.spreadsheets`. SpreadsheetsEnvironment and SpreadsheetsStack replaced with submit's logic (CSP for PayPal, `prune(false)`, correct distributionPaths). KindCdk.java kept from template (safer null handling). |
+| 2.3.4 | Create `pom.xml` — CDK-only, single `cdk-spreadsheets` profile, same structure as gateway/root | ✅ Template had it, updated `retag-gateway` → `retag-spreadsheets`. JAR name `spreadsheets.jar`. |
+| 2.3.5 | Create `package.json` — same baseline as gateway, plus build-packages, generate-knowledge-base-toml, stripe setup | ✅ Major rewrite: `GATEWAY_BASE_URL` → `SPREADSHEETS_BASE_URL`, CI URL fixed to `ci-spreadsheets.diyaccounting.co.uk`, all `www.spreadsheets` paths → `spreadsheets`, added build scripts, added `stripe` dependency |
+| 2.3.6 | Create `CLAUDE.md` — based on gateway CLAUDE.md, adapted for spreadsheets account (064390746177), knowledge base, packages, PayPal/Stripe integrations | ✅ Generated with package pipeline, knowledge base, SPREADSHEETS_BASE_URL, no Lambda/DynamoDB/Cognito |
+| 2.3.7 | Adapt `deploy-spreadsheets.yml` → `deploy.yml` — standalone workflow, add package zip sync step | ✅ Rewritten from submit's deploy-spreadsheets.yml — SpreadsheetsStack, build-redirects/sitemaps/packages steps, S3 zip sync, `SPREADSHEETS_*` vars |
+| 2.3.8 | Add `test.yml` workflow — build, formatting, CDK synth, behaviour tests | ✅ Updated paths trigger, added build-sitemaps/build-redirects steps, spreadsheetsBehaviour-local test |
+| 2.3.9 | Fill gaps from `archive/` — old packages, README, build scripts, community discussions context | Pending |
+| 2.3.10 | Update OIDC trust in spreadsheets account (064390746177): add `repo:antonycc/diy-accounting:*` to trust policy | Pending |
+| 2.3.11 | Deploy from spreadsheets repo. Run `test:spreadsheetsBehaviour-ci`. Verify site, packages, knowledge base, PayPal donate. | Pending — depends on 2.3.10 |
+| 2.3.12 | Remove `deploy-spreadsheets.yml`, `SpreadsheetsStack.java`, `SpreadsheetsEnvironment.java`, `cdk-spreadsheets/`, `web/spreadsheets.diyaccounting.co.uk/`, `packages/`, `build-packages.cjs`, `generate-knowledge-base-toml.cjs`, `stripe-spreadsheets-setup.js` from submit repo | Pending — depends on 2.3.11 |
+
+#### Additional files created/adapted (2.3.2–2.3.8)
+
+| File | Action |
+|------|--------|
+| `cdk-spreadsheets/cdk.json` | Fixed `docRootPath`, `prodFQDomainName`, removed `prodFQNakedDomainName` |
+| `playwright.config.js` | `gatewayBehaviour` → `spreadsheetsBehaviour`, browser test → `spreadsheets-content.browser.test.js` |
+| `.pa11yci.ci.json` / `.pa11yci.prod.json` | Expanded to 5 URLs (download, donate, knowledge-base, community) |
+| `.gitignore` | Added generated files (catalogue.toml, sitemap.xml, knowledge-base.toml, redirect-function.js, target/zips/) |
+| `web/browser-tests/spreadsheets-content.browser.test.js` | New — replaces gateway-content, tests product cards, JSON-LD `SoftwareApplication`, donate/download pages |
+| `web/unit-tests/seo-validation.test.js` | Rewritten — path to `web/spreadsheets.diyaccounting.co.uk/public`, JSON-LD type `SoftwareApplication` |
+| `web/unit-tests/smoke.test.js` | Rewritten — spreadsheets pages (download, donate, knowledge-base), spreadsheets.css |
+| `web/spreadsheets.diyaccounting.co.uk/redirects.toml` | Created — 12 static redirects + 5 product mappings (old www.diyaccounting.co.uk URLs) |
+| `scripts/build-spreadsheets-redirects.cjs` | Fixed auto-generated comment, domain names (ci-spreadsheets, ci.submit) |
+| `README.md` | Generated for spreadsheets site |
+| `PLAN_DONATION_DOWNLOAD_TESTING.md` | Created — 6 phases for Stripe sandbox, PayPal, zip downloads, E2E donation, local dev, GA4 |
+| `gateway.behaviour.test.js` | Deleted |
+| `gateway-content.browser.test.js` | Deleted |
+
+#### Verification (2.3.2–2.3.8)
+
+All passing in diy-accounting repo:
+- `npm install` ✅
+- `./mvnw clean verify` ✅ (BUILD SUCCESS)
+- `npm test` ✅ (28 tests: 20 SEO + 8 smoke)
+- `node scripts/build-spreadsheets-redirects.cjs` ✅ (4.0KB/10KB limit)
+- `npm run cdk:synth` ✅ (ci-spreadsheets-SpreadsheetsStack with DistributionDomainName, DistributionId, OriginBucketName outputs)
 
 #### Spreadsheets-specific complexity (beyond gateway template)
 
