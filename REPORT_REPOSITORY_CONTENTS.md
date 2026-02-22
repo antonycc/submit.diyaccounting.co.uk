@@ -1,6 +1,6 @@
 # DIY Accounting Submit - Repository Documentation
 
-**Generated:** 2026-02-10
+**Generated:** 2026-02-22
 
 This document provides a high-level overview of the `submit.diyaccounting.co.uk` repository. For detailed reference, consult the source files directly.
 
@@ -41,9 +41,7 @@ This document provides a high-level overview of the `submit.diyaccounting.co.uk`
 - **Bundle Capacity**: Global cap enforcement with atomic counters and EventBridge reconciliation
 - **Simulator Mode**: Fully self-contained local development with mocked OAuth2 and HMRC APIs
 - **Multi-Environment**: Supports simulator, local proxy, CI, and production deployments
-- **Multi-Site**: Also deploys gateway.diyaccounting.co.uk, spreadsheets.diyaccounting.co.uk, and root domain
 - **OAuth Integration**: Google/Cognito for production, mock OAuth2 for local testing
-- **Stripe Donations**: Stripe Payment Links on spreadsheets site (completed, see `_developers/archive/PLAN_STRIPE_1.md`)
 
 ## Environment Configuration
 
@@ -136,9 +134,9 @@ npm run test:submitVatBehaviour-proxy
 | `help.behaviour.test.js` | Help page functionality |
 | `compliance.behaviour.test.js` | Compliance checks |
 | `simulator.behaviour.test.js` | Simulator mode |
-| `gateway.behaviour.test.js` | Gateway site |
 | `generatePassActivity.behaviour.test.js` | Pass generation activity |
-| `spreadsheets.behaviour.test.js` | Spreadsheets site (download, donate) |
+| `payment.behaviour.test.js` | Stripe payment flow |
+| `captureDemo.behaviour.test.js` | Demo video capture |
 
 ### Maven Commands
 
@@ -152,7 +150,7 @@ npm run test:submitVatBehaviour-proxy
 **Output Artifacts**:
 - `target/submit-application.jar` - CDK entry point for application stacks
 - `target/submit-environment.jar` - CDK entry point for environment stacks
-- `web/public/docs/openapi.yaml` - Generated API documentation
+- `web/public/docs/api/openapi.yaml` - Generated API documentation
 
 **Read `pom.xml` for complete Maven configuration.**
 
@@ -203,7 +201,10 @@ Created once per environment by `deploy-environment.yml`:
 | ObservabilityStack | CloudWatch Log Groups, RUM, Alarms, Dashboard |
 | ObservabilityUE1Stack | CloudWatch resources in us-east-1 (for CloudFront) |
 | DataStack | DynamoDB tables (Bundles, Passes, BundleCapacity, Receipts, HMRC API Requests) |
+| EcrStack | ECR repositories (eu-west-2 and us-east-1) |
+| ActivityStack | Activity/subscription management |
 | ApexStack | Route53 apex domain |
+| SimulatorStack | S3 bucket and CloudFront for simulator site |
 | IdentityStack | Cognito user pool |
 | BackupStack | Cross-account backup configuration |
 
@@ -213,18 +214,17 @@ Created per deployment by `deploy.yml`:
 
 | Stack | Resources |
 |-------|-----------|
-| DevStack | S3, CloudFront, ECR |
-| SimulatorStack | S3 bucket and CloudFront for simulator site |
 | SelfDestructStack | Auto-destroy (non-prod) |
 | AuthStack | Auth Lambda functions (customAuthorizer, cognitoTokenPost) |
 | HmrcStack | HMRC API Lambda functions (obligations, returns, receipts, tokens) |
 | AccountStack | Bundle, pass, and capacity Lambdas + EventBridge reconciliation |
+| BillingStack | Stripe payment integration Lambdas |
 | ApiStack | HTTP API Gateway |
 | EdgeStack | Production CloudFront |
 | PublishStack | S3 static file deployment |
 | OpsStack | CloudWatch dashboard |
-| GatewayStack | Gateway site (gateway.diyaccounting.co.uk) S3 + CloudFront |
-| SpreadsheetsStack | Spreadsheets site (spreadsheets.diyaccounting.co.uk) S3 + CloudFront |
+
+**Note:** Gateway and spreadsheets stacks have been moved to their own repositories (`antonycc/www.diyaccounting.co.uk` and `antonycc/diy-accounting` respectively).
 
 **Read the CDK stack files in `infra/main/java/co/uk/diyaccounting/submit/stacks/` for details.**
 
@@ -235,31 +235,37 @@ Created per deployment by `deploy.yml`:
 | `deploy.yml` | Build, test, deploy application | Push, schedule, manual |
 | `deploy-environment.yml` | Deploy shared infrastructure | Push to env files, manual |
 | `deploy-cdk-stack.yml` | Deploy individual CDK stack (reusable) | workflow_call |
+| `deploy-app.yml` | Lean app deployment (Lambda + S3 without CDK) | Manual only |
 | `test.yml` | Run all tests (reusable) | Push, schedule, workflow_call |
 | `synthetic-test.yml` | Run synthetic monitoring tests | Schedule, manual |
 | `generate-pass.yml` | Generate invitation passes | Schedule (9am UTC), push, manual, workflow_call |
-| `destroy.yml` | Tear down deployments | Manual only |
+| `destroy-ci.yml` | Tear down CI deployments | Manual only |
+| `destroy-prod.yml` | Tear down prod deployments | Manual only |
 | `publish.yml` | Publish static assets | Manual only |
 | `set-origins.yml` | Update DNS/CloudFront | Manual only |
 | `manage-secrets.yml` | Backup/restore salt secrets | Manual only |
 | `verify-backups.yml` | Verify cross-account backups | Schedule, manual |
 | `setup-backup-account.yml` | Configure backup AWS account | Manual only |
+| `run-migrations.yml` | Run data migrations | Manual only |
 | `create-hmrc-test-user.yml` | Create HMRC sandbox test user | Manual only |
+| `cleanup-test-users.yml` | Clean up Cognito test users | Manual only |
+| `delete-user-data.yml` | Delete user data (GDPR) | Manual only |
+| `delete-user-data-by-email.yml` | Delete user data by email (GDPR) | Manual only |
 | `compliance.yml` | Run compliance checks (Pa11y, axe, Lighthouse, ZAP) | Push, manual |
 | `security-review.yml` | Security scanning | Push, manual |
 | `codeql.yml` | CodeQL security analysis | Push, schedule |
-| `deploy-gateway.yml` | Deploy gateway site (gateway.diyaccounting.co.uk) | Push, manual |
-| `deploy-spreadsheets.yml` | Deploy spreadsheets site (spreadsheets.diyaccounting.co.uk) | Push, manual |
 | `copilot-agent.yml` | GitHub Copilot agent workflow | workflow_dispatch |
 | `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |
+
+**Note:** Gateway and spreadsheets deployment workflows have been moved to their own repositories. This repo only deploys the submit application to submit-ci (367191799875) and submit-prod (972912397388).
 
 #### Custom Actions
 
 | Action | Purpose |
 |--------|---------|
 | `get-names` | Resolve deployment/environment names from branch and context |
+| `lookup-resources` | Look up CloudFormation outputs and AWS resource details |
 | `set-origins` | Update CloudFront origins and Route53 DNS records |
-| `scale-to` | Scale Lambda provisioned concurrency |
 
 **Read `.github/workflows/*.yml` for complete workflow definitions.**
 
@@ -381,6 +387,8 @@ The proxy mode tests are the gold standard for CI validation as they use real OA
 | `scripts/` | Utility scripts for development and deployment |
 | `web/` | Frontend HTML/CSS/JavaScript and tests |
 | `_developers/` | Developer documentation |
+
+**Removed directories** (now in their own repositories): `cdk-gateway/`, `cdk-spreadsheets/`, `cdk-root/`, `root-zone/`, `web/www.diyaccounting.co.uk/`, `web/spreadsheets.diyaccounting.co.uk/`.
 
 ### Backend Structure (`app/`)
 
@@ -610,20 +618,27 @@ Head-injected scripts for early API prefetching:
 | Script | Purpose |
 |--------|---------|
 | `build-simulator.js` | Build simulator site from public site |
+| `build-sitemaps.cjs` | Build XML sitemaps |
 | `simulator-lambda-server.mjs` | Lambda server for simulator |
 | `start-simulator.sh` | Start simulator mode |
 | `start-proxy.sh` | Start proxy mode |
+| `deploy-app.js` | Lean app deployment (Lambda + S3 without CDK) |
 | `generate-test-reports.js` | Generate test report pages |
 | `generate-compliance-report.js` | Generate compliance markdown report |
+| `generate-pass.js` | Generate invitation passes |
+| `generate-pass-with-qr.js` | Generate pass with QR code |
 | `inject-dynamodb-into-test-report.js` | Add DynamoDB state to test reports |
 | `text-spacing-test.js` | WCAG 1.4.12 text spacing tests |
+| `capture-demo-videos.js` | Capture demo videos for documentation |
 | `create-hmrc-test-user.js` | Create HMRC sandbox test user |
 | `create-cognito-test-user.js` | Create Cognito test user |
 | `delete-cognito-test-user.js` | Delete Cognito test user |
 | `enable-cognito-native-test.js` | Enable email/password login for testing |
 | `disable-cognito-native-test.js` | Disable email/password login |
 | `toggle-cognito-native-auth.js` | Toggle Cognito native auth provider |
+| `cleanup-test-users.js` | Clean up Cognito test users |
 | `bundle-for-tests.js` | Grant test bundles |
+| `stripe-setup.js` | Create/verify Stripe webhook endpoints |
 | `export-user-data.js` | Export user data (GDPR) |
 | `delete-user-data.js` | Delete user data (GDPR) |
 | `export-dynamodb-for-test-users.js` | Export DynamoDB for test users |
@@ -639,16 +654,15 @@ Head-injected scripts for early API prefetching:
 | `setup-s3-replication.sh` | Configure S3 replication |
 | `setup-backup-account.sh` | Setup backup AWS account |
 | `dr-restore-from-backup-account.sh` | Disaster recovery restore |
-| `build-gateway-redirects.cjs` | Build gateway redirect configuration |
-| `build-packages.cjs` | Build deployment packages |
-| `build-sitemaps.cjs` | Build XML sitemaps |
-| `generate-pass-with-qr.js` | Generate pass with QR code |
-| `generate-knowledge-base-toml.cjs` | Generate knowledge base TOML from references |
 | `playwright-video-reporter.js` | Playwright video test reporter |
 | `add-bundle.sh` | Add bundle to user account |
+| `clean-drawio.cjs` | Clean draw.io diagram files |
 | `create-favicon.sh` | Generate favicon variants |
 | `list-domains.sh` | List DNS domain configuration |
 | `update.sh` | Update dependencies and tools |
+| `update-java.sh` | Update Java dependencies |
+
+**Removed scripts** (now in their own repositories): `build-packages.cjs`, `build-gateway-redirects.cjs`, `generate-knowledge-base-toml.cjs`, `stripe-spreadsheets-setup.js`.
 
 ## DynamoDB Schema
 
@@ -761,13 +775,14 @@ For specific topics, see:
 | Document | Location |
 |----------|----------|
 | Developer setup | `_developers/SETUP.md` |
-| Passes delivery plan | `PLAN_PASSES_V2.md` |
-| AWS multi-account architecture | `PLAN_AWS_ACCOUNTS.md` |
-| Backup strategy | `PLAN_BACKUP_STRATEGY.md` |
-| Security detection uplift | `PLAN_SECURITY_DETECTION_UPLIFT.md` |
+| AWS architecture | `AWS_ARCHITECTURE.md` |
+| AWS account migration history | `AWS_ACCOUNT_MIGRATION.md` |
+| AWS costs | `AWS_COSTS.md` |
+| Payment lifecycle plan | `PLAN_PAYMENT_LIFECYCLE.md` |
+| Backup strategy | `_developers/backlog/PLAN_BACKUP_STRATEGY.md` |
+| Security detection uplift | `_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` |
 | Site map | `_developers/SITE_MAP.md` |
 | MFA implementation | `_developers/MFA_IMPLEMENTATION_SUMMARY.md` |
-| Metric-son design | `_developers/METRIC_SON_DESIGN.md` |
 | Marketing guidance | `_developers/MARKETING_GUIDANCE.md` |
 | Information security runbook | `RUNBOOK_INFORMATION_SECURITY.md` |
 | Accessibility/penetration report | `REPORT_ACCESSIBILITY_PENETRATION.md` |
@@ -780,8 +795,6 @@ For specific topics, see:
 | Obligation flexibility | `_developers/archive/OBLIGATION_FLEXIBILITY_FIX.md` |
 | Test report generation | `scripts/generate-test-reports.js` |
 | API documentation | `web/public/docs/api/openapi.yaml` |
-| Stripe donation integration (completed) | `_developers/archive/PLAN_STRIPE_1.md` |
-| Payment integration plan | `PLAN_PAYMENT_INTEGRATION.md` |
-| Multi-site deployment | `deploy-gateway.yml`, `deploy-spreadsheets.yml`, `deploy-root.yml` |
+| Account separation (completed) | `_developers/archive/PLAN_ACCOUNT_SEPARATION.md` |
 
 **For detailed implementation, always refer to the source files directly.**
