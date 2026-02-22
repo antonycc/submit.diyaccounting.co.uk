@@ -1,7 +1,7 @@
 # Information Security Runbook
 
-**Document Version**: 2.0
-**Last Updated**: 2026-01-24
+**Document Version**: 3.0
+**Last Updated**: 2026-02-22
 **Administrator**: admin@diyaccounting.co.uk
 
 This document consolidates all security, privacy, and data protection procedures for operating DIY Accounting Submit.
@@ -20,7 +20,8 @@ This document consolidates all security, privacy, and data protection procedures
 8. [Data Retention](#8-data-retention)
 9. [Regulatory Compliance](#9-regulatory-compliance)
 10. [Public Repository Security](#10-public-repository-security)
-11. [Improvement Recommendations](#11-improvement-recommendations)
+11. [Console Access and AWS CLI](#11-console-access-and-aws-cli)
+12. [Backup and Restore](#12-backup-and-restore)
 
 ---
 
@@ -28,16 +29,16 @@ This document consolidates all security, privacy, and data protection procedures
 
 ### 1.1 Data Storage Locations
 
-| Storage | Data Types | Encryption | Retention |
-|---------|------------|------------|-----------|
-| **DynamoDB** `{env}-submit-bundles` | User entitlements, bundle IDs | At rest (AWS managed) | Until account deletion |
-| **DynamoDB** `{env}-submit-receipts` | VAT submission receipts, HMRC responses | At rest (AWS managed) | 7 years (legal requirement) |
-| **DynamoDB** `{env}-submit-hmrc-api-requests` | Audit trail of HMRC API calls (masked) | At rest (AWS managed) | 30 days TTL |
-| **AWS Cognito** | Email, password hash, user attributes | AWS managed | Until account deletion |
-| **AWS Secrets Manager** | OAuth secrets, user sub hash salt | KMS encryption | Permanent (except rotation) |
-| **CloudWatch Logs** | Application logs, API access logs | At rest (AWS managed) | 30-90 days configurable |
-| **S3** | Static assets, deployment artifacts | SSE-S3 | Version controlled |
-| **CloudFront** | CDN cache, access logs | In transit (TLS) | Short-lived cache |
+| Storage | Data Types | Account | Encryption | Retention |
+|---------|------------|---------|------------|-----------|
+| **DynamoDB** `{env}-env-bundles` | User entitlements, bundle IDs | submit-ci (367191799875) / submit-prod (972912397388) | At rest (AWS managed) | Until account deletion |
+| **DynamoDB** `{env}-env-receipts` | VAT submission receipts, HMRC responses | submit-ci / submit-prod | At rest (AWS managed) | 7 years TTL (legal requirement) |
+| **DynamoDB** `{env}-env-hmrc-api-requests` | Audit trail of HMRC API calls (masked) | submit-ci / submit-prod | At rest (AWS managed) | 28 days TTL |
+| **AWS Cognito** | Email, password hash, user attributes | submit-ci / submit-prod | AWS managed | Until account deletion |
+| **AWS Secrets Manager** | OAuth secrets, user sub hash salt | submit-ci / submit-prod (per account) | KMS encryption | Permanent (except rotation) |
+| **CloudWatch Logs** | Application logs, API access logs | submit-ci / submit-prod | At rest (AWS managed) | 30-90 days configurable |
+| **S3** | Static assets, deployment artifacts | submit-ci / submit-prod | SSE-S3 | Version controlled |
+| **CloudFront** | CDN cache, access logs | submit-ci / submit-prod | In transit (TLS) | Short-lived cache |
 
 ### 1.2 Sensitive Data and Compromise Impact
 
@@ -70,21 +71,26 @@ This document consolidates all security, privacy, and data protection procedures
 
 ### 2.1 Secret Inventory
 
-| Secret Name | GitHub Secret | AWS Secrets Manager Path | Used By |
-|-------------|---------------|--------------------------|---------|
-| Google OAuth Client Secret | `GOOGLE_CLIENT_SECRET` | `{env}/submit/google/client_secret` | Cognito Identity Provider |
-| HMRC Production Client Secret | `HMRC_CLIENT_SECRET` | `{env}/submit/hmrc/client_secret` | HMRC OAuth token exchange |
-| HMRC Sandbox Client Secret | `HMRC_SANDBOX_CLIENT_SECRET` | `{env}/submit/hmrc/sandbox_client_secret` | HMRC sandbox testing |
-| User Sub Hash Salt | (auto-generated) | `{env}/submit/user-sub-hash-salt` | DynamoDB partition keys |
+Each AWS account has its own Secrets Manager entries. GitHub Actions secrets flow into the correct account via environment-scoped deployment workflows.
+
+| Secret Name | GitHub Secret | AWS Secrets Manager Path | Account(s) | Used By |
+|-------------|---------------|--------------------------|------------|---------|
+| Google OAuth Client Secret | `GOOGLE_CLIENT_SECRET` | `{env}/submit/google/client_secret` | submit-ci (367191799875), submit-prod (972912397388) | Cognito Identity Provider |
+| HMRC Production Client Secret | `HMRC_CLIENT_SECRET` | `{env}/submit/hmrc/client_secret` | submit-ci, submit-prod | HMRC OAuth token exchange |
+| HMRC Sandbox Client Secret | `HMRC_SANDBOX_CLIENT_SECRET` | `{env}/submit/hmrc/sandbox_client_secret` | submit-ci, submit-prod | HMRC sandbox testing |
+| User Sub Hash Salt | (auto-generated) | `{env}/submit/user-sub-hash-salt` | submit-ci, submit-prod | DynamoDB partition keys |
 
 ### 2.2 Secret Flow Architecture
 
+GitHub Actions environment-scoped variables (`SUBMIT_*`) route deployments to the correct account. Each account receives its own copy of the secrets.
+
 ```
-┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-│   GitHub Secrets    │───▶│  deploy-environment │───▶│  AWS Secrets Mgr    │
-│   (source of truth  │    │  workflow           │    │  (runtime access)   │
-│   for OAuth secrets)│    │  create-secrets job │    │                     │
-└─────────────────────┘    └─────────────────────┘    └─────────────────────┘
+┌─────────────────────┐    ┌─────────────────────┐    ┌───────────────────────────┐
+│   GitHub Secrets    │───▶│  deploy-environment │───▶│  AWS Secrets Mgr           │
+│   (source of truth  │    │  workflow           │    │  (per account)             │
+│   for OAuth secrets)│    │  create-secrets job │    │  submit-ci (367191799875)  │
+└─────────────────────┘    │  (env-scoped OIDC)  │    │  submit-prod (972912397388)│
+                           └─────────────────────┘    └───────────────────────────┘
                                                                │
                                                                ▼
                            ┌─────────────────────┐    ┌─────────────────────┐
@@ -168,7 +174,7 @@ This verifies all required secrets exist and have values.
 1. Test HMRC OAuth flow (retrieve obligations or submit VAT return)
 2. Check Lambda logs for any authentication errors
 
-**Note**: HMRC secrets are read at Lambda runtime, so a standard deployment is sufficient. The `create-secrets` job automatically updates the value in AWS Secrets Manager.
+**Note**: HMRC secrets are read at Lambda runtime, so a standard deployment is sufficient. The `create-secrets` job automatically updates the value in the target account's AWS Secrets Manager (submit-ci or submit-prod, depending on the environment selected).
 
 ### 3.3 Rotation Schedule
 
@@ -257,11 +263,11 @@ The salt is stored in Secrets Manager as a JSON registry supporting multiple ver
 
 If the salt is lost from Secrets Manager, three independent recovery paths exist:
 
-| Path | Location | Recovery Method |
-|------|----------|-----------------|
-| **Path 1** | Secrets Manager | Soft-delete recovery (7-30 day window) |
-| **Path 2** | Physical card | 8-word passphrase printed on card in fire safe |
-| **Path 3** | DynamoDB `system#config` item | KMS-encrypted salt, decrypted with DataStack KMS key |
+| Path | Location | Account | Recovery Method |
+|------|----------|---------|-----------------|
+| **Path 1** | Secrets Manager `{env}/submit/user-sub-hash-salt` | submit-prod (972912397388) / submit-ci (367191799875) | Soft-delete recovery (7-30 day window) |
+| **Path 2** | Physical card | Offline | 8-word passphrase printed on card in fire safe |
+| **Path 3** | DynamoDB `system#config` item in bundles table | submit-prod / submit-ci | KMS-encrypted salt, decrypted with DataStack KMS key (`{env}-env-salt-encryption`) |
 
 **Path 2 detail**: The current salt (v2) is an 8-word passphrase (~82 bits entropy) that can be typed manually into the `restore-salt` workflow.
 
@@ -293,15 +299,18 @@ The `check-salt` action validates registry format and shows version details with
 Symptoms: Lambdas fail with "ResourceNotFoundException" on cold start.
 
 Recovery (try in order):
-1. **Path 1**: Check Secrets Manager soft-delete recovery (7-30 day window)
-2. **Path 3**: Decrypt `system#config`/`salt-v2` item from bundles table using KMS key
+1. **Path 1**: Check Secrets Manager soft-delete recovery (7-30 day window) in the affected account (submit-prod 972912397388 or submit-ci 367191799875)
+2. **Path 3**: Decrypt `system#config`/`salt-v2` item from bundles table using the account's KMS key (`{env}-env-salt-encryption`)
 3. **Path 2**: Type the 8-word passphrase from the physical backup card
 
 After recovering the value:
-1. Go to **Actions** → **manage secrets** → `restore-salt`
-2. Enter the full JSON registry value
-3. **Delete the workflow run**
-4. Redeploy or wait for Lambda cold start
+1. Go to **Actions** -> **manage secrets** -> `restore-salt`
+2. Select the correct environment (`ci` or `prod`) -- this targets the correct account
+3. Enter the full JSON registry value
+4. **Delete the workflow run**
+5. Redeploy or wait for Lambda cold start
+
+**Note**: Each account (submit-ci, submit-prod) has its own independent salt secret. Recovery must target the correct account. The salt value is the same across accounts (copied during migration), but the Secrets Manager entry and KMS key are per-account.
 
 **Scenario: Salt tampered (wrong value)**
 
@@ -388,19 +397,37 @@ This adds permission for `secretsmanager:GetSecretValue` on the salt secret ARN.
 
 ## 6. Security Incident Response
 
-### 6.1 When a Breach Occurs
+### 6.1 Multi-Account Isolation
+
+The system runs across 6 AWS accounts. Compromise of one account does not automatically compromise others:
+
+| Account | ID | Contains user data? | Compromise impact |
+|---------|-----|---------------------|-------------------|
+| management | 887764105431 | No | DNS disruption only (no user data, no secrets) |
+| gateway | 283165661847 | No | Static site only (managed by separate repo) |
+| spreadsheets | 064390746177 | No | Static site only (managed by separate repo) |
+| submit-ci | 367191799875 | Test data only | No real user data at risk |
+| submit-prod | 972912397388 | Yes | User data, HMRC tokens, subscription data |
+| submit-backup | 914216784828 | Backup copies | Read-only vault, no application code |
+
+**Key principle**: Gateway and spreadsheets are managed by their own repositories (`antonycc/www.diyaccounting.co.uk` and `antonycc/diy-accounting` respectively). Incident handling for those sites is outside this runbook's scope.
+
+**First step in any incident**: Identify which account is affected. Use IAM Identity Center SSO portal (`https://d-9c67480c02.awsapps.com/start/`) to access any account's console. Use AWS CLI SSO profiles (`aws --profile submit-prod ...`, `aws --profile submit-ci ...`, etc.) for programmatic investigation.
+
+### 6.2 When a Breach Occurs
 
 **72-hour notification requirement** applies to UK GDPR breaches.
 
-1. **Assess impact**: What data affected? How many users?
-2. **Contain**: Revoke credentials, block access, rotate secrets
-3. **Notify within 72 hours**:
+1. **Identify affected account(s)**: Check CloudTrail in each account via SSO
+2. **Assess impact**: What data affected? How many users? Which account(s)?
+3. **Contain**: Revoke credentials in the affected account, block access, rotate secrets. Account boundaries mean containment can be per-account.
+4. **Notify within 72 hours**:
    - **ICO**: https://ico.org.uk/make-a-complaint/data-protection-complaints/
    - **HMRC**: SDSTeam@hmrc.gov.uk (if OAuth tokens or HMRC data affected)
    - **Affected users**: Email with details and recommended actions
-4. **Document**: Keep records of incident, response, and remediation
+5. **Document**: Keep records of incident, response, and remediation
 
-### 6.2 Breach Types Requiring Notification
+### 6.3 Breach Types Requiring Notification
 
 - Unauthorized access to DynamoDB (bundles, receipts)
 - Exposed OAuth tokens or HMRC credentials
@@ -408,14 +435,36 @@ This adds permission for `secretsmanager:GetSecretValue` on the salt secret ARN.
 - Data exfiltration or ransomware
 - Accidental public exposure of user data
 
-### 6.3 Immediate Actions by Secret Type
+### 6.4 Immediate Actions by Secret Type
 
 | Compromised Secret | Immediate Actions |
 |--------------------|-------------------|
-| `GOOGLE_CLIENT_SECRET` | 1. Regenerate in Google Console<br>2. Update GitHub secret<br>3. Deploy with `force-identity-refresh` |
-| `HMRC_CLIENT_SECRET` | 1. Regenerate in HMRC Developer Hub<br>2. Update GitHub secret<br>3. Run deploy environment workflow |
-| `USER_SUB_HASH_SALT` | 1. Assess data exposure<br>2. **Do NOT rotate** (breaks data access)<br>3. Focus on access control |
-| AWS Credentials | 1. Rotate IAM credentials<br>2. Review CloudTrail for unauthorized access<br>3. Check for data exfiltration |
+| `GOOGLE_CLIENT_SECRET` | 1. Regenerate in Google Console<br>2. Update GitHub secret<br>3. Deploy with `force-identity-refresh` to affected environment(s) |
+| `HMRC_CLIENT_SECRET` | 1. Regenerate in HMRC Developer Hub<br>2. Update GitHub secret<br>3. Run deploy environment workflow for affected environment(s) |
+| `USER_SUB_HASH_SALT` | 1. Assess data exposure<br>2. **Do NOT rotate** (breaks data access)<br>3. Focus on access control in the affected account |
+| GitHub OIDC trust | 1. Check OIDC trust policies in affected account(s)<br>2. Each account has its own OIDC provider scoped to its repo<br>3. Compromise of one repo's OIDC trust does not affect other accounts |
+| AWS account credentials (SSO) | 1. Disable the compromised user in IAM Identity Center (management account 887764105431)<br>2. Review CloudTrail in all accounts<br>3. Check for data exfiltration in submit-prod (972912397388)<br>4. Verify backup vault integrity in submit-backup (914216784828) |
+
+### 6.5 Account Compromise Procedures
+
+**Single account compromised (e.g., submit-prod)**:
+1. Revoke SSO access for the compromised session via IAM Identity Center
+2. Review CloudTrail in the compromised account for unauthorized actions
+3. Check if backups in submit-backup (914216784828) are intact (separate credentials)
+4. Rotate all secrets in the compromised account's Secrets Manager
+5. Redeploy from IaC if infrastructure was modified
+
+**Management account compromised (887764105431)**:
+1. DNS records could be modified -- verify Route53 records immediately
+2. SSO portal access could be used to reach other accounts -- disable compromised user
+3. No user data in management account -- focus on DNS integrity and SSO access revocation
+4. Submit accounts' OIDC trust is independent of management account credentials
+
+**GitHub repository compromised**:
+1. Each account's OIDC trust is scoped to its own repo -- only the trusted repo can deploy
+2. Revoke any leaked GitHub PATs
+3. Review recent workflow runs for unauthorized deployments
+4. OIDC trust in each account can be disabled independently
 
 ---
 
@@ -433,16 +482,26 @@ This adds permission for `secretsmanager:GetSecretValue` on the salt secret ARN.
 
 ### 7.2 Manual Monitoring Required
 
-| Detection | Where to Find | What It Indicates |
-|-----------|---------------|-------------------|
-| Auth failures | CloudWatch Logs > custom-authorizer | Brute force, invalid tokens |
-| WAF blocks | AWS Console > WAF > Sampled requests | Active attacks (SQLi, XSS) |
-| Unusual AWS API calls | CloudTrail > Event History | Credential compromise |
-| HMRC API failures | CloudWatch Logs > hmrc-* | Token theft, unauthorized access |
+| Detection | Where to Find | Account | What It Indicates |
+|-----------|---------------|---------|-------------------|
+| Auth failures | CloudWatch Logs > custom-authorizer | submit-prod (972912397388) | Brute force, invalid tokens |
+| WAF blocks | AWS Console > WAF > Sampled requests | submit-prod (972912397388) | Active attacks (SQLi, XSS) |
+| Unusual AWS API calls | CloudTrail > Event History | Each account (check via SSO) | Credential compromise |
+| HMRC API failures | CloudWatch Logs > hmrc-* | submit-prod (972912397388) | Token theft, unauthorized access |
+| DNS changes | CloudTrail > Event History | management (887764105431) | Unauthorized DNS modification |
+| SSO login anomalies | IAM Identity Center > Settings | management (887764105431) | Compromised SSO credentials |
 
 ### 7.3 Investigation Queries
 
-**CloudWatch Logs Insights - Auth Failures**:
+**AWS CLI access** (use SSO profiles for each account):
+```bash
+aws sso login --sso-session diyaccounting
+aws --profile submit-prod logs tail /aws/lambda/prod-env-custom-authorizer --since 1h
+aws --profile submit-ci logs tail /aws/lambda/ci-env-custom-authorizer --since 1h
+aws --profile management cloudtrail lookup-events --lookup-attributes AttributeKey=EventSource,AttributeValue=route53.amazonaws.com
+```
+
+**CloudWatch Logs Insights - Auth Failures** (run in submit-prod or submit-ci account):
 ```
 fields @timestamp, @message
 | filter @logStream like /custom-authorizer/
@@ -455,22 +514,24 @@ fields @timestamp, @message
 
 | Frequency | Tasks |
 |-----------|-------|
-| **Weekly** | Check CloudWatch alarms, review auth failures, check WAF activity |
-| **Monthly** | Review DynamoDB growth, audit IAM access, check CloudTrail |
-| **Quarterly** | Test export/deletion scripts, review policies, update this document |
-| **Annually** | Rotate OAuth secrets, disaster recovery test, penetration testing |
+| **Weekly** | Check CloudWatch alarms (submit-prod), review auth failures, check WAF activity |
+| **Monthly** | Review DynamoDB growth (submit-prod), audit CloudTrail across all accounts via SSO, verify backup vault integrity (submit-backup) |
+| **Quarterly** | Test export/deletion scripts, review IAM policies per account, update this document |
+| **Annually** | Rotate OAuth secrets, disaster recovery test (restore from cross-account backup), penetration testing |
 
 ---
 
 ## 8. Data Retention
 
-| Data Type | Retention Period | Cleanup Method |
-|-----------|------------------|----------------|
-| Active user bundles | Until account deletion | Manual deletion script |
-| Closed account data | 30 days after closure | `scripts/cleanup-deleted-accounts.js` |
-| HMRC receipts | 7 years (legal requirement) | TTL + archive to Glacier |
-| HMRC API audit trail | 30 days | DynamoDB TTL (automatic) |
-| CloudWatch logs | 30-90 days | Retention policy (automatic) |
+| Data Type | Retention Period | Cleanup Method | Account |
+|-----------|------------------|----------------|---------|
+| Active user bundles | Until account deletion | Manual deletion script | submit-prod (972912397388) |
+| Closed account data | 30 days after closure | `scripts/cleanup-deleted-accounts.js` | submit-prod |
+| HMRC receipts | 7 years (legal requirement) | DynamoDB TTL (automatic) | submit-prod |
+| HMRC API audit trail | 28 days | DynamoDB TTL (automatic) | submit-prod |
+| Async request tables | 1 hour | DynamoDB TTL (automatic) | submit-ci / submit-prod |
+| CloudWatch logs | 30-90 days | Retention policy (automatic) | submit-ci / submit-prod |
+| Cross-account backups | 90 days (daily copies) | Vault lifecycle (planned) | submit-backup (914216784828) |
 
 ---
 
@@ -493,14 +554,14 @@ fields @timestamp, @message
 
 ## 10. Public Repository Security
 
-This repository is **public on GitHub**. The security model is "secure by design" - no security through obscurity.
+All four repositories are **public on GitHub**. The security model is "secure by design" -- no security through obscurity. This section covers the submit repository (`antonycc/submit.diyaccounting.co.uk`). Gateway (`antonycc/www.diyaccounting.co.uk`), spreadsheets (`antonycc/diy-accounting`), and root (`antonycc/root.diyaccounting.co.uk`) follow the same principle.
 
 ### 10.1 What Is Public (By Design)
 
 | Item | Why It's Safe |
 |------|---------------|
-| AWS Account ID `887764105431` | Account IDs are identifiers, not secrets. AWS IAM controls access. |
-| HMRC Client IDs | Public OAuth identifiers. Secrets stored in GitHub Secrets → AWS Secrets Manager. |
+| AWS Account IDs (887764105431, 283165661847, 064390746177, 367191799875, 972912397388, 914216784828) | Account IDs are identifiers, not secrets. AWS IAM controls access per account. |
+| HMRC Client IDs | Public OAuth identifiers. Secrets stored in GitHub Secrets -> AWS Secrets Manager. |
 | Secret ARNs | Just references to secrets, not the secrets themselves. |
 | Infrastructure code (CDK) | Reveals architecture but not access credentials. |
 | `.env.ci`, `.env.prod` | No secrets, only configuration and ARN references. |
@@ -533,6 +594,97 @@ This repository is **public on GitHub**. The security model is "secure by design
 
 ---
 
+## 11. Console Access and AWS CLI
+
+### 11.1 IAM Identity Center (SSO)
+
+All console and CLI access uses IAM Identity Center. There are no IAM users. One SSO portal provides access to all 6 accounts.
+
+- **SSO portal**: `https://d-9c67480c02.awsapps.com/start/`
+- **MFA**: Required for all SSO sessions
+- **Session duration**: ~8-12 hours across all profiles
+
+### 11.2 AWS CLI SSO Profiles
+
+```bash
+# Login once (opens browser for MFA)
+aws sso login --sso-session diyaccounting
+
+# Use --profile for any account
+aws --profile management route53 list-hosted-zones
+aws --profile submit-ci cloudformation describe-stacks
+aws --profile submit-prod dynamodb scan --table-name prod-env-bundles
+aws --profile submit-backup backup list-backup-vaults
+```
+
+| Profile | Account ID | Purpose |
+|---------|------------|---------|
+| `management` | 887764105431 | Route53, Organizations, IAM Identity Center |
+| `gateway` | 283165661847 | Gateway static site (managed by separate repo) |
+| `spreadsheets` | 064390746177 | Spreadsheets static site (managed by separate repo) |
+| `submit-ci` | 367191799875 | Submit CI environment |
+| `submit-prod` | 972912397388 | Submit production environment |
+| `submit-backup` | 914216784828 | Cross-account backup vault |
+
+### 11.3 Credential Model
+
+| Access method | How it works | Scope |
+|---------------|-------------|-------|
+| **SSO portal** | Browser-based login with MFA | All accounts (per assigned permission set) |
+| **AWS CLI SSO profiles** | `aws sso login` + `--profile` per command | All accounts (per assigned permission set) |
+| **GitHub Actions OIDC** | Per-account OIDC provider, scoped to the deploying repository | One account per OIDC trust |
+| **Legacy IAM users** | Removed during Phase 1.5 cleanup | None (SSO replaced all IAM users) |
+
+Each account's OIDC provider trusts only its own repository:
+
+| Account | OIDC Trust |
+|---------|-----------|
+| management (887764105431) | `repo:antonycc/root.diyaccounting.co.uk:*` |
+| gateway (283165661847) | `repo:antonycc/www.diyaccounting.co.uk:*` |
+| spreadsheets (064390746177) | `repo:antonycc/diy-accounting:*` |
+| submit-ci (367191799875) | `repo:antonycc/submit.diyaccounting.co.uk:*` |
+| submit-prod (972912397388) | `repo:antonycc/submit.diyaccounting.co.uk:*` |
+
+---
+
+## 12. Backup and Restore
+
+### 12.1 Current State
+
+Each submit account has a local backup vault with daily, weekly, and monthly compliance schedules. Cross-account backup shipping to submit-backup (914216784828) is planned but not yet implemented.
+
+| Resource | submit-ci (367191799875) | submit-prod (972912397388) | submit-backup (914216784828) |
+|----------|--------------------------|----------------------------|------------------------------|
+| Local vault | `ci-env-primary-vault` | `prod-env-primary-vault` | -- |
+| Backup KMS key | `ci-env-backup` | `prod-env-backup` | Planned |
+| Cross-account vault | -- | -- | `submit-cross-account-vault` (planned) |
+
+### 12.2 Backup Schedules (Local Vault)
+
+| Schedule | Time (UTC) | Retention | Cold storage |
+|----------|-----------|-----------|-------------|
+| Daily | 02:00 | 35 days | No |
+| Weekly (Sundays) | 03:00 | 90 days | No |
+| Monthly compliance (1st) | 04:00 | 7 years (2,555 days) | After 90 days |
+
+### 12.3 Recovery Objectives
+
+| Metric | Target | Implementation |
+|--------|--------|----------------|
+| **RPO** (Recovery Point Objective) | < 24 hours | Daily backups + PITR on critical tables |
+| **RTO** (Recovery Time Objective) | < 4 hours | Automated restore scripts |
+| **Backup Retention** | 90 days (cross-account), 7 years (monthly compliance) | Vault lifecycle policies |
+
+### 12.4 Disaster Recovery
+
+IaC repeatability is proven: submit-prod (972912397388) was deployed from scratch to a new account during Phase 1.4, using only code + backups + salt. See `AWS_ACCOUNT_MIGRATION.md` for details.
+
+**Recovery equation**: Salt + Backups + Code = Full recovery from total loss.
+
+For detailed backup architecture, table inventory, cross-account backup plans, and restore testing procedures, see `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md`.
+
+---
+
 ## Appendix A: File References
 
 | File | Purpose |
@@ -543,17 +695,36 @@ This repository is **public on GitHub**. The security model is "secure by design
 | `app/lib/dataMasking.js` | Sensitive data masking for DynamoDB |
 | `infra/main/java/.../utils/SubHashSaltHelper.java` | CDK helper for salt IAM permissions |
 | `infra/main/java/.../stacks/IdentityStack.java` | Cognito + Google IdP configuration |
+| `infra/main/java/.../stacks/BackupStack.java` | CDK infrastructure for local backup vault and plans |
+| `infra/main/java/.../stacks/DataStack.java` | DynamoDB table definitions including salt encryption KMS key |
+| `scripts/aws-accounts/restore-salt.sh` | Cross-account salt restoration (Paths 1 and 3) |
+| `scripts/aws-accounts/restore-tables-from-backup.sh` | Cross-account DynamoDB table copy |
 
 ---
 
-## Appendix B: Contact Information
+## Appendix B: Account Quick Reference
+
+| Account | ID | SSO Profile | Contains User Data? |
+|---------|-----|-------------|---------------------|
+| management | 887764105431 | `management` | No |
+| gateway | 283165661847 | `gateway` | No (separate repo) |
+| spreadsheets | 064390746177 | `spreadsheets` | No (separate repo) |
+| submit-ci | 367191799875 | `submit-ci` | Test data only |
+| submit-prod | 972912397388 | `submit-prod` | Yes |
+| submit-backup | 914216784828 | `submit-backup` | Backup copies (planned) |
+
+SSO portal: `https://d-9c67480c02.awsapps.com/start/`
+
+---
+
+## Appendix C: Contact Information
 
 | Contact | Purpose | Details |
 |---------|---------|---------|
 | Administrator | Data requests, incidents | admin@diyaccounting.co.uk |
 | ICO | GDPR guidance, breach reporting | https://ico.org.uk/ |
 | HMRC SDS Team | MTD compliance | SDSTeam@hmrc.gov.uk |
-| AWS Support | Infrastructure incidents | Via AWS Console |
+| AWS Support | Infrastructure incidents | Via AWS Console (access any account via SSO portal) |
 
 ---
 

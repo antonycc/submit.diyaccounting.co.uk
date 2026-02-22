@@ -1277,6 +1277,29 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
 
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
+
+    // The page auto-submits on DOMContentLoaded when URL params and an HMRC token exist.
+    // DOMContentLoaded may fire AFTER our networkidle resolved (scripts loaded but not yet executed),
+    // so we must wait for the auto-submit API call to complete before checking page state.
+    // Strategy: if the loading spinner appears, an auto-submit is in flight — wait for it.
+    // Also wait for a second networkidle to catch the auto-submit API call.
+    const spinnerVisible = await page.locator("#loadingSpinner").isVisible();
+    if (spinnerVisible) {
+      console.log("[clickObligationViewReturn] Loading spinner detected — auto-submit in progress, waiting...");
+      await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30000 });
+      await page.waitForTimeout(200);
+    } else {
+      // Spinner not yet visible — DOMContentLoaded may not have fired yet.
+      // Give it a moment, then re-check.
+      await page.waitForTimeout(500);
+      const spinnerVisibleRetry = await page.locator("#loadingSpinner").isVisible();
+      if (spinnerVisibleRetry) {
+        console.log("[clickObligationViewReturn] Loading spinner appeared after delay — auto-submit in progress, waiting...");
+        await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30000 });
+        await page.waitForTimeout(200);
+      }
+    }
+
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-view-return-navigated.png` });
 
     // Extract URL params
@@ -1287,10 +1310,9 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
 
     console.log(`[clickObligationViewReturn] Navigated to viewVatReturn.html: vrn=${vrn}, periodStart=${periodStart}, periodEnd=${periodEnd}`);
 
-    // The page auto-submits when URL params are present and an HMRC token exists.
     // Check if results are already visible (auto-submitted) or form is visible (needs manual submit).
-    const formVisible = await page.locator("#vatReturnForm").isVisible({ timeout: 2000 }).catch(() => false);
-    const resultsVisible = await page.locator("#returnResults").isVisible({ timeout: 2000 }).catch(() => false);
+    const formVisible = await page.locator("#searchForm").isVisible();
+    const resultsVisible = await page.locator("#returnResults").isVisible();
 
     if (resultsVisible && !formVisible) {
       console.log("[clickObligationViewReturn] Page auto-submitted (token with sufficient scope existed). Results already visible.");

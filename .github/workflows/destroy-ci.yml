@@ -182,6 +182,29 @@ jobs:
           echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
           echo "deployed-deployment-names=$DEPLOYED_DEPLOYMENT_NAMES" >> "$GITHUB_OUTPUT"
 
+      # Route 53 is in the management account — switch credentials for the query
+      - name: Configure management account role via GitHub OIDC (for Route 53)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume management account deployment role (for Route 53)
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
       # Get the deployment name that ci.submit.diyaccounting.co.uk aliases to in Route 53
       - name: Get the public record names
         id: public-deployment-names
@@ -233,6 +256,29 @@ jobs:
 
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
           echo "public-deployment-names=$PUBLIC_DEPLOYMENT_NAMES" >> "$GITHUB_OUTPUT"
+
+      # Switch back to submit-ci account for remaining steps
+      - name: Restore submit-ci AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Restore submit-ci AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       # Select ci deployment names of stacks to destroy, excluding public/last-known-good
       - name: Select deployment names for destruction

@@ -30,11 +30,6 @@ public interface AbstractLambdaProps {
     String ingestProvisionedConcurrencyAliasArn();
 
     @Value.Default
-    default int ingestReservedConcurrency() {
-        return 5;
-    }
-
-    @Value.Default
     default int ingestProvisionedConcurrency() {
         return 0;
     }

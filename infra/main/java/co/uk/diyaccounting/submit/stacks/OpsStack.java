@@ -217,7 +217,6 @@ public class OpsStack extends Stack {
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames().activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
-                        .ingestReservedConcurrency(2)
                         .ingestLambdaTimeout(Duration.seconds(10))
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .environment(telegramForwarderEnv)

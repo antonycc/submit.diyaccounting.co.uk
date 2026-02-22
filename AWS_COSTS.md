@@ -68,9 +68,59 @@ Free tier is **shared across the entire organisation**, not per-account. Creatin
 | Budget alerts | Organisation-level budgets | Planned |
 | Cost allocation tags | CDK tags on all resources | Planned |
 
+### Per-Account Actual Costs (Multi-Account, February 2026)
+
+**Context**: Account separation completed February 21 2026. Before this date, all workloads ran in management (887764105431). After separation, workloads are distributed across 5 accounts.
+
+#### Monthly Costs (February 2026, first 22 days)
+
+| Account | ID | Feb 1–22 | Projected Monthly | Main Drivers |
+|---------|-----|--------:|------------------:|-------------|
+| **management** | 887764105431 | $372.0 | ~$507 | Legacy costs pre-cleanup ($354 in Jan when it hosted everything). Post-cleanup (Feb 21): ~$3/day = ~$90/month projected going forward. |
+| **submit-ci** | 367191799875 | $13.6 | ~$19 | Cognito ($2.22), CloudFront ($1.69), CloudTrail ($0.99), CloudWatch ($0.40) |
+| **submit-prod** | 972912397388 | $12.0 | ~$16 | Cognito ($3.94), CloudFront ($2.78), CloudWatch ($1.42), Lambda ($0.82) |
+| **gateway** | 283165661847 | $0.4 | ~$1 | CloudFront ($0.18), S3 ($0.02) |
+| **spreadsheets** | 064390746177 | $0.4 | ~$1 | CloudFront ($0.10), S3 ($0.004) |
+| **submit-backup** | 914216784828 | $0.0 | ~$0 | No resources provisioned yet |
+| **Total** | | **$398.4** | | |
+
+#### Post-Cleanup Steady-State (extrapolated from Feb 22 daily costs)
+
+On Feb 22, the first full day after management account cleanup:
+
+| Account | Daily Cost | Projected Monthly |
+|---------|----------:|------------------:|
+| submit-ci | $3.98 | ~$120 |
+| submit-prod | $2.92 | ~$88 |
+| gateway | $0.18 | ~$6 |
+| management | $0.11 | ~$3 |
+| spreadsheets | $0.10 | ~$3 |
+| **Total** | **$7.29** | **~$220** |
+
+**Note**: Feb 22 was the first day of multi-account operation. Some services (Lambda PC, WAF) had been recently deployed/reconfigured. These numbers will stabilize over the coming weeks.
+
+#### Top Per-Account Per-Service Costs (Feb 21–22, 2 days combined)
+
+| Account | Service | 2-Day Cost |
+|---------|---------|----------:|
+| submit-prod | Amazon Cognito | $3.94 |
+| submit-prod | Amazon CloudFront | $2.78 |
+| submit-ci | Amazon Cognito | $2.22 |
+| submit-ci | Amazon CloudFront | $1.69 |
+| submit-prod | AmazonCloudWatch | $1.42 |
+| management | AWS WAF | $1.03 |
+| submit-ci | AWS CloudTrail | $0.99 |
+| submit-prod | AWS Lambda | $0.82 |
+| management | Amazon Cognito | $0.60 |
+| submit-prod | AWS WAF | $0.48 |
+
+**Observation**: Management account still shows WAF ($1.03), Cognito ($0.60), ECR ($0.40), and Lambda ($0.21) charges for Feb 21 — these are residual from before the cleanup completed on Feb 21. These costs should not recur after cleanup.
+
 ---
 
-## Production Environment (24/7, 720 hours)
+## Production Environment — submit-prod (972912397388)
+
+24/7, 720 hours. These estimates reflect the post-optimization target configuration (256MB PC, 51-minute canaries).
 
 | Resource | Details | $/month |
 |---|---|---:|
@@ -129,10 +179,9 @@ Formula: 2 x (30 x 24 x 60 / 51) runs x $0.0012/run = **$2.03/month**
 
 ---
 
-## CI Environment Stacks (24/7 baseline)
+## CI Environment Stacks — submit-ci (367191799875)
 
-These duplicate per-environment resources but share account-level services
-(GuardDuty, Security Hub, CloudTrail, ECR) with production.
+24/7 baseline. These duplicate per-environment resources. Since account separation, CI and prod no longer share account-level services — each account has its own GuardDuty, Security Hub, CloudTrail, and ECR.
 
 | Resource | Details | $/month |
 |---|---|---:|
@@ -216,14 +265,20 @@ and SelfDestruct.
 
 ---
 
-## Monthly Total
+## Monthly Total (Post-Optimization Target)
 
-| Component | $/month |
-|---|---:|
-| Production (env + app, 24/7) | ~$61 |
-| CI environment (24/7 baseline) | ~$10 |
-| CI application (131.4 stack-hours, actuals) | ~$7 |
-| **Grand Total** | **~$78** |
+| Component | Account | $/month |
+|---|---|---:|
+| Production (env + app, 24/7) | submit-prod (972912397388) | ~$61 |
+| CI environment (24/7 baseline) | submit-ci (367191799875) | ~$10 |
+| CI application (131.4 stack-hours, actuals) | submit-ci (367191799875) | ~$7 |
+| Gateway static site | gateway (283165661847) | ~$6 |
+| Spreadsheets static site | spreadsheets (064390746177) | ~$3 |
+| Management (DNS, holding page) | management (887764105431) | ~$3 |
+| Backup vault (planned) | submit-backup (914216784828) | ~$5 |
+| **Grand Total** | | **~$95** |
+
+**Note**: The $78 single-account estimate from before account separation has increased to ~$95 due to per-account overhead (duplicated Secrets Manager, CloudTrail, ECR in each account). See "Multi-Account Cost Overhead" above.
 
 ---
 
@@ -342,7 +397,9 @@ application with low-urgency monitoring, sub-hour detection is sufficient.
 
 ---
 
-## Actual AWS Costs (Jan 16 – Feb 16 2026)
+## Actual AWS Costs (Jan 16 – Feb 16 2026, Pre-Separation)
+
+**Note**: This data is from the **pre-separation era** when all workloads ran in a single account (887764105431). Account separation completed February 21 2026. For post-separation per-account costs, see "Per-Account Actual Costs" above.
 
 **Configuration during this period:** All Lambda functions at 1024MB,
 Synthetics canaries running every 5 minutes. The 256MB/51-min optimizations
@@ -442,24 +499,39 @@ With all optimizations: ~$289 − $177 = **~$112/month** (excl tax).
 
 ### How to Re-Query
 
+Use SSO profiles to query Cost Explorer. The management account sees all accounts; member accounts see only their own costs.
+
 ```bash
-# Total spend by service (adjust dates as needed)
-aws ce get-cost-and-usage \
-  --time-period Start=2026-01-16,End=2026-02-16 \
+# Organisation-wide: per-account costs (run from management account)
+aws --profile management ce get-cost-and-usage \
+  --time-period Start=2026-02-01,End=2026-03-01 \
+  --granularity MONTHLY \
+  --metrics UnblendedCost \
+  --group-by Type=DIMENSION,Key=LINKED_ACCOUNT
+
+# Organisation-wide: per-account per-service (run from management account)
+aws --profile management ce get-cost-and-usage \
+  --time-period Start=2026-02-21,End=2026-02-23 \
+  --granularity DAILY \
+  --metrics UnblendedCost \
+  --group-by Type=DIMENSION,Key=LINKED_ACCOUNT Type=DIMENSION,Key=SERVICE
+
+# Single account: per-service breakdown
+aws --profile submit-prod ce get-cost-and-usage \
+  --time-period Start=2026-02-01,End=2026-03-01 \
   --granularity MONTHLY \
   --metrics UnblendedCost \
   --group-by Type=DIMENSION,Key=SERVICE
 
-# Breakdown by usage type (shows PC vs on-demand, invalidations, canary runs, etc.)
-aws ce get-cost-and-usage \
-  --time-period Start=2026-01-16,End=2026-02-16 \
+# Single account: usage type breakdown (shows PC vs on-demand, invalidations, etc.)
+aws --profile submit-ci ce get-cost-and-usage \
+  --time-period Start=2026-02-01,End=2026-03-01 \
   --granularity MONTHLY \
   --metrics UnblendedCost UsageQuantity \
   --group-by Type=DIMENSION,Key=USAGE_TYPE
 ```
 
-The deployment role now has `ce:*` permission. Use `. ./scripts/aws-assume-submit-deployment-role.sh`
-to assume it.
+SSO profiles: `management`, `submit-ci`, `submit-prod`, `gateway`, `spreadsheets`, `submit-backup`. Login with `aws sso login --sso-session diyaccounting`.
 
 ---
 
@@ -474,3 +546,6 @@ to assume it.
 - Self-destructing CI stacks (SelfDestructStack tears down after timer)
 - 256MB PC functions (measured at 16% memory utilisation at 1024MB)
 - 51-minute canary interval (down from 5 minutes)
+- Static sites (gateway, spreadsheets) in minimal accounts — CloudFront + S3 only, no compute
+- Single Route53 zone in management account — not duplicated per account
+- Consolidated billing via Organizations — volume discounts aggregate across accounts

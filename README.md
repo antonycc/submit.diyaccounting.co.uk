@@ -5,7 +5,7 @@
 Submit UK VAT returns to HMRC using the official Making Tax Digital (MTD) APIs.
 
 **Website**: https://submit.diyaccounting.co.uk
-**Status**: Sandbox tested, seeking HMRC production credentials
+**Status**: Production
 
 ---
 
