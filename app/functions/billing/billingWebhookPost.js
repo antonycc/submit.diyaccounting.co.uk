@@ -161,6 +161,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     event: "subscription-activated",
     site: "submit",
     summary: `Subscription activated: ${bundleId} for ${maskEmail(customerEmail)}`,
+    actor: test ? "test-user" : "customer",
     flow: "user-journey",
     detail: { bundleId, subscriptionId },
   }).catch(() => {});
@@ -217,12 +218,13 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
     event: "subscription-renewed",
     site: "submit",
     summary: `Subscription renewed: ${bundleId}`,
+    actor: test ? "test-user" : "customer",
     flow: "user-journey",
     detail: { bundleId, subscriptionId },
   }).catch(() => {});
 }
 
-async function handleSubscriptionUpdated(subscription) {
+async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
   logger.info({
     message: "Processing customer.subscription.updated",
     subscriptionId: subscription.id,
@@ -250,9 +252,21 @@ async function handleSubscriptionUpdated(subscription) {
   });
 
   logger.info({ message: "Subscription status updated", hashedSub, bundleId, status: subscription.status });
+
+  // Notify when user schedules cancellation via Stripe portal
+  if (subscription.cancel_at_period_end) {
+    publishActivityEvent({
+      event: "subscription-cancellation-scheduled",
+      site: "submit",
+      summary: `Cancellation scheduled: ${bundleId}`,
+      actor: test ? "test-user" : "customer",
+      flow: "user-journey",
+      detail: { bundleId, subscriptionId: subscription.id },
+    }).catch(() => {});
+  }
 }
 
-async function handleSubscriptionDeleted(subscription) {
+async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
   logger.info({
     message: "Processing customer.subscription.deleted",
     subscriptionId: subscription.id,
@@ -284,12 +298,13 @@ async function handleSubscriptionDeleted(subscription) {
     event: "subscription-canceled",
     site: "submit",
     summary: `Subscription canceled: ${bundleId}`,
+    actor: test ? "test-user" : "customer",
     flow: "user-journey",
     detail: { bundleId, subscriptionId: subscription.id },
   }).catch(() => {});
 }
 
-async function handlePaymentFailed(invoice) {
+async function handlePaymentFailed(invoice, { test = false } = {}) {
   logger.warn({
     message: "Processing invoice.payment_failed",
     subscriptionId: invoice.subscription,
@@ -305,12 +320,27 @@ async function handlePaymentFailed(invoice) {
     return;
   }
 
+  const { hashedSub, bundleId } = subRecord;
+
+  // Mark bundle as past_due so the UI can reflect payment issues
+  await updateBundleSubscriptionFields(hashedSub, bundleId, {
+    subscriptionStatus: "past_due",
+  });
+
+  // Update subscription record
+  await updateSubscription(`stripe#${subscriptionId}`, {
+    status: "past_due",
+  });
+
+  logger.info({ message: "Subscription marked as past_due after payment failure", hashedSub, bundleId });
+
   publishActivityEvent({
     event: "payment-failed",
     site: "submit",
-    summary: `Payment failed: ${subRecord.bundleId}`,
+    summary: `Payment failed: ${bundleId}`,
+    actor: test ? "test-user" : "customer",
     flow: "user-journey",
-    detail: { bundleId: subRecord.bundleId, subscriptionId },
+    detail: { bundleId, subscriptionId },
   }).catch(() => {});
 }
 
@@ -361,19 +391,35 @@ export async function ingestHandler(event) {
         await handleInvoicePaid(stripeEvent.data.object, { test });
         break;
       case "customer.subscription.updated":
-        await handleSubscriptionUpdated(stripeEvent.data.object);
+        await handleSubscriptionUpdated(stripeEvent.data.object, { test });
         break;
       case "customer.subscription.deleted":
-        await handleSubscriptionDeleted(stripeEvent.data.object);
+        await handleSubscriptionDeleted(stripeEvent.data.object, { test });
         break;
       case "invoice.payment_failed":
-        await handlePaymentFailed(stripeEvent.data.object);
+        await handlePaymentFailed(stripeEvent.data.object, { test });
         break;
       case "charge.refunded":
         logger.info({ message: "Charge refunded (audit log)", chargeId: stripeEvent.data.object.id });
+        publishActivityEvent({
+          event: "charge-refunded",
+          site: "submit",
+          summary: `Charge refunded: ${stripeEvent.data.object.id}`,
+          actor: test ? "test-user" : "customer",
+          flow: "user-journey",
+          detail: { chargeId: stripeEvent.data.object.id },
+        }).catch(() => {});
         break;
       case "charge.dispute.created":
         logger.warn({ message: "Dispute created (alert)", chargeId: stripeEvent.data.object.id });
+        publishActivityEvent({
+          event: "dispute-created",
+          site: "submit",
+          summary: `Dispute created: ${stripeEvent.data.object.id}`,
+          actor: test ? "test-user" : "customer",
+          flow: "user-journey",
+          detail: { chargeId: stripeEvent.data.object.id },
+        }).catch(() => {});
         break;
       default:
         logger.info({ message: "Unhandled webhook event type", type: stripeEvent.type });

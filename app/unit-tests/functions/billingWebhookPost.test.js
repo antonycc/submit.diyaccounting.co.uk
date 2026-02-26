@@ -408,6 +408,133 @@ describe("billingWebhookPost", () => {
     expect(body.error).toContain("processing error");
   });
 
+  test("invoice.payment_failed updates bundle and subscription status to past_due", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_payment_failed",
+      type: "invoice.payment_failed",
+      data: {
+        object: { id: "in_test_fail", subscription: "sub_test_456" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+      subscriptionStatus: "past_due",
+    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" });
+  });
+
+  test("invoice.payment_failed skips when no subscription record found", async () => {
+    mockGetSubscription.mockResolvedValue(null);
+
+    const payload = {
+      id: "evt_test_payment_failed",
+      type: "invoice.payment_failed",
+      data: {
+        object: { id: "in_test_fail", subscription: "sub_test_456" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).not.toHaveBeenCalled();
+    expect(mockUpdateSubscription).not.toHaveBeenCalled();
+  });
+
+  test("invoice.payment_failed skips when no subscription ID in invoice", async () => {
+    const payload = {
+      id: "evt_test_payment_failed_no_sub",
+      type: "invoice.payment_failed",
+      data: {
+        object: { id: "in_test_fail_no_sub", subscription: null },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockGetSubscription).not.toHaveBeenCalled();
+  });
+
+  test("customer.subscription.updated with cancel_at_period_end writes cancellation intent", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_sub_cancel_intent",
+      type: "customer.subscription.updated",
+      data: {
+        object: { id: "sub_test_456", status: "active", cancel_at_period_end: true },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+      subscriptionStatus: "active",
+      cancelAtPeriodEnd: true,
+    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
+      status: "active",
+      cancelAtPeriodEnd: true,
+    });
+  });
+
+  test("charge.refunded returns 200 and logs", async () => {
+    const payload = {
+      id: "evt_test_refund",
+      type: "charge.refunded",
+      data: {
+        object: { id: "ch_test_refund_123" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+  });
+
+  test("charge.dispute.created returns 200 and logs", async () => {
+    const payload = {
+      id: "evt_test_dispute",
+      type: "charge.dispute.created",
+      data: {
+        object: { id: "ch_test_dispute_123" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+  });
+
   test("sets currentPeriodEnd from Stripe subscription when available", async () => {
     const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
     mockSubscriptionsRetrieve.mockResolvedValue({

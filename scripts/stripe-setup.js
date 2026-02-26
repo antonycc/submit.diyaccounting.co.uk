@@ -63,24 +63,44 @@ async function findOrCreatePrice(productId) {
   return price;
 }
 
+const DESIRED_EVENTS = [
+  "checkout.session.completed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "invoice.paid",
+  "invoice.payment_failed",
+  "charge.refunded",
+  "charge.dispute.created",
+];
+
 async function findOrCreateWebhook(url, description) {
   const webhooks = await stripe.webhookEndpoints.list();
   const existing = webhooks.data.find((w) => w.url === url && w.status !== "disabled");
   if (existing) {
-    console.log(`Webhook already exists for ${url}:`, existing.id);
+    // Check if enabled_events need updating
+    const currentEvents = [...(existing.enabled_events || [])].sort();
+    const desiredEvents = [...DESIRED_EVENTS].sort();
+    const needsUpdate = currentEvents.length !== desiredEvents.length || currentEvents.some((e, i) => e !== desiredEvents[i]);
+
+    if (needsUpdate) {
+      console.log(`Webhook exists for ${url}: ${existing.id} — updating enabled_events`);
+      console.log(`  Current: [${currentEvents.join(", ")}]`);
+      console.log(`  Desired: [${desiredEvents.join(", ")}]`);
+      const updated = await stripe.webhookEndpoints.update(existing.id, {
+        enabled_events: DESIRED_EVENTS,
+      });
+      console.log(`  Updated successfully`);
+      return updated;
+    }
+
+    console.log(`Webhook already exists for ${url}:`, existing.id, "(events up to date)");
     return existing;
   }
 
   const webhook = await stripe.webhookEndpoints.create({
     url,
-    enabled_events: [
-      "checkout.session.completed",
-      "customer.subscription.created",
-      "customer.subscription.updated",
-      "customer.subscription.deleted",
-      "invoice.payment_succeeded",
-      "invoice.payment_failed",
-    ],
+    enabled_events: DESIRED_EVENTS,
     description,
   });
   console.log(`Created webhook for ${url}:`, webhook.id);
@@ -100,7 +120,9 @@ async function main() {
     "Proxy environment webhook (ngrok)",
   );
 
-  // CI webhook
+  // CI webhook — CI deployments are ephemeral (SelfDestruct after 2h, sweeper runs on schedule).
+  // Stripe will report delivery failures when CI is between deployments. This is expected.
+  // Suppress failure alert emails in Stripe Dashboard → Webhooks → CI endpoint settings.
   const ciWebhook = await findOrCreateWebhook("https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook", "CI environment webhook");
 
   // Prod webhook
