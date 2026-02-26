@@ -25,12 +25,12 @@
 - **Renewal handling**: `invoice.paid` webhook resets tokens, updates `currentPeriodEnd`, updates subscription record, sends Telegram "subscription-renewed"
 - **Cancellation intent**: `customer.subscription.updated` webhook writes `cancelAtPeriodEnd` and `subscriptionStatus` to both bundle and subscription records
 - **Cancellation complete**: `customer.subscription.deleted` webhook marks `subscriptionStatus = "canceled"`, sends Telegram "subscription-canceled"
-- **Payment failure**: `invoice.payment_failed` webhook sends Telegram "payment-failed" notification
-- **Audit events**: `charge.refunded` and `charge.dispute.created` logged in handler code
+- **Payment failure**: `invoice.payment_failed` webhook updates bundle/subscription to `past_due`, sends Telegram "payment-failed"
+- **Audit events**: `charge.refunded` and `charge.dispute.created` logged + Telegram notification
 - **Bundle persistence**: Bundles stored in DynamoDB with `subscriptionId`, `subscriptionStatus`, `currentPeriodEnd`, `tokensGranted`, `tokenResetAt`
 - **Stripe portal**: "Manage Subscription" navigates to Stripe billing portal for cancellation/payment method update
 - **Salt versioning**: Multi-version salt registry, read-path fallback, 5-minute TTL cache (Scenario K fix)
-- **Telegram alerting**: Test and live channels correctly routed by bundle qualifier
+- **Telegram alerting**: All webhook events route based on Stripe `livemode` flag — live Stripe → diy-{env}-live channel, test Stripe → diy-{env}-test channel
 - **Behaviour tests**: `paymentBehaviour` covers full funnel including portal cancellation (proxy + CI passing)
 - **Synthetic tests**: `paymentBehaviour` in `synthetic-test.yml` choices and `deploy.yml` post-deployment matrix
 
@@ -73,7 +73,8 @@ Stripe emailed about delivery failures to `https://ci-submit.diyaccounting.co.uk
 | G6 | Stripe event name mismatch in `stripe-setup.js` | High | **FIXED** | Changed `invoice.payment_succeeded` → `invoice.paid` in `stripe-setup.js` |
 | G7 | `charge.refunded` and `charge.dispute.created` not registered | Medium | **FIXED** | Added to `enabled_events` in `stripe-setup.js` |
 | G8 | No CloudWatch EMF billing metrics | Low | Open | Plan Phase 4.5 — none implemented yet |
-| G9 | CI Stripe webhook delivery failures | Low | **Documented** | CI is ephemeral. Comment added to `stripe-setup.js`. Manual action: suppress alerts in Stripe Dashboard → Webhooks → CI endpoint settings. |
+| G9 | CI Stripe webhook delivery failures | Low | **Documented** | CI is ephemeral. Comment added to `stripe-setup.js`. Manual action needed: suppress alerts in Stripe Dashboard → Webhooks → CI endpoint settings. |
+| G10 | Webhook Telegram routing ignored livemode | Medium | **FIXED** | All `publishActivityEvent` calls now set `actor: test ? "test-user" : "customer"` — live Stripe events → live channel, test Stripe → test channel. `{ test }` passed to all handlers. |
 
 ---
 
@@ -140,13 +141,19 @@ Updated `scripts/stripe-setup.js` enabled_events:
 - Added `charge.refunded` and `charge.dispute.created`
 - Added comment about CI webhook expected delivery failures
 
-**Action required**: Existing webhook endpoints in Stripe need to be updated. Re-run `stripe-setup.js` to recreate endpoints with the updated event list, or manually update in Stripe Dashboard. This affects proxy, CI, and prod endpoints.
+Script also adds an update path: when an endpoint already exists, it compares `enabled_events` and calls `stripe.webhookEndpoints.update()` if they differ. Signing secrets are preserved on update.
 
 ### Validation
 
-All lifecycle events handled correctly. `npm test` passes (933 tests, 88 files). `./mvnw clean verify` passes. Remaining validation:
-- [ ] Deploy to CI and verify `paymentBehaviour-ci` still passes
-- [ ] Re-run `stripe-setup.js` against test and live Stripe accounts to update webhook endpoint event registrations
+All lifecycle events handled correctly. `npm test` passes (941 tests, 89 files). `./mvnw clean verify` passes.
+
+**Done (26 Feb 2026)**:
+- [x] Re-run `stripe-setup.js` against test and live Stripe accounts — all 6 endpoints updated (3 test + 3 live), `invoice.payment_succeeded` → `invoice.paid`, added `charge.refunded` + `charge.dispute.created`
+- [x] Stripe API keys rotated after use
+- [x] Committed on `mfatotp` branch (`9289615c`), not yet pushed
+
+**Remaining**:
+- [ ] Push and deploy to CI, verify `paymentBehaviour-ci` still passes
 - [ ] Suppress CI webhook failure emails in Stripe Dashboard (G9)
 - [ ] Observe 17 March renewal for real `invoice.paid` handler validation (Phase 2)
 
@@ -284,9 +291,10 @@ These items are DONE and do not need further action:
 - **Salt cache TTL fix**: 5-minute TTL in subHasher.js (commit af2ec076).
 - **Lean deploy DEPLOYMENT_NAME fix**: Commented out in .env.prod and .env.ci.
 - **Pass generation**: Done via admin workflow (UI-based generation deferred).
-- **Phase 1 lifecycle handlers**: All seven event types handled in `billingWebhookPost.js` with DynamoDB updates + Telegram notifications: checkout.session.completed, invoice.paid, customer.subscription.updated, customer.subscription.deleted, invoice.payment_failed, charge.refunded, charge.dispute.created.
+- **Phase 1 lifecycle handlers**: All seven event types handled in `billingWebhookPost.js` with DynamoDB updates + Telegram notifications routed by Stripe livemode (live → live channel, test → test channel).
 - **Phase 1 lifecycle tests**: 7 new unit tests added to `billingWebhookPost.test.js` (19 total).
-- **Phase 1 stripe-setup.js**: Event registration fixed (`invoice.paid`, `charge.refunded`, `charge.dispute.created` added).
+- **Phase 1 stripe-setup.js**: Event registration fixed (`invoice.paid`, `charge.refunded`, `charge.dispute.created` added). Update path added to reconcile events on existing endpoints.
+- **Phase 1 Stripe endpoints updated**: All 6 webhook endpoints (3 test + 3 live) updated via `stripe-setup.js` on 26 Feb 2026. API keys rotated.
 - **Phase 3 synthetic tests**: `paymentBehaviour` in `synthetic-test.yml` and `deploy.yml`.
 - **Phase 4.1 accessibility**: Pa11y configs include `usage.html` and `bundles.html`.
 
@@ -295,7 +303,7 @@ These items are DONE and do not need further action:
 ## Phase Dependencies (updated)
 
 ```
-Phase 1: Subscription Lifecycle Handlers — DONE (G1-G7 fixed, G8 deferred to Phase 4)
+Phase 1: Subscription Lifecycle Handlers — DONE (G1-G7,G10 fixed, G8 deferred to Phase 4)
     |
     v
 Phase 2: Human Test in Prod — IN PROGRESS (first renewal 17 March 2026)
