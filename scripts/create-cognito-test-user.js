@@ -16,7 +16,7 @@ import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
   AdminSetUserPasswordCommand,
-  AdminInitiateAuthCommand,
+  InitiateAuthCommand,
   AssociateSoftwareTokenCommand,
   VerifySoftwareTokenCommand,
   AdminSetUserMFAPreferenceCommand,
@@ -109,12 +109,13 @@ async function main() {
     console.log("Enrolling TOTP MFA device...");
 
     // Step 1: Authenticate the user to get an access token
-    // MFA is OPTIONAL and user hasn't enrolled yet, so this returns tokens directly
+    // Uses InitiateAuth (not AdminInitiateAuth) because the User Pool Client has
+    // ALLOW_USER_PASSWORD_AUTH enabled but not ALLOW_ADMIN_USER_PASSWORD_AUTH.
+    // MFA is OPTIONAL and user hasn't enrolled yet, so this returns tokens directly.
     const authResponse = await cognitoClient.send(
-      new AdminInitiateAuthCommand({
-        UserPoolId: userPoolId,
+      new InitiateAuthCommand({
         ClientId: userPoolClientId,
-        AuthFlow: "ADMIN_USER_SRP_AUTH" === "skip" ? "ADMIN_USER_SRP_AUTH" : "USER_PASSWORD_AUTH",
+        AuthFlow: "USER_PASSWORD_AUTH",
         AuthParameters: {
           USERNAME: testEmail,
           PASSWORD: testPassword,
