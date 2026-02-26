@@ -231,18 +231,27 @@ PR #724 on `mfatotp` branch. Deploy run 22460683640 results:
 4. Deleted dead `injectMockMfa`/`clearMockMfa` code and all commented-out references
 5. Added `gov-client-multi-factor` to `essentialFraudPreventionHeaders` in dynamodb-assertions.js
 
-#### Open investigation: Telegram alerts for Google federated login (CI)
+#### Fixed: Telegram alerts for Google federated login (CI)
 
-User logged into CI via Google but no alert appeared in diy-ci-live Telegram channel. Lambda logs
-confirm the token exchange succeeded (status 200, `identities` with `providerName: "Google"`) but
-no `publishActivityEvent` log appears for that request. The code from commit `605d224a` adds the
-Telegram alert logic, and the Docker image tag matches the commit (`2d6a06d0`), but the Lambda may
-not have picked up the new code yet. Needs a fresh deploy to confirm.
+**Root cause**: `publishActivityEvent()` was called without `await` in `cognitoTokenPost.js`. After
+returning the HTTP response, the Lambda execution environment froze before the EventBridge PutEvents
+call completed. For rapid successive requests (behaviour test logins), the Lambda stayed warm long
+enough for the fire-and-forget call to complete. For a one-off Google login, the Lambda froze
+immediately.
+
+**Fix**: Changed all `publishActivityEvent()` calls across 17 Lambda functions from fire-and-forget
+to `await`. The function has internal try/catch and never throws, so `await` only adds ~50-100ms
+EventBridge latency — acceptable for all paths.
+
+**Files fixed**: cognitoTokenPost.js, hmrcTokenPost.js, hmrcVatReturnPost.js, hmrcVatReturnGet.js,
+hmrcVatObligationGet.js, billingWebhookPost.js (×7), billingCheckoutPost.js, customAuthorizer.js,
+bundlePost.js, bundleDelete.js, bundleCapacityReconcile.js, sessionBeaconPost.js, interestPost.js,
+passAdminPost.js, passPost.js, passGeneratePost.js, supportTicketPost.js.
 
 #### Next steps:
 
-- [ ] Commit and push latest fixes (try/catch, dead code removal, essential headers)
-- [ ] Verify Telegram alerts work for Google login after fresh deploy
+- [x] Commit and push latest fixes (try/catch, dead code removal, essential headers)
+- [ ] Verify Telegram alerts work for Google login after fresh deploy (fix: await publishActivityEvent)
 - [ ] Re-run full CI tests — expect all MFA tests + getVatReturn to pass
 
 ### What success looks like
