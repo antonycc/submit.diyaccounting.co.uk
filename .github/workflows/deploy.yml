@@ -350,6 +350,16 @@ jobs:
         run: |
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
 
+      - name: Upload Maven build artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: maven-target
+          path: |
+            target/submit-application.jar
+            target/submit-environment.jar
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
         id: self-destruct-start
         shell: bash
@@ -424,9 +434,6 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
@@ -447,6 +454,8 @@ jobs:
           docker buildx build \
             --platform linux/arm64 \
             --provenance=false \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
             --load \
             -t "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" \
             -f Dockerfile .
@@ -1048,7 +1057,16 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Download Maven build artifact
+        id: download-maven-api
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: maven-target
+          path: target/
+
       - name: Cache Maven build output
+        if: steps.download-maven-api.outcome != 'success'
         uses: actions/cache@v4
         with:
           path: target
@@ -1365,8 +1383,17 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Cache Maven build output
+      - name: Download Maven build artifact
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        id: download-maven-publish
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: maven-target
+          path: target/
+
+      - name: Cache Maven build output
+        if: ${{ steps.download-maven-publish.outcome != 'success' && (needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true') }}
         uses: actions/cache@v4
         with:
           path: target

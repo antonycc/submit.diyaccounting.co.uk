@@ -1,7 +1,7 @@
 # Plan: Deploy Pipeline Optimisation
 
 **Created**: 26 February 2026
-**Status**: Proposal — awaiting approval
+**Status**: In progress — 2.2 (Docker layer caching), 1.1 (JAR as artifact), 1.2 (QEMU removal) implemented
 
 ---
 
@@ -95,7 +95,7 @@ This means: if the cache hit restored the JAR, **Maven is skipped**. The cache w
 
 ### Phase 1: Quick Wins (Low Risk)
 
-#### 1.1 Upload Maven JAR as artifact instead of cache
+#### 1.1 Upload Maven JAR as artifact instead of cache — DONE
 
 **Problem**: Each CDK stack job downloads the full `target/` cache independently.
 **Solution**: `mvn-package` job saves only `target/submit-application.jar` as a GitHub Actions artifact. CDK stack jobs download this small artifact (~20MB) instead of the full `target/` cache (~100MB+).
@@ -120,7 +120,7 @@ This means: if the cache hit restored the JAR, **Maven is skipped**. The cache w
 # Remove the conditional Maven build entirely
 ```
 
-#### 1.2 Skip QEMU setup in deploy.yml docker-build
+#### 1.2 Skip QEMU setup in deploy.yml docker-build — DONE
 
 **Problem**: `docker/setup-qemu-action@v3` takes ~30s and is only needed if running the ARM64 image locally.
 **Current usage**: `docker buildx build --platform linux/arm64 --load` — this uses QEMU for the final stage (the Lambda base image is ARM64), but the builder stage uses `$BUILDPLATFORM`.
@@ -160,17 +160,10 @@ deploy-parallel-stacks:
 **Benefit**: Saves 3 runner setup costs (~3 × 45s = ~2min).
 **Risk**: Medium — if one stack fails, the whole job fails (need error handling per stack).
 
-#### 2.2 Docker layer caching
+#### 2.2 Docker layer caching — DONE
 
 **Problem**: Docker ARM64 build takes 5-10min, even when only application code changed.
-**Solution**: Use GitHub Actions cache for Docker buildx layers.
-
-```yaml
-- uses: docker/build-push-action@v6
-  with:
-    cache-from: type=gha
-    cache-to: type=gha,mode=max
-```
+**Solution**: Added `--cache-from type=gha --cache-to type=gha,mode=max` to `docker buildx build` in both `deploy.yml` and `deploy-app.yml`.
 
 **Benefit**: On code-only changes (no dependency changes), Docker build drops to ~1-2min.
 **Risk**: Low — standard buildx cache pattern. GHA cache is limited to 10GB total.
@@ -228,18 +221,19 @@ When only `app/` and/or `web/` changed:
 
 ## Priority Matrix
 
-| # | Optimisation | Effort | Benefit | Risk |
-|---|-------------|--------|---------|------|
-| 1.1 | JAR as artifact | Low | Medium (~1-2min per deploy) | Low |
-| 1.2 | Skip QEMU | Low | Low (~30s) | Low |
-| 2.2 | Docker layer caching | Low | High (~3-8min on code-only changes) | Low |
-| 2.3 | Skip CDK synth for JS changes | Low | Medium (~5min on test.yml) | Low |
-| 3.1 | Auto lean deploy | Medium | High (~10min for app-only) | Medium |
-| 2.1 | Consolidated CDK deploy | Medium | Medium (~2min) | Medium |
-| 3.2 | Parallel ECR push | Low | Low (~1min) | Low |
-| 1.3 | Combine api/publish Maven | Low | Low (~30s) | Low |
+| # | Optimisation | Effort | Benefit | Risk | Status |
+|---|-------------|--------|---------|------|--------|
+| 1.1 | JAR as artifact | Low | Medium (~1-2min per deploy) | Low | **DONE** |
+| 1.2 | Skip QEMU | Low | Low (~30s) | Low | **DONE** |
+| 2.2 | Docker layer caching | Low | High (~3-8min on code-only changes) | Low | **DONE** |
+| 2.3 | Skip CDK synth for JS changes | Medium | Medium (~5min on test.yml) | Medium | Deferred (test.yml called from deploy.yml via workflow_call) |
+| 3.1 | Auto lean deploy | Medium | High (~10min for app-only) | Medium | Open |
+| 2.1 | Consolidated CDK deploy | Medium | Medium (~2min) | Medium | Open |
+| 3.2 | Parallel ECR push | Low | Low (~1min) | Low | Open |
+| 1.3 | Combine api/publish Maven | Low | Low (~30s) | Low | Superseded by 1.1 |
 
-**Recommended order**: 2.2 → 1.1 → 2.3 → 3.1 → 2.1 → 3.2
+**Implemented**: 2.2 (Docker layer caching) + 1.1 (JAR as artifact) + 1.2 (QEMU removal)
+**Next recommended**: 3.1 (auto lean deploy) → 2.1 (consolidated CDK deploy)
 
 Docker layer caching (2.2) gives the highest ROI with lowest effort. The auto lean deploy (3.1) gives the most dramatic improvement for the most common case (app-only changes).
 
