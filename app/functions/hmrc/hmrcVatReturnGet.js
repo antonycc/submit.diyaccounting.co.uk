@@ -612,9 +612,9 @@ export async function getVatReturn(
     // Workers of this function may choose to map these to HTTP responses
     return { hmrcResponse, vatReturn: null };
   }
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "vat-return-queried",
     summary: "VAT return queried",
-  }).catch(() => {});
+  });
   return { hmrcResponse, vatReturn: hmrcResponse.data, hmrcRequestUrl };
 }

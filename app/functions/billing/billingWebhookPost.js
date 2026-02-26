@@ -157,14 +157,14 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     logger.info({ message: "Subscription record stored", subscriptionId, hashedSub });
   }
 
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "subscription-activated",
     site: "submit",
     summary: `Subscription activated: ${bundleId} for ${maskEmail(customerEmail)}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
     detail: { bundleId, subscriptionId },
-  }).catch(() => {});
+  });
 }
 
 async function handleInvoicePaid(invoice, { test = false } = {}) {
@@ -214,14 +214,14 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
 
   logger.info({ message: "Tokens refreshed on invoice.paid", hashedSub, bundleId, tokensGranted });
 
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "subscription-renewed",
     site: "submit",
     summary: `Subscription renewed: ${bundleId}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
     detail: { bundleId, subscriptionId },
-  }).catch(() => {});
+  });
 }
 
 async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
@@ -255,14 +255,14 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
 
   // Notify when user schedules cancellation via Stripe portal
   if (subscription.cancel_at_period_end) {
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "subscription-cancellation-scheduled",
       site: "submit",
       summary: `Cancellation scheduled: ${bundleId}`,
       actor: test ? "test-user" : "customer",
       flow: "user-journey",
       detail: { bundleId, subscriptionId: subscription.id },
-    }).catch(() => {});
+    });
   }
 }
 
@@ -294,14 +294,14 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
 
   logger.info({ message: "Subscription canceled", hashedSub, bundleId });
 
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "subscription-canceled",
     site: "submit",
     summary: `Subscription canceled: ${bundleId}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
     detail: { bundleId, subscriptionId: subscription.id },
-  }).catch(() => {});
+  });
 }
 
 async function handlePaymentFailed(invoice, { test = false } = {}) {
@@ -334,14 +334,14 @@ async function handlePaymentFailed(invoice, { test = false } = {}) {
 
   logger.info({ message: "Subscription marked as past_due after payment failure", hashedSub, bundleId });
 
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "payment-failed",
     site: "submit",
     summary: `Payment failed: ${bundleId}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
     detail: { bundleId, subscriptionId },
-  }).catch(() => {});
+  });
 }
 
 export async function ingestHandler(event) {
@@ -401,25 +401,25 @@ export async function ingestHandler(event) {
         break;
       case "charge.refunded":
         logger.info({ message: "Charge refunded (audit log)", chargeId: stripeEvent.data.object.id });
-        publishActivityEvent({
+        await publishActivityEvent({
           event: "charge-refunded",
           site: "submit",
           summary: `Charge refunded: ${stripeEvent.data.object.id}`,
           actor: test ? "test-user" : "customer",
           flow: "user-journey",
           detail: { chargeId: stripeEvent.data.object.id },
-        }).catch(() => {});
+        });
         break;
       case "charge.dispute.created":
         logger.warn({ message: "Dispute created (alert)", chargeId: stripeEvent.data.object.id });
-        publishActivityEvent({
+        await publishActivityEvent({
           event: "dispute-created",
           site: "submit",
           summary: `Dispute created: ${stripeEvent.data.object.id}`,
           actor: test ? "test-user" : "customer",
           flow: "user-journey",
           detail: { chargeId: stripeEvent.data.object.id },
-        }).catch(() => {});
+        });
         break;
       default:
         logger.info({ message: "Unhandled webhook event type", type: stripeEvent.type });

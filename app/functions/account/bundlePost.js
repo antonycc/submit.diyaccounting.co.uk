@@ -460,11 +460,11 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   emitCapMetric("BundleGranted", requestedBundle);
   logger.info({ message: "Bundle granted to user:", userId, newBundle });
   const bundleId = requestedBundle;
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "bundle-granted",
     summary: "Bundle granted: " + bundleId,
     detail: { bundleId },
-  }).catch(() => {});
+  });
   const result = {
     status: "granted",
     granted: true,

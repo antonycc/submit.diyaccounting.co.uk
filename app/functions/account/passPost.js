@@ -105,11 +105,11 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "Pass redeemed and bundle granted", code, bundleId: result.bundleId, userId });
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "pass-redeemed",
       summary: "Pass redeemed: " + (result?.bundleId || "unknown"),
       detail: { bundleId: result?.bundleId },
-    }).catch(() => {});
+    });
 
     const testPass = result.pass?.testPass || false;
     return http200OkResponse({

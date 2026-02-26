@@ -96,12 +96,12 @@ export async function ingestHandler(event) {
   const label = grantType === "authorization_code" ? "Login" : "Token refresh";
   const providerLabel = provider ? ` via ${provider}` : "";
   const emailLabel = email ? `: ${maskEmail(email)}` : "";
-  publishActivityEvent({
+  await publishActivityEvent({
     event: eventName,
     summary: `${label}${providerLabel}${emailLabel}`,
     actor,
     flow: "user-journey",
-  }).catch(() => {});
+  });
 
   return result;
 }

@@ -103,11 +103,11 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "User pass created", passTypeId, code: pass.code });
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "pass-generated",
       summary: `User pass generated: ${passTypeId}`,
       detail: { passTypeId, bundleId: pass.bundleId, issuedBy: hashedSub },
-    }).catch(() => {});
+    });
 
     return http200OkResponse({
       request,

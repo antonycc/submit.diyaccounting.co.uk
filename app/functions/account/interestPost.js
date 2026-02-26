@@ -81,11 +81,11 @@ export async function ingestHandler(event) {
     );
 
     logger.info({ message: "Waitlist interest published to SNS", email, requestId });
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "waitlist-registered",
       summary: "Waitlist: " + maskEmail(email),
       detail: { email: maskEmail(email) },
-    }).catch(() => {});
+    });
 
     return http200OkResponse({
       request,

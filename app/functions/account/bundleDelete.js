@@ -279,11 +279,11 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
       await updateUserBundles(userId, bundlesAfterRemoval);
       logger.info({ message: `Bundle ${bundleToRemove} removed for user ${userId}` });
       const bundleId = bundleToRemove;
-      publishActivityEvent({
+      await publishActivityEvent({
         event: "bundle-deleted",
         summary: "Bundle deleted: " + bundleId,
         detail: { bundleId },
-      }).catch(() => {});
+      });
       result = {
         statusCode: 204,
         status: "removed",

@@ -104,11 +104,11 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "Admin pass created", passTypeId, bundleId });
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "pass-generated",
       summary: "Pass generated: " + bundleId,
       detail: { bundleId },
-    }).catch(() => {});
+    });
 
     return http200OkResponse({
       request,

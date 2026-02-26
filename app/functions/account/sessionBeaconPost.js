@@ -43,7 +43,7 @@ export async function ingestHandler(event) {
     // ignore parse errors
   }
 
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "new-session",
     summary: `New session: ${visitorType} from ${country}`,
     actor: visitorType === "ai-agent" ? "ai-agent" : "visitor",
@@ -54,7 +54,7 @@ export async function ingestHandler(event) {
       page,
       userAgent: userAgent.substring(0, 100),
     },
-  }).catch(() => {});
+  });
 
   return http200OkResponse({ request, headers: { "Content-Type": "application/json" }, data: { ok: true } });
 }
