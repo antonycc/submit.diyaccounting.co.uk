@@ -410,17 +410,81 @@ export async function ingestHandler(event) {
           detail: { chargeId: stripeEvent.data.object.id },
         });
         break;
-      case "charge.dispute.created":
-        logger.warn({ message: "Dispute created (alert)", chargeId: stripeEvent.data.object.id });
+      case "charge.dispute.created": {
+        const dispute = stripeEvent.data.object;
+        logger.warn({ message: "Dispute created (alert)", disputeId: dispute.id, chargeId: dispute.charge });
+
+        // Resolve subscription from dispute -> charge -> payment_intent -> subscription
+        let disputeSubscriptionId = null;
+        let disputeCustomerEmail = null;
+        try {
+          const stripeClient = await getStripeClient({ test });
+          const charge = typeof dispute.charge === "string" ? await stripeClient.charges.retrieve(dispute.charge) : dispute.charge;
+          disputeCustomerEmail = charge.billing_details?.email || charge.receipt_email || "";
+          if (charge.payment_intent) {
+            const pi = typeof charge.payment_intent === "string" ? await stripeClient.paymentIntents.retrieve(charge.payment_intent) : charge.payment_intent;
+            if (pi.invoice) {
+              const inv = typeof pi.invoice === "string" ? await stripeClient.invoices.retrieve(pi.invoice) : pi.invoice;
+              disputeSubscriptionId = inv.subscription || null;
+            }
+          }
+        } catch (lookupErr) {
+          logger.warn({ message: "Failed to resolve subscription from dispute", disputeId: dispute.id, error: lookupErr.message });
+        }
+
+        // Flag subscription and bundle records if subscription found
+        if (disputeSubscriptionId) {
+          const disputeSubRecord = await getSubscription(`stripe#${disputeSubscriptionId}`);
+          if (disputeSubRecord) {
+            await updateSubscription(`stripe#${disputeSubscriptionId}`, {
+              disputed: true,
+              disputeId: dispute.id,
+            });
+            await updateBundleSubscriptionFields(disputeSubRecord.hashedSub, disputeSubRecord.bundleId, {
+              disputed: true,
+            });
+            logger.info({ message: "Dispute flagged on subscription and bundle", disputeId: dispute.id, subscriptionId: disputeSubscriptionId });
+          } else {
+            logger.warn({ message: "No subscription record found for dispute flagging", subscriptionId: disputeSubscriptionId });
+          }
+        } else {
+          logger.warn({ message: "Could not resolve subscription for dispute", disputeId: dispute.id });
+        }
+
+        // Auto-accept the dispute — at £9.99/month, contesting costs more (£20-£40 fees) than the charge.
+        // Accepting resolves it faster and avoids the counter fee.
+        try {
+          const stripeClient = await getStripeClient({ test });
+          await stripeClient.disputes.close(dispute.id);
+          logger.info({ message: "Dispute auto-accepted (no-quibble policy)", disputeId: dispute.id });
+        } catch (closeErr) {
+          // Non-fatal — dispute may already be closed or in a state that doesn't allow closing
+          logger.warn({ message: "Failed to auto-accept dispute", disputeId: dispute.id, error: closeErr.message });
+        }
+
         await publishActivityEvent({
           event: "dispute-created",
           site: "submit",
-          summary: `Dispute created: ${stripeEvent.data.object.id}`,
+          summary: `Dispute auto-accepted: ${dispute.id} (charge: ${dispute.charge})${disputeSubscriptionId ? ` sub: ${disputeSubscriptionId}` : ""}${disputeCustomerEmail ? ` email: ${maskEmail(disputeCustomerEmail)}` : ""}`,
           actor: test ? "test-user" : "customer",
           flow: "user-journey",
-          detail: { chargeId: stripeEvent.data.object.id },
+          detail: { disputeId: dispute.id, chargeId: dispute.charge, subscriptionId: disputeSubscriptionId },
         });
         break;
+      }
+      case "charge.dispute.closed": {
+        const closedDispute = stripeEvent.data.object;
+        logger.info({ message: "Dispute closed", disputeId: closedDispute.id, status: closedDispute.status, reason: closedDispute.reason });
+        await publishActivityEvent({
+          event: "dispute-closed",
+          site: "submit",
+          summary: `Dispute closed (${closedDispute.status}): ${closedDispute.id}`,
+          actor: test ? "test-user" : "customer",
+          flow: "user-journey",
+          detail: { disputeId: closedDispute.id, status: closedDispute.status, reason: closedDispute.reason },
+        });
+        break;
+      }
       default:
         logger.info({ message: "Unhandled webhook event type", type: stripeEvent.type });
     }

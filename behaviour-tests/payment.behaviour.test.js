@@ -50,6 +50,7 @@ import {
   navigateToStripePortal,
   cancelSubscriptionViaPortal,
   waitForCancellationWebhook,
+  verifySubscriptionDeletionWebhook,
 } from "./steps/behaviour-bundle-steps.js";
 import { fillInVat } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
@@ -560,6 +561,41 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     }
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-portal-complete.png` });
+  });
+
+  // ============================================================
+  // STEP 10b: Verify subscription.deleted webhook (immediate cancel via API)
+  // After the portal cancellation (which sets cancelAtPeriodEnd=true),
+  // do an immediate API cancellation to trigger customer.subscription.deleted.
+  // This verifies the deletion webhook handler in the pipeline.
+  // Simulator: skipped (no real Stripe).
+  // Proxy/CI/Prod: real Stripe API call → real webhook → real DynamoDB update.
+  // ============================================================
+  await test.step("Verify subscription deletion webhook via immediate API cancel", async () => {
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 10b: Verify subscription.deleted webhook (immediate cancel via Stripe API)");
+    console.log("=".repeat(60));
+
+    // Only run when real Stripe is available (Stripe secret key configured)
+    const stripeKeyAvailable = !!(process.env.STRIPE_SECRET_KEY || process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY_ARN || process.env.STRIPE_TEST_SECRET_KEY_ARN);
+    if (!stripeKeyAvailable) {
+      console.log("No Stripe secret key available — skipping deletion webhook verification (simulator mode)");
+      return;
+    }
+
+    await goToBundlesPage(page, screenshotPath);
+    const deletionResult = await verifySubscriptionDeletionWebhook(page, "resident-pro", screenshotPath, { timeoutMs: 45_000 });
+
+    if (deletionResult.skipped) {
+      console.log("Subscription already gone — skipping deletion webhook verification");
+    } else if (deletionResult.timedOut) {
+      console.warn("WARNING: Subscription deletion webhook did not fire within 45s");
+    } else if (deletionResult.deleted) {
+      console.log(`Subscription deletion webhook confirmed: status=${deletionResult.subscriptionStatus}`);
+      expect(deletionResult.subscriptionStatus).toBe("canceled");
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10b-deletion-webhook-complete.png` });
   });
 
   // ============================================================

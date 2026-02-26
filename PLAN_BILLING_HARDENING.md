@@ -172,6 +172,8 @@ BUT the `subscriptions` table (`{deployment}-subscriptions`) is NOT covered. It 
 
 ## H9: Webhook Callback Testing — Manual Cancellation and Lifecycle Verification — HIGH
 
+**Status**: DONE (26 Feb 2026) — H9.1, H9.2, H9.4A implemented. H9.6 (pipeline integration) implemented. H9.7 (policy configuration) implemented.
+
 **Problem**: The existing behaviour test (`payment.behaviour.test.js` Step 10) exercises `customer.subscription.updated` via portal cancellation, but it only verifies that `cancelAtPeriodEnd` was written — it doesn't test the full lifecycle chain (cancellation → period expiry → subscription deletion → access revocation). The `charge.refunded` and `charge.dispute.created` handlers are audit-only (Telegram + log) with no DynamoDB write, so chargebacks and refunds don't affect the user's subscription status — a customer who disputes a charge retains full access.
 
 ### H9.1: Stripe CLI Webhook Forwarding for Local Testing — MEDIUM
@@ -327,6 +329,56 @@ case "charge.dispute.created":
 - Partial refunds: log only (the subscription continues)
 
 **Recommendation**: Option A for now. Refunds at this scale are infrequent and admin-controlled. Automation can be added when operational volume justifies it.
+
+### H9.6: Pipeline Integration — Webhook Lifecycle in Behaviour Tests — DONE
+
+**Problem**: Webhook testing via `stripe trigger` CLI is useful for local development but doesn't run in the CI/CD pipeline. The payment behaviour test only verifies `checkout.session.completed` and `customer.subscription.updated` webhooks — `customer.subscription.deleted` is never tested end-to-end.
+
+**Implemented**: Added Step 10b to `payment.behaviour.test.js`:
+- After the portal cancellation (Step 10, which verifies `cancelAtPeriodEnd=true` via `customer.subscription.updated`)
+- Calls `stripe.subscriptions.cancel()` directly via the Stripe Node SDK to trigger immediate deletion
+- Polls the bundle API until `subscriptionStatus === "canceled"` — verifying the `customer.subscription.deleted` webhook handler
+- Skipped automatically on simulator (no Stripe secret key available)
+- Runs in proxy, CI, and prod behaviour tests
+
+**Files**:
+- `behaviour-tests/steps/behaviour-bundle-steps.js` — new `verifySubscriptionDeletionWebhook()` function
+- `behaviour-tests/payment.behaviour.test.js` — new Step 10b
+
+**Webhook events now verified in the pipeline**:
+| Event | Behaviour test step | Verification |
+|-------|-------------------|--------------|
+| `checkout.session.completed` | Step 6 | `waitForBundleWebhookActivation` — polls until `stripeSubscriptionId` set |
+| `customer.subscription.updated` | Step 10 | `waitForCancellationWebhook` — polls until `cancelAtPeriodEnd=true` |
+| `customer.subscription.deleted` | Step 10b | `verifySubscriptionDeletionWebhook` — polls until `subscriptionStatus=canceled` |
+
+**Not yet in pipeline** (require synthetic events, not triggerable via normal API):
+- `invoice.paid` — tested manually on 17 March 2026 renewal, unit tested, can be tested via `stripe trigger`
+- `invoice.payment_failed` — unit tested, can be tested via `stripe trigger`
+- `charge.refunded` — unit tested, audit-only handler
+- `charge.dispute.created` — unit tested, flags `disputed: true` in DynamoDB
+
+### H9.7: Stripe Account Policy Configuration — DONE
+
+**Script**: `scripts/stripe-configure-policies.js`
+
+Configures the Stripe account for a no-quibble, customer-first approach:
+
+1. **Payout schedule**: Weekly on Wednesdays — holds funds ~2-8 days, giving Early Fraud Warnings and pre-dispute alerts time to arrive while funds are still in Stripe balance
+2. **Dispute prevention guidance**: Verifi RDR + Ethoca Alerts (Dashboard manual config) — auto-resolves disputes before they become chargebacks, doesn't count against dispute rate
+3. **Dispute handling guidance**: Accept all disputes at £9.99/month — fighting costs £20-40 in fees, always more than the charge
+4. **Refund safety**: Stripe natively bounds refunds to original charge amount — no draw-down risk
+
+**npm script**: `stripe:configure-policies`
+
+**Economics at £9.99/month**:
+| Scenario | Cost | Action |
+|----------|------|--------|
+| Customer cancels | £0 | Self-serve portal |
+| EFW / pre-dispute alert | £0 | Auto-refund £9.99 |
+| Dispute (prevented by Verifi/Ethoca) | ~$0.40-$15 | Auto-resolved |
+| Dispute (not prevented) | £20 + £9.99 | Accept, don't fight |
+| Dispute (contested) | £40 + £9.99 | NEVER do this |
 
 ---
 

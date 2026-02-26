@@ -72,6 +72,7 @@ const DESIRED_EVENTS = [
   "invoice.payment_failed",
   "charge.refunded",
   "charge.dispute.created",
+  "charge.dispute.closed",
 ];
 
 async function findOrCreateWebhook(url, description) {
