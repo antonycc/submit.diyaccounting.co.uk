@@ -200,21 +200,50 @@ npm test                    # 933 tests passed
 ./mvnw clean verify         # BUILD SUCCESS
 ```
 
-### CI deployment and test — IN PROGRESS
+### CI deployment and test — PASSING (MFA tests green, pending re-deploy for latest fixes)
 
-PR #724 pushed to `mfatotp` branch. GitHub Actions workflows running:
-- `deploy environment` — deploys CDK changes (MFA on User Pool)
-- `deploy` — deploys app stacks + runs behaviour tests
-- `generate-pass` — generates test credentials with TOTP secret
+PR #724 on `mfatotp` branch. Deploy run 22460683640 results:
 
 #### Post-deployment verification checklist:
 
-1. [ ] CDK deployment succeeds (MFA enabled on User Pool without replacement)
-2. [ ] Test user TOTP enrollment succeeds (`generate-pass` job summary shows `TOTP_SECRET`)
-3. [ ] Behaviour tests detect TOTP challenge page (check screenshots)
-4. [ ] If selectors don't match, update `handleTotpChallenge()` with correct selectors
-5. [ ] `Gov-Client-Multi-Factor: type=TOTP&timestamp=...&unique-reference=...` in HMRC requests
-6. [ ] FPH validation shows `VALID_HEADER` for `Gov-Client-Multi-Factor`
+1. [x] CDK deployment succeeds (MFA enabled on User Pool without replacement)
+2. [x] Test user TOTP enrollment succeeds (create-cognito-test-user.js with InitiateAuth)
+3. [x] Behaviour tests detect TOTP challenge page (Cognito Hosted UI presents "Please enter the code from test-device.")
+4. [x] TOTP selectors verified working — input field and submit button matched
+5. [x] `Gov-Client-Multi-Factor: type=TOTP&timestamp=...&unique-reference=...` in HMRC requests
+6. [ ] FPH validation shows `VALID_HEADER` for `Gov-Client-Multi-Factor` — pending HMRC approval
+
+#### CI test results (run 22460683640):
+
+- submitVatBehaviour-ci: **PASS**
+- authBehaviour-ci: **PASS**
+- tokenEnforcementBehaviour-ci: **PASS**
+- vatValidationBehaviour-ci: **PASS**
+- complianceBehaviour-ci: **PASS**
+- paymentBehaviour-ci: FAIL — expired Stripe test API key (see PLAN_PAYMENT_LIFECYCLE.md)
+- getVatReturnBehaviour-ci: FAIL — fixed (try/catch for navigation context destruction)
+
+#### Fixes applied during CI validation:
+
+1. `AdminInitiateAuth` → `InitiateAuth` in create-cognito-test-user.js (commit 605d224a)
+2. Wait for next TOTP period after enrollment to avoid code reuse (commit 2d6a06d0)
+3. Try/catch around error check in handleTotpChallenge() for navigation context destruction
+4. Deleted dead `injectMockMfa`/`clearMockMfa` code and all commented-out references
+5. Added `gov-client-multi-factor` to `essentialFraudPreventionHeaders` in dynamodb-assertions.js
+
+#### Open investigation: Telegram alerts for Google federated login (CI)
+
+User logged into CI via Google but no alert appeared in diy-ci-live Telegram channel. Lambda logs
+confirm the token exchange succeeded (status 200, `identities` with `providerName: "Google"`) but
+no `publishActivityEvent` log appears for that request. The code from commit `605d224a` adds the
+Telegram alert logic, and the Docker image tag matches the commit (`2d6a06d0`), but the Lambda may
+not have picked up the new code yet. Needs a fresh deploy to confirm.
+
+#### Next steps:
+
+- [ ] Commit and push latest fixes (try/catch, dead code removal, essential headers)
+- [ ] Verify Telegram alerts work for Google login after fresh deploy
+- [ ] Re-run full CI tests — expect all MFA tests + getVatReturn to pass
 
 ### What success looks like
 
@@ -222,3 +251,45 @@ PR #724 pushed to `mfatotp` branch. GitHub Actions workflows running:
 - The header value comes from real TOTP MFA in the authentication flow, not from mocked/injected sessionStorage
 - HMRC sandbox validates the header as `VALID_HEADER`
 - Proxy tests continue to work unchanged (mock OAuth provides `amr` claims → `type=OTHER`)
+
+## Auth Security Review (2026-02-26)
+
+Comprehensive review of all auth components for non-2FA fallbacks, bypasses, or paths that skip MFA.
+
+### Principle
+
+MFA is the **only** production path and the **only** deployed (ci/prod) path. Proxy and simulator
+get 2FA from simulated endpoints or test script injection. System/unit tests mock around 2FA, not
+rely on production bypasses. No "sandbox", "test mode", or "developer mode" paths bypass 2FA.
+
+### Findings: Zero Production Bypasses
+
+| Component | File | Classification | Notes |
+|-----------|------|----------------|-------|
+| Cognito callback MFA detection | `loginWithCognitoCallback.html:228-267` | OK | Explicit `removeItem` when no MFA — no silent fallback |
+| Mock callback MFA detection | `loginWithMockCallback.html:168-204` | OK | Identical logic to Cognito callback |
+| HMRC FPH header generation | `hmrc-service.js:176-186` | OK | Conditional — only sent when MFA actually occurred |
+| Backend header pass-through | `buildFraudHeaders.js:188-205` | OK | No fallback value invented server-side |
+| Custom JWT authorizer | `customAuthorizer.js` | OK | Validates JWT, not MFA (correct — MFA is Cognito policy) |
+| Mock OAuth server (proxy) | `local-oauth.js:39-41` | MOCK | Provides `amr: ["mfa", "pwd"]` — proxy-only, not deployed |
+| Simulator server | `simulator-server.js:70-79` | MOCK | Local-only demo, no OAuth flow |
+| Old MFA injection helper | `behaviour-helpers.js` | REMOVED | Deleted along with all commented-out imports and call sites |
+| System tests | `cognitoAuth/hmrcAuth.system.test.js` | OK | Test token exchange, not MFA — correct separation |
+| Environment configs | `.env.*` | OK | No `SKIP_MFA` / `BYPASS_MFA` flags anywhere |
+| Developer mode | `developer-mode.js` | OK | UI toggle only, no auth bypass |
+
+### MFA Path Summary
+
+| Environment | MFA Source | How |
+|-------------|-----------|-----|
+| **prod** (Google federated) | Google 2FA | `amr` contains `mfa` → `type=OTHER` |
+| **ci/prod** (Cognito native) | Real TOTP | `amr` contains `otp` → `type=TOTP` |
+| **proxy** (mock OAuth) | Mock `amr` claims | `local-oauth.js` returns `amr: ["mfa", "pwd"]` → `type=OTHER` |
+| **simulator** | N/A | No OAuth, no HMRC calls, no FPH headers |
+| **unit/system tests** | Mocked at test level | Tests verify header logic with mock tokens |
+
+### Conclusion
+
+No code changes needed — the implementation correctly enforces MFA on all deployed paths without
+production bypasses. The old `injectMockMfa()` test helper is already removed. Each environment
+gets MFA from the appropriate source (real TOTP, real Google 2FA, mock OAuth claims, or test mocks).

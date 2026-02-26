@@ -13,7 +13,6 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  // injectMockMfa, // MFA metadata is now set by the login callback via amr/identities claims
   isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,

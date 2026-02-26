@@ -198,7 +198,6 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
  * @see buildFraudHeaders.js for server-side header generation
  * @see submit.js buildGovClientHeaders() for client-side header generation
  */
-// export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
 export const intentionallyNotSuppliedHeaders = [];
 
 /**
@@ -207,6 +206,7 @@ export const intentionallyNotSuppliedHeaders = [];
  */
 export const essentialFraudPreventionHeaders = [
   "gov-client-connection-method",
+  "gov-client-multi-factor",
   "gov-client-user-ids",
   "gov-vendor-product-name",
   "gov-vendor-version",

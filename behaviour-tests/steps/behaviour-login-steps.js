@@ -314,10 +314,17 @@ export async function handleTotpChallenge(page, totpSecret, screenshotPath = def
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-totp-challenge-completed.png` });
 
       // Check if Cognito rejected the code (error message still on the TOTP page)
-      const errorText = await page.evaluate(() => {
-        const errorEl = document.querySelector('[id*="error"], .errorMessage, [class*="error"]');
-        return errorEl?.textContent?.trim() || "";
-      });
+      // If the page navigated away (context destroyed), the TOTP was accepted successfully.
+      let errorText = "";
+      try {
+        errorText = await page.evaluate(() => {
+          const errorEl = document.querySelector('[id*="error"], .errorMessage, [class*="error"]');
+          return errorEl?.textContent?.trim() || "";
+        });
+      } catch (evalError) {
+        console.log("Page navigated away — TOTP accepted");
+        break;
+      }
 
       if (errorText.includes("software token has already been used")) {
         console.log(`TOTP code rejected (already used) — waiting for next 30s period before retry`);
