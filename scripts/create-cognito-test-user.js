@@ -182,6 +182,13 @@ async function main() {
     );
     console.log("TOTP set as preferred MFA method");
 
+    // Wait for the next TOTP period so the behaviour test doesn't reuse the same code.
+    // Cognito rejects a TOTP code that was already consumed (by VerifySoftwareToken above)
+    // within the same 30-second window ("Your software token has already been used once").
+    const secondsRemaining = 30 - (Math.floor(Date.now() / 1000) % 30);
+    console.log(`Waiting ${secondsRemaining}s for next TOTP period...`);
+    await new Promise((resolve) => setTimeout(resolve, secondsRemaining * 1000));
+
     console.log("");
     console.log("=== Test User Created Successfully (with TOTP MFA) ===");
     console.log("");
