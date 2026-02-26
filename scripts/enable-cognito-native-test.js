@@ -58,17 +58,20 @@ async function main() {
   console.log(`=== Creating test user for ${environmentName} ===`);
   let username = null;
   let password = null;
+  let totpSecret = null;
   try {
     const { stdout, stderr } = await execFileAsync("node", ["scripts/create-cognito-test-user.js", environmentName]);
     if (stdout) console.log(stdout.trimEnd());
     if (stderr) console.error(stderr.trimEnd());
 
-    // Parse credentials from stdout (format: TEST_AUTH_USERNAME=... and TEST_AUTH_PASSWORD=...)
+    // Parse credentials from stdout (format: TEST_AUTH_USERNAME=..., TEST_AUTH_PASSWORD=..., TOTP_SECRET=...)
     for (const line of stdout.split("\n")) {
       const usernameMatch = line.match(/^TEST_AUTH_USERNAME=(.+)$/);
       if (usernameMatch) username = usernameMatch[1];
       const passwordMatch = line.match(/^TEST_AUTH_PASSWORD=(.+)$/);
       if (passwordMatch) password = passwordMatch[1];
+      const totpMatch = line.match(/^TOTP_SECRET=(.+)$/);
+      if (totpMatch) totpSecret = totpMatch[1];
     }
   } catch (error) {
     console.error(`Failed to create test user: ${error.message}`);
@@ -82,11 +85,16 @@ async function main() {
     process.exit(1);
   }
 
+  if (!totpSecret) {
+    console.warn("WARNING: No TOTP secret found in output. MFA may not be enabled on the User Pool.");
+  }
+
   // Step 3: Save credentials
   const credentials = {
     environment: environmentName,
     username,
     password,
+    totpSecret: totpSecret || undefined,
     createdAt: new Date().toISOString(),
   };
   fs.writeFileSync(credentialsFile, JSON.stringify(credentials, null, 2) + "\n");
@@ -97,13 +105,20 @@ async function main() {
   console.log("");
   console.log("=== Ready for local testing ===");
   console.log("");
+  const totpEnv = totpSecret ? ` TEST_AUTH_TOTP_SECRET='${totpSecret}'` : "";
   console.log("Run the auth behaviour test:");
   console.log("");
-  console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}' npm run test:authBehaviour-${environmentName}`);
+  console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}'${totpEnv} npm run test:authBehaviour-${environmentName}`);
   console.log("");
   console.log("Run the submit VAT behaviour test:");
   console.log("");
-  console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}' npm run test:submitVatBehaviour-${environmentName}`);
+  console.log(`  TEST_AUTH_USERNAME='${username}' TEST_AUTH_PASSWORD='${password}'${totpEnv} npm run test:submitVatBehaviour-${environmentName}`);
+  if (totpSecret) {
+    console.log("");
+    console.log("Generate a TOTP code manually:");
+    console.log("");
+    console.log(`  oathtool --totp --base32 '${totpSecret}'`);
+  }
   console.log("");
   console.log("When done, clean up:");
   console.log("");

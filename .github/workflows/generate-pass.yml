@@ -427,5 +427,9 @@ jobs:
             echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
             echo "| Username | \`${{ steps.cognito-user.outputs.test-auth-username }}\` |" >> $GITHUB_STEP_SUMMARY
             echo "| Test System Password | \`${{ steps.cognito-user.outputs.test-auth-password }}\` |" >> $GITHUB_STEP_SUMMARY
+            if [[ -n "${{ steps.cognito-user.outputs.test-auth-totp-secret }}" ]]; then
+              echo "| TOTP Secret | \`${{ steps.cognito-user.outputs.test-auth-totp-secret }}\` |" >> $GITHUB_STEP_SUMMARY
+              echo "| TOTP Code | Run: \`oathtool --totp --base32 '${{ steps.cognito-user.outputs.test-auth-totp-secret }}'\` |" >> $GITHUB_STEP_SUMMARY
+            fi
             echo "| Login URL | [https://${{ needs.names.outputs.pass-url-host }}](https://${{ needs.names.outputs.pass-url-host }}) |" >> $GITHUB_STEP_SUMMARY
           fi

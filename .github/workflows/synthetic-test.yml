@@ -97,6 +97,10 @@ on:
         type: string
         description: 'Pre-created test user password (skips user creation if provided)'
         required: false
+      test-auth-totp-secret:
+        type: string
+        description: 'Pre-created test user TOTP secret (for MFA challenge)'
+        required: false
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: true
@@ -160,6 +164,7 @@ jobs:
           X='${{ inputs.skip-native-auth-disable }}' ; echo "skip-native-auth-disable=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-username=${{ inputs.test-auth-username }}' | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-password=${{ inputs.test-auth-password }}' | tee -a "$GITHUB_OUTPUT"
+          echo 'test-auth-totp-secret=${{ inputs.test-auth-totp-secret }}' | tee -a "$GITHUB_OUTPUT"
     outputs:
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
       generate-test-reports: ${{ steps.normalise.outputs.generate-test-reports }}
@@ -169,6 +174,7 @@ jobs:
       skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
       test-auth-username: ${{ steps.normalise.outputs.test-auth-username }}
       test-auth-password: ${{ steps.normalise.outputs.test-auth-password }}
+      test-auth-totp-secret: ${{ steps.normalise.outputs.test-auth-totp-secret }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
   names:
@@ -312,9 +318,10 @@ jobs:
           # If credentials were passed in, use them instead of creating a new user
           if [ -n "${{ needs.params.outputs.test-auth-username }}" ] && [ -n "${{ needs.params.outputs.test-auth-password }}" ]; then
             echo "Using provided test credentials (skipping user creation)"
-            # Test system password - intentionally not masked so it appears in job summary
+            # Test system credentials - intentionally not masked so they appear in job summary
             echo "test-auth-username=${{ needs.params.outputs.test-auth-username }}" >> "$GITHUB_OUTPUT"
             echo "test-auth-password=${{ needs.params.outputs.test-auth-password }}" >> "$GITHUB_OUTPUT"
+            echo "test-auth-totp-secret=${{ needs.params.outputs.test-auth-totp-secret }}" >> "$GITHUB_OUTPUT"
             echo "user-created-here=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -347,6 +354,7 @@ jobs:
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
+          TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v5

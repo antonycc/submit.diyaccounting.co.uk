@@ -176,13 +176,17 @@
 
           if (hasMFA) {
             // amr claims explicitly indicate MFA
+            // Map specific amr claims to HMRC MFA type values:
+            //   otp = TOTP authenticator app → type=TOTP
+            //   mfa/swk/hwk = other MFA methods → type=OTHER
+            const mfaType = amrClaims.includes("otp") ? "TOTP" : "OTHER";
             const mfaMetadata = {
-              type: "OTHER",
+              type: mfaType,
               timestamp: authTime ? new Date(authTime * 1000).toISOString() : new Date().toISOString(),
               uniqueReference: crypto.randomUUID(),
             };
             sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
-            console.log("MFA detected from amr claims:", amrClaims, "Stored metadata:", mfaMetadata);
+            console.log("MFA detected from amr claims:", amrClaims, "type:", mfaType, "Stored metadata:", mfaMetadata);
           } else if (isFederatedLogin && authTime) {
             // Federated login — IdP handles MFA but doesn't expose amr
             const providerNames = idTokenPayload.identities.map((id) => id.providerName || id.providerType).join(", ");

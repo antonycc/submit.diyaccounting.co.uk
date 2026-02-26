@@ -24,6 +24,8 @@ import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.CustomThreatProtectionMode;
 import software.amazon.awscdk.services.cognito.FeaturePlan;
+import software.amazon.awscdk.services.cognito.Mfa;
+import software.amazon.awscdk.services.cognito.MfaSecondFactor;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
@@ -163,6 +165,13 @@ public class IdentityStack extends Stack {
                 .featurePlan(FeaturePlan.PLUS)
                 .standardThreatProtectionMode(StandardThreatProtectionMode.FULL_FUNCTION)
                 .customThreatProtectionMode(CustomThreatProtectionMode.FULL_FUNCTION)
+                // Enable optional TOTP MFA for native auth users (test users, future native users)
+                // Federated users (Google) bypass Cognito MFA — their IdP handles MFA independently
+                .mfa(Mfa.OPTIONAL)
+                .mfaSecondFactor(MfaSecondFactor.builder()
+                        .otp(true) // TOTP via authenticator apps
+                        .sms(false) // No SMS MFA (no phone numbers collected)
+                        .build())
                 .accountRecovery(AccountRecovery.NONE)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
