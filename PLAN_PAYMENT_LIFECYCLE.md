@@ -75,7 +75,7 @@ Stripe emailed about delivery failures to `https://ci-submit.diyaccounting.co.uk
 | G8 | No CloudWatch EMF billing metrics | Low | Open | Plan Phase 4.5 — none implemented yet |
 | G9 | CI Stripe webhook delivery failures | Low | **Documented** | CI is ephemeral. Comment added to `stripe-setup.js`. Manual action needed: suppress alerts in Stripe Dashboard → Webhooks → CI endpoint settings. |
 | G10 | Webhook Telegram routing ignored livemode | Medium | **FIXED** | All `publishActivityEvent` calls now set `actor: test ? "test-user" : "customer"` — live Stripe events → live channel, test Stripe → test channel. `{ test }` passed to all handlers. |
-| G11 | Expired Stripe test API key in CI Secrets Manager | High | **IN PROGRESS** | `sk_test_...Y8wHEj` expired. New key set in GitHub Actions CI env. `deploy-environment.yml` run 22462437990 triggered to update Secrets Manager. |
+| G11 | Expired Stripe test API key in CI Secrets Manager | High | **FIXED** | `sk_test_...Y8wHEj` expired. New key provisioned via `deploy-environment.yml` (run 22462437990). `paymentBehaviour-ci` passes (run 22462538116). |
 
 ---
 
@@ -157,9 +157,9 @@ All lifecycle events handled correctly. `npm test` passes (941 tests, 89 files).
 - [x] Triggered `deploy-environment.yml` to push new keys to Secrets Manager (run 22462437990)
 
 **Remaining**:
-- [ ] Verify `deploy-environment.yml` completes successfully (Stripe secret provisioning)
-- [ ] Re-deploy app stacks to pick up new Stripe key from Secrets Manager
-- [ ] Verify `paymentBehaviour-ci` passes with valid Stripe key
+- [x] Verify `deploy-environment.yml` completes successfully (Stripe secret provisioning) — run 22462437990 succeeded
+- [x] Re-deploy app stacks to pick up new Stripe key from Secrets Manager — run 22462538116 succeeded
+- [x] Verify `paymentBehaviour-ci` passes with valid Stripe key — PASS (run 22462538116)
 - [ ] Suppress CI webhook failure emails in Stripe Dashboard (G9)
 - [ ] Observe 17 March renewal for real `invoice.paid` handler validation (Phase 2)
 

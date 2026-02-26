@@ -200,7 +200,7 @@ npm test                    # 933 tests passed
 ./mvnw clean verify         # BUILD SUCCESS
 ```
 
-### CI deployment and test — PASSING (MFA tests green, pending re-deploy for latest fixes)
+### CI deployment and test — ALL PASSING (run 22462538116)
 
 PR #724 on `mfatotp` branch. Deploy run 22460683640 results:
 
@@ -220,8 +220,8 @@ PR #724 on `mfatotp` branch. Deploy run 22460683640 results:
 - tokenEnforcementBehaviour-ci: **PASS**
 - vatValidationBehaviour-ci: **PASS**
 - complianceBehaviour-ci: **PASS**
-- paymentBehaviour-ci: FAIL — expired Stripe test API key (see PLAN_PAYMENT_LIFECYCLE.md)
-- getVatReturnBehaviour-ci: FAIL — fixed (try/catch for navigation context destruction)
+- paymentBehaviour-ci: **PASS** — Stripe key fix confirmed (deploy-environment.yml provisioned new key)
+- getVatReturnBehaviour-ci: **PASS** — try/catch for navigation context destruction fix confirmed
 
 #### Fixes applied during CI validation:
 
@@ -251,8 +251,8 @@ passAdminPost.js, passPost.js, passGeneratePost.js, supportTicketPost.js.
 #### Next steps:
 
 - [x] Commit and push latest fixes (try/catch, dead code removal, essential headers)
-- [ ] Verify Telegram alerts work for Google login after fresh deploy (fix: await publishActivityEvent)
-- [ ] Re-run full CI tests — expect all MFA tests + getVatReturn to pass
+- [x] Re-run full CI tests — ALL 13 suites pass (run 22462538116)
+- [ ] Verify Telegram alerts work for Google login after fresh deploy (fix: await publishActivityEvent — deployed in run 22463177822)
 
 ### What success looks like
 
