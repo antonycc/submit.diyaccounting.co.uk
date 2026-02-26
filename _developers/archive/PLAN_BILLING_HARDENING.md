@@ -430,4 +430,36 @@ H9.1 fills the gap: `invoice.paid`, `invoice.payment_failed`, `customer.subscrip
 
 ---
 
-*Created 26 February 2026. Updated 26 February 2026. Expanded with H9 (webhook callback testing, manual cancellation, expiry detection, chargebacks).*
+## Stripe Dashboard Configuration — DONE (26 Feb 2026)
+
+### Completed
+
+- [x] **Radar for Fraud Teams** — enabled (free trial started)
+- [x] **Payout schedule** — weekly on Wednesday (both live and test accounts)
+- [x] **Radar block rules** — 3 custom block rules + 1 review rule added:
+  - `Block if :dispute_count_on_card_number_all_time: > 0`
+  - `Block if :total_customers_with_prior_fraud_activity_for_email_yearly: > 0`
+  - `Block if :refund_count_on_card_all_time: > 1`
+  - `Review if :risk_level: = 'elevated'`
+- [x] **API key rotation** — both live and test keys rotated after accidental exposure
+- [x] **GitHub Actions secrets updated** — new keys pushed to ci and prod environments
+- [x] **deploy-environment.yml** — triggered to push new keys to Secrets Manager (run 22465017076)
+- [x] **Local .env** — updated with new test key
+
+### Deferred
+
+- [ ] **Verifi RDR + Ethoca Alerts** — requires Stripe Dashboard → Disputes → Prevention tab (not visible — may need Stripe support to enable, or may appear after Radar for Fraud Teams trial period). Not urgent: webhook auto-accepts disputes in code.
+- [ ] **Early Fraud Warning auto-refund** — same dependency on dispute prevention tab
+- [ ] **CI webhook alert suppression** — skipped (low priority, informational emails only)
+
+### Existing default Radar rules (pre-configured by Stripe)
+
+- `Block if :risk_level: = 'highest'` (enabled)
+- `Block if payment matches one or more values in default Stripe block lists` (enabled)
+- `Request 3DS if 3D Secure is supported for card` (disabled)
+- `Block if CVC verification fails based on risk score` (disabled)
+- `Block if Postal code verification fails based on risk score` (disabled)
+
+---
+
+*Created 26 February 2026. Updated 26 February 2026. Expanded with H9 (webhook callback testing, manual cancellation, expiry detection, chargebacks). Stripe Dashboard config completed 26 Feb 2026.*
