@@ -54,7 +54,7 @@ on:
           - 'true'
           - 'false'
         required: false
-        default: 'false'
+        default: 'true'
       runProxyBehaviourTests:
         description: 'Run proxy behaviour tests (uses ngrok and Docker)'
         type: choice
@@ -163,7 +163,7 @@ jobs:
           echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-true}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipCleanup }}' ; echo "skipCleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSkippingDeploy: true if skipDeploy=true OR (push event with skip: in commit message)
@@ -1684,7 +1684,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-auth:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - names
@@ -1707,7 +1707,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-token-enforcement:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -1730,7 +1730,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-payment:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -1776,7 +1776,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-bundle:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -1803,7 +1803,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-pass-redemption:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -1911,7 +1911,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-fraud-prevention-headers-vat-sandbox:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -1938,7 +1938,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-compliance-sandbox:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -1965,7 +1965,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-help-sandbox:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -2046,7 +2046,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-simulator:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
@@ -2073,7 +2073,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-generate-pass-activity:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
