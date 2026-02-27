@@ -131,52 +131,94 @@ Multiple factors comma-separated. All keys and values percent-encoded (not separ
   - `getVatReturn.behaviour.test.js` — calls at line 420
   - `postVatReturnFraudPreventionHeaders.behaviour.test.js` — calls at line 547
 
-### Step 4: Add Pre Token Generation Lambda Trigger — PENDING
+### Step 4: Add Pre Token Generation Lambda Trigger — DONE
 
-- Create `app/functions/auth/preTokenGeneration.js`
-- In the trigger handler:
-  - Check `event.request.userAttributes["cognito:preferred_mfa_setting"]`
-  - If `SOFTWARE_TOKEN_MFA`, add `amr: ["pwd", "otp"]` to `claimsToAddOrOverride`
-  - Return the modified event
-- Add CDK construct in `IdentityStack.java` to:
-  - Create Lambda function
-  - Attach as Pre Token Generation trigger on the User Pool
-  - Grant necessary permissions
+**Problem**: `amr` is a reserved Cognito claim — it CANNOT be added/modified via Pre Token Generation
+trigger. The original plan of injecting `amr: ["pwd", "otp"]` will not work.
 
-### Step 5: Verify Proxy Tests Still Pass
+**Solution**: Inject a custom claim `custom:mfa_method` with value `"TOTP"` when the user has TOTP
+configured. The Lambda uses `AdminGetUser` to check the user's MFA setting since Cognito doesn't
+pass `cognito:preferred_mfa_setting` to the trigger event.
 
-- Proxy uses mock OAuth server which provides `amr: ["mfa", "pwd"]`
-- Frontend should detect MFA and set `Gov-Client-Multi-Factor: type=OTHER`
-- Run `npm run test:submitVatBehaviour-proxy` to confirm
+- Created `app/functions/auth/preTokenGeneration/index.js` (CommonJS, standalone asset-bundled Lambda)
+- Created `app/unit-tests/functions/preTokenGeneration.test.js`
+- Added CDK construct in `IdentityStack.java`:
+  - Node.js 22 Lambda via `Code.fromAsset("../app/functions/auth/preTokenGeneration")`
+  - IAM policy granting `cognito-idp:AdminGetUser` (wildcard ARN to avoid circular dependency)
+  - Attached as Pre Token Generation trigger on the UserPool
+- Updated `web/public/auth/loginWithCognitoCallback.html` with new MFA detection branch:
+  1. Check `amr` claims → if MFA indicators → type from amr
+  2. **NEW**: Check `custom:mfa_method === "TOTP"` → type TOTP (Cognito native auth)
+  3. Check `isFederatedLogin && authTime` → type OTHER (Google etc.)
+  4. Else → no MFA detected
 
-### Step 6: Deploy and Verify CI
+### Step 5: Enable DynamoDB Assertions in CI — DONE
 
-- Push changes
-- Monitor CI deployment (CDK adds Lambda trigger + deploys new frontend)
-- Verify DynamoDB HMRC requests now contain `Gov-Client-Multi-Factor`
-- All behaviour tests should pass with the new assertions
+**Problem**: `.env.ci` had `TEST_DYNAMODB=off`, which caused ALL DynamoDB assertions to be skipped
+in CI. Tests passed even though `Gov-Client-Multi-Factor` was missing because the assertions
+checking for it never ran.
 
-## Files to Modify
+- Changed `.env.ci` `TEST_DYNAMODB=off` → `TEST_DYNAMODB=useExisting`
+- Fixed `behaviour-tests/helpers/dynamodb-export.js` to conditionally use dummy credentials (local
+  dynalite) vs default AWS SDK credential chain (real AWS DynamoDB in CI)
+
+### Step 6: Filter DynamoDB Assertions by Test User — DONE
+
+**Problem**: With `TEST_DYNAMODB=useExisting`, the DynamoDB export dumps ALL historical records from
+the table (from ALL previous test runs). `assertFraudPreventionHeaders` iterated ALL `/validate`
+records and failed on old ones that had `MISSING_HEADER` warnings for `gov-client-multi-factor`
+(from before the MFA fix), even though the current test's request had the header.
+
+- Added `filterByUserSub` parameter to `assertFraudPreventionHeaders` in `dynamodb-assertions.js`
+- Function is now `async` — initializes salt lazily, hashes `userSub`, filters records by `hashedSub`
+- Falls back gracefully (no filtering) if salt initialization fails
+- Updated all 5 behaviour test callers to pass `userSub` and `await` the call
+
+### Step 7: Verify Proxy Tests Still Pass — DONE
+
+- `npm test` — 949 passed
+- `npm run test:submitVatBehaviour-proxy` — 1 passed (1.9m)
+- Filtering log confirmed: `Filtering fraud prevention header records by hashedSub for current test user`
+
+### Step 8: Deploy and Verify CI — IN PROGRESS
+
+- Pushed `assertmfa` branch (2026-02-27)
+- deploy-environment succeeded: IdentityStack deployed with Pre Token Generation Lambda
+- deploy (application) succeeded: all CDK stacks + simulator tests passed
+- CI behaviour tests confirmed:
+  - Pre Token Generation Lambda working: `custom:mfa_method: "TOTP"` in ID token
+  - Frontend MFA detection working: `MFA detected from custom:mfa_method claim. type: TOTP`
+  - DynamoDB export working: 198 bundles, 2883 hmrc-api-requests exported
+  - `assertEssentialFraudPreventionHeadersPresent` PASSED (header IS present on current request)
+- Two CI tests failed due to historical validation feedback (Step 6 fix addresses this)
+- Pushed Step 6 fix — awaiting CI results
+
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `web/public/auth/loginWithCognitoCallback.html` | Replace `crypto.randomUUID()` with stable SHA-256 hash |
-| `web/public/auth/loginWithMockCallback.html` | Same |
+| `web/public/auth/loginWithCognitoCallback.html` | Stable SHA-256 unique-reference + `custom:mfa_method` detection branch |
+| `web/public/auth/loginWithMockCallback.html` | Stable SHA-256 unique-reference |
 | `app/http-simulator/routes/fraud-headers.js` | Move `gov-client-multi-factor` to `requiredHeaders` |
-| `behaviour-tests/helpers/dynamodb-assertions.js` | No change (function already exists) |
-| `behaviour-tests/submitVat.behaviour.test.js` | Call `assertEssentialFraudPreventionHeadersPresent()` |
+| `behaviour-tests/helpers/dynamodb-assertions.js` | `assertFraudPreventionHeaders` now async with `filterByUserSub` param; imports `hashSub`/`initializeSalt` |
+| `behaviour-tests/helpers/dynamodb-export.js` | Conditional credentials: dummy for local dynalite, default SDK chain for real AWS |
+| `behaviour-tests/submitVat.behaviour.test.js` | Call `assertEssentialFraudPreventionHeadersPresent()` + pass `userSub` to filter |
 | `behaviour-tests/postVatReturn.behaviour.test.js` | Same |
 | `behaviour-tests/getVatObligations.behaviour.test.js` | Same |
 | `behaviour-tests/getVatReturn.behaviour.test.js` | Same |
 | `behaviour-tests/postVatReturnFraudPreventionHeaders.behaviour.test.js` | Same |
-| `app/functions/auth/preTokenGeneration.js` | **NEW** — Pre Token Generation Lambda trigger |
-| `infra/.../IdentityStack.java` | Add Lambda + Pre Token Generation trigger |
+| `app/functions/auth/preTokenGeneration/index.js` | **NEW** — Pre Token Generation Lambda (CommonJS, AdminGetUser) |
+| `app/unit-tests/functions/preTokenGeneration.test.js` | **NEW** — Unit tests for trigger |
+| `infra/.../IdentityStack.java` | Lambda function + Pre Token Generation trigger + IAM policy |
+| `.env.ci` | `TEST_DYNAMODB=useExisting` (was `off`) |
 
 ## Verification
 
-1. `npm test` — unit tests pass
-2. `./mvnw clean verify` — CDK builds
-3. `npm run test:submitVatBehaviour-proxy` — proxy tests pass with MFA header
-4. Push → deploy → `npm run test:submitVatBehaviour-ci` — CI tests pass
-5. Check DynamoDB: all HMRC requests have `Gov-Client-Multi-Factor` header
-6. Behaviour tests fail if any essential FPH header is missing (regression guard)
+1. `npm test` — 949 passed (unit tests) ✅
+2. `./mvnw clean verify` — CDK builds ✅
+3. `npm run test:submitVatBehaviour-proxy` — proxy tests pass with MFA header ✅
+4. Push → deploy-environment → IdentityStack with PreTokenGeneration Lambda ✅
+5. Push → deploy (application) → all stacks + simulator tests ✅
+6. CI: `Gov-Client-Multi-Factor` header present on current test's HMRC request ✅
+7. CI: DynamoDB assertions enabled and running ✅
+8. CI: Historical record filtering by hashedSub — awaiting results after Step 6 push
