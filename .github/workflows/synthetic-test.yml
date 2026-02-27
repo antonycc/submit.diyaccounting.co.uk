@@ -337,6 +337,14 @@ jobs:
             echo "user-created-here=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Stagger HMRC API calls
+        if: ${{ !cancelled() }}
+        run: |
+          DELAY=$((RANDOM % 30))
+          echo "Sleeping ${DELAY}s to stagger HMRC API calls across parallel workflows"
+          sleep "$DELAY"
+        shell: bash
+
       - name: 'Run behaviour test ${{ needs.params.outputs.behaviour-test-suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test
         continue-on-error: true
