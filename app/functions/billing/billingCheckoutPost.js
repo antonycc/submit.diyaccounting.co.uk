@@ -122,13 +122,13 @@ export async function ingestHandler(event) {
 
     logger.info({ message: "Checkout session created", sessionId: session.id, hashedSub, isSandbox });
 
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "checkout-session-created",
       site: "submit",
       summary: `Checkout started: ${maskEmail(userEmail)}`,
       actor: classifyActor(userEmail, decodedToken["cognito:username"] ? "cognito-native" : undefined),
       flow: "user-journey",
-    }).catch(() => {});
+    });
 
     return http200OkResponse({
       request,

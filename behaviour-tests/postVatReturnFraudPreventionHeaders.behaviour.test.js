@@ -12,7 +12,6 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  // injectMockMfa, // MFA metadata is now set by the login callback via amr/identities claims
   isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -43,6 +42,7 @@ import {
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
@@ -278,9 +278,6 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   await clickLogIn(page, screenshotPath);
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
-
-  // MFA metadata is now set by the login callback via amr claims (mock) or identities+auth_time (federated)
-  // await injectMockMfa(page);
 
   await consentToDataCollection(page, screenshotPath);
 
@@ -533,6 +530,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     console.log(`[DynamoDB Assertions]: Found ${vatPostRequests.length} VAT return POST request(s)`);
     expect(vatPostRequests.length).toBeGreaterThan(0);
     vatPostRequests.forEach((vatPostRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(vatPostRequest, `POST ${vatPostRequest.url}`);
       // Assert that the request body contains the submitted data
       assertHmrcApiRequestValues(vatPostRequest, {
         "httpRequest.method": "POST",
@@ -548,10 +546,12 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     });
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
-    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
     // Assert consistent hashedSub across authenticated requests
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test", { filterByUserSub: userSub });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
   }
 });

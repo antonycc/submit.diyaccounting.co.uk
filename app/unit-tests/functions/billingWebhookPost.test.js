@@ -8,6 +8,10 @@ import Stripe from "stripe";
 // Mock Stripe SDK
 const mockSubscriptionsRetrieve = vi.fn();
 const mockWebhooksConstructEvent = vi.fn();
+const mockChargesRetrieve = vi.fn();
+const mockPaymentIntentsRetrieve = vi.fn();
+const mockInvoicesRetrieve = vi.fn();
+const mockDisputesClose = vi.fn();
 vi.mock("stripe", () => {
   return {
     default: class Stripe {
@@ -17,6 +21,18 @@ vi.mock("stripe", () => {
         };
         this.webhooks = {
           constructEvent: mockWebhooksConstructEvent,
+        };
+        this.charges = {
+          retrieve: mockChargesRetrieve,
+        };
+        this.paymentIntents = {
+          retrieve: mockPaymentIntentsRetrieve,
+        };
+        this.invoices = {
+          retrieve: mockInvoicesRetrieve,
+        };
+        this.disputes = {
+          close: mockDisputesClose,
         };
       }
     },
@@ -114,6 +130,9 @@ describe("billingWebhookPost", () => {
   beforeEach(() => {
     mockWebhooksConstructEvent.mockReset();
     mockSubscriptionsRetrieve.mockReset();
+    mockChargesRetrieve.mockReset();
+    mockPaymentIntentsRetrieve.mockReset();
+    mockInvoicesRetrieve.mockReset();
     mockPutBundleByHashedSub.mockReset();
     mockPutSubscription.mockReset();
     mockGetSubscription.mockReset();
@@ -127,6 +146,10 @@ describe("billingWebhookPost", () => {
     mockUpdateBundleSubscriptionFields.mockResolvedValue(undefined);
     mockResetTokensByHashedSub.mockResolvedValue(undefined);
     mockGetSubscription.mockResolvedValue(null);
+    mockChargesRetrieve.mockResolvedValue({ id: "ch_test", billing_details: { email: "user@example.com" }, payment_intent: "pi_test" });
+    mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test", invoice: "in_test" });
+    mockInvoicesRetrieve.mockResolvedValue({ id: "in_test", subscription: "sub_test_456" });
+    mockDisputesClose.mockResolvedValue({ id: "dp_test", status: "lost" });
     mockSubscriptionsRetrieve.mockResolvedValue({
       id: "sub_test_456",
       status: "active",
@@ -406,6 +429,216 @@ describe("billingWebhookPost", () => {
     expect(result.statusCode).toBe(500);
     const body = JSON.parse(result.body);
     expect(body.error).toContain("processing error");
+  });
+
+  test("invoice.payment_failed updates bundle and subscription status to past_due", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_payment_failed",
+      type: "invoice.payment_failed",
+      data: {
+        object: { id: "in_test_fail", subscription: "sub_test_456" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+      subscriptionStatus: "past_due",
+    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" });
+  });
+
+  test("invoice.payment_failed skips when no subscription record found", async () => {
+    mockGetSubscription.mockResolvedValue(null);
+
+    const payload = {
+      id: "evt_test_payment_failed",
+      type: "invoice.payment_failed",
+      data: {
+        object: { id: "in_test_fail", subscription: "sub_test_456" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).not.toHaveBeenCalled();
+    expect(mockUpdateSubscription).not.toHaveBeenCalled();
+  });
+
+  test("invoice.payment_failed skips when no subscription ID in invoice", async () => {
+    const payload = {
+      id: "evt_test_payment_failed_no_sub",
+      type: "invoice.payment_failed",
+      data: {
+        object: { id: "in_test_fail_no_sub", subscription: null },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockGetSubscription).not.toHaveBeenCalled();
+  });
+
+  test("customer.subscription.updated with cancel_at_period_end writes cancellation intent", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_sub_cancel_intent",
+      type: "customer.subscription.updated",
+      data: {
+        object: { id: "sub_test_456", status: "active", cancel_at_period_end: true },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", {
+      subscriptionStatus: "active",
+      cancelAtPeriodEnd: true,
+    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", {
+      status: "active",
+      cancelAtPeriodEnd: true,
+    });
+  });
+
+  test("charge.refunded returns 200 and logs", async () => {
+    const payload = {
+      id: "evt_test_refund",
+      type: "charge.refunded",
+      data: {
+        object: { id: "ch_test_refund_123" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+  });
+
+  test("charge.dispute.created flags subscription and bundle records", async () => {
+    // Set up the chain: dispute -> charge -> payment_intent -> invoice -> subscription
+    mockChargesRetrieve.mockResolvedValue({
+      id: "ch_test_dispute_123",
+      billing_details: { email: "disputed@example.com" },
+      payment_intent: "pi_test_dispute",
+    });
+    mockPaymentIntentsRetrieve.mockResolvedValue({
+      id: "pi_test_dispute",
+      invoice: "in_test_dispute",
+    });
+    mockInvoicesRetrieve.mockResolvedValue({
+      id: "in_test_dispute",
+      subscription: "sub_test_dispute_456",
+    });
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_dispute_456",
+      hashedSub: "hashed_sub_dispute",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_dispute",
+      type: "charge.dispute.created",
+      data: {
+        object: { id: "dp_test_dispute_789", charge: "ch_test_dispute_123" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+
+    // Verify subscription record was flagged
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_dispute_456", {
+      disputed: true,
+      disputeId: "dp_test_dispute_789",
+    });
+
+    // Verify bundle record was flagged
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_dispute", "resident-pro", {
+      disputed: true,
+    });
+
+    // Verify dispute was auto-accepted (no-quibble policy)
+    expect(mockDisputesClose).toHaveBeenCalledWith("dp_test_dispute_789");
+  });
+
+  test("charge.dispute.created handles gracefully when no subscription record found", async () => {
+    mockChargesRetrieve.mockResolvedValue({
+      id: "ch_test_dispute_no_sub",
+      billing_details: { email: "nosub@example.com" },
+      payment_intent: "pi_test_no_sub",
+    });
+    mockPaymentIntentsRetrieve.mockResolvedValue({
+      id: "pi_test_no_sub",
+      invoice: "in_test_no_sub",
+    });
+    mockInvoicesRetrieve.mockResolvedValue({
+      id: "in_test_no_sub",
+      subscription: "sub_test_not_found",
+    });
+    mockGetSubscription.mockResolvedValue(null);
+
+    const payload = {
+      id: "evt_test_dispute_no_sub",
+      type: "charge.dispute.created",
+      data: {
+        object: { id: "dp_test_no_sub", charge: "ch_test_dispute_no_sub" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    // Should not attempt to update subscription or bundle
+    expect(mockUpdateSubscription).not.toHaveBeenCalled();
+    expect(mockUpdateBundleSubscriptionFields).not.toHaveBeenCalled();
+  });
+
+  test("charge.dispute.closed returns 200 and logs", async () => {
+    const payload = {
+      id: "evt_test_dispute_closed",
+      type: "charge.dispute.closed",
+      data: {
+        object: { id: "dp_test_closed_123", status: "lost", reason: "product_not_received" },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
   });
 
   test("sets currentPeriodEnd from Stripe subscription when available", async () => {

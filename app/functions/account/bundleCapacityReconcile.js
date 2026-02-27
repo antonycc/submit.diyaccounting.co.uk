@@ -76,11 +76,11 @@ export async function handler(_event) {
   }
 
   logger.info({ message: "Bundle capacity reconciliation complete", bundleCount: cappedBundleIds.length });
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "capacity-reconciled",
     summary: "Capacity reconciled",
     flow: "operational",
-  }).catch(() => {});
+  });
 }
 
 function emitActiveAllocationsMetric(bundleId, activeCount) {

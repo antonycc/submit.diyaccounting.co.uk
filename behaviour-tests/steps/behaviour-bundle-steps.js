@@ -5,6 +5,7 @@
 
 import { expect, test } from "@playwright/test";
 import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
+import { getStripeClient } from "@app/lib/stripeClient.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-bundle-steps";
 
@@ -1229,5 +1230,113 @@ export async function waitForCancellationWebhook(
     console.warn(`[cancellation-webhook]: Timed out after ${timeoutMs}ms. Last state: ${JSON.stringify(lastState)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-cancellation-webhook-TIMEOUT.png`, fullPage: true });
     return { timedOut: true, lastState };
+  });
+}
+
+/**
+ * Verify webhook lifecycle by cancelling a subscription immediately via the Stripe API.
+ *
+ * This exercises the `customer.subscription.deleted` webhook handler, which is NOT triggered
+ * by the portal cancellation (that only triggers `customer.subscription.updated` with
+ * cancel_at_period_end=true). Immediate cancellation forces Stripe to fire the deletion
+ * event synchronously, allowing us to verify the full lifecycle in the pipeline.
+ *
+ * Only runs when real Stripe is available (proxy/CI/prod). Skipped on simulator.
+ *
+ * @param {import('@playwright/test').Page} page - Playwright page for polling bundle API
+ * @param {string} bundleId - The bundle ID to verify
+ * @param {string} screenshotPath - Screenshot output directory
+ * @param {object} options
+ * @param {number} options.timeoutMs - Max time to wait for webhook (default 45s)
+ * @returns {{ deleted: boolean, subscriptionStatus: string|null, timedOut: boolean }}
+ */
+export async function verifySubscriptionDeletionWebhook(
+  page,
+  bundleId,
+  screenshotPath = defaultScreenshotPath,
+  { timeoutMs = 45_000, pollIntervalMs = 2_000 } = {},
+) {
+  return await test.step(`Verify subscription.deleted webhook for ${bundleId}`, async () => {
+    // First, get the current subscription ID from the bundle API
+    const bundleState = await page.evaluate(async (bid) => {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { error: "no auth token" };
+      const response = await fetch("/api/v1/bundle", {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await response.json();
+      const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
+      if (!bundle) return { found: false };
+      return {
+        found: true,
+        stripeSubscriptionId: bundle.stripeSubscriptionId || null,
+        subscriptionStatus: bundle.subscriptionStatus || null,
+        cancelAtPeriodEnd: bundle.cancelAtPeriodEnd ?? null,
+      };
+    }, bundleId);
+
+    if (!bundleState.found || !bundleState.stripeSubscriptionId) {
+      console.log(`[deletion-webhook]: No active subscription found for ${bundleId}, skipping`);
+      return { deleted: false, subscriptionStatus: null, timedOut: false, skipped: true };
+    }
+
+    const subscriptionId = bundleState.stripeSubscriptionId;
+    console.log(`[deletion-webhook]: Cancelling subscription ${subscriptionId} immediately via Stripe API...`);
+
+    // Cancel immediately via Stripe API — this triggers customer.subscription.deleted
+    try {
+      const stripe = await getStripeClient({ test: true });
+      const canceled = await stripe.subscriptions.cancel(subscriptionId);
+      console.log(`[deletion-webhook]: Stripe API returned status: ${canceled.status}`);
+    } catch (stripeErr) {
+      // Subscription may already be canceled (e.g., if period already ended)
+      console.warn(`[deletion-webhook]: Stripe cancel returned error: ${stripeErr.message}`);
+      if (stripeErr.code === "resource_missing") {
+        console.log("[deletion-webhook]: Subscription already deleted in Stripe");
+        return { deleted: true, subscriptionStatus: "canceled", timedOut: false };
+      }
+      throw stripeErr;
+    }
+
+    // Poll the bundle API until the webhook updates the status to "canceled"
+    console.log(`[deletion-webhook]: Polling for subscriptionStatus=canceled on ${bundleId}...`);
+    const startTime = Date.now();
+    let pollCount = 0;
+
+    while (Date.now() - startTime < timeoutMs) {
+      pollCount++;
+      const result = await page.evaluate(async (bid) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        if (!idToken) return { error: "no auth token" };
+        const response = await fetch("/api/v1/bundle", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        const data = await response.json();
+        const bundle = (data.bundles || []).find((b) => b.bundleId === bid && b.allocated);
+        if (!bundle) return { found: false };
+        return {
+          found: true,
+          subscriptionStatus: bundle.subscriptionStatus || null,
+          cancelAtPeriodEnd: bundle.cancelAtPeriodEnd ?? null,
+        };
+      }, bundleId);
+
+      if (result.found && result.subscriptionStatus === "canceled") {
+        console.log(
+          `[deletion-webhook]: Subscription deletion confirmed after ${Date.now() - startTime}ms (${pollCount} polls). status=${result.subscriptionStatus}`,
+        );
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-deletion-webhook-confirmed.png` });
+        return { deleted: true, subscriptionStatus: result.subscriptionStatus, timedOut: false };
+      }
+
+      console.log(
+        `[deletion-webhook]: Poll ${pollCount} - status=${result.subscriptionStatus}, elapsed=${Date.now() - startTime}ms`,
+      );
+      await page.waitForTimeout(pollIntervalMs);
+    }
+
+    console.warn(`[deletion-webhook]: Timed out after ${timeoutMs}ms waiting for canceled status`);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-deletion-webhook-TIMEOUT.png`, fullPage: true });
+    return { deleted: false, subscriptionStatus: bundleState.subscriptionStatus, timedOut: true };
   });
 }

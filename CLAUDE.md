@@ -438,7 +438,7 @@ aws --profile management route53 list-hosted-zones
 | `submit-prod` | 972912397388 | Submit prod deployments |
 | `submit-backup` | 914216784828 | Cross-account backup vault |
 
-SSO credentials last ~8-12 hours across all profiles. Re-login with `aws sso login --sso-session diyaccounting`.
+SSO credentials last ~8-12 hours across all profiles. When an AWS command fails with an expired token or `UnauthorizedSSOTokenError`, ask the user to run `aws sso login --sso-session diyaccounting` to refresh the session, then retry.
 
 **For scripts that need AWS env vars** (e.g., Cognito test scripts), export the profile:
 ```bash

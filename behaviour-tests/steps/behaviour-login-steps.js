@@ -5,6 +5,7 @@
 
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
+import { TOTP, Secret } from "otpauth";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-login-steps";
 
@@ -52,6 +53,12 @@ export async function loginWithCognitoOrMockAuth(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-native-filled.png` });
     await submitHostedUINativeAuth(page, screenshotPath);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-native-submitted.png` });
+    // Handle TOTP MFA challenge if a TOTP secret is available
+    const totpSecret = process.env.TEST_AUTH_TOTP_SECRET;
+    if (totpSecret) {
+      await handleTotpChallenge(page, totpSecret, screenshotPath);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-login-with-cognito-native-totp-completed.png` });
+    }
   }
 }
 
@@ -233,5 +240,101 @@ export async function submitHostedUINativeAuth(page, screenshotPath = defaultScr
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-signed-in.png` });
+  });
+}
+
+// Handle the Cognito Hosted UI TOTP MFA challenge page
+export async function handleTotpChallenge(page, totpSecret, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user completes the TOTP MFA challenge on the Cognito Hosted UI", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-totp-challenge.png` });
+
+    // Wait for the TOTP challenge page to appear
+    // The Cognito Hosted UI presents a code input field after username/password submission
+    console.log("Waiting for TOTP challenge page...");
+    const codeInput = await page.waitForSelector(
+      'input[name="totpCode"], input[name="SOFTWARE_TOKEN_MFA_CODE"], input[type="text"][inputmode="numeric"], input[name="code"]',
+      { state: "attached", timeout: 10000 },
+    );
+
+    if (!codeInput) {
+      console.log("No TOTP challenge page detected — MFA may not be required for this user");
+      return;
+    }
+
+    console.log("TOTP challenge page detected");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-totp-challenge-page.png` });
+
+    // Generate and submit TOTP code, retrying once if Cognito rejects it.
+    // Cognito rejects a code that was already consumed in the same 30-second window
+    // ("Your software token has already been used once.") — e.g. if the enrollment
+    // verification and the login happen in the same TOTP period.
+    const totp = new TOTP({
+      secret: Secret.fromBase32(totpSecret),
+      algorithm: "SHA1",
+      digits: 6,
+      period: 30,
+    });
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const code = totp.generate();
+      console.log(`Generated TOTP code for MFA challenge (attempt ${attempt})`);
+
+      // Type the code into the visible input field (same pattern as username/password)
+      await page.evaluate(() => {
+        const inputs = document.querySelectorAll(
+          'input[name="totpCode"], input[name="SOFTWARE_TOKEN_MFA_CODE"], input[type="text"][inputmode="numeric"], input[name="code"]',
+        );
+        const visible = Array.from(inputs).find((el) => el.offsetParent !== null) || inputs[inputs.length - 1];
+        if (visible) {
+          visible.focus();
+          visible.select();
+        }
+      });
+      await page.keyboard.type(code, { delay: 10 });
+      console.log("Typed TOTP code on challenge page");
+
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-totp-code-entered.png` });
+
+      // Submit the TOTP form
+      await page.evaluate(() => {
+        const btn =
+          document.querySelector('input[name="signInSubmitButton"]') ||
+          document.querySelector('button[type="submit"]') ||
+          document.querySelector('input[type="submit"]');
+        if (btn) {
+          const form = btn.closest("form");
+          if (form) form.noValidate = true;
+          btn.click();
+        }
+      });
+      console.log("Submitted TOTP challenge form");
+
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-totp-challenge-completed.png` });
+
+      // Check if Cognito rejected the code (error message still on the TOTP page)
+      // If the page navigated away (context destroyed), the TOTP was accepted successfully.
+      let errorText = "";
+      try {
+        errorText = await page.evaluate(() => {
+          const errorEl = document.querySelector('[id*="error"], .errorMessage, [class*="error"]');
+          return errorEl?.textContent?.trim() || "";
+        });
+      } catch (evalError) {
+        console.log("Page navigated away — TOTP accepted");
+        break;
+      }
+
+      if (errorText.includes("software token has already been used")) {
+        console.log(`TOTP code rejected (already used) — waiting for next 30s period before retry`);
+        const secondsRemaining = 30 - (Math.floor(Date.now() / 1000) % 30);
+        await page.waitForTimeout((secondsRemaining + 1) * 1000);
+        continue;
+      }
+
+      // No error — TOTP accepted, break out of retry loop
+      break;
+    }
   });
 }

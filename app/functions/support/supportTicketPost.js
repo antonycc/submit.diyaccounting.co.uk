@@ -198,10 +198,10 @@ ${description}
     });
 
     logger.info({ message: "GitHub issue created successfully", issueNumber: issue.number, issueUrl: issue.html_url });
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "support-ticket",
       summary: "Support ticket created",
-    }).catch(() => {});
+    });
 
     return http200OkResponse({
       request,

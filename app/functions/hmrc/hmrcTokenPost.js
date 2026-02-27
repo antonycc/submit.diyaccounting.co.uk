@@ -113,10 +113,10 @@ export async function ingestHandler(event) {
   if (!userSub) {
     userSub = getHeader(event.headers, "x-user-sub") || null;
   }
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "hmrc-token-exchanged",
     summary: "HMRC token exchanged",
-  }).catch(() => {});
+  });
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
 }
 

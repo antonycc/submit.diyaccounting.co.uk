@@ -8,7 +8,7 @@ concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
-# Bump23
+# Bump25
 
 on:
   workflow_dispatch:
@@ -54,7 +54,7 @@ on:
           - 'true'
           - 'false'
         required: false
-        default: 'false'
+        default: 'true'
       runProxyBehaviourTests:
         description: 'Run proxy behaviour tests (uses ngrok and Docker)'
         type: choice
@@ -163,7 +163,7 @@ jobs:
           echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-true}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipCleanup }}' ; echo "skipCleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSkippingDeploy: true if skipDeploy=true OR (push event with skip: in commit message)
@@ -350,6 +350,16 @@ jobs:
         run: |
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
 
+      - name: Upload Maven build artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: maven-target
+          path: |
+            target/submit-application.jar
+            target/submit-environment.jar
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
         id: self-destruct-start
         shell: bash
@@ -424,9 +434,6 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
 
@@ -447,6 +454,8 @@ jobs:
           docker buildx build \
             --platform linux/arm64 \
             --provenance=false \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
             --load \
             -t "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}" \
             -f Dockerfile .
@@ -1048,7 +1057,16 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Download Maven build artifact
+        id: download-maven-api
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: maven-target
+          path: target/
+
       - name: Cache Maven build output
+        if: steps.download-maven-api.outcome != 'success'
         uses: actions/cache@v4
         with:
           path: target
@@ -1365,8 +1383,17 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Cache Maven build output
+      - name: Download Maven build artifact
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        id: download-maven-publish
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: maven-target
+          path: target/
+
+      - name: Cache Maven build output
+        if: ${{ steps.download-maven-publish.outcome != 'success' && (needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true') }}
         uses: actions/cache@v4
         with:
           path: target
@@ -1657,13 +1684,12 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-auth:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - names
       - params
       - set-origins
-      - deploy-publish
       - enable-native-auth
       - verify-api
     uses: ./.github/workflows/synthetic-test.yml
@@ -1681,13 +1707,12 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-token-enforcement:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
-      - deploy-publish
       - enable-native-auth
       - verify-api
     uses: ./.github/workflows/synthetic-test.yml
@@ -1705,13 +1730,12 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-payment:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
-      - deploy-publish
       - enable-native-auth
       - verify-api
     uses: ./.github/workflows/synthetic-test.yml
@@ -1732,9 +1756,9 @@ jobs:
     if: ${{ !cancelled() }}
     name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
+      - params
       - names
       - set-origins
-      - deploy-publish
       - enable-native-auth
       - verify-api
     uses: ./.github/workflows/synthetic-test.yml
@@ -1752,17 +1776,18 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-bundle:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1778,17 +1803,18 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-pass-redemption:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1811,10 +1837,11 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1837,10 +1864,11 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1863,10 +1891,11 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1882,17 +1911,18 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-fraud-prevention-headers-vat-sandbox:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1908,17 +1938,18 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-compliance-sandbox:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1934,17 +1965,18 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-help-sandbox:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1967,10 +1999,11 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -1993,10 +2026,11 @@ jobs:
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -2012,17 +2046,18 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-simulator:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read
@@ -2038,17 +2073,18 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-generate-pass-activity:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() }}
     name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
-      - web-test-auth
-      - web-test-token-enforcement
-      - web-test-payment
-      - web-test
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
     uses: ./.github/workflows/synthetic-test.yml
     permissions:
       contents: read

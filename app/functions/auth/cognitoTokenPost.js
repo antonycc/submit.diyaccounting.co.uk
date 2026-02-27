@@ -8,7 +8,7 @@ import { extractRequest, buildTokenExchangeResponse, buildValidationError, http2
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/auth/cognitoTokenPost.js" });
 
@@ -87,19 +87,50 @@ export async function ingestHandler(event) {
     tokenResponse = await exchangeRefreshTokenForToken(refreshToken);
   }
 
-  if (grantType === "authorization_code") {
-    publishActivityEvent({
-      event: "login",
-      summary: "Login via authorization_code",
-    }).catch(() => {});
-  } else if (grantType === "refresh_token") {
-    publishActivityEvent({
-      event: "token-refresh",
-      summary: "Token refresh",
-    }).catch(() => {});
-  }
+  const result = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
 
-  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
+  // Publish activity event after token exchange so we can classify the user from the ID token
+  const { email, provider } = extractUserInfoFromResponse(result);
+  const actor = classifyActor(email);
+  const eventName = grantType === "authorization_code" ? "login" : "token-refresh";
+  const label = grantType === "authorization_code" ? "Login" : "Token refresh";
+  const providerLabel = provider ? ` via ${provider}` : "";
+  const emailLabel = email ? `: ${maskEmail(email)}` : "";
+  await publishActivityEvent({
+    event: eventName,
+    summary: `${label}${providerLabel}${emailLabel}`,
+    actor,
+    flow: "user-journey",
+  });
+
+  return result;
+}
+
+/**
+ * Extract email and identity provider from the token exchange response.
+ * Decodes the ID token JWT payload (no signature verification needed —
+ * Cognito just issued it). Returns { email, provider } or empty strings.
+ */
+export function extractUserInfoFromResponse(result) {
+  try {
+    if (result.statusCode !== 200) return { email: "", provider: "" };
+    const body = JSON.parse(result.body);
+    if (!body.idToken) return { email: "", provider: "" };
+    const payload = JSON.parse(Buffer.from(body.idToken.split(".")[1], "base64url").toString());
+    const email = payload.email || "";
+    // Cognito federated users have an 'identities' claim (JSON string of provider array)
+    let provider = "";
+    if (payload.identities) {
+      const identities = typeof payload.identities === "string" ? JSON.parse(payload.identities) : payload.identities;
+      if (Array.isArray(identities) && identities.length > 0) {
+        provider = identities[0].providerName || "";
+      }
+    }
+    return { email, provider };
+  } catch (err) {
+    logger.warn({ message: "Failed to extract user info from token response", error: err.message });
+    return { email: "", provider: "" };
+  }
 }
 
 // Service adaptor: authorization_code

@@ -581,163 +581,212 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
     body: requestBody,
   });
 
-  try {
-    // Add timeout to prevent hanging tests
-    const timeoutMs = 20000;
-
-    /* *************************** */
-    /* 1. Obtain OAuth2 access token */
-    /* *************************** */
-
-    logger.info({
-      message: "[HMRC Test User Creation] Requesting OAuth2 access token",
-      tokenUrl,
-      grantType: "client_credentials",
-    });
-
-    const tokenController = new AbortController();
-    const tokenTimeout = setTimeout(() => tokenController.abort(), timeoutMs);
-
-    let tokenResponse;
+  const maxRetries = 3;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const tokenBody = new URLSearchParams({
-        client_id: hmrcClientId,
-        client_secret: hmrcClientSecret,
-        grant_type: "client_credentials",
+      // Add timeout to prevent hanging tests
+      const timeoutMs = 20000;
+
+      /* *************************** */
+      /* 1. Obtain OAuth2 access token */
+      /* *************************** */
+
+      logger.info({
+        message: "[HMRC Test User Creation] Requesting OAuth2 access token",
+        tokenUrl,
+        grantType: "client_credentials",
+        attempt: attempt > 0 ? attempt : undefined,
       });
 
-      if (options.scope) {
-        tokenBody.set("scope", options.scope);
+      const tokenController = new AbortController();
+      const tokenTimeout = setTimeout(() => tokenController.abort(), timeoutMs);
+
+      let tokenResponse;
+      try {
+        const tokenBody = new URLSearchParams({
+          client_id: hmrcClientId,
+          client_secret: hmrcClientSecret,
+          grant_type: "client_credentials",
+        });
+
+        if (options.scope) {
+          tokenBody.set("scope", options.scope);
+        }
+
+        tokenResponse = await fetch(tokenUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: tokenBody.toString(),
+          signal: tokenController.signal,
+        });
+      } finally {
+        clearTimeout(tokenTimeout);
       }
 
-      tokenResponse = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: tokenBody.toString(),
-        signal: tokenController.signal,
-      });
-    } finally {
-      clearTimeout(tokenTimeout);
-    }
+      const tokenResponseBody = await tokenResponse.json().catch(() => ({}));
 
-    const tokenResponseBody = await tokenResponse.json().catch(() => ({}));
-
-    logger.info({
-      message: "[HMRC Test User Creation] Token response received",
-      status: tokenResponse.status,
-      statusText: tokenResponse.statusText,
-      // Do not log access_token
-      hasAccessToken: Boolean(tokenResponseBody && tokenResponseBody.access_token),
-      error: tokenResponseBody.error,
-      errorDescription: tokenResponseBody.error_description,
-    });
-
-    if (!tokenResponse.ok) {
-      const tokenErrorDetails = tokenResponseBody?.error_description || tokenResponseBody?.error || JSON.stringify(tokenResponseBody);
-      logger.error({
-        message: "[HMRC Test User Creation] Failed to obtain access token",
+      logger.info({
+        message: "[HMRC Test User Creation] Token response received",
         status: tokenResponse.status,
-        tokenResponseBody,
+        statusText: tokenResponse.statusText,
+        // Do not log access_token
+        hasAccessToken: Boolean(tokenResponseBody && tokenResponseBody.access_token),
+        error: tokenResponseBody.error,
+        errorDescription: tokenResponseBody.error_description,
       });
-      throw new Error(`Failed to obtain HMRC access token: ${tokenResponse.status} ${tokenResponse.statusText} - ${tokenErrorDetails}`);
-    }
 
-    const accessToken = tokenResponseBody.access_token;
-    if (!accessToken) {
-      logger.error({
-        message: "[HMRC Test User Creation] Token response did not contain access_token",
-        tokenResponseBody,
-      });
-      throw new Error("Failed to obtain HMRC access token: access_token missing from response");
-    }
+      if (tokenResponse.status === 429) {
+        const retryDelay = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000 - 500;
+        if (attempt < maxRetries) {
+          logger.info({
+            message: "[HMRC Test User Creation] Rate limited (429) on token request, retrying",
+            attempt: attempt + 1,
+            maxRetries,
+            retryDelayMs: Math.round(retryDelay),
+          });
+          await new Promise(r => setTimeout(r, retryDelay));
+          continue;
+        }
+        const tokenErrorDetails = tokenResponseBody?.error_description || tokenResponseBody?.error || JSON.stringify(tokenResponseBody);
+        throw new Error(`Failed to obtain HMRC access token: ${tokenResponse.status} ${tokenResponse.statusText} - ${tokenErrorDetails}`);
+      }
 
-    /* ************************************** */
-    /* 2. Call Create Test User (organisations) */
-    /* ************************************** */
+      if (!tokenResponse.ok) {
+        const tokenErrorDetails = tokenResponseBody?.error_description || tokenResponseBody?.error || JSON.stringify(tokenResponseBody);
+        logger.error({
+          message: "[HMRC Test User Creation] Failed to obtain access token",
+          status: tokenResponse.status,
+          tokenResponseBody,
+        });
+        throw new Error(`Failed to obtain HMRC access token: ${tokenResponse.status} ${tokenResponse.statusText} - ${tokenErrorDetails}`);
+      }
 
-    const requestHeaders = {
-      "Content-Type": "application/json",
-      "Accept": "application/vnd.hmrc.1.0+json",
-      "Authorization": `Bearer ${accessToken}`,
-    };
+      const accessToken = tokenResponseBody.access_token;
+      if (!accessToken) {
+        logger.error({
+          message: "[HMRC Test User Creation] Token response did not contain access_token",
+          tokenResponseBody,
+        });
+        throw new Error("Failed to obtain HMRC access token: access_token missing from response");
+      }
 
-    const requestHeadersForLog = {
-      ...requestHeaders,
-      Authorization: "Bearer ***REDACTED***",
-    };
+      /* ************************************** */
+      /* 2. Call Create Test User (organisations) */
+      /* ************************************** */
 
-    logger.info({
-      message: "[HMRC Test User Creation] Request details (create-test-user)",
-      method: "POST",
-      url,
-      headers: requestHeadersForLog,
-      body: requestBody,
-    });
+      const requestHeaders = {
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.hmrc.1.0+json",
+        "Authorization": `Bearer ${accessToken}`,
+      };
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      const requestHeadersForLog = {
+        ...requestHeaders,
+        Authorization: "Bearer ***REDACTED***",
+      };
 
-    let response;
-    try {
-      response = await fetch(url, {
+      logger.info({
+        message: "[HMRC Test User Creation] Request details (create-test-user)",
         method: "POST",
-        headers: requestHeaders,
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
+        url,
+        headers: requestHeadersForLog,
+        body: requestBody,
       });
-    } finally {
-      clearTimeout(timeout);
-    }
 
-    const responseBody = await response.json();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-    logger.info({
-      message: "[HMRC Test User Creation] Response received",
-      status: response.status,
-      statusText: response.statusText,
-      responseBody,
-    });
+      let response;
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: requestHeaders,
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
-    if (!response.ok) {
-      const errorDetails = responseBody?.message || responseBody?.error || JSON.stringify(responseBody);
-      logger.error({
-        message: "[HMRC Test User Creation] Failed to create test user",
+      const responseBody = await response.json();
+
+      logger.info({
+        message: "[HMRC Test User Creation] Response received",
         status: response.status,
+        statusText: response.statusText,
         responseBody,
       });
-      throw new Error(`Failed to create HMRC test user: ${response.status} ${response.statusText} - ${errorDetails}`);
+
+      if (response.status === 429) {
+        const retryDelay = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000 - 500;
+        if (attempt < maxRetries) {
+          logger.info({
+            message: "[HMRC Test User Creation] Rate limited (429) on create-test-user request, retrying",
+            attempt: attempt + 1,
+            maxRetries,
+            retryDelayMs: Math.round(retryDelay),
+          });
+          await new Promise(r => setTimeout(r, retryDelay));
+          continue;
+        }
+        const errorDetails = responseBody?.message || responseBody?.error || JSON.stringify(responseBody);
+        throw new Error(`Failed to create HMRC test user: ${response.status} ${response.statusText} - ${errorDetails}`);
+      }
+
+      if (!response.ok) {
+        const errorDetails = responseBody?.message || responseBody?.error || JSON.stringify(responseBody);
+        logger.error({
+          message: "[HMRC Test User Creation] Failed to create test user",
+          status: response.status,
+          responseBody,
+        });
+        throw new Error(`Failed to create HMRC test user: ${response.status} ${response.statusText} - ${errorDetails}`);
+      }
+
+      // Extract key information from response
+      const testUser = {
+        userId: responseBody.userId,
+        password: responseBody.password,
+        userFullName: responseBody.userFullName,
+        emailAddress: responseBody.emailAddress,
+        organisationDetails: responseBody.organisationDetails,
+        vatRegistrationNumber: responseBody.vatRegistrationNumber,
+        // Include all other fields for completeness
+        ...responseBody,
+      };
+
+      logger.info({
+        message: "[HMRC Test User Creation] Test user created successfully",
+        userId: testUser.userId,
+        userFullName: testUser.userFullName,
+        vatRegistrationNumber: testUser.vatRegistrationNumber,
+        organisationName: testUser.organisationDetails?.name,
+      });
+
+      return testUser;
+    } catch (error) {
+      if (attempt < maxRetries && error.message && error.message.includes("429")) {
+        // This handles edge cases where a 429 error propagates through an unexpected path
+        const retryDelay = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000 - 500;
+        logger.info({
+          message: "[HMRC Test User Creation] Rate limited (429), retrying after error",
+          attempt: attempt + 1,
+          maxRetries,
+          retryDelayMs: Math.round(retryDelay),
+          error: error.message,
+        });
+        await new Promise(r => setTimeout(r, retryDelay));
+        continue;
+      }
+      logger.error({
+        message: "[HMRC Test User Creation] Error creating test user",
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
     }
-
-    // Extract key information from response
-    const testUser = {
-      userId: responseBody.userId,
-      password: responseBody.password,
-      userFullName: responseBody.userFullName,
-      emailAddress: responseBody.emailAddress,
-      organisationDetails: responseBody.organisationDetails,
-      vatRegistrationNumber: responseBody.vatRegistrationNumber,
-      // Include all other fields for completeness
-      ...responseBody,
-    };
-
-    logger.info({
-      message: "[HMRC Test User Creation] Test user created successfully",
-      userId: testUser.userId,
-      userFullName: testUser.userFullName,
-      vatRegistrationNumber: testUser.vatRegistrationNumber,
-      organisationName: testUser.organisationDetails?.name,
-    });
-
-    return testUser;
-  } catch (error) {
-    logger.error({
-      message: "[HMRC Test User Creation] Error creating test user",
-      error: error.message,
-      stack: error.stack,
-    });
-    throw error;
   }
 }
 
@@ -869,57 +918,3 @@ export function generatePeriodDates() {
   };
 }
 
-// injectMockMfa and clearMockMfa are no longer needed — MFA metadata is now set by the
-// login callback itself via amr claims (mock OAuth2 server) or identities+auth_time (federated IdPs).
-// See loginWithCognitoCallback.html and loginWithMockCallback.html for the detection logic.
-//
-// /**
-//  * Inject mock MFA metadata into sessionStorage for testing Gov-Client-Multi-Factor header.
-//  * This simulates MFA detection from federated IdP (Google 2FA, OIDC, etc.)
-//  *
-//  * @param {Object} page - Playwright page object
-//  * @param {Object} options - MFA options { type, timestamp, uniqueReference }
-//  * @returns {Promise<void>}
-//  *
-//  * @example
-//  * // Inject mock TOTP MFA for testing
-//  * await injectMockMfa(page, {
-//  *   type: 'TOTP',
-//  *   timestamp: new Date().toISOString(),
-//  *   uniqueReference: 'test-session-12345'
-//  * });
-//  */
-// export async function injectMockMfa(page, options = {}) {
-//   const mfaType = options.type || process.env.TEST_MFA_TYPE || "TOTP";
-//   const mfaTimestamp = options.timestamp || process.env.TEST_MFA_TIMESTAMP || new Date().toISOString();
-//   const mfaUniqueRef = options.uniqueReference || process.env.TEST_MFA_UNIQUE_REF || `test-mfa-${Date.now()}`;
-//
-//   await page.evaluate(
-//     ({ type, timestamp, uniqueReference }) => {
-//       const mfaMetadata = {
-//         type,
-//         timestamp,
-//         uniqueReference,
-//       };
-//       sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
-//       console.log("[Mock MFA] Injected MFA metadata:", mfaMetadata);
-//     },
-//     { type: mfaType, timestamp: mfaTimestamp, uniqueReference: mfaUniqueRef },
-//   );
-//
-//   console.log(`[Mock MFA] Injected: type=${mfaType}, timestamp=${mfaTimestamp}, ref=${mfaUniqueRef}`);
-// }
-//
-// /**
-//  * Clear MFA metadata from sessionStorage (simulates no MFA scenario)
-//  *
-//  * @param {Object} page - Playwright page object
-//  * @returns {Promise<void>}
-//  */
-// export async function clearMockMfa(page) {
-//   await page.evaluate(() => {
-//     sessionStorage.removeItem("mfaMetadata");
-//     console.log("[Mock MFA] Cleared MFA metadata");
-//   });
-//   console.log("[Mock MFA] Cleared MFA metadata from sessionStorage");
-// }

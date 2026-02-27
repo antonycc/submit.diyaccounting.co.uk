@@ -39,6 +39,7 @@ import {
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
@@ -481,14 +482,17 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     );
     expect(postRequests.length).toBeGreaterThan(0);
     postRequests.forEach((postRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(postRequest, `POST ${postRequest.url}`);
       assertHmrcApiRequestValues(postRequest, { "httpRequest.method": "POST" });
       // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
     });
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
-    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT POST test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT POST test", { filterByUserSub: userSub });
     expect(hashedSubs.length).toBeGreaterThan(0);
   }
 });

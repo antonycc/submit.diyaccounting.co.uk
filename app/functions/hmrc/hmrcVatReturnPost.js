@@ -825,10 +825,10 @@ export async function submitVat(
   }
 
   if (hmrcResponse.ok) {
-    publishActivityEvent({
+    await publishActivityEvent({
       event: "vat-return-submitted",
       summary: "VAT return submitted",
-    }).catch(() => {});
+    });
   }
 
   return { hmrcRequestBody, receipt: hmrcResponseBody, hmrcResponse, hmrcResponseBody, hmrcRequestUrl };

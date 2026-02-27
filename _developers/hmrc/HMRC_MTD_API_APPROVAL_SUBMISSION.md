@@ -306,7 +306,7 @@ npm run test:submitVatBehaviour-proxy-report
     - auth_time gives HMRC the actual authentication timestamp from the IdP session
     - The header is only populated when the user actively authenticated (not from cached sessions without auth_time)
 
-  Test coverage: The mock OAuth2 server provides amr: ["mfa", "pwd"] in its tokens, so the mock login callback detects MFA via the primary path. The injectMockMfa() workaround is no longer needed.
+  Test coverage: The mock OAuth2 server provides amr: ["mfa", "pwd"] in its tokens, so the mock login callback detects MFA via the primary path. CI/prod tests use real Cognito TOTP MFA.
 
 ```
 
@@ -390,12 +390,13 @@ Each header is traced from collection to transmission.
 - **Test Assertion**: Header presence verified
 
 ### Gov-Client-Multi-Factor
-- **Value**: `type=TOTP&timestamp=<ISO8601>&unique-reference=<session-id>`
-- **Collection**: MFA metadata from federated IdP token (`amr` claim) or mock injection for tests
+- **Value**: `type=TOTP&timestamp=<ISO8601>&unique-reference=<session-id>` (Cognito native) or `type=OTHER&...` (Google federated)
+- **Collection**: MFA metadata from Cognito ID token `amr` claim or federated IdP `identities` + `auth_time`
 - **Implementation**:
   - Production: `web/public/auth/loginWithCognitoCallback.html` (extracts from token)
-  - Tests: `behaviour-tests/helpers/behaviour-helpers.js:injectMockMfa()`
-- **Test Assertion**: `assertMfaHeader()` verifies format compliance
+  - Proxy tests: Mock OAuth server provides `amr: ["mfa", "pwd"]` via `loginWithMockCallback.html`
+  - CI/prod tests: Real Cognito TOTP MFA via `create-cognito-test-user.js` TOTP enrollment
+- **Test Assertion**: `assertMfaHeader()` verifies format compliance, `essentialFraudPreventionHeaders` enforces presence
 
 ### Gov-Client-Public-IP-Timestamp
 - **Value**: ISO 8601 timestamp when IP was collected

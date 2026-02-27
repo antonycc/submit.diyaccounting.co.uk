@@ -12,7 +12,6 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  // injectMockMfa, // MFA metadata is now set by the login callback via amr/identities claims
   isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -34,6 +33,7 @@ import {
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   readDynamoDbExport,
   countHmrcApiRequestValues,
   assertFraudPreventionHeaders,
@@ -313,9 +313,6 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   await clickLogIn(page, screenshotPath);
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
-
-  // MFA metadata is now set by the login callback via amr claims (mock) or identities+auth_time (federated)
-  // await injectMockMfa(page);
 
   await consentToDataCollection(page, screenshotPath);
 
@@ -669,6 +666,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     //let http201CreatedResults = 0;
     expect(vatPostRequests.length).toBeGreaterThan(0);
     vatPostRequests.forEach((vatPostRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(vatPostRequest, `POST ${vatPostRequest.url}`);
       const thisRequestHttp201CreatedResults = countHmrcApiRequestValues(vatPostRequest, {
         "httpRequest.method": "POST",
         "httpResponse.statusCode": 201,
@@ -699,6 +697,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
     expect(vatGetRequests.length).toBeGreaterThan(0);
     vatGetRequests.forEach((vatGetRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(vatGetRequest, `GET ${vatGetRequest.url}`);
       const thisRequestHttp200OkResults = countHmrcApiRequestValues(vatGetRequest, {
         "httpRequest.method": "GET",
         "httpResponse.statusCode": 200,
@@ -719,10 +718,12 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     });
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
-    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
     // Assert consistent hashedSub across authenticated requests
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test", { filterByUserSub: userSub });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
   }
 });

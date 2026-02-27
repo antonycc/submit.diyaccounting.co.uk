@@ -9,10 +9,12 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -20,10 +22,14 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.cognito.UserPoolOperation;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
 import software.amazon.awscdk.services.cognito.CustomThreatProtectionMode;
 import software.amazon.awscdk.services.cognito.FeaturePlan;
+import software.amazon.awscdk.services.cognito.Mfa;
+import software.amazon.awscdk.services.cognito.MfaSecondFactor;
 import software.amazon.awscdk.services.cognito.OAuthFlows;
 import software.amazon.awscdk.services.cognito.OAuthScope;
 import software.amazon.awscdk.services.cognito.OAuthSettings;
@@ -38,6 +44,10 @@ import software.amazon.awscdk.services.cognito.UserPoolClient;
 import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
+import software.amazon.awscdk.services.lambda.Architecture;
+import software.amazon.awscdk.services.lambda.Code;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
@@ -163,9 +173,45 @@ public class IdentityStack extends Stack {
                 .featurePlan(FeaturePlan.PLUS)
                 .standardThreatProtectionMode(StandardThreatProtectionMode.FULL_FUNCTION)
                 .customThreatProtectionMode(CustomThreatProtectionMode.FULL_FUNCTION)
+                // Enable optional TOTP MFA for native auth users (test users, future native users)
+                // Federated users (Google) bypass Cognito MFA — their IdP handles MFA independently
+                .mfa(Mfa.OPTIONAL)
+                .mfaSecondFactor(MfaSecondFactor.builder()
+                        .otp(true) // TOTP via authenticator apps
+                        .sms(false) // No SMS MFA (no phone numbers collected)
+                        .build())
                 .accountRecovery(AccountRecovery.NONE)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
+
+        // Pre Token Generation trigger: injects custom:mfa_method claim for TOTP users.
+        // Cognito doesn't populate the amr claim for native TOTP MFA, so this trigger
+        // adds a custom claim that the frontend can use to detect MFA completion.
+        // Resolve asset path from either project root (Maven test) or cdk-environment/ (cdk synth)
+        var preTokenGenRelativePath = "app/functions/auth/preTokenGeneration";
+        var preTokenGenAssetDir = Paths.get(preTokenGenRelativePath).toAbsolutePath().normalize();
+        if (!preTokenGenAssetDir.toFile().isDirectory()) {
+            preTokenGenAssetDir = Paths.get("../" + preTokenGenRelativePath).toAbsolutePath().normalize();
+        }
+        var preTokenGenFunction = Function.Builder.create(
+                        this, props.resourceNamePrefix() + "-PreTokenGeneration")
+                .functionName(props.resourceNamePrefix() + "-pre-token-generation")
+                .runtime(Runtime.NODEJS_22_X)
+                .architecture(Architecture.ARM_64)
+                .handler("index.handler")
+                .code(Code.fromAsset(preTokenGenAssetDir.toString()))
+                .timeout(Duration.seconds(5))
+                .memorySize(128)
+                .build();
+        this.userPool.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGenFunction);
+        // Grant AdminGetUser using a string ARN pattern to avoid circular dependency:
+        // UserPool -> Lambda (trigger) -> IAM Policy (UserPool ARN) -> UserPool
+        preTokenGenFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .actions(List.of("cognito-idp:AdminGetUser"))
+                .resources(List.of(
+                        String.format("arn:aws:cognito-idp:%s:%s:userpool/*",
+                                props.getEnv().getRegion(), props.getEnv().getAccount())))
+                .build());
 
         // Google IdP
         this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(

@@ -174,22 +174,39 @@
           const isFederatedLogin = Array.isArray(idTokenPayload.identities) && idTokenPayload.identities.length > 0;
           const authTime = idTokenPayload.auth_time;
 
+          // Generate a stable unique-reference for HMRC Gov-Client-Multi-Factor header.
+          // HMRC requires: "Use the same hashing function consistently so that this can be
+          // recognised across API calls." SHA-256(sub + ":" + factorType) gives a stable
+          // identifier per user per MFA method. sub is already an opaque UUID (no PII).
+          async function stableUniqueReference(sub, factorType) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(sub + ":" + factorType);
+            const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+            return Array.from(new Uint8Array(hashBuffer))
+              .map((b) => b.toString(16).padStart(2, "0"))
+              .join("");
+          }
+
           if (hasMFA) {
             // amr claims explicitly indicate MFA
+            // Map specific amr claims to HMRC MFA type values:
+            //   otp = TOTP authenticator app → type=TOTP
+            //   mfa/swk/hwk = other MFA methods → type=OTHER
+            const mfaType = amrClaims.includes("otp") ? "TOTP" : "OTHER";
             const mfaMetadata = {
-              type: "OTHER",
+              type: mfaType,
               timestamp: authTime ? new Date(authTime * 1000).toISOString() : new Date().toISOString(),
-              uniqueReference: crypto.randomUUID(),
+              uniqueReference: await stableUniqueReference(idTokenPayload.sub, mfaType),
             };
             sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
-            console.log("MFA detected from amr claims:", amrClaims, "Stored metadata:", mfaMetadata);
+            console.log("MFA detected from amr claims:", amrClaims, "type:", mfaType, "Stored metadata:", mfaMetadata);
           } else if (isFederatedLogin && authTime) {
             // Federated login — IdP handles MFA but doesn't expose amr
             const providerNames = idTokenPayload.identities.map((id) => id.providerName || id.providerType).join(", ");
             const mfaMetadata = {
               type: "OTHER",
               timestamp: new Date(authTime * 1000).toISOString(),
-              uniqueReference: crypto.randomUUID(),
+              uniqueReference: await stableUniqueReference(idTokenPayload.sub, "OTHER"),
             };
             sessionStorage.setItem("mfaMetadata", JSON.stringify(mfaMetadata));
             console.log("MFA inferred from federated login (" + providerNames + "), auth_time:", authTime, "Stored metadata:", mfaMetadata);

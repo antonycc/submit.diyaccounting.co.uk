@@ -13,7 +13,6 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  // injectMockMfa, // MFA metadata is now set by the login callback via amr/identities claims
   isSandboxMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -209,8 +208,6 @@ async function setupTestUserAndLogin(page, testInfo) {
   await clickLogIn(page, screenshotPath);
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
-  // MFA metadata is now set by the login callback via amr claims (mock) or identities+auth_time (federated)
-  // await injectMockMfa(page);
   await consentToDataCollection(page, screenshotPath);
 
   await goToBundlesPage(page, screenshotPath);

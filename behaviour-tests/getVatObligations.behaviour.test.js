@@ -46,6 +46,7 @@ import {
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   readDynamoDbExport,
   countHmrcApiRequestValues,
   assertFraudPreventionHeaders,
@@ -676,6 +677,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     let http500ServerErrorResults = 0;
     let http503ServiceUnavailableResults = 0;
     obligationsRequests.forEach((obligationsRequest, index) => {
+      assertEssentialFraudPreventionHeadersPresent(obligationsRequest, `GET obligations request ${index + 1}`);
       console.log(`[DynamoDB Assertions]: Validating VAT obligations GET request ${index + 1} of ${obligationsRequests.length}`);
       const thisRequestHttp200OkResults = countHmrcApiRequestValues(obligationsRequest, {
         "httpRequest.method": "GET",
@@ -730,10 +732,12 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     // TODO: capture exception failures in dynamo: expect(http503ServiceUnavailableResults).toBe(1);
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
-    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
     // Assert consistent hashedSub across authenticated requests
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test", { filterByUserSub: userSub });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
   }
 });

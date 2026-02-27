@@ -21,14 +21,21 @@ const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-export.j
 export async function exportTableToJsonLines(tableName, endpoint, outputPath) {
   logger.info(`[dynamodb-export]: Exporting table '${tableName}' from endpoint '${endpoint}' to '${outputPath}'`);
 
-  const clientConfig = {
-    endpoint,
-    region: "us-east-1",
-    credentials: {
-      accessKeyId: "dummy",
-      secretAccessKey: "dummy",
-    },
-  };
+  // When an explicit endpoint is provided (local dynalite), use dummy credentials.
+  // When no endpoint (real AWS DynamoDB), use the default SDK credential chain
+  // (environment variables set by configure-aws-credentials in GitHub Actions).
+  const clientConfig = endpoint
+    ? {
+        endpoint,
+        region: "us-east-1",
+        credentials: {
+          accessKeyId: "dummy",
+          secretAccessKey: "dummy",
+        },
+      }
+    : {
+        region: process.env.AWS_REGION || "eu-west-2",
+      };
 
   const client = new DynamoDBClient(clientConfig);
   const docClient = DynamoDBDocumentClient.from(client);

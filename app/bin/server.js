@@ -32,6 +32,7 @@ import { apiEndpoint as billingRecoverPostApiEndpoint } from "../functions/billi
 import { apiEndpoint as billingWebhookPostApiEndpoint } from "../functions/billing/billingWebhookPost.js";
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
+import { detectVendorPublicIp } from "../lib/buildFraudHeaders.js";
 
 const logger = createLogger({ source: "app/bin/server.js" });
 
@@ -88,6 +89,21 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Private-Network", "true");
   }
   if (req.method === "OPTIONS") return res.status(200).end();
+  next();
+});
+
+// Simulate CloudFront headers for fraud prevention in non-proxy environments.
+// In proxy/CI/prod, CloudFront and ngrok set X-Forwarded-For and CloudFront-Viewer-Address.
+// In simulator mode, the Express server receives direct requests from Playwright on localhost,
+// so we inject synthetic values to allow buildFraudHeaders.js to generate all Gov-* headers.
+app.use((req, res, next) => {
+  if (!req.headers["x-forwarded-for"]) {
+    req.headers["x-forwarded-for"] = "203.0.113.1"; // RFC 5737 TEST-NET-3 (documentation IP)
+  }
+  if (!req.headers["cloudfront-viewer-address"]) {
+    const port = req.socket?.remotePort || 12345;
+    req.headers["cloudfront-viewer-address"] = `203.0.113.1:${port}`;
+  }
   next();
 });
 
@@ -261,6 +277,14 @@ if (__runDirect) {
       logger.warn(`Non-strict env validation warning: ${e}`);
     }
   }
+  // Detect vendor public IP at startup (same as Lambda cold start) for Gov-Vendor-Public-IP header
+  detectVendorPublicIp().then((ip) => {
+    if (ip) {
+      logger.info(`Detected vendor public IP for fraud prevention headers: ${ip}`);
+    } else {
+      logger.warn("Could not detect vendor public IP — Gov-Vendor-Public-IP will be missing");
+    }
+  });
   app.listen(TEST_SERVER_HTTP_PORT, () => {
     const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
     console.log(message);

@@ -174,11 +174,11 @@ function generateAllowPolicy(routeArn, jwtPayload) {
 }
 
 // Generate IAM policy to deny access
-function generateDenyPolicy(routeArn) {
-  publishActivityEvent({
+async function generateDenyPolicy(routeArn) {
+  await publishActivityEvent({
     event: "auth-denied",
     summary: "Authorization denied",
-  }).catch(() => {});
+  });
   return {
     principalId: "user",
     policyDocument: {

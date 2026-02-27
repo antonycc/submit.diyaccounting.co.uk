@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import { expect } from "@playwright/test";
 import { createLogger } from "@app/lib/logger.js";
+import { hashSub, initializeSalt, isSaltInitialized } from "@app/services/subHasher.js";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-assertions.js" });
 
@@ -143,29 +144,47 @@ function getNestedValue(obj, path) {
  * @param {Object} options - Options for validation
  * @param {number} options.maxHashedSubs - Maximum allowed unique hashedSub values (default: 2)
  * @param {boolean} options.allowOAuthDifference - Allow different hashedSub for OAuth requests (default: true)
+ * @param {string} options.filterByUserSub - If provided, filter authenticated records to this user's hashedSub
  */
-export function assertConsistentHashedSub(exportFilePath, description = "", options = {}) {
-  const { maxHashedSubs = 2, allowOAuthDifference = true } = options;
+export async function assertConsistentHashedSub(exportFilePath, description = "", options = {}) {
+  const { maxHashedSubs = 2, allowOAuthDifference = true, filterByUserSub = null } = options;
 
-  const records = readDynamoDbExport(exportFilePath);
+  const allRecords = readDynamoDbExport(exportFilePath);
 
-  if (records.length === 0) {
+  if (allRecords.length === 0) {
     logger.warn(`No HMRC API request records found in ${exportFilePath}`);
     return;
   }
 
-  const hashedSubs = [...new Set(records.map((r) => r.hashedSub).filter((h) => h))];
-  const oauthRequests = records.filter((r) => r.url && r.url.includes("/oauth/token"));
+  // When filterByUserSub is provided, filter to the current test user's records.
+  // This prevents false failures in CI where the DynamoDB table contains historical records
+  // from all previous test runs. OAuth requests use a pre-auth hashedSub (different from the
+  // authenticated hashedSub), so we filter authenticated requests by the user's hashedSub
+  // and skip the OAuth uniqueness check when filtering.
+  let userHashedSub = null;
+  if (filterByUserSub) {
+    try {
+      if (!isSaltInitialized()) {
+        await initializeSalt();
+      }
+      userHashedSub = hashSub(filterByUserSub);
+    } catch (e) {
+      logger.warn(`Could not hash userSub for filtering (checking all records): ${e.message}`);
+    }
+  }
+
+  const records = userHashedSub ? allRecords.filter((r) => r.hashedSub === userHashedSub) : allRecords;
+  const oauthRequests = allRecords.filter((r) => r.url && r.url.includes("/oauth/token"));
   const authenticatedRequests = records.filter((r) => r.url && !r.url.includes("/oauth/token"));
-  const oauthHashedSubs = [...new Set(oauthRequests.map((r) => r.hashedSub))];
   const authenticatedHashedSubs = [...new Set(authenticatedRequests.map((r) => r.hashedSub))];
   const desc = description ? ` (${description})` : "";
 
-  // If allowing OAuth difference, validate that we have at most 2 hashedSubs: one for OAuth, one for authenticated
-  if (allowOAuthDifference && hashedSubs.length) {
-    // Verify OAuth requests use one hashedSub and authenticated requests use another
-    expect(oauthHashedSubs.length, `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`).toBe(
-      1,
+  if (userHashedSub) {
+    // Filtered mode: only assert authenticated requests have a consistent hashedSub.
+    // OAuth requests can't be filtered by user sub (pre-auth hashedSub differs).
+    logger.info(
+      `Filtering by hashedSub ${userHashedSub}: ${authenticatedRequests.length} authenticated requests ` +
+        `(of ${allRecords.length} total, ${oauthRequests.length} OAuth)`,
     );
 
     expect(
@@ -174,19 +193,39 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
     ).toBe(1);
 
     logger.info(
-      `Found ${records.length} HMRC API requests: OAuth (${oauthRequests.length}) with hashedSub ${oauthHashedSubs[0]}, ` +
-        `authenticated (${authenticatedRequests.length}) with hashedSub ${authenticatedHashedSubs[0]}`,
+      `Found ${authenticatedRequests.length} authenticated HMRC API requests with hashedSub ${authenticatedHashedSubs[0]}`,
     );
+  } else if (allowOAuthDifference) {
+    // Unfiltered mode with OAuth difference allowed: validate at most 2 hashedSubs
+    const hashedSubs = [...new Set(allRecords.map((r) => r.hashedSub).filter((h) => h))];
+    const oauthHashedSubs = [...new Set(oauthRequests.map((r) => r.hashedSub))];
+
+    if (hashedSubs.length) {
+      expect(oauthHashedSubs.length, `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`).toBe(
+        1,
+      );
+
+      expect(
+        authenticatedHashedSubs.length,
+        `Expected authenticated requests to have a single hashedSub${desc}, but found ${authenticatedHashedSubs.length}`,
+      ).toBe(1);
+
+      logger.info(
+        `Found ${allRecords.length} HMRC API requests: OAuth (${oauthRequests.length}) with hashedSub ${oauthHashedSubs[0]}, ` +
+          `authenticated (${authenticatedRequests.length}) with hashedSub ${authenticatedHashedSubs[0]}`,
+      );
+    }
   } else {
+    const hashedSubs = [...new Set(allRecords.map((r) => r.hashedSub).filter((h) => h))];
     expect(
       hashedSubs.length,
       `Expected all HMRC API requests to have the same hashedSub${desc}, but found ${hashedSubs.length} different values: ${hashedSubs.join(", ")}`,
     ).toBeLessThanOrEqual(maxHashedSubs);
 
-    logger.info(`Found ${records.length} HMRC API requests with ${hashedSubs.length} unique hashedSub value(s)`);
+    logger.info(`Found ${allRecords.length} HMRC API requests with ${hashedSubs.length} unique hashedSub value(s)`);
   }
 
-  return hashedSubs;
+  return authenticatedHashedSubs;
 }
 
 /**
@@ -198,21 +237,33 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
  * @see buildFraudHeaders.js for server-side header generation
  * @see submit.js buildGovClientHeaders() for client-side header generation
  */
-// export const intentionallyNotSuppliedHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids", "gov-client-public-port"];
 export const intentionallyNotSuppliedHeaders = [];
 
 /**
  * Essential HMRC Fraud Prevention headers that MUST be present in every HMRC API request.
- * These are generated server-side by buildFraudHeaders.js and should always exist.
+ * These are generated client-side (browser) or server-side (buildFraudHeaders.js).
+ * The Express server injects synthetic CloudFront headers in simulator mode so that
+ * network-dependent headers (public IP, port, forwarded) are also available for testing.
+ *
+ * See HMRC spec: https://developer.service.hmrc.gov.uk/guides/fraud-prevention/connection-method/web-app-via-server/
  */
 export const essentialFraudPreventionHeaders = [
+  // Server-side (buildFraudHeaders.js)
   "gov-client-connection-method",
   "gov-client-user-ids",
+  "gov-client-public-ip",
+  "gov-client-public-port",
   "gov-vendor-product-name",
   "gov-vendor-version",
   "gov-vendor-public-ip",
-  "gov-client-public-ip",
-  "gov-client-public-port",
+  "gov-vendor-forwarded",
+  // Client-side (hmrc-service.js, passed as request headers)
+  "gov-client-multi-factor",
+  "gov-client-device-id",
+  "gov-client-browser-js-user-agent",
+  "gov-client-screens",
+  "gov-client-timezone",
+  "gov-client-window-size",
 ];
 
 /**
@@ -233,7 +284,29 @@ export function assertEssentialFraudPreventionHeadersPresent(hmrcApiRequest, con
   }
 }
 
-export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = false, noWarnings = false, allValidFeedbackHeaders = false) {
+export async function assertFraudPreventionHeaders(
+  hmrcApiRequestsFile,
+  noErrors = false,
+  noWarnings = false,
+  allValidFeedbackHeaders = false,
+  filterByUserSub = null,
+) {
+  // When filterByUserSub is provided, only check records belonging to the current test user.
+  // This prevents false failures in CI where the DynamoDB table contains historical records
+  // from old test runs (e.g. before MFA was implemented).
+  let filterHashedSub = null;
+  if (filterByUserSub) {
+    try {
+      if (!isSaltInitialized()) {
+        await initializeSalt();
+      }
+      filterHashedSub = hashSub(filterByUserSub);
+      console.log(`[DynamoDB Assertions]: Filtering fraud prevention header records by hashedSub for current test user`);
+    } catch (e) {
+      console.log(`[DynamoDB Assertions]: Could not hash userSub for filtering (checking all records): ${e.message}`);
+    }
+  }
+
   let fraudPreventionHeadersValidationFeedbackGetRequests;
   if (allValidFeedbackHeaders) {
     fraudPreventionHeadersValidationFeedbackGetRequests = assertHmrcApiRequestExists(
@@ -244,6 +317,11 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
     );
   } else {
     fraudPreventionHeadersValidationFeedbackGetRequests = [];
+  }
+  if (filterHashedSub) {
+    fraudPreventionHeadersValidationFeedbackGetRequests = fraudPreventionHeadersValidationFeedbackGetRequests.filter(
+      (record) => record.hashedSub === filterHashedSub,
+    );
   }
   console.log(
     `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationFeedbackGetRequests.length} Fraud prevention headers validation feedback GET request(s)`,
@@ -274,12 +352,27 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
   });
 
   // Assert Fraud prevention headers validation GET request exists and validate key fields
-  const fraudPreventionHeadersValidationGetRequests = assertHmrcApiRequestExists(
+  // First assert without filter to confirm at least one record exists in the full export
+  assertHmrcApiRequestExists(
     hmrcApiRequestsFile,
     "GET",
     `/test/fraud-prevention-headers/validate`,
     "Fraud prevention headers validation",
   );
+  // Then filter to current user's records for detailed assertions (errors/warnings)
+  let fraudPreventionHeadersValidationGetRequests = findHmrcApiRequestsByMethodAndUrl(
+    hmrcApiRequestsFile,
+    "GET",
+    `/test/fraud-prevention-headers/validate`,
+  );
+  if (filterHashedSub) {
+    fraudPreventionHeadersValidationGetRequests = fraudPreventionHeadersValidationGetRequests.filter(
+      (record) => record.hashedSub === filterHashedSub,
+    );
+    console.log(
+      `[DynamoDB Assertions]: Filtered to ${fraudPreventionHeadersValidationGetRequests.length} validation request(s) for hashedSub ${filterHashedSub}`,
+    );
+  }
   console.log(
     `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationGetRequests.length} Fraud prevention headers validation GET request(s)`,
   );

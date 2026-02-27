@@ -537,9 +537,9 @@ export async function getVatObligations(
   if (!hmrcResponse.ok) {
     return { hmrcResponse, obligations: null };
   }
-  publishActivityEvent({
+  await publishActivityEvent({
     event: "vat-obligations-queried",
     summary: "VAT obligations queried",
-  }).catch(() => {});
+  });
   return { hmrcResponse, obligations: hmrcResponse.data, hmrcRequestUrl };
 }
