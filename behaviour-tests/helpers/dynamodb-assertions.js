@@ -202,17 +202,29 @@ export const intentionallyNotSuppliedHeaders = [];
 
 /**
  * Essential HMRC Fraud Prevention headers that MUST be present in every HMRC API request.
- * These are generated server-side by buildFraudHeaders.js and should always exist.
+ * These are generated client-side (browser) or server-side (buildFraudHeaders.js).
+ * The Express server injects synthetic CloudFront headers in simulator mode so that
+ * network-dependent headers (public IP, port, forwarded) are also available for testing.
+ *
+ * See HMRC spec: https://developer.service.hmrc.gov.uk/guides/fraud-prevention/connection-method/web-app-via-server/
  */
 export const essentialFraudPreventionHeaders = [
+  // Server-side (buildFraudHeaders.js)
   "gov-client-connection-method",
-  "gov-client-multi-factor",
   "gov-client-user-ids",
+  "gov-client-public-ip",
+  "gov-client-public-port",
   "gov-vendor-product-name",
   "gov-vendor-version",
   "gov-vendor-public-ip",
-  "gov-client-public-ip",
-  "gov-client-public-port",
+  "gov-vendor-forwarded",
+  // Client-side (hmrc-service.js, passed as request headers)
+  "gov-client-multi-factor",
+  "gov-client-device-id",
+  "gov-client-browser-js-user-agent",
+  "gov-client-screens",
+  "gov-client-timezone",
+  "gov-client-window-size",
 ];
 
 /**

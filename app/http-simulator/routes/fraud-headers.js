@@ -8,9 +8,10 @@
 import { randomUUID } from "crypto";
 
 /**
- * Required fraud prevention headers for WEB_APP_VIA_SERVER connection method
- * Note: Network-dependent headers (public IPs) are NOT validated in simulator mode
- * because they require real network context (e.g., ngrok) to be populated properly.
+ * Required fraud prevention headers for WEB_APP_VIA_SERVER connection method.
+ * The Express server injects synthetic CloudFront headers (X-Forwarded-For,
+ * CloudFront-Viewer-Address) and calls detectVendorPublicIp() at startup,
+ * so network-dependent headers are now available in all environments.
  */
 const requiredHeaders = [
   "gov-client-connection-method",
@@ -23,25 +24,22 @@ const requiredHeaders = [
   "gov-client-browser-js-user-agent",
   "gov-vendor-version",
   "gov-vendor-product-name",
+  "gov-vendor-public-ip",
+  "gov-vendor-forwarded",
+  "gov-client-public-ip",
+  "gov-client-public-port",
 ];
 
 /**
  * Optional headers that generate warnings if missing
- * Note: Network-dependent headers are completely skipped in simulator validation
  */
-const optionalHeaders = ["gov-vendor-license-ids"];
+const optionalHeaders = ["gov-vendor-license-ids", "gov-client-public-ip-timestamp"];
 
 /**
- * Network-dependent headers that are completely skipped in simulator validation
- * These require real network context (ngrok, public IPs) and cannot be tested locally
+ * Network-dependent headers that are completely skipped in simulator validation.
+ * Now empty — the Express server provides synthetic values for all network headers.
  */
-const skippedNetworkHeaders = [
-  "gov-vendor-public-ip",
-  "gov-vendor-forwarded",
-  "gov-client-public-ip",
-  "gov-client-public-ip-timestamp",
-  "gov-client-public-port",
-];
+const skippedNetworkHeaders = [];
 
 /**
  * Validate fraud prevention headers
