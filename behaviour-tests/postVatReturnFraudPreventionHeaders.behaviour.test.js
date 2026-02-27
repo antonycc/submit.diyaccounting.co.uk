@@ -42,6 +42,7 @@ import {
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
@@ -529,6 +530,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     console.log(`[DynamoDB Assertions]: Found ${vatPostRequests.length} VAT return POST request(s)`);
     expect(vatPostRequests.length).toBeGreaterThan(0);
     vatPostRequests.forEach((vatPostRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(vatPostRequest, `POST ${vatPostRequest.url}`);
       // Assert that the request body contains the submitted data
       assertHmrcApiRequestValues(vatPostRequest, {
         "httpRequest.method": "POST",

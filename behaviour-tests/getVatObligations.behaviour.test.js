@@ -46,6 +46,7 @@ import {
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   readDynamoDbExport,
   countHmrcApiRequestValues,
   assertFraudPreventionHeaders,
@@ -676,6 +677,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     let http500ServerErrorResults = 0;
     let http503ServiceUnavailableResults = 0;
     obligationsRequests.forEach((obligationsRequest, index) => {
+      assertEssentialFraudPreventionHeadersPresent(obligationsRequest, `GET obligations request ${index + 1}`);
       console.log(`[DynamoDB Assertions]: Validating VAT obligations GET request ${index + 1} of ${obligationsRequests.length}`);
       const thisRequestHttp200OkResults = countHmrcApiRequestValues(obligationsRequest, {
         "httpRequest.method": "GET",

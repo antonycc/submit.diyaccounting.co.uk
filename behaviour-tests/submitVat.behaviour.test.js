@@ -33,6 +33,7 @@ import {
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   readDynamoDbExport,
   countHmrcApiRequestValues,
   assertFraudPreventionHeaders,
@@ -665,6 +666,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     //let http201CreatedResults = 0;
     expect(vatPostRequests.length).toBeGreaterThan(0);
     vatPostRequests.forEach((vatPostRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(vatPostRequest, `POST ${vatPostRequest.url}`);
       const thisRequestHttp201CreatedResults = countHmrcApiRequestValues(vatPostRequest, {
         "httpRequest.method": "POST",
         "httpResponse.statusCode": 201,
@@ -695,6 +697,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
 
     expect(vatGetRequests.length).toBeGreaterThan(0);
     vatGetRequests.forEach((vatGetRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(vatGetRequest, `GET ${vatGetRequest.url}`);
       const thisRequestHttp200OkResults = countHmrcApiRequestValues(vatGetRequest, {
         "httpRequest.method": "GET",
         "httpResponse.statusCode": 200,

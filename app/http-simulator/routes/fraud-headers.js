@@ -15,6 +15,7 @@ import { randomUUID } from "crypto";
 const requiredHeaders = [
   "gov-client-connection-method",
   "gov-client-device-id",
+  "gov-client-multi-factor",
   "gov-client-user-ids",
   "gov-client-timezone",
   "gov-client-screens",
@@ -28,7 +29,7 @@ const requiredHeaders = [
  * Optional headers that generate warnings if missing
  * Note: Network-dependent headers are completely skipped in simulator validation
  */
-const optionalHeaders = ["gov-client-multi-factor", "gov-vendor-license-ids"];
+const optionalHeaders = ["gov-vendor-license-ids"];
 
 /**
  * Network-dependent headers that are completely skipped in simulator validation

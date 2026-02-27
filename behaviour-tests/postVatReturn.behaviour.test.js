@@ -39,6 +39,7 @@ import {
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
@@ -481,6 +482,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     );
     expect(postRequests.length).toBeGreaterThan(0);
     postRequests.forEach((postRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(postRequest, `POST ${postRequest.url}`);
       assertHmrcApiRequestValues(postRequest, { "httpRequest.method": "POST" });
       // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
     });

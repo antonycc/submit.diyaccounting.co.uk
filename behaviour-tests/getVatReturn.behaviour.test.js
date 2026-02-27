@@ -49,6 +49,7 @@ import {
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
+  assertEssentialFraudPreventionHeadersPresent,
   assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
@@ -412,6 +413,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     const vatGetRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "GET", vatReturnUrlPattern, "VAT return retrieval");
     expect(vatGetRequests.length).toBeGreaterThan(0);
     vatGetRequests.forEach((vatGetRequest) => {
+      assertEssentialFraudPreventionHeadersPresent(vatGetRequest, `GET ${vatGetRequest.url}`);
       assertHmrcApiRequestValues(vatGetRequest, { "httpRequest.method": "GET" });
       // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
     });
