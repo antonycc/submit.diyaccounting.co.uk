@@ -22,6 +22,7 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cognito.AccountRecovery;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.cognito.UserPoolOperation;
 import software.amazon.awscdk.services.cognito.AttributeMapping;
 import software.amazon.awscdk.services.cognito.AuthFlow;
@@ -203,6 +204,14 @@ public class IdentityStack extends Stack {
                 .memorySize(128)
                 .build();
         this.userPool.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGenFunction);
+        // Grant AdminGetUser using a string ARN pattern to avoid circular dependency:
+        // UserPool -> Lambda (trigger) -> IAM Policy (UserPool ARN) -> UserPool
+        preTokenGenFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .actions(List.of("cognito-idp:AdminGetUser"))
+                .resources(List.of(
+                        String.format("arn:aws:cognito-idp:%s:%s:userpool/*",
+                                props.getEnv().getRegion(), props.getEnv().getAccount())))
+                .build());
 
         // Google IdP
         this.googleIdentityProvider = UserPoolIdentityProviderGoogle.Builder.create(

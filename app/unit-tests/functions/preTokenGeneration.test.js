@@ -1,10 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
-import { describe, it, expect } from "vitest";
-import { handler } from "@app/functions/auth/preTokenGeneration/index.js";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-function buildEvent(userAttributes, triggerSource = "TokenGeneration_HostedAuth") {
+// Mock the AWS SDK before importing the handler
+const mockSend = vi.fn();
+vi.mock("@aws-sdk/client-cognito-identity-provider", () => ({
+  CognitoIdentityProviderClient: vi.fn(() => ({ send: mockSend })),
+  AdminGetUserCommand: vi.fn((params) => ({ input: params })),
+}));
+
+const { handler } = await import("@app/functions/auth/preTokenGeneration/index.js");
+
+function buildEvent(triggerSource = "TokenGeneration_HostedAuth") {
   return {
     version: "1",
     triggerSource,
@@ -15,7 +23,6 @@ function buildEvent(userAttributes, triggerSource = "TokenGeneration_HostedAuth"
       userAttributes: {
         sub: "test-user-sub",
         email: "test@test.diyaccounting.co.uk",
-        ...userAttributes,
       },
       groupConfiguration: {},
     },
@@ -24,10 +31,13 @@ function buildEvent(userAttributes, triggerSource = "TokenGeneration_HostedAuth"
 }
 
 describe("preTokenGeneration", () => {
+  beforeEach(() => {
+    mockSend.mockReset();
+  });
+
   it("should add custom:mfa_method=TOTP when user has SOFTWARE_TOKEN_MFA configured", async () => {
-    const event = buildEvent({
-      "cognito:preferred_mfa_setting": "SOFTWARE_TOKEN_MFA",
-    });
+    mockSend.mockResolvedValue({ PreferredMfaSetting: "SOFTWARE_TOKEN_MFA" });
+    const event = buildEvent();
 
     const result = await handler(event);
 
@@ -37,7 +47,8 @@ describe("preTokenGeneration", () => {
   });
 
   it("should not add claims when user has no MFA configured", async () => {
-    const event = buildEvent({});
+    mockSend.mockResolvedValue({ PreferredMfaSetting: undefined });
+    const event = buildEvent();
 
     const result = await handler(event);
 
@@ -45,9 +56,8 @@ describe("preTokenGeneration", () => {
   });
 
   it("should not add claims when MFA setting is SMS (not TOTP)", async () => {
-    const event = buildEvent({
-      "cognito:preferred_mfa_setting": "SMS_MFA",
-    });
+    mockSend.mockResolvedValue({ PreferredMfaSetting: "SMS_MFA" });
+    const event = buildEvent();
 
     const result = await handler(event);
 
@@ -55,10 +65,8 @@ describe("preTokenGeneration", () => {
   });
 
   it("should add claim on token refresh if user has MFA configured", async () => {
-    const event = buildEvent(
-      { "cognito:preferred_mfa_setting": "SOFTWARE_TOKEN_MFA" },
-      "TokenGeneration_RefreshTokens",
-    );
+    mockSend.mockResolvedValue({ PreferredMfaSetting: "SOFTWARE_TOKEN_MFA" });
+    const event = buildEvent("TokenGeneration_RefreshTokens");
 
     const result = await handler(event);
 
@@ -67,15 +75,26 @@ describe("preTokenGeneration", () => {
     });
   });
 
-  it("should detect MFA from custom:mfa_method attribute if preferred_mfa_setting is absent", async () => {
-    const event = buildEvent({
-      "custom:mfa_method": "SOFTWARE_TOKEN_MFA",
-    });
+  it("should not fail if AdminGetUser throws", async () => {
+    mockSend.mockRejectedValue(new Error("Access denied"));
+    const event = buildEvent();
 
     const result = await handler(event);
 
-    expect(result.response.claimsOverrideDetails.claimsToAddOrOverride).toEqual({
-      "custom:mfa_method": "TOTP",
+    expect(result.response).toEqual({});
+  });
+
+  it("should call AdminGetUser with correct UserPoolId and Username", async () => {
+    mockSend.mockResolvedValue({ PreferredMfaSetting: undefined });
+    const event = buildEvent();
+
+    await handler(event);
+
+    expect(mockSend).toHaveBeenCalledOnce();
+    const command = mockSend.mock.calls[0][0];
+    expect(command.input).toEqual({
+      UserPoolId: "eu-west-2_test",
+      Username: "test-user-sub",
     });
   });
 });
