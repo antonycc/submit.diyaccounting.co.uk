@@ -144,29 +144,47 @@ function getNestedValue(obj, path) {
  * @param {Object} options - Options for validation
  * @param {number} options.maxHashedSubs - Maximum allowed unique hashedSub values (default: 2)
  * @param {boolean} options.allowOAuthDifference - Allow different hashedSub for OAuth requests (default: true)
+ * @param {string} options.filterByUserSub - If provided, filter authenticated records to this user's hashedSub
  */
-export function assertConsistentHashedSub(exportFilePath, description = "", options = {}) {
-  const { maxHashedSubs = 2, allowOAuthDifference = true } = options;
+export async function assertConsistentHashedSub(exportFilePath, description = "", options = {}) {
+  const { maxHashedSubs = 2, allowOAuthDifference = true, filterByUserSub = null } = options;
 
-  const records = readDynamoDbExport(exportFilePath);
+  const allRecords = readDynamoDbExport(exportFilePath);
 
-  if (records.length === 0) {
+  if (allRecords.length === 0) {
     logger.warn(`No HMRC API request records found in ${exportFilePath}`);
     return;
   }
 
-  const hashedSubs = [...new Set(records.map((r) => r.hashedSub).filter((h) => h))];
-  const oauthRequests = records.filter((r) => r.url && r.url.includes("/oauth/token"));
+  // When filterByUserSub is provided, filter to the current test user's records.
+  // This prevents false failures in CI where the DynamoDB table contains historical records
+  // from all previous test runs. OAuth requests use a pre-auth hashedSub (different from the
+  // authenticated hashedSub), so we filter authenticated requests by the user's hashedSub
+  // and skip the OAuth uniqueness check when filtering.
+  let userHashedSub = null;
+  if (filterByUserSub) {
+    try {
+      if (!isSaltInitialized()) {
+        await initializeSalt();
+      }
+      userHashedSub = hashSub(filterByUserSub);
+    } catch (e) {
+      logger.warn(`Could not hash userSub for filtering (checking all records): ${e.message}`);
+    }
+  }
+
+  const records = userHashedSub ? allRecords.filter((r) => r.hashedSub === userHashedSub) : allRecords;
+  const oauthRequests = allRecords.filter((r) => r.url && r.url.includes("/oauth/token"));
   const authenticatedRequests = records.filter((r) => r.url && !r.url.includes("/oauth/token"));
-  const oauthHashedSubs = [...new Set(oauthRequests.map((r) => r.hashedSub))];
   const authenticatedHashedSubs = [...new Set(authenticatedRequests.map((r) => r.hashedSub))];
   const desc = description ? ` (${description})` : "";
 
-  // If allowing OAuth difference, validate that we have at most 2 hashedSubs: one for OAuth, one for authenticated
-  if (allowOAuthDifference && hashedSubs.length) {
-    // Verify OAuth requests use one hashedSub and authenticated requests use another
-    expect(oauthHashedSubs.length, `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`).toBe(
-      1,
+  if (userHashedSub) {
+    // Filtered mode: only assert authenticated requests have a consistent hashedSub.
+    // OAuth requests can't be filtered by user sub (pre-auth hashedSub differs).
+    logger.info(
+      `Filtering by hashedSub ${userHashedSub}: ${authenticatedRequests.length} authenticated requests ` +
+        `(of ${allRecords.length} total, ${oauthRequests.length} OAuth)`,
     );
 
     expect(
@@ -175,19 +193,39 @@ export function assertConsistentHashedSub(exportFilePath, description = "", opti
     ).toBe(1);
 
     logger.info(
-      `Found ${records.length} HMRC API requests: OAuth (${oauthRequests.length}) with hashedSub ${oauthHashedSubs[0]}, ` +
-        `authenticated (${authenticatedRequests.length}) with hashedSub ${authenticatedHashedSubs[0]}`,
+      `Found ${authenticatedRequests.length} authenticated HMRC API requests with hashedSub ${authenticatedHashedSubs[0]}`,
     );
+  } else if (allowOAuthDifference) {
+    // Unfiltered mode with OAuth difference allowed: validate at most 2 hashedSubs
+    const hashedSubs = [...new Set(allRecords.map((r) => r.hashedSub).filter((h) => h))];
+    const oauthHashedSubs = [...new Set(oauthRequests.map((r) => r.hashedSub))];
+
+    if (hashedSubs.length) {
+      expect(oauthHashedSubs.length, `Expected OAuth requests to have a single hashedSub${desc}, but found ${oauthHashedSubs.length}`).toBe(
+        1,
+      );
+
+      expect(
+        authenticatedHashedSubs.length,
+        `Expected authenticated requests to have a single hashedSub${desc}, but found ${authenticatedHashedSubs.length}`,
+      ).toBe(1);
+
+      logger.info(
+        `Found ${allRecords.length} HMRC API requests: OAuth (${oauthRequests.length}) with hashedSub ${oauthHashedSubs[0]}, ` +
+          `authenticated (${authenticatedRequests.length}) with hashedSub ${authenticatedHashedSubs[0]}`,
+      );
+    }
   } else {
+    const hashedSubs = [...new Set(allRecords.map((r) => r.hashedSub).filter((h) => h))];
     expect(
       hashedSubs.length,
       `Expected all HMRC API requests to have the same hashedSub${desc}, but found ${hashedSubs.length} different values: ${hashedSubs.join(", ")}`,
     ).toBeLessThanOrEqual(maxHashedSubs);
 
-    logger.info(`Found ${records.length} HMRC API requests with ${hashedSubs.length} unique hashedSub value(s)`);
+    logger.info(`Found ${allRecords.length} HMRC API requests with ${hashedSubs.length} unique hashedSub value(s)`);
   }
 
-  return hashedSubs;
+  return authenticatedHashedSubs;
 }
 
 /**

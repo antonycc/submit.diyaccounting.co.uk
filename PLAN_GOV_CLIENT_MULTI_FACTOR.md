@@ -190,8 +190,15 @@ records and failed on old ones that had `MISSING_HEADER` warnings for `gov-clien
   - Frontend MFA detection working: `MFA detected from custom:mfa_method claim. type: TOTP`
   - DynamoDB export working: 198 bundles, 2883 hmrc-api-requests exported
   - `assertEssentialFraudPreventionHeadersPresent` PASSED (header IS present on current request)
-- Two CI tests failed due to historical validation feedback (Step 6 fix addresses this)
-- Pushed Step 6 fix — awaiting CI results
+- Two CI tests failed: `assertFraudPreventionHeaders` fixed in Step 6, but `assertConsistentHashedSub`
+  was missed — same root cause (historical records), different function
+- Step 6 fix pushed but `assertConsistentHashedSub` still reads all records unfiltered
+- Run 22496165436: `submitVatBehaviour-ci` and `postVatReturnFraudPreventionHeadersBehaviour-ci` both
+  failed with `Expected OAuth requests to have a single hashedSub, but found 148`
+- Fix: `assertConsistentHashedSub` now accepts `filterByUserSub` option, filters authenticated requests
+  by hashedSub, skips OAuth uniqueness check when filtering (OAuth pre-auth hashedSub differs from
+  authenticated hashedSub). All 5 callers updated to pass `userSub`.
+- `npm test` — 949 passed after fix
 
 ## Files Modified
 

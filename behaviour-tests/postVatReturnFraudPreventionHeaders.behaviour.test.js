@@ -550,7 +550,8 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
     // Assert consistent hashedSub across authenticated requests
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test", { filterByUserSub: userSub });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
   }
 });

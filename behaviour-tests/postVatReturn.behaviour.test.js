@@ -491,7 +491,8 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
     await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT POST test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT POST test", { filterByUserSub: userSub });
     expect(hashedSubs.length).toBeGreaterThan(0);
   }
 });

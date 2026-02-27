@@ -422,7 +422,8 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
     await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "View VAT GET test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "View VAT GET test", { filterByUserSub: userSub });
     expect(hashedSubs.length).toBeGreaterThan(0);
   }
 });

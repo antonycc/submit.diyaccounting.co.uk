@@ -736,7 +736,8 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
     // Assert consistent hashedSub across authenticated requests
-    const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test");
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "VAT Obligations test", { filterByUserSub: userSub });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
   }
 });
