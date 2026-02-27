@@ -6,9 +6,15 @@
 // This is needed because Cognito does not populate the amr claim for native TOTP auth.
 
 export const handler = async (event) => {
+  console.log("Pre Token Generation trigger invoked for user:", event.userName);
+  console.log("Trigger source:", event.triggerSource);
+  console.log("User attributes:", JSON.stringify(event.request.userAttributes));
+
   const mfaSetting =
     event.request.userAttributes["custom:mfa_method"] ||
     event.request.userAttributes["cognito:preferred_mfa_setting"];
+
+  console.log("Resolved mfaSetting:", mfaSetting);
 
   if (mfaSetting === "SOFTWARE_TOKEN_MFA") {
     event.response = {
