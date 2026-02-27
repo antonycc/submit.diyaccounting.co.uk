@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import { expect } from "@playwright/test";
 import { createLogger } from "@app/lib/logger.js";
+import { hashSub, initializeSalt, isSaltInitialized } from "@app/services/subHasher.js";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-assertions.js" });
 
@@ -245,7 +246,29 @@ export function assertEssentialFraudPreventionHeadersPresent(hmrcApiRequest, con
   }
 }
 
-export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = false, noWarnings = false, allValidFeedbackHeaders = false) {
+export async function assertFraudPreventionHeaders(
+  hmrcApiRequestsFile,
+  noErrors = false,
+  noWarnings = false,
+  allValidFeedbackHeaders = false,
+  filterByUserSub = null,
+) {
+  // When filterByUserSub is provided, only check records belonging to the current test user.
+  // This prevents false failures in CI where the DynamoDB table contains historical records
+  // from old test runs (e.g. before MFA was implemented).
+  let filterHashedSub = null;
+  if (filterByUserSub) {
+    try {
+      if (!isSaltInitialized()) {
+        await initializeSalt();
+      }
+      filterHashedSub = hashSub(filterByUserSub);
+      console.log(`[DynamoDB Assertions]: Filtering fraud prevention header records by hashedSub for current test user`);
+    } catch (e) {
+      console.log(`[DynamoDB Assertions]: Could not hash userSub for filtering (checking all records): ${e.message}`);
+    }
+  }
+
   let fraudPreventionHeadersValidationFeedbackGetRequests;
   if (allValidFeedbackHeaders) {
     fraudPreventionHeadersValidationFeedbackGetRequests = assertHmrcApiRequestExists(
@@ -256,6 +279,11 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
     );
   } else {
     fraudPreventionHeadersValidationFeedbackGetRequests = [];
+  }
+  if (filterHashedSub) {
+    fraudPreventionHeadersValidationFeedbackGetRequests = fraudPreventionHeadersValidationFeedbackGetRequests.filter(
+      (record) => record.hashedSub === filterHashedSub,
+    );
   }
   console.log(
     `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationFeedbackGetRequests.length} Fraud prevention headers validation feedback GET request(s)`,
@@ -286,12 +314,27 @@ export function assertFraudPreventionHeaders(hmrcApiRequestsFile, noErrors = fal
   });
 
   // Assert Fraud prevention headers validation GET request exists and validate key fields
-  const fraudPreventionHeadersValidationGetRequests = assertHmrcApiRequestExists(
+  // First assert without filter to confirm at least one record exists in the full export
+  assertHmrcApiRequestExists(
     hmrcApiRequestsFile,
     "GET",
     `/test/fraud-prevention-headers/validate`,
     "Fraud prevention headers validation",
   );
+  // Then filter to current user's records for detailed assertions (errors/warnings)
+  let fraudPreventionHeadersValidationGetRequests = findHmrcApiRequestsByMethodAndUrl(
+    hmrcApiRequestsFile,
+    "GET",
+    `/test/fraud-prevention-headers/validate`,
+  );
+  if (filterHashedSub) {
+    fraudPreventionHeadersValidationGetRequests = fraudPreventionHeadersValidationGetRequests.filter(
+      (record) => record.hashedSub === filterHashedSub,
+    );
+    console.log(
+      `[DynamoDB Assertions]: Filtered to ${fraudPreventionHeadersValidationGetRequests.length} validation request(s) for hashedSub ${filterHashedSub}`,
+    );
+  }
   console.log(
     `[DynamoDB Assertions]: Found ${fraudPreventionHeadersValidationGetRequests.length} Fraud prevention headers validation GET request(s)`,
   );

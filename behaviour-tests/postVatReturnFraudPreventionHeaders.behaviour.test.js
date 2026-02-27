@@ -546,7 +546,8 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     });
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
-    assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false);
+    // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
+    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
     // Assert consistent hashedSub across authenticated requests
     const hashedSubs = assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT test");
