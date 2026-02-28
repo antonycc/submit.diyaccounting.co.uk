@@ -1,4 +1,4 @@
-# Plan: Fix Gov-Client-Multi-Factor Header Missing from HMRC Requests
+# Plan: Fix Gov-Client-Multi-Factor Header Missing from HMRC Requests — COMPLETE
 
 ## User Assertions (non-negotiable)
 
@@ -264,3 +264,27 @@ The test failure was purely the unfiltered `assertConsistentHashedSub` assertion
 4. Push test run 22500632262: all 27 simulator jobs passed ✅
 5. DynamoDB evidence: all 21 records from run 22496165436 traceparent confirm header present ✅
 6. CI deployment run 22501672507: all 16 CI behaviour tests passed ✅
+7. **Prod deployment run 22510198070: all prod behaviour tests passed** ✅
+
+### Prod Validation (2026-02-28)
+
+DynamoDB scan of `prod-env-hmrc-api-requests` for test run traceparents (01:20–01:30 UTC, run 22510198070)
+found 44 records across 5 trace IDs. All VAT API requests include `Gov-Client-Multi-Factor`:
+
+```
+Gov-Client-Multi-Factor: type=TOTP&timestamp=2026-02-28T01%3A23%3A03.000Z&unique-reference=e7e105cfaa0d1375cb5aab03fdb990900062f946fbe1b27e9f7acc6dbb07dbcc
+```
+
+HMRC fraud prevention header validation response:
+```
+"All headers required for your connection method have been supplied and all appear to be valid"
+```
+- 0 warnings, 0 errors
+- All 16 Gov-* headers present including `Gov-Client-Multi-Factor`
+
+**This plan is COMPLETE.** All user assertions satisfied:
+- `Gov-Client-Multi-Factor` present in all HMRC API requests from CI and prod ✅
+- Behaviour tests fail if mandatory FPH headers are missing (DynamoDB assertions enabled) ✅
+- `assertEssentialFraudPreventionHeadersPresent` called in all 5 behaviour tests ✅
+- MFA header carries genuine TOTP values from the authentication flow ✅
+- `unique-reference` is stable (SHA-256 hash of `sub:mfaType`) ✅
