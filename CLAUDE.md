@@ -1,5 +1,7 @@
 # Claude Code Memory - DIY Accounting Submit
 
+> **Shared conventions** (git workflow, AWS accounts, code quality, confirm behavior, security): See `../CLAUDE.md`
+
 ## Context Survival (CRITICAL — read this first after every compaction)
 
 **After compaction or at session start:**
@@ -39,33 +41,13 @@
 - `.junie/guidelines.md` - Junie (testing & iteration focus)
 - `.github/copilot-instructions.md` - GitHub Copilot (code review focus)
 
-## Permission Handling (CRITICAL)
+## Permission Handling
 
-**Before starting any task**, review what permissions may be required and request them all upfront:
-
-1. **Analyze the task** - What tools, commands, and access will be needed?
-2. **List all permissions** - File access, git operations, shell commands, external services
-3. **Request upfront** - Ask for all permissions at the start, not piecemeal during execution
-
-**If a permission is missing mid-task:**
-- Continue working on other parts of the task that don't require the missing permission
-- Run background tasks that can proceed independently
-- Only block and ask when you've exhausted all parallel work options
-
-**Common permissions to consider:**
-- Git: commit, push, branch operations
-- GitHub CLI: workflow monitoring, PR operations, log retrieval
-- Shell: specific command patterns (npm, mvnw, aws, etc.)
-- File operations: read/write in specific directories
-- External services: API calls, web fetches
+See `../CLAUDE.md` for full rules. Common permissions for submit work: git operations, GitHub CLI (`gh`), shell commands (`npm`, `mvnw`, `aws`), external API calls.
 
 ## Git Workflow
 
-**You may**: create branches, commit changes, push branches, open pull requests
-
-**You may NOT**: merge PRs, push to main, delete branches, rewrite history
-
-**Branch naming**: `claude/<short-description>`
+See `../CLAUDE.md` for full rules. Branch naming: `claude/<short-description>`. You may create branches, commit, push, open PRs. You may NOT merge PRs, push to main, delete branches, or rewrite history.
 
 ## Test Commands
 
@@ -276,14 +258,11 @@ npm run test:submitVatBehaviour-ci
 
 ## Code Quality Rules
 
-- **Trace code paths** before running tests - follow both test execution and AWS deployment paths
-- **No unnecessary formatting** - don't reformat lines you're not changing
-- **No import reordering** - considered unnecessary formatting
-- **No fallback paths** for silent failures when fixing bugs
-- **No compatibility adaptors** when refactoring - change names everywhere consistently
-- **No "legacy" support code** - all requests originate in this repository, so there's no external caller needing backwards compatibility. Code that accepts parameters and ignores them is toxic. If a parameter isn't used, remove it. Don't add complexity pretending to support something.
-- **No backwards-compatible aliases** - when renaming a function/export, update ALL callers in this repository instead of creating aliases like `export const oldName = newName`. All code in this repo can be refactored together; aliases create tech debt and confuse future readers.
-- **No server-side fallbacks to favor tests** - if a header or parameter is required, the client must send it. Don't add `|| process.env.X` fallbacks in production code to work around test setup issues.
+See `../CLAUDE.md` for shared rules. Additional submit-specific rules:
+
+- **No "legacy" support code** — code that accepts parameters and ignores them is toxic. If a parameter isn't used, remove it.
+- **No backwards-compatible aliases** — when renaming a function/export, update ALL callers in this repository. All code in this repo can be refactored together.
+- **No server-side fallbacks to favor tests** — don't add `|| process.env.X` fallbacks in production code to work around test setup issues.
 - Only run `npm run linting-fix && npm run formatting-fix` when specifically asked
 
 ## API Error Handling (CRITICAL)
@@ -327,26 +306,19 @@ npm run test:submitVatBehaviour-ci
 - DynamoDB tables: `{env}-env-{purpose}`
 - npm scripts: colon separator for variants (e.g., `test:unit`)
 
-## Infrastructure Teardown Philosophy
+## Infrastructure Teardown (Submit-Specific)
 
-**Core principle**: Stacks must be cleanly destroyable. Data protection comes from backups (PITR, cross-account copies), NOT from CloudFormation `RemovalPolicy.RETAIN`.
+See `../CLAUDE.md` for core teardown philosophy. Submit-specific details:
 
 ### RemovalPolicy Guidelines
 
 **Use `DESTROY` for everything except:**
-- Lambda Versions with provisioned concurrency (RETAIN prevents CloudFormation deadlocks - this is an AWS bug workaround, not data protection)
-
-**Why not RETAIN?**
-- Blocks stack teardown and redeployment (name conflicts)
-- Creates manual cleanup burden
-- Causes CloudFormation drift when resources are manually deleted
-- AWS log groups with RETAIN block deployments if deleted externally
+- Lambda Versions with provisioned concurrency (RETAIN prevents CloudFormation deadlocks — AWS bug workaround, not data protection)
 
 **Customer data protection strategy:**
 - DynamoDB: PITR enabled (35-day recovery window)
 - Backups: Cross-account copying (planned)
 - HMRC receipts: 7-year TTL with PITR backup
-- If you need the data, back it up properly - don't rely on CloudFormation refusing to delete it
 
 ### Stack Architecture for Teardown
 
@@ -363,50 +335,23 @@ When CloudFormation references resources that might not exist (e.g., log groups 
 
 ## Before Making Infrastructure Changes
 
-1. **Trace all dependencies**: When modifying a CDK construct, read its documentation to understand ALL resources it creates, not just the ones you're directly changing. For example, `Trail` auto-creates an S3 bucket and IAM role.
+See `../CLAUDE.md` for shared rules. Additionally: **No manual interventions** — never suggest AWS CLI commands, console actions, or workflow hacks. Run `./mvnw clean verify` before considering any infrastructure change complete.
 
-2. **Check existing patterns**: Search the codebase for similar constructs (e.g., other S3 buckets, other LogGroups) and follow the same configuration approach. Don't invent new patterns.
+## AWS Write Operations
 
-3. **Propose before implementing**: For infrastructure changes, describe the change in plain text and wait for approval before editing files.
+See `../CLAUDE.md` for full rules. **Always ask before writing to AWS.** Submit-specific paths:
 
-4. **No manual interventions**: Never suggest AWS CLI commands, console actions, or workflow hacks. Everything goes through code changes → git push → GitHub Actions.
-
-5. **Understand the full error**: When a deployment fails, don't just fix the immediate error. Ask: "What other resources does this construct depend on? What else could be in a bad state?"
-
-6. **Verify compilation locally**: Run `./mvnw clean verify` before considering any infrastructure change complete.
-
-## AWS Write Operations (CRITICAL)
-
-**ALWAYS ask before writing to AWS.** Any mutating operation (create, update, delete) requires explicit user approval. Present the command, explain what it does, and wait for a "yes" before executing.
-
-- **Preferred path for secrets**: GitHub Actions Secrets/Variables → `deploy-environment.yml` → AWS Secrets Manager. Direct AWS writes are the exception, not the norm.
-- **Preferred path for infrastructure**: CDK code → git push → GitHub Actions deploy.
-- **Read-only AWS operations are always permitted** (describe, get, list, scan, logs, etc.) — no need to ask.
+- **Secrets**: GitHub Actions Secrets/Variables → `deploy-environment.yml` → AWS Secrets Manager
+- **Infrastructure**: CDK code → git push → GitHub Actions deploy
 - If you need to persist data between sessions and GitHub Actions is not appropriate, ask the user.
 
-## Confirm Means Stop and Wait (CRITICAL)
+## Confirm Means Stop and Wait
 
-When the user says "confirm each command" or similar:
+See `../CLAUDE.md` — present the command, STOP, wait for explicit approval before executing.
 
-1. **Present the command** in a code block.
-2. **STOP. Do not execute.** Wait for the user to explicitly approve.
-3. Only after the user says "yes", "go ahead", "run it", or similar, execute that single command.
-4. Then present the next command and **STOP again**.
+## AWS Accounts (Submit-Specific)
 
-"Confirm" NEVER means "narrate what you're doing as you do it." It means **ask permission, then wait.**
-
-This applies to ALL external side effects: AWS, Stripe, Telegram, GitHub, or any other service that changes state outside the local filesystem.
-
-## AWS Accounts and Repositories
-
-| Account | ID | Repository | Relative Path |
-|---------|-----|-----------|---------------|
-| Management (root) | 887764105431 | `antonycc/root.diyaccounting.co.uk` | `../root.diyaccounting.co.uk` |
-| gateway | 283165661847 | `antonycc/www.diyaccounting.co.uk` | `../www.diyaccounting.co.uk` |
-| spreadsheets | 064390746177 | `antonycc/diy-accounting` (future) | `../diy-accounting` |
-| submit-ci | 367191799875 | `antonycc/submit.diyaccounting.co.uk` | `.` (this repo) |
-| submit-prod | 972912397388 | `antonycc/submit.diyaccounting.co.uk` | `.` (this repo) |
-| submit-backup | 914216784828 | — | — |
+This repo deploys to two accounts: **submit-ci** (367191799875) and **submit-prod** (972912397388). See `../CLAUDE.md` for the full account table.
 
 **Current state**: Gateway and spreadsheets are fully migrated to their own accounts. Submit CI is migrating to 367191799875. Submit prod is still in 887764105431 (migrating to 972912397388 in Phase 1.4). Root DNS and holding page remain in 887764105431 permanently.
 
@@ -530,8 +475,7 @@ Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
 
 ## Security Checklist
 
-- Never commit secrets - use AWS Secrets Manager ARNs
-- Check IAM for least privilege (avoid `Resource: "*"`)
-- Validate all user input in Lambda functions
+See `../CLAUDE.md` for shared rules. Submit-specific checks:
+
 - Verify OAuth state parameter validation
 - Check JWT validation in `app/functions/auth/customAuthorizer.js`
