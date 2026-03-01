@@ -296,7 +296,7 @@ jobs:
           ls -la REPORT_ACCESSIBILITY_PENETRATION.md || echo "No compliance report"
 
       - name: Upload compliance reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: compliance-reports
           path: |

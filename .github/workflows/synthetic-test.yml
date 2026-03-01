@@ -456,7 +456,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.params.outputs.behaviour-test-suite }}-artifacts
           retention-days: 7
@@ -465,7 +465,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.params.outputs.behaviour-test-suite }}-reports
           retention-days: 7
