@@ -108,7 +108,7 @@ jobs:
             --confirm --json | tee deletion-summary.json
 
       - name: Upload deletion summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: deletion-summary-${{ inputs.hashed-sub }}
           path: deletion-summary.json
