@@ -91,7 +91,7 @@ jobs:
     steps:
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -102,7 +102,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -184,7 +184,7 @@ jobs:
 
       # Route 53 is in the management account — switch credentials for the query
       - name: Configure management account role via GitHub OIDC (for Route 53)
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -195,7 +195,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume management account deployment role (for Route 53)
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -259,7 +259,7 @@ jobs:
 
       # Switch back to submit-ci account for remaining steps
       - name: Restore submit-ci AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -270,7 +270,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Restore submit-ci AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -493,7 +493,7 @@ jobs:
           cache: 'maven'
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -504,7 +504,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
