@@ -541,7 +541,7 @@ jobs:
 
       - name: Download artifacts - ${{ needs.params.outputs.behaviour-test-suite }}
         if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.params.outputs.behaviour-test-suite }}-artifacts
           path: |
@@ -556,7 +556,7 @@ jobs:
 
       - name: Download reports - ${{ needs.params.outputs.behaviour-test-suite }}
         if: ${{ !cancelled() }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.params.outputs.behaviour-test-suite }}-reports
           path: |
