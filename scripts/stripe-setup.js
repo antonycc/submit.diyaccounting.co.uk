@@ -77,25 +77,29 @@ const DESIRED_EVENTS = [
 
 async function findOrCreateWebhook(url, description) {
   const webhooks = await stripe.webhookEndpoints.list();
-  const existing = webhooks.data.find((w) => w.url === url && w.status !== "disabled");
+  const existing = webhooks.data.find((w) => w.url === url);
   if (existing) {
+    // Re-enable disabled endpoints (Stripe auto-disables after sustained delivery failures)
+    const needsEnable = existing.status === "disabled";
     // Check if enabled_events need updating
     const currentEvents = [...(existing.enabled_events || [])].sort();
     const desiredEvents = [...DESIRED_EVENTS].sort();
-    const needsUpdate = currentEvents.length !== desiredEvents.length || currentEvents.some((e, i) => e !== desiredEvents[i]);
+    const needsEventUpdate = currentEvents.length !== desiredEvents.length || currentEvents.some((e, i) => e !== desiredEvents[i]);
 
-    if (needsUpdate) {
-      console.log(`Webhook exists for ${url}: ${existing.id} — updating enabled_events`);
-      console.log(`  Current: [${currentEvents.join(", ")}]`);
-      console.log(`  Desired: [${desiredEvents.join(", ")}]`);
-      const updated = await stripe.webhookEndpoints.update(existing.id, {
-        enabled_events: DESIRED_EVENTS,
-      });
-      console.log(`  Updated successfully`);
+    if (needsEnable || needsEventUpdate) {
+      const updates = { enabled_events: DESIRED_EVENTS };
+      if (needsEnable) updates.disabled = false;
+      console.log(`Webhook exists for ${url}: ${existing.id} — updating${needsEnable ? " (re-enabling)" : ""}`);
+      if (needsEventUpdate) {
+        console.log(`  Current events: [${currentEvents.join(", ")}]`);
+        console.log(`  Desired events: [${desiredEvents.join(", ")}]`);
+      }
+      const updated = await stripe.webhookEndpoints.update(existing.id, updates);
+      console.log(`  Updated successfully — status: ${updated.status}`);
       return updated;
     }
 
-    console.log(`Webhook already exists for ${url}:`, existing.id, "(events up to date)");
+    console.log(`Webhook already exists for ${url}:`, existing.id, `(status: ${existing.status}, events up to date)`);
     return existing;
   }
 

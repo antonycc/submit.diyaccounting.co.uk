@@ -134,7 +134,7 @@ jobs:
     steps:
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -145,7 +145,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -441,7 +441,7 @@ jobs:
       contents: read
     steps:
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: us-east-1
@@ -452,7 +452,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
@@ -515,7 +515,7 @@ jobs:
     steps:
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -526,7 +526,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -640,7 +640,7 @@ jobs:
     steps:
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -651,7 +651,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}

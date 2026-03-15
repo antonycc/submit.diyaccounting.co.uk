@@ -369,10 +369,17 @@ export async function ingestHandler(event) {
   let stripeEvent;
   try {
     const webhookSecret = await resolveWebhookSecret({ test: isTestMode });
+    const secretSource = isTestMode
+      ? (process.env.STRIPE_TEST_WEBHOOK_SECRET && !process.env.STRIPE_TEST_WEBHOOK_SECRET.startsWith("arn:") ? "env" : "secretsmanager")
+      : (process.env.STRIPE_WEBHOOK_SECRET && !process.env.STRIPE_WEBHOOK_SECRET.startsWith("arn:") ? "env" : "secretsmanager");
+    logger.info({ message: "Webhook signature verification attempt", isTestMode, secretSource, hasSignature: !!sig });
     const stripe = await getStripeClient();
     stripeEvent = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (error) {
-    logger.warn({ message: "Webhook signature verification failed", error: error.message, isTestMode });
+    logger.error({ message: "Webhook signature verification failed", error: error.message, isTestMode,
+      hasTestSecretArn: !!process.env.STRIPE_TEST_WEBHOOK_SECRET_ARN,
+      hasLiveSecretArn: !!process.env.STRIPE_WEBHOOK_SECRET_ARN,
+    });
     return jsonResponse(400, { error: "Invalid webhook signature" });
   }
 

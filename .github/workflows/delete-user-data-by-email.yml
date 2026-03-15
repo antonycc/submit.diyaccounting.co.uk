@@ -49,7 +49,7 @@ jobs:
         run: npm ci
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -60,7 +60,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -141,7 +141,7 @@ jobs:
             --hashed-sub "${{ steps.hash.outputs.hashed-sub }}"
 
       - name: Upload user data export
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: user-data-export-${{ github.run_id }}
           path: user-data-export-*.json
@@ -176,7 +176,7 @@ jobs:
           echo "Cognito user deleted: ${{ steps.lookup.outputs.username }}"
 
       - name: Upload deletion summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: deletion-summary-${{ github.run_id }}
           path: deletion-summary.json

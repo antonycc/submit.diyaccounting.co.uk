@@ -200,7 +200,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -211,7 +211,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -320,7 +320,7 @@ jobs:
       - run: npm run test:coverage
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: coverage-reports
@@ -351,7 +351,7 @@ jobs:
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
 
       - name: Upload Maven build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: maven-target
           path: |
@@ -382,7 +382,7 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -393,7 +393,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -466,7 +466,7 @@ jobs:
           docker save -o docker-image/image.tar "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docker-image
           path: docker-image/image.tar
@@ -481,7 +481,7 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -492,7 +492,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -540,7 +540,7 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -551,7 +551,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -681,7 +681,7 @@ jobs:
     steps:
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -692,7 +692,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -747,7 +747,7 @@ jobs:
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: docker-image/
@@ -782,7 +782,7 @@ jobs:
     steps:
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: us-east-1
@@ -793,7 +793,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
@@ -848,7 +848,7 @@ jobs:
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: docker-image/
@@ -1036,7 +1036,7 @@ jobs:
           cache: 'maven'
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1047,7 +1047,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1059,7 +1059,7 @@ jobs:
 
       - name: Download Maven build artifact
         id: download-maven-api
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: maven-target
@@ -1067,7 +1067,7 @@ jobs:
 
       - name: Cache Maven build output
         if: steps.download-maven-api.outcome != 'success'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
@@ -1222,7 +1222,7 @@ jobs:
           cache: 'maven'
 
       - name: Configure AWS role via GitHub OIDC (for RUM outputs)
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1233,7 +1233,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role (for RUM outputs)
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1361,7 +1361,7 @@ jobs:
 
       - name: Configure AWS role via GitHub OIDC
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1373,7 +1373,7 @@ jobs:
 
       - name: Assume AWS deployment role
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1386,7 +1386,7 @@ jobs:
       - name: Download Maven build artifact
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         id: download-maven-publish
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: maven-target
@@ -1394,7 +1394,7 @@ jobs:
 
       - name: Cache Maven build output
         if: ${{ steps.download-maven-publish.outcome != 'success' && (needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true') }}
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
@@ -1485,7 +1485,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1496,7 +1496,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1578,7 +1578,7 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1589,7 +1589,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -2140,7 +2140,7 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -2151,7 +2151,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -2186,7 +2186,7 @@ jobs:
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -2197,7 +2197,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}

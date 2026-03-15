@@ -266,6 +266,7 @@ public class PublishStack extends Stack {
                         "/submit.js",
                         "/submit.version.txt",
                         "/terms.html",
+                        "/.well-known/security.txt",
                         "/site.webmanifest",
                         "/simulator.html",
                         "/developer-mode.js"))

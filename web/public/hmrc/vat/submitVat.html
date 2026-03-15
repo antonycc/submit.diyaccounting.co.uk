@@ -447,18 +447,23 @@
       // Note: Obligation dropdown has been replaced with date inputs (periodStart/periodEnd).
       // Period key is now resolved server-side from the dates.
 
+      // Strip commas from numeric input (thousands separators like "1,234.56" → "1234.56")
+      function stripCommas(value) {
+        return String(value).replace(/,/g, '');
+      }
+
       // Auto-calculation functions for 9-box VAT return
       function calculateTotalVatDue() {
-        const box1 = parseFloat(document.getElementById("vatDueSales").value) || 0;
-        const box2 = parseFloat(document.getElementById("vatDueAcquisitions").value) || 0;
+        const box1 = parseFloat(stripCommas(document.getElementById("vatDueSales").value)) || 0;
+        const box2 = parseFloat(stripCommas(document.getElementById("vatDueAcquisitions").value)) || 0;
         const total = Math.round((box1 + box2) * 100) / 100;
         document.getElementById("totalVatDue").value = total.toFixed(2);
         calculateNetVatDue();
       }
 
       function calculateNetVatDue() {
-        const box3 = parseFloat(document.getElementById("totalVatDue").value) || 0;
-        const box4 = parseFloat(document.getElementById("vatReclaimedCurrPeriod").value) || 0;
+        const box3 = parseFloat(stripCommas(document.getElementById("totalVatDue").value)) || 0;
+        const box4 = parseFloat(stripCommas(document.getElementById("vatReclaimedCurrPeriod").value)) || 0;
         const net = Math.round(Math.abs(box3 - box4) * 100) / 100;
         document.getElementById("netVatDue").value = net.toFixed(2);
       }
@@ -520,7 +525,7 @@
 
       // Validate VAT monetary amount (boxes 1-4)
       function validateVatMonetaryAmount(value, fieldId, fieldLabel) {
-        const strValue = String(value).trim();
+        const strValue = stripCommas(String(value).trim());
         if (strValue === "") {
           showFieldError(fieldId, `Enter the ${fieldLabel}`);
           return false;
@@ -549,7 +554,7 @@
 
       // Validate net VAT due (box 5)
       function validateNetVatDue(value, fieldId) {
-        const num = parseFloat(value);
+        const num = parseFloat(stripCommas(value));
         if (isNaN(num)) {
           showFieldError(fieldId, "Net VAT due must be a valid number");
           return false;
@@ -571,7 +576,7 @@
 
       // Validate whole pound amount (boxes 6-9)
       function validateVatWholeAmount(value, fieldId, fieldLabel) {
-        const strValue = String(value).trim();
+        const strValue = stripCommas(String(value).trim());
         if (strValue === "") {
           showFieldError(fieldId, `Enter the ${fieldLabel}`);
           return false;
@@ -647,15 +652,15 @@
       // Collect 9-box VAT data from form
       function collect9BoxData() {
         return {
-          vatDueSales: parseFloat(document.getElementById("vatDueSales").value) || 0,
-          vatDueAcquisitions: parseFloat(document.getElementById("vatDueAcquisitions").value) || 0,
-          totalVatDue: parseFloat(document.getElementById("totalVatDue").value) || 0,
-          vatReclaimedCurrPeriod: parseFloat(document.getElementById("vatReclaimedCurrPeriod").value) || 0,
-          netVatDue: parseFloat(document.getElementById("netVatDue").value) || 0,
-          totalValueSalesExVAT: Math.round(parseFloat(document.getElementById("totalValueSalesExVAT").value) || 0),
-          totalValuePurchasesExVAT: Math.round(parseFloat(document.getElementById("totalValuePurchasesExVAT").value) || 0),
-          totalValueGoodsSuppliedExVAT: Math.round(parseFloat(document.getElementById("totalValueGoodsSuppliedExVAT").value) || 0),
-          totalAcquisitionsExVAT: Math.round(parseFloat(document.getElementById("totalAcquisitionsExVAT").value) || 0),
+          vatDueSales: parseFloat(stripCommas(document.getElementById("vatDueSales").value)) || 0,
+          vatDueAcquisitions: parseFloat(stripCommas(document.getElementById("vatDueAcquisitions").value)) || 0,
+          totalVatDue: parseFloat(stripCommas(document.getElementById("totalVatDue").value)) || 0,
+          vatReclaimedCurrPeriod: parseFloat(stripCommas(document.getElementById("vatReclaimedCurrPeriod").value)) || 0,
+          netVatDue: parseFloat(stripCommas(document.getElementById("netVatDue").value)) || 0,
+          totalValueSalesExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalValueSalesExVAT").value)) || 0),
+          totalValuePurchasesExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalValuePurchasesExVAT").value)) || 0),
+          totalValueGoodsSuppliedExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalValueGoodsSuppliedExVAT").value)) || 0),
+          totalAcquisitionsExVAT: Math.round(parseFloat(stripCommas(document.getElementById("totalAcquisitionsExVAT").value)) || 0),
           finalised: true,
         };
       }
