@@ -182,13 +182,11 @@ jobs:
 
             # Start drift detection
             local DETECTION_ID
-            DETECTION_ID=$(aws cloudformation detect-stack-drift \
+            if ! DETECTION_ID=$(aws cloudformation detect-stack-drift \
               --stack-name "$STACK" \
               --region "$REGION" \
               --query 'StackDriftDetectionId' \
-              --output text 2>&1)
-
-            if [ $? -ne 0 ]; then
+              --output text 2>&1); then
               echo "  FAILED to start detection: $STACK ($REGION): $DETECTION_ID"
               SUMMARY="${SUMMARY}${STACK} (${REGION})  DETECTION_FAILED\n"
               return
