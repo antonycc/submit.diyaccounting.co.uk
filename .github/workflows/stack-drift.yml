@@ -1,0 +1,299 @@
+name: stack-drift
+run-name: "stack drift check for ${{ github.ref_name }}"
+# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        type: choice
+        description: 'Environment name to use instead of computing from branch, e.g. ci or prod'
+        required: false
+        options:
+          - '(auto)'
+          - 'ci'
+          - 'prod'
+        default: '(auto)'
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 06:00 UTC
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  JAVA_VERSION: '25'
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+
+  params:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "github.event_name=[${{ github.event_name }}]"
+        run: ":"
+      - name: "inputs.environment-name=[${{ inputs.environment-name }}]"
+        run: ":"
+      - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
+        run: ":"
+      - name: Normalise Params
+        id: normalise
+        shell: bash
+        run: |
+          # Convert '(auto)' to empty string for downstream processing
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          # Resolve GitHub Actions environment from explicit input or branch
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+      deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
+
+  names:
+    needs:
+      params
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.params.outputs.github-environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: If main, read back last known good prod deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
+        run: |
+          PARAMETER_NAME="/submit/prod/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+
+      - name: If not main, read back last known good ci deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' && github.ref != 'refs/heads/main' }}
+        run: |
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+
+      - name: If last-known-good-deployment set use that otherwise use current deployment name
+        id: deployment-name
+        run: |
+            if [ -s /tmp/last_known_good_deployment.txt ]; then
+                echo "Using last known good deployment from SSM Parameter Store"
+                echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
+            else
+                echo "No last known good deployment found, using current deployment name"
+                echo "deployment-name=${{ needs.params.outputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
+            fi
+
+      - name: Compute environment name and apex URL
+        id: deployment-config
+        uses: './.github/actions/get-names'
+        with:
+          environment-name: ${{ needs.params.outputs.environment-name }}
+          deployment-name: ${{ steps.deployment-name.outputs.deployment-name }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+
+  detect-drift:
+    name: 'detect stack drift for ${{ needs.names.outputs.environment-name }}'
+    needs:
+      - params
+      - names
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.params.outputs.github-environment }}
+    env:
+      ENV_NAME: ${{ needs.names.outputs.environment-name }}
+      DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Detect drift on all stacks
+        id: drift
+        shell: bash
+        run: |
+          set +e
+          DRIFTED=0
+          SUMMARY=""
+
+          detect_drift() {
+            local STACK="$1"
+            local REGION="$2"
+
+            # Check stack exists
+            if ! aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" >/dev/null 2>&1; then
+              echo "  SKIPPED (stack not found): $STACK ($REGION)"
+              SUMMARY="${SUMMARY}${STACK} (${REGION})  SKIPPED\n"
+              return
+            fi
+
+            # Start drift detection
+            local DETECTION_ID
+            DETECTION_ID=$(aws cloudformation detect-stack-drift \
+              --stack-name "$STACK" \
+              --region "$REGION" \
+              --query 'StackDriftDetectionId' \
+              --output text 2>&1)
+
+            if [ $? -ne 0 ]; then
+              echo "  FAILED to start detection: $STACK ($REGION): $DETECTION_ID"
+              SUMMARY="${SUMMARY}${STACK} (${REGION})  DETECTION_FAILED\n"
+              return
+            fi
+
+            # Poll for completion (max 5 minutes)
+            local ELAPSED=0
+            local STATUS="DETECTION_IN_PROGRESS"
+            while [ "$STATUS" = "DETECTION_IN_PROGRESS" ] && [ $ELAPSED -lt 300 ]; do
+              sleep 10
+              ELAPSED=$((ELAPSED + 10))
+              STATUS=$(aws cloudformation describe-stack-drift-detection-status \
+                --stack-drift-detection-id "$DETECTION_ID" \
+                --region "$REGION" \
+                --query 'DetectionStatus' \
+                --output text 2>/dev/null)
+            done
+
+            local DRIFT_STATUS
+            DRIFT_STATUS=$(aws cloudformation describe-stack-drift-detection-status \
+              --stack-drift-detection-id "$DETECTION_ID" \
+              --region "$REGION" \
+              --query 'StackDriftStatus' \
+              --output text 2>/dev/null)
+
+            echo "  $STACK ($REGION): $DRIFT_STATUS"
+
+            if [ "$DRIFT_STATUS" = "DRIFTED" ]; then
+              DRIFTED=1
+              SUMMARY="${SUMMARY}${STACK} (${REGION})  DRIFTED\n"
+
+              # Show drifted resources
+              aws cloudformation describe-stack-resource-drifts \
+                --stack-name "$STACK" \
+                --region "$REGION" \
+                --stack-resource-drift-status-filters MODIFIED DELETED \
+                --query 'StackResourceDrifts[].{Resource: LogicalResourceId, Type: ResourceType, Status: StackResourceDriftStatus}' \
+                --output table 2>/dev/null || true
+            else
+              SUMMARY="${SUMMARY}${STACK} (${REGION})  ${DRIFT_STATUS}\n"
+            fi
+          }
+
+          echo "=============================="
+          echo "Stack Drift Detection"
+          echo "Environment: $ENV_NAME"
+          echo "Deployment:  $DEPLOYMENT_NAME"
+          echo "=============================="
+          echo ""
+
+          echo "--- Environment Stacks (eu-west-2) ---"
+          for STACK in \
+            "${ENV_NAME}-env-ObservabilityStack" \
+            "${ENV_NAME}-env-DataStack" \
+            "${ENV_NAME}-env-IdentityStack" \
+            "${ENV_NAME}-env-BackupStack" \
+            "${ENV_NAME}-env-ActivityStack" \
+            "${ENV_NAME}-env-SimulatorStack" \
+            "${ENV_NAME}-env-EcrStack"; do
+            detect_drift "$STACK" "eu-west-2"
+          done
+
+          echo ""
+          echo "--- Environment Stacks (us-east-1) ---"
+          for STACK in \
+            "${ENV_NAME}-env-ObservabilityUE1Stack" \
+            "${ENV_NAME}-env-EcrUE1Stack" \
+            "${ENV_NAME}-env-ApexStack"; do
+            detect_drift "$STACK" "us-east-1"
+          done
+
+          echo ""
+          echo "--- Application Stacks (eu-west-2) ---"
+          for STACK in \
+            "${DEPLOYMENT_NAME}-app-AuthStack" \
+            "${DEPLOYMENT_NAME}-app-HmrcStack" \
+            "${DEPLOYMENT_NAME}-app-AccountStack" \
+            "${DEPLOYMENT_NAME}-app-BillingStack" \
+            "${DEPLOYMENT_NAME}-app-ApiStack" \
+            "${DEPLOYMENT_NAME}-app-OpsStack"; do
+            detect_drift "$STACK" "eu-west-2"
+          done
+
+          # SelfDestructStack only exists for non-prod
+          if [ "$ENV_NAME" != "prod" ]; then
+            detect_drift "${DEPLOYMENT_NAME}-app-SelfDestructStack" "eu-west-2"
+          fi
+
+          echo ""
+          echo "--- Application Stacks (us-east-1) ---"
+          for STACK in \
+            "${DEPLOYMENT_NAME}-app-EdgeStack" \
+            "${DEPLOYMENT_NAME}-app-PublishStack"; do
+            detect_drift "$STACK" "us-east-1"
+          done
+
+          echo ""
+          echo "=============================="
+          echo "Summary"
+          echo "=============================="
+          echo -e "$SUMMARY"
+
+          if [ $DRIFTED -ne 0 ]; then
+            echo "::error::One or more stacks have drifted from their expected configuration"
+            exit 1
+          else
+            echo "All stacks are in sync"
+          fi
