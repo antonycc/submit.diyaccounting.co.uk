@@ -353,7 +353,7 @@ jobs:
 
       - name: Cache Maven build output
         if: ${{ steps.download-maven.outcome != 'success' && (needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true') }}
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
