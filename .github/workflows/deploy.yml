@@ -320,7 +320,7 @@ jobs:
       - run: npm run test:coverage
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: coverage-reports
@@ -351,7 +351,7 @@ jobs:
           ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
 
       - name: Upload Maven build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: maven-target
           path: |
@@ -466,7 +466,7 @@ jobs:
           docker save -o docker-image/image.tar "${{ env.BASE_IMAGE_TAG_PREFIX }}:${{ github.sha }}"
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docker-image
           path: docker-image/image.tar

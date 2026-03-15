@@ -345,7 +345,7 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Upload passes artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: passes-${{ needs.params.outputs.pass-type }}-${{ github.run_id }}
           path: |

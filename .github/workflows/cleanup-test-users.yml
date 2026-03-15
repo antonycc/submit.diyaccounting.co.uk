@@ -105,7 +105,7 @@ jobs:
             ${CONFIRM_FLAG} --json | tee cleanup-summary.json
 
       - name: Upload cleanup summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: cleanup-summary-${{ github.run_id }}
           path: cleanup-summary.json
