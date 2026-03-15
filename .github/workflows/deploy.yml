@@ -747,7 +747,7 @@ jobs:
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: docker-image/
@@ -848,7 +848,7 @@ jobs:
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: docker-image/
@@ -1059,7 +1059,7 @@ jobs:
 
       - name: Download Maven build artifact
         id: download-maven-api
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: maven-target
@@ -1386,7 +1386,7 @@ jobs:
       - name: Download Maven build artifact
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         id: download-maven-publish
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: maven-target

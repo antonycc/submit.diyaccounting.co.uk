@@ -276,7 +276,7 @@ jobs:
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: docker-image/
@@ -351,7 +351,7 @@ jobs:
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image
           path: docker-image/

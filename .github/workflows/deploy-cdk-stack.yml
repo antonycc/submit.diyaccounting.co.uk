@@ -345,7 +345,7 @@ jobs:
       - name: Download Maven build artifact
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         id: download-maven
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: maven-target
