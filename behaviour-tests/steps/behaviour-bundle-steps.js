@@ -187,7 +187,12 @@ export async function ensureBundlePresent(
         .isDisabled()
         .catch(() => true));
 
-    if (isRequestEnabled) {
+    if (testPass) {
+      // testPass requested: always use pass API to ensure sandbox qualifier is set
+      console.log(`testPass=true for ${bundleName}, using pass API for sandbox-qualified grant...`);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass });
+    } else if (isRequestEnabled) {
       // Requestable and enabled bundles: skip if already present
       if (await addedLocator.isVisible({ timeout: 32000 })) {
         console.log(`${bundleName} bundle already present, skipping request.`);

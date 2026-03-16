@@ -159,20 +159,13 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
 
   // --- Step 1: Verify clean state ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
-  // Day Guest is an on-pass bundle — verify it appears as disabled card before pass entry
+  // Day Guest bundle — verify it appears in the catalogue
   const requestDayGuestBtn = page.locator('button[data-bundle-id="day-guest"]');
   const requestDayGuestVisible = await requestDayGuestBtn
     .first()
     .isVisible({ timeout: 5000 })
     .catch(() => false);
-  console.log(`[pass-test]: Day Guest bundle button visible: ${requestDayGuestVisible} (expected: true, but disabled for on-pass bundle)`);
-  if (requestDayGuestVisible) {
-    const isDisabled = await requestDayGuestBtn
-      .first()
-      .isDisabled()
-      .catch(() => false);
-    console.log(`[pass-test]: Day Guest bundle button disabled: ${isDisabled} (expected: true)`);
-  }
+  console.log(`[pass-test]: Day Guest bundle button visible: ${requestDayGuestVisible}`);
 
   // --- Step 2: Create a test pass via admin API ---
   // Use passTypeId "day-guest-test-pass" which has test=true in submit.passes.toml.
