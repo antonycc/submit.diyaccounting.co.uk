@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="340" viewBox="0 0 720 340">
+  <defs>
+    <style>
+      text { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="340" fill="#f5f5f5" rx="8"/>
+
+  <!-- Header bar -->
+  <rect width="720" height="56" fill="#1a3a5c" rx="8"/>
+  <rect y="20" width="720" height="36" fill="#1a3a5c"/>
+  <text x="24" y="36" fill="white" font-size="18" font-weight="bold">DIY Accounting Submit</text>
+
+  <!-- Nav -->
+  <rect y="56" width="720" height="36" fill="#245080"/>
+  <text x="24" y="79" fill="white" font-size="13" font-weight="bold" text-decoration="underline">Activities</text>
+  <text x="120" y="79" fill="#aac4e0" font-size="13">Receipts</text>
+  <text x="200" y="79" fill="#aac4e0" font-size="13">Bundles</text>
+
+  <!-- Success banner -->
+  <rect x="30" y="108" width="660" height="50" fill="#d4edda" rx="6" stroke="#c3e6cb" stroke-width="1"/>
+  <text x="56" y="130" fill="#155724" font-size="15" font-weight="bold">&#x2713; Your VAT return was submitted successfully</text>
+  <text x="56" y="148" fill="#155724" font-size="12">HMRC receipt: 8904567890 · Period: 01 Jan — 31 Mar 2026</text>
+
+  <!-- Referral prompt card -->
+  <rect x="30" y="174" width="660" height="146" fill="white" rx="6" stroke="#bee5eb" stroke-width="1.5"/>
+
+  <!-- Icon area -->
+  <circle cx="70" cy="220" r="24" fill="#e0ecf8"/>
+  <text x="70" y="226" fill="#2c5aa0" font-size="22" text-anchor="middle">&#x1f381;</text>
+
+  <!-- Text -->
+  <text x="110" y="210" fill="#1a1a2e" font-size="16" font-weight="bold">Know someone who'd find this useful?</text>
+  <text x="110" y="232" fill="#555" font-size="13">Share a free invitation — they get a full month of VAT submission access.</text>
+  <text x="110" y="252" fill="#555" font-size="13">You'll earn 2 tokens when they redeem, and 5 more when they submit their first return.</text>
+
+  <!-- CTA button -->
+  <rect x="110" y="270" width="200" height="36" fill="#2c5aa0" rx="4"/>
+  <text x="148" y="294" fill="white" font-size="14" font-weight="600">Share an Invitation &#x2192;</text>
+
+  <!-- Dismiss link -->
+  <text x="330" y="294" fill="#888" font-size="12">Maybe later</text>
+</svg>

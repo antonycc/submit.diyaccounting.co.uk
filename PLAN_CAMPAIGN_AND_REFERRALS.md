@@ -510,5 +510,91 @@ This is critical — HMRC and UK employment law distinguish between employees, w
 
 ---
 
+## 10. Mockups
+
+See SVG mockups in the project root:
+
+| File | Screen |
+|------|--------|
+| `PLAN_CAMPAIGN_AND_REFERRALS_ISSUE_INVITATION.svg` | "Issue an Invitation" section on bundles.html — free pass counter, notes input, result with QR/copy/link |
+| `PLAN_CAMPAIGN_AND_REFERRALS_REFERRAL_REWARDS.svg` | "Referral Rewards" dashboard — ambassador tier progress bar, reward totals, individual referral cards with status |
+| `PLAN_CAMPAIGN_AND_REFERRALS_GENERATED_PASSES_LIST.svg` | Updated "My Generated Passes" list — notes displayed, View QR button, campaign/invitation badge |
+| `PLAN_CAMPAIGN_AND_REFERRALS_POST_SUBMISSION_PROMPT.svg` | Post-VAT-submission prompt on submitVat.html — encourages sharing an invitation |
+
+---
+
+## 11. Drop-in Platform Evaluation
+
+Before building the referral/commission system in-house, evaluate third-party platforms that integrate with Stripe and could replace most of the custom backend.
+
+### Recommendation: FirstPromoter ($49/month)
+
+**Best overall fit** for all four requirements:
+
+| Requirement | FirstPromoter Coverage |
+|-------------|----------------------|
+| Referral tracking (who referred whom) | Native Stripe integration — automatic |
+| Progressive rewards (tokens/credits) | Built-in performance tier system |
+| Ambassador tiers (Starter/Silver/Gold) | Configurable tiers with auto-promotion on referral count thresholds |
+| Commission payouts (20%, ~£25/conversion) | Stripe Connect support — automate payouts with min threshold |
+
+**What you would NOT need to build**: referral records, GSI, tier calculation, commission balance tracking, payout endpoint, referral dashboard API. FirstPromoter provides a hosted affiliate dashboard, commission tracking, and payout management.
+
+**What you would still build**: campaign pass issuance (the pass/token system is bespoke), the "Issue Invitation" UI on bundles.html, and the post-submission prompt. FirstPromoter tracks conversions once the referred user subscribes via Stripe; your pass system handles the initial sharing mechanic.
+
+### Comparison Summary
+
+| Platform | Price/mo | Stripe Depth | Tiers Built-in | Auto Payouts | UK Fit |
+|----------|----------|-------------|----------------|--------------|--------|
+| **FirstPromoter** | $49 | Very good | **Yes** | PayPal + Stripe Connect | Good |
+| Rewardful | $49 | Excellent | Partial (API needed) | Manual/PayPal | Good |
+| Tolt | $29 | Very good | Partial | PayPal + Wise | **Good (Wise)** |
+| GrowSurf | $99 | Fair | Milestones only | No cash payouts | Fair |
+| Tapfiliate | $89 | Fair | Yes | PayPal | Fair |
+| PartnerStack | ~$500+ | Good | Full | Yes | Overkill |
+| ReferralCandy | $59 | None | Basic | Ecommerce only | Not a fit |
+| Stripe alone | $0 | N/A | None | DIY via Connect | Build everything |
+
+### Integration Approach (with FirstPromoter or Rewardful)
+
+If using a third-party platform, the architecture simplifies to:
+
+```
+Phase 6.1  Campaign pass issuance     → Keep (bespoke pass/token system)
+Phase 6.2  Referral tracking          → REPLACE with FirstPromoter
+Phase 6.3  Progressive rewards        → REPLACE with FirstPromoter (configure tiers + commission rules)
+Phase 6.4  Referral dashboard API     → REPLACE with FirstPromoter hosted dashboard
+Phase 6.5  Campaign UI (bundles.html) → Keep "Issue Invitation" section; embed FirstPromoter widget for referral stats
+Phase 6.6  Commission payout          → REPLACE with FirstPromoter + Stripe Connect
+Phase 7    Monitoring                 → PARTIALLY REPLACE — FirstPromoter has analytics; keep CloudWatch for abuse detection
+```
+
+**Custom code still needed**:
+1. `passCampaignPost.js` — campaign pass issuance with free-pass allowance (this is unique to DIY Accounting's pass/token model)
+2. "Issue Invitation" section on bundles.html — calls your API, not FirstPromoter's
+3. Post-submission referral prompt on submitVat.html
+4. Integration glue: when a campaign pass is redeemed and the user later subscribes via Stripe, FirstPromoter picks up the Stripe subscription event automatically (via its Stripe integration) and attributes it to the referrer
+
+**What you avoid building**: referral repository, referred-index GSI, reward trigger hooks in passPost/hmrcVatReturnPost/billingWebhookPost, commission balance tracking, payout endpoint, tier calculation, referral dashboard API.
+
+### Budget Option: Tolt ($29/month)
+
+If cost is a concern at early stage, Tolt offers similar Stripe-native tracking at $29/month. Its Wise payout integration is practical for UK bank transfers. The risk is it's a smaller company — evaluate current feature set against your specific tier requirements.
+
+### Build vs Buy Decision
+
+| Factor | Build In-House | Use FirstPromoter/Rewardful |
+|--------|---------------|---------------------------|
+| Monthly cost | $0 (but dev time) | $49/month |
+| Dev effort | ~2-3 weeks | ~2-3 days (integration only) |
+| Maintenance | Ongoing (tier logic, payouts, compliance) | Managed by vendor |
+| Flexibility | Full control | Constrained to platform capabilities |
+| Payout compliance | You handle tax, KYC, bank transfers | Platform assists (Stripe Connect/PayPal) |
+| Risk | Bugs in commission calc, payout errors | Vendor dependency, possible sunset |
+
+**Recommendation**: Start with **FirstPromoter** (or Tolt for budget). If the programme scales to hundreds of affiliates or requires features the platform doesn't support, migrate to in-house at that point — the pass/token system and data model described in this plan remain valid as a migration target.
+
+---
+
 *Last updated: 2026-03-16*
 *GitHub Issue: #560*
