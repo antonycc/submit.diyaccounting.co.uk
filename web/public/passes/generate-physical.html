@@ -295,9 +295,39 @@ ${textElements}</svg>`;
         }
       }
 
+      // --- View existing pass (when ?code= parameter is present)
+      async function viewExistingPass(code) {
+        const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(code)}`;
+        __generatedPassCode = code;
+        __generatedPassUrl = passUrl;
+        __generatedWords = code.split("-");
+
+        document.getElementById("generatedPassCode").textContent = code;
+        document.getElementById("generatedPassUrl").textContent = passUrl;
+        document.getElementById("passCodeSmall").textContent = code;
+
+        renderFrontPreview();
+        await renderBackPreview();
+
+        // Hide the generation form, show the result
+        document.getElementById("tokenInfo").style.display = "none";
+        document.getElementById("generatePassBtn").style.display = "none";
+        document.querySelector("[for='passNotes']")?.closest("div")?.style.setProperty("display", "none");
+        document.querySelectorAll("[data-product-type]").forEach(b => b.closest("div")?.style.setProperty("display", "none"));
+        document.getElementById("passResult").style.display = "block";
+      }
+
       // --- Initialise page
       async function initPage() {
         checkAuthStatus();
+
+        // If ?code= param is present, show existing pass QR instead of generation form
+        const urlParams = new URLSearchParams(window.location.search);
+        const existingCode = urlParams.get("code");
+        if (existingCode) {
+          await viewExistingPass(existingCode);
+          return;
+        }
 
         const idToken = getIdToken();
         if (!idToken) {

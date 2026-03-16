@@ -1111,6 +1111,9 @@
             const expiryLabel = pass.validUntil ? new Date(pass.validUntil).toLocaleDateString() : "No expiry";
             const usageLabel = `${pass.useCount || 0} of ${pass.maxUses} uses`;
             const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
+            const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
+            const qrUrl = `${window.location.origin}/passes/${qrPage}?code=${encodeURIComponent(pass.code)}`;
+            const notesHtml = pass.notes ? `<div style="font-size:0.85em; color:#555; margin-top:0.3em; font-style:italic">${escapeHtml(pass.notes)}</div>` : "";
 
             const card = document.createElement("div");
             card.setAttribute("data-pass-code", pass.code);
@@ -1120,11 +1123,13 @@
                 <span style="font-weight:600; color:#2c5aa0; word-break:break-word">${escapeHtml(pass.code)}</span>
                 <span style="font-size:0.8em; color:#6c757d; background:#e9ecef; padding:0.2em 0.6em; border-radius:3px">${typeLabel}</span>
               </div>
+              ${notesHtml}
               <div style="font-size:0.85em; color:#666; margin-top:0.4em">
                 ${expiryLabel} · ${usageLabel}
               </div>
               <div style="margin-top:0.5em; display:flex; gap:0.5em; flex-wrap:wrap">
                 <button type="button" class="btn pass-copy-link" data-pass-url="${escapeHtml(passUrl)}" style="font-size:0.75em; padding:0.2em 0.6em; min-width:unset; background-color:#6c757d">Copy Link</button>
+                <a href="${escapeHtml(qrUrl)}" class="btn" style="font-size:0.75em; padding:0.2em 0.6em; min-width:unset; background-color:#495057; text-decoration:none; color:white">View QR</a>
               </div>`;
             list.appendChild(card);
           });
