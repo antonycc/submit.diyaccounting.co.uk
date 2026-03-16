@@ -1,118 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="780" viewBox="0 0 720 780">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420">
   <defs>
     <style>
-      text { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; }
+      text { font-family: Arial, sans-serif; }
     </style>
   </defs>
 
-  <!-- Background -->
-  <rect width="720" height="780" fill="#f5f5f5" rx="8"/>
+  <!-- Page background -->
+  <rect width="800" height="420" fill="#f9f9f9"/>
 
-  <!-- Header bar -->
-  <rect width="720" height="56" fill="#1a3a5c" rx="8"/>
-  <rect y="20" width="720" height="36" fill="#1a3a5c"/>
-  <text x="24" y="36" fill="white" font-size="18" font-weight="bold">DIY Accounting Submit</text>
-  <text x="540" y="36" fill="#aac4e0" font-size="13">antony@example.co.uk</text>
+  <!-- ===== HEADER ===== -->
+  <path d="M28 32 L38 24 L48 32 L48 42 L42 42 L42 36 L34 36 L34 42 L28 42 Z" fill="#2c5aa0"/>
+  <circle cx="66" cy="33" r="10" fill="none" stroke="#2c5aa0" stroke-width="1.5"/>
+  <text x="66" y="37" fill="#2c5aa0" font-size="13" font-weight="bold" text-anchor="middle">i</text>
+  <text x="772" y="30" fill="#666" font-size="12" text-anchor="end">antony@example.co.uk</text>
+  <text x="772" y="46" fill="#666" font-size="12" text-anchor="end">99 tokens</text>
 
-  <!-- Nav -->
-  <rect y="56" width="720" height="36" fill="#245080"/>
-  <text x="24" y="79" fill="#aac4e0" font-size="13">Activities</text>
-  <text x="120" y="79" fill="#aac4e0" font-size="13">Receipts</text>
-  <text x="200" y="79" fill="white" font-size="13" font-weight="bold" text-decoration="underline">Bundles</text>
-  <text x="280" y="79" fill="#aac4e0" font-size="13">Spreadsheets</text>
+  <!-- h1 -->
+  <text x="400" y="82" fill="#2c5aa0" font-size="26" font-weight="bold" text-anchor="middle">DIY Accounting Submit</text>
+  <text x="400" y="104" fill="#666" font-size="13" text-anchor="middle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</text>
 
-  <!-- Section title -->
-  <text x="40" y="124" fill="#1a1a2e" font-size="20" font-weight="bold">Referral Rewards</text>
+  <!-- ===== NAV BAR ===== -->
+  <line x1="60" y1="120" x2="740" y2="120" stroke="#ddd" stroke-width="1"/>
+  <rect x="195" y="128" width="90" height="30" rx="4" fill="none" stroke="#ddd" stroke-width="1"/>
+  <text x="240" y="148" fill="#2c5aa0" font-size="13" text-anchor="middle">Activities</text>
+  <rect x="300" y="128" width="80" height="30" rx="4" fill="none" stroke="#ddd" stroke-width="1"/>
+  <text x="340" y="148" fill="#2c5aa0" font-size="13" text-anchor="middle">Receipts</text>
+  <rect x="395" y="128" width="80" height="30" rx="4" fill="none" stroke="#ddd" stroke-width="1"/>
+  <text x="435" y="148" fill="#333" font-size="13" font-weight="bold" text-anchor="middle">Bundles</text>
+  <rect x="490" y="128" width="110" height="30" rx="4" fill="none" stroke="#ddd" stroke-width="1"/>
+  <text x="545" y="148" fill="#2c5aa0" font-size="13" text-anchor="middle">Spreadsheets</text>
+  <line x1="60" y1="166" x2="740" y2="166" stroke="#ddd" stroke-width="1"/>
 
-  <!-- Main card -->
-  <rect x="30" y="138" width="660" height="620" fill="white" rx="6" stroke="#dee2e6" stroke-width="1"/>
+  <!-- ===== TOKEN REWARD NOTIFICATION ===== -->
+  <!-- Phase A: no dashboard UI. This shows the token reward notification
+       that appears on the bundles page when a referral redeems an invitation. -->
+  <rect x="60" y="186" width="680" height="44" fill="#d4edda" rx="6" stroke="#c3e6cb" stroke-width="1"/>
+  <text x="86" y="213" fill="#155724" font-size="13" font-weight="600">+2 tokens earned! Someone redeemed your invitation tiger-happy-mountain-silver</text>
 
-  <!-- Ambassador tier -->
-  <rect x="50" y="158" width="120" height="28" fill="#e9ecef" rx="12"/>
-  <text x="75" y="177" fill="#495057" font-size="12" font-weight="600">Starter Tier</text>
+  <!-- ===== SECTION: My Generated Passes (showing redeemed pass) ===== -->
+  <line x1="60" y1="250" x2="740" y2="250" stroke="#ddd" stroke-width="1"/>
 
-  <!-- Tier progress -->
-  <text x="50" y="214" fill="#333" font-size="14">
-    <tspan font-weight="600">3</tspan> passes redeemed — <tspan font-weight="600">2 more</tspan> to unlock
-    <tspan fill="#2c5aa0" font-weight="bold">Silver</tspan> (5 free invitations/month)
-  </text>
+  <text x="400" y="280" fill="#333" font-size="19" font-weight="bold" text-anchor="middle">My Generated Passes</text>
+  <text x="400" y="300" fill="#666" font-size="12" text-anchor="middle">Passes you have generated for others to use.</text>
 
-  <!-- Progress bar background -->
-  <rect x="50" y="228" width="400" height="16" fill="#e9ecef" rx="8"/>
-  <!-- Progress bar fill (3/5 = 60%) -->
-  <rect x="50" y="228" width="240" height="16" fill="#2c5aa0" rx="8"/>
-  <!-- Progress labels -->
-  <text x="460" y="241" fill="#888" font-size="12">3 / 5</text>
-
-  <!-- Tier legend -->
-  <rect x="50" y="258" width="600" height="50" fill="#f8f9fa" rx="4"/>
-  <text x="66" y="278" fill="#888" font-size="11">Starter: 3 free/mo</text>
-  <line x1="190" y1="268" x2="190" y2="292" stroke="#ddd" stroke-width="1"/>
-  <text x="206" y="278" fill="#2c5aa0" font-size="11" font-weight="600">Silver (5 redeemed): 5 free/mo</text>
-  <line x1="400" y1="268" x2="400" y2="292" stroke="#ddd" stroke-width="1"/>
-  <text x="416" y="278" fill="#b8860b" font-size="11">Gold (15 redeemed): 8 free/mo, +20% tokens</text>
-
-  <!-- Divider -->
-  <line x1="50" y1="324" x2="670" y2="324" stroke="#eee" stroke-width="1"/>
-
-  <!-- Rewards summary -->
-  <text x="50" y="352" fill="#333" font-size="15" font-weight="bold">Rewards Earned</text>
-
-  <!-- Reward cards -->
-  <rect x="50" y="366" width="195" height="70" fill="#e8f4e8" rx="4"/>
-  <text x="66" y="392" fill="#2d6a2d" font-size="22" font-weight="bold">6</text>
-  <text x="66" y="412" fill="#2d6a2d" font-size="11">tokens from redemptions</text>
-  <text x="66" y="426" fill="#5a9a5a" font-size="10">3 referrals × 2 tokens</text>
-
-  <rect x="255" y="366" width="195" height="70" fill="#e0ecf8" rx="4"/>
-  <text x="271" y="392" fill="#1a5276" font-size="22" font-weight="bold">5</text>
-  <text x="271" y="412" fill="#1a5276" font-size="11">tokens from VAT submissions</text>
-  <text x="271" y="426" fill="#5b8db8" font-size="10">1 referral × 5 tokens</text>
-
-  <rect x="460" y="366" width="195" height="70" fill="#f0e6f6" rx="4"/>
-  <text x="476" y="392" fill="#6a1b9a" font-size="22" font-weight="bold">0</text>
-  <text x="476" y="412" fill="#6a1b9a" font-size="11">free months from subscriptions</text>
-  <text x="476" y="426" fill="#9a68b8" font-size="10">0 referrals subscribed</text>
-
-  <!-- Divider -->
-  <line x1="50" y1="454" x2="670" y2="454" stroke="#eee" stroke-width="1"/>
-
-  <!-- Recent referrals -->
-  <text x="50" y="482" fill="#333" font-size="15" font-weight="bold">Recent Referrals</text>
-
-  <!-- Referral card 1 -->
-  <rect x="50" y="496" width="620" height="80" fill="#f8f9fa" rx="4" stroke="#dee2e6" stroke-width="1"/>
-  <text x="66" y="520" fill="#2c5aa0" font-size="14" font-weight="600">tiger-happy-mountain-silver</text>
-  <text x="66" y="540" fill="#666" font-size="12">Redeemed 10 Mar 2026</text>
-  <text x="66" y="558" fill="#555" font-size="12">
-    <tspan fill="#28a745">&#x2713; VAT submitted</tspan>
-    <tspan dx="16" fill="#888">&#x25cb; Not yet subscribed</tspan>
-  </text>
-  <!-- Reward badges -->
-  <rect x="480" y="510" width="80" height="22" fill="#d4edda" rx="3"/>
-  <text x="496" y="526" fill="#155724" font-size="10">+2 tokens</text>
-  <rect x="566" y="510" width="80" height="22" fill="#d4edda" rx="3"/>
-  <text x="582" y="526" fill="#155724" font-size="10">+5 tokens</text>
-
-  <!-- Referral card 2 -->
-  <rect x="50" y="586" width="620" height="80" fill="#f8f9fa" rx="4" stroke="#dee2e6" stroke-width="1"/>
-  <text x="66" y="610" fill="#2c5aa0" font-size="14" font-weight="600">ocean-bright-forest-cloud</text>
-  <text x="66" y="630" fill="#666" font-size="12">Redeemed 8 Mar 2026</text>
-  <text x="66" y="648" fill="#555" font-size="12">
-    <tspan fill="#888">&#x25cb; Awaiting VAT submission</tspan>
-  </text>
-  <rect x="480" y="600" width="80" height="22" fill="#d4edda" rx="3"/>
-  <text x="496" y="616" fill="#155724" font-size="10">+2 tokens</text>
-
-  <!-- Referral card 3 -->
-  <rect x="50" y="676" width="620" height="64" fill="#f8f9fa" rx="4" stroke="#dee2e6" stroke-width="1"/>
-  <text x="66" y="700" fill="#2c5aa0" font-size="14" font-weight="600">river-golden-castle-dawn</text>
-  <text x="66" y="720" fill="#666" font-size="12">Redeemed 5 Mar 2026</text>
-  <text x="66" y="734" fill="#28a745" font-size="12">&#x2713; VAT submitted · &#x2713; Subscribed!</text>
-  <rect x="400" y="690" width="80" height="22" fill="#d4edda" rx="3"/>
-  <text x="416" y="706" fill="#155724" font-size="10">+2 tokens</text>
-  <rect x="486" y="690" width="80" height="22" fill="#d4edda" rx="3"/>
-  <text x="502" y="706" fill="#155724" font-size="10">+5 tokens</text>
-  <rect x="572" y="690" width="88" height="22" fill="#e0d4f5" rx="3"/>
-  <text x="582" y="706" fill="#4a1a8a" font-size="10">+1 free month</text>
+  <!-- Pass card showing redeemed invitation -->
+  <rect x="80" y="316" width="640" height="86" fill="#fff" rx="6" stroke="#ddd" stroke-width="1"/>
+  <text x="100" y="342" fill="#2c5aa0" font-size="14" font-weight="600">tiger-happy-mountain-silver</text>
+  <!-- Invitation badge -->
+  <rect x="600" y="326" width="80" height="20" fill="#fff3cd" rx="3"/>
+  <text x="640" y="340" fill="#856404" font-size="10" text-anchor="middle">Invitation</text>
+  <text x="100" y="362" fill="#666" font-size="11" font-style="italic">For my colleague Dave</text>
+  <text x="100" y="382" fill="#666" font-size="11">19 Mar 2026 · 1 of 1 uses</text>
+  <!-- Redeemed status -->
+  <text x="260" y="382" fill="#28a745" font-size="11">Redeemed · +2 tokens earned</text>
 </svg>
