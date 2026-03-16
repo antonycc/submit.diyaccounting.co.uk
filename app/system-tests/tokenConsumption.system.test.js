@@ -9,6 +9,7 @@
 // - Token exhaustion when all tokens are consumed
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { getBundle, getActivity } from "./helpers/catalogueValues.js";
 
 let stopDynalite;
 let store;
@@ -55,12 +56,15 @@ afterAll(async () => {
   } catch {}
 });
 
+const dayGuestTokens = getBundle("day-guest").tokensGranted;
+const submitVatCost = getActivity("submit-vat").tokenCost;
+
 const catalog = {
-  bundles: [{ id: "day-guest", tokensGranted: 3 }],
+  bundles: [{ id: "day-guest", tokensGranted: dayGuestTokens }],
   activities: [
     {
       id: "submit-vat",
-      tokenCost: 1,
+      tokenCost: submitVatCost,
       bundles: ["day-guest", "invited-guest"],
     },
     {
@@ -81,39 +85,25 @@ describe("System: token consumption with dynalite", () => {
       await store.putBundle(userId, {
         bundleId,
         expiry,
-        tokensGranted: 3,
+        tokensGranted: dayGuestTokens,
         tokensConsumed: 0,
       });
 
       const bundles = await store.getUserBundles(userId);
       const bundle = bundles.find((b) => b.bundleId === bundleId);
       expect(bundle).toBeTruthy();
-      expect(bundle.tokensGranted).toBe(3);
+      expect(bundle.tokensGranted).toBe(dayGuestTokens);
       expect(bundle.tokensConsumed).toBe(0);
     });
 
-    it("should atomically consume first token", async () => {
-      const result = await store.consumeToken(userId, bundleId);
-
-      expect(result.consumed).toBe(true);
-      expect(result.tokensRemaining).toBe(2);
-      expect(result.bundle.tokensConsumed).toBe(1);
-    });
-
-    it("should atomically consume second token", async () => {
-      const result = await store.consumeToken(userId, bundleId);
-
-      expect(result.consumed).toBe(true);
-      expect(result.tokensRemaining).toBe(1);
-      expect(result.bundle.tokensConsumed).toBe(2);
-    });
-
-    it("should atomically consume third (last) token", async () => {
-      const result = await store.consumeToken(userId, bundleId);
-
-      expect(result.consumed).toBe(true);
-      expect(result.tokensRemaining).toBe(0);
-      expect(result.bundle.tokensConsumed).toBe(3);
+    it("should atomically consume tokens until exhausted", async () => {
+      // Consume all tokens one by one
+      for (let i = 1; i <= dayGuestTokens; i++) {
+        const result = await store.consumeToken(userId, bundleId);
+        expect(result.consumed).toBe(true);
+        expect(result.tokensRemaining).toBe(dayGuestTokens - i);
+        expect(result.bundle.tokensConsumed).toBe(i);
+      }
     });
 
     it("should reject consumption when tokens exhausted", async () => {
@@ -127,8 +117,8 @@ describe("System: token consumption with dynalite", () => {
     it("should verify final state in DynamoDB", async () => {
       const bundles = await store.getUserBundles(userId);
       const bundle = bundles.find((b) => b.bundleId === bundleId);
-      expect(bundle.tokensConsumed).toBe(3);
-      expect(bundle.tokensGranted).toBe(3);
+      expect(bundle.tokensConsumed).toBe(dayGuestTokens);
+      expect(bundle.tokensGranted).toBe(dayGuestTokens);
     });
   });
 

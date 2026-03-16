@@ -202,8 +202,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   // --- Step 3: Request Day Guest bundle (via test pass for sandbox routing) ---
   await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
 
-  // --- Step 4: Verify Day Guest bundle is locked down (on-pass, cap=0 in closed beta) ---
-  // Day Guest requires a pass and has cap=0 — assert it's NOT available for allocation
+  // --- Step 4: Check Day Guest capacity availability ---
   const dayGuestCapacity = await page
     .evaluate(async () => {
       const idToken = localStorage.getItem("cognitoIdToken");
@@ -223,9 +222,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     })
     .catch(() => ({ found: false }));
   console.log(`[bundle-test]: Day Guest capacity check: ${JSON.stringify(dayGuestCapacity)}`);
-  // Closed beta: Day Guest should be in catalogue but NOT allocatable (cap=0)
   expect(dayGuestCapacity.found).toBe(true);
-  expect(dayGuestCapacity.capacityAvailable).toBe(false);
 
   const isDayGuestAvailable = dayGuestCapacity.capacityAvailable === true;
   if (isDayGuestAvailable) {

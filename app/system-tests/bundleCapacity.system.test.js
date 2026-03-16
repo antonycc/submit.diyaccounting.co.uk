@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 import { ingestHandler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
+import { getBundle } from "./helpers/catalogueValues.js";
 
 let stopDynalite;
 let bundleRepository;
@@ -145,8 +146,13 @@ describe("System: bundle capacity and per-user uniqueness", () => {
   });
 
   describe("global cap enforcement via atomic counter", () => {
-    it("should reject allocation when cap is zero (closed beta day-guest)", async () => {
-      // day-guest has cap=0 in closed beta; allocation should always be rejected
+    it("should reject allocation when cap is reached (day-guest)", async () => {
+      const dayGuestCap = getBundle("day-guest").cap;
+      expect(dayGuestCap).toBeGreaterThan(0);
+
+      const { putCounter } = await import("../data/dynamoDbCapacityRepository.js");
+      await putCounter("day-guest", dayGuestCap);
+
       const token = makeJWT("cap-fresh-user");
       const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
       const res = await bundlePostHandler(event);
@@ -165,21 +171,20 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       expect(body.status).toBe("granted");
     });
 
-    it("should reject all users when cap is zero regardless of counter state", async () => {
-      // day-guest has cap=0; even with counter reset to 0, allocations are rejected
+    it("should reject all users when cap is fully consumed", async () => {
+      const dayGuestCap = getBundle("day-guest").cap;
+
       const { putCounter } = await import("../data/dynamoDbCapacityRepository.js");
+      await putCounter("day-guest", dayGuestCap);
 
-      // Reset counter to 0 — still rejected because cap=0 means 0 >= 0
-      await putCounter("day-guest", 0);
-
-      const token1 = makeJWT("cap-user-zero-1");
+      const token1 = makeJWT("cap-user-full-1");
       const res1 = await bundlePostHandler(buildPostEvent(token1, { bundleId: "day-guest", qualifiers: {} }));
       const body1 = JSON.parse(res1.body);
       expect(res1.statusCode).toBe(403);
       expect(body1.status).toBe("cap_reached");
 
       // A second user also rejected
-      const token2 = makeJWT("cap-user-zero-2");
+      const token2 = makeJWT("cap-user-full-2");
       const res2 = await bundlePostHandler(buildPostEvent(token2, { bundleId: "day-guest", qualifiers: {} }));
       const body2 = JSON.parse(res2.body);
       expect(res2.statusCode).toBe(403);

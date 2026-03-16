@@ -176,9 +176,47 @@
       let __generatedPassCode = "";
       let __generatedQrSvg = "";
 
+      // --- View existing pass (when ?code= parameter is present)
+      async function viewExistingPass(code) {
+        const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(code)}`;
+        __generatedPassCode = code;
+        __generatedPassUrl = passUrl;
+
+        document.getElementById("generatedPassCode").textContent = code;
+        document.getElementById("generatedPassUrl").textContent = passUrl;
+        document.getElementById("passCodeSmall").textContent = code;
+
+        try {
+          const qrSvg = await QRCode.toString(passUrl, {
+            type: "svg",
+            width: 250,
+            margin: 2,
+            errorCorrectionLevel: "M",
+          });
+          __generatedQrSvg = qrSvg;
+          document.getElementById("generatedPassQrCode").innerHTML = qrSvg;
+        } catch (qrErr) {
+          console.warn("Failed to generate QR code:", qrErr);
+        }
+
+        // Hide the generation form, show the result
+        document.getElementById("tokenInfo").style.display = "none";
+        document.getElementById("generatePassBtn").style.display = "none";
+        document.querySelector("[for='passNotes']")?.closest("div")?.style.setProperty("display", "none");
+        document.getElementById("passResult").style.display = "block";
+      }
+
       // --- Initialise page
       async function initPage() {
         checkAuthStatus();
+
+        // If ?code= param is present, show existing pass QR instead of generation form
+        const urlParams = new URLSearchParams(window.location.search);
+        const existingCode = urlParams.get("code");
+        if (existingCode) {
+          await viewExistingPass(existingCode);
+          return;
+        }
 
         const idToken = getIdToken();
         if (!idToken) {
