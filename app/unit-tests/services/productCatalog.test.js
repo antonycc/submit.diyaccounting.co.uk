@@ -31,6 +31,7 @@ describe("productCatalogHelper", () => {
     expect(bundlesForActivity(catalog, "submit-vat")).toEqual([
       "day-guest",
       "invited-guest",
+      "resident-vat",
       "resident-guest",
       "resident-pro-comp",
       "resident-pro",

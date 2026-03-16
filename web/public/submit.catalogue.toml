@@ -101,6 +101,26 @@ tokenRefreshInterval = "P1M"
 # GET /api/v1/tokens/ [ { "bundle": "day-guest", "tokens": 2, "expires": "2024-06-30T12:34:56Z" } ]
 # GET /api/v1/activities/ [ { "activity": "submit-vat", "tokens": 1, "started": "2024-05-30T12:34:56Z", "completed": "2024-05-30T12:34:56Z", requestId: "abc-123-def-456" } ]
 
+# resident-vat: Long-term HMRC access for specific users with a pass, unlocked subscription for VAT submission
+# Unlocked by: resident-vat pass (email-restricted, admin-issued)
+# Payment: Pass reveals the card, subscription grants the bundle (£0.99/mo via Stripe Checkout)
+# Tokens: 10 granted, refreshing monthly, no timeout (unlimited duration)
+# Tokens: 100 granted, refreshing monthly
+# Enables: all activities including generating digital/physical passes (costs 10 tokens each)
+# Access to all authenticated activities including VAT submission for subscribed users
+[[bundles]]
+id = "resident-vat"
+name = "Resident VAT"
+levelName = "Resident"
+enable = "on-pass"
+hidden = true
+allocation = "on-pass-on-subscription"
+# on-pass-on-subscription: Pass gates visibility (card appears after valid pass), subscription gates access.
+# After entering a valid pass, user sees a "Subscribe £0.99/mo" button instead of "Request".
+# Stripe Checkout creates the subscription; webhook grants the bundle.
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+
 # resident-guest: Permanent free access for existing DIY customers and partners
 # Unlocked by: resident-guest pass (email-restricted, admin-issued)
 # Payment: None (admin manually sends pass to verified customers via email support)
@@ -176,7 +196,7 @@ name = "Submit VAT (HMRC)"
 display = "always-with-upsell"
 # display: always-with-upsell
 # shows upsell prompt if not entitled
-bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
@@ -186,7 +206,7 @@ hmrcScopesRequired = ["write:vat", "read:vat"]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
@@ -196,7 +216,7 @@ hmrcScopesRequired = ["read:vat"]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
@@ -214,7 +234,7 @@ paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]
 id = "generate-pass-digital"
 name = "Generate Digital Pass"
 display = "on-entitlement"
-bundles = ["resident-pro-comp", "resident-pro"]
+bundles = ["resident-vat", "resident-pro-comp", "resident-pro"]
 tokenCost = 10
 metered = true
 # generate-pass-digital
@@ -228,7 +248,7 @@ paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
 id = "generate-pass-physical"
 name = "Generate Physical Pass"
 display = "on-entitlement"
-bundles = ["resident-pro-comp", "resident-pro"]
+bundles = ["resident-vat", "resident-pro-comp", "resident-pro"]
 tokenCost = 10
 metered = true
 # generate-pass-physical
