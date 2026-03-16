@@ -31,16 +31,14 @@ allocation = "automatic"
 id = "day-guest"
 name = "Day Guest"
 levelName = "Guest"
-# TODO: 2. Switch to enable = "always" for "public" - AKA open public beta with production credentials recognised by HMRC
-enable = "on-pass"
+enable = "always"
 #enable = "always"
 hidden = false
 # hidden
 # ======
 # Show this bundle on the bundles page
 allocation = "on-request"
-# TODO: 2. Switch to 10 for "public" - AKA open public beta with production credentials recognised by HMRC
-cap = 0
+cap = 100
 # cap (GLOBAL capacity limit)
 # ===========================
 # Maximum number of active (non-expired) allocations of this bundle across ALL users.
