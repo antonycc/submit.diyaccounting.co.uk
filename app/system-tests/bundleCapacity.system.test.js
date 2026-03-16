@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 import { ingestHandler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
+import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 
 let stopDynalite;
 let bundleRepository;
@@ -145,10 +146,13 @@ describe("System: bundle capacity and per-user uniqueness", () => {
   });
 
   describe("global cap enforcement via atomic counter", () => {
-    it("should reject allocation when cap is reached (day-guest cap=100)", async () => {
-      // day-guest has cap=100; set counter to 100 so no slots remain
+    it("should reject allocation when cap is reached (day-guest)", async () => {
+      const catalog = loadCatalogFromRoot();
+      const dayGuestCap = catalog.bundles.find(b => b.id === "day-guest").cap;
+      expect(dayGuestCap).toBeGreaterThan(0);
+
       const { putCounter } = await import("../data/dynamoDbCapacityRepository.js");
-      await putCounter("day-guest", 100);
+      await putCounter("day-guest", dayGuestCap);
 
       const token = makeJWT("cap-fresh-user");
       const event = buildPostEvent(token, { bundleId: "day-guest", qualifiers: {} });
@@ -169,9 +173,11 @@ describe("System: bundle capacity and per-user uniqueness", () => {
     });
 
     it("should reject all users when cap is fully consumed", async () => {
-      // day-guest has cap=100; set counter to 100 so all slots are taken
+      const catalog = loadCatalogFromRoot();
+      const dayGuestCap = catalog.bundles.find(b => b.id === "day-guest").cap;
+
       const { putCounter } = await import("../data/dynamoDbCapacityRepository.js");
-      await putCounter("day-guest", 100);
+      await putCounter("day-guest", dayGuestCap);
 
       const token1 = makeJWT("cap-user-full-1");
       const res1 = await bundlePostHandler(buildPostEvent(token1, { bundleId: "day-guest", qualifiers: {} }));
