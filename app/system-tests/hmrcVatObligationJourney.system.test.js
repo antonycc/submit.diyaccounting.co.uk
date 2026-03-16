@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
+import { getBundle } from "./helpers/catalogueValues.js";
 import { ingestHandler as hmrcTokenPostHandler } from "../functions/hmrc/hmrcTokenPost.js";
 import { ingestHandler as hmrcVatObligationGetHandler } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { ingestHandler as hmrcVatReturnPostHandler } from "../functions/hmrc/hmrcVatReturnPost.js";
@@ -153,7 +154,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await bm.updateUserBundles(testUserSub, [{ bundleId: "day-guest", expiry, tokensGranted: 3, tokensConsumed: 0 }]);
+    await bm.updateUserBundles(testUserSub, [{ bundleId: "day-guest", expiry, tokensGranted: getBundle("day-guest").tokensGranted, tokensConsumed: 0 }]);
   });
 
   it("should complete obligation-based journey: Auth → Token → Obligations → Submit → Get VAT", async () => {

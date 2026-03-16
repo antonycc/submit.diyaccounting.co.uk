@@ -7,6 +7,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { dotenvConfigIfNotBlank } from "../lib/env.js";
+import { getBundle } from "./helpers/catalogueValues.js";
 
 /** @type {typeof import("../services/subHasher.js").hashSub} */
 let hashSub;
@@ -218,7 +219,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
 
     // Grant test bundle for user
     const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    await importedBundleManagement.updateUserBundles(testUserSub, [{ bundleId: "day-guest", expiry, tokensGranted: 3, tokensConsumed: 0 }]);
+    await importedBundleManagement.updateUserBundles(testUserSub, [{ bundleId: "day-guest", expiry, tokensGranted: getBundle("day-guest").tokensGranted, tokensConsumed: 0 }]);
   });
 
   it("should complete full VAT submission journey: Auth → Token → Submit → PostReceipt → GetReceipt", async () => {
