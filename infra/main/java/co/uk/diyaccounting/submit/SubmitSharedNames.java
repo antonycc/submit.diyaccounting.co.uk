@@ -125,6 +125,8 @@ public class SubmitSharedNames {
     // Env-level billing webhook Lambda
     public String envBillingWebhookLambdaFunctionName;
     public String envBillingWebhookLambdaHandler;
+    public String envBillingWebhookLambdaArn;
+    public String envBillingWebhookProvisionedConcurrencyAliasArn;
 
     public String appResourceNamePrefix;
     public String authStackId;
@@ -471,6 +473,10 @@ public class SubmitSharedNames {
         // Env-level billing webhook Lambda
         this.envBillingWebhookLambdaFunctionName = "%s-billing-webhook".formatted(this.envResourceNamePrefix);
         this.envBillingWebhookLambdaHandler = "app/functions/billing/billingWebhookPost.ingestHandler";
+        this.envBillingWebhookLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
+                .formatted(props.regionName, props.awsAccount, this.envBillingWebhookLambdaFunctionName);
+        this.envBillingWebhookProvisionedConcurrencyAliasArn =
+                "%s:%s".formatted(this.envBillingWebhookLambdaArn, this.provisionedConcurrencyAliasName);
 
         this.receiptsTableName = "%s-receipts".formatted(this.envResourceNamePrefix);
         this.bundlesTableName = "%s-bundles".formatted(this.envResourceNamePrefix);

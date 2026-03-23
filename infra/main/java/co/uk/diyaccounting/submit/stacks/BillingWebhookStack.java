@@ -180,6 +180,9 @@ public class BillingWebhookStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().envBillingWebhookLambdaFunctionName)
                         .ingestHandler(props.sharedNames().envBillingWebhookLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().envBillingWebhookLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().envBillingWebhookProvisionedConcurrencyAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName("pc")
                         .ingestMemorySize(512)

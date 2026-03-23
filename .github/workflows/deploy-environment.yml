@@ -749,6 +749,49 @@ jobs:
       - name: Node dependencies
         run: npm ci
 
+      # --- Build and push env-level Docker image (self-contained, no app deploy dependency) ---
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build env billing webhook image (ARM64)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --provenance=false \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            -t "env-billing-webhook:${{ github.sha }}" \
+            -f Dockerfile .
+
+      - name: Login to ECR
+        run: |
+          ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          ECR_REPOSITORY_NAME="${{ needs.names.outputs.environment-name }}-env-ecr"
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+            | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL}"
+        shell: bash
+
+      - name: Tag and push env billing webhook image to ECR
+        run: |
+          ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          ECR_REPOSITORY_NAME="${{ needs.names.outputs.environment-name }}-env-ecr"
+          ECR_URI="${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}"
+          ENV_IMAGE_TAG="env-billing-webhook"
+
+          docker tag "env-billing-webhook:${{ github.sha }}" "${ECR_URI}:${ENV_IMAGE_TAG}"
+          docker push "${ECR_URI}:${ENV_IMAGE_TAG}"
+          echo "Pushed ${ECR_URI}:${ENV_IMAGE_TAG}"
+        shell: bash
+
+      # --- Deploy CDK stack using the env-level image tag ---
+
       - uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
@@ -776,4 +819,4 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           REGIONAL_CERTIFICATE_ARN: ${{ vars.SUBMIT_REGIONAL_CERTIFICATE_ARN }}
-          BASE_IMAGE_TAG: latest
+          BASE_IMAGE_TAG: env-billing-webhook
