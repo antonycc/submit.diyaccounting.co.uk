@@ -134,19 +134,26 @@ Update `scripts/stripe-setup.js` to use the new env-level domains:
 
 ### 5. Transition Plan
 
-**Phase 1: Add env-level webhook (no breaking changes)**
-1. Create `BillingWebhookStack` in `SubmitEnvironment.java`
-2. Add `billingDomainName` to `SubmitSharedNames.java`
-3. Pass Stripe secret ARNs to environment CDK context
-4. Deploy environment stacks
-5. Verify webhook Lambda responds on new domain
+**Phase 1: Add env-level webhook (no breaking changes)** — DONE (2026-03-23)
+1. [x] Create `BillingWebhookStack` in `SubmitEnvironment.java`
+2. [x] Add `billingDomainName` to `SubmitSharedNames.java`
+3. [x] Pass Stripe secret ARNs to environment CDK context
+4. [x] Add `deploy-billing-webhook` job to `deploy-environment.yml`
+5. [ ] Deploy environment stacks — awaiting CI pipeline run
+6. [ ] Verify webhook Lambda responds on new domain
 
-**Phase 2: Update Stripe configuration**
+**Branch**: `claude/billing-webhook-to-env` — pushed, awaiting CI deploy.
+
+**Conditional guard**: BillingWebhookStack is only synthesized when both `REGIONAL_CERTIFICATE_ARN`
+and `BASE_IMAGE_TAG` are set. Locally these are absent so the stack is safely skipped. In the
+deploy workflow they are provided via GitHub Actions env vars.
+
+**Phase 2: Update Stripe configuration** — next session (after CI deploy verified)
 1. Update `stripe-setup.js` with new webhook URLs
 2. Run stripe-setup to register new endpoints in Stripe Dashboard
 3. Stripe will send to both old and new endpoints briefly
 
-**Phase 3: Remove from app stack**
+**Phase 3: Remove from app stack** — after Phase 2 verified
 1. Remove `billingWebhookPostLambda` from `BillingStack.java`
 2. Remove webhook route from `ApiStack.java` route list
 3. App-level BillingStack still handles checkout, portal, and recover (these need the app domain)
@@ -162,21 +169,24 @@ and are accessed by the browser through the app's CloudFront:
 
 ## Files to Create/Modify
 
-### New files
-- `infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java`
+### Phase 1 files (DONE)
+- `infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java` — **created**
+- `infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java` — **modified** (add BillingWebhookStack + Stripe/cert/image props)
+- `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` — **modified** (add billingDomainName, billingWebhookStackId, env Lambda names)
+- `.github/workflows/deploy-environment.yml` — **modified** (add deploy-billing-webhook job)
 
-### Modified files
-- `infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java` — add BillingWebhookStack
-- `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` — add billing domain names and env-level Lambda names
-- `infra/main/java/co/uk/diyaccounting/submit/stacks/BillingStack.java` — remove webhook Lambda
-- `infra/main/java/co/uk/diyaccounting/submit/stacks/ApiStack.java` — remove webhook route (may be automatic via lambdaFunctions list)
+### Phase 2 files (TODO)
 - `scripts/stripe-setup.js` — update webhook URLs
-- `.github/workflows/deploy-environment.yml` — pass Stripe secret ARNs as CDK context
-- `cdk-environment/cdk.json` — add Stripe secret ARN context keys
+
+### Phase 3 files (TODO)
+- `infra/main/java/co/uk/diyaccounting/submit/stacks/BillingStack.java` — remove webhook Lambda
+- `infra/main/java/co/uk/diyaccounting/submit/stacks/ApiStack.java` — remove webhook route (auto via lambdaFunctions list)
 
 ## Verification
 
-- [ ] `./mvnw clean verify` passes (CDK synthesis)
+- [x] `./mvnw clean verify` passes (CDK synthesis)
+- [x] `npm test` passes (947 tests)
+- [x] `npm run cdk-ci` environment synth succeeds (stack skipped locally as expected)
 - [ ] Environment deploy creates BillingWebhookStack
 - [ ] `curl -X POST https://ci-billing.diyaccounting.co.uk/api/v1/billing/webhook` returns 400 (missing Stripe signature, not 503/404)
 - [ ] Stripe test webhook delivery succeeds to new URL
