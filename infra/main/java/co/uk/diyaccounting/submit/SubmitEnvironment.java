@@ -12,6 +12,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import co.uk.diyaccounting.submit.stacks.ActivityStack;
 import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.BackupStack;
+import co.uk.diyaccounting.submit.stacks.BillingWebhookStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.EcrStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
@@ -35,6 +36,7 @@ public class SubmitEnvironment {
     public final IdentityStack identityStack;
     public final ApexStack apexStack;
     public final SimulatorStack simulatorStack;
+    public final BillingWebhookStack billingWebhookStack;
     public final EcrStack ecrStack;
     public final EcrStack ue1EcrStack;
 
@@ -58,6 +60,12 @@ public class SubmitEnvironment {
         public String authCertificateArn;
         public String simulatorCertificateArn;
         public String simulatorCodePath;
+        public String regionalCertificateArn;
+        public String stripeSecretKeyArn;
+        public String stripeTestSecretKeyArn;
+        public String stripeWebhookSecretArn;
+        public String stripeTestWebhookSecretArn;
+        public String baseImageTag;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -131,6 +139,25 @@ public class SubmitEnvironment {
                 "SIMULATOR_CERTIFICATE_ARN",
                 appProps.simulatorCertificateArn,
                 "(from simulatorCertificateArn in cdk.json)");
+        var regionalCertificateArn = envOr(
+                "REGIONAL_CERTIFICATE_ARN",
+                appProps.regionalCertificateArn,
+                "(from regionalCertificateArn in cdk.json)");
+        var stripeSecretKeyArn = envOr(
+                "STRIPE_SECRET_KEY_ARN", appProps.stripeSecretKeyArn, "(from stripeSecretKeyArn in cdk.json)");
+        var stripeTestSecretKeyArn = envOr(
+                "STRIPE_TEST_SECRET_KEY_ARN",
+                appProps.stripeTestSecretKeyArn,
+                "(from stripeTestSecretKeyArn in cdk.json)");
+        var stripeWebhookSecretArn = envOr(
+                "STRIPE_WEBHOOK_SECRET_ARN",
+                appProps.stripeWebhookSecretArn,
+                "(from stripeWebhookSecretArn in cdk.json)");
+        var stripeTestWebhookSecretArn = envOr(
+                "STRIPE_TEST_WEBHOOK_SECRET_ARN",
+                appProps.stripeTestWebhookSecretArn,
+                "(from stripeTestWebhookSecretArn in cdk.json)");
+        var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "latest");
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -302,6 +329,41 @@ public class SubmitEnvironment {
                     "Skipping SimulatorStack synthesis - simulator code path %s does not exist (run 'npm run build:simulator' first)",
                     simulatorCodePath);
             this.simulatorStack = null;
+        }
+
+        // Create BillingWebhookStack for always-available Stripe webhook endpoint
+        if (regionalCertificateArn != null && !regionalCertificateArn.isBlank()
+                && !regionalCertificateArn.startsWith("(from")
+                && baseImageTag != null && !baseImageTag.isBlank()
+                && !baseImageTag.startsWith("(from")) {
+            infof(
+                    "Synthesizing stack %s for environment %s",
+                    sharedNames.billingWebhookStackId, envName);
+            this.billingWebhookStack = new BillingWebhookStack(
+                    app,
+                    sharedNames.billingWebhookStackId,
+                    BillingWebhookStack.BillingWebhookStackProps.builder()
+                            .env(primaryEnv)
+                            .crossRegionReferences(false)
+                            .envName(envName)
+                            .deploymentName(deploymentName)
+                            .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                            .cloudTrailEnabled(cloudTrailEnabled)
+                            .sharedNames(sharedNames)
+                            .baseImageTag(baseImageTag)
+                            .hostedZoneName(appProps.hostedZoneName)
+                            .hostedZoneId(appProps.hostedZoneId)
+                            .regionalCertificateArn(regionalCertificateArn)
+                            .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                            .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
+                            .stripeWebhookSecretArn(stripeWebhookSecretArn != null ? stripeWebhookSecretArn : "")
+                            .stripeTestWebhookSecretArn(
+                                    stripeTestWebhookSecretArn != null ? stripeTestWebhookSecretArn : "")
+                            .build());
+        } else {
+            warnf(
+                    "Skipping BillingWebhookStack synthesis — REGIONAL_CERTIFICATE_ARN not set (required for API Gateway custom domain)");
+            this.billingWebhookStack = null;
         }
 
         // Create EcrStack for ECR repositories (eu-west-2)

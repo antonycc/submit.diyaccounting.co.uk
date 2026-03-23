@@ -67,6 +67,7 @@ public class SubmitSharedNames {
     public String cognitoDomainName;
     public String holdingDomainName;
     public String simulatorDomainName;
+    public String billingDomainName;
     public String baseUrl;
     public String envBaseUrl;
     public String publicBaseUrl;
@@ -109,6 +110,7 @@ public class SubmitSharedNames {
     public String backupStackId;
     public String activityStackId;
     public String simulatorStackId;
+    public String billingWebhookStackId;
     public String ecrStackId;
     public String ue1EcrStackId;
     public String ecrRepositoryArn;
@@ -119,6 +121,10 @@ public class SubmitSharedNames {
     public String ue1EcrRepositoryName;
     public String ue1EcrLogGroupName;
     public String ue1EcrPublishRoleName;
+
+    // Env-level billing webhook Lambda
+    public String envBillingWebhookLambdaFunctionName;
+    public String envBillingWebhookLambdaHandler;
 
     public String appResourceNamePrefix;
     public String authStackId;
@@ -424,6 +430,7 @@ public class SubmitSharedNames {
         this.cognitoDomainName = "%s-auth.%s".formatted(props.envName, props.hostedZoneName);
         this.holdingDomainName = "%s-holding.%s".formatted(props.envName, props.hostedZoneName);
         this.simulatorDomainName = "%s-simulator.%s".formatted(props.envName, props.hostedZoneName);
+        this.billingDomainName = "%s-billing.%s".formatted(props.envName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
                 .formatted(
                         props.deploymentName,
@@ -446,6 +453,7 @@ public class SubmitSharedNames {
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
         this.activityStackId = "%s-env-ActivityStack".formatted(props.envName);
         this.simulatorStackId = "%s-env-SimulatorStack".formatted(props.envName);
+        this.billingWebhookStackId = "%s-env-BillingWebhookStack".formatted(props.envName);
         this.ecrStackId = "%s-env-EcrStack".formatted(props.envName);
         this.ue1EcrStackId = "%s-env-EcrUE1Stack".formatted(props.envName);
         this.ecrRepositoryArn = "arn:aws:ecr:%s:%s:repository/%s-ecr"
@@ -459,6 +467,10 @@ public class SubmitSharedNames {
         this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.envResourceNamePrefix);
         this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(this.envResourceNamePrefix);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
+
+        // Env-level billing webhook Lambda
+        this.envBillingWebhookLambdaFunctionName = "%s-billing-webhook".formatted(this.envResourceNamePrefix);
+        this.envBillingWebhookLambdaHandler = "app/functions/billing/billingWebhookPost.ingestHandler";
 
         this.receiptsTableName = "%s-receipts".formatted(this.envResourceNamePrefix);
         this.bundlesTableName = "%s-bundles".formatted(this.envResourceNamePrefix);
