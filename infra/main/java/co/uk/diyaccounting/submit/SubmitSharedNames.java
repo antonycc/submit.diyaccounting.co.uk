@@ -432,7 +432,7 @@ public class SubmitSharedNames {
         this.cognitoDomainName = "%s-auth.%s".formatted(props.envName, props.hostedZoneName);
         this.holdingDomainName = "%s-holding.%s".formatted(props.envName, props.hostedZoneName);
         this.simulatorDomainName = "%s-simulator.%s".formatted(props.envName, props.hostedZoneName);
-        this.billingDomainName = "%s-billing.%s".formatted(props.envName, props.hostedZoneName);
+        this.billingDomainName = "%s-billing.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
                 .formatted(
                         props.deploymentName,

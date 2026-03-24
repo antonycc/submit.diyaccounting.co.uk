@@ -1,0 +1,171 @@
+# submit.passes.toml
+# Pass type definitions for DIY Accounting Submit
+#
+# This file defines the templates for generating invite passes.
+# It is read by the GitHub Actions generate-pass workflow and the passAdminPost Lambda
+# to populate defaults when creating passes. It is NOT validated at runtime when
+# passes are persisted or redeemed - the pass record itself is self-contained.
+#
+# Pass records store their own bundleId, maxUses, validUntil etc. so this file
+# can evolve independently without affecting existing passes.
+#
+# PASS → BUNDLE MAPPING SUMMARY
+# =============================
+# Pass Type              → Bundle Granted       → Payment Required?
+# day-guest-test-pass    → day-guest            → No (free, admin-issued, test/sandbox)
+# day-guest-pass         → day-guest            → No (free, admin-issued, production)
+# invited-guest          → invited-guest        → No (free, admin-issued, email-restricted)
+# resident-guest         → resident-guest       → No (free, admin-issued, email-restricted)
+# resident-pro-comp      → resident-pro-comp    → No (free, admin-issued, email-restricted)
+# resident-pro-test-pass → resident-pro         → No (free, admin-issued, test/sandbox)
+# resident-pro-pass      → resident-pro         → No (free, admin-issued, production)
+# campaign               → invited-guest        → Costs 10 tokens to issue (user-issued, Phase 6)
+# digital-pass           → day-guest            → Costs 10 tokens to issue (user-issued, Phase 6)
+# physical-pass          → day-guest            → Costs 10 tokens to issue (user-issued, Phase 6)
+#
+# See PASSES.md for full documentation and web/public/submit.catalogue.toml for bundle definitions.
+
+version = "1.0.0"
+
+# day-guest-test-pass → unlocks "day-guest" bundle (test/sandbox)
+# Grants: 3 tokens, 1 day timeout, HMRC sandbox access (testPass: true)
+# Tokens: 3 (enough for 3 VAT submissions; viewing obligations is free)
+# Payment: None (admin-issued via GitHub Actions for automated tests and CI)
+[[passTypes]]
+id = "day-guest-test-pass"
+name = "Day Guest Test Pass"
+description = "Single-day access to HMRC Sandbox APIs for testing"
+bundleId = "day-guest"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+test = true
+
+# day-guest-pass → unlocks "day-guest" bundle (production)
+# Grants: 3 tokens, 1 day timeout, production HMRC access
+# Tokens: 3 (enough for 3 VAT submissions; viewing obligations is free)
+# Payment: None (admin-issued via GitHub Actions for real users)
+[[passTypes]]
+id = "day-guest-pass"
+name = "Day Guest Pass"
+description = "Single-day access to production HMRC APIs"
+bundleId = "day-guest"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+
+# resident-pro-test-pass → unlocks "resident-pro" bundle (test/sandbox)
+# Grants: 100 tokens, refreshing monthly, HMRC sandbox access (testPass: true)
+# Tokens: 100 per month
+# Payment: None (admin-issued via GitHub Actions for automated tests and CI)
+[[passTypes]]
+id = "resident-pro-test-pass"
+name = "Resident Pro Test Pass"
+description = "Pro subscription access to HMRC Sandbox APIs for testing"
+bundleId = "resident-pro"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+test = true
+
+# resident-pro-pass → unlocks "resident-pro" bundle (production)
+# Grants: 100 tokens, refreshing monthly, production HMRC access
+# Tokens: 100 per month
+# Payment: None (admin-issued via GitHub Actions for real users)
+[[passTypes]]
+id = "resident-pro-pass"
+name = "Resident Pro Pass"
+description = "Pro subscription access to production HMRC APIs"
+bundleId = "resident-pro"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+
+# invited-guest → unlocks "invited-guest" bundle
+# Grants: 3 tokens refreshing monthly, 1 month timeout, production HMRC access
+# Tokens: 3 per month (refreshes on tokenRefreshInterval)
+# Payment: None (admin-issued, email-restricted to specific user)
+[[passTypes]]
+id = "invited-guest"
+name = "Invited Guest"
+description = "Month-long access for specific invited users"
+bundleId = "invited-guest"
+defaultValidityPeriod = "P1M"
+defaultMaxUses = 1
+requiresEmailRestriction = true
+
+# resident-guest → unlocks "resident-guest" bundle
+# Grants: 3 tokens refreshing monthly, no timeout (unlimited duration), production HMRC access
+# Tokens: 3 per month (refreshes on tokenRefreshInterval)
+# Payment: None (admin-issued, email-restricted; for existing DIY customers and partners)
+# DIY customers: email support, admin sends a resident-guest pass manually
+[[passTypes]]
+id = "resident-guest"
+name = "Resident Guest"
+description = "Ongoing free access for specific users"
+bundleId = "resident-guest"
+# No defaultValidityPeriod = unlimited
+defaultMaxUses = 1
+requiresEmailRestriction = true
+
+# resident-pro-comp → unlocks "resident-pro-comp" bundle
+# Grants: 100 tokens refreshing monthly, no timeout, production HMRC access + pass generation
+# Tokens: 100 per month (refreshes on tokenRefreshInterval)
+# Payment: None (admin-issued, email-restricted; gifted to beta testers and partners)
+[[passTypes]]
+id = "resident-pro-comp"
+name = "Resident Pro (Complimentary)"
+description = "Complimentary pro subscription for beta testers and partners"
+bundleId = "resident-pro-comp"
+defaultValidityPeriod = "P1Y"
+defaultMaxUses = 1
+requiresEmailRestriction = true
+
+# digital-pass → unlocks "day-guest" bundle
+# Grants: 3 tokens, 1 day timeout per redeemer, 7 day pass validity, 100 uses
+# Tokens: 3 per redeemer (no refresh for day-guest)
+# Payment: Costs 3 tokens from the issuing user's bundle (Phase 6, not yet implemented)
+# Short validity (7 days) encourages focused digital campaigns.
+# 100 uses allows broad distribution via social media, email, messaging.
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+[[passTypes]]
+id = "digital-pass"
+name = "Digital Pass"
+description = "Time-limited digital pass for short campaigns (social media, email, QR sharing)"
+bundleId = "day-guest"
+defaultValidityPeriod = "P7D"
+defaultMaxUses = 20
+requiresEmailRestriction = false
+tokenCostToIssue = 3
+
+# physical-pass → unlocks "day-guest" bundle
+# Grants: 3 tokens, 1 day timeout per redeemer, no expiry, 10 uses
+# Tokens: 3 per redeemer (no refresh for day-guest)
+# Payment: Costs 3 tokens from the issuing user's bundle (Phase 6, not yet implemented)
+# No time limit means merchandise retains value indefinitely.
+# 10 uses discourages sharing while rewarding continued display.
+# Designed for t-shirts, mugs, stickers with QR code + 4-word passphrase.
+# See PLAN_GENERATE_PASS_ACTIVITY.md
+[[passTypes]]
+id = "physical-pass"
+name = "Physical Pass"
+description = "Usage-limited pass for printed merchandise (t-shirts, mugs)"
+bundleId = "day-guest"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+tokenCostToIssue = 3
+
+# campaign → unlocks "invited-guest" bundle
+# Grants: 3 tokens refreshing monthly per redeemer, 3 day validity
+# Tokens: 3 per month per redeemer
+# Payment: Costs 3 tokens from the issuing user's bundle (Phase 6, not yet implemented)
+[[passTypes]]
+id = "campaign-pass"
+name = "Campaign Pass"
+description = "Time-limited digital pass for larger campaigns (social media, email, QR sharing)"
+bundleId = "day-guest"
+defaultValidityPeriod = "P7D"
+defaultMaxUses = 1000
+requiresEmailRestriction = false
+tokenCostToIssue = 25
+

@@ -49,7 +49,7 @@ Stripe --webhook--> ci-submit.diyaccounting.co.uk/api/v1/billing/webhook
 ## Proposed Architecture
 
 ```
-Stripe --webhook--> ci-billing.diyaccounting.co.uk/api/v1/billing/webhook
+Stripe --webhook--> ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook
                         |
                     [Route53] ── env-level (PERSISTS)
                         |
@@ -66,8 +66,8 @@ Following the existing pattern (`{env}-auth`, `{env}-holding`, `{env}-simulator`
 
 | Environment | Webhook Domain | Current (will be removed) |
 |------------|---------------|--------------------------|
-| CI | `ci-billing.diyaccounting.co.uk` | `ci-submit.diyaccounting.co.uk/api/v1/billing/webhook` |
-| Prod | `prod-billing.diyaccounting.co.uk` | `submit.diyaccounting.co.uk/api/v1/billing/webhook` |
+| CI | `ci-billing.submit.diyaccounting.co.uk` | `ci-submit.diyaccounting.co.uk/api/v1/billing/webhook` |
+| Prod | `prod-billing.submit.diyaccounting.co.uk` | `submit.diyaccounting.co.uk/api/v1/billing/webhook` |
 
 ### Why a Separate Domain (Not the App Domain)
 
@@ -92,8 +92,8 @@ Following the existing pattern (`{env}-auth`, `{env}-holding`, `{env}-simulator`
 - **API Gateway HTTP API v2**
   - Single route: `POST /api/v1/billing/webhook`
   - No authorizer (Stripe signature verification in Lambda)
-  - Custom domain: `{env}-billing.{hostedZoneName}`
-  - Regional ACM certificate (same one used by IdentityStack/Cognito)
+  - Custom domain: `{env}-billing.{subDomainName}.{hostedZoneName}` (e.g. `ci-billing.submit.diyaccounting.co.uk`)
+  - Regional ACM certificate (covered by `*.submit.diyaccounting.co.uk` wildcard)
 - **Route53 A/AAAA alias records** pointing domain to API Gateway
 - **IAM permissions**:
   - DynamoDB read/write on `{env}-env-bundles` and `{env}-env-subscriptions`
@@ -129,8 +129,8 @@ updates shared tables. Any deployment reading those tables sees the updated stat
 ### 4. Stripe Webhook URL Update
 
 Update `scripts/stripe-setup.js` to use the new env-level domains:
-- CI: `https://ci-billing.diyaccounting.co.uk/api/v1/billing/webhook`
-- Prod: `https://prod-billing.diyaccounting.co.uk/api/v1/billing/webhook`
+- CI: `https://ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook`
+- Prod: `https://prod-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook`
 
 ### 5. Transition Plan
 
@@ -188,7 +188,7 @@ and are accessed by the browser through the app's CloudFront:
 - [x] `npm test` passes (947 tests)
 - [x] `npm run cdk-ci` environment synth succeeds (stack skipped locally as expected)
 - [ ] Environment deploy creates BillingWebhookStack
-- [ ] `curl -X POST https://ci-billing.diyaccounting.co.uk/api/v1/billing/webhook` returns 400 (missing Stripe signature, not 503/404)
+- [ ] `curl -X POST https://ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook` returns 400 (missing Stripe signature, not 503/404)
 - [ ] Stripe test webhook delivery succeeds to new URL
 - [ ] App teardown does NOT affect webhook endpoint
 - [ ] Synthetic test still passes (submitVatBehaviour uses app-level billing checkout, not webhook)
@@ -197,7 +197,7 @@ and are accessed by the browser through the app's CloudFront:
 
 | Risk | Mitigation |
 |------|-----------|
-| Certificate doesn't cover `ci-billing.diyaccounting.co.uk` | Existing wildcard cert `*.diyaccounting.co.uk` should cover it — verify |
+| Certificate doesn't cover `ci-billing.submit.diyaccounting.co.uk` | Existing wildcard cert `*.diyaccounting.co.uk` should cover it — verify |
 | API Gateway needs **regional** certificate (eu-west-2) | Currently only used by app-level ApiStack via `REGIONAL_CERTIFICATE_ARN` / `SUBMIT_REGIONAL_CERTIFICATE_ARN`. Must also pass to `deploy-environment.yml` and `SubmitEnvironment.java` |
 | Docker image not available during env deploy | EcrStack already creates ECR repos at env level; images pushed during app deploy. First env deploy must be after at least one app image is pushed to ECR |
 | Cold start exceeds Stripe timeout (20s) | Docker ARM64 cold start is ~1-3s; Stripe retries automatically |
