@@ -773,7 +773,6 @@ jobs:
       - name: Login to ECR
         run: |
           ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
-          ECR_REPOSITORY_NAME="${{ needs.names.outputs.environment-name }}-env-ecr"
           aws ecr get-login-password --region ${{ env.AWS_REGION }} \
             | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL}"
         shell: bash
