@@ -113,6 +113,106 @@ public final class Route53AliasUpsert {
                 .build();
     }
 
+    /**
+     * UPSERTs A and AAAA records with AliasTarget pointing to an API Gateway v2 custom domain.
+     *
+     * @param scope construct scope
+     * @param idPrefix unique id prefix for custom resources
+     * @param zone hosted zone where records should be created
+     * @param fqdn fully qualified domain name for the record
+     * @param apiGatewayDnsName API Gateway v2 regional domain name (e.g. d-abc123.execute-api.eu-west-2.amazonaws.com)
+     * @param apiGatewayHostedZoneId API Gateway v2 regional hosted zone ID
+     */
+    public static void upsertAliasToApiGatewayV2(
+            Construct scope,
+            String idPrefix,
+            IHostedZone zone,
+            String fqdn,
+            String apiGatewayDnsName,
+            String apiGatewayHostedZoneId) {
+        upsertAlias(scope, idPrefix, zone, fqdn, apiGatewayDnsName, apiGatewayHostedZoneId);
+    }
+
+    /** Shared implementation for UPSERT of A/AAAA alias records to any AWS target. */
+    private static void upsertAlias(
+            Construct scope,
+            String idPrefix,
+            IHostedZone zone,
+            String fqdn,
+            String targetDnsName,
+            String targetHostedZoneId) {
+
+        String route53AssumedRoleArn = System.getenv("ROOT_ROUTE53_ROLE_ARN");
+        boolean crossAccount = route53AssumedRoleArn != null && !route53AssumedRoleArn.isBlank();
+
+        java.util.function.Function<String, Map<String, Object>> changeForType = (recordType) -> {
+            Map<String, Object> aliasTarget = new java.util.HashMap<>();
+            aliasTarget.put("DNSName", targetDnsName);
+            aliasTarget.put("HostedZoneId", targetHostedZoneId);
+            aliasTarget.put("EvaluateTargetHealth", false);
+
+            Map<String, Object> rrset = new java.util.HashMap<>();
+            rrset.put("Name", fqdn);
+            rrset.put("Type", recordType);
+            rrset.put("AliasTarget", aliasTarget);
+
+            Map<String, Object> change = new java.util.HashMap<>();
+            change.put("Action", "UPSERT");
+            change.put("ResourceRecordSet", rrset);
+
+            Map<String, Object> changeBatch = new java.util.HashMap<>();
+            changeBatch.put("Changes", java.util.List.of(change));
+
+            Map<String, Object> params = new java.util.HashMap<>();
+            params.put("HostedZoneId", zone.getHostedZoneId());
+            params.put("ChangeBatch", changeBatch);
+            return params;
+        };
+
+        var statements = new java.util.ArrayList<>(List.of(
+                software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+                        .actions(List.of("route53:ChangeResourceRecordSets"))
+                        .resources(List.of("arn:aws:route53:::hostedzone/" + zone.getHostedZoneId()))
+                        .build()));
+        if (crossAccount) {
+            statements.add(software.amazon.awscdk.services.iam.PolicyStatement.Builder.create()
+                    .actions(List.of("sts:AssumeRole"))
+                    .resources(List.of(route53AssumedRoleArn))
+                    .build());
+        }
+        var policy = AwsCustomResourcePolicy.fromStatements(statements);
+
+        var upsertABuilder = AwsSdkCall.builder()
+                .service("Route53")
+                .action("changeResourceRecordSets")
+                .parameters(changeForType.apply("A"))
+                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-A-" + fqdn));
+        if (crossAccount) {
+            upsertABuilder.assumedRoleArn(route53AssumedRoleArn);
+        }
+
+        var upsertAAAABuilder = AwsSdkCall.builder()
+                .service("Route53")
+                .action("changeResourceRecordSets")
+                .parameters(changeForType.apply("AAAA"))
+                .physicalResourceId(PhysicalResourceId.of(idPrefix + "-AAAA-" + fqdn));
+        if (crossAccount) {
+            upsertAAAABuilder.assumedRoleArn(route53AssumedRoleArn);
+        }
+
+        AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
+                .policy(policy)
+                .onCreate(upsertABuilder.build())
+                .onUpdate(upsertABuilder.build())
+                .build();
+
+        AwsCustomResource.Builder.create(scope, idPrefix + "-AliasAAAA-Upsert")
+                .policy(policy)
+                .onCreate(upsertAAAABuilder.build())
+                .onUpdate(upsertAAAABuilder.build())
+                .build();
+    }
+
     private static String buildFqdn(IHostedZone zone, String relativeRecordName) {
         if (relativeRecordName == null || relativeRecordName.isBlank()) {
             return zone.getZoneName();

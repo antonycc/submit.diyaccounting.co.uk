@@ -12,6 +12,7 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.Route53AliasUpsert;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
@@ -38,13 +39,9 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.logs.RetentionDays;
-import software.amazon.awscdk.services.route53.ARecord;
-import software.amazon.awscdk.services.route53.AaaaRecord;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
-import software.amazon.awscdk.services.route53.RecordTarget;
-import software.amazon.awscdk.services.route53.targets.ApiGatewayv2DomainProperties;
 import software.constructs.Construct;
 
 /**
@@ -265,7 +262,9 @@ public class BillingWebhookStack extends Stack {
                         .build());
 
         // ============================================================================
-        // Route53 DNS records — stable endpoint
+        // Route53 DNS records — cross-account UPSERT via AwsCustomResource
+        // Route53 hosted zone is in the management account, not this account.
+        // Uses the same Route53AliasUpsert pattern as EdgeStack.
         // ============================================================================
 
         IHostedZone hostedZone = HostedZone.fromHostedZoneAttributes(
@@ -276,22 +275,15 @@ public class BillingWebhookStack extends Stack {
                         .zoneName(props.hostedZoneName())
                         .build());
 
-        var domainTarget = new ApiGatewayv2DomainProperties(
-                customDomain.getRegionalDomainName(), customDomain.getRegionalHostedZoneId());
+        Route53AliasUpsert.upsertAliasToApiGatewayV2(
+                this,
+                "BillingAlias",
+                hostedZone,
+                billingDomainName,
+                customDomain.getRegionalDomainName(),
+                customDomain.getRegionalHostedZoneId());
 
-        ARecord.Builder.create(this, props.resourceNamePrefix() + "-BillingARecord")
-                .zone(hostedZone)
-                .recordName(billingDomainName)
-                .target(RecordTarget.fromAlias(domainTarget))
-                .build();
-
-        AaaaRecord.Builder.create(this, props.resourceNamePrefix() + "-BillingAaaaRecord")
-                .zone(hostedZone)
-                .recordName(billingDomainName)
-                .target(RecordTarget.fromAlias(domainTarget))
-                .build();
-
-        infof("Created Route53 records for %s", billingDomainName);
+        infof("Created Route53 UPSERT records for %s", billingDomainName);
 
         // Outputs
         cfnOutput(this, "BillingWebhookApiUrl", httpApi.getUrl());
