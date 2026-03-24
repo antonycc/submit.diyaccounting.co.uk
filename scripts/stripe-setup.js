@@ -125,15 +125,16 @@ async function main() {
     "Proxy environment webhook (ngrok)",
   );
 
-  // CI webhook — CI deployments are ephemeral (SelfDestruct after 2h, sweeper runs on schedule).
-  // Stripe will report delivery failures when CI is between deployments. This is expected.
-  // Suppress failure alert emails in Stripe Dashboard → Webhooks → CI endpoint settings.
-  const ciWebhook = await findOrCreateWebhook("https://ci-submit.diyaccounting.co.uk/api/v1/billing/webhook", "CI environment webhook");
+  // CI webhook — env-level endpoint, always available even when app stacks are torn down.
+  const ciWebhook = await findOrCreateWebhook(
+    "https://ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook",
+    "CI environment webhook (env-level, persistent)",
+  );
 
-  // Prod webhook
+  // Prod webhook — env-level endpoint, independent of app deployments.
   const prodWebhook = await findOrCreateWebhook(
-    "https://submit.diyaccounting.co.uk/api/v1/billing/webhook",
-    "Production environment webhook",
+    "https://prod-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook",
+    "Production environment webhook (env-level, persistent)",
   );
 
   const mode = STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE" : "TEST";
