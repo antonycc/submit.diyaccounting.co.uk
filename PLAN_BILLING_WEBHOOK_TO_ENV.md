@@ -142,12 +142,14 @@ Update `scripts/stripe-setup.js` to use the new env-level domains:
 5. [x] Deploy environment stacks
 6. [ ] Verify webhook Lambda responds on new domain
 
-**Phase 2: Update Stripe configuration** — IN PROGRESS (2026-03-24)
+**Phase 2: Update Stripe configuration** — DONE (2026-03-25, PR #753)
 1. [x] Update `stripe-setup.js` with new webhook URLs
-2. [ ] Run stripe-setup to register new endpoints in Stripe Dashboard (both test and live keys)
-3. [ ] Store new webhook signing secrets in GitHub Environment secrets
+2. [x] Run stripe-setup to register new endpoints in Stripe Dashboard (both test and live keys)
+3. [x] Store new webhook signing secrets in GitHub Environment secrets
+4. [x] Re-run deploy-environment.yml for ci and prod (pushes secrets to Secrets Manager)
+5. [x] Disable old Stripe webhook endpoints in Stripe Dashboard
 
-**Phase 3: Remove from app stack** — after Phase 2 verified
+**Phase 3: Remove from app stack** — next
 1. Remove `billingWebhookPostLambda` from `BillingStack.java`
 2. Remove webhook route from `ApiStack.java` route list
 3. App-level BillingStack still handles checkout, portal, and recover (these need the app domain)
