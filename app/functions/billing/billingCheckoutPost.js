@@ -32,26 +32,16 @@ export function apiEndpoint(app) {
 
 /**
  * Resolve the Stripe price ID based on bundleId and sandbox mode.
- * Each bundle has its own Stripe product/price. Falls back to resident-pro if no bundle-specific price is configured.
+ * Env var pattern: STRIPE_[TEST_]PRICE_ID_RESIDENT_PRO, STRIPE_[TEST_]PRICE_ID_RESIDENT_VAT, etc.
  */
 function resolveStripePriceId(bundleId, isSandbox) {
-  // Bundle-specific env vars: STRIPE_[TEST_]PRICE_ID_RESIDENT_VAT, etc.
-  const suffix = bundleId === "resident-vat" ? "_RESIDENT_VAT" : "";
-  if (isSandbox) {
-    const testPrice = process.env[`STRIPE_TEST_PRICE_ID${suffix}`];
-    if (testPrice) return testPrice;
-    if (suffix) {
-      logger.warn({ message: `No STRIPE_TEST_PRICE_ID${suffix} configured, falling back to default` });
-    }
-    // Fall back to default test price (resident-pro)
-    return process.env.STRIPE_TEST_PRICE_ID;
-  }
-  const price = process.env[`STRIPE_PRICE_ID${suffix}`];
+  const suffix = `_${bundleId.toUpperCase().replace(/-/g, "_")}`;
+  const prefix = isSandbox ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
+  const envVar = `${prefix}${suffix}`;
+  const price = process.env[envVar];
   if (price) return price;
-  if (suffix) {
-    logger.warn({ message: `No STRIPE_PRICE_ID${suffix} configured, falling back to default` });
-  }
-  return process.env.STRIPE_PRICE_ID;
+  logger.warn({ message: `No ${envVar} configured`, bundleId, isSandbox });
+  return undefined;
 }
 
 export async function ingestHandler(event) {
