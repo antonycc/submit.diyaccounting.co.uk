@@ -351,17 +351,18 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
   });
 
   // ============================================================
-  // STEP 6: Get resident-vat via pass + checkout (100 tokens)
+  // STEP 6: Subscribe to resident-vat via direct checkout (100 tokens)
+  // resident-vat is publicly visible (enable=always, allocation=on-subscription) — no pass needed.
   // Simulator: checkout auto-completes (fakes Stripe like OAuth)
   // Proxy/CI/Prod: real Stripe test checkout with test card
   // ============================================================
-  await test.step("Get resident-vat bundle via pass + checkout (100 tokens)", async () => {
+  await test.step("Subscribe to resident-vat via direct checkout (100 tokens)", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 6: Get resident-vat via pass + checkout");
+    console.log("STEP 6: Subscribe to resident-vat via direct checkout");
     console.log("=".repeat(60));
 
     await goToBundlesPage(page, screenshotPath);
-    const checkoutResult = await ensureBundleViaCheckout(page, "resident-vat", screenshotPath, { testPass: true });
+    const checkoutResult = await ensureBundleViaCheckout(page, "resident-vat", screenshotPath, { skipPass: true });
 
     // If real Stripe checkout was used, wait for the webhook to activate the bundle.
     // This is the key verification that would catch webhook signature failures.

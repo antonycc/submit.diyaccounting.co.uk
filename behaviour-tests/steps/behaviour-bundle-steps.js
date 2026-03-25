@@ -412,11 +412,12 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
  * In simulator: checkout auto-completes (mock billing endpoints).
  * In proxy/ci/prod: navigates to real Stripe test checkout and fills in test card.
  */
-export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = defaultScreenshotPath, { testPass = false } = {}) {
+export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = defaultScreenshotPath, { testPass = false, skipPass = false } = {}) {
   return await test.step(`Ensure ${bundleId} bundle via checkout flow`, async () => {
-    console.log(`Creating pass and starting checkout for bundle ${bundleId} (testPass=${testPass})...`);
+    console.log(`Starting checkout for bundle ${bundleId} (testPass=${testPass}, skipPass=${skipPass})...`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-01-starting.png` });
 
+    if (!skipPass) {
     // Step 1: Create a pass via admin API
     const createResult = await page.evaluate(
       async ({ bid, isTestPass }) => {
@@ -470,6 +471,7 @@ export async function ensureBundleViaCheckout(page, bundleId, screenshotPath = d
     const data = redeemResult?.data || redeemResult;
     console.log(`Pass redemption result: ${JSON.stringify(data)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png` });
+    } // end if (!skipPass)
 
     // Step 3: Call checkout session API
     // Server auto-detects sandbox mode from bundle qualifiers (no explicit sandbox flag needed)
