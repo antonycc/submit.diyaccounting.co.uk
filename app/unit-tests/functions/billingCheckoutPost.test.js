@@ -161,4 +161,32 @@ describe("billingCheckoutPost", () => {
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
     expect(params.line_items[0].price).toBe("price_test_sandbox_456");
   });
+
+  test("uses STRIPE_PRICE_ID_RESIDENT_VAT for resident-vat checkout", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_VAT = "price_vat_live_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_vat_live_789");
+    expect(params.metadata.bundleId).toBe("resident-vat");
+  });
+
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_VAT for resident-vat sandbox checkout", async () => {
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT = "price_vat_test_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat", sandbox: true });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_vat_test_789");
+    expect(params.metadata.bundleId).toBe("resident-vat");
+  });
+
+  test("returns 500 when resident-vat price ID is not configured", async () => {
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_VAT;
+    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT;
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(500);
+  });
 });

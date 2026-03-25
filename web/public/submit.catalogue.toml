@@ -113,7 +113,7 @@ id = "resident-vat"
 name = "Resident VAT"
 levelName = "Resident"
 enable = "on-pass"
-hidden = true
+hidden = false
 allocation = "on-pass-on-subscription"
 # on-pass-on-subscription: Pass gates visibility (card appears after valid pass), subscription gates access.
 # After entering a valid pass, user sees a "Subscribe £0.99/mo" button instead of "Request".
