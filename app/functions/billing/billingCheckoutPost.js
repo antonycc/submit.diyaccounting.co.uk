@@ -31,14 +31,25 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Resolve the Stripe price ID based on sandbox mode.
- * Same pattern as HMRC sandbox/live selection via hmrcAccount.
+ * Resolve the Stripe price ID based on bundleId and sandbox mode.
+ * Each bundle has its own Stripe product/price. Falls back to resident-pro if no bundle-specific price is configured.
  */
-function resolveStripePriceId(isSandbox) {
+function resolveStripePriceId(bundleId, isSandbox) {
+  // Bundle-specific env vars: STRIPE_[TEST_]PRICE_ID_RESIDENT_VAT, etc.
+  const suffix = bundleId === "resident-vat" ? "_RESIDENT_VAT" : "";
   if (isSandbox) {
-    const testPrice = process.env.STRIPE_TEST_PRICE_ID;
+    const testPrice = process.env[`STRIPE_TEST_PRICE_ID${suffix}`];
     if (testPrice) return testPrice;
-    logger.warn({ message: "Sandbox mode requested but no STRIPE_TEST_PRICE_ID configured, falling back to STRIPE_PRICE_ID" });
+    if (suffix) {
+      logger.warn({ message: `No STRIPE_TEST_PRICE_ID${suffix} configured, falling back to default` });
+    }
+    // Fall back to default test price (resident-pro)
+    return process.env.STRIPE_TEST_PRICE_ID;
+  }
+  const price = process.env[`STRIPE_PRICE_ID${suffix}`];
+  if (price) return price;
+  if (suffix) {
+    logger.warn({ message: `No STRIPE_PRICE_ID${suffix} configured, falling back to default` });
   }
   return process.env.STRIPE_PRICE_ID;
 }
@@ -90,10 +101,11 @@ export async function ingestHandler(event) {
     logger.info({ message: "Sandbox mode resolved", isSandbox, sandboxSource });
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
-    const priceId = resolveStripePriceId(isSandbox);
+    const bundleId = body.bundleId || "resident-pro";
+    const priceId = resolveStripePriceId(bundleId, isSandbox);
 
     if (!priceId) {
-      logger.error({ message: "No Stripe price ID configured" });
+      logger.error({ message: "No Stripe price ID configured", bundleId, isSandbox });
       return http500ServerErrorResponse({
         request,
         headers: responseHeaders,
@@ -103,9 +115,7 @@ export async function ingestHandler(event) {
 
     const stripe = await getStripeClient({ test: isSandbox });
 
-    logger.info({ message: "Creating checkout session", isSandbox, priceId: priceId.substring(0, 20) + "..." });
-
-    const bundleId = body.bundleId || "resident-pro";
+    logger.info({ message: "Creating checkout session", isSandbox, bundleId, priceId: priceId.substring(0, 20) + "..." });
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",

@@ -11,6 +11,8 @@ on:
         options:
           - day-guest-test-pass
           - day-guest-pass
+          - resident-vat-test-pass
+          - resident-vat-pass
           - resident-pro-test-pass
           - resident-pro-pass
           - invited-guest

@@ -97,6 +97,16 @@ public class BillingStack extends Stack {
             return "";
         }
 
+        @Value.Default
+        default String stripePriceIdResidentVat() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentVat() {
+            return "";
+        }
+
         static ImmutableBillingStackProps.Builder builder() {
             return ImmutableBillingStackProps.builder();
         }
@@ -152,6 +162,12 @@ public class BillingStack extends Stack {
         }
         if (props.stripeTestPriceId() != null && !props.stripeTestPriceId().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID", props.stripeTestPriceId());
+        }
+        if (props.stripePriceIdResidentVat() != null && !props.stripePriceIdResidentVat().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_VAT", props.stripePriceIdResidentVat());
+        }
+        if (props.stripeTestPriceIdResidentVat() != null && !props.stripeTestPriceIdResidentVat().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_TEST_PRICE_ID_RESIDENT_VAT", props.stripeTestPriceIdResidentVat());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());

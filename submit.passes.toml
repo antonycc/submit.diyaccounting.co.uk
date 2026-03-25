@@ -121,6 +121,33 @@ defaultValidityPeriod = "P1Y"
 defaultMaxUses = 1
 requiresEmailRestriction = true
 
+# resident-vat-test-pass → unlocks "resident-vat" bundle (test/sandbox)
+# Grants: 100 tokens, refreshing monthly, HMRC sandbox access (testPass: true)
+# Tokens: 100 per month
+# Payment: None (admin-issued via GitHub Actions for automated tests and CI)
+[[passTypes]]
+id = "resident-vat-test-pass"
+name = "Resident VAT Test Pass"
+description = "VAT subscription access to HMRC Sandbox APIs for testing"
+bundleId = "resident-vat"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+test = true
+
+# resident-vat-pass → unlocks "resident-vat" bundle (production)
+# Grants: 100 tokens, refreshing monthly, production HMRC access
+# Tokens: 100 per month
+# Payment: Pass reveals the subscription card, £0.99/mo via Stripe
+[[passTypes]]
+id = "resident-vat-pass"
+name = "Resident VAT Pass"
+description = "VAT subscription access to production HMRC APIs"
+bundleId = "resident-vat"
+defaultValidityPeriod = "P1D"
+defaultMaxUses = 1
+requiresEmailRestriction = false
+
 # digital-pass → unlocks "day-guest" bundle
 # Grants: 3 tokens, 1 day timeout per redeemer, 7 day pass validity, 100 uses
 # Tokens: 3 per redeemer (no refresh for day-guest)

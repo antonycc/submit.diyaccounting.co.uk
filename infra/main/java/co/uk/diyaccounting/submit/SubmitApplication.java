@@ -69,6 +69,8 @@ public class SubmitApplication {
         public String stripeTestSecretKeyArn;
         public String stripePriceId;
         public String stripeTestPriceId;
+        public String stripePriceIdResidentVat;
+        public String stripeTestPriceIdResidentVat;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String telegramBotTokenArn;
@@ -171,6 +173,14 @@ public class SubmitApplication {
         var stripePriceId = envOr("STRIPE_PRICE_ID", appProps.stripePriceId, "(from stripePriceId in cdk.json)");
         var stripeTestPriceId =
                 envOr("STRIPE_TEST_PRICE_ID", appProps.stripeTestPriceId, "(from stripeTestPriceId in cdk.json)");
+        var stripePriceIdResidentVat = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_VAT",
+                appProps.stripePriceIdResidentVat,
+                "(from stripePriceIdResidentVat in cdk.json)");
+        var stripeTestPriceIdResidentVat = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_VAT",
+                appProps.stripeTestPriceIdResidentVat,
+                "(from stripeTestPriceIdResidentVat in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -286,6 +296,10 @@ public class SubmitApplication {
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
                         .stripePriceId(stripePriceId != null ? stripePriceId : "")
                         .stripeTestPriceId(stripeTestPriceId != null ? stripeTestPriceId : "")
+                        .stripePriceIdResidentVat(
+                                stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
+                        .stripeTestPriceIdResidentVat(
+                                stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .build());
 
