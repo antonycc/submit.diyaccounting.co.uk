@@ -41,10 +41,6 @@ public class BillingStack extends Stack {
     public Function billingRecoverPostLambda;
     public ILogGroup billingRecoverPostLambdaLogGroup;
 
-    public AbstractApiLambdaProps billingWebhookPostLambdaProps;
-    public Function billingWebhookPostLambda;
-    public ILogGroup billingWebhookPostLambdaLogGroup;
-
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -98,16 +94,6 @@ public class BillingStack extends Stack {
 
         @Value.Default
         default String baseUrl() {
-            return "";
-        }
-
-        @Value.Default
-        default String stripeWebhookSecretArn() {
-            return "";
-        }
-
-        @Value.Default
-        default String stripeTestWebhookSecretArn() {
             return "";
         }
 
@@ -355,110 +341,12 @@ public class BillingStack extends Stack {
                 "Created Billing Recover POST Lambda %s",
                 this.billingRecoverPostLambda.getNode().getId());
 
-        // ============================================================================
-        // Billing Webhook POST Lambda (NO auth - Stripe signature verification)
-        // ============================================================================
-        var billingWebhookPostLambdaEnv = new PopulatedMap<String, String>()
-                .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
-                .with("ENVIRONMENT_NAME", props.envName());
-        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
-            billingWebhookPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
-        }
-        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
-            billingWebhookPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
-        }
-        if (props.stripeWebhookSecretArn() != null
-                && !props.stripeWebhookSecretArn().isBlank()) {
-            billingWebhookPostLambdaEnv.with("STRIPE_WEBHOOK_SECRET_ARN", props.stripeWebhookSecretArn());
-        }
-        if (props.stripeTestWebhookSecretArn() != null
-                && !props.stripeTestWebhookSecretArn().isBlank()) {
-            billingWebhookPostLambdaEnv.with("STRIPE_TEST_WEBHOOK_SECRET_ARN", props.stripeTestWebhookSecretArn());
-        }
-        var billingWebhookPostApiLambda = new ApiLambda(
-                this,
-                ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().billingWebhookPostIngestLambdaFunctionName)
-                        .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().billingWebhookPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().billingWebhookPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().billingWebhookPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().billingWebhookPostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .ingestProvisionedConcurrency(0)
-                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().billingWebhookPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().billingWebhookPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().billingWebhookPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().billingWebhookPostLambdaCustomAuthorizer)
-                        .environment(billingWebhookPostLambdaEnv)
-                        .build());
-        this.billingWebhookPostLambdaProps = billingWebhookPostApiLambda.apiProps;
-        this.billingWebhookPostLambda = billingWebhookPostApiLambda.ingestLambda;
-        this.billingWebhookPostLambdaLogGroup = billingWebhookPostApiLambda.logGroup;
-        this.lambdaFunctionProps.add(this.billingWebhookPostLambdaProps);
-        subscriptionsTable.grantReadWriteData(this.billingWebhookPostLambda);
-        bundlesTable.grantReadWriteData(this.billingWebhookPostLambda);
-        SubHashSaltHelper.grantSaltAccess(this.billingWebhookPostLambda, region, account, props.envName());
-        this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of("events:PutEvents"))
-                .resources(List.of(activityBusArn))
-                .build());
-        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
-            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
-                    ? props.stripeSecretKeyArn()
-                    : props.stripeSecretKeyArn() + "-*";
-            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(stripeSecretArnWithWildcard))
-                    .build());
-        }
-        if (props.stripeTestSecretKeyArn() != null && !props.stripeTestSecretKeyArn().isBlank()) {
-            var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
-                    ? props.stripeTestSecretKeyArn()
-                    : props.stripeTestSecretKeyArn() + "-*";
-            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(stripeTestSecretArnWithWildcard))
-                    .build());
-        }
-        if (props.stripeWebhookSecretArn() != null
-                && !props.stripeWebhookSecretArn().isBlank()) {
-            var webhookSecretArnWithWildcard = props.stripeWebhookSecretArn().endsWith("*")
-                    ? props.stripeWebhookSecretArn()
-                    : props.stripeWebhookSecretArn() + "-*";
-            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(webhookSecretArnWithWildcard))
-                    .build());
-        }
-        if (props.stripeTestWebhookSecretArn() != null
-                && !props.stripeTestWebhookSecretArn().isBlank()) {
-            var testWebhookSecretArnWithWildcard = props.stripeTestWebhookSecretArn().endsWith("*")
-                    ? props.stripeTestWebhookSecretArn()
-                    : props.stripeTestWebhookSecretArn() + "-*";
-            this.billingWebhookPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(testWebhookSecretArnWithWildcard))
-                    .build());
-        }
-        infof(
-                "Created Billing Webhook POST Lambda %s",
-                this.billingWebhookPostLambda.getNode().getId());
+        // Billing Webhook POST Lambda has been moved to the env-level BillingWebhookStack
+        // (always available, independent of app deployments). See PLAN_BILLING_WEBHOOK_TO_ENV.md.
 
         cfnOutput(this, "BillingCheckoutPostLambdaArn", this.billingCheckoutPostLambda.getFunctionArn());
         cfnOutput(this, "BillingPortalGetLambdaArn", this.billingPortalGetLambda.getFunctionArn());
         cfnOutput(this, "BillingRecoverPostLambdaArn", this.billingRecoverPostLambda.getFunctionArn());
-        cfnOutput(this, "BillingWebhookPostLambdaArn", this.billingWebhookPostLambda.getFunctionArn());
 
         infof(
                 "BillingStack %s created successfully for %s",

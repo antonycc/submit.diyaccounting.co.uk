@@ -72,8 +72,9 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.accountStack).resourceCountIs("AWS::Lambda::Function", 13);
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
-        // 4 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1), billingWebhookPost(1)
-        Template.fromStack(submitApplication.billingStack).resourceCountIs("AWS::Lambda::Function", 4);
+        // 3 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1)
+        // billingWebhookPost moved to env-level BillingWebhookStack
+        Template.fromStack(submitApplication.billingStack).resourceCountIs("AWS::Lambda::Function", 3);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
